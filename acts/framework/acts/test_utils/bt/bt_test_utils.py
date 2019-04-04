@@ -1351,9 +1351,9 @@ def setup_multiple_devices_for_bt_test(android_devices):
                 a.log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
-            a.adb.shell("setprop persist.bluetooth.btsnoopenable true")
-            getprop_result = bool(
-                a.adb.shell("getprop persist.bluetooth.btsnoopenable"))
+            a.adb.shell("setprop persist.bluetooth.btsnooplogmode full")
+            getprop_result = a.adb.shell(
+                "getprop persist.bluetooth.btsnooplogmode") == "full"
             if not getprop_result:
                 a.log.warning("Failed to enable Bluetooth Hci Snoop Logging.")
     except Exception as err:
