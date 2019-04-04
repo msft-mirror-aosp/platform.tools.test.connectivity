@@ -34,6 +34,8 @@ from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_default_sub_for_all_services
 from acts.test_utils.tel.tel_test_utils import build_id_override
 from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import enable_connectivity_metrics
@@ -66,6 +68,13 @@ from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import activate_wfc_on_device
+from acts.test_utils.tel.tel_test_utils import install_googleaccountutil_apk
+from acts.test_utils.tel.tel_test_utils import add_google_account
+from acts.test_utils.tel.tel_test_utils import install_googlefi_apk
+from acts.test_utils.tel.tel_test_utils import activate_google_fi_account
+from acts.test_utils.tel.tel_test_utils import check_google_fi_activated
+from acts.test_utils.tel.tel_test_utils import check_fi_apk_installed
+from acts.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -94,6 +103,12 @@ class TelephonyBaseTest(BaseTestClass):
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
+        self.account_util = self.user_params.get("account_util", None)
+        if isinstance(self.account_util, list):
+            self.account_util = self.account_util[0]
+        self.fi_util = self.user_params.get("fi_util", None)
+        if isinstance(self.fi_util, list):
+            self.fi_util = self.fi_util[0]
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
@@ -200,7 +215,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
-        if self.user_params.get("enable_connectivity_metrics", True):
+        if self.user_params.get("enable_connectivity_metrics", False):
             enable_connectivity_metrics(ad)
         if self.user_params.get("build_id_override", False):
             build_postfix = self.user_params.get("build_id_postfix",
@@ -237,6 +252,31 @@ class TelephonyBaseTest(BaseTestClass):
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
 
+        # eSIM enablement
+        if hasattr(ad, "fi_esim"):
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("Failed to connect to wifi")
+                return False
+            if check_google_fi_activated(ad):
+                ad.log.info("Google Fi is already Activated")
+            else:
+                install_googleaccountutil_apk(ad, self.account_util)
+                add_google_account(ad)
+                install_googlefi_apk(ad, self.fi_util)
+                if not activate_google_fi_account(ad):
+                    return False
+                check_google_fi_activated(ad)
+            if hasattr(ad, "dsds"):
+                sim_mode = ad.droid.telephonyGetPhoneCount()
+                if sim_mode == 1:
+                    ad.log.info("Phone in Single SIM Mode")
+                    if not phone_switch_to_msim_mode(ad):
+                        ad.log.error("Failed to switch to Dual SIM Mode")
+                        return False
+                elif sim_mode == 2:
+                    ad.log.info("Phone already in Dual SIM Mode")
+                set_default_sub_for_all_services(ad)
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
             ensure_phone_idle(self.log, ad)
@@ -331,7 +371,7 @@ class TelephonyBaseTest(BaseTestClass):
             ad.droid.disableDevicePassword()
         except Exception as e:
             self.log.error("Failure with %s", e)
-        if self.user_params.get("enable_connectivity_metrics", True):
+        if self.user_params.get("enable_connectivity_metrics", False):
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
                 ad.log.error("Failed to connect to wifi")
