@@ -18,6 +18,9 @@
 """
 
 import time
+import random
+import collections
+
 from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -72,9 +75,14 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts.test_utils.tel.tel_test_utils import get_lte_rsrp
 from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -94,6 +102,11 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts.test_utils.tel.tel_subscription_utils import perform_dds_switch
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts.utils import get_current_epoch_time
 
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
@@ -105,6 +118,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
         self.number_of_devices = 2
         self.stress_test_number = self.get_stress_test_number()
+        self.dds_operator = self.user_params.get("dds_operator", None)
+
+
+    def on_fail(self, test_name, begin_time):
+        if test_name.startswith('test_stress'):
+            return
+        super().on_fail(test_name, begin_time)
 
 
     def _msim_call_sequence(self, ads, mo_mt, slot_id,
@@ -502,3 +522,209 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
         return ((mt_result_0 is True) and (mt_result_1 is True))
+
+
+    def _test_stress_msim(self, mo_mt, dds_switch=False):
+        """ Test MSIM/SSIM Voice General Stress
+
+            mo_mt: indicating this call sequence is MO or MT.
+                Valid input: DIRECTION_MOBILE_ORIGINATED and
+                DIRECTION_MOBILE_TERMINATED.
+            slot_id: either 0 or 1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        if (mo_mt not in [DIRECTION_MOBILE_ORIGINATED,
+                          DIRECTION_MOBILE_TERMINATED]):
+            self.log.error("Invalid parameters.")
+            return False
+        ads = [self.android_devices[0], self.android_devices[1]]
+        total_iteration = self.stress_test_number
+        fail_count = collections.defaultdict(int)
+        for i in range(0,2):
+            sub_id = get_subid_from_slot_index(ads[0].log, ads[0], i)
+            operator = get_operatorname_from_slot_index(ads[0], i)
+            self.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+            if self.dds_operator == operator:
+                ads[0].log.info("Setting DDS on %s", operator)
+                set_subid_for_data(ads[0], sub_id)
+                ads[0].droid.telephonyToggleDataConnection(True)
+
+        self.log.info("Total iteration = %d.", total_iteration)
+        current_iteration = 1
+        for i in range(1, total_iteration + 1):
+            msg = "Stress Call Test Iteration: <%s> / <%s>" % (
+                i, total_iteration)
+            begin_time = get_current_epoch_time()
+            self.log.info(msg)
+            start_qxdm_loggers(self.log, self.android_devices, begin_time)
+
+            if dds_switch:
+                perform_dds_switch(ads[0])
+
+            result_0 = self._msim_call_sequence(
+                ads, mo_mt, 0,
+                self._phone_setup_voice_general, None, self._is_phone_in_call,
+                None, True)
+            if not result_0:
+                fail_count["slot_0"] += 1
+
+            result_1 = self._msim_call_sequence(
+                ads, mo_mt, 1,
+                self._phone_setup_voice_general, None, self._is_phone_in_call,
+                None, True)
+            if not result_1:
+                fail_count["slot_1"] += 1
+
+            self.log.info("Slot0: %s, Slot1: %s", result_0, result_1)
+            iteration_result = ((result_0 is True) and (result_1 is True))
+            if iteration_result:
+                self.log.info(">----Iteration : %d/%d succeed.----<",
+                    i, total_iteration)
+            else:
+                self.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+            current_iteration += 1
+
+        test_result = True
+        for failure, count in fail_count.items():
+            if count:
+                self.log.error("%s: %s %s failures in %s iterations",
+                               self.test_name, count, failure,
+                               total_iteration)
+                test_result = False
+        return test_result
+
+    @test_tracker_info(uuid="22e3130e-9d46-45e2-a999-36a091acadcf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_msim_mt_calls(self):
+        """ Test MSIM to SSIM stress
+
+        Call from PhoneB to PhoneA Slot0
+        Call from PhoneB to PhoneA Slot1
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim(DIRECTION_MOBILE_TERMINATED)
+
+
+    @test_tracker_info(uuid="e7c97ffb-6b1c-4819-9f3c-29b1c87b0ead")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_msim_mt_calls(self):
+        """ Test MSIM to SSIM stress
+
+        Perform DDS Switch
+        Call from PhoneB to PhoneA Slot0
+        Call from PhoneB to PhoneA Slot0
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim(DIRECTION_MOBILE_TERMINATED,
+                                      dds_switch=True)
+
+
+    @test_tracker_info(uuid="bc80622a-09fb-48ed-9340-c5de92df1c69")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_msim_mo_calls(self):
+        """ Test MSIM to SSIM stress
+
+        Call from PhoneA Slot0 to PhoneB
+        Call from PhoneA Slot1 to PhoneB
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim(DIRECTION_MOBILE_ORIGINATED)
+
+
+    @test_tracker_info(uuid="b1af7036-7d91-4f6f-83c9-a763092790b4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_msim_mo_calls(self):
+        """ Test MSIM to SSIM stress with DDS
+
+        Switch DDS
+        Call from PhoneA Slot0 to PhoneB
+        Call from PhoneA Slot1 to PhoneB
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim(DIRECTION_MOBILE_ORIGINATED,
+                                      dds_switch=True)
+
+
+    def _test_msim_file_download_stress(self):
+        ad = self.android_devices[0]
+        total_iteration = self.stress_test_number
+        fail_count = collections.defaultdict(int)
+        for i in range(0,2):
+            sub_id = get_subid_from_slot_index(ad.log, ad, i)
+            operator = get_operatorname_from_slot_index(ad, i)
+            ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+
+        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
+        current_iteration = 1
+        for i in range(1, total_iteration + 1):
+            msg = "File DL Iteration: <%s> / <%s>" % (i, total_iteration)
+            self.log.info(msg)
+            begin_time = get_current_epoch_time()
+            start_qxdm_logger(ad, begin_time)
+            current_dds = perform_dds_switch(ad)
+            time.sleep(15)
+            if not verify_internet_connection(ad.log, ad):
+                ad.log.warning("No Data after DDS. Waiting 1 more minute")
+                time.sleep(60)
+            try:
+                selection = random.randrange(0, len(file_names))
+                file_name = file_names[selection]
+                iteration_result = active_file_download_test(
+                                       ad.log, ad, file_name)
+                if not iteration_result:
+                    fail_count["%s" % current_dds] += 1
+            except Exception as e:
+                ad.log.error("Exception error %s", str(e))
+                iteration_result = False
+
+            if iteration_result:
+                ad.log.info(">----Iteration : %d/%d succeed.----<",
+                    i, total_iteration)
+            else:
+                ad.log.error("%s file download failure", file_name)
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+            current_iteration += 1
+
+        test_result = True
+        for failure, count in fail_count.items():
+            if count:
+                ad.log.error("%s: %s %s failures in %s iterations",
+                               self.test_name, count, failure,
+                               total_iteration)
+                test_result = False
+        return test_result
+
+
+    @test_tracker_info(uuid="82e10a34-5018-453a-bf20-52d3b225a36e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_file_download(self):
+        """ Test File DL stress on both DDS
+
+        Switch DDS
+        File Download on alternate slot
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_msim_file_download_stress()

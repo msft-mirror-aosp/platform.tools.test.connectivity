@@ -29,6 +29,7 @@ from acts.signals import TestFailure
 from acts.signals import TestPass
 from acts.test_utils.bt.bt_test_utils import factory_reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 from acts.utils import set_location_service
 
@@ -74,10 +75,10 @@ class BluetoothPairAndConnectTest(BaseTestClass):
         self.bt_logger = BluetoothMetricLogger.for_test_case()
 
     def setup_test(self):
+        setup_multiple_devices_for_bt_test(self.android_devices)
         # Make sure Bluetooth is on
         enable_bluetooth(self.phone.droid, self.phone.ed)
         set_location_service(self.phone, True)
-        factory_reset_bluetooth([self.phone])
         self.apollo_act.factory_reset()
         self.log.info('===== START BLUETOOTH PAIR AND CONNECT TEST  =====')
 
