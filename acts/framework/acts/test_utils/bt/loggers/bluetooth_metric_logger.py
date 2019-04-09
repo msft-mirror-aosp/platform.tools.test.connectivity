@@ -64,6 +64,8 @@ class BluetoothMetricLogger(MetricLogger):
                               .BluetoothDataTestResult(),
                           'BtCodecSweepTest': self.proto_module
                               .BluetoothAudioTestResult(),
+                          'BtRangeCodecTest': self.proto_module
+                              .BluetoothAudioTestResult(),
                           }
 
     @staticmethod
