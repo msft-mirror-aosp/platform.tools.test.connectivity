@@ -27,6 +27,8 @@ from acts.controllers.buds_lib.test_actions.bt_utils import BTUtilsError
 from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
 from acts.signals import TestFailure
 from acts.signals import TestPass
+from acts.test_decorators import test_tracker_info
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import factory_reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
@@ -119,6 +121,8 @@ class BluetoothPairAndConnectTest(BaseTestClass):
 
         return pair_time, connection_time
 
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c914fd08-350d-465a-96cf-970d40e71060')
     def test_bluetooth_connect(self):
         # Store metrics
         metrics = {}

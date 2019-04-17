@@ -22,7 +22,10 @@ import time
 from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
-from acts.signals import TestPass, TestFailure
+from acts.signals import TestFailure
+from acts.signals import TestPass
+from acts.test_decorators import test_tracker_info
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.bt_test_utils import factory_reset_bluetooth
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
@@ -119,6 +122,8 @@ class BluetoothReconnectTest(BaseTestClass):
         end_time = time.perf_counter()
         return (end_time - start_time) * 1000
 
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='da921903-92d0-471d-ae01-456058cc1297')
     def test_bluetooth_reconnect(self):
         """Reconnects Bluetooth between a phone and Apollo device a specified
         number of times and reports connection time statistics."""
