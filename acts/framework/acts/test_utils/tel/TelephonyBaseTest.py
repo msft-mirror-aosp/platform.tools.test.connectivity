@@ -273,6 +273,7 @@ class TelephonyBaseTest(BaseTestClass):
                     ad.log.info("Phone in Single SIM Mode")
                     if not phone_switch_to_msim_mode(ad):
                         ad.log.error("Failed to switch to Dual SIM Mode")
+                        return False
                 elif sim_mode == 2:
                     ad.log.info("Phone already in Dual SIM Mode")
                 set_default_sub_for_all_services(ad)
@@ -486,7 +487,7 @@ class TelephonyBaseTest(BaseTestClass):
         return result
 
     def _take_bug_report(self, test_name, begin_time):
-        if self._skip_bug_report():
+        if self._skip_bug_report(test_name):
             return
         test_log_path = os.path.join(self.log_path, test_name)
         utils.create_dir(test_log_path)
