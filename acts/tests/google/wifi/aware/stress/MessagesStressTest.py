@@ -206,6 +206,7 @@ class MessagesStressTest(AwareBaseTest):
 
     #######################################################################
 
+    @test_tracker_info(uuid="e88c060f-4ca7-41c1-935a-d3d62878ec0b")
     def test_stress_message_no_throttling(self):
         """Stress test for bi-directional message transmission and reception no throttling"""
         p_dut = self.android_devices[0]
@@ -339,6 +340,7 @@ class MessagesStressTest(AwareBaseTest):
 
         asserts.explicit_pass("test_stress_message_no_throttling done", extras=results)
 
+    @test_tracker_info(uuid="546b0c6f-3071-4330-8e23-842ecbd07018")
     def test_stress_message_throttling(self):
         """Stress test for bi-directional message transmission and reception with throttling"""
         p_dut = self.android_devices[0]
