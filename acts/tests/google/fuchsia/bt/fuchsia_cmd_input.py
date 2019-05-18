@@ -133,6 +133,22 @@ class CmdInput(cmd.Cmd):
                         break
         self.pri_dut.btc_lib.requestDiscovery(False)
 
+
+    def do_tool_take_bt_snoop_log(self, custom_name):
+        """
+        Description: Takes the bt snoop log from the Fuchsia device.
+        Logs will show up in your config files' logpath directory.
+
+        Input(s):
+            custom_name: Optional. Override the default pcap file name.
+
+        Usage: tool_set_target_device_name new_target_device name
+          Examples:
+            tool_take_bt_snoop_log connection_error
+            tool_take_bt_snoop_log
+        """
+        self.pri_dut.take_bt_snoop_log(custom_name)
+
     def do_tool_refresh_unique_id(self, line):
         """
         Description: Refresh command line tool mac unique id.
@@ -977,6 +993,21 @@ class CmdInput(cmd.Cmd):
     """End LE scan wrappers"""
     """Begin GATT Server wrappers"""
 
+    def do_gatts_close(self, line):
+        """
+        Description: Close active GATT server.
+
+        Usage:
+          Examples:
+            gatts_close
+        """
+        cmd = "Close active GATT server."
+        try:
+            result = self.pri_dut.gatts_lib.closeServer()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def complete_gatts_setup_database(self, text, line, begidx, endidx):
         if not text:
             completions = list(
@@ -1264,6 +1295,38 @@ class CmdInput(cmd.Cmd):
         cmd = "Get the local BR/EDR address of the Bluetooth Controller."
         try:
             result = self.pri_dut.btc_lib.getActiveAdapterAddress()['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_input_pairing_pin(self, line):
+        """
+        Description: Sends a pairing pin to SL4F's Bluetooth Control's
+        Pairing Delegate.
+
+        Usage:
+          Examples:
+            btc_input_pairing_pin 123456
+        """
+        cmd = "Input pairing pin to the Fuchsia device."
+        try:
+            result = self.pri_dut.btc_lib.inputPairingPin(line)['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_get_pairing_pin(self, line):
+        """
+        Description: Gets the pairing pin from SL4F's Bluetooth Control's
+        Pairing Delegate.
+
+        Usage:
+          Examples:
+            btc_get_pairing_pin
+        """
+        cmd = "Get the pairing pin from the Fuchsia device."
+        try:
+            result = self.pri_dut.btc_lib.getPairingPin()['result']
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
