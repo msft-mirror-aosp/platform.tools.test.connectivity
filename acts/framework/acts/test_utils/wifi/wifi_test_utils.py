@@ -54,12 +54,12 @@ roaming_attn = {
         "AP1_on_AP2_off": [
             0,
             0,
-            95,
-            95
+            60,
+            60
         ],
         "AP1_off_AP2_on": [
-            95,
-            95,
+            60,
+            60,
             0,
             0
         ],
@@ -1963,6 +1963,29 @@ def set_attns(attenuator, attn_val_name):
                        attn_val_name)
         raise
 
+def set_attns_steps(attenuators, atten_val_name, steps=10, wait_time=12):
+    """Set attenuation values on attenuators used in this test. It will change
+    the attenuation values linearly from current value to target value step by
+    step.
+
+    Args:
+        attenuators: The list of attenuator objects that you want to change
+                     their attenuation value.
+        atten_val_name: Name of the attenuation value pair to use.
+        steps: Number of attenuator changes to reach the target value.
+        wait_time: Sleep time for each change of attenuator.
+    """
+    logging.info("Set attenuation values to %s in %d step(s)",
+            roaming_attn[atten_val_name], steps)
+    start_atten = [attenuator.get_atten() for attenuator in attenuators]
+    target_atten = roaming_attn[atten_val_name]
+    for current_step in range(steps):
+        progress = (current_step + 1) / steps
+        for i, attenuator in enumerate(attenuators):
+            amount_since_start = (target_atten[i] - start_atten[i]) * progress
+            attenuator.set_atten(round(start_atten[i] + amount_since_start))
+        time.sleep(wait_time)
+
 
 def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
     """Sets attenuators to trigger roaming and validate the DUT connected
@@ -1977,9 +2000,7 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
         WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
         WifiEnums.BSSID_KEY: expected_con["bssid"],
     }
-    set_attns(attenuator, attn_val_name)
-    logging.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
-    time.sleep(ROAMING_TIMEOUT)
+    set_attns_steps(attenuator, attn_val_name)
 
     verify_wifi_connection_info(dut, expected_con)
     expected_bssid = expected_con[WifiEnums.BSSID_KEY]
