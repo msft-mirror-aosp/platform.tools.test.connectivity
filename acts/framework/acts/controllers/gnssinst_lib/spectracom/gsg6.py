@@ -21,16 +21,6 @@ import acts.controllers.gnssinst_lib.abstract_inst as abstract_inst
 class GSG6Error(abstract_inst.SocketInstrumentError):
     """GSG-6 Instrument Error Class."""
 
-    def __init__(self, error, command=None):
-        """Init method for GSG-6 Error.
-
-        Args:
-            error: Exception error.
-            command: Additional information on command,
-                Type, Str.
-        """
-        super(GSG6Error, self).__init__(error)
-
 
 class GSG6(abstract_inst.SocketInstrument):
     """GSG-6 Class, inherted from abstract_inst SocketInstrument."""
@@ -55,14 +45,13 @@ class GSG6(abstract_inst.SocketInstrument):
         self.get_idn()
 
         infmsg = 'Connected to GSG-6, with ID: {}'.format(self.idn)
-        self._logger.info(infmsg)
+        self._logger.debug(infmsg)
 
     def close(self):
         """Close GSG-6."""
         self._close_socket()
 
-        infmsg = 'Closed connection to GSG-6'
-        self._logger.info(infmsg)
+        self._logger.debug('Closed connection to GSG-6')
 
     def get_idn(self):
         """Get the Idenification of GSG-6.
@@ -93,12 +82,39 @@ class GSG6(abstract_inst.SocketInstrument):
         else:
             infmsg = 'Started running current scenario'
 
-        self._logger.info(infmsg)
+        self._logger.debug(infmsg)
 
     def stop_scenario(self):
         """Stop the running scenario."""
 
         self._send('SOUR:SCEN:CONT STOP')
 
-        infmsg = 'Stopped running scenario'
-        self._logger.info(infmsg)
+        self._logger.debug('Stopped running scenario')
+
+    def preset(self):
+        """Preset GSG-6 to default status."""
+        self._send('*RST')
+
+        self._logger.debug('Reset GSG-6')
+
+    def set_power(self, power_level):
+        """set GSG-6 transmit power on all bands.
+
+        Args:
+            power_level: transmit power level
+                Type, float.
+                Decimal, unit [dBm]
+
+        Raises:
+            GSG6Error: raise when power level is not in [-160, -65] range.
+        """
+        if not -160 <= power_level <= -65:
+            errmsg = ('"power_level" must be within [-160, -65], '
+                      'current input is {}').format(str(power_level))
+            raise GSG6Error(error=errmsg, command='set_power')
+
+        self._send(':SOUR:POW ' + str(round(power_level, 1)))
+
+        infmsg = 'Set GSG-6 transmit power to "{}"'.format(
+            round(power_level, 1))
+        self._logger.debug(infmsg)
