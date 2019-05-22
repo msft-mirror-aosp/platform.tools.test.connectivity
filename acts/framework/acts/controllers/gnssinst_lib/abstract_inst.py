@@ -95,8 +95,7 @@ class SocketInstrument(object):
                 Type, Str.
         """
         if not self._socket:
-            warnmsg = ('Socket instrument is not connected')
-            self._logger.warning(warnmsg)
+            self._logger.warning('Socket instrument is not connected')
             self._connect_socket()
 
         cmd_es = cmd + self._escseq
@@ -132,8 +131,7 @@ class SocketInstrument(object):
                 Type, Str.
         """
         if not self._socket:
-            warnmsg = ('Socket instrument is not connected')
-            self._logger.warning(warnmsg)
+            self._logger.warning('Socket instrument is not connected')
             self._connect_socket()
 
         resp = ''
