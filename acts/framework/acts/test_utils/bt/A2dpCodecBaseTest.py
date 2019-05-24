@@ -83,8 +83,9 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
 
         self.log.info('Pairing and connecting to headset...')
         if not connect_phone_to_headset(self.android, self.bt_device, 20):
-            self.log.info("Failed to connect. Factory reset Bluetooth.")
-            self.android.droid.bluetoothFactoryReset()
+            self.log.info("Failed to connect. Reset headset.")
+            self.bt_device.power_off()
+            self.bt_device.power_on()
         asserts.assert_true(
             connect_phone_to_headset(self.android, self.bt_device, 60),
             'Could not connect to device at address %s'
