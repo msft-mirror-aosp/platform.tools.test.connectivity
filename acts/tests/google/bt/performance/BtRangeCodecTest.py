@@ -20,12 +20,12 @@ import time
 from acts import asserts
 from acts.signals import TestPass
 from acts.test_utils.bt.A2dpCodecBaseTest import A2dpCodecBaseTest
+from acts.test_utils.bt.A2dpCodecBaseTest import HEADSET_CONTROL_SLEEP_TIME
 from acts.test_utils.bt import bt_constants
 from acts.test_utils.bt.bt_test_utils import set_bluetooth_codec
 from acts.test_utils.bt.loggers import bluetooth_metric_logger as log
 
 DEFAULT_THDN_THRESHOLD = 0.9
-HEADSET_CONTROL_SLEEP_TIME = 10
 PHONE_BT_ENABLE_WAITING_TIME = 10
 
 
