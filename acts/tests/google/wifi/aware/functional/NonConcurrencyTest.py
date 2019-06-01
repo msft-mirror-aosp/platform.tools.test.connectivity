@@ -43,6 +43,7 @@ class NonConcurrencyTest(AwareBaseTest):
         AwareBaseTest.teardown_test(self)
         for ad in self.android_devices:
             ad.droid.wifiP2pClose()
+            ad.droid.connectivityStopTethering(0)
 
     def run_aware_then_incompat_service(self, is_p2p):
         """Run test to validate that a running Aware session terminates when an
@@ -136,6 +137,7 @@ class NonConcurrencyTest(AwareBaseTest):
         p_id = dut.droid.wifiAwareAttach()
         autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
 
+        wutils.start_wifi_connection_scan_and_ensure_network_found(dut, ap_ssid)
         wutils.wifi_connect(dut, config, check_connectivity=False)
         autils.wait_for_event(dut, wconsts.WIFI_STATE_CHANGED)
 
