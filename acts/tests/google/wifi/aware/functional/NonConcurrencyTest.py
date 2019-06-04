@@ -85,6 +85,15 @@ class NonConcurrencyTest(AwareBaseTest):
         # expect an announcement about Aware non-availability
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
 
+        # Wifi state and location mode changes should not make Aware available
+        wutils.wifi_toggle_state(dut, False)
+        utils.set_location_service(dut, False)
+        wutils.wifi_toggle_state(dut, True)
+        utils.set_location_service(dut, True)
+        autils.fail_on_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+        asserts.assert_false(dut.droid.wifiIsAwareAvailable(),
+                             "Aware is available (it shouldn't be)")
+
         # try starting anyway (expect failure)
         dut.droid.wifiAwareAttach()
         autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
