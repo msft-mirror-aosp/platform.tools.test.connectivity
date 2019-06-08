@@ -1,4 +1,4 @@
-#!/usr/bin python3
+#!/usr/bin/env python3
 #
 #   Copyright 2019 - The Android Open Source Project
 #
@@ -15,7 +15,7 @@
 #   limitations under the License.
 """Python module for Spectracom/Orolia GSG-6 GNSS simulator."""
 
-import acts.controllers.gnssinst_lib.abstract_inst as abstract_inst
+from acts.controllers.gnssinst_lib import abstract_inst
 
 
 class GSG6Error(abstract_inst.SocketInstrumentError):
