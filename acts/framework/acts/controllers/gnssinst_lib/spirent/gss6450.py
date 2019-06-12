@@ -350,3 +350,32 @@ class GSS6450(abstract_inst.RequestInstrument):
         _ = self._put('-o{}'.format(offset_raw))
 
         self._logger.debug('Set playback offset: %s sec.', offset_raw)
+
+    def set_storage_media(self, media):
+        """Set the storage media of GSS6450.
+
+        Args:
+            media: RPS storage Media, Internal or External.
+                Type, str. Option, 'internal', 'removable'
+
+        Raises:
+            GSS6450Error: raise when media option is not support.
+        """
+        if media == 'internal':
+            raw_media = '1'
+        elif media == 'removable':
+            raw_media = '2'
+        else:
+            raise GSS6450Error(
+                error=('"media" input must be in ["internal", "removable"]. '
+                       ' Current input is {}'.format(media)),
+                command='set_storage_media')
+
+        _ = self._put('-M{}-wM'.format(raw_media))
+
+        resp_raw = self.get_storage_media()
+        if raw_media != resp_raw[0]:
+            raise GSS6450Error(
+                error=('Setting media "{}" is not the same as queried media '
+                       '"{}".'.format(media, resp_raw)),
+                command='set_storage_media')
