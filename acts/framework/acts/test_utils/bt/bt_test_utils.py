@@ -216,13 +216,15 @@ def connect_phone_to_headset(android, headset, timeout=bt_default_timeout,
     """
     connected = is_a2dp_src_device_connected(android, headset.mac_address)
     log.info('Devices connected before pair attempt: %s' % connected)
+    if not connected:
+        # Turn on headset and initiate pairing mode.
+        headset.enter_pairing_mode()
+        android.droid.bluetoothStartPairingHelper()
     start_time = time.time()
     # If already connected, skip pair and connect attempt.
     while not connected and (time.time() - start_time < timeout):
         bonded_info = android.droid.bluetoothA2dpGetConnectedDevices()
         if headset.mac_address not in [info["address"] for info in bonded_info]:
-            # Turn on headset and initiate pairing mode.
-            headset.enter_pairing_mode()
             # Use SL4A to pair and connect with headset.
             android.droid.bluetoothDiscoverAndBond(headset.mac_address)
         else:  # Device is bonded but not connected
