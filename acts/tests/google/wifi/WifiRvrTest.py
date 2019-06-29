@@ -262,10 +262,20 @@ class WifiRvrTest(base_test.BaseTestClass):
             att + rvr_result["fixed_attenuation"]
             for att in rvr_result["attenuation"]
         ]
+        # Generate graph annotatios
+        hover_text = [
+            "TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)".format(
+                curr_llstats["summary"]["common_tx_mcs"],
+                curr_llstats["summary"]["common_tx_mcs_freq"] * 100,
+                curr_llstats["summary"]["common_rx_mcs"],
+                curr_llstats["summary"]["common_rx_mcs_freq"] * 100)
+            for curr_llstats in rvr_result["llstats"]
+        ]
         figure.add_line(
             total_attenuation,
             rvr_result["throughput_receive"],
             "Test Results",
+            hover_text=hover_text,
             color="red",
             marker="circle")
 
@@ -285,14 +295,21 @@ class WifiRvrTest(base_test.BaseTestClass):
         Returns:
             rvr_result: dict containing rvr_results and meta data
         """
+        battery_level = utils.get_battery_level(self.client_dut)
+        if battery_level < 10 and testcase_params["traffic_direction"] == "UL":
+            asserts.skip("Battery level too low. Skipping test.")
         self.log.info("Start running RvR")
+        llstats_obj = wputils.LinkLayerStats(self.client_dut)
         zero_counter = 0
         throughput = []
+        llstats = []
         rssi = []
         for atten in testcase_params["atten_range"]:
             # Set Attenuation
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
+            # Refresh link layer stats
+            llstats_obj.update_stats()
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             rssi_future = wputils.get_connected_rssi_nb(
@@ -320,9 +337,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                     "ValueError: Cannot get iperf result. Setting to 0")
                 curr_throughput = 0
             throughput.append(curr_throughput)
+            llstats_obj.update_stats()
+            curr_llstats = llstats_obj.llstats_incremental.copy()
+            llstats.append(curr_llstats)
             self.log.info(
-                "Throughput at {0:.2f} dB is {1:.2f} Mbps. RSSI = {2:.2f}".
-                format(atten, curr_throughput, current_rssi))
+                ("Throughput at {0:.2f} dB is {1:.2f} Mbps. RSSI = {2:.2f}."
+                 ).format(atten, curr_throughput, current_rssi))
             if curr_throughput == 0:
                 zero_counter = zero_counter + 1
             else:
@@ -345,6 +365,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result["attenuation"] = list(testcase_params["atten_range"])
         rvr_result["rssi"] = rssi
         rvr_result["throughput_receive"] = throughput
+        rvr_result["llstats"] = llstats
         return rvr_result
 
     def setup_ap(self, testcase_params):
@@ -415,6 +436,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         """Function that generates test params based on the test name."""
         test_name_params = test_name.split("_")
         testcase_params = collections.OrderedDict()
+        testcase_params["traffic_type"] = test_name_params[2]
+        testcase_params["traffic_direction"] = test_name_params[3]
         testcase_params["channel"] = int(test_name_params[4][2:])
         testcase_params["mode"] = test_name_params[5]
         num_atten_steps = int((self.testclass_params["atten_stop"] -
@@ -427,14 +450,14 @@ class WifiRvrTest(base_test.BaseTestClass):
         ]
         testcase_params["iperf_args"] = "-i 1 -t {} -J ".format(
             self.testclass_params["iperf_duration"])
-        if test_name_params[2] == "UDP":
+        if testcase_params["traffic_type"] == "UDP":
             testcase_params["iperf_args"] = testcase_params[
                 "iperf_args"] + "-u -b {} -l 1400".format(
                     self.testclass_params["UDP_rates"][
                         testcase_params["mode"]])
-        if (test_name_params[3] == "DL"
+        if (testcase_params["traffic_direction"] == "DL"
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
-            ) or (test_name_params[3] == "UL"
+            ) or (testcase_params["traffic_direction"] == "UL"
                   and isinstance(self.iperf_server, ipf.IPerfServerOverAdb)):
             testcase_params[
                 "iperf_args"] = testcase_params["iperf_args"] + " -R"
