@@ -198,8 +198,8 @@ class BTUtils(object):
             return True, 0
         self.logger.debug('Unpairing from %s' % target_address)
         start_time = end_time = time.time()
-        assert (True is pri_device.droid.bluetoothUnbond(target_address),
-                'Failed to request device unpairing.')
+        assert True is pri_device.droid.bluetoothUnbond(target_address), (
+            'Failed to request device unpairing.')
 
         # Check that devices have unpaired successfully.
         self.logger.debug('Verifying devices are unpaired')
@@ -290,4 +290,3 @@ class BTUtils(object):
             if expected[key] != actual[key]:
                 return False
         return True
-
