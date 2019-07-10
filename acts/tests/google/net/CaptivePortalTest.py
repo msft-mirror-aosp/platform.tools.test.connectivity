@@ -19,6 +19,7 @@ from acts import asserts
 from acts import base_test
 from acts import signals
 from acts.libs.uicd.uicd_cli import UicdCli
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconst
 from acts.test_utils.net import connectivity_test_utils as cutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -52,10 +53,16 @@ class CaptivePortalTest(base_test.BaseTestClass):
                       "uicd_zip"]
         self.unpack_userparams(req_param_names=req_params,)
         self.ui = UicdCli(self.uicd_zip, self.uicd_workflows)
+        self.rk_workflow_config = "rk_captive_portal_%s" % self.dut.model
+        self.gg_workflow_config = "gg_captive_portal_%s" % self.dut.model
 
     def teardown_class(self):
         """ Reset devices """
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC)
+
+    def setup_test(self):
+        """ Setup device """
+        self.dut.unlock_screen()
 
     def teardown_test(self):
         """ Reset to default state after each test """
@@ -79,6 +86,8 @@ class CaptivePortalTest(base_test.BaseTestClass):
             2. uicd_workflow: ui workflow to accept captive portal conn
         """
         # connect to captive portal wifi network
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, network[WifiEnums.SSID_KEY])
         wutils.wifi_connect(self.dut, network, check_connectivity=False)
 
         # run uicd
@@ -102,6 +111,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
 
     ### Test Cases ###
 
+    @test_tracker_info(uuid="b035b4f9-40f7-42f6-9941-ec27afe15040")
     def test_ruckus_captive_portal_default(self):
         """Verify captive portal network
 
@@ -114,8 +124,10 @@ class CaptivePortalTest(base_test.BaseTestClass):
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.rk_captive_portal, "rk_captive_portal")
+        self._verify_captive_portal(self.rk_captive_portal,
+                                    self.rk_workflow_config)
 
+    @test_tracker_info(uuid="8ea18d80-0170-41b1-8945-fe14bcd4feab")
     def test_ruckus_captive_portal_private_dns_off(self):
         """Verify captive portal network
 
@@ -128,8 +140,10 @@ class CaptivePortalTest(base_test.BaseTestClass):
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OFF)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.rk_captive_portal, "rk_captive_portal")
+        self._verify_captive_portal(self.rk_captive_portal,
+                                    self.rk_workflow_config)
 
+    @test_tracker_info(uuid="e8e05907-55f7-40e5-850c-b3111ceb31a4")
     def test_ruckus_captive_portal_private_dns_strict(self):
         """Verify captive portal network
 
@@ -144,8 +158,10 @@ class CaptivePortalTest(base_test.BaseTestClass):
                                cconst.DNS_GOOGLE)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.rk_captive_portal, "rk_captive_portal")
+        self._verify_captive_portal(self.rk_captive_portal,
+                                    self.rk_workflow_config)
 
+    @test_tracker_info(uuid="76e49800-f141-4fd2-9969-562585eb1e7a")
     def test_guestgate_captive_portal_default(self):
         """Verify captive portal network
 
@@ -160,6 +176,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
         # verify connection to captive portal network
         self._verify_captive_portal(self.gg_captive_portal, "gg_captive_portal")
 
+    @test_tracker_info(uuid="0aea0cac-0f42-406b-84ba-62c1ef74adfc")
     def test_guestgate_captive_portal_private_dns_off(self):
         """Verify captive portal network
 
@@ -174,6 +191,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
         # verify connection to captive portal network
         self._verify_captive_portal(self.gg_captive_portal, "gg_captive_portal")
 
+    @test_tracker_info(uuid="39124dcc-2fd3-4d33-b129-a1c8150b7f2a")
     def test_guestgate_captive_portal_private_dns_strict(self):
         """Verify captive portal network
 
