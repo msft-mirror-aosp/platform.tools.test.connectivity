@@ -68,6 +68,9 @@ class FilteringTest(BluetoothBaseTest):
         BluetoothBaseTest.__init__(self, controllers)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
+
+    def setup_class(self):
+        super().setup_class()
         self.log.info("Scanner device model: {}".format(
             self.scn_ad.droid.getBuildModel()))
         self.log.info("Advertiser device model: {}".format(
