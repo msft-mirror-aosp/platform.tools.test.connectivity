@@ -207,6 +207,7 @@ class BluetoothPtsDevice:
     _next_action = -1
     _observers = []
     address = ""
+    current_implicit_send_description = ""
     devices = []
     extra_answers = []
     log_directory = ""
@@ -215,6 +216,7 @@ class BluetoothPtsDevice:
     ixit = None
     profile_under_test = None
     pts_library = None
+    pts_profile_mmi_request = ""
     pts_test_result = VERDICT_STRINGS['RESULT_INCOMP']
     sniffer_ready = False
     test_log_directory = ""
@@ -604,23 +606,30 @@ class BluetoothPtsDevice:
         time.sleep(1)
         indx = descr_str.find('}')
         implicit_send_info = descr_str[1:(indx)]
-        implicit_send_desc = descr_str[(indx + 1):]
+        self.current_implicit_send_description = descr_str[(indx + 1):]
         items = implicit_send_info.split(',')
         implicit_send_info_id = items[0]
         implicit_send_info_test_case = items[1]
-        implicit_send_info_project = items[2]
+        self.pts_profile_mmi_request = items[2]
         self.log.info(
             "OnImplicitSend() has been called with the following parameters:\n"
         )
-        self.log.info(
-            "     project_name = {0:s}".format(implicit_send_info_project))
+        self.log.info("\t\tproject_name = {0:s}".format(
+            self.pts_profile_mmi_request))
         self.log.info("\t\tid = {0:s}".format(implicit_send_info_id))
         self.log.info(
             "\t\ttest_case = {0:s}".format(implicit_send_info_test_case))
-        self.log.info("\t\tdescription = {0:s}".format(implicit_send_desc))
+        self.log.info("\t\tdescription = {0:s}".format(
+            self.current_implicit_send_description))
         self.log.info("\t\tstyle = {0:#X}".format(ctypes.c_int(style).value))
         self.log.info("")
-        self.next_action = int(implicit_send_info_id)
+        try:
+            self.next_action = int(implicit_send_info_id)
+        except Exception as err:
+            self.log.error(
+                "Setting verdict to RESULT_FAIL, exception found: {}".format(
+                    err))
+            self.pts_test_result = VERDICT_STRINGS['RESULT_FAIL']
         res = b'OK'
         if len(self.extra_answers) > 0:
             res = self.extra_answers.pop(0).encode()
@@ -657,7 +666,7 @@ class BluetoothPtsDevice:
             raise BluetoothPtsSnifferError(
                 "Sniffer not ready after 60 seconds.")
 
-    def execute_test(self, test_name, test_timeout=120):
+    def execute_test(self, test_name, test_timeout=60):
         """Execute the input test name.
 
         Preps PTS to run the test and waits up to 2 minutes for all steps
@@ -700,9 +709,9 @@ class BluetoothPtsDevice:
 
         # Wait till verdict is received
         self.log.info("Begin Test Execution... waiting for verdict.")
+        end_time = time.time() + test_timeout
         while self.pts_test_result == VERDICT_STRINGS[
-                'RESULT_INCOMP'] and time.time() < (time.time() +
-                                                    test_timeout):
+                'RESULT_INCOMP'] and time.time() < end_time:
             time.sleep(1)
         self.log.info("End Test Execution... Verdict {}".format(
             self.pts_test_result))
