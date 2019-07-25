@@ -245,6 +245,7 @@ class TriggerMessageIDs(Enum):
     IDENTITY_REQUEST_LTE = 141155
     IDENTITY_REQUEST_WCDMA = 241115
     IDENTITY_REQUEST_GSM = 641115
+    UE_CAPABILITY_ENQUIRY = 111167
 
 
 class TriggerMessageReply(Enum):
@@ -863,13 +864,13 @@ class MD8475A(object):
         cmd = "W_RRCSTAT?"
         return self.send_query(cmd)
 
-    def set_umts_dch_stat_timer(self, time):
+    def set_umts_dch_stat_timer(self, timer_seconds):
         """ Sets the UMTS RRC DCH timer
 
         Returns:
             None
         """
-        cmd = "W_STATTMRDCH %s" % time
+        cmd = "W_STATTMRDCH %s" % timer_seconds
         self.send_command(cmd)
 
     def set_simulation_state_to_poweroff(self):
@@ -922,6 +923,57 @@ class MD8475A(object):
                 callstat = self.send_query("CALLSTAT?").split(",")
             else:
                 break
+
+    def set_trigger_message_mode(self, msg_id):
+        """ Sets the Message Mode of the trigger
+
+        Args:
+            msg_id: The hex value of the identity of an RRC/NAS message.
+
+        Returns:
+            None
+        """
+
+        if isinstance(msg_id, TriggerMessageIDs):
+            msg_id = msg_id.value
+
+        cmd = "TMMESSAGEMODE {},USERDATA".format(msg_id)
+        self.send_command(cmd)
+
+    def set_data_of_trigger_message(self, msg_id, user_data):
+        """ Sets the User Data of the trigger message
+
+        Args:
+            msg_id: The hex value of the identity of an RRC/NAS message.
+            user_data: Hex data
+
+        Returns:
+            None
+        """
+
+        if isinstance(msg_id, TriggerMessageIDs):
+            msg_id = msg_id.value
+
+        data_len = len(user_data) * 4
+
+        cmd = "TMUSERDATA {}, {}, {}".format(msg_id, user_data, data_len)
+        self.send_command(cmd)
+
+    def send_trigger_message(self, msg_id):
+        """ Sends the User Data of the trigger information
+
+        Args:
+            msg_id: The hex value of the identity of an RRC/NAS message.
+
+        Returns:
+            None
+        """
+
+        if isinstance(msg_id, TriggerMessageIDs):
+            msg_id = msg_id.value
+
+        cmd = "TMSENDUSERMSG {}".format(msg_id)
+        self.send_command(cmd)
 
     def wait_for_registration_state(self,
                                     bts=1,
@@ -1459,6 +1511,20 @@ class MD8475A(object):
                 return None
             seqlog = self.send_query("SEQLOG? %d" % index).split(",")
         return (seqlog[-1])
+
+    def trigger_ue_capability_enquiry(self, requested_bands):
+        """ Triggers LTE RRC UE capability enquiry from callbox.
+
+        Args:
+            requested_bands: User data in hex format
+        """
+        self.set_trigger_message_mode(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
+        time.sleep(SETTLING_TIME)
+        self.set_data_of_trigger_message(
+            TriggerMessageIDs.UE_CAPABILITY_ENQUIRY, requested_bands)
+        time.sleep(SETTLING_TIME)
+        self.send_trigger_message(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
+        time.sleep(SETTLING_TIME)
 
     def select_usim(self, usim):
         """ Select pre-defined Anritsu USIM models
