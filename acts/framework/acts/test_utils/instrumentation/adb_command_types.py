@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts.test_utils.instrumentation.intent_builder import IntentBuilder
+
 
 class DeviceState(object):
     """Class for adb commands for setting device properties to a value."""
@@ -78,6 +80,31 @@ class DeviceSetting(DeviceState):
         """
         super().__init__('settings put %s %s' % (namespace, setting),
                          on_val, off_val)
+
+
+class DeviceGServices(DeviceState):
+    """Class for overriding a GServices value."""
+
+    OVERRIDE_GSERVICES_INTENT = ('com.google.gservices.intent.action.'
+                                 'GSERVICES_OVERRIDE')
+
+    def __init__(self, setting, on_val='true', off_val='false'):
+        """Create a DeviceGServices.
+
+        Args:
+            setting: Name of the GServices setting
+            on_val: Value used for the 'on' state
+            off_val: Value used for the 'off' state
+        """
+        super().__init__(None, on_val, off_val)
+        self._intent_builder = IntentBuilder('am broadcast')
+        self._intent_builder.set_action(self.OVERRIDE_GSERVICES_INTENT)
+        self._setting = setting
+
+    def set_value(self, value):
+        """Returns the adb command with the given value."""
+        self._intent_builder.add_key_value_param(self._setting, value)
+        return self._intent_builder.build()
 
 
 class DeviceBinaryCommandSeries(object):
