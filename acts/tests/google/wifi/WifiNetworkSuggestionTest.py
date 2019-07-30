@@ -31,6 +31,11 @@ from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi import wifi_constants
 
 WifiEnums = wutils.WifiEnums
+# EAP Macros
+EAP = WifiEnums.Eap
+EapPhase2 = WifiEnums.EapPhase2
+# Enterprise Config Macros
+Ent = WifiEnums.Enterprise
 
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
 # for the system to settle down after the operation.
@@ -52,7 +57,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = []
+        req_params = ["radius_conf_2g", "radius_conf_5g", "ca_cert",
+                      "eap_identity", "eap_password",]
         opt_param = [
             "open_network", "reference_networks"
         ]
@@ -60,8 +66,10 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start(wpa_network=True,
-                                               wep_network=True)
+            self.legacy_configure_ap_and_start(
+                wpa_network=True, ent_network=True,
+                radius_conf_2g=self.radius_conf_2g,
+                radius_conf_5g=self.radius_conf_5g,)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -70,6 +78,20 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.wpa_psk_5g = self.reference_networks[0]["5g"]
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
+        self.ent_network_2g = self.ent_networks[0]["2g"]
+        self.ent_network_5g = self.ent_networks[0]["5g"]
+        self.config_aka = {
+            Ent.EAP: int(EAP.AKA),
+            WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+        }
+        self.config_ttls = {
+            Ent.EAP: int(EAP.TTLS),
+            Ent.CA_CERT: self.ca_cert,
+            Ent.IDENTITY: self.eap_identity,
+            Ent.PASSWORD: self.eap_password,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
+            WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+        }
         self.dut.droid.wifiRemoveNetworkSuggestions([])
 
     def setup_test(self):
@@ -150,6 +172,45 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         finally:
             self.dut.droid.wifiStopTrackingNetworkSuggestionStateChange()
         self.dut.ed.clear_all_events()
+
+    def _test_connect_to_wifi_network_reboot_config_store(self,
+                                                          network_suggestions,
+                                                          wifi_network):
+        """ Test network suggestion with reboot config store
+
+        Args:
+        1. network_suggestions: network suggestions in list to add to the device.
+        2. wifi_network: expected wifi network to connect to
+        """
+
+        self.add_suggestions_and_ensure_connection(
+            network_suggestions, wifi_network[WifiEnums.SSID_KEY], None)
+
+        # Reboot and wait for connection back to the same suggestion.
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+
+        wutils.wait_for_connect(self.dut, wifi_network[WifiEnums.SSID_KEY])
+
+        self.dut.log.info("Removing network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiRemoveNetworkSuggestions(network_suggestions),
+            "Failed to remove suggestions")
+
+        # Ensure we did not disconnect
+        wutils.ensure_no_disconnect(self.dut)
+
+        # Trigger a disconnect and wait for the disconnect.
+        self.dut.droid.wifiDisconnect()
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+
+        # Now ensure that we didn't connect back.
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut,
+                                    wifi_network[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False),
+            "Device should not connect back")
 
     @test_tracker_info(uuid="bda8ed20-4382-4380-831a-64cf77eca108")
     def test_connect_to_wpa_psk_2g(self):
@@ -271,30 +332,43 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         5. Wait for the device to connect to back to it.
         6. Remove the suggestions and ensure the device does not connect back.
         """
-        self.add_suggestions_and_ensure_connection(
-            [self.wpa_psk_5g], self.wpa_psk_5g[WifiEnums.SSID_KEY],
-            None)
+        self._test_connect_to_wifi_network_reboot_config_store(
+            [self.wpa_psk_5g], self.wpa_psk_5g)
 
-        # Reboot and wait for connection back to the same suggestion.
-        self.dut.reboot()
-        time.sleep(DEFAULT_TIMEOUT)
+    def test_connect_to_wpa_ent_config_aka_reboot_config_store(self):
+        """
+        Adds a network suggestion and ensure that the device connects to it
+        after reboot.
 
-        wutils.wait_for_connect(self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
+        Steps:
+        1. Send a Enterprise AKA network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did not receive the post connection broadcast.
+        4. Reboot the device.
+        5. Wait for the device to connect to the wifi network.
+        6. Remove suggestions and ensure device doesn't connect back to it.
+        """
+        self._test_connect_to_wifi_network_reboot_config_store(
+            [self.config_aka], self.ent_network_2g)
 
-        # Remove suggestion trigger disconnect and wait for the disconnect.
-        self.dut.log.info("Removing network suggestions");
-        asserts.assert_true(
-            self.dut.droid.wifiRemoveNetworkSuggestions([self.wpa_psk_5g]),
-            "Failed to remove suggestions")
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.ed.clear_all_events()
+    def test_connect_to_wpa_ent_config_ttls_pap_reboot_config_store(self):
+        """
+        Adds a network suggestion and ensure that the device connects to it
+        after reboot.
 
-        # Now ensure that we didn't connect back.
-        asserts.assert_false(
-            wutils.wait_for_connect(self.dut,
-                                    self.wpa_psk_5g[WifiEnums.SSID_KEY],
-                                    assert_on_fail=False),
-            "Device should not connect back")
+        Steps:
+        1. Send a Enterprise TTLS PAP network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did not receive the post connection broadcast.
+        4. Reboot the device.
+        5. Wait for the device to connect to the wifi network.
+        6. Remove suggestions and ensure device doesn't connect back to it.
+        """
+        config = dict(self.config_ttls)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
+
+        self._test_connect_to_wifi_network_reboot_config_store(
+            [config], self.ent_network_2g)
 
     @test_tracker_info(uuid="554b5861-22d0-4922-a5f4-712b4cf564eb")
     def test_fail_to_connect_to_wpa_psk_5g_when_not_approved(self):
