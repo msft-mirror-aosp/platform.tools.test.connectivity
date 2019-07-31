@@ -14,13 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation_tests.adb_command_types \
+from acts.test_utils.instrumentation.adb_command_types \
     import DeviceBinaryCommandSeries
-from acts.test_utils.instrumentation_tests.adb_command_types \
-    import DeviceSetprop
-from acts.test_utils.instrumentation_tests.adb_command_types \
-    import DeviceSetting
-from acts.test_utils.instrumentation_tests.adb_command_types import DeviceState
+from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
+from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
+from acts.test_utils.instrumentation.adb_command_types import DeviceState
 
 GLOBAL = 'global'
 SYSTEM = 'system'
@@ -63,6 +61,7 @@ bluetooth = DeviceState('service call bluetooth_manager', '6', '8')
 
 nfc = DeviceState('svc nfc', 'enable', 'disable')
 
+
 # Screen
 
 screen_adaptive_brightness = DeviceSetting(
@@ -82,9 +81,11 @@ screensaver = DeviceSetting(SECURE, 'screensaver_enabled')
 
 notification_led = DeviceSetting(SYSTEM, 'notification_light_pulse')
 
+
 # Accelerometer
 
 auto_rotate = DeviceSetting(SYSTEM, 'accelerometer_rotation')
+
 
 # Time
 
@@ -94,6 +95,7 @@ auto_timezone = DeviceSetting(GLOBAL, 'auto_time_zone')
 
 timezone = DeviceSetprop('persist.sys.timezone')
 
+
 # Location
 
 location_gps = DeviceSetting(SECURE, 'location_providers_allowed',
@@ -101,6 +103,7 @@ location_gps = DeviceSetting(SECURE, 'location_providers_allowed',
 
 location_network = DeviceSetting(SECURE, 'location_providers_allowed',
                                  '+network', '-network')
+
 
 # Power
 
