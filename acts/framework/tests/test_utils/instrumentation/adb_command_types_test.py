@@ -20,6 +20,8 @@ from acts.test_utils.instrumentation.adb_command_types import DeviceState
 from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
 from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
 from acts.test_utils.instrumentation.adb_command_types import \
+    DeviceGServices
+from acts.test_utils.instrumentation.adb_command_types import \
     DeviceBinaryCommandSeries
 
 
@@ -95,6 +97,19 @@ class AbdCommandTest(unittest.TestCase):
         self.assertEqual(
             device_binary_setting.toggle(False),
             'settings put system some_other_setting off')
+
+    def test_device_gservices(self):
+        """Tests that DeviceGServices returns the correct ADB command with
+        set_value.
+        """
+        setting = 'some_gservice'
+        val = 22
+        device_gservices = DeviceGServices(setting)
+        self.assertEqual(
+            device_gservices.set_value(val),
+            'am broadcast -a '
+            'com.google.gservices.intent.action.GSERVICES_OVERRIDE '
+            '-e some_gservice 22')
 
     def test_device_binary_command_series(self):
         """Tests that DeviceBinaryCommandSuite returns the correct ADB
