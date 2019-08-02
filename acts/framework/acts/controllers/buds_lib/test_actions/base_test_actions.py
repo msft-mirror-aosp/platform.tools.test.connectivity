@@ -22,7 +22,7 @@ import datetime
 import inspect
 import time
 
-from acts import tracelogger
+from acts.controllers.buds_lib import tako_trace_logger
 from acts.libs.utils.timer import TimeRecorder
 
 # All methods start with "_" are considered hidden.
@@ -135,7 +135,7 @@ class BaseTestAction(object):
 
     def __init__(self, logger=None):
         if logger is None:
-            self.logger = tracelogger.TakoTraceLogger()
+            self.logger = tako_trace_logger.TakoTraceLogger()
             self.log_step = self.logger.step
         else:
             self.logger = logger
