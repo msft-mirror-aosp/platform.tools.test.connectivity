@@ -119,8 +119,10 @@ class BtRangeCodecTest(A2dpCodecBaseTest):
         self.bt_logger.add_proto_to_results(test_case_proto,
                                             self.__class__.__name__)
 
-        return self.bt_logger.get_proto_dict(self.__class__.__name__,
-                                             test_case_proto)
+        proto_dict = self.bt_logger.get_proto_dict(self.__class__.__name__,
+                                                   test_case_proto)
+        del proto_dict["proto_ascii"]
+        return proto_dict
 
     def stream_music_on_codec_vs_atten(self, codec_config):
         attenuation_range = range(self.bt_atten_start,
