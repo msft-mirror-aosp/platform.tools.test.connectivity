@@ -118,7 +118,7 @@ class AdbCommandTypesTest(unittest.TestCase):
             device_gservices.set_value(val),
             'am broadcast -a '
             'com.google.gservices.intent.action.GSERVICES_OVERRIDE '
-            '-e some_gservice 22')
+            '--ei some_gservice 22')
 
     def test_device_binary_command_series(self):
         """Tests that DeviceBinaryCommandSuite returns the correct ADB

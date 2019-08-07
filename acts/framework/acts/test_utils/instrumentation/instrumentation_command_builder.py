@@ -34,7 +34,7 @@ class InstrumentationCommandBuilder(object):
         self._flags.append(param)
 
     def add_key_value_param(self, key, value):
-        self._key_value_params[key] = value
+        self._key_value_params[key] = str(value)
 
     def build(self):
         call = self._instrument_call_with_arguments()

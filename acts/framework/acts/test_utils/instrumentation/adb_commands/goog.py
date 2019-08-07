@@ -28,6 +28,16 @@ from acts.test_utils.instrumentation.adb_command_types import DeviceState
 location_collection = DeviceGServices(
     'location:collection_enabled', on_val='1', off_val='0')
 
+location_opt_in = DeviceBinaryCommandSeries(
+    [
+        DeviceState('content insert --uri content://com.google.settings/'
+                    'partner --bind name:s:use_location_for_services '
+                    '--bind value:s:%s'),
+        DeviceState('content insert --uri content://com.google.settings/'
+                    'partner --bind name:s:network_location_opt_in '
+                    '--bind value:s:%s')
+    ]
+)
 
 # Cast
 
