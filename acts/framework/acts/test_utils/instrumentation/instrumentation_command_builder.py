@@ -35,7 +35,7 @@ class InstrumentationCommandBuilder(object):
         self._flags.append(param)
 
     def add_key_value_param(self, key, value):
-        self._key_value_params[key] = value
+        self._key_value_params[key] = str(value)
 
     def set_proto_path(self, path):
         """Sets a custom path to store result proto. Note that this path will
