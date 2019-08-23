@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import os
+import threading
 
 import tzlocal
 import yaml
@@ -148,23 +149,42 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.ad_apps = app_installer.AppInstaller(self.ad_dut)
         self._prepare_device()
 
-    def adb_run(self, cmds, non_blocking=False):
+    def adb_run(self, cmds):
         """Run the specified command, or list of commands, with the ADB shell.
 
         Args:
             cmds: A string or list of strings representing ADB shell command(s)
-            non_blocking: Run asynchronously
 
         Returns: dict mapping command to resulting stdout
         """
         if isinstance(cmds, str):
             cmds = [cmds]
-        adb = self.ad_dut.adb
-        adb_shell = adb.shell_nb if non_blocking else adb.shell
         out = {}
         for cmd in cmds:
-            out[cmd] = adb_shell(cmd)
+            out[cmd] = self.ad_dut.adb.shell(cmd)
         return out
+
+    def adb_run_async(self, cmds, wait_secs=0):
+        """Run the specified command, or list of commands, with the ADB shell.
+        (async)
+
+        Args:
+            cmds: A string or list of strings representing ADB shell command(s)
+            wait_secs: Creates a timer thread that terminates after the
+                specified number of seconds.
+
+        Returns: Tuple (procs, timer)
+            procs: dict mapping command to resulting subprocess.Popen object
+            timer: timer thread. Call join() to wait on the thread.
+        """
+        if isinstance(cmds, str):
+            cmds = [cmds]
+        procs = {}
+        timer = threading.Timer(wait_secs, lambda: None)
+        timer.start()
+        for cmd in cmds:
+            procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
+        return procs, timer
 
     # Basic setup methods
 
