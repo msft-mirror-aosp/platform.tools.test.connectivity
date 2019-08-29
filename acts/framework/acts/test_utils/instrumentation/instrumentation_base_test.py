@@ -30,15 +30,12 @@ from acts.test_utils.instrumentation.brightness import \
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
-from acts.test_utils.instrumentation.instrumentation_command_builder import \
-    InstrumentationTestCommandBuilder
 
 from acts import base_test
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
 DEFAULT_POWER_CONFIG_FILE = 'power_config.yaml'
-POWER_TEST_MANIFEST_PKG = 'com.google.android.powertests'
 
 
 class InstrumentationTestError(Exception):
@@ -324,16 +321,3 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         # Enable clock dump info
         self.adb_run('echo 1 > /d/clk/debug_suspend')
-
-    def install_power_apk(self):
-        """Installs power.apk on the device."""
-        self.ad_apps.install(self._power_config.get_file('power_apk'))
-
-    # Test runtime utils
-
-    @property
-    def power_instrumentation_command_builder(self):
-        """Return the default command builder for power tests"""
-        builder = InstrumentationTestCommandBuilder.default()
-        builder.set_manifest_package(POWER_TEST_MANIFEST_PKG)
-        return builder
