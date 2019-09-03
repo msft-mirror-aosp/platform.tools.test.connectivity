@@ -15,7 +15,7 @@
 #   limitations under the License.
 """Python module for Spectracom/Orolia GSG-6 GNSS simulator."""
 
-from acts.controllers.gnssinst_lib import abstract_inst
+from acts.controllers import abstract_inst
 
 
 class GSG6Error(abstract_inst.SocketInstrumentError):

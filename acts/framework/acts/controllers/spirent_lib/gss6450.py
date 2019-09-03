@@ -17,7 +17,7 @@
 
 import datetime
 import numbers
-from acts.controllers.gnssinst_lib import abstract_inst
+from acts.controllers import abstract_inst
 
 
 class GSS6450Error(abstract_inst.SocketInstrumentError):
