@@ -839,8 +839,6 @@ class LteSimulation(BaseSimulation):
             parameters: list of parameters
         """
 
-        super().parse_parameters(parameters)
-
         # Setup band
 
         values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
@@ -1540,7 +1538,7 @@ class LteSimulation(BaseSimulation):
             bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_1dot4MHz
         else:
             msg = "Bandwidth = {} MHz is not valid for LTE".format(bandwidth)
-            self.log.Error(msg)
+            self.log.error(msg)
             raise ValueError(msg)
         time.sleep(5)  # It takes some time to propagate the new settings
 
@@ -1560,12 +1558,14 @@ class LteSimulation(BaseSimulation):
         # Wait for the setting to propagate
         time.sleep(5)
 
-    def calibrate(self):
+    def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before
 
-        This method overrides the baseclass specifically for LTE calibration.
-        For LTE cal, the simulation is set to TM1 and 1 antenna.
+        Before running the base class implementation, configure the base station
+        to only use one downlink antenna with maximum bandwidth.
 
+        Args:
+            band: the band that is currently being calibrated.
         """
 
         # Set in TM1 mode and 1 antenna for downlink calibration for LTE
@@ -1578,15 +1578,24 @@ class LteSimulation(BaseSimulation):
             self.bts1.transmode = "TM1"
             time.sleep(5)  # It takes some time to propagate the new settings
 
+        # Save bandwidth value so it can be restored after calibration
+        init_bandwidth = self.get_bandwidth(self.bts1)
+
+        # Set bandwidth to the maximum allowed value during calibration
+        self.set_channel_bandwidth(
+            self.bts1, max(self.allowed_bandwidth_dictionary[int(band)]))
+
         # SET TBS pattern for calibration
         self.bts1.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
 
-        super().calibrate()
+        super().calibrate(band)
 
+        # Restore values as they were before changing them for calibration.
         if init_dl_antenna is not None:
             self.bts1.dl_antenna = init_dl_antenna
             self.bts1.transmode = init_transmode
             time.sleep(5)  # It takes some time to propagate the new settings
+        self.set_channel_bandwidth(self.bts1, init_bandwidth)
 
     def start_traffic_for_calibration(self):
         """
