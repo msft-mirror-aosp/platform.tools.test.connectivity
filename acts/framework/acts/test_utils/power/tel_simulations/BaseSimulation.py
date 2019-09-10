@@ -126,16 +126,10 @@ class BaseSimulation():
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
 
-        # Set
+        # Load callbox config files
         self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
             self.anritsu._md8475_version)
-
-    def start(self):
-        """ Start simulation.
-
-        Starts the simulation in the Anritsu Callbox.
-
-        """
+        self.load_config_files(self.anritsu)
 
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
@@ -145,6 +139,17 @@ class BaseSimulation():
 
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
+
+    def load_config_files(self):
+        """ Loads configuration files for the simulation.
+
+        This method needs to be implement by derived simulation classes.
+
+        Args:
+            anritsu: the Anritsu callbox controller
+        """
+
+        raise NotImplementedError()
 
     def attach(self):
         """ Attach the phone to the basestation.
@@ -206,14 +211,6 @@ class BaseSimulation():
                 self.log.info("UE attached to the callbox.")
                 break
 
-        # Set signal levels obtained from the test parameters
-        if self.sim_dl_power:
-            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
-            time.sleep(2)
-        if self.sim_ul_power:
-            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
-            time.sleep(2)
-
         return True
 
     def detach(self):
@@ -254,6 +251,25 @@ class BaseSimulation():
 
         # Stop the simulation
         self.anritsu.stop_simulation()
+
+    def start(self):
+        """ Start the simulation by attaching the phone and setting the
+        required DL and UL power.
+
+        Note that this refers to starting the simulated testing environment
+        and not to starting the simulation in the Anritsu callbox, which was
+        done during the class initialization. """
+
+        if not self.attach():
+            raise RuntimeError('Could not attach to base station.')
+
+        # Set signal levels obtained from the test parameters
+        if self.sim_dl_power:
+            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
+            time.sleep(2)
+        if self.sim_ul_power:
+            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
+            time.sleep(2)
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.
@@ -455,9 +471,9 @@ class BaseSimulation():
 
         # If downlink or uplink were not yet calibrated, do it now
         if not self.dl_path_loss:
-            self.dl_path_loss = self.downlink_calibration(self.bts1)
+            self.dl_path_loss = self.downlink_calibration()
         if not self.ul_path_loss:
-            self.ul_path_loss = self.uplink_calibration(self.bts1)
+            self.ul_path_loss = self.uplink_calibration()
 
         # Detach after calibrating
         self.detach()
@@ -487,17 +503,14 @@ class BaseSimulation():
         time.sleep(2)
 
     def downlink_calibration(self,
-                             bts,
                              rat=None,
                              power_units_conversion_func=None):
         """ Computes downlink path loss and returns the calibration value
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also needs to be attached
-        to the desired basesation for calibration
+        The DUT needs to be attached to the base station before calling this
+        method.
 
         Args:
-            bts: basestation handle
             rat: desired RAT to calibrate (matching the label reported by
                 the phone)
             power_units_conversion_func: a function to convert the units
@@ -516,9 +529,9 @@ class BaseSimulation():
                 "reported by the phone.")
 
         # Set BTS to a good output level to minimize measurement error
-        init_output_level = bts.output_level
+        init_output_level = self.bts1.output_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.output_level = self.DL_CAL_TARGET_POWER[
+        self.bts1.output_level = self.DL_CAL_TARGET_POWER[
             self.anritsu._md8475_version]
 
         # Set phone sleep time out
@@ -545,7 +558,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.output_level = init_output_level
+        self.bts1.output_level = init_output_level
         time.sleep(2)
 
         # Calculate the mean of the measurements
@@ -554,7 +567,7 @@ class BaseSimulation():
         # Convert from RSRP to signal power
         if power_units_conversion_func:
             avg_down_power = power_units_conversion_func(
-                reported_asu_power, bts)
+                reported_asu_power, self.bts1)
         else:
             avg_down_power = reported_asu_power
 
@@ -574,15 +587,11 @@ class BaseSimulation():
 
         return down_call_path_loss
 
-    def uplink_calibration(self, bts):
+    def uplink_calibration(self):
         """ Computes uplink path loss and returns the calibration value
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also neeeds to be attached
-        to the desired basesation for calibration
-
-        Args:
-            bts: basestation handle
+        The DUT needs to be attached to the base station before calling this
+        method.
 
         Returns:
             Uplink calibration value and measured UL power
@@ -591,9 +600,9 @@ class BaseSimulation():
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER
-        initial_input_level = bts.input_level
+        initial_input_level = self.bts1.input_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.input_level = self.MAX_BTS_INPUT_POWER
+        self.bts1.input_level = self.MAX_BTS_INPUT_POWER
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -631,7 +640,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.input_level = initial_input_level
+        self.bts1.input_level = initial_input_level
         time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0

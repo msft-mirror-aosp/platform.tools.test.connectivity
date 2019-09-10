@@ -46,13 +46,10 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
     droid_list = []
     max_advertisements = -1
 
-    def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
-        self.scn_ad = self.android_devices[0]
-        self.adv_ad = self.android_devices[1]
-
     def setup_class(self):
         super().setup_class()
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
         self.droid_list = get_advanced_droid_list(self.android_devices)
         self.max_advertisements = self.droid_list[1]['max_advertisements']
 

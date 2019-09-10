@@ -39,14 +39,11 @@ class BleStressTest(BluetoothBaseTest):
     PAIRING_TIMEOUT = 20
     droid_list = []
 
-    def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
-        self.scn_ad = self.android_devices[0]
-        self.adv_ad = self.android_devices[1]
-
     def setup_class(self):
         super().setup_class()
         self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
 
     def teardown_test(self):
         super().teardown_test()
