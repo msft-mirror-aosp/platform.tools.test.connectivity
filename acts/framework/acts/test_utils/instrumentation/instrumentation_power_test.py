@@ -24,7 +24,11 @@ from acts.test_utils.instrumentation.instrumentation_base_test \
 from acts.test_utils.instrumentation.instrumentation_base_test \
     import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
+    DEFAULT_NOHUP_LOG
+from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationTestCommandBuilder
+from acts.test_utils.instrumentation.instrumentation_proto_parser import \
+    DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power_metrics import Measurement
 from acts.test_utils.instrumentation.power_metrics import PowerMetrics
 
@@ -43,6 +47,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+
+    def _prepare_device(self):
+        """Prepares the device for power testing."""
+        super()._prepare_device()
+        self.install_power_apk()
+        self.grant_permissions()
+
+    def _cleanup_device(self):
+        """Clean up device after power testing."""
+        self._cleanup_test_files()
 
     def _setup_monsoon(self):
         """Set up the Monsoon controller for this testclass/testcase."""
@@ -87,6 +101,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         if not self.ad_apps.is_installed(power_apk_file):
             raise InstrumentationTestError('Failed to install power test APK.')
         self._power_test_pkg = self.ad_apps.get_package_name(power_apk_file)
+
+    def _cleanup_test_files(self):
+        """Remove test-generated files from the device."""
+        for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
+                          DEFAULT_NOHUP_LOG]:
+            path = os.path.join(
+                self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'), file_name)
+            self.adb_run('rm -rf %s' % path)
 
     # Test runtime utils
 
