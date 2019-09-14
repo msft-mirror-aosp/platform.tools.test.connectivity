@@ -55,7 +55,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def install_power_apk(self):
         """Installs power.apk on the device."""
         power_apk_file = self._instrumentation_config.get_file('power_apk')
-        self.ad_apps.install(power_apk_file)
+        self.ad_apps.install(power_apk_file, '-g')
         self._power_test_pkg = self.ad_apps.get_package_name(power_apk_file)
 
     # Test runtime utils
