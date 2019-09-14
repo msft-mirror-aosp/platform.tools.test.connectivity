@@ -129,8 +129,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.ad_apps = app_installer.AppInstaller(self.ad_dut)
         self._prepare_device()
 
+    def teardown_class(self):
+        """Class teardown"""
+        self._cleanup_device()
+
     def _prepare_device(self):
         """Prepares the device for testing."""
+        pass
+
+    def _cleanup_device(self):
+        """Clean up device after test completion."""
         pass
 
     def _get_controller_config(self, controller_name):
@@ -219,15 +227,13 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(common.wifi.toggle(False))
         self.adb_run(common.bluetooth.toggle(True))
 
-    def grant_permissions(self, permissions_apk_path):
-        """Grant all runtime permissions with PermissionUtils.
-
-        Args:
-            permissions_apk_path: Path to PermissionUtils.apk
-        """
+    def grant_permissions(self):
+        """Grant all runtime permissions with PermissionUtils."""
         self.log.info('Granting all revoked runtime permissions.')
 
         # Install PermissionUtils.apk
+        permissions_apk_path = self._instrumentation_config.get_file(
+            'permissions_apk')
         self.ad_apps.install(permissions_apk_path)
         if not self.ad_apps.is_installed(permissions_apk_path):
             raise InstrumentationTestError(

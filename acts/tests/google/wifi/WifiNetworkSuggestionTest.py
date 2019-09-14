@@ -51,10 +51,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
       network.
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = []
@@ -244,8 +243,11 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         1. Send 2 network suggestions to the device (with different priorities).
         2. Wait for the device to connect to the network with the highest
            priority.
-        3. Re-add the suggestions with the priorities reversed.
-        4. Again wait for the device to connect to the network with the highest
+        3. In-place modify network suggestions with priorities reversed
+        4. Restart wifi, wait for the device to connect to the network with the highest
+           priority.
+        5. Re-add the suggestions with the priorities reversed again.
+        6. Again wait for the device to connect to the network with the highest
            priority.
         """
         network_suggestion_2g = self.wpa_psk_2g
@@ -259,13 +261,30 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.wpa_psk_2g[WifiEnums.SSID_KEY],
             None)
 
+        # In-place modify Reverse the priority, should be no disconnect
+        network_suggestion_2g[WifiEnums.PRIORITY] = 2
+        network_suggestion_5g[WifiEnums.PRIORITY] = 5
+        self.dut.log.info("Modifying network suggestions");
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([network_suggestion_2g,
+                                                      network_suggestion_5g]),
+            "Failed to add suggestions")
+        wutils.ensure_no_disconnect(self.dut)
+
+        # Disable and re-enable wifi, should connect to higher priority
+        wutils.wifi_toggle_state(self.dut, False)
+        time.sleep(DEFAULT_TIMEOUT)
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.start_wifi_connection_scan_and_return_status(self.dut)
+        wutils.wait_for_connect(self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
+
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
         # Reverse the priority.
         # Add suggestions & wait for the connection event.
-        network_suggestion_2g[WifiEnums.PRIORITY] = 2
-        network_suggestion_5g[WifiEnums.PRIORITY] = 5
+        network_suggestion_2g[WifiEnums.PRIORITY] = 5
+        network_suggestion_5g[WifiEnums.PRIORITY] = 2
         self.add_suggestions_and_ensure_connection(
             [network_suggestion_2g, network_suggestion_5g],
             self.wpa_psk_5g[WifiEnums.SSID_KEY],
