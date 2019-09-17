@@ -24,7 +24,11 @@ from acts.test_utils.instrumentation.instrumentation_base_test \
 from acts.test_utils.instrumentation.instrumentation_base_test \
     import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
+    DEFAULT_NOHUP_LOG
+from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationTestCommandBuilder
+from acts.test_utils.instrumentation.instrumentation_proto_parser import \
+    DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power_metrics import Measurement
 from acts.test_utils.instrumentation.power_metrics import PowerMetrics
 
@@ -32,6 +36,8 @@ from acts import context
 from acts import signals
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
+DISCONNECT_USB_FILE = 'disconnectusb.log'
+POLLING_INTERVAL = 0.5
 
 
 class InstrumentationPowerTest(InstrumentationBaseTest):
@@ -41,6 +47,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+
+    def _prepare_device(self):
+        """Prepares the device for power testing."""
+        super()._prepare_device()
+        self.install_power_apk()
+        self.grant_permissions()
+
+    def _cleanup_device(self):
+        """Clean up device after power testing."""
+        self._cleanup_test_files()
 
     def _setup_monsoon(self):
         """Set up the Monsoon controller for this testclass/testcase."""
@@ -55,6 +71,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.monsoon.usb('on')
         self.monsoon.set_on_disconnect(self._on_disconnect)
         self.monsoon.set_on_reconnect(self._on_reconnect)
+
+        self._disconnect_usb_timeout = monsoon_config.get_numeric(
+            'usb_disconnection_timeout', 240)
 
         self._measurement_args = dict(
             duration=monsoon_config.get_numeric('duration'),
@@ -79,7 +98,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Installs power.apk on the device."""
         power_apk_file = self._instrumentation_config.get_file('power_apk')
         self.ad_apps.install(power_apk_file, '-g')
+        if not self.ad_apps.is_installed(power_apk_file):
+            raise InstrumentationTestError('Failed to install power test APK.')
         self._power_test_pkg = self.ad_apps.get_package_name(power_apk_file)
+
+    def _cleanup_test_files(self):
+        """Remove test-generated files from the device."""
+        for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
+                          DEFAULT_NOHUP_LOG]:
+            path = os.path.join(
+                self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'), file_name)
+            self.adb_run('rm -rf %s' % path)
 
     # Test runtime utils
 
@@ -91,12 +120,29 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         builder.set_nohup()
         return builder
 
+    def _wait_for_disconnect_signal(self):
+        """Poll the device for a disconnect USB signal file. This will indicate
+        to the Monsoon that the device is ready to be disconnected.
+        """
+        self.log.info('Waiting for USB disconnect signal')
+        disconnect_file = os.path.join(
+            self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'),
+            DISCONNECT_USB_FILE)
+        start_time = time.time()
+        while time.time() < start_time + self._disconnect_usb_timeout:
+            if self.ad_dut.adb.shell('ls %s' % disconnect_file):
+                return
+            time.sleep(POLLING_INTERVAL)
+        raise InstrumentationTestError('Timeout while waiting for USB '
+                                       'disconnect signal.')
+
     def measure_power(self):
         """Measures power consumption with the Monsoon. See monsoon_lib API for
         details.
         """
         if not hasattr(self, '_measurement_args'):
             raise InstrumentationTestError('Missing Monsoon measurement args.')
+        self._wait_for_disconnect_signal()
         output_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
         self.monsoon.usb('auto')
