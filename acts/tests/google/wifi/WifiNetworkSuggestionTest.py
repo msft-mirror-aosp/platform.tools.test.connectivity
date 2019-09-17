@@ -279,7 +279,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         wutils.wait_for_connect(self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
 
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
-            [], self.wpa_psk_2g[WifiEnums.SSID_KEY])
+            [], self.wpa_psk_5g[WifiEnums.SSID_KEY])
 
         # Reverse the priority.
         # Add suggestions & wait for the connection event.
@@ -287,7 +287,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         network_suggestion_5g[WifiEnums.PRIORITY] = 2
         self.add_suggestions_and_ensure_connection(
             [network_suggestion_2g, network_suggestion_5g],
-            self.wpa_psk_5g[WifiEnums.SSID_KEY],
+            self.wpa_psk_2g[WifiEnums.SSID_KEY],
             None)
 
     @test_tracker_info(uuid="b1d27eea-23c8-4c4f-b944-ef118e4cc35f")

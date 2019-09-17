@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2018 - The Android Open Source Project
 #
@@ -126,7 +126,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Sync device time, timezone and country code
         utils.require_sl4a((self.dut,))
         utils.sync_device_time(self.dut)
-        self.dut.droid.wifiSetCountryCode('US')
+        wutils.set_wifi_country_code(self.dut, 'US')
 
         screen_on_img = self.user_params.get('screen_on_img', [])
         if screen_on_img:
