@@ -71,13 +71,13 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             'avg_current': {
                 'unit_type': 'current',
                 'unit': 'A',
-                'lower_limit': 1.5,
-                'upper_limit': 2.5
+                'lower_limit': 0.0015,
+                'upper_limit': 0.0025
             },
             'max_current': {
                 'unit_type': 'current',
                 'unit': 'mA',
-                'upper_limit': 5000
+                'upper_limit': 5
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_accept)
@@ -93,13 +93,13 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             'avg_current': {
                 'unit_type': 'current',
                 'unit': 'A',
-                'lower_limit': 1.5,
-                'upper_limit': 2
+                'lower_limit': 0.0015,
+                'upper_limit': 0.002
             },
             'max_current': {
                 'unit_type': 'current',
                 'unit': 'mA',
-                'upper_limit': 4000
+                'upper_limit': 4
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_reject)
@@ -115,7 +115,7 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             'stdev_current': {
                 'unit_type': 'current',
                 'unit': 'A',
-                'expected_value': 1.5,
+                'expected_value': 0.0015,
                 'percent_deviation': 20
             }
         }
@@ -132,7 +132,7 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             'min_current': {
                 'unit_type': 'current',
                 'unit': 'mA',
-                'expected_value': 500,
+                'expected_value': 0.5,
                 'percent_deviation': 10
             }
         }
@@ -149,8 +149,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             'no_such_metric': {
                 'unit_type': 'current',
                 'unit': 'A',
-                'lower_limit': 5,
-                'upper_limit': 7
+                'lower_limit': 0.005,
+                'upper_limit': 0.007
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_invalid_metric)
@@ -165,8 +165,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
         criteria_missing_params = {
             'avg_current': {
                 'unit': 'A',
-                'lower_limit': 1,
-                'upper_limit': 2
+                'lower_limit': 0.001,
+                'upper_limit': 0.002
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_missing_params)
