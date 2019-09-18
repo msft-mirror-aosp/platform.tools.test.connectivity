@@ -39,6 +39,7 @@ from acts import context
 from acts import signals
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
+AUTOTESTER_LOG = 'autotester.log'
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
 
@@ -54,6 +55,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def _prepare_device(self):
         """Prepares the device for power testing."""
         super()._prepare_device()
+        self._cleanup_test_files()
         self.install_power_apk()
         self.grant_permissions()
 
@@ -116,8 +118,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
+        self.ad_dut.log.info('Cleaning up test generated files.')
         for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
-                          DEFAULT_NOHUP_LOG]:
+                          DEFAULT_NOHUP_LOG, AUTOTESTER_LOG]:
             path = os.path.join(
                 self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'), file_name)
             self.adb_run('rm -rf %s' % path)
@@ -221,8 +224,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             instr_test_names = [instr_test_names]
         summaries = {}
         failures = {}
-        all_thresholds = self._instrumentation_config \
-            .get_config(self.__class__.__name__) \
+        all_thresholds = self._class_config \
             .get_config(self.current_test_name) \
             .get_config(ACCEPTANCE_THRESHOLD)
 
