@@ -261,7 +261,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         else:
             wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
-            self.dut.droid.wifiSetCountryCode(
+            wutils.set_wifi_country_code(self.dut,
                 self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
             wutils.wifi_connect(
@@ -446,8 +446,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
-        self.process_testclass_results()
         self.ota_chamber.reset_chamber()
+        self.process_testclass_results()
 
     def extract_test_id(self, testcase_params, id_fields):
         test_id = collections.OrderedDict(
@@ -577,7 +577,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         return test_cases
 
 
-class WifiOtaThroughputStabilityTenDegree_Test(WifiOtaThroughputStabilityTest):
+class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
