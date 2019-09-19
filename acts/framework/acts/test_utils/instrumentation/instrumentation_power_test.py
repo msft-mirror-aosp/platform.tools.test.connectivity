@@ -15,8 +15,11 @@
 #   limitations under the License.
 
 import os
+import shutil
+import tempfile
 import time
 
+from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.instrumentation_base_test \
@@ -83,16 +86,25 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _on_disconnect(self):
         """Callback invoked by device disconnection from the Monsoon."""
-        self.log.info('Disconnecting device.')
+        self.ad_dut.log.info('Disconnecting device.')
         self.ad_dut.stop_services()
+        # Uninstall SL4A
+        self._sl4a_apk = self.ad_apps.pull_apk(
+            SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
+        self.ad_apps.uninstall(self._sl4a_apk)
         time.sleep(1)
 
     def _on_reconnect(self):
         """Callback invoked by device reconnection to the Monsoon"""
+        # Reinstall SL4A
+        if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
+            self.ad_apps.install(self._sl4a_apk)
+            shutil.rmtree(os.path.dirname(self._sl4a_apk))
+            self._sl4a_apk = None
         self.ad_dut.start_services()
         # Release wake lock to put device into sleep.
         self.ad_dut.droid.goToSleepNow()
-        self.log.info('Device reconnected.')
+        self.ad_dut.log.info('Device reconnected.')
 
     def install_power_apk(self):
         """Installs power.apk on the device."""
