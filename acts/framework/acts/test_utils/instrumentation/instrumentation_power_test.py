@@ -174,6 +174,38 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             proto_parser.get_test_timestamps(session))
         return result
 
+    def run_and_measure(self, instr_class, instr_method=None, req_params=None,
+                        opt_params=None):
+        """Convenience method for setting up the instrumentation test command,
+        running it on the device, and starting the Monsoon measurement.
+
+        Args:
+            instr_class: Fully qualified name of the instrumentation test class
+            instr_method: Name of the instrumentation test method
+            req_params: List of required parameter names
+            opt_params: List of optional parameter names
+
+        Returns: summary of Monsoon measurement
+        """
+        builder = self.power_instrumentation_command_builder
+        if instr_method:
+            builder.add_test_method(instr_class, instr_method)
+        else:
+            builder.add_test_class(instr_class)
+        params = {}
+        for param_name in req_params or []:
+            params[param_name] = self._class_config.get(
+                param_name, verify_fn=lambda x: x is not None,
+                failure_msg='%s is a required parameter.' % param_name)
+        for param_name in opt_params or []:
+            if param_name in self._class_config:
+                params[param_name] = self._class_config[param_name]
+        for name, value in params.items():
+            builder.add_key_value_param(name, value)
+        instr_cmd = builder.build()
+        self.adb_run_async(instr_cmd)
+        return self.measure_power()
+
     def validate_power_results(self, instr_test_name):
         """Compare power measurements with target values and set the test result
         accordingly.
