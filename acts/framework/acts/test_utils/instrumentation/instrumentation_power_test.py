@@ -154,20 +154,24 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """
         if not hasattr(self, '_measurement_args'):
             raise InstrumentationTestError('Missing Monsoon measurement args.')
+
+        # Start measurement after receiving disconnect signal
         self._wait_for_disconnect_signal()
-        output_path = os.path.join(
+        power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
         self.monsoon.usb('auto')
         measure_start_time = time.time()
         result = self.monsoon.measure_power(
-            **self._measurement_args, output_path=output_path)
+            **self._measurement_args, output_path=power_data_path)
         self.monsoon.usb('on')
+
+        # Gather relevant metrics from measurements
+        session = self.dump_instrumentation_result_proto()
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)
         self._power_metrics.generate_test_metrics(
-            PowerMetrics.import_raw_data(output_path),
-            proto_parser.get_test_timestamps(
-                proto_parser.get_session_from_device(self.ad_dut)))
+            PowerMetrics.import_raw_data(power_data_path),
+            proto_parser.get_test_timestamps(session))
         return result
 
     def validate_power_results(self, instr_test_name):
