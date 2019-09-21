@@ -244,12 +244,12 @@ class PowerMetrics(object):
     @property
     def max_current(self):
         """Max current, in milliamps."""
-        return Measurement.milliamps(self._max_current)
+        return Measurement.milliamps(self._max_current or 0)
 
     @property
     def min_current(self):
         """Min current, in milliamps."""
-        return Measurement.milliamps(self._min_current)
+        return Measurement.milliamps(self._min_current or 0)
 
     @property
     def stdev_current(self):

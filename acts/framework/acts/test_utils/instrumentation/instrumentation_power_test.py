@@ -39,6 +39,7 @@ from acts import context
 from acts import signals
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
+AUTOTESTER_LOG = 'autotester.log'
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
 
@@ -54,6 +55,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def _prepare_device(self):
         """Prepares the device for power testing."""
         super()._prepare_device()
+        self._cleanup_test_files()
         self.install_power_apk()
         self.grant_permissions()
 
@@ -116,8 +118,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
+        self.ad_dut.log.info('Cleaning up test generated files.')
         for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
-                          DEFAULT_NOHUP_LOG]:
+                          DEFAULT_NOHUP_LOG, AUTOTESTER_LOG]:
             path = os.path.join(
                 self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'), file_name)
             self.adb_run('rm -rf %s' % path)
@@ -206,57 +209,64 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run_async(instr_cmd)
         return self.measure_power()
 
-    def validate_power_results(self, instr_test_name):
+    def validate_power_results(self, instr_test_names):
         """Compare power measurements with target values and set the test result
         accordingly.
 
         Args:
-            instr_test_name: Name of the instrumentation test method
+            instr_test_names: Name(s) of the instrumentation test method
 
         Raises:
             signals.TestFailure if one or more metrics do not satisfy threshold
             signals.TestPass otherwise
         """
-        acceptance_thresholds = self._instrumentation_config \
-            .get_config(self.__class__.__name__) \
+        if not isinstance(instr_test_names, list):
+            instr_test_names = [instr_test_names]
+        summaries = {}
+        failures = {}
+        all_thresholds = self._class_config \
             .get_config(self.current_test_name) \
             .get_config(ACCEPTANCE_THRESHOLD)
-        failures = {}
-        try:
-            test_metrics = self._power_metrics.test_metrics[instr_test_name]
-        except KeyError:
-            raise InstrumentationTestError(
-                'Unable to find test method %s in instrumentation output.'
-                % instr_test_name)
 
-        for metric_name, metric in acceptance_thresholds.items():
+        for instr_test_name in instr_test_names:
             try:
-                actual_result = getattr(test_metrics, metric_name)
-            except AttributeError:
-                continue
+                test_metrics = self._power_metrics.test_metrics[instr_test_name]
+            except KeyError:
+                raise InstrumentationTestError(
+                    'Unable to find test method %s in instrumentation output.'
+                    % instr_test_name)
 
-            if 'unit_type' not in metric or 'unit' not in metric:
-                continue
-            unit_type = metric['unit_type']
-            unit = metric['unit']
+            summaries[instr_test_name] = test_metrics.summary
+            failures[instr_test_name] = {}
+            test_thresholds = all_thresholds.get_config(instr_test_name)
+            for metric_name, metric in test_thresholds.items():
+                try:
+                    actual_result = getattr(test_metrics, metric_name)
+                except AttributeError:
+                    continue
 
-            lower_value = metric.get_numeric('lower_limit', float('-inf'))
-            upper_value = metric.get_numeric('upper_limit', float('inf'))
-            if 'expected_value' in metric and 'percent_deviation' in metric:
-                expected_value = metric.get_numeric('expected_value')
-                percent_deviation = metric.get_numeric('percent_deviation')
-                lower_value = expected_value * (1 - percent_deviation / 100)
-                upper_value = expected_value * (1 + percent_deviation / 100)
+                if 'unit_type' not in metric or 'unit' not in metric:
+                    continue
+                unit_type = metric['unit_type']
+                unit = metric['unit']
 
-            lower_bound = Measurement(lower_value, unit_type, unit)
-            upper_bound = Measurement(upper_value, unit_type, unit)
-            if not lower_bound <= actual_result <= upper_bound:
-                failures[metric_name] = {
-                    'expected': '[%s, %s]' % (lower_bound, upper_bound),
-                    'actual': str(actual_result)
-                }
-        if failures:
-            raise signals.TestFailure('One or more measurements does not meet '
+                lower_value = metric.get_numeric('lower_limit', float('-inf'))
+                upper_value = metric.get_numeric('upper_limit', float('inf'))
+                if 'expected_value' in metric and 'percent_deviation' in metric:
+                    expected_value = metric.get_numeric('expected_value')
+                    percent_deviation = metric.get_numeric('percent_deviation')
+                    lower_value = expected_value * (1 - percent_deviation / 100)
+                    upper_value = expected_value * (1 + percent_deviation / 100)
+
+                lower_bound = Measurement(lower_value, unit_type, unit)
+                upper_bound = Measurement(upper_value, unit_type, unit)
+                if not lower_bound <= actual_result <= upper_bound:
+                    failures[instr_test_name][metric_name] = {
+                        'expected': '[%s, %s]' % (lower_bound, upper_bound),
+                        'actual': str(actual_result)
+                    }
+        self.log.info('Summary of measurements: %s' % summaries)
+        if any(failures.values()):
+            raise signals.TestFailure('One or more measurements do not meet '
                                       'the specified criteria', failures)
-        raise signals.TestPass('All measurements meet the specified criteria',
-                               test_metrics.summary)
+        raise signals.TestPass('All measurements meet the specified criteria')
