@@ -25,7 +25,6 @@ from acts import context
 from acts import base_test
 from acts import utils
 from acts.controllers.utils_lib import ssh
-from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -57,10 +56,12 @@ class WifiPingTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
-        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
+
         self.tests = self.generate_test_cases(
             ap_power='standard',
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
@@ -92,11 +93,21 @@ class WifiPingTest(base_test.BaseTestClass):
                 for file in os.listdir(
                     self.testbed_params['golden_results_path'])
             ]
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
 
         # Turn WiFi ON
-        for dev in self.android_devices:
-            wutils.wifi_toggle_state(dev, True)
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_class(self):
         # Turn WiFi OFF
@@ -143,7 +154,9 @@ class WifiPingTest(base_test.BaseTestClass):
                   len(x))] for x in sorted_rtt
         ]
         # Set blackbox metric
-        self.ping_rtt_metric.metric_value = max(rtt_at_test_percentile)
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('ping_rtt',
+                                                   max(rtt_at_test_percentile))
         # Evaluate test pass/fail
         test_failed = False
         for idx, rtt in enumerate(rtt_at_test_percentile):
@@ -173,7 +186,9 @@ class WifiPingTest(base_test.BaseTestClass):
         # Get target range
         rvr_range = self.get_range_from_rvr()
         # Set Blackbox metric
-        self.ping_range_metric.metric_value = result['range']
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('ping_range',
+                                                   result['range'])
         # Evaluate test pass/fail
         if result['range'] - rvr_range < -self.testclass_params[
                 'range_gap_threshold']:
@@ -446,9 +461,9 @@ class WifiPingTest(base_test.BaseTestClass):
 
         if testcase_params['test_type'] == 'test_ping_range':
             start_atten = self.get_range_start_atten(testcase_params)
-            num_atten_steps = int((self.testclass_params['range_atten_stop'] -
-                                   start_atten)
-                                  / self.testclass_params['range_atten_step'])
+            num_atten_steps = int(
+                (self.testclass_params['range_atten_stop'] - start_atten) /
+                self.testclass_params['range_atten_step'])
             testcase_params['atten_range'] = [
                 start_atten + x * self.testclass_params['range_atten_step']
                 for x in range(0, num_atten_steps)
@@ -506,11 +521,7 @@ class WifiPingTest(base_test.BaseTestClass):
 
 class WifiPing_LowPowerAP_Test(WifiPingTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
-        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
+        super().__init__(self, controllers)
         self.tests = self.generate_test_cases(
             ap_power='low_power',
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
@@ -529,12 +540,11 @@ class WifiOtaPingTest(WifiPingTest):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
-        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
-        self.bb_metric_logger = (
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = False
 
     def setup_class(self):
         WifiPingTest.setup_class(self)
@@ -581,7 +591,7 @@ class WifiOtaPingTest(WifiPingTest):
             self.log.info('Average range for Channel {} is: {}dB'.format(
                 channel, average_range))
             metric_name = 'ota_summary_ch{}.avg_range'.format(channel)
-            self.bb_metric_logger.add_metric(metric_name, average_range)
+            self.testclass_metric_logger.add_metric(metric_name, average_range)
         current_context = context.get_current_context().get_full_output_path()
         plot_file_path = os.path.join(current_context, 'results.html')
         figure.generate_figure(plot_file_path)
@@ -617,14 +627,12 @@ class WifiOtaPingTest(WifiPingTest):
         """
         # Get the current and reference test config. The reference test is the
         # one performed at the current MCS+1
-        ref_test_params = self.extract_test_id(
-            testcase_params,
-            ['channel', 'mode'])
+        ref_test_params = self.extract_test_id(testcase_params,
+                                               ['channel', 'mode'])
         # Check if reference test has been run and set attenuation accordingly
         previous_params = [
-            self.extract_test_id(
-                result['testcase_params'],
-                ['channel', 'mode'])
+            self.extract_test_id(result['testcase_params'],
+                                 ['channel', 'mode'])
             for result in self.testclass_results
         ]
         try:

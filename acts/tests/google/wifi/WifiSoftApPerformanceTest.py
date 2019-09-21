@@ -35,14 +35,11 @@ class WifiSoftApRvrTest(WifiRvrTest):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = ("test_rvr_TCP_DL_2GHz", "test_rvr_TCP_UL_2GHz",
                       "test_rvr_TCP_DL_5GHz", "test_rvr_TCP_UL_5GHz")
-        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='failure_count')
-        self.peak_tput_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='peak_tput')
-        self.high_tput_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='high_tput_range')
-        self.low_tput_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='low_tput_range')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -77,6 +74,17 @@ class WifiSoftApRvrTest(WifiRvrTest):
                 for file in os.listdir(
                     self.testbed_params['golden_results_path'])
             ]
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
 
         # Turn WiFi ON

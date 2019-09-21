@@ -20,6 +20,8 @@ import tzlocal
 import yaml
 from acts.keys import Config
 from acts.test_utils.instrumentation import app_installer
+from acts.test_utils.instrumentation import instrumentation_proto_parser \
+    as proto_parser
 from acts.test_utils.instrumentation.adb_command_types import DeviceGServices
 from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
 from acts.test_utils.instrumentation.adb_commands import common
@@ -31,6 +33,7 @@ from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
 
 from acts import base_test
+from acts import context
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -62,10 +65,12 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             instrumentation_config_path = os.path.join(
                 self.user_params[Config.key_config_path.value],
                 DEFAULT_INSTRUMENTATION_CONFIG_FILE)
-        self._instrumentation_config = None
+        self._instrumentation_config = ConfigWrapper()
         if os.path.exists(instrumentation_config_path):
             self._instrumentation_config = self._load_instrumentation_config(
                 instrumentation_config_path)
+            self._class_config = self._instrumentation_config.get_config(
+                self.__class__.__name__)
         else:
             self.log.warning(
                 'Instrumentation config file %s does not exist' %
@@ -149,18 +154,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             controller_name: Name of the controller config to fetch
         Returns: The controller config, as a ConfigWrapper
         """
-        class_config = self._instrumentation_config.get_config(
-            self.__class__.__name__)
         if self.current_test_name:
             # Return the testcase level config, used for setting up test
-            case_config = class_config.get_config(self.current_test_name)
+            case_config = self._class_config.get_config(self.current_test_name)
             return case_config.get_config(controller_name)
         else:
             # Merge the base and testclass level configs, used for setting up
             # class.
             merged_config = self._instrumentation_config.get_config(
                 controller_name)
-            merged_config.update(class_config.get_config(controller_name))
+            merged_config.update(self._class_config.get_config(controller_name))
             return merged_config
 
     def adb_run(self, cmds):
@@ -193,6 +196,20 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         for cmd in cmds:
             procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
         return procs
+
+    def dump_instrumentation_result_proto(self):
+        """Dump the instrumentation result proto as a human-readable txt file
+        in the log directory.
+
+        Returns: The parsed instrumentation_data_pb2.Session
+        """
+        session = proto_parser.get_session_from_device(self.ad_dut)
+        proto_txt_path = os.path.join(
+            context.get_current_context().get_full_output_path(),
+            'instrumentation_proto.txt')
+        with open(proto_txt_path, 'w') as f:
+            f.write(str(session))
+        return session
 
     # Basic setup methods
 

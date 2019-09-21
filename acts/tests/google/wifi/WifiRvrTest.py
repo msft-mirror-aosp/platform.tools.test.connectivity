@@ -18,7 +18,6 @@ import collections
 import itertools
 import json
 import logging
-import math
 import numpy
 import os
 from acts import asserts
@@ -54,6 +53,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             wputils.BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -85,11 +85,21 @@ class WifiRvrTest(base_test.BaseTestClass):
                 for file in os.listdir(
                     self.testbed_params['golden_results_path'])
             ]
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
 
         # Turn WiFi ON
-        for dev in self.android_devices:
-            wutils.wifi_toggle_state(dev, True)
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
@@ -153,7 +163,9 @@ class WifiRvrTest(base_test.BaseTestClass):
 
         # Set test metrics
         rvr_result['metrics']['failure_count'] = failure_count
-        self.testcase_metric_logger.add_metric('failure_count', failure_count)
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('failure_count',
+                                                   failure_count)
 
         # Assert pass or fail
         if failure_count >= self.testclass_params['failure_count_tolerance']:
@@ -291,8 +303,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result['metrics'] = {}
         rvr_result['metrics']['peak_tput'] = max(
             rvr_result['throughput_receive'])
-        self.testcase_metric_logger.add_metric(
-            'peak_tput', rvr_result['metrics']['peak_tput'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'peak_tput', rvr_result['metrics']['peak_tput'])
 
         tput_below_limit = [
             tput < self.testclass_params['tput_metric_targets'][
@@ -306,8 +319,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 break
         else:
             rvr_result['metrics']['high_tput_range'] = -1
-        self.testcase_metric_logger.add_metric(
-            'high_tput_range', rvr_result['metrics']['high_tput_range'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'high_tput_range', rvr_result['metrics']['high_tput_range'])
 
         tput_below_limit = [
             tput < self.testclass_params['tput_metric_targets'][
@@ -321,8 +335,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 break
         else:
             rvr_result['metrics']['low_tput_range'] = -1
-        self.testcase_metric_logger.add_metric(
-            'low_tput_range', rvr_result['metrics']['low_tput_range'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'low_tput_range', rvr_result['metrics']['low_tput_range'])
 
     def run_rvr_test(self, testcase_params):
         """Test function to run RvR.
@@ -374,10 +389,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 iperf_file = server_output_path
             try:
                 iperf_result = ipf.IPerfResult(iperf_file)
-                curr_throughput = (math.fsum(iperf_result.instantaneous_rates[
-                    self.testclass_params['iperf_ignored_interval']:-1]) / len(
-                        iperf_result.instantaneous_rates[self.testclass_params[
-                            'iperf_ignored_interval']:-1])) * 8 * (1.024**2)
+                curr_throughput = numpy.mean(iperf_result.instantaneous_rates[
+                    self.testclass_params['iperf_ignored_interval']:-1]
+                                             ) * 8 * (1.024**2)
             except:
                 self.log.warning(
                     'ValueError: Cannot get iperf result. Setting to 0')
@@ -671,6 +685,7 @@ class WifiOtaRvrTest(WifiRvrTest):
             wputils.BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = False
 
     def setup_class(self):
         WifiRvrTest.setup_class(self)
@@ -697,10 +712,6 @@ class WifiOtaRvrTest(WifiRvrTest):
                     result['testcase_params'],
                     ['channel', 'mode', 'traffic_type', 'traffic_direction'
                      ]).items())
-            #test_id = (result['testcase_params']['channel'],
-            #           result['testcase_params']['mode'],
-            #           result['testcase_params']['traffic_type'],
-            #           result['testcase_params']['traffic_direction'])
             if test_id not in plots:
                 # Initialize test id data when not present
                 compiled_data[test_id] = {'throughput': [], 'metrics': {}}
