@@ -314,11 +314,13 @@ class WifiRvrTest(base_test.BaseTestClass):
         ]
         for idx in range(len(tput_below_limit)):
             if all(tput_below_limit[idx:]):
-                rvr_result['metrics']['high_tput_range'] = rvr_result[
-                    'total_attenuation'][max(idx, 1) - 1]
+                if idx == 0:
+                    #Throughput was never above limit
+                    rvr_result['metrics']['high_tput_range'] = -1
+                else:
+                    rvr_result['metrics']['high_tput_range'] = rvr_result[
+                        'total_attenuation'][max(idx, 1) - 1]
                 break
-        else:
-            rvr_result['metrics']['high_tput_range'] = -1
         if self.publish_testcase_metrics:
             self.testcase_metric_logger.add_metric(
                 'high_tput_range', rvr_result['metrics']['high_tput_range'])
@@ -468,15 +470,18 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Check battery level before test
         if not wputils.health_check(
                 self.dut, 20) and testcase_params['traffic_direction'] == 'UL':
-            asserts.skip('Battery level too low. Skipping test.')
+            asserts.skip('Overheating or Battery level low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         current_network = self.dut.droid.wifiGetConnectionInfo()
-        valid_connection = wutils.validate_connection(self.dut)
-        if valid_connection and current_network['SSID'] == self.main_network[
-                band]['SSID']:
+        try:
+            connected = wutils.validate_connection(self.dut) is not None
+        except:
+            connected = False
+        if connected and current_network['SSID'] == self.main_network[band][
+                'SSID']:
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)

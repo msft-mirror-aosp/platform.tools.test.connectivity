@@ -16,6 +16,8 @@
 
 import bokeh, bokeh.plotting
 import collections
+import itertools
+import json
 import logging
 import math
 import re
@@ -382,6 +384,18 @@ class BokehFigure():
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='height'))
 
+    def _filter_line(self, x_data, y_data, hover_text=None):
+        """Function to remove NaN points from bokeh plots."""
+        x_data_filtered = []
+        y_data_filtered = []
+        hover_text_filtered = []
+        for x, y, hover in itertools.zip_longest(x_data, y_data, hover_text):
+            if not math.isnan(y):
+                x_data_filtered.append(x)
+                y_data_filtered.append(y)
+                hover_text_filtered.append(hover)
+        return x_data_filtered, y_data_filtered, hover_text_filtered
+
     def add_line(self,
                  x_data,
                  y_data,
@@ -417,11 +431,13 @@ class BokehFigure():
             style = [5, 5]
         if not hover_text:
             hover_text = ['y={}'.format(y) for y in y_data]
+        x_data_filter, y_data_filter, hover_text_filter = self._filter_line(
+            x_data, y_data, hover_text)
         self.figure_data.append({
-            'x_data': x_data,
-            'y_data': y_data,
+            'x_data': x_data_filter,
+            'y_data': y_data_filter,
             'legend': legend,
-            'hover_text': hover_text,
+            'hover_text': hover_text_filter,
             'color': color,
             'width': width,
             'style': style,
@@ -554,9 +570,19 @@ class BokehFigure():
         self.plot.title.text_font_size = self.fig_property['title_size']
 
         if output_file is not None:
-            bokeh.plotting.output_file(output_file)
-            bokeh.plotting.save(self.plot)
+            self.save_figure(output_file)
         return self.plot
+
+    def _save_figure_json(self, output_file):
+        """Function to save a json format of a figure"""
+        figure_dict = collections.OrderedDict(
+            fig_property=self.fig_property,
+            figure_data=self.figure_data,
+            tools=self.TOOLS,
+            tooltips=self.TOOLTIPS)
+        output_file = output_file.replace('.html', '_plot_data.json')
+        with open(output_file, 'w') as outfile:
+            json.dump(figure_dict, outfile, indent=4)
 
     def save_figure(self, output_file):
         """Function to save BokehFigure.
@@ -566,6 +592,7 @@ class BokehFigure():
         """
         bokeh.plotting.output_file(output_file)
         bokeh.plotting.save(self.plot)
+        self._save_figure_json(output_file)
 
     @staticmethod
     def save_figures(figure_array, output_file_path):
@@ -575,8 +602,11 @@ class BokehFigure():
             figure_array: list of BokehFigure object to be plotted
             output_file: string specifying output file path
         """
-        for figure in figure_array:
+        for idx, figure in enumerate(figure_array):
             figure.generate_figure()
+            json_file_path = output_file_path.replace(
+                '.html', '{}-plot_data.json'.format(idx))
+            figure._save_figure_json(json_file_path)
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array)
         bokeh.plotting.output_file(output_file_path)
@@ -709,23 +739,22 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     Returns:
         ping_result: dict containing ping results and other meta data
     """
-    ping_count = int(ping_duration/ping_interval)
-    ping_deadline = int(ping_count*ping_interval)+1
+    ping_count = int(ping_duration / ping_interval)
+    ping_deadline = int(ping_count * ping_interval) + 1
     ping_cmd = 'ping -c {} -w {} -i {} -s {} -D'.format(
         ping_count,
         ping_deadline,
         ping_interval,
         ping_size,
     )
-    start_time = time.time()
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_deadline+SHORT_SLEEP, ignore_status=True)
+            ping_cmd, timeout=ping_deadline + SHORT_SLEEP, ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.run(
-            ping_cmd, timeout=ping_deadline+SHORT_SLEEP,
+            ping_cmd, timeout=ping_deadline + SHORT_SLEEP,
             ignore_status=True).stdout
     else:
         raise TypeError(
