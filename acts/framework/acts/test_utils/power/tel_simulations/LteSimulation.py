@@ -16,7 +16,6 @@
 
 import time
 import math
-import ntpath
 from enum import Enum
 
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
@@ -26,16 +25,40 @@ from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
 
+class TransmissionMode(Enum):
+    """ Transmission modes for LTE (e.g., TM1, TM4, ...) """
+    TM1 = "TM1"
+    TM2 = "TM2"
+    TM3 = "TM3"
+    TM4 = "TM4"
+    TM7 = "TM7"
+    TM8 = "TM8"
+    TM9 = "TM9"
+
+
+class MimoMode(Enum):
+    """ Mimo modes """
+    MIMO_1x1 = "1x1"
+    MIMO_2x2 = "2x2"
+    MIMO_4x4 = "4x4"
+
+
+class SchedulingMode(Enum):
+    """ Traffic scheduling modes (e.g., STATIC, DYNAMIC) """
+    DYNAMIC = "DYNAMIC"
+    STATIC = "STATIC"
+
+
+class DuplexMode(Enum):
+    """ DL/UL Duplex mode """
+    FDD = "FDD"
+    TDD = "TDD"
+
+
 class LteSimulation(BaseSimulation):
     """ Simple LTE simulation with only one basestation.
 
     """
-
-    # Simulation config files in the callbox computer.
-    # These should be replaced in the future by setting up
-    # the same configuration manually.
-    LTE_BASIC_SIM_FILE = 'SIM_default_LTE.wnssp'
-    LTE_BASIC_CELL_FILE = 'CELL_LTE_config.wnscp'
 
     # Simulation config keywords contained in the test name
     PARAM_FRAME_CONFIG = "tddconfig"
@@ -55,39 +78,6 @@ class LteSimulation(BaseSimulation):
     KEY_TBS_PATTERN = "tbs_pattern_on"
     KEY_DL_256_QAM = "256_qam_dl"
     KEY_UL_64_QAM = "64_qam_ul"
-
-    class TransmissionMode(Enum):
-        ''' Transmission modes for LTE (e.g., TM1, TM4, ..)
-
-        '''
-        TM1 = "TM1"
-        TM2 = "TM2"
-        TM3 = "TM3"
-        TM4 = "TM4"
-        TM7 = "TM7"
-        TM8 = "TM8"
-        TM9 = "TM9"
-
-    class MimoMode(Enum):
-        """ Mimo modes """
-
-        MIMO_1x1 = "1x1"
-        MIMO_2x2 = "2x2"
-        MIMO_4x4 = "4x4"
-
-    class SchedulingMode(Enum):
-        ''' Traffic scheduling modes (e.g., STATIC, DYNAMIC)
-
-        '''
-        DYNAMIC = "DYNAMIC"
-        STATIC = "STATIC"
-
-    class DuplexMode(Enum):
-        ''' DL/UL Duplex mode
-
-        '''
-        FDD = "FDD"
-        TDD = "TDD"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
@@ -426,6 +416,7 @@ class LteSimulation(BaseSimulation):
             self.ul_modulation_order = None
             self.tbs_pattern_on = None
             self.dl_channel = None
+            self.dl_cc_enabled = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with 1 basetation
@@ -448,8 +439,6 @@ class LteSimulation(BaseSimulation):
         if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
             raise ValueError('The LTE simulation relies on the simulator to '
                              'be an Anritsu MD8475 A/B instrument.')
-
-        self.anritsu = self.simulator.anritsu
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
@@ -475,9 +464,9 @@ class LteSimulation(BaseSimulation):
         self.dl_256_qam = test_config.get(self.KEY_DL_256_QAM, False)
 
         if self.dl_256_qam:
-            if self.anritsu._md8475_version == 'A':
-                self.log.warning("The key '{}' is set to true but MD8475A "
-                                 "callbox doesn't support that modulation "
+            if not self.simulator.LTE_SUPPORTS_DL_256QAM:
+                self.log.warning("The key '{}' is set to true but the "
+                                 "simulator doesn't support that modulation "
                                  "order.".format(self.KEY_DL_256_QAM))
                 self.dl_256_qam = False
             else:
@@ -492,103 +481,19 @@ class LteSimulation(BaseSimulation):
         self.ul_64_qam = test_config.get(self.KEY_UL_64_QAM, False)
 
         if self.ul_64_qam:
-            if self.anritsu._md8475_version == 'A':
-                self.log.warning("The key '{}' is set to true but MD8475A "
-                                 "callbox doesn't support that modulation "
+            if not self.simulator.LTE_SUPPORTS_UL_64QAM:
+                self.log.warning("The key '{}' is set to true but the "
+                                 "simulator doesn't support that modulation "
                                  "order.".format(self.KEY_UL_64_QAM))
                 self.ul_64_qam = False
             else:
                 self.primary_config.ul_modulation_order = "64QAM"
 
-        self.configure_bts(self.bts1, self.primary_config)
+        self.simulator.configure_bts(self.primary_config)
 
-    def configure_bts(self, bts_handle, config):
-        """ Configures LTE parameters in the base station handle. See parent
-        class implementation for more details.
-
-        Args:
-            bts_handle: a handle to the Anritsu base station controller.
-            config: a BtsConfig object containing the desired configuration.
-        """
-
-        super().configure_bts(bts_handle, config)
-
-        if config.band:
-            # Only calibrate for the primary carrier band
-            isPcc = bts_handle == self.bts1
-            self.set_band(bts_handle,
-                          config.band,
-                          calibrate_if_necessary=isPcc)
-
-        if config.dlul_config:
-            self.set_dlul_configuration(bts_handle, config.dlul_config)
-
-        if config.bandwidth:
-            self.set_channel_bandwidth(bts_handle, config.bandwidth)
-
-        if config.dl_channel:
-            # Temporarily adding this line to workaround a bug in the
-            # Anritsu callbox in which the channel number needs to be set
-            # to a different value before setting it to the final one.
-            bts_handle.dl_channel = str(config.dl_channel)
-            time.sleep(8)
-            bts_handle.dl_channel = str(config.dl_channel - 1)
-
-        if config.mimo_mode:
-            self.set_mimo_mode(bts_handle, config.mimo_mode)
-
-        if config.transmission_mode:
-            self.set_transmission_mode(bts_handle, config.transmission_mode)
-
-        if config.scheduling_mode:
-
-            if (config.scheduling_mode == LteSimulation.SchedulingMode.STATIC
-                    and not all([
-                        config.dl_rbs, config.ul_rbs, config.dl_mcs,
-                        config.ul_mcs
-                    ])):
-                raise ValueError('When the scheduling mode is set to manual, '
-                                 'the RB and MCS parameters are required.')
-
-            # If scheduling mode is set to Dynamic, the RB and MCS parameters
-            # will be ignored by set_scheduling_mode.
-            self.set_scheduling_mode(bts_handle,
-                                     config.scheduling_mode,
-                                     packet_rate=BtsPacketRate.LTE_MANUAL,
-                                     nrb_dl=config.dl_rbs,
-                                     nrb_ul=config.ul_rbs,
-                                     mcs_ul=config.ul_mcs,
-                                     mcs_dl=config.dl_mcs)
-
-        if config.dl_modulation_order:
-            bts_handle.lte_dl_modulation_order = config.dl_modulation_order
-
-        if config.ul_modulation_order:
-            bts_handle.lte_u_modulation_order = config.ul_modulation_order
-
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
-        if config.tbs_pattern_on is not None:
-            if config.tbs_pattern_on:
-                bts_handle.tbs_pattern = "FULLALLOCATION"
-            else:
-                bts_handle.tbs_pattern = "OFF"
-
-    def load_config_files(self):
-        """ Loads configuration files for the simulation. """
-
-        cell_file_name = self.LTE_BASIC_CELL_FILE
-        sim_file_name = self.LTE_BASIC_SIM_FILE
-
-        if self.anritsu._md8475_version == 'B':
-            cell_file_name += '2'
-            sim_file_name += '2'
-
-        cell_file_path = ntpath.join(self.callbox_config_path, cell_file_name)
-        sim_file_path = ntpath.join(self.callbox_config_path, sim_file_name)
-
-        self.anritsu.load_simulation_paramfile(sim_file_path)
-        self.anritsu.load_cell_paramfile(cell_file_path)
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
+        self.simulator.setup_lte_scenario()
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
@@ -614,7 +519,7 @@ class LteSimulation(BaseSimulation):
         new_config.band = values[1]
 
         # Set DL/UL frame configuration
-        if self.get_duplex_mode(new_config.band) == self.DuplexMode.TDD:
+        if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
 
             values = self.consume_parameter(parameters,
                                             self.PARAM_FRAME_CONFIG, 1)
@@ -652,7 +557,7 @@ class LteSimulation(BaseSimulation):
                 "The test name needs to include parameter '{}' followed by the "
                 "mimo mode.".format(self.PARAM_MIMO))
 
-        for mimo_mode in LteSimulation.MimoMode:
+        for mimo_mode in MimoMode:
             if values[1] == mimo_mode.value:
                 new_config.mimo_mode = mimo_mode
                 break
@@ -660,10 +565,10 @@ class LteSimulation(BaseSimulation):
             raise ValueError("The {} parameter needs to be followed by either "
                              "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
-        if (new_config.mimo_mode == LteSimulation.MimoMode.MIMO_4x4
-                and self.anritsu._md8475_version == 'A'):
+        if (new_config.mimo_mode == MimoMode.MIMO_4x4
+                and not self.simulator.LTE_SUPPORTS_4X4_MIMO):
             raise ValueError("The test requires 4x4 MIMO, but that is not "
-                             "supported by the MD8475A callbox.")
+                             "supported by the cellular simulator.")
 
         # Setup transmission mode
 
@@ -675,7 +580,7 @@ class LteSimulation(BaseSimulation):
                 "int value from 1 to 4 indicating transmission mode.".format(
                     self.PARAM_TM))
 
-        for tm in LteSimulation.TransmissionMode:
+        for tm in TransmissionMode:
             if values[1] == tm.value[2:]:
                 new_config.transmission_mode = tm
                 break
@@ -689,20 +594,20 @@ class LteSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
 
         if not values:
-            new_config.scheduling_mode = LteSimulation.SchedulingMode.STATIC
+            new_config.scheduling_mode = SchedulingMode.STATIC
             self.log.warning(
                 "The test name does not include the '{}' parameter. Setting to "
                 "static by default.".format(self.PARAM_SCHEDULING))
         elif values[1] == self.PARAM_SCHEDULING_DYNAMIC:
-            new_config.scheduling_mode = LteSimulation.SchedulingMode.DYNAMIC
+            new_config.scheduling_mode = SchedulingMode.DYNAMIC
         elif values[1] == self.PARAM_SCHEDULING_STATIC:
-            new_config.scheduling_mode = LteSimulation.SchedulingMode.STATIC
+            new_config.scheduling_mode = SchedulingMode.STATIC
         else:
             raise ValueError(
                 "The test name parameter '{}' has to be followed by either "
                 "'dynamic' or 'static'.".format(self.PARAM_SCHEDULING))
 
-        if new_config.scheduling_mode == LteSimulation.SchedulingMode.STATIC:
+        if new_config.scheduling_mode == SchedulingMode.STATIC:
 
             values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
 
@@ -744,18 +649,20 @@ class LteSimulation(BaseSimulation):
                 new_config.ul_mcs = 23
 
         # Setup LTE RRC status change function and timer for LTE idle test case
-
+        # TODO (b/141838145): setting RRC timer parameters requires unwrapping
+        # the simulator class as it still doesn't support these methods.
         values = self.consume_parameter(parameters,
                                         self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
         if not values:
             self.log.info(
                 "The test name does not include the '{}' parameter. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
-            self.anritsu.set_lte_rrc_status_change(False)
+            self.simulator.anritsu.set_lte_rrc_status_change(False)
         else:
             self.rrc_sc_timer = int(values[1])
-            self.anritsu.set_lte_rrc_status_change(True)
-            self.anritsu.set_lte_rrc_status_change_timer(self.rrc_sc_timer)
+            self.simulator.anritsu.set_lte_rrc_status_change(True)
+            self.simulator.anritsu.set_lte_rrc_status_change_timer(
+                self.rrc_sc_timer)
 
         # Get uplink power
 
@@ -775,8 +682,11 @@ class LteSimulation(BaseSimulation):
 
         # Setup the base station with the obtained configuration and then save
         # these parameters in the current configuration object
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
+
+        # Now that the band is set, calibrate the link if necessary
+        self.load_pathloss_if_required()
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """ LTE simulation overrides this method so that it can convert from
@@ -871,11 +781,11 @@ class LteSimulation(BaseSimulation):
             Maximum throughput in mbps.
 
         """
-        if bts_config.mimo_mode == LteSimulation.MimoMode.MIMO_1x1:
+        if bts_config.mimo_mode == MimoMode.MIMO_1x1:
             streams = 1
-        elif bts_config.mimo_mode == LteSimulation.MimoMode.MIMO_2x2:
+        elif bts_config.mimo_mode == MimoMode.MIMO_2x2:
             streams = 1
-        elif bts_config.mimo_mode == LteSimulation.MimoMode.MIMO_4x4:
+        elif bts_config.mimo_mode == MimoMode.MIMO_4x4:
             streams = 1
         else:
             raise ValueError('Unable to calculate maximum downlink throughput '
@@ -890,7 +800,7 @@ class LteSimulation(BaseSimulation):
         tdd_subframe_config = bts_config.dlul_config
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
-        if duplex_mode == self.DuplexMode.TDD.value:
+        if duplex_mode == DuplexMode.TDD.value:
             if self.dl_256_qam:
                 if mcs == "27":
                     if bts_config.tbs_pattern_on:
@@ -908,7 +818,7 @@ class LteSimulation(BaseSimulation):
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG1'][tdd_subframe_config][bandwidth]['DL']
 
-        elif duplex_mode == self.DuplexMode.FDD.value:
+        elif duplex_mode == DuplexMode.FDD.value:
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
                     and mcs == "28"):
                 max_rate_per_stream = {
@@ -1001,7 +911,7 @@ class LteSimulation(BaseSimulation):
         tdd_subframe_config = bts_config.dlul_config
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
-        if duplex_mode == self.DuplexMode.TDD.value:
+        if duplex_mode == DuplexMode.TDD.value:
             if self.ul_64_qam:
                 if mcs == "28":
                     if bts_config.tbs_pattern_on:
@@ -1019,7 +929,7 @@ class LteSimulation(BaseSimulation):
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG1'][tdd_subframe_config][bandwidth]['UL']
 
-        elif duplex_mode == self.DuplexMode.FDD.value:
+        elif duplex_mode == DuplexMode.FDD.value:
             if mcs == "23" and not self.ul_64_qam:
                 max_rate_per_stream = {
                     1.4: 2.85,
@@ -1046,132 +956,6 @@ class LteSimulation(BaseSimulation):
                     mcs))
 
         return max_rate_per_stream * rb_ratio
-
-    def set_transmission_mode(self, bts, tmode):
-        """ Sets the transmission mode for the LTE basetation
-
-        Args:
-            bts: basestation handle
-            tmode: Enum list from class 'TransmissionModeLTE'
-        """
-
-        # If the selected transmission mode does not support the number of DL
-        # antennas, throw an exception.
-        if (tmode in [self.TransmissionMode.TM1, self.TransmissionMode.TM7]
-                and bts.dl_antenna != '1'):
-            # TM1 and TM7 only support 1 DL antenna
-            raise ValueError("{} allows only one DL antenna. Change the "
-                             "number of DL antennas before setting the "
-                             "transmission mode.".format(tmode.value))
-        elif tmode == self.TransmissionMode.TM8 and bts.dl_antenna != '2':
-            # TM8 requires 2 DL antennas
-            raise ValueError("TM2 requires two DL antennas. Change the "
-                             "number of DL antennas before setting the "
-                             "transmission mode.")
-        elif (tmode in [
-                self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                self.TransmissionMode.TM4, self.TransmissionMode.TM9
-        ] and bts.dl_antenna == '1'):
-            # TM2, TM3, TM4 and TM9 require 2 or 4 DL antennas
-            raise ValueError("{} requires at least two DL atennas. Change the "
-                             "number of DL antennas before setting the "
-                             "transmission mode.".format(tmode.value))
-
-        # The TM mode is allowed for the current number of DL antennas, so it
-        # is safe to change this setting now
-        bts.transmode = tmode.value
-
-        time.sleep(5)  # It takes some time to propagate the new settings
-
-    def set_mimo_mode(self, bts, mimo):
-        """ Sets the number of DL antennas for the desired MIMO mode.
-
-        Args:
-            bts: basestation handle
-            mimo: object of class MimoMode
-        """
-
-        # If the requested mimo mode is not compatible with the current TM,
-        # warn the user before changing the value.
-
-        if mimo == self.MimoMode.MIMO_1x1:
-            if bts.transmode not in [
-                    self.TransmissionMode.TM1, self.TransmissionMode.TM7
-            ]:
-                self.log.warning(
-                    "Using only 1 DL antennas is not allowed with "
-                    "the current transmission mode. Changing the "
-                    "number of DL antennas will override this "
-                    "setting.")
-            bts.dl_antenna = 1
-        elif mimo == self.MimoMode.MIMO_2x2:
-            if bts.transmode not in [
-                    self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                    self.TransmissionMode.TM4, self.TransmissionMode.TM8,
-                    self.TransmissionMode.TM9
-            ]:
-                self.log.warning("Using two DL antennas is not allowed with "
-                                 "the current transmission mode. Changing the "
-                                 "number of DL antennas will override this "
-                                 "setting.")
-            bts.dl_antenna = 2
-        elif mimo == self.MimoMode.MIMO_4x4:
-            if bts.transmode not in [
-                    self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                    self.TransmissionMode.TM4, self.TransmissionMode.TM9
-            ]:
-                self.log.warning("Using four DL antennas is not allowed with "
-                                 "the current transmission mode. Changing the "
-                                 "number of DL antennas will override this "
-                                 "setting.")
-
-            bts.dl_antenna = 4
-        else:
-            RuntimeError("The requested MIMO mode is not supported.")
-
-    def set_scheduling_mode(self,
-                            bts,
-                            scheduling,
-                            packet_rate=None,
-                            mcs_dl=None,
-                            mcs_ul=None,
-                            nrb_dl=None,
-                            nrb_ul=None):
-        """ Sets the scheduling mode for LTE
-
-        Args:
-            bts: basestation handle
-            scheduling: DYNAMIC or STATIC scheduling (Enum list)
-            mcs_dl: Downlink MCS (only for STATIC scheduling)
-            mcs_ul: Uplink MCS (only for STATIC scheduling)
-            nrb_dl: Number of RBs for downlink (only for STATIC scheduling)
-            nrb_ul: Number of RBs for uplink (only for STATIC scheduling)
-        """
-
-        bts.lte_scheduling_mode = scheduling.value
-
-        if scheduling == self.SchedulingMode.STATIC:
-
-            if not packet_rate:
-                raise RuntimeError("Packet rate needs to be indicated when "
-                                   "selecting static scheduling.")
-
-            bts.packet_rate = packet_rate
-
-            if packet_rate == BtsPacketRate.LTE_MANUAL:
-
-                if not (mcs_dl and mcs_ul and nrb_dl and nrb_ul):
-                    raise RuntimeError("When using manual packet rate the "
-                                       "number of dl/ul RBs and the dl/ul "
-                                       "MCS needs to be indicated with the "
-                                       "optional arguments.")
-
-                bts.lte_mcs_dl = mcs_dl
-                bts.lte_mcs_ul = mcs_ul
-                bts.nrb_dl = nrb_dl
-                bts.nrb_ul = nrb_ul
-
-        time.sleep(5)  # It takes some time to propagate the new settings
 
     def allocation_percentages_to_rbs(self, bw, tm, dl, ul):
         """ Converts usage percentages to number of DL/UL RBs
@@ -1220,7 +1004,7 @@ class LteSimulation(BaseSimulation):
         desired_dl_rbs = percentage_to_amount(
             min_val=min_dl_rbs, max_val=max_rbs, percentage=dl)
 
-        if tm == self.TransmissionMode.TM3 or tm == self.TransmissionMode.TM4:
+        if tm == TransmissionMode.TM3 or tm == TransmissionMode.TM4:
 
             # For TM3 and TM4 the number of DL RBs needs to be max_rbs or a
             # multiple of the RBG size
@@ -1270,60 +1054,6 @@ class LteSimulation(BaseSimulation):
 
         return dl_rbs, ul_rbs
 
-    def set_channel_bandwidth(self, bts, bandwidth):
-        """ Sets the LTE channel bandwidth (MHz)
-
-        Args:
-            bts: basestation handle
-            bandwidth: desired bandwidth (MHz)
-        """
-        if bandwidth == 20:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_20MHz
-        elif bandwidth == 15:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_15MHz
-        elif bandwidth == 10:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_10MHz
-        elif bandwidth == 5:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_5MHz
-        elif bandwidth == 3:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_3MHz
-        elif bandwidth == 1.4:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_1dot4MHz
-        else:
-            msg = "Bandwidth = {} MHz is not valid for LTE".format(bandwidth)
-            self.log.error(msg)
-            raise ValueError(msg)
-        time.sleep(5)  # It takes some time to propagate the new settings
-
-    def get_bandwidth(self, bts):
-        """ Obtains bandwidth in MHz for a base station. The Anritsu callbox
-        returns a string that needs to be mapped to the right number.
-
-        Args:
-            bts: base station handle
-
-        Returns:
-            the channel bandwidth in MHz
-        """
-
-        return BtsBandwidth.get_float_value(bts.bandwidth)
-
-    def set_dlul_configuration(self, bts, config):
-        """ Sets the frame structure for TDD bands.
-
-        Args:
-            config: the desired frame structure. An int between 0 and 6.
-        """
-
-        if not 0 <= config <= 6:
-            raise ValueError("The frame structure configuration has to be a "
-                             "number between 0 and 6")
-
-        bts.uldl_configuration = config
-
-        # Wait for the setting to propagate
-        time.sleep(5)
-
     def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before
 
@@ -1342,17 +1072,17 @@ class LteSimulation(BaseSimulation):
 
         # Set up a temporary calibration configuration.
         temporary_config = self.BtsConfig()
-        temporary_config.mimo_mode = LteSimulation.MimoMode.MIMO_1x1
-        temporary_config.transmission_mode = LteSimulation.TransmissionMode.TM1
+        temporary_config.mimo_mode = MimoMode.MIMO_1x1
+        temporary_config.transmission_mode = TransmissionMode.TM1
         temporary_config.bandwidth = max(
             self.allowed_bandwidth_dictionary[int(band)])
-        self.configure_bts(self.bts1, temporary_config)
+        self.simulator.configure_bts(temporary_config)
         self.primary_config.incorporate(temporary_config)
 
         super().calibrate(band)
 
         # Restore values as they were before changing them for calibration.
-        self.configure_bts(self.bts1, restore_config)
+        self.simulator.configure_bts(restore_config)
         self.primary_config.incorporate(restore_config)
 
     def start_traffic_for_calibration(self):
@@ -1380,19 +1110,6 @@ class LteSimulation(BaseSimulation):
         """
 
         if 33 <= int(band) <= 46:
-            return self.DuplexMode.TDD
+            return DuplexMode.TDD
         else:
-            return self.DuplexMode.FDD
-
-    def set_band(self, bts, band, calibrate_if_necessary=True):
-        """ Sets the right duplex mode before switching to a new band.
-
-        Args:
-            bts: basestation handle
-            band: desired band
-            calibrate_if_necessary: if False calibration will be skipped
-        """
-
-        bts.duplex_mode = self.get_duplex_mode(band).value
-
-        super().set_band(bts, band, calibrate_if_necessary)
+            return DuplexMode.FDD

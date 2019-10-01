@@ -86,6 +86,7 @@ class BaseSimulation():
             parameters to None. """
             self.output_power = None
             self.input_power = None
+            self.band = None
 
         def incorporate(self, new_config):
             """ Incorporates a different configuration by replacing the current
@@ -128,9 +129,6 @@ class BaseSimulation():
         self.calibration_required = test_config.get(self.KEY_CALIBRATION,
                                                     False)
 
-        # Gets BTS1 since this sim only has 1 BTS
-        self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
-
         # Configuration object for the primary base station
         self.primary_config = self.BtsConfig()
 
@@ -155,25 +153,17 @@ class BaseSimulation():
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
 
-        # Load callbox config files
-        self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
-            self.anritsu._md8475_version)
-        self.load_config_files()
-
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
 
         # Wait for airplane mode setting to propagate
         time.sleep(2)
 
-        # Start simulation if it wasn't started
-        self.anritsu.start_simulation()
+        # Prepare the simulator for this simulation setup
+        self.setup_simulator()
 
-    def load_config_files(self):
-        """ Loads configuration files for the simulation.
-
-        This method needs to be implement by derived simulation classes. """
-
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
         raise NotImplementedError()
 
     def attach(self):
@@ -196,7 +186,7 @@ class BaseSimulation():
         new_config = self.BtsConfig()
         new_config.input_power = -10
         new_config.output_power = -30
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
 
         # Try to attach the phone.
@@ -296,7 +286,7 @@ class BaseSimulation():
             self.primary_config, self.sim_dl_power)
         new_config.input_power = self.calibrated_uplink_tx_power(
             self.primary_config, self.sim_ul_power)
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
 
     def parse_parameters(self, parameters):
@@ -310,22 +300,6 @@ class BaseSimulation():
         """
 
         raise NotImplementedError()
-
-    def configure_bts(self, bts_handle, config):
-        """ Configures the base station in the Anritsu callbox.
-
-        Parameters set to None in the configuration object are skipped.
-
-        Args:
-            bts_handle: a handle to the Anritsu base station controller.
-            config: a BtsConfig object containing the desired configuration.
-        """
-
-        if config.output_power:
-            bts_handle.output_level = config.output_power
-
-        if config.input_power:
-            bts_handle.input_level = config.input_power
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.
@@ -593,7 +567,7 @@ class BaseSimulation():
         new_config = self.BtsConfig()
         new_config.output_power = self.DL_CAL_TARGET_POWER[
             self.anritsu._md8475_version]
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -619,7 +593,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        self.configure_bts(self.bts1, restoration_config)
+        self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
         # Calculate the mean of the measurements
@@ -668,7 +642,7 @@ class BaseSimulation():
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
         new_config = self.BtsConfig()
         new_config.input_power = self.MAX_BTS_INPUT_POWER
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -706,7 +680,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        self.configure_bts(self.bts1, restoration_config)
+        self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0
@@ -729,26 +703,18 @@ class BaseSimulation():
 
         return up_call_path_loss
 
-    def set_band(self, bts, band, calibrate_if_necessary=True):
-        """ Sets the band used for communication.
-
-        When moving to a new band, recalibrate the link.
-
-        Args:
-            bts: basestation handle
-            band: desired band
-            calibrate_if_necessary: if False calibration will be skipped
-        """
-
-        bts.band = band
-        time.sleep(5)  # It takes some time to propagate the new band
-
-        # Invalidate the calibration values
+    def load_pathloss_if_required(self):
+        """ If calibration is required, try to obtain the pathloss values from
+        the calibration table and measure them if they are not available. """
+        # Invalidate the previous values
         self.dl_path_loss = None
         self.ul_path_loss = None
 
-        # Only calibrate when required.
-        if self.calibration_required and calibrate_if_necessary:
+        # Load the new ones
+        if self.calibration_required:
+
+            band = self.primary_config.band
+
             # Try loading the path loss values from the calibration table. If
             # they are not available, use the automated calibration procedure.
             try:
