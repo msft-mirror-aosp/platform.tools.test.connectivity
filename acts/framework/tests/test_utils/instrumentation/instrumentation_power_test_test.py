@@ -35,6 +35,7 @@ class MockInstrumentationPowerTest(InstrumentationPowerTest):
 
     def __init__(self):
         self.log = mock.Mock()
+        self.metric_logger = mock.Mock()
         self.current_test_name = 'test_case'
         self._power_metrics = PowerMetrics(4.2)
         self._power_metrics.test_metrics = {
