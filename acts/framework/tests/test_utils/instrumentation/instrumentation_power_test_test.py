@@ -47,6 +47,7 @@ class MockInstrumentationPowerTest(InstrumentationPowerTest):
         self._power_metrics.test_metrics['instrTest2'].generate_test_metrics(
             list(zip(range(10), self.SAMPLE_DATA))
         )
+        self._instrumentation_config = ConfigWrapper()
         self._class_config = ConfigWrapper(
             {
                 self.current_test_name: {
