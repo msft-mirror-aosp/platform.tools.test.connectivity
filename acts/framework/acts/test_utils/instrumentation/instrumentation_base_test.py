@@ -23,6 +23,7 @@ from acts.test_utils.instrumentation import app_installer
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.adb_command_types import DeviceGServices
+from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
 from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
 from acts.test_utils.instrumentation.adb_commands import common
 from acts.test_utils.instrumentation.adb_commands import goog
@@ -277,6 +278,12 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         self.ad_dut.adb.ensure_root()
 
+        # Test harness flag
+        self.adb_run(common.test_harness.toggle(True))
+
+        # Calling
+        self.adb_run(common.disable_dialing.toggle(True))
+
         # Screen
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
         self.adb_run(common.screen_brightness.set_value(
@@ -304,6 +311,10 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(common.battery_saver_trigger.set_value(0))
         self.adb_run(common.enable_full_batterystats_history)
         self.adb_run(common.disable_doze)
+
+        # Camera
+        self.adb_run(DeviceSetprop(
+            'camera.optbar.hdr', 'true', 'false').toggle(True))
 
         # Gestures
         gestures = {
