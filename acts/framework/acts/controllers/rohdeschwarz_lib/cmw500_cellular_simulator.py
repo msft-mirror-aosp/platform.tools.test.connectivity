@@ -13,17 +13,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from acts import logger
-from acts.test_utils.power import tel_simulations as sims
+from acts.controllers.rohdeschwarz_lib import cmw500
+from acts.controllers import cellular_simulator as cc
 
 
-class AbstractCellularSimulator:
-    """ A generic cellular simulator controller class that can be derived to
-    implement equipment specific classes and allows the tests to be implemented
-    without depending on a singular instrument model.
-
-    This class defines the interface that every cellular simulator controller
-    needs to implement and shouldn't be instantiated by itself. """
+class CMW500CellularSimulator:
+    """ A cellular simulator for telephony simulations based on the CMW 500
+    controller. """
 
     # Indicates if it is able to use 256 QAM as the downlink modulation for LTE
     LTE_SUPPORTS_DL_256QAM = None
@@ -37,9 +33,17 @@ class AbstractCellularSimulator:
     # The maximum number of carriers that this simulator can support for LTE
     LTE_MAX_CARRIERS = None
 
-    def __init__(self):
-        """ Initializes the cellular simulator. """
-        self.log = logger.create_tagged_trace_logger('CellularSimulator')
+    def __init__(self, ip_address, port):
+        """ Initializes the cellular simulator.
+
+        Args:
+            ip_address: the ip address of the CMW500
+            port: the port number for the CMW500 controller
+        """
+        try:
+            self.cmw = cmw500.Cmw500(ip_address, port)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('Could not connect to CMW500.')
 
     def destroy(self):
         """ Sends finalization commands to the cellular equipment and closes
@@ -53,82 +57,6 @@ class AbstractCellularSimulator:
     def setup_lte_ca_scenario(self):
         """ Configures the equipment for an LTE with CA simulation. """
         raise NotImplementedError()
-
-    def configure_bts(self, config, bts_index=0):
-        """ Commands the equipment to setup a base station with the required
-        configuration. This method applies configurations that are common to all
-        RATs.
-
-        Args:
-            config: a BaseSimulation.BtsConfig object.
-            bts_index: the base station number.
-        """
-
-        if config.output_power:
-            self.set_output_power(bts_index, config.output_power)
-
-        if config.input_power:
-            self.set_input_power(bts_index, config.input_power)
-
-        if isinstance(config, sims.LteSimulation.LteSimulation.BtsConfig):
-            self.configure_lte_bts(config, bts_index)
-
-    def configure_lte_bts(self, config, bts_index=0):
-        """ Commands the equipment to setup an LTE base station with the
-        required configuration.
-
-        Args:
-            config: an LteSimulation.BtsConfig object.
-            bts_index: the base station number.
-        """
-        if config.band:
-            self.set_band(bts_index, config.band)
-
-        if config.dlul_config:
-            self.set_tdd_config(bts_index, config.dlul_config)
-
-        if config.bandwidth:
-            self.set_bandwidth(bts_index, config.bandwidth)
-
-        if config.dl_channel:
-            self.set_downlink_channel_number(bts_index, config.dl_channel)
-
-        if config.mimo_mode:
-            self.set_mimo_mode(bts_index, config.mimo_mode)
-
-        if config.transmission_mode:
-            self.set_transmission_mode(bts_index, config.transmission_mode)
-
-        if config.scheduling_mode:
-
-            if (config.scheduling_mode ==
-                    sims.LteSimulation.SchedulingMode.STATIC
-                    and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
-                             and config.ul_mcs)):
-                raise ValueError('When the scheduling mode is set to manual, '
-                                 'the RB and MCS parameters are required.')
-
-            # If scheduling mode is set to Dynamic, the RB and MCS parameters
-            # will be ignored by set_scheduling_mode.
-            self.set_scheduling_mode(bts_index, config.scheduling_mode,
-                                     config.dl_mcs, config.ul_mcs,
-                                     config.dl_rbs, config.ul_rbs)
-
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
-        if config.dl_cc_enabled is not None:
-            self.set_enabled_for_ca(bts_index, config.dl_cc_enabled)
-
-        if config.dl_modulation_order:
-            self.set_dl_modulation(bts_index, config.dl_modulation_order)
-
-        if config.ul_modulation_order:
-            self.set_ul_modulation(bts_index, config.ul_modulation_order)
-
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
-        if config.tbs_pattern_on is not None:
-            self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
 
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
@@ -251,9 +179,3 @@ class AbstractCellularSimulator:
             tbs_pattern_on: the new TBS pattern setting
         """
         raise NotImplementedError()
-
-
-class CellularSimulatorError(Exception):
-    """ Exceptions thrown when the cellular equipment is unreachable or it
-    returns an error after receiving a command. """
-    pass

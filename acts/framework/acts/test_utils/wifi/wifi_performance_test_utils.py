@@ -187,102 +187,6 @@ class LinkLayerStats():
             self.llstats_cumulative)
 
 
-# Dashboard utilities
-class BlackboxMappedMetricLogger(MetricLogger):
-    """A MetricLogger for logging and publishing Blackbox metrics from a dict.
-
-    The dict maps the metric name to the metric value. For additional
-    information on reporting to Blackbox, see BlackBoxMetricLogger.
-
-    Attributes:
-        proto_module: The proto module for ActsBlackboxMetricResult.
-        metric_key: The metric key to use. If unset, the logger will use the
-                    context's identifier.
-    """
-
-    PROTO_FILE = '../../metrics/loggers/protos/acts_blackbox.proto'
-
-    def __init__(self, metric_key=None, event=None):
-        """Initializes a logger for Blackbox metrics.
-
-        Args:
-            metric_key: The metric key to use. If unset, the logger will use
-                        the context's identifier.
-            event: The event triggering the creation of this logger.
-        """
-        super().__init__(event=event)
-        self.proto_module = self._compile_proto(self.PROTO_FILE)
-        self.metric_key = metric_key
-        self._metric_map = {}
-
-    def _get_metric_key(self, metric_name):
-        """Gets the metric key to use.
-
-        If the metric_key is explicitly set, returns that value. Otherwise,
-        extracts an identifier from the context.
-
-        Args:
-            metric_name: The name of the metric to report.
-        """
-        if self.metric_key:
-            key = self.metric_key
-        else:
-            key = self._get_blackbox_identifier()
-        key = '%s.%s' % (key, metric_name)
-        return key
-
-    def set_metric_data(self, metric_map):
-        """Sets the map of metrics to be uploaded to Blackbox. Note that
-        this will overwrite all existing added by this function or add_metric.
-
-        Args:
-            metric_map: the map of metric_name -> metric_value to publish
-                to blackbox. If the metric value is set to None, the
-                metric will not be reported.
-        """
-        self._metric_map = metric_map
-
-    def add_metric(self, metric_name, metric_value):
-        """Adds a metric value to be published later.
-
-        Note that if the metric name has already been added, the metric value
-        will be overwritten.
-
-        Args:
-            metric_name: the name of the metric.
-            metric_value: the value of the metric.
-        """
-        self._metric_map[metric_name] = metric_value
-
-    def _get_blackbox_identifier(self):
-        """Returns the testcase identifier, as expected by Blackbox."""
-        # b/119787228: Blackbox requires function names to look like Java
-        # functions.
-        identifier = self.context.identifier
-        parts = identifier.rsplit('.', 1)
-        return '#'.join(parts)
-
-    def end(self, _):
-        """Creates and publishes a ProtoMetric with blackbox data.
-
-        Builds a list of ActsBlackboxMetricResult messages from the set
-        metric data, and sends them to the publisher.
-        """
-        metrics = []
-        for metric_name, metric_value in self._metric_map.items():
-            if metric_value is None:
-                continue
-            result = self.proto_module.ActsBlackboxMetricResult()
-            result.test_identifier = self._get_blackbox_identifier()
-            result.metric_key = self._get_metric_key(metric_name)
-            result.metric_value = metric_value
-
-            metrics.append(
-                ProtoMetric(name='blackbox_%s' % metric_name, data=result))
-
-        return self.publisher.publish(metrics)
-
-
 # JSON serializer
 def serialize_dict(input_dict):
     """Function to serialize dicts to enable JSON output"""
@@ -345,23 +249,23 @@ class BokehFigure():
     def __init__(self,
                  title=None,
                  x_label=None,
-                 primary_y=None,
-                 secondary_y=None,
+                 primary_y_label=None,
+                 secondary_y_label=None,
                  height=700,
                  width=1300,
-                 title_size=15,
-                 axis_label_size=12):
+                 title_size='15pt',
+                 axis_label_size='12pt'):
         self.figure_data = []
         self.fig_property = {
             'title': title,
             'x_label': x_label,
-            'primary_y_label': primary_y,
-            'secondary_y_label': secondary_y,
+            'primary_y_label': primary_y_label,
+            'secondary_y_label': secondary_y_label,
             'num_lines': 0,
             'height': height,
             'width': width,
-            'title_size': '{}pt'.format(title_size),
-            'axis_label_size': '{}pt'.format(axis_label_size)
+            'title_size': title_size,
+            'axis_label_size': axis_label_size
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
@@ -444,7 +348,7 @@ class BokehFigure():
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': shaded_region,
-            'y_range_name': y_axis
+            'y_axis': y_axis
         })
         self.fig_property['num_lines'] += 1
 
@@ -489,7 +393,7 @@ class BokehFigure():
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': None,
-            'y_range_name': y_axis
+            'y_axis': y_axis
         })
         self.fig_property['num_lines'] += 1
 
@@ -515,8 +419,8 @@ class BokehFigure():
                     line_width=line['width'],
                     color=line['color'],
                     line_dash=line['style'],
-                    name=line['y_range_name'],
-                    y_range_name=line['y_range_name'],
+                    name=line['y_axis'],
+                    y_range_name=line['y_axis'],
                     source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
@@ -538,10 +442,10 @@ class BokehFigure():
                     legend=line['legend'],
                     line_color=line['color'],
                     fill_color=line['color'],
-                    name=line['y_range_name'],
-                    y_range_name=line['y_range_name'],
+                    name=line['y_axis'],
+                    y_range_name=line['y_axis'],
                     source=source)
-            if line['y_range_name'] == 'secondary':
+            if line['y_axis'] == 'secondary':
                 two_axes = True
 
         #x-axis formatting

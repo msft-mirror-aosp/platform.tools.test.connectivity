@@ -25,6 +25,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -50,9 +51,9 @@ class WifiRvrTest(base_test.BaseTestClass):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_case())
+            BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_class())
+            BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
 
     def setup_class(self):
@@ -129,7 +130,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                         result['testcase_params']['mode'],
                         result['testcase_params']['traffic_type']),
                     x_label='Attenuation (dB)',
-                    primary_y='Throughput (Mbps)')
+                    primary_y_label='Throughput (Mbps)')
             plots[plot_id].add_line(
                 result['total_attenuation'],
                 result['throughput_receive'],
@@ -256,7 +257,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         figure = wputils.BokehFigure(
             title=test_name,
             x_label='Attenuation (dB)',
-            primary_y='Throughput (Mbps)')
+            primary_y_label='Throughput (Mbps)')
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
@@ -692,9 +693,9 @@ class WifiOtaRvrTest(WifiRvrTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_case())
+            BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_class())
+            BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = False
 
     def setup_class(self):
@@ -736,7 +737,7 @@ class WifiOtaRvrTest(WifiRvrTest):
                         result['testcase_params']['traffic_type'],
                         result['testcase_params']['traffic_direction']),
                     x_label='Attenuation (dB)',
-                    primary_y='Throughput (Mbps)')
+                    primary_y_label='Throughput (Mbps)')
             # Compile test id data and metrics
             compiled_data[test_id]['throughput'].append(
                 result['throughput_receive'])
