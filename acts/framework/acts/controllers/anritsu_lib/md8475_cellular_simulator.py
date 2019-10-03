@@ -38,6 +38,9 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
     # The maximum number of carriers that this simulator can support for LTE
     LTE_MAX_CARRIERS = 2
 
+    # The maximum power that the equipment is able to transmit
+    MAX_DL_POWER = -10
+
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
     # the same configuration manually.
@@ -59,8 +62,8 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         super().__init__()
 
         try:
-            self.anritsu = md8475a.MD8475A(
-                ip_address, md8475_version=self.MD8475_VERSION)
+            self.anritsu = md8475a.MD8475A(ip_address,
+                                           md8475_version=self.MD8475_VERSION)
         except anritsu.AnristuError:
             raise cc.CellularSimulatorError('Could not connect to MD8475.')
 
@@ -338,6 +341,34 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         time.sleep(5)  # It takes some time to propagate the new settings
 
+    def lte_attach_secondary_carriers(self):
+        """ Activates the secondary carriers for CA. Requires the DUT to be
+        attached to the primary carrier first. """
+
+        testcase = self.anritsu.get_AnritsuTestCases()
+        # Setting the procedure to selection is needed because of a bug in the
+        # instrument's software (b/139547391).
+        testcase.procedure = md8475a.TestProcedure.PROCEDURE_SELECTION
+        testcase.procedure = md8475a.TestProcedure.PROCEDURE_MULTICELL
+        testcase.power_control = md8475a.TestPowerControl.POWER_CONTROL_DISABLE
+        testcase.measurement_LTE = md8475a.TestMeasurement.MEASUREMENT_DISABLE
+
+        self.anritsu.start_testcase()
+
+        retry_counter = 0
+        self.log.info("Waiting for the test case to start...")
+        time.sleep(5)
+
+        while self.anritsu.get_testcase_status() == "0":
+            retry_counter += 1
+            if retry_counter == 3:
+                raise RuntimeError(
+                    "The test case failed to start after {} "
+                    "retries. The connection between the phone "
+                    "and the base station might be unstable.".format(
+                        retry_counter))
+            time.sleep(10)
+
     def set_transmission_mode(self, bts_index, tmode):
         """ Sets the transmission mode for the LTE basetation
 
@@ -381,6 +412,76 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         time.sleep(5)  # It takes some time to propagate the new settings
 
+    def wait_until_attached(self, timeout=120):
+        """ Waits until the DUT is attached to the primary carrier.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        try:
+            self.anritsu.wait_for_registration_state(time_to_wait=timeout)
+        except anritsu.AnritsuError:
+            raise cc.CellularSimulatorError('The phone did not attach before '
+                                            'the timeout period ended.')
+
+    def wait_until_communication_state(self, timeout=120):
+        """ Waits until the DUT is in Communication state.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        try:
+            self.anritsu.wait_for_communication_state(time_to_wait=timeout)
+        except anritsu.AnritsuError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'Communication state before '
+                                            'the timeout period ended.')
+
+    def wait_until_idle_state(self, timeout=120):
+        """ Waits until the DUT is in Idle state.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        try:
+            self.anritsu.wait_for_idle_state(time_to_wait=timeout)
+        except anritsu.AnritsuError:
+            raise cc.CellularSimulatorError('The phone was not in Idle state '
+                                            'before the time the timeout '
+                                            'period ended.')
+
+    def detach(self):
+        """ Turns off all the base stations so the DUT loose connection."""
+        self.anritsu.set_simulation_state_to_poweroff()
+
+    def stop(self):
+        """ Stops current simulation. After calling this method, the simulator
+        will need to be set up again. """
+        self.simulator.stop()
+
+    def start_data_traffic(self):
+        """ Starts transmitting data from the instrument to the DUT. """
+        try:
+            self.anritsu.start_ip_traffic()
+        except md8475a.AnritsuError as inst:
+            # This typically happens when traffic is already running.
+            # TODO (b/141962691): continue only if traffic is running
+            self.log.warning(str(inst))
+        time.sleep(4)
+
+    def stop_data_traffic(self):
+        """ Stops transmitting data from the instrument to the DUT. """
+        try:
+            self.anritsu.stop_ip_traffic()
+        except md8475a.AnritsuError as inst:
+            # This typically happens when traffic has already been stopped
+            # TODO (b/141962691): continue only if traffic is stopped
+            self.log.warning(str(inst))
+        time.sleep(2)
+
 
 class MD8475BCellularSimulator(MD8475CellularSimulator):
 
@@ -397,6 +498,9 @@ class MD8475BCellularSimulator(MD8475CellularSimulator):
 
     # The maximum number of carriers that this simulator can support for LTE
     LTE_MAX_CARRIERS = 4
+
+    # The maximum power that the equipment is able to transmit
+    MAX_DL_POWER = -30
 
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up

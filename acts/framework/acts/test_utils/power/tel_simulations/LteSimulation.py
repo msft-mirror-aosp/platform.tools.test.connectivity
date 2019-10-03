@@ -14,13 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
 import math
 from enum import Enum
 
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
-from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
-from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
@@ -56,9 +53,7 @@ class DuplexMode(Enum):
 
 
 class LteSimulation(BaseSimulation):
-    """ Simple LTE simulation with only one basestation.
-
-    """
+    """ Single-carrier LTE simulation. """
 
     # Simulation config keywords contained in the test name
     PARAM_FRAME_CONFIG = "tddconfig"
@@ -397,7 +392,6 @@ class LteSimulation(BaseSimulation):
                 should be used or not
             dl_channel: an integer indicating the downlink channel number
         """
-
         def __init__(self):
             """ Initialize the base station config by setting all its
             parameters to None. """
@@ -419,7 +413,7 @@ class LteSimulation(BaseSimulation):
             self.dl_cc_enabled = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
-        """ Configures Anritsu system for LTE simulation with 1 basetation
+        """ Initializes the simulator for a single-carrier LTE simulation.
 
         Loads a simple LTE simulation enviroment with 1 basestation.
 
@@ -524,10 +518,11 @@ class LteSimulation(BaseSimulation):
             values = self.consume_parameter(parameters,
                                             self.PARAM_FRAME_CONFIG, 1)
             if not values:
-                raise ValueError("When a TDD band is selected the frame "
-                                 "structure has to be indicated with the '{}' "
-                                 "parameter followed by a number from 0 to 6."
-                                 .format(self.PARAM_FRAME_CONFIG))
+                raise ValueError(
+                    "When a TDD band is selected the frame "
+                    "structure has to be indicated with the '{}' "
+                    "parameter followed by a number from 0 to 6.".format(
+                        self.PARAM_FRAME_CONFIG))
 
             new_config.dlul_config = int(values[1])
 
@@ -616,8 +611,8 @@ class LteSimulation(BaseSimulation):
                     "The '{}' parameter was not set, using 100% RBs for both "
                     "DL and UL. To set the percentages of total RBs include "
                     "the '{}' parameter followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages."
-                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                    "underscore indicating downlink and uplink percentages.".
+                    format(self.PARAM_PATTERN, self.PARAM_PATTERN))
                 dl_pattern = 100
                 ul_pattern = 100
             else:
@@ -630,10 +625,9 @@ class LteSimulation(BaseSimulation):
                     "positive numbers between 0 and 100.")
 
             new_config.dl_rbs, new_config.ul_rbs = (
-                self.allocation_percentages_to_rbs(new_config.bandwidth,
-                                                   new_config.transmission_mode,
-                                                   dl_pattern,
-                                                   ul_pattern))
+                self.allocation_percentages_to_rbs(
+                    new_config.bandwidth, new_config.transmission_mode,
+                    dl_pattern, ul_pattern))
 
             if self.dl_256_qam and new_config.bandwidth == 1.4:
                 new_config.dl_mcs = 26
@@ -706,9 +700,7 @@ class LteSimulation(BaseSimulation):
         # Use parent method to calculate signal level
         return super().calibrated_downlink_rx_power(bts_config, power)
 
-    def downlink_calibration(self,
-                             rat=None,
-                             power_units_conversion_func=None):
+    def downlink_calibration(self, rat=None, power_units_conversion_func=None):
         """ Computes downlink path loss and returns the calibration value.
 
         See base class implementation for details.
@@ -805,18 +797,22 @@ class LteSimulation(BaseSimulation):
                 if mcs == "27":
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG3'][tdd_subframe_config][bandwidth]['DL']
+                            'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
+                                'DL']
                     else:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG2'][tdd_subframe_config][bandwidth]['DL']
+                            'TDD_CONFIG2'][tdd_subframe_config][bandwidth][
+                                'DL']
             else:
                 if mcs == "28":
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG4'][tdd_subframe_config][bandwidth]['DL']
+                            'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
+                                'DL']
                     else:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG1'][tdd_subframe_config][bandwidth]['DL']
+                            'TDD_CONFIG1'][tdd_subframe_config][bandwidth][
+                                'DL']
 
         elif duplex_mode == DuplexMode.FDD.value:
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
@@ -829,7 +825,7 @@ class LteSimulation(BaseSimulation):
                     20: 72.2
                 }.get(bandwidth, None)
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
-                    and mcs ==  "27"):
+                    and mcs == "27"):
                 max_rate_per_stream = {
                     1.4: 2.94,
                 }.get(bandwidth, None)
@@ -916,18 +912,22 @@ class LteSimulation(BaseSimulation):
                 if mcs == "28":
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG3'][tdd_subframe_config][bandwidth]['UL']
+                            'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
+                                'UL']
                     else:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG2'][tdd_subframe_config][bandwidth]['UL']
+                            'TDD_CONFIG2'][tdd_subframe_config][bandwidth][
+                                'UL']
             else:
                 if mcs == "23":
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG4'][tdd_subframe_config][bandwidth]['UL']
+                            'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
+                                'UL']
                     else:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
-                            'TDD_CONFIG1'][tdd_subframe_config][bandwidth]['UL']
+                            'TDD_CONFIG1'][tdd_subframe_config][bandwidth][
+                                'UL']
 
         elif duplex_mode == DuplexMode.FDD.value:
             if mcs == "23" and not self.ul_64_qam:
@@ -1001,8 +1001,9 @@ class LteSimulation(BaseSimulation):
 
         # Get the number of DL RBs that corresponds to
         #  the required percentage.
-        desired_dl_rbs = percentage_to_amount(
-            min_val=min_dl_rbs, max_val=max_rbs, percentage=dl)
+        desired_dl_rbs = percentage_to_amount(min_val=min_dl_rbs,
+                                              max_val=max_rbs,
+                                              percentage=dl)
 
         if tm == TransmissionMode.TM3 or tm == TransmissionMode.TM4:
 
@@ -1023,8 +1024,9 @@ class LteSimulation(BaseSimulation):
 
         # Get the number of UL RBs that corresponds
         # to the required percentage
-        desired_ul_rbs = percentage_to_amount(
-            min_val=min_ul_rbs, max_val=max_rbs, percentage=ul)
+        desired_ul_rbs = percentage_to_amount(min_val=min_ul_rbs,
+                                              max_val=max_rbs,
+                                              percentage=ul)
 
         # Create a list of all possible UL RBs assignment
         # The standard allows any number that can be written as

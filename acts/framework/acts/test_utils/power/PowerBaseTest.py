@@ -50,7 +50,6 @@ class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -69,7 +68,6 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
-
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
@@ -94,8 +92,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
 
         # Unpack the test/device specific parameters
-        TEST_PARAMS = self.TAG + '_params'
-        req_params = [TEST_PARAMS, 'custom_files']
+        req_params = ['custom_files']
         self.unpack_userparams(req_params)
         # Unpack the custom files based on the test configs
         for file in self.custom_files:
@@ -111,11 +108,14 @@ class PowerBaseTest(base_test.BaseTestClass):
         asserts.abort_class_if(
             not self.threshold_file,
             'Required test pass/fail threshold file is missing')
-        asserts.abort_class_if(not self.rockbottom_script,
-                               'Required rockbottom setting script is missing')
+        asserts.abort_class_if(
+            not self.rockbottom_script,
+            'Required rockbottom setting script is missing')
 
         # Unpack test specific configs
-        self.unpack_testparams(getattr(self, TEST_PARAMS))
+        TEST_PARAMS = self.TAG + '_params'
+        self.test_params = self.user_params.get(TEST_PARAMS, {})
+        self.unpack_testparams(self.test_params)
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
@@ -124,7 +124,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon_info = self.create_monsoon_info()
 
         # Sync device time, timezone and country code
-        utils.require_sl4a((self.dut,))
+        utils.require_sl4a((self.dut, ))
         utils.sync_device_time(self.dut)
         wutils.set_wifi_country_code(self.dut, 'US')
 
@@ -159,10 +159,17 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.usb('on')
         self.power_logger.set_avg_power(self.power_result.metric_value)
         self.power_logger.set_testbed(self.testbed_name)
+
         # Take Bugreport
         if self.bug_report:
             begin_time = utils.get_current_epoch_time()
             self.dut.take_bug_report(self.test_name, begin_time)
+
+        # Allow the device to cooldown before executing the next test
+        last_test = self.current_test_name == self.results.requested[-1]
+        cooldown = self.test_params.get('cooldown', None)
+        if cooldown and not last_test:
+            time.sleep(cooldown)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
@@ -444,11 +451,10 @@ class PowerBaseTest(base_test.BaseTestClass):
             iperf_result = ipf.IPerfResult(iperf_file)
 
             # Compute the throughput in Mbit/s
-            throughput = (
-                math.fsum(
-                    iperf_result.instantaneous_rates[self.start_meas_time:-1]) /
-                len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
-            ) * 8 * (1.024**2)
+            throughput = (math.fsum(
+                iperf_result.instantaneous_rates[self.start_meas_time:-1]
+            ) / len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
+                          ) * 8 * (1.024**2)
 
             self.log.info('The average throughput is {}'.format(throughput))
         except ValueError:

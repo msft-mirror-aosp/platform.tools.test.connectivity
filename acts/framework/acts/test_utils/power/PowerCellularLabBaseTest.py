@@ -76,10 +76,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().setup_class()
 
-        # Gets the name of the interface from which packets are sent
-        if hasattr(self, 'packet_senders'):
-            self.pkt_sender = self.packet_senders[0]
-
         # Load calibration tables
         filename_calibration_table = (
             self.FILENAME_CALIBRATION_TABLE_UNFORMATTED.format(
@@ -94,10 +90,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         # Ensure the calibration table only contains non-negative values
         self.ensure_valid_calibration_table(self.calibration_table)
-
-        # Store the value of the key to access the test config in the
-        # user_params dictionary.
-        self.PARAMS_KEY = self.TAG + "_params"
 
         # Turn on airplane mode for all devices, as some might
         # be unused during the test
@@ -212,14 +204,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Wait for new params to settle
         time.sleep(5)
 
-        # Start the simulation. This method will raise a RuntimeException if
+        # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
-        try:
-            self.simulation.start()
-        except RuntimeError:
-            return False
-
-        self.simulation.start_test_case()
+        self.simulation.start()
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()
@@ -368,9 +355,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Instantiate a new simulation
         self.simulation = simulation_class(self.cellular_simulator, self.log,
                                            self.dut,
-                                           self.user_params[self.PARAMS_KEY],
+                                           self.test_params,
                                            self.calibration_table[sim_type])
-
 
     def ensure_valid_calibration_table(self, calibration_table):
         """ Ensures the calibration table has the correct structure.
@@ -388,4 +374,3 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
                 raise TypeError('Calibration table value must be a number')
             elif val < 0.0:
                 raise ValueError('Calibration table contains negative values')
-

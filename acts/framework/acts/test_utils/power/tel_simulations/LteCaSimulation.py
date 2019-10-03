@@ -14,18 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import re
-import time
-
+from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsTechnology
 from acts.controllers.anritsu_lib.md8475a import LteMimoMode
-from acts.controllers.anritsu_lib.md8475a import BtsNumber
-from acts.controllers.anritsu_lib.md8475a import TestProcedure
-from acts.controllers.anritsu_lib.md8475a import TestPowerControl
-from acts.controllers.anritsu_lib.md8475a import TestMeasurement
 from acts.test_utils.power.tel_simulations import LteSimulation
 
 
 class LteCaSimulation(LteSimulation.LteSimulation):
+    """ Carrier aggregation LTE simulation. """
 
     # Dictionary of lower DL channel number bound for each band.
     LOWEST_DL_CN_DICTIONARY = {
@@ -78,13 +74,13 @@ class LteCaSimulation(LteSimulation.LteSimulation):
     KEY_FREQ_BANDS = "freq_bands"
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
-        """ Configures Anritsu system for LTE simulation with carrier
+        """ Initializes the simulator for LTE simulation with carrier
         aggregation.
 
         Loads a simple LTE simulation enviroment with 5 basestations.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: the cellular instrument controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -97,8 +93,10 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         self.anritsu = simulator.anritsu
 
-        self.bts = [self.anritsu.get_BTS(BtsNumber.BTS1),
-                    self.anritsu.get_BTS(BtsNumber.BTS2)]
+        self.bts = [
+            self.anritsu.get_BTS(BtsNumber.BTS1),
+            self.anritsu.get_BTS(BtsNumber.BTS2)
+        ]
 
         if self.anritsu._md8475_version == 'B':
             self.bts.extend([
@@ -120,7 +118,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         if self.KEY_FREQ_BANDS not in test_config:
             self.log.warning("The key '{}' is not set in the config file. "
                              "Setting to null by default.".format(
-                self.KEY_FREQ_BANDS))
+                                 self.KEY_FREQ_BANDS))
 
         self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
@@ -137,12 +135,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         # Enable all base stations initially. The ones that are not needed after
         # parsing the CA combo string can be removed.
-        self.anritsu.set_simulation_model(
-            BtsTechnology.LTE,
-            BtsTechnology.LTE,
-            BtsTechnology.LTE,
-            BtsTechnology.LTE,
-            reset=False)
+        self.anritsu.set_simulation_model(BtsTechnology.LTE,
+                                          BtsTechnology.LTE,
+                                          BtsTechnology.LTE,
+                                          BtsTechnology.LTE,
+                                          reset=False)
 
         # Create an empty array for new configuration objects. Elements will be
         # added to this list after parsing the CA configuration from the band
@@ -332,7 +329,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                      for elem in LteSimulation.MimoMode})
 
             if (requested_mimo == LteSimulation.MimoMode.MIMO_4x4
-                    and self.anritsu._md8475_version == 'A'):
+                    and not self.simulator.LTE_SUPPORTS_4X4_MIMO):
                 raise ValueError("The test requires 4x4 MIMO, but that is not "
                                  "supported by the MD8475A callbox.")
 
@@ -413,16 +410,16 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                     "The '{}' parameter was not set, using 100% RBs for both "
                     "DL and UL. To set the percentages of total RBs include "
                     "the '{}' parameter followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages."
-                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                    "underscore indicating downlink and uplink percentages.".
+                    format(self.PARAM_PATTERN, self.PARAM_PATTERN))
                 dl_pattern = 100
                 ul_pattern = 100
             else:
                 dl_pattern = int(values[1])
                 ul_pattern = int(values[2])
 
-            if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0), (100,
-                                                                     100)]:
+            if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0),
+                                                (100, 100)]:
                 raise ValueError(
                     "Only full RB allocation for DL or UL is supported in CA "
                     "sims. The allowed combinations are 100/0, 0/100 and "
@@ -446,13 +443,17 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
                 dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                     new_configs[bts_index].bandwidth,
-                    new_configs[bts_index].transmission_mode,
-                    dl_pattern, ul_pattern)
+                    new_configs[bts_index].transmission_mode, dl_pattern,
+                    ul_pattern)
 
                 new_configs[bts_index].dl_rbs = dl_rbs
                 new_configs[bts_index].ul_rbs = ul_rbs
                 new_configs[bts_index].dl_mcs = mcs_dl
                 new_configs[bts_index].ul_mcs = mcs_ul
+
+        # Enable the configured base stations for CA
+        for bts_config in new_configs:
+            bts_config.dl_cc_enabled = True
 
         # Setup the base stations with the obtained configurations and then save
         # these parameters in the current configuration objects
@@ -460,50 +461,12 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             self.simulator.configure_bts(new_configs[bts_index], bts_index)
             self.bts_configs[bts_index].incorporate(new_configs[bts_index])
 
-        # Now that the band is set, calibrate the link for the PCC if necessary
-        self.load_pathloss_if_required()
-
-    def start_test_case(self):
-        """ Attaches the phone to all the other basestations.
-
-        Starts the CA test case. Requires being attached to
-        basestation 1 first.
-
-        """
-
         # Trigger UE capability enquiry from network to get
         # UE supported CA band combinations. Here freq_bands is a hex string.
-
         self.anritsu.trigger_ue_capability_enquiry(self.freq_bands)
 
-        testcase = self.anritsu.get_AnritsuTestCases()
-        # Setting the procedure to selection is needed because of a bug in the
-        # instrument's software (b/139547391).
-        testcase.procedure = TestProcedure.PROCEDURE_SELECTION
-        testcase.procedure = TestProcedure.PROCEDURE_MULTICELL
-        testcase.power_control = TestPowerControl.POWER_CONTROL_DISABLE
-        testcase.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
-
-        for bts_index in range(1, self.num_carriers):
-            new_config = self.BtsConfig()
-            new_config.dl_cc_enabled = True
-            self.simulator.configure_bts(new_config, bts_index)
-            self.bts_configs[bts_index].incorporate(new_config)
-
-        self.anritsu.start_testcase()
-
-        retry_counter = 0
-        self.log.info("Waiting for the test case to start...")
-        time.sleep(5)
-
-        while self.anritsu.get_testcase_status() == "0":
-            retry_counter += 1
-            if retry_counter == 3:
-                raise RuntimeError("The test case failed to start after {} "
-                                   "retries. The connection between the phone "
-                                   "and the basestation might be unstable."
-                                   .format(retry_counter))
-            time.sleep(10)
+        # Now that the band is set, calibrate the link for the PCC if necessary
+        self.load_pathloss_if_required()
 
     def maximum_downlink_throughput(self):
         """ Calculates maximum downlink throughput as the sum of all the active
@@ -516,17 +479,20 @@ class LteCaSimulation(LteSimulation.LteSimulation):
     def start(self):
         """ Set the signal level for the secondary carriers, as the base class
         implementation of this method will only set up downlink power for the
-        primary carrier component. """
+        primary carrier component.
+
+        After that, attaches the secondary carriers."""
 
         super().start()
 
-        if not self.sim_dl_power:
-            return
+        if self.sim_dl_power:
+            self.log.info('Setting DL power for secondary carriers.')
 
-        for bts_index in range(1, self.num_carriers):
-            self.log.info("Setting DL power for BTS{}.".format(bts_index + 1))
-            new_config = self.BtsConfig()
-            new_config.output_power = self.calibrated_downlink_rx_power(
-                self.bts_configs[bts_index], self.sim_dl_power)
-            self.simulator.configure_bts(new_config, bts_index)
-            self.bts_configs[bts_index].incorporate(new_config)
+            for bts_index in range(1, self.num_carriers):
+                new_config = self.BtsConfig()
+                new_config.output_power = self.calibrated_downlink_rx_power(
+                    self.bts_configs[bts_index], self.sim_dl_power)
+                self.simulator.configure_bts(new_config, bts_index)
+                self.bts_configs[bts_index].incorporate(new_config)
+
+        self.simulator.lte_attach_secondary_carriers()
