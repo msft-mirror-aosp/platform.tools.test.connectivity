@@ -69,8 +69,15 @@ class WifiSoftApAcsTest(WifiBaseTest):
                      "iperf_server_port"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
+        if hasattr(self, 'packet_capture'):
+            self.configure_packet_capture()
 
     def setup_test(self):
+        if hasattr(self, 'packet_capture'):
+            band = '2G' if '2G' in self.test_name else \
+                ('5G' if '5G' in self.test_name else 'dual')
+            self.pcap_procs = wutils.start_pcap(
+                self.packet_capture, band, self.test_name)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
@@ -80,6 +87,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
         wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
+        if hasattr(self, 'packet_capture'):
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         try:
             if "AccessPoint" in self.user_params:
                 del self.user_params["reference_networks"]
