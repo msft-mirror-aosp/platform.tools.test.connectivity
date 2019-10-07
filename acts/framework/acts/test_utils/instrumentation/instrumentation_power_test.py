@@ -56,7 +56,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Prepares the device for power testing."""
         super()._prepare_device()
         self._cleanup_test_files()
-        self.install_power_apk()
+        self.install_test_apk()
         self.grant_permissions()
 
     def _cleanup_device(self):
@@ -108,13 +108,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.droid.goToSleepNow()
         self.ad_dut.log.info('Device reconnected.')
 
-    def install_power_apk(self):
-        """Installs power.apk on the device."""
-        power_apk_file = self._instrumentation_config.get_file('power_apk')
-        self.ad_apps.install(power_apk_file, '-g')
-        if not self.ad_apps.is_installed(power_apk_file):
-            raise InstrumentationTestError('Failed to install power test APK.')
-        self._power_test_pkg = self.ad_apps.get_package_name(power_apk_file)
+    def install_test_apk(self):
+        """Installs test apk on the device."""
+        test_apk_file = self._instrumentation_config.get_file('test_apk')
+        self.ad_apps.install(test_apk_file, '-g')
+        if not self.ad_apps.is_installed(test_apk_file):
+            raise InstrumentationTestError('Failed to install test APK.')
+        self._test_pkg = self.ad_apps.get_package_name(test_apk_file)
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
@@ -131,7 +131,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def power_instrumentation_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
-        builder.set_manifest_package(self._power_test_pkg)
+        builder.set_manifest_package(self._test_pkg)
         builder.set_nohup()
         return builder
 
