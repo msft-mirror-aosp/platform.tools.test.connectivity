@@ -51,6 +51,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+        self._sl4a_apk = None
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
