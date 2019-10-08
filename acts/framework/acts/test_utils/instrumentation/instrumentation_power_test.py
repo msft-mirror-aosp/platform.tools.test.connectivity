@@ -20,6 +20,7 @@ import tempfile
 import time
 
 from acts.controllers.android_device import SL4A_APK_NAME
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.instrumentation_base_test \
@@ -46,6 +47,10 @@ POLLING_INTERVAL = 0.5
 
 class InstrumentationPowerTest(InstrumentationBaseTest):
     """Instrumentation test for measuring and validating power metrics."""
+
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.metric_logger = BlackboxMappedMetricLogger.for_test_class()
 
     def setup_class(self):
         super().setup_class()
@@ -176,6 +181,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._power_metrics.generate_test_metrics(
             PowerMetrics.import_raw_data(power_data_path),
             proto_parser.get_test_timestamps(session))
+        self._log_metrics()
         return result
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
@@ -209,6 +215,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         instr_cmd = builder.build()
         self.adb_run_async(instr_cmd)
         return self.measure_power()
+
+    def _log_metrics(self):
+        """Record the collected metrics with the metric logger."""
+        for metric_name in PowerMetrics.ALL_METRICS:
+            for instr_test_name in self._power_metrics.test_metrics:
+                metric_value = getattr(
+                    self._power_metrics.test_metrics[instr_test_name],
+                    metric_name).value
+                self.metric_logger.add_metric(
+                    '%s__%s' % (metric_name, instr_test_name), metric_value)
 
     def validate_power_results(self, instr_test_names):
         """Compare power measurements with target values and set the test result

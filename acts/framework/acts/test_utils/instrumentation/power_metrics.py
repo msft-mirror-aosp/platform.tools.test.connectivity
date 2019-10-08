@@ -234,6 +234,9 @@ class PowerMetrics(object):
 
     # Numeric metrics
 
+    ALL_METRICS = ('avg_current', 'max_current', 'min_current', 'stdev_current',
+                   'avg_power')
+
     @property
     def avg_current(self):
         """Average current, in milliamps."""
