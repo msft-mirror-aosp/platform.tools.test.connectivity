@@ -23,6 +23,7 @@ from acts.test_utils.instrumentation import app_installer
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.adb_command_types import DeviceGServices
+from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
 from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
 from acts.test_utils.instrumentation.adb_commands import common
 from acts.test_utils.instrumentation.adb_commands import goog
@@ -146,25 +147,51 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         """Clean up device after test completion."""
         pass
 
-    def _get_controller_config(self, controller_name):
-        """Get the controller config from the instrumentation config, at the
-        level of the current test class or test case.
+    def _get_merged_config(self, config_name):
+        """Takes the configs with config_name from the base, testclass, and
+        testcase levels and merges them together. When the same parameter is
+        defined in different contexts, the value from the most specific context
+        is taken.
+
+        Example:
+            self._instrumentation_config = {
+                'sample_config': {
+                    'val_a': 5,
+                    'val_b': 7
+                },
+                'ActsTestClass': {
+                    'sample_config': {
+                        'val_b': 3,
+                        'val_c': 6
+                    },
+                    'acts_test_case': {
+                        'sample_config': {
+                            'val_c': 10,
+                            'val_d': 2
+                        }
+                    }
+                }
+            }
+
+            self._get_merged_config('sample_config') returns
+            {
+                'val_a': 5,
+                'val_b': 3,
+                'val_c': 10,
+                'val_d': 2
+            }
 
         Args:
-            controller_name: Name of the controller config to fetch
-        Returns: The controller config, as a ConfigWrapper
+            config_name: Name of the config to fetch
+        Returns: The merged config, as a ConfigWrapper
         """
+        merged_config = self._instrumentation_config.get_config(
+            config_name)
+        merged_config.update(self._class_config.get_config(config_name))
         if self.current_test_name:
-            # Return the testcase level config, used for setting up test
             case_config = self._class_config.get_config(self.current_test_name)
-            return case_config.get_config(controller_name)
-        else:
-            # Merge the base and testclass level configs, used for setting up
-            # class.
-            merged_config = self._instrumentation_config.get_config(
-                controller_name)
-            merged_config.update(self._class_config.get_config(controller_name))
-            return merged_config
+            merged_config.update(case_config.get_config(config_name))
+        return merged_config
 
     def adb_run(self, cmds):
         """Run the specified command, or list of commands, with the ADB shell.
@@ -277,6 +304,12 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         self.ad_dut.adb.ensure_root()
 
+        # Test harness flag
+        self.adb_run(common.test_harness.toggle(True))
+
+        # Calling
+        self.adb_run(common.disable_dialing.toggle(True))
+
         # Screen
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
         self.adb_run(common.screen_brightness.set_value(
@@ -304,6 +337,10 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(common.battery_saver_trigger.set_value(0))
         self.adb_run(common.enable_full_batterystats_history)
         self.adb_run(common.disable_doze)
+
+        # Camera
+        self.adb_run(DeviceSetprop(
+            'camera.optbar.hdr', 'true', 'false').toggle(True))
 
         # Gestures
         gestures = {

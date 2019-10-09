@@ -20,6 +20,7 @@ import tempfile
 import time
 
 from acts.controllers.android_device import SL4A_APK_NAME
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.instrumentation_base_test \
@@ -47,10 +48,15 @@ POLLING_INTERVAL = 0.5
 class InstrumentationPowerTest(InstrumentationBaseTest):
     """Instrumentation test for measuring and validating power metrics."""
 
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.metric_logger = BlackboxMappedMetricLogger.for_test_class()
+
     def setup_class(self):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+        self._sl4a_apk = None
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
@@ -66,7 +72,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def _setup_monsoon(self):
         """Set up the Monsoon controller for this testclass/testcase."""
         self.log.info('Setting up Monsoon %s' % self.monsoon.serial)
-        monsoon_config = self._get_controller_config('Monsoon')
+        monsoon_config = self._get_merged_config('Monsoon')
         self._monsoon_voltage = monsoon_config.get_numeric('voltage', 4.2)
         self.monsoon.set_voltage_safe(self._monsoon_voltage)
         if 'max_current' in monsoon_config:
@@ -175,10 +181,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._power_metrics.generate_test_metrics(
             PowerMetrics.import_raw_data(power_data_path),
             proto_parser.get_test_timestamps(session))
+        self._log_metrics()
         return result
 
-    def run_and_measure(self, instr_class, instr_method=None, req_params=None,
-                        opt_params=None):
+    def run_and_measure(self, instr_class, instr_method=None, req_params=None):
         """Convenience method for setting up the instrumentation test command,
         running it on the device, and starting the Monsoon measurement.
 
@@ -186,7 +192,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             instr_class: Fully qualified name of the instrumentation test class
             instr_method: Name of the instrumentation test method
             req_params: List of required parameter names
-            opt_params: List of optional parameter names
 
         Returns: summary of Monsoon measurement
         """
@@ -196,18 +201,29 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         else:
             builder.add_test_class(instr_class)
         params = {}
+        instr_call_config = self._get_merged_config('instrumentation_call')
+        # Add required parameters
         for param_name in req_params or []:
-            params[param_name] = self._class_config.get(
+            params[param_name] = instr_call_config.get(
                 param_name, verify_fn=lambda x: x is not None,
                 failure_msg='%s is a required parameter.' % param_name)
-        for param_name in opt_params or []:
-            if param_name in self._class_config:
-                params[param_name] = self._class_config[param_name]
+        # Add all other parameters
+        params.update(instr_call_config)
         for name, value in params.items():
             builder.add_key_value_param(name, value)
         instr_cmd = builder.build()
         self.adb_run_async(instr_cmd)
         return self.measure_power()
+
+    def _log_metrics(self):
+        """Record the collected metrics with the metric logger."""
+        for metric_name in PowerMetrics.ALL_METRICS:
+            for instr_test_name in self._power_metrics.test_metrics:
+                metric_value = getattr(
+                    self._power_metrics.test_metrics[instr_test_name],
+                    metric_name).value
+                self.metric_logger.add_metric(
+                    '%s__%s' % (metric_name, instr_test_name), metric_value)
 
     def validate_power_results(self, instr_test_names):
         """Compare power measurements with target values and set the test result
@@ -224,9 +240,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             instr_test_names = [instr_test_names]
         summaries = {}
         failures = {}
-        all_thresholds = self._class_config \
-            .get_config(self.current_test_name) \
-            .get_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
 
         for instr_test_name in instr_test_names:
             try:
