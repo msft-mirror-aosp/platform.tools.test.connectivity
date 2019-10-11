@@ -770,6 +770,10 @@ def set_wifi_country_code(ad, country_code):
         country_code: 2 letter ISO country code
     """
     ad.adb.shell("cmd wifi force-country-code enabled %s" % country_code)
+    try:
+        ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
+    except Exception:
+        pass
 
 
 def start_wifi_connection_scan(ad):
