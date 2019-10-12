@@ -46,7 +46,12 @@ POLLING_INTERVAL = 0.5
 
 
 class InstrumentationPowerTest(InstrumentationBaseTest):
-    """Instrumentation test for measuring and validating power metrics."""
+    """Instrumentation test for measuring and validating power metrics.
+
+    Params:
+        metric_logger: Blackbox metric logger used to store test metrics.
+        _instr_cmd_builder: Builder for the instrumentation command
+    """
 
     def __init__(self, configs):
         super().__init__(configs)
@@ -56,6 +61,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+        self._instr_cmd_builder = self.power_instrumentation_command_builder()
         self._sl4a_apk = None
 
     def _prepare_device(self):
@@ -133,7 +139,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     # Test runtime utils
 
-    @property
     def power_instrumentation_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
@@ -195,11 +200,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         Returns: summary of Monsoon measurement
         """
-        builder = self.power_instrumentation_command_builder
         if instr_method:
-            builder.add_test_method(instr_class, instr_method)
+            self._instr_cmd_builder.add_test_method(instr_class, instr_method)
         else:
-            builder.add_test_class(instr_class)
+            self._instr_cmd_builder.add_test_class(instr_class)
         params = {}
         instr_call_config = self._get_merged_config('instrumentation_call')
         # Add required parameters
@@ -210,8 +214,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Add all other parameters
         params.update(instr_call_config)
         for name, value in params.items():
-            builder.add_key_value_param(name, value)
-        instr_cmd = builder.build()
+            self._instr_cmd_builder.add_key_value_param(name, value)
+        instr_cmd = self._instr_cmd_builder.build()
         self.adb_run_async(instr_cmd)
         return self.measure_power()
 
