@@ -77,13 +77,13 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'avg_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'lower_limit': 0.0015,
-                    'upper_limit': 0.0025
+                    'lower_limit': 1.5,
+                    'upper_limit': 2.5
                 },
                 'max_current': {
                     'unit_type': 'current',
                     'unit': 'mA',
-                    'upper_limit': 5
+                    'upper_limit': 5000
                 }
             }
         }
@@ -101,13 +101,13 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'avg_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'lower_limit': 0.0015,
-                    'upper_limit': 0.002
+                    'lower_limit': 1.5,
+                    'upper_limit': 2
                 },
                 'max_current': {
                     'unit_type': 'current',
                     'unit': 'mA',
-                    'upper_limit': 4
+                    'upper_limit': 4000
                 }
             }
         }
@@ -125,7 +125,7 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'stdev_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'expected_value': 0.0015,
+                    'expected_value': 1.5,
                     'percent_deviation': 20
                 }
             }
@@ -144,7 +144,7 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'min_current': {
                     'unit_type': 'current',
                     'unit': 'mA',
-                    'expected_value': 0.5,
+                    'expected_value': 500,
                     'percent_deviation': 10
                 }
             }
@@ -163,7 +163,7 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'min_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'expected_value': 0.002,
+                    'expected_value': 2,
                     'percent_deviation': 20
                 }
             }
@@ -182,8 +182,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'no_such_metric': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'lower_limit': 0.005,
-                    'upper_limit': 0.007
+                    'lower_limit': 5,
+                    'upper_limit': 7
                 }
             }
         }
@@ -200,8 +200,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             'instrTest1': {
                 'avg_current': {
                     'unit': 'A',
-                    'lower_limit': 0.001,
-                    'upper_limit': 0.002
+                    'lower_limit': 1,
+                    'upper_limit': 2
                 }
             }
         }
@@ -219,12 +219,12 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'avg_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'lower_limit': 0.002
+                    'lower_limit': 2
                 },
                 'stdev_current': {
                     'unit_type': 'current',
                     'unit': 'mA',
-                    'expected_value': 1.25,
+                    'expected_value': 1250,
                     'percent_deviation': 30
                 }
             },
@@ -232,12 +232,12 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'max_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'upper_limit': 0.005
+                    'upper_limit': 5
                 },
                 'avg_power': {
                     'unit_type': 'power',
                     'unit': 'W',
-                    'upper_limit': 0.01
+                    'upper_limit': 10
                 }
             }
         }
@@ -255,12 +255,12 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'avg_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'lower_limit': 0.002
+                    'lower_limit': 2
                 },
                 'stdev_current': {
                     'unit_type': 'current',
                     'unit': 'mA',
-                    'expected_value': 1.25,
+                    'expected_value': 1250,
                     'percent_deviation': 30
                 }
             },
@@ -268,12 +268,12 @@ class InstrumentationPowerTestTest(unittest.TestCase):
                 'max_current': {
                     'unit_type': 'current',
                     'unit': 'A',
-                    'upper_limit': 0.005
+                    'upper_limit': 5
                 },
                 'avg_power': {
                     'unit_type': 'power',
                     'unit': 'W',
-                    'upper_limit': 0.008
+                    'upper_limit': 8
                 }
             }
         }
