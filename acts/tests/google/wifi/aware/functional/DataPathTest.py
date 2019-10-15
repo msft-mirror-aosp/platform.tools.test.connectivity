@@ -2159,8 +2159,8 @@ class DataPathTest(AwareBaseTest):
 
     The NDPs are all OPEN (no encryption).
     """
-        asserts.assert_true(
-            len(self.android_devices) >= 3,
+        asserts.skip_if(
+            len(self.android_devices) < 3,
             'A minimum of 3 devices is needed to run the test, have %d' % len(
                 self.android_devices))
 
