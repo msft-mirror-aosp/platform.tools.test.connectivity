@@ -31,4 +31,4 @@ class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def test_rock_bottom(self):
         """Measures power when the device is in a rock bottom state."""
-        self.validate_power_results(['rockBottom'])
+        self.validate_power_results()
