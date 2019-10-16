@@ -17,6 +17,7 @@
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 import time
+import re
 
 from acts import asserts
 from acts import utils
@@ -32,6 +33,7 @@ WPS_PBC = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
 WPS_DISPLAY = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY
 WPS_KEYPAD = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_KEYPAD
 DEFAULT_TIMEOUT = 10
+WAIT_TIME = 60
 
 class WifiP2pSnifferTest(WifiP2pBaseTest):
     """Tests factory MAC is not leaked for p2p discovery and associated cases.
@@ -46,6 +48,8 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
 
     def setup_class(self):
         super(WifiP2pSnifferTest, self).setup_class()
+        self.dut1_mac = self.get_p2p_mac_address(self.dut1)
+        self.dut2_mac = self.get_p2p_mac_address(self.dut2)
         wp2putils.wifi_p2p_set_channels_for_current_group(self.dut1, 6, 6)
         wp2putils.wifi_p2p_set_channels_for_current_group(self.dut2, 6, 6)
         self.configure_packet_capture()
@@ -56,7 +60,6 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
             self.packet_capture, '2g', self.test_name)
 
     def teardown_test(self):
-        self.verify_mac_no_leakage()
         super(WifiP2pSnifferTest, self).teardown_test()
 
     def configure_packet_capture(self):
@@ -66,6 +69,13 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         if not result:
             raise ValueError("Failed to configure channel for 2G band")
 
+    def get_p2p_mac_address(self, dut):
+        """Gets the current MAC address being used for Wi-Fi Direct."""
+        dut.reboot()
+        time.sleep(WAIT_TIME)
+        out = dut.adb.shell("ifconfig p2p0")
+        return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
+
     def verify_mac_no_leakage(self):
         time.sleep(DEFAULT_TIMEOUT)
         self.log.info("Stopping packet capture")
@@ -74,8 +84,8 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         pcap_fname = '%s_%s.pcap' % (self.pcap_procs[BAND_2G][1],
                                      BAND_2G.upper())
         packets = rdpcap(pcap_fname)
-        wutils.verify_mac_not_found_in_pcap(self.dut1_mac, packets)
-        wutils.verify_mac_not_found_in_pcap(self.dut2_mac, packets)
+        wutils.verify_mac_not_found_in_pcap(self.dut1, self.dut1_mac, packets)
+        wutils.verify_mac_not_found_in_pcap(self.dut2, self.dut2_mac, packets)
 
     """Test Cases"""
     @test_tracker_info(uuid=" d04e62dc-e1ef-4cea-86e6-39f0dd08fb6b")
@@ -88,6 +98,7 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         self.log.info("Device discovery")
         wp2putils.find_p2p_device(self.dut1, self.dut2)
         wp2putils.find_p2p_device(self.dut2, self.dut1)
+        self.verify_mac_no_leakage()
 
     @test_tracker_info(uuid="6a02be84-912d-4b5b-8dfa-fd80d2554c55")
     def test_p2p_connect_via_pbc_and_ping_and_reconnect_sniffer(self):
@@ -136,3 +147,6 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         wp2putils.p2p_disconnect(gc_dut)
         wp2putils.check_disconnect(go_dut)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
+
+        # teardown
+        self.verify_mac_no_leakage()
