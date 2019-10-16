@@ -20,7 +20,6 @@ import unittest
 
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as parser
-from acts.test_utils.instrumentation.power_metrics import AMP
 from acts.test_utils.instrumentation.power_metrics import CURRENT
 from acts.test_utils.instrumentation.power_metrics import HOUR
 from acts.test_utils.instrumentation.power_metrics import MILLIAMP
@@ -48,22 +47,22 @@ class MeasurementTest(unittest.TestCase):
     def test_init_with_invalid_unit_type(self):
         """Test that __init__ raises an error if given an invalid unit type."""
         with self.assertRaisesRegex(TypeError, 'valid unit type'):
-            Measurement(2, FAKE_UNIT_TYPE, FAKE_UNIT)
+            measurement = Measurement(2, FAKE_UNIT_TYPE, FAKE_UNIT)
 
     def test_unit_conversion(self):
         """Test that to_unit correctly converts value and unit."""
         ratio = 1000
-        current_milliamps = Measurement.milliamps(15)
-        current_amps = current_milliamps.to_unit(AMP)
+        current_amps = Measurement.amps(15)
+        current_milliamps = current_amps.to_unit(MILLIAMP)
         self.assertEqual(current_milliamps.value / current_amps.value, ratio)
 
     def test_unit_conversion_with_wrong_type(self):
         """Test that to_unit raises and error if incompatible unit type is
         specified.
         """
-        current_amps = Measurement.milliamps(3.4)
+        current_amps = Measurement.amps(3.4)
         with self.assertRaisesRegex(TypeError, 'Incompatible units'):
-            current_amps.to_unit(WATT)
+            power_watts = current_amps.to_unit(WATT)
 
     def test_comparison_operators(self):
         """Test that the comparison operators work as intended."""

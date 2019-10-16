@@ -75,14 +75,14 @@ class Measurement(object):
 
     # Convenience constructor methods
     @staticmethod
-    def milliamps(milliamps):
-        """Create a new current measurement, in milliamps."""
-        return Measurement(milliamps, CURRENT, MILLIAMP)
+    def amps(amps):
+        """Create a new current measurement, in amps."""
+        return Measurement(amps, CURRENT, AMP)
 
     @staticmethod
-    def milliwatts(milliwatts):
-        """Create a new power measurement, in milliwatts."""
-        return Measurement(milliwatts, POWER, MILLIWATT)
+    def watts(watts):
+        """Create a new power measurement, in watts."""
+        return Measurement(watts, POWER, WATT)
 
     @staticmethod
     def seconds(seconds):
@@ -239,40 +239,39 @@ class PowerMetrics(object):
 
     @property
     def avg_current(self):
-        """Average current, in milliamps."""
+        """Average current, in amps."""
         if not self._num_samples:
-            return Measurement.milliamps(0)
-        return Measurement.milliamps(self._sum_currents / self._num_samples)
+            return Measurement.amps(0)
+        return Measurement.amps(self._sum_currents / self._num_samples)
 
     @property
     def max_current(self):
-        """Max current, in milliamps."""
-        return Measurement.milliamps(self._max_current or 0)
+        """Max current, in amps."""
+        return Measurement.amps(self._max_current or 0)
 
     @property
     def min_current(self):
-        """Min current, in milliamps."""
-        return Measurement.milliamps(self._min_current or 0)
+        """Min current, in amps."""
+        return Measurement.amps(self._min_current or 0)
 
     @property
     def stdev_current(self):
-        """Standard deviation of current values, in milliamps."""
+        """Standard deviation of current values, in amps."""
         if self._num_samples < 2:
-            return Measurement.milliamps(0)
+            return Measurement.amps(0)
 
-        return Measurement.milliamps(math.sqrt(
+        return Measurement.amps(math.sqrt(
             (self._sum_squares - (
                     self._num_samples * self.avg_current.value ** 2))
             / (self._num_samples - 1)))
 
     def current_to_power(self, current):
         """Converts a current value to a power value."""
-        return Measurement.milliwatts(current.to_unit(MILLIAMP).value
-                                      * self._voltage)
+        return Measurement.watts(current.to_unit(AMP).value * self._voltage)
 
     @property
     def avg_power(self):
-        """Average power, in milliwatts."""
+        """Average power, in watts."""
         return self.current_to_power(self.avg_current)
 
     @property
