@@ -229,22 +229,24 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 self.metric_logger.add_metric(
                     '%s__%s' % (metric_name, instr_test_name), metric_value)
 
-    def validate_power_results(self, instr_test_names):
+    def validate_power_results(self, *instr_test_names):
         """Compare power measurements with target values and set the test result
         accordingly.
 
         Args:
-            instr_test_names: Name(s) of the instrumentation test method
+            instr_test_names: Name(s) of the instrumentation test method.
+                If none specified, defaults to all test methods run.
 
         Raises:
             signals.TestFailure if one or more metrics do not satisfy threshold
             signals.TestPass otherwise
         """
-        if not isinstance(instr_test_names, list):
-            instr_test_names = [instr_test_names]
         summaries = {}
         failures = {}
         all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
+
+        if not instr_test_names:
+            instr_test_names = all_thresholds.keys()
 
         for instr_test_name in instr_test_names:
             try:

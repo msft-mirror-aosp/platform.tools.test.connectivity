@@ -31,4 +31,4 @@ class PartialWakeLockTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def test_partial_wake_lock(self):
         """Measures power when the device is idle with a partial wake lock."""
-        self.validate_power_results(['before', 'partialWakeLock', 'after'])
+        self.validate_power_results()
