@@ -36,6 +36,7 @@ EAP = WifiEnums.Eap
 EapPhase2 = WifiEnums.EapPhase2
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
+BOINGO = 0
 
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
 # for the system to settle down after the operation.
@@ -59,7 +60,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "radius_conf_2g", "radius_conf_5g", "ca_cert",
-            "eap_identity", "eap_password", "hidden_networks"
+            "eap_identity", "eap_password", "hidden_networks", "passpoint_networks"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -153,13 +154,13 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut.droid.wifiAddNetworkSuggestions(network_suggestions),
             "Failed to add suggestions")
         # Enable suggestions by the app.
-        self.dut.log.debug("Enabling suggestions from test");
+        self.dut.log.debug("Enabling suggestions from test")
         self.set_approved(True)
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
         wutils.wait_for_connect(self.dut, expected_ssid)
 
         if expect_post_connection_broadcast is None:
-            return;
+            return
 
         # Check if we expected to get the broadcast.
         try:
@@ -472,3 +473,99 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             [network_suggestion], network_suggestion[WifiEnums.SSID_KEY], False)
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [network_suggestion], network_suggestion[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_passpoint_network_with_post_connection_broadcast(self):
+        """ Adds a passpoint network suggestion and ensure that the device connected.
+
+        Steps:
+        1. Send a network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did receive the post connection broadcast
+               (isAppInteractionRequired = true).
+        4. Remove the suggestions and ensure the device does not connect back.
+        """
+        asserts.skip_if(not hasattr(self, "passpoint_networks"),
+                        "No passpoint networks, skip this test")
+        passpoint_config = self.passpoint_networks[BOINGO]
+        passpoint_config[WifiEnums.IS_APP_INTERACTION_REQUIRED] = True
+        self.add_suggestions_and_ensure_connection([passpoint_config],
+                                                   passpoint_config[WifiEnums.SSID_KEY], True)
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [passpoint_config], passpoint_config[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_passpoint_network_reboot_config_store(self):
+        """
+        Adds a passpoint network suggestion and ensure that the device connects to it
+        after reboot.
+
+        Steps:
+        1. Send a network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did not receive the post connection broadcast
+           (isAppInteractionRequired = False).
+        4. Reboot the device.
+        5. Wait for the device to connect to back to it.
+        6. Remove the suggestions and ensure the device does not connect back.
+        """
+        asserts.skip_if(not hasattr(self, "passpoint_networks"),
+                        "No passpoint networks, skip this test")
+        passpoint_config = self.passpoint_networks[BOINGO]
+        self._test_connect_to_wifi_network_reboot_config_store([passpoint_config],
+                                                               passpoint_config)
+
+    @test_tracker_info(uuid="554b5861-22d0-4922-a5f4-712b4cf564eb")
+    def test_fail_to_connect_to_passpoint_network_when_not_approved(self):
+        """
+        Adds a passpoint network suggestion and ensure that the device does not
+        connect to it until we approve the app.
+
+        Steps:
+        1. Send a network suggestion to the device with the app not approved.
+        2. Ensure the network is present in scan results, but we don't connect
+           to it.
+        3. Now approve the app.
+        4. Wait for the device to connect to it.
+        """
+        asserts.skip_if(not hasattr(self, "passpoint_networks"),
+                        "No passpoint networks, skip this test")
+        passpoint_config = self.passpoint_networks[BOINGO]
+        self.dut.log.info("Adding network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([passpoint_config]),
+            "Failed to add suggestions")
+
+        # Disable suggestions by the app.
+        self.set_approved(False)
+
+        # Ensure the app is not approved.
+        asserts.assert_false(
+            self.is_approved(),
+            "Suggestions should be disabled")
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, passpoint_config[WifiEnums.SSID_KEY])
+
+        # Ensure we don't connect to the network.
+        asserts.assert_false(
+            wutils.wait_for_connect(
+                self.dut, passpoint_config[WifiEnums.SSID_KEY], assert_on_fail=False),
+            "Should not connect to network suggestions from unapproved app")
+
+        self.dut.log.info("Enabling suggestions from test");
+        # Now Enable suggestions by the app & ensure we connect to the network.
+        self.set_approved(True)
+
+        # Ensure the app is approved.
+        asserts.assert_true(
+            self.is_approved(),
+            "Suggestions should be enabled")
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, passpoint_config[WifiEnums.SSID_KEY])
+
+        wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
+
