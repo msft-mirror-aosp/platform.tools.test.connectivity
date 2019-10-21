@@ -976,3 +976,15 @@ class WifiManagerTest(WifiBaseTest):
                 "wifi state changed after reboot")
 
         disable_bluetooth(self.dut.droid)
+
+    @test_tracker_info(uuid="")
+    def test_scan_result_api(self):
+        """Register scan result callback, start scan and wait for event"""
+        self.dut.ed.clear_all_events()
+        self.dut.droid.wifiStartScanWithListener()
+        try:
+            events = self.dut.ed.pop_events(
+                "WifiManagerScanResultsCallbackOnSuccess", 60)
+        except queue.Empty:
+            asserts.fail(
+                "Wi-Fi scan results did not become available within 60s.")
