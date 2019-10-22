@@ -241,8 +241,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
         for pkt in packets:
             self.log.debug("Packet Summary = %s" % pkt.summary())
             if mac in pkt.summary():
-                raise signals.TestFailure("Caught Factory MAC in packet sniffer."
-                                          "Packet = %s" % pkt.show())
+                raise signals.TestFailure("Caught Factory MAC in packet sniffer"
+                                          "Packet = %s Device = %s"
+                                           % (pkt.show(), self.dut))
 
     def verify_mac_is_found_in_pcap(self, mac, packets):
         for pkt in packets:
@@ -250,7 +251,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
             if mac in pkt.summary():
                 return
         raise signals.TestFailure("Did not find MAC = %s in packet sniffer."
-                                  % mac)
+                                  "for device %s" % (mac, self.dut))
 
     def get_sta_mac_address(self):
         """Gets the current MAC address being used for client mode."""
@@ -283,7 +284,8 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(SHORT_TIMEOUT)
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         packets = rdpcap(pcap_fname)
-        self.verify_mac_is_found_in_pcap(self.sta_factory_mac, packets)
+        self.verify_mac_is_found_in_pcap(self.dut, self.sta_factory_mac,
+                                         packets)
 
     @test_tracker_info(uuid="d9e64202-02d5-421a-967c-42e45f1f7f91")
     def test_mac_randomization_wpapsk(self):
