@@ -977,7 +977,7 @@ class WifiManagerTest(WifiBaseTest):
 
         disable_bluetooth(self.dut.droid)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d0e14a2d-a28f-4551-8988-1e15d9d8bb1a")
     def test_scan_result_api(self):
         """Register scan result callback, start scan and wait for event"""
         self.dut.ed.clear_all_events()
