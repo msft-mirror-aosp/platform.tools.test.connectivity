@@ -474,7 +474,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [network_suggestion], network_suggestion[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="806dff14-7543-482b-bd0a-598de59374b3")
     def test_connect_to_passpoint_network_with_post_connection_broadcast(self):
         """ Adds a passpoint network suggestion and ensure that the device connected.
 
@@ -494,7 +494,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [passpoint_config], passpoint_config[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="159b8b8c-fb00-4d4e-a29f-606881dcbf44")
     def test_connect_to_passpoint_network_reboot_config_store(self):
         """
         Adds a passpoint network suggestion and ensure that the device connects to it
@@ -515,7 +515,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self._test_connect_to_wifi_network_reboot_config_store([passpoint_config],
                                                                passpoint_config)
 
-    @test_tracker_info(uuid="554b5861-22d0-4922-a5f4-712b4cf564eb")
+    @test_tracker_info(uuid="34f3d28a-bedf-43fe-a12d-2cfadf6bc6eb")
     def test_fail_to_connect_to_passpoint_network_when_not_approved(self):
         """
         Adds a passpoint network suggestion and ensure that the device does not
