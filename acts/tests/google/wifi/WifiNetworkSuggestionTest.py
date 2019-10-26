@@ -36,7 +36,7 @@ EAP = WifiEnums.Eap
 EapPhase2 = WifiEnums.EapPhase2
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
-BOINGO = 0
+ATT = 2
 
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
 # for the system to settle down after the operation.
@@ -71,16 +71,14 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 radius_conf_2g=self.radius_conf_2g,
                 radius_conf_5g=self.radius_conf_5g,)
 
-        asserts.assert_true(
-            len(self.reference_networks) > 0,
-            "Need at least one reference network with psk.")
-        if hasattr(self, "reference_networks"):
-            self.wpa_psk_2g = self.reference_networks[0]["2g"]
-            self.wpa_psk_5g = self.reference_networks[0]["5g"]
-        if hasattr(self, "open_network"):
+        if hasattr(self, "reference_networks") and \
+            isinstance(self.reference_networks, list):
+              self.wpa_psk_2g = self.reference_networks[0]["2g"]
+              self.wpa_psk_5g = self.reference_networks[0]["5g"]
+        if hasattr(self, "open_network") and isinstance(self.open_network,list):
             self.open_2g = self.open_network[0]["2g"]
             self.open_5g = self.open_network[0]["5g"]
-        if hasattr(self, "ent_networks"):
+        if hasattr(self, "ent_networks") and isinstance(self.ent_networks,list):
             self.ent_network_2g = self.ent_networks[0]["2g"]
             self.ent_network_5g = self.ent_networks[0]["5g"]
             self.config_aka = {
@@ -95,8 +93,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 Ent.PHASE2: int(EapPhase2.MSCHAPV2),
                 WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
             }
-        if hasattr(self, "hidden_networks"):
-            self.hidden_network = self.hidden_networks[0]
+        if hasattr(self, "hidden_networks") and \
+            isinstance(self.hidden_networks, list):
+              self.hidden_network = self.hidden_networks[0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
 
     def setup_test(self):
@@ -487,7 +486,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[BOINGO]
+        passpoint_config = self.passpoint_networks[ATT]
         passpoint_config[WifiEnums.IS_APP_INTERACTION_REQUIRED] = True
         self.add_suggestions_and_ensure_connection([passpoint_config],
                                                    passpoint_config[WifiEnums.SSID_KEY], True)
@@ -511,7 +510,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[BOINGO]
+        passpoint_config = self.passpoint_networks[ATT]
         self._test_connect_to_wifi_network_reboot_config_store([passpoint_config],
                                                                passpoint_config)
 
@@ -530,7 +529,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[BOINGO]
+        passpoint_config = self.passpoint_networks[ATT]
         self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([passpoint_config]),
