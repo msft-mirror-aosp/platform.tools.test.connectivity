@@ -41,6 +41,7 @@ ATT = 2
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
 # for the system to settle down after the operation.
 DEFAULT_TIMEOUT = 10
+PASSPOINT_TIMEOUT = 30
 
 
 class WifiNetworkSuggestionTest(WifiBaseTest):
@@ -156,6 +157,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.dut.log.debug("Enabling suggestions from test")
         self.set_approved(True)
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
+        # if suggestion is passpoint wait longer for connection.
+        if "profile" in network_suggestions:
+            time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, expected_ssid)
 
         if expect_post_connection_broadcast is None:
@@ -565,6 +569,5 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         # Start a new scan to trigger auto-join.
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, passpoint_config[WifiEnums.SSID_KEY])
-
+        time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
-
