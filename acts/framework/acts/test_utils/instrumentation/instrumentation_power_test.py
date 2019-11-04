@@ -253,7 +253,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 test_metrics = self._power_metrics.test_metrics[instr_test_name]
             except KeyError:
                 raise InstrumentationTestError(
-                    'Unable to find test method %s in instrumentation output.'
+                    'Unable to find test method %s in instrumentation output. '
+                    'Check instrumentation call results in '
+                    'instrumentation_proto.txt.'
                     % instr_test_name)
 
             summaries[instr_test_name] = test_metrics.summary
