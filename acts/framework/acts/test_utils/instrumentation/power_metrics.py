@@ -14,12 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import bisect
 import math
 
-import numpy as np
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as parser
+from acts.test_utils.instrumentation.instrumentation_base_test \
+    import InstrumentationTestError
 
 # Unit type constants
 CURRENT = 'current'
@@ -218,12 +218,23 @@ class PowerMetrics(object):
         for test_name, times in test_timestamps.items():
             self.test_metrics[test_name] = PowerMetrics(
                 self._voltage, self._start_time)
-            test_starts[test_name] = Measurement(
-                times[parser.START_TIMESTAMP], TIME, MILLISECOND)\
-                .to_unit(SECOND).value - self._start_time
-            test_ends[test_name] = Measurement(
-                times[parser.END_TIMESTAMP], TIME, MILLISECOND)\
-                .to_unit(SECOND).value - self._start_time
+            try:
+                test_starts[test_name] = Measurement(
+                    times[parser.START_TIMESTAMP], TIME, MILLISECOND)\
+                    .to_unit(SECOND).value - self._start_time
+            except KeyError:
+                raise InstrumentationTestError(
+                    'Missing start timestamp for test scenario %s. Refer to '
+                    'instrumentation_proto.txt for details.' % test_name)
+            try:
+                test_ends[test_name] = Measurement(
+                    times[parser.END_TIMESTAMP], TIME, MILLISECOND)\
+                    .to_unit(SECOND).value - self._start_time
+            except KeyError:
+                raise InstrumentationTestError(
+                    'Missing end timestamp for test scenario %s. Test scenario '
+                    'may have been terminated with errors. Refer to '
+                    'instrumentation_proto.txt for details.' % test_name)
 
         # Assign data to tests based on timestamps
         for timestamp, sample in raw_data:
