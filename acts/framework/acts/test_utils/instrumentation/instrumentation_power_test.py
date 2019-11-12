@@ -36,8 +36,8 @@ from acts.test_utils.instrumentation.instrumentation_proto_parser import \
 from acts.test_utils.instrumentation.power_metrics import Measurement
 from acts.test_utils.instrumentation.power_metrics import PowerMetrics
 
+from acts import asserts
 from acts import context
-from acts import signals
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 AUTOTESTER_LOG = 'autotester.log'
@@ -173,11 +173,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._wait_for_disconnect_signal()
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
+        self.log.info('Starting Monsoon measurement.')
         self.monsoon.usb('auto')
         measure_start_time = time.time()
         result = self.monsoon.measure_power(
             **self._measurement_args, output_path=power_data_path)
         self.monsoon.usb('on')
+        self.log.info('Monsoon measurement complete.')
 
         # Gather relevant metrics from measurements
         session = self.dump_instrumentation_result_proto()
@@ -216,6 +218,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         for name, value in params.items():
             self._instr_cmd_builder.add_key_value_param(name, value)
         instr_cmd = self._instr_cmd_builder.build()
+        self.log.info('Running instrumentation call: %s' % instr_cmd)
         self.adb_run_async(instr_cmd)
         return self.measure_power()
 
@@ -239,7 +242,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         Raises:
             signals.TestFailure if one or more metrics do not satisfy threshold
-            signals.TestPass otherwise
         """
         summaries = {}
         failures = {}
@@ -288,7 +290,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                         'actual': str(actual_result)
                     }
         self.log.info('Summary of measurements: %s' % summaries)
-        if any(failures.values()):
-            raise signals.TestFailure('One or more measurements do not meet '
-                                      'the specified criteria', failures)
-        raise signals.TestPass('All measurements meet the specified criteria')
+        asserts.assert_false(
+            any(failures.values()),
+            msg='One or more measurements do not meet the specified criteria',
+            extras=failures)

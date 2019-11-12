@@ -81,6 +81,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
 
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
+        self.cmw.connection_type = cmw500.ConnectionType.DAU
         self.bts = [self.cmw.get_base_station()]
         self.cmw.switch_lte_signalling(cmw500.LteState.LTE_ON)
 
@@ -134,7 +135,9 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             input_power: the new input power
         """
-        raise NotImplementedError()
+        # TODO:(@ganeshganesh) Add support to configure input power.
+        # As of now cmw sets this value by default
+        pass
 
     def set_output_power(self, bts_index, output_power):
         """ Sets the output power for the indicated base station.
