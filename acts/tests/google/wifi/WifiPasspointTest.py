@@ -119,12 +119,8 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         """
         ad = self.dut
         ad.ed.clear_all_events()
-        wutils.start_wifi_connection_scan(ad)
-        scan_results = ad.droid.wifiGetScanResults()
-        # Wait for scan to complete.
-        time.sleep(5)
         ssid = passpoint_network
-        wutils.assert_network_in_list({WifiEnums.SSID_KEY: ssid}, scan_results)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(ad, ssid, 6)
         # Passpoint network takes longer time to connect than normal networks.
         # Every try comes with a timeout of 30s. Setting total timeout to 120s.
         wutils.wifi_passpoint_connect(self.dut, passpoint_network, num_of_tries=4)
