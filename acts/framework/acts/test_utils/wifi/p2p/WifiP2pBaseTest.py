@@ -24,6 +24,8 @@ from acts.base_test import BaseTestClass
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 
+WAIT_TIME = 60
+
 class WifiP2pBaseTest(BaseTestClass):
     def __init__(self, controllers):
         if not hasattr(self, 'android_devices'):
@@ -32,6 +34,8 @@ class WifiP2pBaseTest(BaseTestClass):
     def setup_class(self):
         self.dut1 = self.android_devices[0]
         self.dut2 = self.android_devices[1]
+        self.dut1_mac = self.get_p2p_mac_address(self.dut1)
+        self.dut2_mac = self.get_p2p_mac_address(self.dut2)
 
         #init location before init p2p
         acts.utils.set_location_service(self.dut1, True)
@@ -100,3 +104,10 @@ class WifiP2pBaseTest(BaseTestClass):
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
+
+    def get_p2p_mac_address(self, dut):
+        """Gets the current MAC address being used for Wi-Fi Direct."""
+        dut.reboot()
+        time.sleep(WAIT_TIME)
+        out = dut.adb.shell("ifconfig p2p0")
+        return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
