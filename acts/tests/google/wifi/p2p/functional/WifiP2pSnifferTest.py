@@ -33,7 +33,6 @@ WPS_PBC = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
 WPS_DISPLAY = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY
 WPS_KEYPAD = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_KEYPAD
 DEFAULT_TIMEOUT = 10
-WAIT_TIME = 60
 
 class WifiP2pSnifferTest(WifiP2pBaseTest):
     """Tests factory MAC is not leaked for p2p discovery and associated cases.
@@ -48,8 +47,6 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
 
     def setup_class(self):
         super(WifiP2pSnifferTest, self).setup_class()
-        self.dut1_mac = self.get_p2p_mac_address(self.dut1)
-        self.dut2_mac = self.get_p2p_mac_address(self.dut2)
         wp2putils.wifi_p2p_set_channels_for_current_group(self.dut1, 6, 6)
         wp2putils.wifi_p2p_set_channels_for_current_group(self.dut2, 6, 6)
         self.configure_packet_capture()
@@ -68,13 +65,6 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         result = self.packet_capture.configure_monitor_mode(BAND_2G, 6)
         if not result:
             raise ValueError("Failed to configure channel for 2G band")
-
-    def get_p2p_mac_address(self, dut):
-        """Gets the current MAC address being used for Wi-Fi Direct."""
-        dut.reboot()
-        time.sleep(WAIT_TIME)
-        out = dut.adb.shell("ifconfig p2p0")
-        return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
 
     def verify_mac_no_leakage(self):
         time.sleep(DEFAULT_TIMEOUT)
