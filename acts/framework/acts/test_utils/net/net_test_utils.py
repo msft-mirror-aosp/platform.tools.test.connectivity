@@ -39,7 +39,7 @@ import urllib.request
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
-TCPDUMP_PATH = "/data/local/tmp/tcpdump"
+TCPDUMP_PATH = "/data/local/tmp/"
 
 GCE_SSH = "gcloud compute ssh "
 GCE_SCP = "gcloud compute scp "
