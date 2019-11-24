@@ -48,7 +48,7 @@ CMW_MODULATION_MAPPING = {
 
 # get mcs vs tbsi map with 256-qam disabled(downlink)
 get_mcs_tbsi_map_dl = {
-    'QPSK': {
+    cmw500.ModulationType.QPSK: {
         0: 0,
         1: 1,
         2: 2,
@@ -60,7 +60,7 @@ get_mcs_tbsi_map_dl = {
         8: 8,
         9: 9
     },
-    'Q16': {
+    cmw500.ModulationType.Q16: {
         10: 9,
         11: 10,
         12: 11,
@@ -69,7 +69,7 @@ get_mcs_tbsi_map_dl = {
         15: 14,
         16: 15
     },
-    'Q64': {
+    cmw500.ModulationType.Q64: {
         17: 15,
         18: 16,
         19: 17,
@@ -87,14 +87,14 @@ get_mcs_tbsi_map_dl = {
 
 # get mcs vs tbsi map with 256-qam enabled(downlink)
 get_mcs_tbsi_map_for_256qam_dl = {
-    'QPSK': {
+    cmw500.ModulationType.QPSK: {
         0: 0,
         1: 2,
         2: 4,
         3: 6,
         4: 8,
     },
-    'Q16': {
+    cmw500.ModulationType.Q16: {
         5: 10,
         6: 11,
         7: 12,
@@ -102,7 +102,7 @@ get_mcs_tbsi_map_for_256qam_dl = {
         9: 14,
         10: 15
     },
-    'Q64': {
+    cmw500.ModulationType.Q64: {
         11: 16,
         12: 17,
         13: 18,
@@ -113,7 +113,7 @@ get_mcs_tbsi_map_for_256qam_dl = {
         18: 23,
         19: 24
     },
-    'Q256': {
+    cmw500.ModulationType.Q256: {
         20: 25,
         21: 27,
         22: 28,
@@ -127,7 +127,7 @@ get_mcs_tbsi_map_for_256qam_dl = {
 
 # get mcs vs tbsi map (uplink)
 get_mcs_tbsi_map_ul = {
-    'QPSK': {
+    cmw500.ModulationType.QPSK: {
         0: 0,
         1: 1,
         2: 2,
@@ -139,7 +139,7 @@ get_mcs_tbsi_map_ul = {
         8: 8,
         9: 9
     },
-    '16QAM': {
+    cmw500.ModulationType.Q16: {
         10: 10,
         11: 10,
         12: 11,
@@ -219,10 +219,11 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             enabled: a boolean indicating if the timer should be on or off.
             time: time in seconds for the timer to expire
         """
-        # Setting this method to pass instead of raising an exception as it
-        # it is required by LTE sims.
-        # TODO (b/141838145): Implement RRC status change timer for CMW500.
-        pass
+        if enabled:
+            self.cmw.rrc_connection = cmw500.RrcState.RRC_OFF
+            self.cmw.rrc_connection_timer = time
+        else:
+            self.cmw.rrc_connection = cmw500.RrcState.RRC_ON
 
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
@@ -258,9 +259,14 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             input_power: the new input power
         """
-        # TODO:(@ganeshganesh) Add support to configure input power.
-        # As of now cmw sets this value by default
-        pass
+        bts = self.bts[bts_index]
+        if input_power > 23:
+            self.log.warning('Open loop supports-50dBm to 23 dBm. '
+                             'Setting it to max power 23 dBm')
+            input_power = 23
+        bts.uplink_power_control = input_power
+        bts.tpc_power_control = cmw500.TpcPowerControl.CLOSED_LOOP
+        bts.tpc_closed_loop_target_power = input_power
 
     def set_output_power(self, bts_index, output_power):
         """ Sets the output power for the indicated base station.
@@ -384,6 +390,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             nrb_ul: Number of RBs for uplink.
         """
         bts = self.bts[bts_index]
+        bts.reduced_pdcch = cmw500.ReducedPdcch.ON
+
         scheduling = CMW_SCH_MAPPING[scheduling]
         bts.scheduling_mode = scheduling
 
@@ -415,7 +423,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             # Convert ul modulation type to CMW modulation type.
             self.ul_modulation = CMW_MODULATION_MAPPING[self.ul_modulation]
 
-            tbs = get_mcs_tbsi_map_ul[self.ul_modulation.value][mcs_ul]
+            tbs = get_mcs_tbsi_map_ul[self.ul_modulation][mcs_ul]
 
             bts.rb_configuration_ul = (nrb_ul, 0, self.ul_modulation, tbs)
             self.log.info('ul rb configurations set to {}'.format(
@@ -428,9 +436,9 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
 
             if self.dl_modulation == cmw500.ModulationType.Q256:
                 tbs = get_mcs_tbsi_map_for_256qam_dl[
-                    self.dl_modulation.value][mcs_dl]
+                    self.dl_modulation][mcs_dl]
             else:
-                tbs = get_mcs_tbsi_map_dl[self.dl_modulation.value][mcs_dl]
+                tbs = get_mcs_tbsi_map_dl[self.dl_modulation][mcs_dl]
 
             bts.rb_configuration_dl = (nrb_dl, 0, self.dl_modulation, tbs)
             self.log.info('dl rb configurations set to {}'.format(
@@ -494,7 +502,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        self.cmw.wait_for_attached_state(timeout=timeout)
+        try:
+            self.cmw.wait_for_attached_state(timeout=timeout)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'attached state before '
+                                            'the timeout period ended.')
 
     def wait_until_communication_state(self, timeout=120):
         """ Waits until the DUT is in Communication state.
@@ -503,7 +516,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        self.cmw.wait_for_connected_state(timeout=timeout)
+        try:
+            self.cmw.wait_for_rrc_state(cmw500.LTE_CONN_RESP, timeout=timeout)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'Communication state before '
+                                            'the timeout period ended.')
 
     def wait_until_idle_state(self, timeout=120):
         """ Waits until the DUT is in Idle state.
@@ -512,7 +530,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        raise NotImplementedError()
+        try:
+            self.cmw.wait_for_rrc_state(cmw500.LTE_IDLE_RESP, timeout=timeout)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'Idle state before '
+                                            'the timeout period ended.')
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""

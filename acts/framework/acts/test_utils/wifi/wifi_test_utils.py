@@ -2029,6 +2029,13 @@ def start_softap_and_verify(ad, band):
     Returns: dict, the softAP config.
 
     """
+    # Register before start the test.
+    callbackId = ad.dut.droid.registerSoftApCallback()
+    # Check softap info value is default
+    frequency, bandwdith = get_current_softap_info(ad.dut, callbackId, True)
+    asserts.assert_true(frequency == 0, "Softap frequency is not reset")
+    asserts.assert_true(bandwdith == 0, "Softap bandwdith is not reset")
+
     config = create_softap_config()
     start_wifi_tethering(ad.dut,
                          config[WifiEnums.SSID_KEY],
@@ -2037,6 +2044,15 @@ def start_softap_and_verify(ad, band):
                          "SoftAp is not reported as running")
     start_wifi_connection_scan_and_ensure_network_found(ad.dut_client,
         config[WifiEnums.SSID_KEY])
+
+    # Check softap info can get from callback succeed and assert value should be
+    # valid.
+    frequency, bandwdith = get_current_softap_info(ad.dut, callbackId, True)
+    asserts.assert_true(frequency > 0, "Softap frequency is not valid")
+    asserts.assert_true(bandwdith > 0, "Softap bandwdith is not valid")
+    # Unregister callback
+    ad.dut.droid.unregisterSoftApCallback(callbackId)
+
     return config
 
 def wait_for_expected_number_of_softap_clients(ad, callbackId,
@@ -2086,6 +2102,41 @@ def get_current_number_of_softap_clients(ad, callbackId):
     if len(events) == 0:
         return None
     return num_of_clients
+
+def get_current_softap_info(ad, callbackId, least_one):
+    """pop up all of softap info changed event from queue.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        least_one: Wait for the info callback event before pop all.
+    Returns:
+        Returns last updated information of softap.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_INFO_CHANGED
+    ad.log.info("softap info dump from eventStr %s",
+                eventStr)
+    frequency = 0
+    bandwidth = 0
+    if (least_one):
+        event = ad.ed.pop_event(eventStr, SHORT_TIMEOUT)
+        frequency = event['data'][wifi_constants.
+                SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
+        bandwidth = event['data'][wifi_constants.
+                SOFTAP_INFO_BANDWIDTH_CALLBACK_KEY]
+        ad.log.info("softap info updated, frequency is %s, bandwidth is %s",
+            frequency, bandwidth)
+
+    events = ad.ed.pop_all(eventStr)
+    for event in events:
+        frequency = event['data'][wifi_constants.
+                SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
+        bandwidth = event['data'][wifi_constants.
+                SOFTAP_INFO_BANDWIDTH_CALLBACK_KEY]
+    ad.log.info("softap info, frequency is %s, bandwidth is %s",
+            frequency, bandwidth)
+    return frequency, bandwidth
+
+
 
 def get_ssrdumps(ad, test_name=""):
     """Pulls dumps in the ssrdump dir
