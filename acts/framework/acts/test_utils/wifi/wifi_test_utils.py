@@ -1023,7 +1023,7 @@ def toggle_wifi_and_wait_for_reconnection(ad,
         num_of_tries=num_of_tries)
 
 
-def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
+def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=3):
     """Toggle wifi state and then wait for Android device to reconnect to
     the provided wifi network.
 
