@@ -616,32 +616,6 @@ class WifiManagerTest(WifiBaseTest):
                 nw[WifiEnums.BSSID_KEY] != ssid,
                 "Found forgotten network %s in configured networks." % ssid)
 
-    @test_tracker_info(uuid="b306d65c-6df3-4eb5-a178-6278bdc76c3e")
-    def test_reconnect_to_connected_network(self):
-        """Connect to a network and immediately issue reconnect.
-
-        Steps:
-        1. Connect to a 2GHz network.
-        2. Reconnect to the network using its network id.
-        3. Connect to a 5GHz network.
-        4. Reconnect to the network using its network id.
-
-        """
-        connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
-        reconnect_2g = self.connect_to_wifi_network_with_id(
-            connect_2g_data[WifiEnums.NETID_KEY],
-            connect_2g_data[WifiEnums.SSID_KEY])
-        if not reconnect_2g:
-            raise signals.TestFailure("Device did not connect to the correct"
-                                      " 2GHz network.")
-        connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
-        reconnect_5g = self.connect_to_wifi_network_with_id(
-            connect_5g_data[WifiEnums.NETID_KEY],
-            connect_5g_data[WifiEnums.SSID_KEY])
-        if not reconnect_5g:
-            raise signals.TestFailure("Device did not connect to the correct"
-                                      " 5GHz network.")
-
     @test_tracker_info(uuid="3cff17f6-b684-4a95-a438-8272c2ad441d")
     def test_reconnect_to_previously_connected(self):
         """Connect to multiple networks and reconnect to the previous network.
