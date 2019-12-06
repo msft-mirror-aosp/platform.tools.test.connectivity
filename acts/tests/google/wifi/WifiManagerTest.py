@@ -97,6 +97,8 @@ class WifiManagerTest(WifiBaseTest):
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
+        if self.dut_client:
+            self.dut_client.take_bug_report(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
