@@ -13,12 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import itertools
 from future import standard_library
 
 standard_library.install_aliases()
 
-import copy
 import importlib
 import inspect
 import fnmatch
@@ -29,7 +28,6 @@ import pkgutil
 import sys
 
 from acts import base_test
-from acts import config_parser
 from acts import keys
 from acts import logger
 from acts import records
@@ -38,7 +36,6 @@ from acts import utils
 from acts import error
 
 from mobly.records import ExceptionRecord
-from mobly import config_parser as mobly_config_parser
 
 
 def _find_test_class():
@@ -51,13 +48,13 @@ def _find_test_class():
         The test class in the test module.
     """
     test_classes = []
-    main_module_members = sys.modules["__main__"]
+    main_module_members = sys.modules['__main__']
     for _, module_member in main_module_members.__dict__.items():
         if inspect.isclass(module_member):
             if issubclass(module_member, base_test.BaseTestClass):
                 test_classes.append(module_member)
     if len(test_classes) != 1:
-        logging.error("Expected 1 test class per file, found %s.",
+        logging.error('Expected 1 test class per file, found %s.',
                       [t.__name__ for t in test_classes])
         sys.exit(1)
     return test_classes[0]
@@ -89,7 +86,7 @@ def execute_one_test_class(test_class, test_config, test_identifier):
     except signals.TestAbortAll:
         raise
     except:
-        logging.exception("Exception when executing %s.", tr.testbed_name)
+        logging.exception('Exception when executing %s.', tr.testbed_name)
     finally:
         tr.stop()
 
@@ -99,39 +96,28 @@ class TestRunner(object):
     report results.
 
     Attributes:
-        self.test_run_info: A dictionary containing the information needed by
-                            test classes for this test run, including params,
-                            controllers, and other objects. All of these will
-                            be passed to test classes.
-        self.test_configs: A dictionary that is the original test configuration
-                           passed in by user.
-        self.id: A string that is the unique identifier of this test run.
-        self.log_path: A string representing the path of the dir under which
-                       all logs from this test run should be written.
-        self.log: The logger object used throughout this test run.
-        self.summary_writer: The TestSummaryWriter object used to stream test
-                             results to a file.
-        self.test_classes: A dictionary where we can look up the test classes
-                           by name to instantiate. Supports unix shell style
-                           wildcards.
-        self.run_list: A list of tuples specifying what tests to run.
-        self.results: The test result object used to record the results of
-                      this test run.
-        self.running: A boolean signifies whether this test run is ongoing or
-                      not.
+        test_run_config: The TestRunConfig object specifying what tests to run.
+        id: A string that is the unique identifier of this test run.
+        log_path: A string representing the path of the dir under which all logs
+            from this test run should be written.
+        log: The logger object used throughout this test run.
+        summary_writer: The TestSummaryWriter object used to stream test results
+            to a file.
+        test_classes: A dictionary where we can look up the test classes by name
+            to instantiate. Supports unix shell style wildcards.
+        run_list: A list of tuples specifying what tests to run.
+        results: The test result object used to record the results of this test
+            run.
+        running: A boolean signifies whether this test run is ongoing or not.
     """
     def __init__(self, test_configs, run_list):
-        self.test_run_info = mobly_config_parser.TestRunConfig()
-        self.test_configs = test_configs
-        self.testbed_configs = self.test_configs[keys.Config.key_testbed.value]
-        self.testbed_name = self.testbed_configs[
-            keys.Config.key_testbed_name.value]
+        self.test_run_config = test_configs
+        self.testbed_name = self.test_run_config.testbed_name
         start_time = logger.get_log_file_timestamp()
-        self.id = "{}@{}".format(self.testbed_name, start_time)
+        self.id = '{}@{}'.format(self.testbed_name, start_time)
         # log_path should be set before parsing configs.
-        l_path = os.path.join(
-            self.test_configs[keys.Config.key_log_path.value],
-            self.testbed_name, start_time)
+        l_path = os.path.join(self.test_run_config.log_path, self.testbed_name,
+                              start_time)
         self.log_path = os.path.abspath(l_path)
         logger.setup_test_logger(self.log_path, self.testbed_name)
         self.log = logging.getLogger()
@@ -158,8 +144,8 @@ class TestRunner(object):
             actual test classes that can be instantiated.
         """
         def is_testfile_name(name, ext):
-            if ext == ".py":
-                if name.endswith("Test") or name.endswith("_test"):
+            if ext == '.py':
+                if name.endswith('Test') or name.endswith('_test'):
                     return True
             return False
 
@@ -179,8 +165,8 @@ class TestRunner(object):
                     # import error. We need to check against both naming
                     # conventions: AaaBbb and aaa_bbb.
                     if name == test_cls_name or alt_name == alt_cls_name:
-                        msg = ("Encountered error importing test class %s, "
-                               "abort.") % test_cls_name
+                        msg = ('Encountered error importing test class %s, '
+                               'abort.') % test_cls_name
                         # This exception is logged here to help with debugging
                         # under py2, because "raise X from Y" syntax is only
                         # supported under py3.
@@ -188,31 +174,12 @@ class TestRunner(object):
                         raise ValueError(msg)
                 continue
             for member_name in dir(module):
-                if not member_name.startswith("__"):
-                    if member_name.endswith("Test"):
+                if not member_name.startswith('__'):
+                    if member_name.endswith('Test'):
                         test_class = getattr(module, member_name)
                         if inspect.isclass(test_class):
                             test_classes[member_name] = test_class
         return test_classes
-
-    def parse_config(self, test_configs):
-        """Parses the test configuration and unpacks objects and parameters
-        into a dictionary to be passed to test classes.
-
-        Args:
-            test_configs: A json object representing the test configurations.
-        """
-        self.test_run_info.testbed_name = self.testbed_name
-        self.test_run_info.controller_configs = copy.deepcopy(
-            self.testbed_configs)
-        self.test_run_info.log_path = self.log_path
-        self.test_run_info.summary_writer = self.summary_writer
-
-        user_param_pairs = []
-        for item in test_configs.items():
-            if item[0] not in keys.Config.reserved_keys.value:
-                user_param_pairs.append(item)
-        self.test_run_info.user_params = copy.deepcopy(dict(user_param_pairs))
 
     def set_test_util_logs(self, module=None):
         """Sets the log object to each test util module.
@@ -225,7 +192,7 @@ class TestRunner(object):
         """
         # Initial condition of recursion.
         if not module:
-            module = importlib.import_module("acts.test_utils")
+            module = importlib.import_module('acts.test_utils')
         # Somehow pkgutil.walk_packages is not working for me.
         # Using iter_modules for now.
         pkg_iter = pkgutil.iter_modules(module.__path__, module.__name__ + '.')
@@ -234,9 +201,9 @@ class TestRunner(object):
             if ispkg:
                 self.set_test_util_logs(module=m)
             else:
-                self.log.debug("Setting logger to test util module %s",
+                self.log.debug('Setting logger to test util module %s',
                                module_name)
-                setattr(m, "log", self.log)
+                setattr(m, 'log', self.log)
 
     def run_test_class(self, test_cls_name, test_cases=None):
         """Instantiates and executes a test class.
@@ -256,26 +223,26 @@ class TestRunner(object):
         matches = fnmatch.filter(self.test_classes.keys(), test_cls_name)
         if not matches:
             self.log.info(
-                "Cannot find test class %s or classes matching pattern, "
-                "skipping for now." % test_cls_name)
-            record = records.TestResultRecord("*all*", test_cls_name)
-            record.test_skip(signals.TestSkip("Test class does not exist."))
+                'Cannot find test class %s or classes matching pattern, '
+                'skipping for now.' % test_cls_name)
+            record = records.TestResultRecord('*all*', test_cls_name)
+            record.test_skip(signals.TestSkip('Test class does not exist.'))
             self.results.add_record(record)
             return
         if matches != [test_cls_name]:
-            self.log.info("Found classes matching pattern %s: %s",
+            self.log.info('Found classes matching pattern %s: %s',
                           test_cls_name, matches)
 
         for test_cls_name_match in matches:
             test_cls = self.test_classes[test_cls_name_match]
-            if "Preflight" in test_cls_name_match or (
-                    "Postflight" in test_cls_name_match):
+            if 'Preflight' in test_cls_name_match or (
+                    'Postflight' in test_cls_name_match):
                 test_case_iterations = 1
             else:
-                test_case_iterations = self.test_configs.get(
+                test_case_iterations = self.test_run_config.user_params.get(
                     keys.Config.key_test_case_iterations.value, 1)
 
-            test_cls_instance = test_cls(self.test_run_info)
+            test_cls_instance = test_cls(self.test_run_config)
             try:
                 cls_result = test_cls_instance.run(test_cases,
                                                    test_case_iterations)
@@ -302,33 +269,34 @@ class TestRunner(object):
         """
         if not self.running:
             self.running = True
-        # Initialize controller objects and pack appropriate objects/params
-        # to be passed to test class.
-        self.parse_config(self.test_configs)
+
+        self.test_run_config.summary_writer = self.summary_writer
+
         if test_class:
             self.test_classes = {test_class.__name__: test_class}
         else:
-            t_paths = self.test_configs[keys.Config.key_test_paths.value]
+            t_paths = self.test_run_config.controller_configs[
+                keys.Config.key_test_paths.value]
             self.test_classes = self.import_test_modules(t_paths)
-        self.log.debug("Executing run list %s.", self.run_list)
+        self.log.debug('Executing run list %s.', self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
                 break
 
             if test_case_names:
-                self.log.debug("Executing test cases %s in test class %s.",
+                self.log.debug('Executing test cases %s in test class %s.',
                                test_case_names, test_cls_name)
             else:
-                self.log.debug("Executing test class %s", test_cls_name)
+                self.log.debug('Executing test class %s', test_cls_name)
 
             try:
                 self.run_test_class(test_cls_name, test_case_names)
             except error.ActsError as e:
                 self.results.error.append(ExceptionRecord(e))
-                self.log.error("Test Runner Error: %s" % e.message)
+                self.log.error('Test Runner Error: %s' % e.message)
             except signals.TestAbortAll as e:
                 self.log.warning(
-                    "Abort all subsequent test classes. Reason: %s", e)
+                    'Abort all subsequent test classes. Reason: %s', e)
                 raise
 
     def stop(self):
@@ -338,7 +306,7 @@ class TestRunner(object):
         This function concludes a test run and writes out a test report.
         """
         if self.running:
-            msg = "\nSummary for test run %s: %s\n" % (
+            msg = '\nSummary for test run %s: %s\n' % (
                 self.id, self.results.summary_str())
             self._write_results_to_file()
             self.log.info(msg.strip())
@@ -348,7 +316,7 @@ class TestRunner(object):
     def _write_results_to_file(self):
         """Writes test results to file(s) in a serializable format."""
         # Old JSON format
-        path = os.path.join(self.log_path, "test_run_summary.json")
+        path = os.path.join(self.log_path, 'test_run_summary.json')
         with open(path, 'w') as f:
             f.write(self.results.json_str())
         # New YAML format
@@ -359,12 +327,18 @@ class TestRunner(object):
         """Writes the test config to a JSON file under self.log_path"""
         config_path = os.path.join(self.log_path, 'test_configs.json')
         with open(config_path, 'a') as f:
-            json.dump(self.test_configs, f, skipkeys=True, indent=4)
+            json.dump(dict(
+                itertools.chain(
+                    self.test_run_config.user_params.items(),
+                    self.test_run_config.controller_configs.items())),
+                      f,
+                      skipkeys=True,
+                      indent=4)
 
     def write_test_campaign(self):
         """Log test campaign file."""
-        path = os.path.join(self.log_path, "test_campaign.log")
+        path = os.path.join(self.log_path, 'test_campaign.log')
         with open(path, 'w') as f:
             for test_class, test_cases in self.run_list:
-                f.write("%s:\n%s" % (test_class, ",\n".join(test_cases)))
-                f.write("\n\n")
+                f.write('%s:\n%s' % (test_class, ',\n'.join(test_cases)))
+                f.write('\n\n')
