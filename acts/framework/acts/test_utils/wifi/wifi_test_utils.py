@@ -49,7 +49,7 @@ SPEED_OF_LIGHT = 299792458
 
 DEFAULT_PING_ADDR = "https://www.google.com/robots.txt"
 
-roaming_attn = {
+ROAMING_ATTN = {
         "AP1_on_AP2_off": [
             0,
             0,
@@ -1945,12 +1945,13 @@ def group_attenuators(attenuators):
     return [attn0, attn1]
 
 
-def set_attns(attenuator, attn_val_name):
+def set_attns(attenuator, attn_val_name, roaming_attn=ROAMING_ATTN):
     """Sets attenuation values on attenuators used in this test.
 
     Args:
         attenuator: The attenuator object.
         attn_val_name: Name of the attenuation value pair to use.
+        roaming_attn: Dictionary specifying the attenuation params.
     """
     logging.info("Set attenuation values to %s", roaming_attn[attn_val_name])
     try:
@@ -1963,7 +1964,11 @@ def set_attns(attenuator, attn_val_name):
                        attn_val_name)
         raise
 
-def set_attns_steps(attenuators, atten_val_name, steps=10, wait_time=12):
+def set_attns_steps(attenuators,
+                    atten_val_name,
+                    roaming_attn=ROAMING_ATTN,
+                    steps=10,
+                    wait_time=12):
     """Set attenuation values on attenuators used in this test. It will change
     the attenuation values linearly from current value to target value step by
     step.
@@ -1972,6 +1977,7 @@ def set_attns_steps(attenuators, atten_val_name, steps=10, wait_time=12):
         attenuators: The list of attenuator objects that you want to change
                      their attenuation value.
         atten_val_name: Name of the attenuation value pair to use.
+        roaming_attn: Dictionary specifying the attenuation params.
         steps: Number of attenuator changes to reach the target value.
         wait_time: Sleep time for each change of attenuator.
     """
@@ -1987,7 +1993,11 @@ def set_attns_steps(attenuators, atten_val_name, steps=10, wait_time=12):
         time.sleep(wait_time)
 
 
-def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
+def trigger_roaming_and_validate(dut,
+                                 attenuator,
+                                 attn_val_name,
+                                 expected_con,
+                                 roaming_attn=ROAMING_ATTN):
     """Sets attenuators to trigger roaming and validate the DUT connected
     to the BSSID expected.
 
@@ -1995,12 +2005,13 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
         attenuator: The attenuator object.
         attn_val_name: Name of the attenuation value pair to use.
         expected_con: The network information of the expected network.
+        roaming_attn: Dictionary specifying the attenaution params.
     """
     expected_con = {
         WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
         WifiEnums.BSSID_KEY: expected_con["bssid"],
     }
-    set_attns_steps(attenuator, attn_val_name)
+    set_attns_steps(attenuator, attn_val_name, roaming_attn)
 
     verify_wifi_connection_info(dut, expected_con)
     expected_bssid = expected_con[WifiEnums.BSSID_KEY]
