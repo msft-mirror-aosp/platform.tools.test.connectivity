@@ -125,6 +125,10 @@ class Measurement(object):
         return str(self)
 
     @property
+    def unit(self):
+        return self._unit
+
+    @property
     def value(self):
         return self._value
 

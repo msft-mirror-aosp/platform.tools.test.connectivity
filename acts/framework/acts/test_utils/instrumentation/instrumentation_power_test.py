@@ -382,7 +382,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 if not lower_bound <= actual_result <= upper_bound:
                     failures[instr_test_name][metric_name] = {
                         'expected': '[%s, %s]' % (lower_bound, upper_bound),
-                        'actual': str(actual_result)
+                        'actual': str(actual_result.to_unit(unit))
                     }
         self.log.info('Summary of measurements: %s' % summaries)
         asserts.assert_false(
