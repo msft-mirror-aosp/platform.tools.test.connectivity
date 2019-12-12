@@ -16,25 +16,19 @@
 
 import os
 
-import tzlocal
 import yaml
+
+from acts import base_test
+from acts import context
+from acts import utils
 from acts.keys import Config
 from acts.test_utils.instrumentation import app_installer
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
-from acts.test_utils.instrumentation.adb_command_types import DeviceGServices
-from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
-from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
 from acts.test_utils.instrumentation.adb_commands import common
-from acts.test_utils.instrumentation.adb_commands import goog
-from acts.test_utils.instrumentation.brightness import \
-    get_brightness_for_200_nits
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
-
-from acts import base_test
-from acts import context
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -136,7 +130,9 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self._prepare_device()
 
     def teardown_class(self):
-        """Class teardown"""
+        """Class teardown. Takes bugreport and cleans up device."""
+        self._ad_take_bugreport(self.ad_dut, 'teardown_class',
+                                utils.get_current_epoch_time())
         self._cleanup_device()
 
     def _prepare_device(self):
@@ -146,11 +142,6 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
     def _cleanup_device(self):
         """Clean up device after test completion."""
         pass
-
-    def teardown_test(self):
-        """Teardown test. Takes bugreport."""
-        self.log.info('Taking bugreport for test %s' % self.current_test_name)
-        self._take_bug_report(self.current_test_name, self.begin_time)
 
     def _get_merged_config(self, config_name):
         """Takes the configs with config_name from the base, testclass, and
@@ -302,90 +293,3 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         # Uninstall PermissionUtils.apk
         self.ad_apps.uninstall(permissions_apk_path)
-
-    def base_device_configuration(self):
-        """Run the base setup commands for power testing."""
-        self.log.info('Running base device setup commands.')
-
-        self.ad_dut.adb.ensure_root()
-
-        # Test harness flag
-        self.adb_run(common.test_harness.toggle(True))
-
-        # Calling
-        self.adb_run(common.disable_dialing.toggle(True))
-
-        # Screen
-        self.adb_run(common.screen_adaptive_brightness.toggle(False))
-        self.adb_run(common.screen_brightness.set_value(
-            get_brightness_for_200_nits(self.ad_dut.model)))
-        self.adb_run(common.screen_timeout_ms.set_value(1800000))
-        self.adb_run(common.notification_led.toggle(False))
-        self.adb_run(common.screensaver.toggle(False))
-        self.adb_run(common.wake_gesture.toggle(False))
-        self.adb_run(common.doze_mode.toggle(False))
-
-        # Accelerometer
-        self.adb_run(common.auto_rotate.toggle(False))
-
-        # Time
-        self.adb_run(common.auto_time.toggle(False))
-        self.adb_run(common.auto_timezone.toggle(False))
-        self.adb_run(common.timezone.set_value(str(tzlocal.get_localzone())))
-
-        # Location
-        self.adb_run(common.location_gps.toggle(False))
-        self.adb_run(common.location_network.toggle(False))
-
-        # Power
-        self.adb_run(common.battery_saver_mode.toggle(False))
-        self.adb_run(common.battery_saver_trigger.set_value(0))
-        self.adb_run(common.enable_full_batterystats_history)
-        self.adb_run(common.disable_doze)
-
-        # Camera
-        self.adb_run(DeviceSetprop(
-            'camera.optbar.hdr', 'true', 'false').toggle(True))
-
-        # Gestures
-        gestures = {
-            'doze_pulse_on_pick_up': False,
-            'doze_pulse_on_double_tap': False,
-            'camera_double_tap_power_gesture_disabled': True,
-            'camera_double_twist_to_flip_enabled': False,
-            'assist_gesture_enabled': False,
-            'assist_gesture_silence_alerts_enabled': False,
-            'assist_gesture_wake_enabled': False,
-            'system_navigation_keys_enabled': False,
-            'camera_lift_trigger_enabled': False,
-            'doze_always_on': False,
-            'aware_enabled': False,
-            'doze_wake_screen_gesture': False,
-            'skip_gesture': False,
-            'silence_gesture': False
-        }
-        self.adb_run(
-            [DeviceSetting(common.SECURE, k).toggle(v)
-             for k, v in gestures.items()])
-
-        # GServices
-        self.adb_run(goog.location_collection.toggle(False))
-        self.adb_run(goog.cast_broadcast.toggle(False))
-        self.adb_run(DeviceGServices(
-            'location:compact_log_enabled').toggle(True))
-        self.adb_run(DeviceGServices('gms:magictether:enable').toggle(False))
-        self.adb_run(DeviceGServices('ocr.cc_ocr_enabled').toggle(False))
-        self.adb_run(DeviceGServices(
-            'gms:phenotype:phenotype_flag:debug_bypass_phenotype').toggle(True))
-        self.adb_run(DeviceGServices(
-            'gms_icing_extension_download_enabled').toggle(False))
-
-        # Misc. Google features
-        self.adb_run(goog.disable_playstore)
-        self.adb_run(goog.disable_volta)
-        self.adb_run(goog.disable_chre)
-        self.adb_run(goog.disable_musiciq)
-        self.adb_run(goog.disable_hotword)
-
-        # Enable clock dump info
-        self.adb_run('echo 1 > /d/clk/debug_suspend')

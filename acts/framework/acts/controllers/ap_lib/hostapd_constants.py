@@ -308,11 +308,15 @@ CENTER_CHANNEL_MAP = {
 
 OFDM_DATA_RATES = {'supported_rates': '60 90 120 180 240 360 480 540'}
 
-CCK_DATA_RATES = {'supported_rates': '10 20 55 11'}
+CCK_DATA_RATES = {'supported_rates': '10 20 55 110'}
+
+CCK_AND_OFDM_DATA_RATES = {
+    'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
+}
 
 OFDM_ONLY_BASIC_RATES = {'basic_rates': '60 120 240'}
 
-CCK_AND_OFDM_BASIC_RATES = {'basic_rates': '10 20 55 11'}
+CCK_AND_OFDM_BASIC_RATES = {'basic_rates': '10 20 55 110'}
 
 WEP_AUTH = {
     'open': {
@@ -415,13 +419,13 @@ VENDOR_IE = {
         'vendor_elements': 'dd040050f203'
     },
     'correct_length_association_response': {
-        'assocresp_elements=': 'dd0411223301'
+        'assocresp_elements': 'dd0411223301'
     },
     'too_short_length_association_response': {
-        'assocresp_elements=': 'dd0311223301'
+        'assocresp_elements': 'dd0311223301'
     },
     'too_long_length_association_response': {
-        'assocresp_elements=': 'dd0511223301'
+        'assocresp_elements': 'dd0511223301'
     },
     'zero_length_association_response_with_data': {
         'assocresp_elements': 'dd0011223301'
