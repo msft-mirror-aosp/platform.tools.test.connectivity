@@ -228,7 +228,7 @@ class PowerMetrics(object):
                     .to_unit(SECOND).value - self._start_time
             except KeyError:
                 raise InstrumentationTestError(
-                    'Missing start timestamp for test scenario %s. Refer to '
+                    'Missing start timestamp for test scenario "%s". Refer to '
                     'instrumentation_proto.txt for details.' % test_name)
             try:
                 test_ends[test_name] = Measurement(
@@ -236,8 +236,8 @@ class PowerMetrics(object):
                     .to_unit(SECOND).value - self._start_time
             except KeyError:
                 raise InstrumentationTestError(
-                    'Missing end timestamp for test scenario %s. Test scenario '
-                    'may have been terminated with errors. Refer to '
+                    'Missing end timestamp for test scenario "%s". Test '
+                    'scenario may have terminated with errors. Refer to '
                     'instrumentation_proto.txt for details.' % test_name)
 
         # Assign data to tests based on timestamps
