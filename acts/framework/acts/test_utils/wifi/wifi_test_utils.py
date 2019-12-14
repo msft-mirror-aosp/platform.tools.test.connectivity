@@ -638,6 +638,7 @@ def _wifi_toggle_state(ad, new_state=None):
     ad.ed.clear_all_events()
     # Setting wifi state.
     ad.droid.wifiToggleState(new_state)
+    time.sleep(2)
     fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state,
                                                            ad.serial)
     try:
