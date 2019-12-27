@@ -97,9 +97,6 @@ class WifiDppTest(WifiBaseTest):
     self.dut.log.info(
       "Parsed configs: %s %s" % (self.wifi_psk_network, self.wifi_sae_network))
 
-    self.dut.log.info("PSK network: %s %s" % (self.wifi_psk_network[self.DPP_TEST_PARAM_SSID],
-                      self.wifi_psk_network[self.DPP_TEST_PARAM_PASSWORD]))
-
     # Set up the networks. This is optional. In case these networks are not initialized,
     # the script will create random ones. However, a real AP is required to pass DPP R2 test.
     # Most efficient setup would be to use an AP in WPA2/WPA3 transition mode.
