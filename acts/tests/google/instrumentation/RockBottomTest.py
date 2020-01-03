@@ -22,7 +22,7 @@ class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def setup_class(self):
         super().setup_class()
-        self.run_and_measure('%s.tests.RockBottom' % self._test_pkg)
+        self.run_and_measure('%s.tests.RockBottom' % self._test_apk.pkg_name)
 
     def _prepare_device(self):
         super()._prepare_device()

@@ -29,6 +29,7 @@ from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
 from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
 from acts.test_utils.instrumentation.adb_commands import common
 from acts.test_utils.instrumentation.adb_commands import goog
+from acts.test_utils.instrumentation.app_installer import AppInstaller
 from acts.test_utils.instrumentation.brightness import \
     get_brightness_for_200_nits
 from acts.test_utils.instrumentation.instrumentation_base_test \
@@ -198,17 +199,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.log.info('Disconnecting device.')
         self.ad_dut.stop_services()
         # Uninstall SL4A
-        self._sl4a_apk = self.ad_apps.pull_apk(
-            SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
-        self.ad_apps.uninstall(self._sl4a_apk)
+        self._sl4a_apk = AppInstaller.pull_from_device(
+            self.ad_dut, SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
+        self._sl4a_apk.uninstall()
         time.sleep(1)
 
     def _on_reconnect(self):
         """Callback invoked by device reconnection to the Monsoon"""
         # Reinstall SL4A
         if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
-            self.ad_apps.install(self._sl4a_apk)
-            shutil.rmtree(os.path.dirname(self._sl4a_apk))
+            self._sl4a_apk.install()
+            shutil.rmtree(os.path.dirname(self._sl4a_apk.apk_path))
             self._sl4a_apk = None
         self.ad_dut.start_services()
         # Release wake lock to put device into sleep.
@@ -218,10 +219,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def install_test_apk(self):
         """Installs test apk on the device."""
         test_apk_file = self._instrumentation_config.get_file('test_apk')
-        self.ad_apps.install(test_apk_file, '-g')
-        if not self.ad_apps.is_installed(test_apk_file):
+        self._test_apk = AppInstaller(self.ad_dut, test_apk_file)
+        self._test_apk.install('-g')
+        if not self._test_apk.is_installed():
             raise InstrumentationTestError('Failed to install test APK.')
-        self._test_pkg = self.ad_apps.get_package_name(test_apk_file)
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
@@ -237,7 +238,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def power_instrumentation_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
-        builder.set_manifest_package(self._test_pkg)
+        builder.set_manifest_package(self._test_apk.pkg_name)
         builder.set_nohup()
         return builder
 
