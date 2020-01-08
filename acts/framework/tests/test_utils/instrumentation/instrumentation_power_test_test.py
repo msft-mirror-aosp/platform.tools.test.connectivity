@@ -88,7 +88,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_accept)
-        self.instrumentation_power_test.validate_power_results('instrTest1')
+        with self.assertRaises(signals.TestPass):
+            self.instrumentation_power_test.validate_power_results('instrTest1')
 
     def test_validate_power_results_lower_and_upper_limit_reject(self):
         """Test that validate_power_results reject failing measurements
@@ -128,7 +129,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_accept)
-        self.instrumentation_power_test.validate_power_results('instrTest1')
+        with self.assertRaises(signals.TestPass):
+            self.instrumentation_power_test.validate_power_results('instrTest1')
 
     def test_validate_power_results_expected_value_and_deviation_reject(self):
         """Test that validate_power_results reject failing measurements
@@ -163,7 +165,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_wrong_test)
-        self.instrumentation_power_test.validate_power_results('instrTest1')
+        with self.assertRaises(signals.TestPass):
+            self.instrumentation_power_test.validate_power_results('instrTest1')
 
     def test_validate_power_results_no_such_metric(self):
         """Test that validate_power_results skip validation if the specified
@@ -180,7 +183,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_invalid_metric)
-        self.instrumentation_power_test.validate_power_results('instrTest1')
+        with self.assertRaises(signals.TestPass):
+            self.instrumentation_power_test.validate_power_results('instrTest1')
 
     def test_validate_power_results_criteria_missing_params(self):
         """Test that validate_power_results skip validation if the specified
@@ -196,7 +200,8 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_missing_params)
-        self.instrumentation_power_test.validate_power_results('instrTest1')
+        with self.assertRaises(signals.TestPass):
+            self.instrumentation_power_test.validate_power_results('instrTest1')
 
     def test_validate_power_results_pass_if_all_tests_accept(self):
         """Test that validate_power_results succeeds if it accepts the results
@@ -230,8 +235,9 @@ class InstrumentationPowerTestTest(unittest.TestCase):
             }
         }
         self.instrumentation_power_test.set_criteria(criteria_multi_test_accept)
-        self.instrumentation_power_test.validate_power_results(
-            'instrTest1', 'instrTest2')
+        with self.assertRaises(signals.TestPass):
+            self.instrumentation_power_test.validate_power_results(
+                'instrTest1', 'instrTest2')
 
     def test_validate_power_results_fail_if_at_least_one_test_rejects(self):
         """Test that validate_power_results fails if it rejects the results
