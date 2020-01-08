@@ -219,6 +219,11 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             network_suggestions, wifi_network[WifiEnums.SSID_KEY])
 
+        # Reboot with empty suggestion, verify user approval is kept.
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+        asserts.assert_true(self.is_approved(), "User approval should be kept")
+
     @test_tracker_info(uuid="bda8ed20-4382-4380-831a-64cf77eca108")
     def test_connect_to_wpa_psk_2g(self):
         """ Adds a network suggestion and ensure that the device connected.
@@ -328,6 +333,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         4. Reboot the device.
         5. Wait for the device to connect to back to it.
         6. Remove the suggestions and ensure the device does not connect back.
+        7. Reboot the device again, ensure user approval is kept
         """
         self._test_connect_to_wifi_network_reboot_config_store(
             [self.wpa_psk_5g], self.wpa_psk_5g)
@@ -345,6 +351,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         4. Reboot the device.
         5. Wait for the device to connect to the wifi network.
         6. Remove suggestions and ensure device doesn't connect back to it.
+        7. Reboot the device again, ensure user approval is kept
         """
         self._test_connect_to_wifi_network_reboot_config_store(
             [self.config_aka], self.ent_network_2g)
@@ -362,6 +369,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         4. Reboot the device.
         5. Wait for the device to connect to the wifi network.
         6. Remove suggestions and ensure device doesn't connect back to it.
+        7. Reboot the device again, ensure user approval is kept
         """
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
@@ -511,6 +519,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         4. Reboot the device.
         5. Wait for the device to connect to back to it.
         6. Remove the suggestions and ensure the device does not connect back.
+        7. Reboot the device again, ensure user approval is kept
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
