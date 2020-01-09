@@ -81,7 +81,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super()._prepare_device()
         self._cleanup_test_files()
         self.install_test_apk()
-        self.grant_permissions()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
