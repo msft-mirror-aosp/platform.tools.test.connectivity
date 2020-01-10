@@ -14,22 +14,21 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation import instrumentation_power_test
+from acts.test_utils.instrumentation.power import instrumentation_power_test
 
 
-class PartialWakeLockTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation test PartialWakeLock."""
+class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
+    """Test class for running instrumentation test RockBottom."""
 
     def setup_class(self):
         super().setup_class()
-        self.run_and_measure('%s.tests.PartialWakeLock' %
-                             self._test_apk.pkg_name)
+        self.run_and_measure('%s.tests.RockBottom' % self._test_apk.pkg_name)
 
     def _prepare_device(self):
         super()._prepare_device()
         self.mode_airplane()
         self.base_device_configuration()
 
-    def test_partial_wake_lock(self):
-        """Measures power when the device is idle with a partial wake lock."""
+    def test_rock_bottom(self):
+        """Measures power when the device is in a rock bottom state."""
         self.validate_power_results()

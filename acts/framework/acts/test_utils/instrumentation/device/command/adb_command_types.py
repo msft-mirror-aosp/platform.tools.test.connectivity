@@ -14,7 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.intent_builder import IntentBuilder
+from acts.test_utils.instrumentation.device.command.intent_builder import \
+    IntentBuilder
 
 
 class DeviceState(object):

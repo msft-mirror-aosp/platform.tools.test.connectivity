@@ -14,15 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import mock
 import unittest
 
+import mock
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.instrumentation_power_test \
+from acts.test_utils.instrumentation.power.instrumentation_power_test \
     import ACCEPTANCE_THRESHOLD
-from acts.test_utils.instrumentation.instrumentation_power_test \
+from acts.test_utils.instrumentation.power.instrumentation_power_test \
     import InstrumentationPowerTest
-from acts.test_utils.instrumentation.power_metrics import PowerMetrics
+from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 from acts import signals
 
