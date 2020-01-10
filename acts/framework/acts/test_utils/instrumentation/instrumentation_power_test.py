@@ -65,13 +65,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
         self.metric_logger = BlackboxMappedMetricLogger.for_test_class()
+        self._test_apk = None
+        self._sl4a_apk = None
+        self._instr_cmd_builder = None
+        self._power_metrics = None
 
     def setup_class(self):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
         self._instr_cmd_builder = self.power_instrumentation_command_builder()
-        self._sl4a_apk = None
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
@@ -82,6 +85,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
+        if self._test_apk:
+            self._test_apk.uninstall()
         self._cleanup_test_files()
 
     def base_device_configuration(self):
