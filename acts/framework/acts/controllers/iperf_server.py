@@ -335,7 +335,7 @@ def _get_port_from_ss_output(ss_output, pid):
         if pid in line:
             # Expected format:
             # tcp LISTEN  0 5 *:<PORT>  *:* users:(("cmd",pid=<PID>,fd=3))
-            return line.split()[4].split(':')[1]
+            return line.split()[4].split(':')[-1]
     else:
         raise ProcessLookupError('Could not find started iperf3 process.')
 
@@ -589,6 +589,7 @@ class IPerfServerOverAdb(IPerfServerBase):
         """
         super().__init__(port)
         self._android_device_or_serial = android_device_or_serial
+        self._iperf_process_adb_pid = ''
 
         self._iperf_process = None
         self._current_tag = ''
@@ -639,7 +640,6 @@ class IPerfServerOverAdb(IPerfServerBase):
                 cmd=iperf_command,
                 extra_flags=extra_args,
                 log_file=self._get_device_log_path()))
-        self._iperf_process_adb_pid = ''
         while len(self._iperf_process_adb_pid) == 0:
             self._iperf_process_adb_pid = self._android_device.adb.shell(
                 'pgrep iperf3 -n')
