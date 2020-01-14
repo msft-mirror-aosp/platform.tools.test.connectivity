@@ -47,7 +47,8 @@ class DialogDismissalUtilTest(unittest.TestCase):
         self._dismiss_dialogs_util.dismiss_dialogs(apps)
         expected_cmd = (
             'am instrument -w -f -e apps sample.app.one '
-            'dismiss.dialogs/.DismissDialogsInstrumentation'
+            'dismiss.dialogs/.DismissDialogsInstrumentation '
+            '-e screenshots true -e quitOnError true'
         )
         self._dismiss_dialogs_util._dut.adb.shell.assert_called_with(
             expected_cmd)
@@ -60,7 +61,8 @@ class DialogDismissalUtilTest(unittest.TestCase):
         self._dismiss_dialogs_util.dismiss_dialogs(apps)
         expected_cmd = (
             'am instrument -w -f -e apps sample.app.one,sample.app.two '
-            'dismiss.dialogs/.DismissDialogsInstrumentation'
+            'dismiss.dialogs/.DismissDialogsInstrumentation '
+            '-e screenshots true -e quitOnError true'
         )
         self._dismiss_dialogs_util._dut.adb.shell.assert_called_with(
             expected_cmd)
