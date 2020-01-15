@@ -234,8 +234,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.log.info('Cleaning up test generated files.')
         for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
                           DEFAULT_NOHUP_LOG, AUTOTESTER_LOG]:
-            path = os.path.join(
-                self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'), file_name)
+            path = os.path.join(self.ad_dut.external_storage_path, file_name)
             self.adb_run('rm -rf %s' % path)
 
     # Test runtime utils
@@ -253,8 +252,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """
         self.log.info('Waiting for USB disconnect signal')
         disconnect_file = os.path.join(
-            self.ad_dut.adb.shell('echo $EXTERNAL_STORAGE'),
-            DISCONNECT_USB_FILE)
+            self.ad_dut.external_storage_path, DISCONNECT_USB_FILE)
         start_time = time.time()
         while time.time() < start_time + self._disconnect_usb_timeout:
             if self.ad_dut.adb.shell('ls %s' % disconnect_file):
