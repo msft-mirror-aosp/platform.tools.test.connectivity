@@ -41,7 +41,6 @@ install_requires = [
     'xlsxwriter',
     'mobly',
     'grpcio',
-    'IPy',
     'Monsoon',
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
