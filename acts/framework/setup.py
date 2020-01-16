@@ -35,7 +35,6 @@ install_requires = [
     'protobuf',
     'retry',
     'requests',
-    'roman',
     'scapy',
     'pylibftdi',
     'xlsxwriter',
