@@ -343,7 +343,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             signals.TestFailure if one or more metrics do not satisfy threshold
         """
         summaries = {}
-        failures = {}
+        failure = False
         all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
 
         if not instr_test_names:
@@ -359,8 +359,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     'instrumentation_proto.txt.'
                     % instr_test_name)
 
-            summaries[instr_test_name] = test_metrics.summary
-            failures[instr_test_name] = {}
+            summaries[instr_test_name] = {}
             test_thresholds = all_thresholds.get_config(instr_test_name)
             for metric_name, metric in test_thresholds.items():
                 try:
@@ -383,13 +382,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
                 lower_bound = Measurement(lower_value, unit_type, unit)
                 upper_bound = Measurement(upper_value, unit_type, unit)
+                summary_entry = {
+                    'expected': '[%s, %s]' % (lower_bound, upper_bound),
+                    'actual': str(actual_result.to_unit(unit))
+                }
+                summaries[instr_test_name][metric_name] = summary_entry
                 if not lower_bound <= actual_result <= upper_bound:
-                    failures[instr_test_name][metric_name] = {
-                        'expected': '[%s, %s]' % (lower_bound, upper_bound),
-                        'actual': str(actual_result.to_unit(unit))
-                    }
+                    failure = True
         self.log.info('Summary of measurements: %s' % summaries)
         asserts.assert_false(
-            any(failures.values()),
+            failure,
             msg='One or more measurements do not meet the specified criteria',
-            extras=failures)
+            extras=summaries)
+        asserts.explicit_pass(
+            msg='All measurements meet the criteria',
+            extras=summaries)
