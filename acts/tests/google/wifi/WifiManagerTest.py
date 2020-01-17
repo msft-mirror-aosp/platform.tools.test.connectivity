@@ -964,3 +964,30 @@ class WifiManagerTest(WifiBaseTest):
         except queue.Empty:
             asserts.fail(
                 "Wi-Fi scan results did not become available within 60s.")
+
+    @test_tracker_info(uuid="")
+    def test_enable_disable_auto_join_saved_network(self):
+        """
+        Add a saved network, simulate user change the auto join to false, ensure the device doesn't
+        auto connect to this network
+
+        Steps:
+        1. Create a saved network.
+        2. Add this saved network, and ensure we connect to this network
+        3. Simulate user change the auto join to false.
+        4. Toggle the Wifi off and on
+        4. Ensure device doesn't connect to his network
+        """
+        network = self.open_network_5g
+        wutils.connect_to_wifi_network(self.dut, network)
+        info = self.dut.droid.wifiGetConnectionInfo()
+        network_id = info[WifiEnums.NETID_KEY]
+        self.dut.log.info("Disable auto join on network")
+        self.dut.droid.wifiEnableAutojoin(network_id, False)
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.wifi_toggle_state(self.dut, True)
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut, network[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False), "Device should not connect.")
+        self.dut.droid.wifiEnableAutojoin(network_id, True)
+        wutils.wait_for_connect(self.dut, network[WifiEnums.SSID_KEY], assert_on_fail=False)
