@@ -20,14 +20,14 @@ import unittest
 
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as parser
-from acts.test_utils.instrumentation.power_metrics import CURRENT
-from acts.test_utils.instrumentation.power_metrics import HOUR
-from acts.test_utils.instrumentation.power_metrics import MILLIAMP
-from acts.test_utils.instrumentation.power_metrics import MINUTE
-from acts.test_utils.instrumentation.power_metrics import Measurement
-from acts.test_utils.instrumentation.power_metrics import PowerMetrics
-from acts.test_utils.instrumentation.power_metrics import TIME
-from acts.test_utils.instrumentation.power_metrics import WATT
+from acts.test_utils.instrumentation.power.power_metrics import CURRENT
+from acts.test_utils.instrumentation.power.power_metrics import HOUR
+from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
+from acts.test_utils.instrumentation.power.power_metrics import MINUTE
+from acts.test_utils.instrumentation.power.power_metrics import Measurement
+from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
+from acts.test_utils.instrumentation.power.power_metrics import TIME
+from acts.test_utils.instrumentation.power.power_metrics import WATT
 
 FAKE_UNIT_TYPE = 'fake_unit'
 FAKE_UNIT = 'F'
@@ -121,7 +121,8 @@ class PowerMetricsTest(unittest.TestCase):
         the number of samples is correct."""
 
         imported_data = PowerMetrics.import_raw_data(
-            os.path.join(os.path.dirname(__file__), 'data/sample_monsoon_data')
+            os.path.join(os.path.dirname(__file__),
+                         '../data/sample_monsoon_data')
         )
         self.power_metrics.generate_test_metrics(imported_data)
         self.assertEqual(self.power_metrics._num_samples, 10)

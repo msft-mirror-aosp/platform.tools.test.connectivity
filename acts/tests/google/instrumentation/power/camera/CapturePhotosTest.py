@@ -14,22 +14,34 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation import instrumentation_power_test
+from acts.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.device.apps.dismiss_dialogs import \
+    DialogDismissalUtil
 
 
-class PartialWakeLockTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation test PartialWakeLock."""
+class CapturePhotosTest(instrumentation_power_test.InstrumentationPowerTest):
+    """Test class for running instrumentation test CapturePhotos."""
 
     def setup_class(self):
         super().setup_class()
-        self.run_and_measure('%s.tests.PartialWakeLock' %
-                             self._test_apk.pkg_name)
+        self.run_and_measure(
+            '%s.tests.camera.CapturePhotos' % self._test_apk.pkg_name
+        )
 
     def _prepare_device(self):
         super()._prepare_device()
         self.mode_airplane()
         self.base_device_configuration()
+        self._dialog_util = DialogDismissalUtil(
+            self.ad_dut,
+            self._instrumentation_config.get_file('dismiss_dialogs_apk')
+        )
+        self._dialog_util.dismiss_dialogs('GoogleCamera')
 
-    def test_partial_wake_lock(self):
-        """Measures power when the device is idle with a partial wake lock."""
+    def _cleanup_device(self):
+        self._dialog_util.close()
+        super()._cleanup_device()
+
+    def test_capture_photos(self):
+        """Measures power during photo capture."""
         self.validate_power_results()

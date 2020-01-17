@@ -24,26 +24,30 @@ from acts.controllers.android_device import SL4A_APK_NAME
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
-from acts.test_utils.instrumentation.adb_command_types import DeviceGServices
-from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
-from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
-from acts.test_utils.instrumentation.adb_commands import common
-from acts.test_utils.instrumentation.adb_commands import goog
-from acts.test_utils.instrumentation.app_installer import AppInstaller
-from acts.test_utils.instrumentation.brightness import \
+from acts.test_utils.instrumentation.device.apps.app_installer import \
+    AppInstaller
+from acts.test_utils.instrumentation.device.brightness import \
     get_brightness_for_200_nits
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    DeviceGServices
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    DeviceSetprop
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    DeviceSetting
+from acts.test_utils.instrumentation.device.command.adb_commands import common
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
+    import DEFAULT_NOHUP_LOG
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
+    import InstrumentationTestCommandBuilder
 from acts.test_utils.instrumentation.instrumentation_base_test \
     import InstrumentationBaseTest
 from acts.test_utils.instrumentation.instrumentation_base_test \
     import InstrumentationTestError
-from acts.test_utils.instrumentation.instrumentation_command_builder import \
-    DEFAULT_NOHUP_LOG
-from acts.test_utils.instrumentation.instrumentation_command_builder import \
-    InstrumentationTestCommandBuilder
 from acts.test_utils.instrumentation.instrumentation_proto_parser import \
     DEFAULT_INST_LOG_DIR
-from acts.test_utils.instrumentation.power_metrics import Measurement
-from acts.test_utils.instrumentation.power_metrics import PowerMetrics
+from acts.test_utils.instrumentation.power.power_metrics import Measurement
+from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 from acts import asserts
 from acts import context
@@ -81,7 +85,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super()._prepare_device()
         self._cleanup_test_files()
         self.install_test_apk()
-        self.grant_permissions()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
@@ -343,7 +346,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             signals.TestFailure if one or more metrics do not satisfy threshold
         """
         summaries = {}
-        failures = {}
+        failure = False
         all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
 
         if not instr_test_names:
@@ -359,8 +362,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     'instrumentation_proto.txt.'
                     % instr_test_name)
 
-            summaries[instr_test_name] = test_metrics.summary
-            failures[instr_test_name] = {}
+            summaries[instr_test_name] = {}
             test_thresholds = all_thresholds.get_config(instr_test_name)
             for metric_name, metric in test_thresholds.items():
                 try:
@@ -383,13 +385,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
                 lower_bound = Measurement(lower_value, unit_type, unit)
                 upper_bound = Measurement(upper_value, unit_type, unit)
+                summary_entry = {
+                    'expected': '[%s, %s]' % (lower_bound, upper_bound),
+                    'actual': str(actual_result.to_unit(unit))
+                }
+                summaries[instr_test_name][metric_name] = summary_entry
                 if not lower_bound <= actual_result <= upper_bound:
-                    failures[instr_test_name][metric_name] = {
-                        'expected': '[%s, %s]' % (lower_bound, upper_bound),
-                        'actual': str(actual_result.to_unit(unit))
-                    }
+                    failure = True
         self.log.info('Summary of measurements: %s' % summaries)
         asserts.assert_false(
-            any(failures.values()),
+            failure,
             msg='One or more measurements do not meet the specified criteria',
-            extras=failures)
+            extras=summaries)
+        asserts.explicit_pass(
+            msg='All measurements meet the criteria',
+            extras=summaries)
