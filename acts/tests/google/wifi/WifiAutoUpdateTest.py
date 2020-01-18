@@ -186,16 +186,12 @@ class WifiAutoUpdateTest(WifiBaseTest):
             network_suggestions : suggestions to remove.
             expected_ssid : SSID to verify that DUT is not connected.
         """
+        # remove network suggestion and verify disconnect
         self.dut.log.info("Removing network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiRemoveNetworkSuggestions(network_suggestions),
             "Failed to remove suggestions")
 
-        # Ensure we did not disconnect
-        wutils.ensure_no_disconnect(self.dut)
-
-        # Trigger a disconnect and wait for the disconnect.
-        self.dut.droid.wifiDisconnect()
         wutils.wait_for_disconnect(self.dut)
         self.dut.ed.clear_all_events()
 

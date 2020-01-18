@@ -38,7 +38,7 @@ install_requires = [
     'scapy',
     'pylibftdi',
     'xlsxwriter',
-    'mobly',
+    'mobly>=1.10.0',
     'grpcio',
     'IPy',
     'Monsoon',

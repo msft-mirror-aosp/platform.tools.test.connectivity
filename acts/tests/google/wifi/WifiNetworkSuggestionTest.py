@@ -149,7 +149,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         if expect_post_connection_broadcast is not None:
             self.dut.droid.wifiStartTrackingNetworkSuggestionStateChange()
 
-        self.dut.log.info("Adding network suggestions");
+        self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions(network_suggestions),
             "Failed to add suggestions")
@@ -580,3 +580,58 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut, passpoint_config[WifiEnums.SSID_KEY])
         time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="")
+    def test_initial_auto_join_on_network_suggestion(self):
+        """
+        Add a network suggestion with enableAutojoin bit set to false, ensure the device doesn't
+        auto connect to this network
+
+        Steps:
+        1. Create a network suggestion.
+        2. Set EnableAutojoin to false.
+        3. Add this suggestion
+        4. Ensure device doesn't connect to his network
+        """
+        network_suggestion = self.open_5g
+        # Set suggestion auto join initial to false.
+        network_suggestion["enableAutojoin"] = False
+        self.dut.log.info("Adding network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([network_suggestion]),
+            "Failed to add suggestions")
+        # Enable suggestions by the app.
+        self.dut.log.debug("Enabling suggestions from test")
+        self.set_approved(True)
+        wutils.start_wifi_connection_scan_and_return_status(self.dut)
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False), "Device should not connect.")
+
+    @test_tracker_info(uuid="")
+    def test_user_override_auto_join_on_network_suggestion(self):
+        """
+        Add a network suggestion, user change the auto join to false, ensure the device doesn't
+        auto connect to this network
+
+        Steps:
+        1. Create a network suggestion.
+        2. Add this suggestion, and ensure we connect to this network
+        3. Simulate user change the auto join to false.
+        4. Toggle the Wifi off and on
+        4. Ensure device doesn't connect to his network
+        """
+        network_suggestion = self.open_5g
+        self.add_suggestions_and_ensure_connection([network_suggestion],
+                                                   network_suggestion[WifiEnums.SSID_KEY], False)
+        wifi_info = self.dut.droid.wifiGetConnectionInfo()
+        self.dut.log.info(wifi_info)
+        network_id = wifi_info[WifiEnums.NETID_KEY]
+        # Simulate user disable auto join through Settings.
+        self.dut.log.info("Disable auto join on suggestion")
+        self.dut.droid.wifiEnableAutojoin(network_id, False)
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.wifi_toggle_state(self.dut, True)
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False), "Device should not connect.")

@@ -769,12 +769,14 @@ def set_wifi_country_code(ad, country_code):
     Args:
         ad: An AndroidDevice object.
         country_code: 2 letter ISO country code
+
+    Raises:
+        An RpcException if unable to set the country code.
     """
-    ad.adb.shell("cmd wifi force-country-code enabled %s" % country_code)
     try:
+        ad.adb.shell("cmd wifi force-country-code enabled %s" % country_code)
+    except ad.adb.AdbError as e:
         ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
-    except Exception:
-        pass
 
 
 def start_wifi_connection_scan(ad):
@@ -1344,7 +1346,7 @@ def _wifi_connect(ad, network, num_of_tries=1, check_connectivity=True):
         time.sleep(5)
 
         if check_connectivity:
-            internet = validate_connection(ad, DEFAULT_PING_ADDR)
+            internet = validate_connection(ad, DEFAULT_PING_ADDR, 10)
             if not internet:
                 raise signals.TestFailure("Failed to connect to internet on %s" %
                                           expected_ssid)
@@ -1777,18 +1779,19 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
     utils.exe_cmd(cmd)
 
 
-def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR):
+def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2):
     """Validate internet connection by pinging the address provided.
 
     Args:
         ad: android_device object.
         ping_addr: address on internet for pinging.
+        wait_time: wait for some time before validating connection
 
     Returns:
         ping output if successful, NULL otherwise.
     """
-    # Adding 2 secs timeout before pinging to allow for DHCP to complete.
-    time.sleep(2)
+    # wait_time to allow for DHCP to complete.
+    time.sleep(wait_time)
     ping = ad.droid.httpPing(ping_addr)
     ad.log.info("Http ping result: %s.", ping)
     return ping
