@@ -48,6 +48,7 @@ from acts.test_utils.instrumentation.instrumentation_proto_parser import \
     DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import Measurement
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
+from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 
 from acts import asserts
 from acts import context
@@ -84,12 +85,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Prepares the device for power testing."""
         super()._prepare_device()
         self._cleanup_test_files()
+        self._permissions_util = PermissionsUtil(
+            self.ad_dut,
+            self._instrumentation_config.get_file('permissions_apk'))
+        self._permissions_util.grant_all()
         self.install_test_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
         if self._test_apk:
             self._test_apk.uninstall()
+        self._permissions_util.close()
         self._cleanup_test_files()
 
     def base_device_configuration(self):
