@@ -238,8 +238,7 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         # start 3 scans to get AP_1 5G blacklisted because of the incorrect
         # password
         for _ in range(3):
-            wutils.start_wifi_connection_scan_and_ensure_network_found(
-                self.dut, wrong_passwd_network['SSID'])
+            wutils.start_wifi_connection_scan_and_return_status(self.dut)
             time.sleep(NETWORK_SELECTION_TIME_GAP)
 
         # verify DUT is connect AP_2 5G
