@@ -19,7 +19,7 @@ import concurrent.futures
 import copy
 import datetime
 import functools
-import IPy
+import ipaddress
 import json
 import logging
 import os
@@ -1414,26 +1414,19 @@ def get_interface_ip_addresses(comm_channel, interface):
     for interface_line in all_interfaces_and_addresses.split('\n'):
         if interface != interface_line.split()[0]:
             continue
-        on_device_ip = IPy.IP(interface_line.split()[1])
-        if on_device_ip.version() is 4:
-            if on_device_ip.iptype() == 'PRIVATE':
-                if str(on_device_ip) in ifconfig_output:
-                    ipv4_private_local_addresses.append(
-                        on_device_ip.strNormal())
-            elif on_device_ip.iptype() == 'PUBLIC':
-                if str(on_device_ip) in ifconfig_output:
-                    ipv4_public_addresses.append(on_device_ip.strNormal())
-        elif on_device_ip.version() is 6:
-            if on_device_ip.iptype() == 'LINKLOCAL':
-                if str(on_device_ip) in ifconfig_output:
-                    ipv6_link_local_addresses.append(on_device_ip.strNormal())
-            elif on_device_ip.iptype() == 'ULA':
-                if str(on_device_ip) in ifconfig_output:
-                    ipv6_private_local_addresses.append(
-                        on_device_ip.strNormal())
-            elif 'ALLOCATED' in on_device_ip.iptype():
-                if str(on_device_ip) in ifconfig_output:
-                    ipv6_public_addresses.append(on_device_ip.strNormal())
+        on_device_ip = ipaddress.ip_address(interface_line.split()[1])
+        if on_device_ip.version() == 4:
+            if on_device_ip.is_private():
+                ipv4_private_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_global():
+                ipv4_public_addresses.append(str(on_device_ip))
+        elif on_device_ip.version() == 6:
+            if on_device_ip.is_link_local():
+                ipv6_link_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_private():
+                ipv6_private_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_global():
+                ipv6_public_addresses.append(str(on_device_ip))
     return {
         'ipv4_private': ipv4_private_local_addresses,
         'ipv4_public': ipv4_public_addresses,
