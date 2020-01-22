@@ -593,7 +593,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         3. Add this suggestion
         4. Ensure device doesn't connect to his network
         """
-        network_suggestion = self.open_5g
+        network_suggestion = self.wpa_psk_5g
         # Set suggestion auto join initial to false.
         network_suggestion["enableAutojoin"] = False
         self.dut.log.info("Adding network suggestions")
@@ -621,7 +621,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         4. Toggle the Wifi off and on
         4. Ensure device doesn't connect to his network
         """
-        network_suggestion = self.open_5g
+        network_suggestion = self.wpa_psk_5g
         self.add_suggestions_and_ensure_connection([network_suggestion],
                                                    network_suggestion[WifiEnums.SSID_KEY], False)
         wifi_info = self.dut.droid.wifiGetConnectionInfo()

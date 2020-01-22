@@ -33,6 +33,7 @@ import queue
 import time
 from logging import Logger
 
+from acts import asserts
 from acts.controllers.buds_lib import tako_trace_logger
 from acts.utils import TimeoutError
 from acts.utils import wait_until
@@ -198,7 +199,8 @@ class BTUtils(object):
             return True, 0
         self.logger.debug('Unpairing from %s' % target_address)
         start_time = end_time = time.time()
-        assert True is pri_device.droid.bluetoothUnbond(target_address), (
+        asserts.assert_true(
+            pri_device.droid.bluetoothUnbond(target_address),
             'Failed to request device unpairing.')
 
         # Check that devices have unpaired successfully.
