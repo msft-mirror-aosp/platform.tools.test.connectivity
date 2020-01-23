@@ -119,16 +119,18 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         """
         ad = self.dut
         ad.ed.clear_all_events()
-        ssid = passpoint_network
-        wutils.start_wifi_connection_scan_and_ensure_network_found(ad, ssid, 6)
-        # Passpoint network takes longer time to connect than normal networks.
-        # Every try comes with a timeout of 30s. Setting total timeout to 120s.
-        wutils.wifi_passpoint_connect(self.dut, passpoint_network, num_of_tries=4)
+        try:
+            wutils.start_wifi_connection_scan_and_return_status(ad)
+            wutils.wait_for_connect(ad)
+        except:
+            pass
         # Re-verify we are connected to the correct network.
         network_info = self.dut.droid.wifiGetConnectionInfo()
-        if network_info[WifiEnums.SSID_KEY] != passpoint_network:
-            raise signals.TestFailure("Device did not connect to the passpoint"
-                                      " network.")
+        self.log.info("Network Info: %s" % network_info)
+        if not network_info or not network_info[WifiEnums.SSID_KEY] or \
+            network_info[WifiEnums.SSID_KEY] not in passpoint_network:
+              raise signals.TestFailure(
+                  "Device did not connect to passpoint network.")
 
 
     def get_configured_passpoint_and_delete(self):
