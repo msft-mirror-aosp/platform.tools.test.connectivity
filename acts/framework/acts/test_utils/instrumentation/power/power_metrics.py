@@ -143,8 +143,8 @@ class Measurement(object):
         """
         try:
             new_value = self._value * (
-                    CONVERSION_TABLES[self._unit_type][self._unit] /
-                    CONVERSION_TABLES[self._unit_type][new_unit])
+                CONVERSION_TABLES[self._unit_type][self._unit] /
+                CONVERSION_TABLES[self._unit_type][new_unit])
         except KeyError:
             raise TypeError('Incompatible units: %s, %s' %
                             (self._unit, new_unit))
@@ -194,7 +194,7 @@ class PowerMetrics(object):
         """Update the running metrics with the current sample.
 
         Args:
-            sample: A current sample.
+            sample: A current sample in Amps.
         """
         self._num_samples += 1
         self._sum_currents += sample
@@ -224,16 +224,16 @@ class PowerMetrics(object):
                 self._voltage, self._start_time)
             try:
                 test_starts[test_name] = Measurement(
-                    times[parser.START_TIMESTAMP], TIME, MILLISECOND)\
-                    .to_unit(SECOND).value - self._start_time
+                    times[parser.START_TIMESTAMP], TIME, MILLISECOND) \
+                                             .to_unit(SECOND).value - self._start_time
             except KeyError:
                 raise InstrumentationTestError(
                     'Missing start timestamp for test scenario "%s". Refer to '
                     'instrumentation_proto.txt for details.' % test_name)
             try:
                 test_ends[test_name] = Measurement(
-                    times[parser.END_TIMESTAMP], TIME, MILLISECOND)\
-                    .to_unit(SECOND).value - self._start_time
+                    times[parser.END_TIMESTAMP], TIME, MILLISECOND) \
+                                           .to_unit(SECOND).value - self._start_time
             except KeyError:
                 raise InstrumentationTestError(
                     'Missing end timestamp for test scenario "%s". Test '
@@ -254,40 +254,41 @@ class PowerMetrics(object):
 
     @property
     def avg_current(self):
-        """Average current, in amps."""
+        """Average current, in milliamps."""
         if not self._num_samples:
-            return Measurement.amps(0)
-        return Measurement.amps(self._sum_currents / self._num_samples)
+            return Measurement.amps(0).to_unit(MILLIAMP)
+        return (Measurement.amps(self._sum_currents / self._num_samples)
+                .to_unit(MILLIAMP))
 
     @property
     def max_current(self):
-        """Max current, in amps."""
-        return Measurement.amps(self._max_current or 0)
+        """Max current, in milliamps."""
+        return Measurement.amps(self._max_current or 0).to_unit(MILLIAMP)
 
     @property
     def min_current(self):
-        """Min current, in amps."""
-        return Measurement.amps(self._min_current or 0)
+        """Min current, in milliamps."""
+        return Measurement.amps(self._min_current or 0).to_unit(MILLIAMP)
 
     @property
     def stdev_current(self):
-        """Standard deviation of current values, in amps."""
+        """Standard deviation of current values, in milliamps."""
         if self._num_samples < 2:
-            return Measurement.amps(0)
-
-        return Measurement.amps(math.sqrt(
+            return Measurement.amps(0).to_unit(MILLIAMP)
+        stdev = math.sqrt(
             (self._sum_squares - (
-                    self._num_samples * self.avg_current.value ** 2))
-            / (self._num_samples - 1)))
+                self._num_samples * self.avg_current.to_unit(AMP).value ** 2))
+            / (self._num_samples - 1))
+        return Measurement.amps(stdev).to_unit(MILLIAMP)
 
     def current_to_power(self, current):
         """Converts a current value to a power value."""
-        return Measurement.watts(current.to_unit(AMP).value * self._voltage)
+        return (Measurement.watts(current.to_unit(AMP).value * self._voltage))
 
     @property
     def avg_power(self):
-        """Average power, in watts."""
-        return self.current_to_power(self.avg_current)
+        """Average power, in milliwatts."""
+        return self.current_to_power(self.avg_current).to_unit(MILLIWATT)
 
     @property
     def summary(self):

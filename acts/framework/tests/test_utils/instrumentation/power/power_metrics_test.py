@@ -143,13 +143,13 @@ class PowerMetricsTest(unittest.TestCase):
         """Test that the numeric metrics have correct values."""
         self.power_metrics.generate_test_metrics(self.RAW_DATA)
         self.assertAlmostEqual(self.power_metrics.avg_current.value,
-                               statistics.mean(self.SAMPLES))
+                               statistics.mean(self.SAMPLES) * 1000)
         self.assertAlmostEqual(self.power_metrics.max_current.value,
-                               max(self.SAMPLES))
+                               max(self.SAMPLES) * 1000)
         self.assertAlmostEqual(self.power_metrics.min_current.value,
-                               min(self.SAMPLES))
+                               min(self.SAMPLES) * 1000)
         self.assertAlmostEqual(self.power_metrics.stdev_current.value,
-                               statistics.stdev(self.SAMPLES))
+                               statistics.stdev(self.SAMPLES) * 1000)
         self.assertAlmostEqual(
             self.power_metrics.avg_power.value,
             self.power_metrics.avg_current.value * self.VOLTAGE)
