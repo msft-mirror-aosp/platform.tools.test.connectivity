@@ -26,8 +26,6 @@ from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.device.apps.app_installer import \
     AppInstaller
-from acts.test_utils.instrumentation.device.brightness import \
-    get_brightness_for_200_nits
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
     DeviceGServices
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
@@ -69,6 +67,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def __init__(self, configs):
         super().__init__(configs)
+
         self.metric_logger = BlackboxMappedMetricLogger.for_test_class()
         self._test_apk = None
         self._sl4a_apk = None
@@ -112,8 +111,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         # Screen
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
-        self.adb_run(common.screen_brightness.set_value(
-            get_brightness_for_200_nits(self.ad_dut.model)))
+
+        brightness_level = None
+        if 'brightness_level' in self._instrumentation_config:
+            brightness_level = self._instrumentation_config['brightness_level']
+
+        if brightness_level is None:
+            raise ValueError('no brightness level defined (or left as None) '
+                             'and it is needed.'
+                             % self.ad_dut.model)
+
+        self.adb_run(common.screen_brightness.set_value(brightness_level))
         self.adb_run(common.screen_timeout_ms.set_value(1800000))
         self.adb_run(common.notification_led.toggle(False))
         self.adb_run(common.screensaver.toggle(False))
