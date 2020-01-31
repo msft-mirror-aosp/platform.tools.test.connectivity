@@ -581,7 +581,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e35f99c8-78a4-4b96-9258-f9834b6ddd33")
     def test_initial_auto_join_on_network_suggestion(self):
         """
         Add a network suggestion with enableAutojoin bit set to false, ensure the device doesn't
@@ -608,7 +608,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY],
                                     assert_on_fail=False), "Device should not connect.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ff4e451f-a380-4ff5-a5c2-dd9b1633d5e5")
     def test_user_override_auto_join_on_network_suggestion(self):
         """
         Add a network suggestion, user change the auto join to false, ensure the device doesn't

@@ -394,7 +394,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def test_start_subscription_provisioning_and_toggle_wifi(self):
         self.start_subscription_provisioning(TOGGLE)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ad6d5eb8-a3c5-4ce0-9e10-d0f201cd0f40")
     def test_user_override_auto_join_on_passpoint_network(self):
         """Add a Passpoint network, simulate user change the auto join to false, ensure the device
         doesn't auto connect to this passponit network

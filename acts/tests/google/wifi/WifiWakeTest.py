@@ -192,7 +192,7 @@ class WifiWakeTest(WifiBaseTest):
             self.dut.droid.wifiCheckState(),
             "Expect Wifi Wake to enable Wifi, but Wifi is disabled.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3cecd1c5-54bc-44a2-86f7-ad84625bf094")
     def test_reconnect_wifi_network_suggestion(self):
         """Tests that Wifi Wake re-enables Wifi for app provided suggestion."""
         self.dut.log.info("Adding network suggestions");

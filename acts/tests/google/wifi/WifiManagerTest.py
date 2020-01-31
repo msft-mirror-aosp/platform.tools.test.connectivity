@@ -965,7 +965,7 @@ class WifiManagerTest(WifiBaseTest):
             asserts.fail(
                 "Wi-Fi scan results did not become available within 60s.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="03cfbc86-7fcc-48d8-ab0f-1f6f3523e596")
     def test_enable_disable_auto_join_saved_network(self):
         """
         Add a saved network, simulate user change the auto join to false, ensure the device doesn't
