@@ -22,7 +22,6 @@ class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def setup_class(self):
         super().setup_class()
-        self.run_and_measure('%s.tests.RockBottom' % self._test_apk.pkg_name)
 
     def _prepare_device(self):
         super()._prepare_device()
@@ -31,4 +30,7 @@ class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def test_rock_bottom(self):
         """Measures power when the device is in a rock bottom state."""
+        self.run_and_measure(
+            'com.google.android.platform.powertests.IdleTestCase',
+            'testIdleScreenOff')
         self.validate_power_results()
