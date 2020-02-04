@@ -138,6 +138,24 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             + " " + SL4A_APK_NAME)
         return True if (is_approved_str == "yes") else False
 
+    def set_carrier_approved(self, carrier_id, approved):
+        self.dut.log.debug(("Setting IMSI protection exemption for carrier: " + carrier_id
+                                + "approved" if approved else "not approved"))
+        self.dut.adb.shell("cmd wifi imsi-protection-exemption-set-user-approved-for-carrier"
+                           + " " + carrier_id
+                           + " " + ("yes" if approved else "no"))
+
+    def is_carrier_approved(self, carrier_id):
+        is_approved_str = self.dut.adb.shell(
+            "cmd wifi imsi-protection-exemption-has-user-approved-for-carrier"
+            + " " + carrier_id)
+        return True if (is_approved_str == "yes") else False
+
+    def clear_carrier_approved(self, carrier_id):
+        self.dut.adb.shell(
+            "cmd wifi imsi-protection-exemption-clear-user-approved-for-carrier"
+            + " " + carrier_id)
+
     def clear_deleted_ephemeral_networks(self):
         self.dut.log.debug("Clearing deleted ephemeral networks")
         self.dut.adb.shell(
@@ -353,8 +371,12 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         6. Remove suggestions and ensure device doesn't connect back to it.
         7. Reboot the device again, ensure user approval is kept
         """
+        if "carrierId" in self.config_aka:
+            self.set_carrier_approved(self.config_aka["carrierId"], True)
         self._test_connect_to_wifi_network_reboot_config_store(
             [self.config_aka], self.ent_network_2g)
+        if "carrierId" in self.config_aka:
+            self.clear_carrier_approved(self.config_aka["carrierId"])
 
     @test_tracker_info(uuid="98b2d40a-acb4-4a2f-aba1-b069e2a1d09d")
     def test_connect_to_wpa_ent_config_ttls_pap_reboot_config_store(self):
@@ -500,10 +522,14 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                         "No passpoint networks, skip this test")
         passpoint_config = self.passpoint_networks[ATT]
         passpoint_config[WifiEnums.IS_APP_INTERACTION_REQUIRED] = True
+        if "carrierId" in passpoint_config:
+            self.set_carrier_approved(passpoint_config["carrierId"], True)
         self.add_suggestions_and_ensure_connection([passpoint_config],
                                                    passpoint_config[WifiEnums.SSID_KEY], True)
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [passpoint_config], passpoint_config[WifiEnums.SSID_KEY])
+        if "carrierId" in passpoint_config:
+            self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="159b8b8c-fb00-4d4e-a29f-606881dcbf44")
     def test_connect_to_passpoint_network_reboot_config_store(self):
@@ -524,8 +550,12 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
         passpoint_config = self.passpoint_networks[ATT]
+        if "carrierId" in passpoint_config:
+            self.set_carrier_approved(passpoint_config["carrierId"], True)
         self._test_connect_to_wifi_network_reboot_config_store([passpoint_config],
                                                                passpoint_config)
+        if "carrierId" in passpoint_config:
+            self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="34f3d28a-bedf-43fe-a12d-2cfadf6bc6eb")
     def test_fail_to_connect_to_passpoint_network_when_not_approved(self):
@@ -580,6 +610,62 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut, passpoint_config[WifiEnums.SSID_KEY])
         time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="")
+    def test_fail_to_connect_to_passpoint_network_when_imsi_protection_exemption_not_approved(self):
+        """
+        Adds a passpoint network suggestion using SIM credential without IMSI privacy protection.
+        Before user approves the exemption, ensure that the device does noconnect to it until we
+        approve the carrier exemption.
+
+        Steps:
+        1. Send a network suggestion to the device with IMSI protection exemption not approved.
+        2. Ensure the network is present in scan results, but we don't connect
+           to it.
+        3. Now approve the carrier.
+        4. Wait for the device to connect to it.
+        """
+        asserts.skip_if(not hasattr(self, "passpoint_networks"),
+                        "No passpoint networks, skip this test")
+        passpoint_config = self.passpoint_networks[ATT]
+        asserts.skip_if("carrierId" not in passpoint_config,
+                        "Not a SIM based passpoint network, skip this test")
+
+        self.dut.log.info("Adding network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([passpoint_config]),
+            "Failed to add suggestions")
+
+        # Ensure the carrier imsi protection exemption is not approved.
+        asserts.assert_false(
+            self.is_carrier_approved(passpoint_config["carrierId"]),
+            "Carrier should not be approved")
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, passpoint_config[WifiEnums.SSID_KEY])
+
+        # Ensure we don't connect to the network.
+        asserts.assert_false(
+            wutils.wait_for_connect(
+                self.dut, passpoint_config[WifiEnums.SSID_KEY], assert_on_fail=False),
+            "Should not connect to network suggestions from unapproved app")
+
+        self.dut.log.info("Enabling suggestions from test")
+        # Now approve IMSI protection exemption by carrier & ensure we connect to the network.
+        self.set_carrier_approved(passpoint_config["carrierId"], True)
+
+        # Ensure the carrier is approved.
+        asserts.assert_true(
+            self.is_carrier_approved(passpoint_config["carrierId"]),
+            "Carrier should be approved")
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, passpoint_config[WifiEnums.SSID_KEY])
+        time.sleep(PASSPOINT_TIMEOUT)
+        wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
+        self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="e35f99c8-78a4-4b96-9258-f9834b6ddd33")
     def test_initial_auto_join_on_network_suggestion(self):
