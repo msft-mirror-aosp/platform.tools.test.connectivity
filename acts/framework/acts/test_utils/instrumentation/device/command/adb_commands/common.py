@@ -72,8 +72,7 @@ disable_dialing = DeviceSetprop('ro.telephony.disable-call', 'true', 'false')
 
 # Screen
 
-screen_adaptive_brightness = DeviceSetting(
-    SYSTEM, 'screen_brightness_mode')
+screen_adaptive_brightness = DeviceSetting(SYSTEM, 'screen_brightness_mode')
 
 screen_brightness = DeviceSetting(SYSTEM, 'screen_brightness')
 
@@ -82,6 +81,8 @@ screen_always_on = DeviceState('svc power stayon', 'true', 'false')
 screen_timeout_ms = DeviceSetting(SYSTEM, 'screen_off_timeout')
 
 doze_mode = DeviceSetting(SECURE, 'doze_enabled')
+
+doze_always_on = DeviceSetting(SECURE, 'doze_always_on')
 
 wake_gesture = DeviceSetting(SECURE, 'wake_gesture_enabled')
 
@@ -124,6 +125,11 @@ enable_full_batterystats_history = 'dumpsys batterystats --enable full-history'
 disable_doze = 'dumpsys deviceidle disable'
 
 
+# Sensors
+
+disable_sensors = 'dumpsys sensorservice restrict blah'
+
+
 # Miscellaneous
 
 test_harness = DeviceBinaryCommandSeries(
@@ -132,3 +138,4 @@ test_harness = DeviceBinaryCommandSeries(
         DeviceSetprop('ro.test_harness')
     ]
 )
+
