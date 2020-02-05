@@ -68,7 +68,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
 
-        self.metric_logger = BlackboxMappedMetricLogger.for_test_class()
+        self.metric_logger = BlackboxMappedMetricLogger.for_test_case()
         self._test_apk = None
         self._sl4a_apk = None
         self._instr_cmd_builder = None
