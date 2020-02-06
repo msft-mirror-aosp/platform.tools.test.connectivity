@@ -85,6 +85,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.config_aka = {
                 Ent.EAP: int(EAP.AKA),
                 WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+                "carrierId": str(self.dut.droid.telephonyGetSimCarrierId()),
             }
             self.config_ttls = {
                 Ent.EAP: int(EAP.TTLS),
@@ -611,7 +612,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="cf624cda-4d25-42f1-80eb-6c717fb08338")
     def test_fail_to_connect_to_passpoint_network_when_imsi_protection_exemption_not_approved(self):
         """
         Adds a passpoint network suggestion using SIM credential without IMSI privacy protection.
