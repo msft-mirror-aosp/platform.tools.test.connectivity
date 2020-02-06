@@ -574,6 +574,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
         passpoint_config = self.passpoint_networks[ATT]
+        if "carrierId" in passpoint_config:
+            self.set_carrier_approved(passpoint_config["carrierId"], True)
         self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([passpoint_config]),
@@ -611,6 +613,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut, passpoint_config[WifiEnums.SSID_KEY])
         time.sleep(PASSPOINT_TIMEOUT)
         wutils.wait_for_connect(self.dut, passpoint_config[WifiEnums.SSID_KEY])
+        if "carrierId" in passpoint_config:
+            self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="cf624cda-4d25-42f1-80eb-6c717fb08338")
     def test_fail_to_connect_to_passpoint_network_when_imsi_protection_exemption_not_approved(self):
