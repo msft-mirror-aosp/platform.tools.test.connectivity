@@ -19,14 +19,10 @@ from acts.test_utils.instrumentation.device.apps.dismiss_dialogs import \
     DialogDismissalUtil
 
 
-class CapturePhotosTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation test CapturePhotos."""
-
-    def setup_class(self):
-        super().setup_class()
-        self.run_and_measure(
-            '%s.tests.camera.CapturePhotos' % self._test_apk.pkg_name
-        )
+class ImageCaptureTest(instrumentation_power_test.InstrumentationPowerTest):
+    """
+    Test class for running instrumentation test CameraTests#testImageCapture.
+    """
 
     def _prepare_device(self):
         super()._prepare_device()
@@ -44,4 +40,7 @@ class CapturePhotosTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def test_capture_photos(self):
         """Measures power during photo capture."""
+        self.run_and_measure(
+            'com.google.android.platform.powertests.CameraTests',
+            'testImageCapture', req_params=['hdr_mode'])
         self.validate_power_results()
