@@ -128,8 +128,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.doze_mode.toggle(False))
         self.adb_run(common.doze_always_on.toggle(False))
 
-        # Accelerometer
+        # Sensors
         self.adb_run(common.auto_rotate.toggle(False))
+        self.adb_run(common.disable_sensors)
+        self.adb_run(common.ambient_eq.toggle(False))
+
+        if self.file_exists(common.MOISTURE_DETECTION_SETTING_FILE):
+            self.adb_run(common.disable_moisture_detection)
 
         # Time
         self.adb_run(common.auto_time.toggle(False))
@@ -259,6 +264,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         cmd = cmd + '-d file://%s ' % self.ad_dut.external_storage_path
         cmd = cmd + '--receiver-include-background'
         return self.adb_run(cmd)
+
+    def file_exists(self, file_path):
+        cmd = '(test -f %s && echo yes) || echo no' % file_path
+        result = self.adb_run(cmd)
+        if result[cmd] == 'yes':
+            return True
+        elif result[cmd] == 'no':
+            return False
+        raise ValueError('Couldn\'t determine if %s exists. '
+                         'Expected yes/no, got %s' % (file_path, result[cmd]))
 
     def push_to_external_storage(self, file_path, dest=None):
         """Pushes a file to {$EXTERNAL_STORAGE} and returns its final location.
