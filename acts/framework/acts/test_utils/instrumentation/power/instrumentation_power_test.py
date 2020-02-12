@@ -102,6 +102,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Running base device setup commands.')
 
         self.ad_dut.adb.ensure_root()
+        self.adb_run(common.dismiss_keyguard)
+        self.ad_dut.ensure_screen_on()
 
         # Test harness flag
         self.adb_run(common.test_harness.toggle(True))
@@ -110,6 +112,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.disable_dialing.toggle(True))
 
         # Screen
+        self.adb_run(common.screen_always_on.toggle(True))
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
 
         brightness_level = None
