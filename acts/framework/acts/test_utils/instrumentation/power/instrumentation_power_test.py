@@ -79,6 +79,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+
+    def setup_test(self):
+        super().setup_test()
         self._instr_cmd_builder = self.power_instrumentation_command_builder()
 
     def _prepare_device(self):
@@ -399,11 +402,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _log_metrics(self):
         """Record the collected metrics with the metric logger."""
+        self.log.info('Obtained metrics summaries:')
+        for k, m in self._power_metrics.test_metrics.items():
+            self.log.info('%s %s' % (k, str(m.summary)))
+
         for metric_name in PowerMetrics.ALL_METRICS:
             for instr_test_name in self._power_metrics.test_metrics:
                 metric_value = getattr(
                     self._power_metrics.test_metrics[instr_test_name],
                     metric_name).value
+                # TODO: Refactor this into instr_test_name.metric_name
                 self.metric_logger.add_metric(
                     '%s__%s' % (metric_name, instr_test_name), metric_value)
 

@@ -97,10 +97,9 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
     def setup_class(self):
         """Class setup"""
         self.ad_dut = self.android_devices[0]
-        self._prepare_device()
 
-    def teardown_class(self):
-        """Class teardown. Takes bugreport and cleans up device."""
+    def teardown_test(self):
+        """Test teardown. Takes bugreport and cleans up device."""
         self._ad_take_bugreport(self.ad_dut, 'teardown_class',
                                 utils.get_current_epoch_time())
         self._cleanup_device()
