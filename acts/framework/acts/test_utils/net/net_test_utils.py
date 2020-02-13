@@ -357,16 +357,17 @@ def stop_tcpdump_gce_server(ad, tcpdump_pid, fname, gce):
     # pull pcap file
     gcloud_scp_cmd = "%s --project=%s --zone=%s %s@%s:" % \
         (GCE_SCP, gce["project"], gce["zone"], gce["username"], gce["hostname"])
-    pull_file = '%s%s.pcap %s' % (gcloud_scp_cmd, fname, ad.log_path)
+    pull_file = '%s%s.pcap %s/' % (gcloud_scp_cmd, fname, ad.device_log_path)
     utils.exe_cmd(pull_file)
-    if not os.path.exists("%s/%s.pcap" % (ad.log_path, fname.split('/')[-1])):
+    if not os.path.exists(
+        "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])):
         raise signals.TestFailure("Failed to pull tcpdump from gce server")
 
     # delete pcaps
     utils.exe_cmd('%s "sudo rm %s.*"' % (gcloud_ssh_cmd, fname))
 
     # return pcap file
-    pcap_file = "%s/%s.pcap" % (ad.log_path, fname.split('/')[-1])
+    pcap_file = "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])
     return pcap_file
 
 def is_ipaddress_ipv6(ip_address):
