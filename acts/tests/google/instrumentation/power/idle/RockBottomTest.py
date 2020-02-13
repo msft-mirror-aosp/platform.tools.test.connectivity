@@ -20,12 +20,8 @@ from acts.test_utils.instrumentation.power import instrumentation_power_test
 class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
     """Test class for running instrumentation test RockBottom."""
 
-    def setup_class(self):
-        super().setup_class()
-
     def _prepare_device(self):
         super()._prepare_device()
-        self.mode_airplane()
         self.base_device_configuration()
 
     def test_rock_bottom(self):
