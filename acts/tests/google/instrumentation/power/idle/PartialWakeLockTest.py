@@ -20,12 +20,8 @@ from acts.test_utils.instrumentation.power import instrumentation_power_test
 class PartialWakeLockTest(instrumentation_power_test.InstrumentationPowerTest):
     """Test class for running instrumentation test PartialWakeLock."""
 
-    def setup_class(self):
-        super().setup_class()
-
     def _prepare_device(self):
         super()._prepare_device()
-        self.mode_airplane()
         self.base_device_configuration()
 
     def test_partial_wake_lock(self):
