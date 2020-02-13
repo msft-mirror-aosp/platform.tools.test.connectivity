@@ -129,6 +129,11 @@ disable_doze = 'dumpsys deviceidle disable'
 
 disable_sensors = 'dumpsys sensorservice restrict blah'
 
+MOISTURE_DETECTION_SETTING_FILE = '/sys/class/power_supply/usb/moisture_detection_enabled'
+disable_moisture_detection = 'echo 0 > %s' % MOISTURE_DETECTION_SETTING_FILE
+
+## Ambient EQ: https://support.google.com/googlenest/answer/9137130?hl=en
+ambient_eq = DeviceSetting(SECURE, 'display_white_balance_enabled')
 
 # Miscellaneous
 
