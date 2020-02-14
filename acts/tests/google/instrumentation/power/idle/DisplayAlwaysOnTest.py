@@ -21,12 +21,8 @@ from acts.test_utils.instrumentation.device.command.adb_commands import common
 class DisplayAlwaysOnTest(instrumentation_power_test.InstrumentationPowerTest):
     """Test class for running instrumentation test DisplayAlwaysOn."""
 
-    def setup_class(self):
-        super().setup_class()
-
     def _prepare_device(self):
         super()._prepare_device()
-        self.mode_airplane()
         self.base_device_configuration()
         self.adb_run(common.doze_mode.toggle(True))
         self.adb_run(common.doze_always_on.toggle(True))
