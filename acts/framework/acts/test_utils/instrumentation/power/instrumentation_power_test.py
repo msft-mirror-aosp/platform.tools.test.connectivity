@@ -53,6 +53,7 @@ from acts import context
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 AUTOTESTER_LOG = 'autotester.log'
+DEFAULT_PUSH_FILE_TIMEOUT = 180
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
 
@@ -102,6 +103,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Running base device setup commands.')
 
         self.ad_dut.adb.ensure_root()
+        self.adb_run(common.dismiss_keyguard)
+        self.ad_dut.ensure_screen_on()
 
         # Test harness flag
         self.adb_run(common.test_harness.toggle(True))
@@ -110,6 +113,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.disable_dialing.toggle(True))
 
         # Screen
+        self.adb_run(common.screen_always_on.toggle(True))
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
 
         brightness_level = None
@@ -187,6 +191,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             'gms:phenotype:phenotype_flag:debug_bypass_phenotype').toggle(True))
         self.adb_run(DeviceGServices(
             'gms_icing_extension_download_enabled').toggle(False))
+
+        # Comms
+        self.adb_run(common.wifi.toggle(False))
+        self.adb_run(common.bluetooth.toggle(False))
+        self.adb_run(common.airplane_mode.toggle(True))
 
         # Misc. Google features
         self.adb_run(goog.disable_playstore)
@@ -275,12 +284,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         raise ValueError('Couldn\'t determine if %s exists. '
                          'Expected yes/no, got %s' % (file_path, result[cmd]))
 
-    def push_to_external_storage(self, file_path, dest=None):
+    def push_to_external_storage(self, file_path, dest=None,
+        timeout=DEFAULT_PUSH_FILE_TIMEOUT):
         """Pushes a file to {$EXTERNAL_STORAGE} and returns its final location.
 
         Args:
             file_path: The file to be pushed.
             dest: Where within {$EXTERNAL_STORAGE} it should be pushed.
+            timeout: Float number of seconds to wait for the file to be pushed.
 
         Returns: The absolute path where the file was pushed.
         """
@@ -291,7 +302,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('clearing %s before pushing %s' % (dest_path, file_path))
         self.ad_dut.adb.shell('rm -rf %s', dest_path)
         self.log.info('pushing file %s to %s' % (file_path, dest_path))
-        self.ad_dut.adb.push(file_path, dest_path)
+        self.ad_dut.adb.push(file_path, dest_path, timeout=timeout)
         return dest_path
 
     # Test runtime utils

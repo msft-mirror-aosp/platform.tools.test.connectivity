@@ -100,7 +100,7 @@ auto_rotate = DeviceSetting(SYSTEM, 'accelerometer_rotation')
 
 auto_time = DeviceSetting(GLOBAL, 'auto_time')
 
-auto_timezone = DeviceSetting(GLOBAL, 'auto_time_zone')
+auto_timezone = DeviceSetting(GLOBAL, 'auto_timezone')
 
 timezone = DeviceSetprop('persist.sys.timezone')
 
@@ -144,3 +144,4 @@ test_harness = DeviceBinaryCommandSeries(
     ]
 )
 
+dismiss_keyguard = 'wm dismiss-keyguard'

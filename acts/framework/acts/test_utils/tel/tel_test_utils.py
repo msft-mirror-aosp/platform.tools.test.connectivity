@@ -26,6 +26,7 @@ import urllib.parse
 import time
 import acts.controllers.iperf_server as ipf
 import shutil
+import struct
 
 from acts import signals
 from acts import utils
@@ -4392,17 +4393,43 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
 
 
 def toggle_wfc(log, ad, new_state=None):
-    """ Toggle WFC enable/disable"""
+    """ Toggle WFC enable/disable
+
+    Args:
+        log: Log object
+        ad: Android device object.
+        new_state: True or False
+    """
     if not ad.droid.imsIsWfcEnabledByPlatform():
         ad.log.info("WFC is not enabled by platform")
         return False
     current_state = ad.droid.imsIsWfcEnabledByUser()
-    if current_state == None:
+    if current_state is None:
         new_state = not current_state
     if new_state != current_state:
         ad.log.info("Toggle WFC user enabled from %s to %s", current_state,
                     new_state)
         ad.droid.imsSetWfcSetting(new_state)
+    return True
+
+
+def toggle_wfc_for_subscription(ad, new_state=None, sub_id=None):
+    """ Toggle WFC enable/disable
+
+    Args:
+        ad: Android device object.
+        sub_id: subscription Id
+        new_state: True or False
+    """
+    if sub_id is None:
+        sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+    current_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
+    if current_state is None:
+        new_state = not current_state
+    if new_state != current_state:
+        ad.log.info("SubId %s - Toggle WFC from %s to %s", sub_id,
+                    current_state, new_state)
+        ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, new_state)
     return True
 
 
@@ -4463,6 +4490,107 @@ def set_wfc_mode(log, ad, wfc_mode):
         return False
     return True
 
+
+def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
+    """Set WFC enable/disable and mode subscription based
+
+    Args:
+        ad: Android device object.
+        wfc_mode: WFC mode to set to.
+            Valid mode includes: WFC_MODE_WIFI_ONLY, WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_WIFI_PREFERRED.
+        sub_id: subscription Id
+
+    Returns:
+        True if success. False if ad does not support WFC or error happened.
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        if not ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id):
+            ad.log.info("SubId %s - Enabling WiFi Calling", sub_id)
+            ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, True)
+        ad.log.info("SubId %s - setwfcmode to %s", sub_id, wfc_mode)
+        ad.droid.imsMmTelSetVoWiFiModeSetting(sub_id, wfc_mode)
+        mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
+        if mode != wfc_mode:
+            ad.log.error("SubId %s - getwfcmode shows %s", sub_id, mode)
+            return False
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    return True
+
+
+def set_ims_provisioning_for_subscription(ad, feature_flag, value, sub_id=None):
+    """ Sets Provisioning Values for Subscription Id
+
+    Args:
+        ad: Android device object.
+        sub_id: Subscription Id
+        feature_flag: voice or video
+        value: enable or disable
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        ad.log.info("SubId %s - setprovisioning for %s to %s",
+                    sub_id, feature_flag, value)
+        result = ad.droid.provisioningSetProvisioningIntValue(sub_id,
+                    feature_flag, value)
+        if result == 0:
+            return True
+        return False
+    except Exception as e:
+        ad.log.error(e)
+        return False
+
+
+def get_ims_provisioning_for_subscription(ad, feature_flag, tech, sub_id=None):
+    """ Gets Provisioning Values for Subscription Id
+
+    Args:
+        ad: Android device object.
+        sub_id: Subscription Id
+        feature_flag: voice, video, ut, sms
+        tech: lte, iwlan
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        result = ad.droid.provisioningGetProvisioningStatusForCapability(
+                    sub_id, feature_flag, tech)
+        ad.log.info("SubId %s - getprovisioning for %s on %s - %s",
+                    sub_id, feature_flag, tech, result)
+        return result
+    except Exception as e:
+        ad.log.error(e)
+        return False
+
+
+def get_carrier_provisioning_for_subscription(ad, feature_flag,
+                                              tech, sub_id=None):
+    """ Gets Provisioning Values for Subscription Id
+
+    Args:
+        ad: Android device object.
+        sub_id: Subscription Id
+        feature_flag: voice, video, ut, sms
+        tech: wlan, wwan
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        result = ad.droid.imsMmTelIsSupported(sub_id, feature_flag, tech)
+        ad.log.info("SubId %s - imsMmTelIsSupported for %s on %s - %s",
+                    sub_id, feature_flag, tech, result)
+        return result
+    except Exception as e:
+        ad.log.error(e)
+        return False
 
 def activate_wfc_on_device(log, ad):
     """ Activates WiFi calling on device.
@@ -4539,6 +4667,33 @@ def toggle_video_calling(log, ad, new_state=None):
         new_state = not current_state
     if new_state != current_state:
         ad.droid.imsSetVtSetting(new_state)
+    return True
+
+
+def toggle_video_calling_for_subscription(ad, new_state=None, sub_id=None):
+    """Toggle enable/disable Video calling for subscription.
+
+    Args:
+        ad: Android device object.
+        new_state: Video mode state to set to.
+            True for enable, False for disable.
+            If None, opposite of the current state.
+        sub_id: subscription Id
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        current_state = ad.droid.imsMmTelIsVtSettingEnabled(sub_id)
+        if new_state is None:
+            new_state = not current_state
+        if new_state != current_state:
+            ad.log.info("SubId %s - Toggle VT from %s to %s", sub_id,
+                        current_state, new_state)
+            ad.droid.imsMmTelSetVtSettingEnabled(sub_id, new_state)
+    except Exception as e:
+        ad.log.error(e)
+        return False
     return True
 
 
@@ -6192,7 +6347,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
         if not wait_for_droid_not_in_call(log, ad):
             ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
-        ad.droid.imsFactoryReset()
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
@@ -8615,3 +8769,70 @@ def set_call_forwarding_by_mmi(
     ad.log.error("Failed to register or activate call forwarding %s to %s." %
         (call_forwarding_type, forwarded_number))
     return False
+
+
+def get_rx_tx_power_levels(log, ad):
+    """ Obtains Rx and Tx power levels from the MDS application.
+
+    The method requires the MDS app to be installed in the DUT.
+
+    Args:
+        log: logger object
+        ad: an android device
+
+    Return:
+        A tuple where the first element is an array array with the RSRP value
+        in Rx chain, and the second element is the transmitted power in dBm.
+        Values for invalid Rx / Tx chains are set to None.
+    """
+    cmd = ('am instrument -w -e request "80 00 e8 03 00 08 00 00 00" -e '
+           'response wait "com.google.mdstest/com.google.mdstest.instrument.'
+           'ModemCommandInstrumentation"')
+    output = ad.adb.shell(cmd)
+
+    if 'result=SUCCESS' not in output:
+        raise RuntimeError('Could not obtain Tx/Rx power levels from MDS. Is '
+                           'the MDS app installed?')
+
+    response = re.search(r"(?<=response=).+", output)
+
+    if not response:
+        raise RuntimeError('Invalid response from the MDS app:\n' + output)
+
+    # Obtain a list of bytes in hex format from the response string
+    response_hex = response.group(0).split(' ')
+
+    def get_bool(pos):
+        """ Obtain a boolean variable from the byte array. """
+        return response_hex[pos] == '01'
+
+    def get_int32(pos):
+        """ Obtain an int from the byte array. Bytes are printed in
+        little endian format."""
+        return struct.unpack(
+            '<i', bytearray.fromhex(''.join(response_hex[pos:pos + 4])))[0]
+
+    rx_power = []
+    RX_CHAINS = 4
+
+    for i in range(RX_CHAINS):
+        # Calculate starting position for the Rx chain data structure
+        start = 12 + i * 22
+
+        # The first byte in the data structure indicates if the rx chain is
+        # valid.
+        if get_bool(start):
+            rx_power.append(get_int32(start + 2) / 10)
+        else:
+            rx_power.append(None)
+
+    # Calculate the position for the tx chain data structure
+    tx_pos = 12 + RX_CHAINS * 22
+
+    tx_valid = get_bool(tx_pos)
+    if tx_valid:
+        tx_power = get_int32(tx_pos + 2) / -10
+    else:
+        tx_power = None
+
+    return rx_power, tx_power
