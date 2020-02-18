@@ -87,7 +87,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._cleanup_test_files()
         self._permissions_util = PermissionsUtil(
             self.ad_dut,
-            self._instrumentation_config.get_file('permissions_apk'))
+            self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
         self.install_test_apk()
 
@@ -254,7 +254,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def install_test_apk(self):
         """Installs test apk on the device."""
-        test_apk_file = self._instrumentation_config.get_file('test_apk')
+        test_apk_file = self.get_file_from_config('test_apk')
         self._test_apk = AppInstaller(self.ad_dut, test_apk_file)
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():

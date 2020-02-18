@@ -85,40 +85,14 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             raise InstrumentationTestError(
                 'Cannot open or parse instrumentation config file %s'
                 % path) from e
-        if not self._resolve_file_paths(config_dict):
-            self.log.warning('File paths missing from instrumentation config.')
 
-        # Write out a copy of the resolved instrumentation config
+        # Write out a copy of the instrumentation config
         with open(os.path.join(
-                self.log_path, 'resolved_instrumentation_config.yaml'),
+                self.log_path, 'instrumentation_config.yaml'),
                   mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
         return ConfigWrapper(config_dict)
-
-    def _resolve_file_paths(self, config):
-        """Recursively resolve all 'FILE' markers found in the instrumentation
-        config to their corresponding paths in the ACTS config, i.e. in
-        self.user_params.
-
-        Args:
-            config: The instrumentation config to update
-
-        Returns: True if all 'FILE' markers are resolved.
-        """
-        success = True
-        for key, value in config.items():
-            # Recursive call; resolve files in nested maps
-            if isinstance(value, dict):
-                success &= self._resolve_file_paths(value)
-            # Replace file resolver markers with paths from ACTS config
-            elif value == RESOLVE_FILE_MARKER:
-                if key not in self.user_params:
-                    success = False
-                    config[key] = FILE_NOT_FOUND
-                else:
-                    config[key] = self.user_params[key]
-        return success
 
     def setup_class(self):
         """Class setup"""
@@ -184,6 +158,33 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             case_config = self._class_config.get_config(self.current_test_name)
             merged_config.update(case_config.get_config(config_name))
         return merged_config
+
+    def get_files_from_config(self, config_key):
+        """Get a list of file paths on host from self.user_params with the
+        given key. Verifies that each file exists.
+
+        Args:
+            config_key: Key in which the files are found.
+
+        Returns: list of str file paths
+        """
+        if config_key not in self.user_params:
+            raise InstrumentationTestError(
+                'Cannot get files for key "%s": Key missing from config.'
+                % config_key)
+        files = self.user_params[config_key]
+        for f in files:
+            if not os.path.exists(f):
+                raise InstrumentationTestError(
+                    'Cannot get files for key "%s": No file exists for %s.' %
+                    (config_key, f))
+        return files
+
+    def get_file_from_config(self, config_key):
+        """Get a single file path on host from self.user_params with the given
+        key. See get_files_from_config for details.
+        """
+        return self.get_files_from_config(config_key)[-1]
 
     def adb_run(self, cmds):
         """Run the specified command, or list of commands, with the ADB shell.

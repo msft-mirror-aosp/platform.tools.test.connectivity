@@ -96,16 +96,6 @@ class ConfigWrapperTest(unittest.TestCase):
         with self.assertRaisesRegex(InvalidParamError, 'of type int or float'):
             self.mock_config.get_numeric('string')
 
-    @mock.patch('os.path.exists', side_effect=lambda f: f in REAL_PATHS)
-    def test_get_files(self, *_):
-        """Test that get_files() returns the list of files only if all of the
-        paths actually exist.
-        """
-        self.assertEqual(self.mock_config.get_files('real_paths_only'),
-                         MOCK_CONFIG['real_paths_only'])
-        with self.assertRaisesRegex(InvalidParamError, 'Cannot resolve'):
-            self.mock_config.get_files('real_and_fake_paths')
-
     def test_config_wrapper_wraps_recursively(self):
         """Test that dict values within the input config get transformed into
         ConfigWrapper objects themselves.
