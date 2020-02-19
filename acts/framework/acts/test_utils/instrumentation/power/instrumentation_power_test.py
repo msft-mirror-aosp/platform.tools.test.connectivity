@@ -81,8 +81,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._setup_monsoon()
 
     def setup_test(self):
+        """Test setup"""
         super().setup_test()
+        self._prepare_device()
         self._instr_cmd_builder = self.power_instrumentation_command_builder()
+        return True
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
@@ -92,7 +95,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.ad_dut,
             self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
-        self.install_test_apk()
+        self._install_test_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
@@ -255,7 +258,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.droid.goToSleepNow()
         self.ad_dut.log.info('Device reconnected.')
 
-    def install_test_apk(self):
+    def _install_test_apk(self):
         """Installs test apk on the device."""
         test_apk_file = self.get_file_from_config('test_apk')
         self._test_apk = AppInstaller(self.ad_dut, test_apk_file)
