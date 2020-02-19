@@ -20,6 +20,7 @@ import os
 import math
 import shutil
 import fnmatch
+import datetime
 import posixpath
 from collections import namedtuple
 
@@ -38,7 +39,7 @@ PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
     "/storage/emulated/0/Android/data/com.android.gpstool/files/")
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
-TTFF_REPORT = namedtuple("TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
+TTFF_REPORT = namedtuple("TTFF_REPORT","ttff_time ttff_loop ttff_sec ttff_pe ttff_cn")
 TRACK_REPORT = namedtuple(
     "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
 LOCAL_PROP_FILE_CONTENTS =  """\
@@ -844,6 +845,11 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                             gnss_location_log[8].split("=")[-1].strip(","))
                         ttff_lon = float(
                             gnss_location_log[9].split("=")[-1].strip(","))
+                        ttff_time = int(
+                            gnss_location_log[10].split("=")[-1].strip(","))
+                        ttff_time1 = (
+                            datetime.datetime.fromtimestamp(ttff_time / 1000)
+                                .strftime('%Y-%m-%d %H:%M:%S'))
                 elif type == "flp":
                     flp_results = ad.search_logcat("GPSService: FLP Location",
                                                    begin_time)
@@ -862,14 +868,15 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                                                    ttff_lon))
             ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
                                                true_position)
-            ttff_data[ttff_loop] = TTFF_REPORT(ttff_loop=ttff_loop,
+            ttff_data[ttff_loop] = TTFF_REPORT(ttff_time=ttff_time1,
+                                               ttff_loop=ttff_loop,
                                                ttff_sec=ttff_sec,
                                                ttff_pe=ttff_pe,
                                                ttff_cn=ttff_cn)
-            ad.log.info("Loop %d = %.1f seconds, "
+            ad.log.info("TTFF Time = %s, Loop %d = %.1f seconds, "
                         "Position Error = %.1f meters, "
                         "Average Signal = %.1f dbHz"
-                        % (ttff_loop, ttff_sec, ttff_pe, ttff_cn))
+                        % (ttff_time1, ttff_loop, ttff_sec, ttff_pe, ttff_cn))
     return ttff_data
 
 
