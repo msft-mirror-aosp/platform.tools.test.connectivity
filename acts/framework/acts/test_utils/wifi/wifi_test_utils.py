@@ -1779,7 +1779,8 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
     utils.exe_cmd(cmd)
 
 
-def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2):
+def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2,
+                        ping_gateway=True):
     """Validate internet connection by pinging the address provided.
 
     Args:
@@ -1792,8 +1793,18 @@ def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2):
     """
     # wait_time to allow for DHCP to complete.
     time.sleep(wait_time)
-    ping = ad.droid.httpPing(ping_addr)
-    ad.log.info("Http ping result: %s.", ping)
+    ping = False
+    try:
+        ping = ad.droid.httpPing(ping_addr)
+        ad.log.info("Http ping result: %s.", ping)
+    except:
+        pass
+    if not ping and ping_gateway:
+        ad.log.info("Http ping failed. Pinging default gateway")
+        gw = ad.droid.connectivityGetIPv4DefaultGateway()
+        result = ad.adb.shell("ping -c 6 {}".format(gw))
+        ad.log.info("Default gateway ping result: %s" % result)
+        ping = False if "100% packet loss" in result else True
     return ping
 
 
