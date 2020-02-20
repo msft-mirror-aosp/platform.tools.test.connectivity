@@ -79,7 +79,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+
+    def setup_test(self):
+        """Test setup"""
+        super().setup_test()
+        self._prepare_device()
         self._instr_cmd_builder = self.power_instrumentation_command_builder()
+        return True
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
@@ -87,9 +93,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._cleanup_test_files()
         self._permissions_util = PermissionsUtil(
             self.ad_dut,
-            self._instrumentation_config.get_file('permissions_apk'))
+            self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
-        self.install_test_apk()
+        self._install_test_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
@@ -252,9 +258,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.droid.goToSleepNow()
         self.ad_dut.log.info('Device reconnected.')
 
-    def install_test_apk(self):
+    def _install_test_apk(self):
         """Installs test apk on the device."""
-        test_apk_file = self._instrumentation_config.get_file('test_apk')
+        test_apk_file = self.get_file_from_config('test_apk')
         self._test_apk = AppInstaller(self.ad_dut, test_apk_file)
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():
@@ -399,11 +405,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _log_metrics(self):
         """Record the collected metrics with the metric logger."""
+        self.log.info('Obtained metrics summaries:')
+        for k, m in self._power_metrics.test_metrics.items():
+            self.log.info('%s %s' % (k, str(m.summary)))
+
         for metric_name in PowerMetrics.ALL_METRICS:
             for instr_test_name in self._power_metrics.test_metrics:
                 metric_value = getattr(
                     self._power_metrics.test_metrics[instr_test_name],
                     metric_name).value
+                # TODO: Refactor this into instr_test_name.metric_name
                 self.metric_logger.add_metric(
                     '%s__%s' % (metric_name, instr_test_name), metric_value)
 

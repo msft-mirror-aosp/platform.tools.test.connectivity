@@ -289,7 +289,7 @@ def stop_tcpdump(ad,
     except Exception as e:
         ad.log.warning(e)
     log_path = os.path.join(ad.log_path, test_name)
-    utils.create_dir(log_path)
+    os.makedirs(log_path, exist_ok=True)
     ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path), timeout=adb_pull_timeout)
     ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
@@ -464,4 +464,3 @@ def wait_for_new_iface(old_ifaces):
             return new_ifaces.pop()
         time.sleep(1)
     asserts.fail("Timeout waiting for tethering interface on host")
-

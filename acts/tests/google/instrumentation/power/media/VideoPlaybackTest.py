@@ -31,7 +31,7 @@ class VideoPlaybackTest(
     def test_playback_high_bit_rate(self):
         """Measures power when the device is in a rock bottom state."""
         video_location = self.push_to_external_storage(
-            self._instrumentation_config.get_file('high_bit_rate_video'),
+            self.get_file_from_config('high_bit_rate_video'),
             timeout=BIG_FILE_PUSH_TIMEOUT)
         self.trigger_scan_on_external_storage()
 
