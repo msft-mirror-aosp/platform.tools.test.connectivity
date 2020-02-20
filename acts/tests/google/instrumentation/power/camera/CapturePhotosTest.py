@@ -30,7 +30,7 @@ class ImageCaptureTest(instrumentation_power_test.InstrumentationPowerTest):
         self.base_device_configuration()
         self._dialog_util = DialogDismissalUtil(
             self.ad_dut,
-            self._instrumentation_config.get_file('dismiss_dialogs_apk')
+            self.get_file_from_config('dismiss_dialogs_apk')
         )
         self._dialog_util.dismiss_dialogs('GoogleCamera')
 
