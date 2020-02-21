@@ -15,28 +15,25 @@
 #   limitations under the License.
 
 from acts.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.device.command.adb_commands import common
 
-BIG_FILE_PUSH_TIMEOUT = 600
 
-
-class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation tests
-    VideoPlaybackHighBitRateTest."""
+class BluetoothEnableTest(instrumentation_power_test.InstrumentationPowerTest):
+    """Test class for running instrumentation test
+    IdleTestCase#testIdleScreenOff with Bluetooth enabled.
+    """
 
     def _prepare_device(self):
         super()._prepare_device()
         self.base_device_configuration()
-        self._video_location = self.push_to_external_storage(
-            self.get_file_from_config('high_bit_rate_video'),
-            timeout=BIG_FILE_PUSH_TIMEOUT)
-        self.trigger_scan_on_external_storage()
+        self.adb_run(common.bluetooth.toggle(True))
 
-    def test_playback_high_bit_rate(self):
-        """Measures power when the device is playing a video."""
+    def test_bluetooth_enable(self):
+        """Measures power when the device is in rock bottom state with Bluetooth
+        enabled.
+        """
 
         self.run_and_measure(
-            'com.google.android.platform.powertests.PhotosTests',
-            'testVideoPlaybackThroughIntent',
-            extra_params=[('video_file_path', self._video_location)])
-
+            'com.google.android.platform.powertests.IdleTestCase',
+            'testIdleScreenOff')
         self.validate_power_results()

@@ -51,6 +51,8 @@ mobile_data = DeviceBinaryCommandSeries(
 
 cellular = DeviceSetting(GLOBAL, 'cell_on')
 
+preferred_network_mode = DeviceSetting(GLOBAL, 'preferred_network_mode')
+
 wifi = DeviceBinaryCommandSeries(
     [
         DeviceSetting(GLOBAL, 'wifi_on'),
@@ -92,6 +94,11 @@ wake_gesture = DeviceSetting(SECURE, 'wake_gesture_enabled')
 screensaver = DeviceSetting(SECURE, 'screensaver_enabled')
 
 notification_led = DeviceSetting(SYSTEM, 'notification_light_pulse')
+
+
+# Audio
+
+disable_audio = DeviceSetprop('ro.audio.silent')
 
 
 # Accelerometer

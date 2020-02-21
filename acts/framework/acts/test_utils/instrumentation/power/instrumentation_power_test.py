@@ -57,6 +57,12 @@ DEFAULT_PUSH_FILE_TIMEOUT = 180
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
 
+_NETWORK_TYPES = {
+    '2g': 1,
+    '3g': 0,
+    'lte': 12
+}
+
 
 class InstrumentationPowerTest(InstrumentationBaseTest):
     """Instrumentation test for measuring and validating power metrics.
@@ -311,6 +317,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('pushing file %s to %s' % (file_path, dest_path))
         self.ad_dut.adb.push(file_path, dest_path, timeout=timeout)
         return dest_path
+
+    def set_preferred_network(self, network_type):
+        """Set the preferred network type."""
+        self.adb_run(common.airplane_mode.toggle(False))
+        self.adb_run(
+            common.preferred_network_mode.set_value(
+                _NETWORK_TYPES[network_type.lower()]
+            )
+        )
+        self.ad_dut.reboot()
+        self.adb_run(common.disable_doze)
 
     # Test runtime utils
 

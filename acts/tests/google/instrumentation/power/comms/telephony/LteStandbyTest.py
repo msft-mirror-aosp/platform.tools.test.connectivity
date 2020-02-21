@@ -14,29 +14,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.power.instrumentation_power_test \
+    import InstrumentationPowerTest
 
-BIG_FILE_PUSH_TIMEOUT = 600
 
-
-class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation tests
-    VideoPlaybackHighBitRateTest."""
+class LteStandbyTest(InstrumentationPowerTest):
+    """Test class for running instrumentation test
+    ImsTestCases#testVoLTEOnSuspend
+    """
 
     def _prepare_device(self):
         super()._prepare_device()
         self.base_device_configuration()
-        self._video_location = self.push_to_external_storage(
-            self.get_file_from_config('high_bit_rate_video'),
-            timeout=BIG_FILE_PUSH_TIMEOUT)
-        self.trigger_scan_on_external_storage()
+        self.set_preferred_network('lte')
 
-    def test_playback_high_bit_rate(self):
-        """Measures power when the device is playing a video."""
-
+    def test_lte_standby(self):
+        """Measures power when the device is running
+        ImsTestCases#testVoLTEOnSuspend
+        """
         self.run_and_measure(
-            'com.google.android.platform.powertests.PhotosTests',
-            'testVideoPlaybackThroughIntent',
-            extra_params=[('video_file_path', self._video_location)])
-
+            'com.google.android.platform.powertests.ImsTestCases',
+            'testVoLTEOnSuspend')
         self.validate_power_results()
