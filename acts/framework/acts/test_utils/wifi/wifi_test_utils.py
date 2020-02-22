@@ -73,24 +73,38 @@ ROAMING_ATTN = {
 
 class WifiEnums():
 
-    SSID_KEY = "SSID"
+    SSID_KEY = "SSID" # Used for Wifi & SoftAp
     SSID_PATTERN_KEY = "ssidPattern"
     NETID_KEY = "network_id"
-    BSSID_KEY = "BSSID"
+    BSSID_KEY = "BSSID" # Used for Wifi & SoftAp
     BSSID_PATTERN_KEY = "bssidPattern"
-    PWD_KEY = "password"
+    PWD_KEY = "password" # Used for Wifi & SoftAp
     frequency_key = "frequency"
-    APBAND_KEY = "apBand"
+    APBAND_KEY = "apBand" # Used for SoftAp
     HIDDEN_KEY = "hiddenSSID"
     IS_APP_INTERACTION_REQUIRED = "isAppInteractionRequired"
     IS_USER_INTERACTION_REQUIRED = "isUserInteractionRequired"
     IS_METERED = "isMetered"
     PRIORITY = "priority"
-    SECURITY = "security"
+    SECURITY = "security" # Used for Wifi & SoftAp
 
-    WIFI_CONFIG_APBAND_2G = 0
-    WIFI_CONFIG_APBAND_5G = 1
-    WIFI_CONFIG_APBAND_AUTO = -1
+    # Used for SoftAp
+    WIFI_CONFIG_SOFTAP_BAND_2G = 1
+    WIFI_CONFIG_SOFTAP_BAND_5G = 2
+    WIFI_CONFIG_SOFTAP_BAND_2G_5G = 3
+    WIFI_CONFIG_SOFTAP_BAND_6G = 4
+    WIFI_CONFIG_SOFTAP_BAND_2G_6G = 5
+    WIFI_CONFIG_SOFTAP_BAND_5G_6G = 6
+    WIFI_CONFIG_SOFTAP_BAND_ANY = 7
+
+    # DO NOT USE IT for new test case! Replaced by WIFI_CONFIG_SOFTAP_BAND_
+    WIFI_CONFIG_APBAND_2G = WIFI_CONFIG_SOFTAP_BAND_2G
+    WIFI_CONFIG_APBAND_5G = WIFI_CONFIG_SOFTAP_BAND_5G
+    WIFI_CONFIG_APBAND_AUTO = WIFI_CONFIG_SOFTAP_BAND_2G_5G
+
+    WIFI_CONFIG_APBAND_2G_OLD = 0
+    WIFI_CONFIG_APBAND_5G_OLD = 1
+    WIFI_CONFIG_APBAND_AUTO_OLD = -1
 
     WIFI_WPS_INFO_PBC = 0
     WIFI_WPS_INFO_DISPLAY = 1
