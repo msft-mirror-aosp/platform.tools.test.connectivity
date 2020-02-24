@@ -99,6 +99,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             isinstance(self.hidden_networks, list):
               self.hidden_network = self.hidden_networks[0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
+        self.passpoint_network = self.passpoint_networks[ATT]
+        self.passpoint_network[WifiEnums.SSID_KEY] = \
+            self.passpoint_networks[ATT][WifiEnums.SSID_KEY][0]
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -521,9 +524,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[ATT]
-        passpoint_config[WifiEnums.SSID_KEY] = \
-            passpoint_config[WifiEnums.SSID_KEY][0]
+        passpoint_config = self.passpoint_network
         passpoint_config[WifiEnums.IS_APP_INTERACTION_REQUIRED] = True
         if "carrierId" in passpoint_config:
             self.set_carrier_approved(passpoint_config["carrierId"], True)
@@ -552,9 +553,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[ATT]
-        passpoint_config[WifiEnums.SSID_KEY] = \
-            passpoint_config[WifiEnums.SSID_KEY][0]
+        passpoint_config = self.passpoint_network
         if "carrierId" in passpoint_config:
             self.set_carrier_approved(passpoint_config["carrierId"], True)
         self._test_connect_to_wifi_network_reboot_config_store([passpoint_config],
@@ -577,9 +576,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[ATT]
-        passpoint_config[WifiEnums.SSID_KEY] = \
-            passpoint_config[WifiEnums.SSID_KEY][0]
+        passpoint_config = self.passpoint_network
         if "carrierId" in passpoint_config:
             self.set_carrier_approved(passpoint_config["carrierId"], True)
         self.dut.log.info("Adding network suggestions")
@@ -638,9 +635,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_networks[ATT]
-        passpoint_config[WifiEnums.SSID_KEY] = \
-            passpoint_config[WifiEnums.SSID_KEY][0]
+        passpoint_config = self.passpoint_network
         asserts.skip_if("carrierId" not in passpoint_config,
                         "Not a SIM based passpoint network, skip this test")
 
