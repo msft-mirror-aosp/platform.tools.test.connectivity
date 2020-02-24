@@ -649,10 +649,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut.droid.wifiAddNetworkSuggestions([passpoint_config]),
             "Failed to add suggestions")
 
-        # Ensure the carrier imsi protection exemption is not approved.
-        asserts.assert_false(
-            self.is_carrier_approved(passpoint_config["carrierId"]),
-            "Carrier should not be approved")
+        # Clean the carrier approval in case other test side affect.
+        self.clear_carrier_approved(passpoint_config["carrierId"])
 
         # Start a new scan to trigger auto-join.
         wutils.start_wifi_connection_scan_and_ensure_network_found(
