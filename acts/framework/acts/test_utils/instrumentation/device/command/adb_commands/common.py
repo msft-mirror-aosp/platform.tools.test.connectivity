@@ -64,6 +64,9 @@ bluetooth = DeviceState('service call bluetooth_manager', '6', '8')
 
 nfc = DeviceState('svc nfc', 'enable', 'disable')
 
+# Disable the ModemService
+
+disable_modem = 'pm disable com.google.android.apps.scone'
 
 # Calling
 

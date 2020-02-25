@@ -202,6 +202,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.wifi.toggle(False))
         self.adb_run(common.bluetooth.toggle(False))
         self.adb_run(common.airplane_mode.toggle(True))
+        self.adb_run(common.disable_modem)
 
         # Misc. Google features
         self.adb_run(goog.disable_playstore)
