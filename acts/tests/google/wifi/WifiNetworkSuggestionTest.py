@@ -98,10 +98,11 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         if hasattr(self, "hidden_networks") and \
             isinstance(self.hidden_networks, list):
               self.hidden_network = self.hidden_networks[0]
+        if hasattr(self, "passpoint_networks"):
+            self.passpoint_network = self.passpoint_networks[ATT]
+            self.passpoint_network[WifiEnums.SSID_KEY] = \
+                self.passpoint_networks[ATT][WifiEnums.SSID_KEY][0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
-        self.passpoint_network = self.passpoint_networks[ATT]
-        self.passpoint_network[WifiEnums.SSID_KEY] = \
-            self.passpoint_networks[ATT][WifiEnums.SSID_KEY][0]
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
