@@ -229,36 +229,3 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         with open(proto_txt_path, 'w') as f:
             f.write(str(session))
         return session
-
-    # Basic setup methods
-
-    def mode_airplane(self):
-        """Mode for turning on airplane mode only."""
-        self.log.info('Enabling airplane mode.')
-        self.adb_run(common.airplane_mode.toggle(True))
-        self.adb_run(common.auto_time.toggle(False))
-        self.adb_run(common.auto_timezone.toggle(False))
-        self.adb_run(common.location_gps.toggle(False))
-        self.adb_run(common.location_network.toggle(False))
-        self.adb_run(common.wifi.toggle(False))
-        self.adb_run(common.bluetooth.toggle(False))
-
-    def mode_wifi(self):
-        """Mode for turning on airplane mode and wifi."""
-        self.log.info('Enabling airplane mode and wifi.')
-        self.adb_run(common.airplane_mode.toggle(True))
-        self.adb_run(common.location_gps.toggle(False))
-        self.adb_run(common.location_network.toggle(False))
-        self.adb_run(common.wifi.toggle(True))
-        self.adb_run(common.bluetooth.toggle(False))
-
-    def mode_bluetooth(self):
-        """Mode for turning on airplane mode and bluetooth."""
-        self.log.info('Enabling airplane mode and bluetooth.')
-        self.adb_run(common.airplane_mode.toggle(True))
-        self.adb_run(common.auto_time.toggle(False))
-        self.adb_run(common.auto_timezone.toggle(False))
-        self.adb_run(common.location_gps.toggle(False))
-        self.adb_run(common.location_network.toggle(False))
-        self.adb_run(common.wifi.toggle(False))
-        self.adb_run(common.bluetooth.toggle(True))

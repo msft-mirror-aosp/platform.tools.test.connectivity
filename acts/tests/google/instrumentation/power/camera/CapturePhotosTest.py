@@ -26,7 +26,6 @@ class ImageCaptureTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def _prepare_device(self):
         super()._prepare_device()
-        self.mode_airplane()
         self.base_device_configuration()
         self._dialog_util = DialogDismissalUtil(
             self.ad_dut,
