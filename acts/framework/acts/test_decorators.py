@@ -14,7 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
+from acts.libs.testtracker.testtracker_results_writer import KEY_EFFORT_NAME
+from acts.libs.testtracker.testtracker_results_writer import TestTrackerError
+from acts.libs.testtracker.testtracker_results_writer import \
+    TestTrackerResultsWriter
+from mobly.base_test import BaseTestClass
+
 from acts import signals
+
 
 def test_info(predicate=None, **keyed_info):
     """Adds info about test.
@@ -59,10 +68,12 @@ def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
         extra_environment_info: Extra info about the test tracker environment.
         predicate: A func that if false when called will ignore this info.
     """
-    return test_info(
-        test_tracker_uuid=uuid,
-        test_tracker_enviroment_info=extra_environment_info,
-        predicate=predicate)
+    def test_tracker_info_decorator(func):
+        keyed_info = dict(test_tracker_uuid=uuid,
+                          test_tracker_environment_info=extra_environment_info)
+        return _TestTrackerInfoDecoratorFunc(func, predicate, keyed_info)
+
+    return test_tracker_info_decorator
 
 
 class _TestInfoDecoratorFunc(object):
@@ -87,6 +98,13 @@ class _TestInfoDecoratorFunc(object):
         """
         When called runs the underlying func and then attaches test info
         to a signal.
+        """
+        new_signal = self._get_signal_from_func_call(*args, **kwargs)
+        raise new_signal
+
+    def _get_signal_from_func_call(self, *args, **kwargs):
+        """Calls the underlying func, then attaches test info to the resulting
+        signal and returns the signal.
         """
         try:
             result = self.func(*args, **kwargs)
@@ -116,7 +134,7 @@ class _TestInfoDecoratorFunc(object):
 
                 new_signal.extras[k].insert(0, v)
 
-        raise new_signal
+        return new_signal
 
     def gather(self, *args, **kwargs):
         """
@@ -157,6 +175,44 @@ class _TestInfoDecoratorFunc(object):
                     extras[k].insert(0, v)
 
         return extras
+
+
+class _TestTrackerInfoDecoratorFunc(_TestInfoDecoratorFunc):
+    """
+    Expands on _TestInfoDecoratorFunc by writing gathered test info to a
+    TestTracker proto file
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        When called runs the underlying func and then attaches test info
+        to a signal. It then writes the result from the signal to a TestTracker
+        Result proto file.
+        """
+        new_signal = self._get_signal_from_func_call(*args, **kwargs)
+        self._write_to_testtracker(args[0], new_signal)
+        raise new_signal
+
+    def _write_to_testtracker(self, test_instance, signal):
+        """Write test result from given signal to a TestTracker Result proto
+        file.
+        """
+        if not isinstance(test_instance, BaseTestClass):
+            logging.warning('The decorated object must be an instance of an '
+                            'ACTS/Mobly test class.')
+            return
+        testtracker_properties = test_instance.user_params.get(
+            'testtracker_properties', None)
+        if testtracker_properties and hasattr(test_instance, 'android_devices'):
+            try:
+                testtracker_properties[KEY_EFFORT_NAME] = (
+                    test_instance.android_devices[0].build_info['build_id'])
+                writer = TestTrackerResultsWriter(
+                    test_instance.log_path, testtracker_properties)
+                writer.write_results_from_test_signal(
+                    signal, test_instance.begin_time)
+            except TestTrackerError:
+                test_instance.log.exception('TestTracker Error')
 
 
 class _TestInfoBinding(object):

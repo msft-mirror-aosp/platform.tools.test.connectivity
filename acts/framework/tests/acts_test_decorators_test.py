@@ -25,7 +25,7 @@ from acts import test_runner
 from acts.controllers.sl4a_lib import rpc_client
 
 TEST_TRACKER_UUID = '12345'
-UUID_KEY = 'test_tracker_uuid'
+UUID_KEY = 'uuid'
 
 
 def return_true():
@@ -53,9 +53,9 @@ def raise_generic():
 
 
 class TestDecoratorUnitTests(unittest.TestCase):
-    def _verify_test_tracker_info(self, func):
+    def _verify_test_info(self, func):
         try:
-            test_decorators.test_tracker_info(uuid=TEST_TRACKER_UUID)(func)()
+            test_decorators.test_info(uuid=TEST_TRACKER_UUID)(func)()
             self.fail('Expected decorator to raise exception.')
         except signals.TestSignal as e:
             self.assertTrue(hasattr(e, 'extras'),
@@ -64,26 +64,26 @@ class TestDecoratorUnitTests(unittest.TestCase):
                             'Expected extras to have %s.' % UUID_KEY)
             self.assertEqual(e.extras[UUID_KEY], TEST_TRACKER_UUID)
 
-    def test_test_tracker_info_on_return_true(self):
-        self._verify_test_tracker_info(return_true)
+    def test_test_info_on_return_true(self):
+        self._verify_test_info(return_true)
 
-    def test_test_tracker_info_on_return_false(self):
-        self._verify_test_tracker_info(return_false)
+    def test_test_info_on_return_false(self):
+        self._verify_test_info(return_false)
 
-    def test_test_tracker_info_on_raise_pass(self):
-        self._verify_test_tracker_info(raise_pass)
+    def test_test_info_on_raise_pass(self):
+        self._verify_test_info(raise_pass)
 
-    def test_test_tracker_info_on_raise_failure(self):
-        self._verify_test_tracker_info(raise_failure)
+    def test_test_info_on_raise_failure(self):
+        self._verify_test_info(raise_failure)
 
-    def test_test_tracker_info_on_raise_sl4a(self):
-        self._verify_test_tracker_info(raise_sl4a)
+    def test_test_info_on_raise_sl4a(self):
+        self._verify_test_info(raise_sl4a)
 
-    def test_test_tracker_info_on_raise_generic(self):
-        self._verify_test_tracker_info(raise_generic)
+    def test_test_info_on_raise_generic(self):
+        self._verify_test_info(raise_generic)
 
     def test_tti_returns_existing_test_pass(self):
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_raises_test_pass():
             raise signals.TestPass('Expected Message')
 
@@ -93,7 +93,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
         self.assertEqual(context.exception.details, 'Expected Message')
 
     def test_tti_returns_existing_test_failure(self):
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_raises_test_failure():
             raise signals.TestFailure('Expected Message')
 
@@ -105,7 +105,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
     def test_tti_returns_test_error_on_non_signal_error(self):
         expected_error = ValueError('Some Message')
 
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_raises_non_signal():
             raise expected_error
 
@@ -115,7 +115,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
         self.assertEqual(context.exception.details, expected_error)
 
     def test_tti_returns_test_pass_if_no_return_value_specified(self):
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_returns_nothing():
             pass
 
@@ -124,7 +124,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
 
     def test_tti_returns_test_fail_if_return_value_is_truthy(self):
         """This is heavily frowned upon. Use signals.TestPass instead!"""
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_returns_truthy():
             return True
 
@@ -133,7 +133,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
 
     def test_tti_returns_test_fail_if_return_value_is_falsy(self):
         """This is heavily frowned upon. Use signals.TestFailure instead!"""
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_returns_falsy_but_not_none():
             return False
 
@@ -145,7 +145,7 @@ class MockTest(base_test.BaseTestClass):
     TEST_CASE_LIST = 'test_run_mock_test'
     TEST_LOGIC_ATTR = 'test_logic'
 
-    @test_decorators.test_tracker_info(uuid=TEST_TRACKER_UUID)
+    @test_decorators.test_info(uuid=TEST_TRACKER_UUID)
     def test_run_mock_test(self):
         getattr(MockTest, MockTest.TEST_LOGIC_ATTR, None)()
 
