@@ -174,7 +174,7 @@ class TestTrackerResultsWriterTest(unittest.TestCase):
                 return
         self.fail('Property "extra_prop" missing from Result proto.')
 
-    @mock.patch('acts.utils.create_dir')
+    @mock.patch('os.makedirs')
     def test_create_results_dir(self, _):
         """Test that _create_results_dir generates the correct path."""
         writer = TestTrackerResultsWriter(MOCK_LOG_PATH, MOCK_PROPERTIES)
