@@ -312,9 +312,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             dest = os.path.basename(file_path)
 
         dest_path = os.path.join(self.ad_dut.external_storage_path, dest)
-        self.log.info('clearing %s before pushing %s' % (dest_path, file_path))
+        self.log.info('Clearing %s before pushing %s' % (dest_path, file_path))
         self.ad_dut.adb.shell('rm -rf %s', dest_path)
-        self.log.info('pushing file %s to %s' % (file_path, dest_path))
+        self.log.info('Pushing file %s to %s' % (file_path, dest_path))
         self.ad_dut.adb.push(file_path, dest_path, timeout=timeout)
         return dest_path
 
@@ -494,7 +494,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 summaries[instr_test_name][metric_name] = summary_entry
                 if not lower_bound <= actual_result <= upper_bound:
                     failure = True
-        self.log.info('Summary of measurements: %s' % summaries)
+        self.log.info('Validation output: %s' % summaries)
         asserts.assert_false(
             failure,
             msg='One or more measurements do not meet the specified criteria',

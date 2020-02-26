@@ -100,8 +100,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def teardown_test(self):
         """Test teardown. Takes bugreport and cleans up device."""
-        self._ad_take_bugreport(self.ad_dut, 'teardown_class',
-                                utils.get_current_epoch_time())
+        self._take_bug_report('teardown_class', utils.get_current_epoch_time())
         self._cleanup_device()
 
     def _prepare_device(self):
