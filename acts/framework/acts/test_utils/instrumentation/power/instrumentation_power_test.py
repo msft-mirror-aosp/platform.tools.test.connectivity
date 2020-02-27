@@ -53,8 +53,15 @@ from acts import context
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 AUTOTESTER_LOG = 'autotester.log'
+DEFAULT_PUSH_FILE_TIMEOUT = 180
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
+
+_NETWORK_TYPES = {
+    '2g': 1,
+    '3g': 0,
+    'lte': 12
+}
 
 
 class InstrumentationPowerTest(InstrumentationBaseTest):
@@ -78,7 +85,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         super().setup_class()
         self.monsoon = self.monsoons[0]
         self._setup_monsoon()
+
+    def setup_test(self):
+        """Test setup"""
+        super().setup_test()
+        self._prepare_device()
         self._instr_cmd_builder = self.power_instrumentation_command_builder()
+        return True
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
@@ -86,9 +99,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._cleanup_test_files()
         self._permissions_util = PermissionsUtil(
             self.ad_dut,
-            self._instrumentation_config.get_file('permissions_apk'))
+            self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
-        self.install_test_apk()
+        self._install_test_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
@@ -102,6 +115,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Running base device setup commands.')
 
         self.ad_dut.adb.ensure_root()
+        self.adb_run(common.dismiss_keyguard)
+        self.ad_dut.ensure_screen_on()
 
         # Test harness flag
         self.adb_run(common.test_harness.toggle(True))
@@ -110,6 +125,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.disable_dialing.toggle(True))
 
         # Screen
+        self.adb_run(common.screen_always_on.toggle(True))
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
 
         brightness_level = None
@@ -188,6 +204,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(DeviceGServices(
             'gms_icing_extension_download_enabled').toggle(False))
 
+        # Comms
+        self.adb_run(common.wifi.toggle(False))
+        self.adb_run(common.bluetooth.toggle(False))
+        self.adb_run(common.airplane_mode.toggle(True))
+        self.adb_run(common.disable_modem)
+
         # Misc. Google features
         self.adb_run(goog.disable_playstore)
         self.adb_run(goog.disable_volta)
@@ -243,9 +265,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.droid.goToSleepNow()
         self.ad_dut.log.info('Device reconnected.')
 
-    def install_test_apk(self):
+    def _install_test_apk(self):
         """Installs test apk on the device."""
-        test_apk_file = self._instrumentation_config.get_file('test_apk')
+        test_apk_file = self.get_file_from_config('test_apk')
         self._test_apk = AppInstaller(self.ad_dut, test_apk_file)
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():
@@ -275,12 +297,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         raise ValueError('Couldn\'t determine if %s exists. '
                          'Expected yes/no, got %s' % (file_path, result[cmd]))
 
-    def push_to_external_storage(self, file_path, dest=None):
+    def push_to_external_storage(self, file_path, dest=None,
+        timeout=DEFAULT_PUSH_FILE_TIMEOUT):
         """Pushes a file to {$EXTERNAL_STORAGE} and returns its final location.
 
         Args:
             file_path: The file to be pushed.
             dest: Where within {$EXTERNAL_STORAGE} it should be pushed.
+            timeout: Float number of seconds to wait for the file to be pushed.
 
         Returns: The absolute path where the file was pushed.
         """
@@ -288,11 +312,22 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             dest = os.path.basename(file_path)
 
         dest_path = os.path.join(self.ad_dut.external_storage_path, dest)
-        self.log.info('clearing %s before pushing %s' % (dest_path, file_path))
+        self.log.info('Clearing %s before pushing %s' % (dest_path, file_path))
         self.ad_dut.adb.shell('rm -rf %s', dest_path)
-        self.log.info('pushing file %s to %s' % (file_path, dest_path))
-        self.ad_dut.adb.push(file_path, dest_path)
+        self.log.info('Pushing file %s to %s' % (file_path, dest_path))
+        self.ad_dut.adb.push(file_path, dest_path, timeout=timeout)
         return dest_path
+
+    def set_preferred_network(self, network_type):
+        """Set the preferred network type."""
+        self.adb_run(common.airplane_mode.toggle(False))
+        self.adb_run(
+            common.preferred_network_mode.set_value(
+                _NETWORK_TYPES[network_type.lower()]
+            )
+        )
+        self.ad_dut.reboot()
+        self.adb_run(common.disable_doze)
 
     # Test runtime utils
 
@@ -388,11 +423,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _log_metrics(self):
         """Record the collected metrics with the metric logger."""
+        self.log.info('Obtained metrics summaries:')
+        for k, m in self._power_metrics.test_metrics.items():
+            self.log.info('%s %s' % (k, str(m.summary)))
+
         for metric_name in PowerMetrics.ALL_METRICS:
             for instr_test_name in self._power_metrics.test_metrics:
                 metric_value = getattr(
                     self._power_metrics.test_metrics[instr_test_name],
                     metric_name).value
+                # TODO: Refactor this into instr_test_name.metric_name
                 self.metric_logger.add_metric(
                     '%s__%s' % (metric_name, instr_test_name), metric_value)
 
@@ -454,7 +494,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 summaries[instr_test_name][metric_name] = summary_entry
                 if not lower_bound <= actual_result <= upper_bound:
                     failure = True
-        self.log.info('Summary of measurements: %s' % summaries)
+        self.log.info('Validation output: %s' % summaries)
         asserts.assert_false(
             failure,
             msg='One or more measurements do not meet the specified criteria',

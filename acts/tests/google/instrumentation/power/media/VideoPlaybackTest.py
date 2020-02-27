@@ -16,29 +16,27 @@
 
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 
+BIG_FILE_PUSH_TIMEOUT = 600
 
-class VideoPlaybackTest(
-    instrumentation_power_test.InstrumentationPowerTest):
+
+class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
     """Test class for running instrumentation tests
     VideoPlaybackHighBitRateTest."""
 
-    def setup_class(self):
-        super().setup_class()
-
     def _prepare_device(self):
         super()._prepare_device()
-        self.mode_airplane()
         self.base_device_configuration()
+        self._video_location = self.push_to_external_storage(
+            self.get_file_from_config('high_bit_rate_video'),
+            timeout=BIG_FILE_PUSH_TIMEOUT)
+        self.trigger_scan_on_external_storage()
 
     def test_playback_high_bit_rate(self):
-        """Measures power when the device is in a rock bottom state."""
-        video_location = self.push_to_external_storage(
-            self._instrumentation_config.get_file('high_bit_rate_video'))
-        self.trigger_scan_on_external_storage()
+        """Measures power when the device is playing a video."""
 
         self.run_and_measure(
             'com.google.android.platform.powertests.PhotosTests',
             'testVideoPlaybackThroughIntent',
-            extra_params=[('video_file_path', video_location)])
+            extra_params=[('video_file_path', self._video_location)])
 
         self.validate_power_results()

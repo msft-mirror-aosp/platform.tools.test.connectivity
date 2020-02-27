@@ -717,19 +717,6 @@ class BaseTestClass(MoblyBaseTest):
                                func.__name__, self.TAG)
             return False
 
-    def _get_all_test_names(self):
-        """Finds all the function names that match the test case naming
-        convention in this class.
-
-        Returns:
-            A list of strings, each is a test case name.
-        """
-        test_names = []
-        for name in dir(self):
-            if name.startswith("test_"):
-                test_names.append(name)
-        return test_names
-
     def _get_test_funcs(self, test_names):
         """Obtain the actual functions of test cases based on test names.
 
@@ -991,7 +978,7 @@ class BaseTestClass(MoblyBaseTest):
             mylogger.stop(session)
             diag_path = os.path.join(
                 self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
-            utils.create_dir(diag_path)
+            os.makedirs(diag_path, exist_ok=True)
             mylogger.pull(session, diag_path)
 
     def register_test_class_event_subscriptions(self):

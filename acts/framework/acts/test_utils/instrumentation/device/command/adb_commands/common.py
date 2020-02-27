@@ -51,6 +51,8 @@ mobile_data = DeviceBinaryCommandSeries(
 
 cellular = DeviceSetting(GLOBAL, 'cell_on')
 
+preferred_network_mode = DeviceSetting(GLOBAL, 'preferred_network_mode')
+
 wifi = DeviceBinaryCommandSeries(
     [
         DeviceSetting(GLOBAL, 'wifi_on'),
@@ -64,6 +66,9 @@ bluetooth = DeviceState('service call bluetooth_manager', '6', '8')
 
 nfc = DeviceState('svc nfc', 'enable', 'disable')
 
+# Disable the ModemService
+
+disable_modem = 'pm disable com.google.android.apps.scone'
 
 # Calling
 
@@ -91,6 +96,11 @@ screensaver = DeviceSetting(SECURE, 'screensaver_enabled')
 notification_led = DeviceSetting(SYSTEM, 'notification_light_pulse')
 
 
+# Audio
+
+disable_audio = DeviceSetprop('ro.audio.silent')
+
+
 # Accelerometer
 
 auto_rotate = DeviceSetting(SYSTEM, 'accelerometer_rotation')
@@ -100,7 +110,7 @@ auto_rotate = DeviceSetting(SYSTEM, 'accelerometer_rotation')
 
 auto_time = DeviceSetting(GLOBAL, 'auto_time')
 
-auto_timezone = DeviceSetting(GLOBAL, 'auto_time_zone')
+auto_timezone = DeviceSetting(GLOBAL, 'auto_timezone')
 
 timezone = DeviceSetprop('persist.sys.timezone')
 
@@ -144,3 +154,4 @@ test_harness = DeviceBinaryCommandSeries(
     ]
 )
 
+dismiss_keyguard = 'wm dismiss-keyguard'

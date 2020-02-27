@@ -80,6 +80,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.img_name = ''
         self.dut = None
         self.power_logger = PowerMetricLogger.for_test_case()
+        self.avg_current = 0
 
     @property
     def final_test(self):
@@ -90,7 +91,7 @@ class PowerBaseTest(base_test.BaseTestClass):
     def setup_class(self):
 
         self.log = logging.getLogger()
-        self.tests = self._get_all_test_names()
+        self.tests = self.get_existing_test_names()
 
         # Obtain test parameters from user_params
         TEST_PARAMS = self.TAG + '_params'
@@ -189,6 +190,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
         self.power_logger.set_avg_power(self.power_result.metric_value)
+        self.power_logger.set_avg_current(self.avg_current)
+        self.power_logger.set_voltage(self.mon_voltage)
         self.power_logger.set_testbed(self.testbed_name)
 
         build_id = self.dut.build_info.get('incremental_build_id', '')
@@ -300,6 +303,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         result = self.monsoon_data_collect_save()
         self.power_result.metric_value = (result.average_current *
                                           self.mon_voltage)
+        self.avg_current = result.average_current
+
         wputils.monsoon_data_plot(self.mon_info, result)
         return result
 

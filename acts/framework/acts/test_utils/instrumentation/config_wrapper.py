@@ -79,15 +79,3 @@ class ConfigWrapper(collections.UserDict):
         return self.get(param_name, default=default,
                         verify_fn=lambda val: type(val) in (int, float),
                         failure_msg='Param must be of type int or float.')
-
-    def get_files(self, param_name):
-        """Get list of file paths from config. Will raise an exception if any
-        of the paths do not point to actual files/directories.
-        """
-        return self.get(param_name,
-                        verify_fn=lambda l: all(map(os.path.exists, l)),
-                        failure_msg='Cannot resolve one or more paths.')
-
-    def get_file(self, param_name):
-        """Get single file path from config."""
-        return self.get_files(param_name)[0]

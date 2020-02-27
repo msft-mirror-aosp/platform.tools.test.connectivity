@@ -31,6 +31,7 @@ from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from scapy.all import get_if_list
 
 import os
 import re
@@ -41,6 +42,9 @@ VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
 TCPDUMP_PATH = "/data/local/tmp/"
+USB_CHARGE_MODE = "svc usb setFunctions"
+USB_TETHERING_MODE = "svc usb setFunctions rndis"
+DEVICE_IP_ADDRESS = "ip address"
 
 GCE_SSH = "gcloud compute ssh "
 GCE_SCP = "gcloud compute scp "
@@ -285,7 +289,7 @@ def stop_tcpdump(ad,
     except Exception as e:
         ad.log.warning(e)
     log_path = os.path.join(ad.log_path, test_name)
-    utils.create_dir(log_path)
+    os.makedirs(log_path, exist_ok=True)
     ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path), timeout=adb_pull_timeout)
     ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
@@ -357,16 +361,17 @@ def stop_tcpdump_gce_server(ad, tcpdump_pid, fname, gce):
     # pull pcap file
     gcloud_scp_cmd = "%s --project=%s --zone=%s %s@%s:" % \
         (GCE_SCP, gce["project"], gce["zone"], gce["username"], gce["hostname"])
-    pull_file = '%s%s.pcap %s' % (gcloud_scp_cmd, fname, ad.log_path)
+    pull_file = '%s%s.pcap %s/' % (gcloud_scp_cmd, fname, ad.device_log_path)
     utils.exe_cmd(pull_file)
-    if not os.path.exists("%s/%s.pcap" % (ad.log_path, fname.split('/')[-1])):
+    if not os.path.exists(
+        "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])):
         raise signals.TestFailure("Failed to pull tcpdump from gce server")
 
     # delete pcaps
     utils.exe_cmd('%s "sudo rm %s.*"' % (gcloud_ssh_cmd, fname))
 
     # return pcap file
-    pcap_file = "%s/%s.pcap" % (ad.log_path, fname.split('/')[-1])
+    pcap_file = "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])
     return pcap_file
 
 def is_ipaddress_ipv6(ip_address):
@@ -410,3 +415,52 @@ def supports_ipv6_tethering(self, dut):
     carrier_supports_tethering = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
     operator = get_operator_name(self.log, dut)
     return operator in carrier_supports_tethering
+
+
+def start_usb_tethering(ad):
+    """Start USB tethering.
+
+    Args:
+        ad: android device object
+    """
+    # TODO: test USB tethering by #startTethering API - b/149116235
+    ad.log.info("Starting USB Tethering")
+    ad.stop_services()
+    ad.adb.shell(USB_TETHERING_MODE, ignore_status=True)
+    ad.adb.wait_for_device()
+    ad.start_services()
+    if "rndis" not in ad.adb.shell(DEVICE_IP_ADDRESS):
+        raise signals.TestFailure("Unable to enable USB tethering.")
+
+
+def stop_usb_tethering(ad):
+    """Stop USB tethering.
+
+    Args:
+        ad: android device object
+    """
+    ad.log.info("Stopping USB Tethering")
+    ad.stop_services()
+    ad.adb.shell(USB_CHARGE_MODE)
+    ad.adb.wait_for_device()
+    ad.start_services()
+
+
+def wait_for_new_iface(old_ifaces):
+    """Wait for the new interface to come up.
+
+    Args:
+        old_ifaces: list of old interfaces
+    """
+    old_set = set(old_ifaces)
+    # Try 10 times to find a new interface with a 1s sleep every time
+    # (equivalent to a 9s timeout)
+    for i in range(0, 10):
+        new_ifaces = set(get_if_list()) - old_set
+        asserts.assert_true(len(new_ifaces) < 2,
+                            "Too many new interfaces after turning on "
+                            "tethering")
+        if len(new_ifaces) == 1:
+            return new_ifaces.pop()
+        time.sleep(1)
+    asserts.fail("Timeout waiting for tethering interface on host")
