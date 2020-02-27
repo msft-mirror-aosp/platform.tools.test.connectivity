@@ -330,6 +330,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         start_time = time.time()
         while time.time() < start_time + self._disconnect_usb_timeout:
             if self.ad_dut.adb.shell('ls %s' % disconnect_file):
+                self.log.info('disconnection signal received. File: '
+                              '"%s"' % disconnect_file)
                 return
             time.sleep(POLLING_INTERVAL)
         raise InstrumentationTestError('Timeout while waiting for USB '
@@ -343,7 +345,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             raise InstrumentationTestError('Missing Monsoon measurement args.')
 
         # Start measurement after receiving disconnect signal
-        self._wait_for_disconnect_signal()
+        try:
+            self._wait_for_disconnect_signal()
+        except InstrumentationTestError:
+            # TODO: parse the proto for stack traces and raise an error with it.
+            self.dump_instrumentation_result_proto()
+            raise
+
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
         self.log.info('Starting Monsoon measurement.')
