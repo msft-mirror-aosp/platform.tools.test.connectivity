@@ -32,8 +32,6 @@ install_requires = [
     'numpy',
     'pyserial',
     'pyyaml>=5.1',
-    'tzlocal',
-    'shellescape>=3.4.1',
     'protobuf',
     'retry',
     'requests',
