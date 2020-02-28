@@ -23,7 +23,6 @@ from acts.records import TestResultEnums
 from acts.records import TestResultRecord
 
 from acts import signals
-from acts import utils
 
 KEY_DETAILS = 'details'
 KEY_EFFORT_NAME = 'effort_name'
@@ -169,5 +168,5 @@ class TestTrackerResultsWriter(object):
         """
         dir_path = os.path.join(self._log_path, TESTTRACKER_PATH % (
             self._properties[KEY_EFFORT_NAME], uuid))
-        utils.create_dir(dir_path)
+        os.makedirs(dir_path, exist_ok=True)
         return dir_path
