@@ -106,6 +106,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.clear_deleted_ephemeral_networks()
         wutils.wifi_toggle_state(self.dut, True)
         self.dut.ed.clear_all_events()
+        self.clear_carrier_approved(str(self.dut.droid.telephonyGetSimCarrierId()))
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
@@ -115,6 +116,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
         wutils.wifi_toggle_state(self.dut, False)
         self.dut.ed.clear_all_events()
+        self.clear_carrier_approved(str(self.dut.droid.telephonyGetSimCarrierId()))
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -636,13 +638,15 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.skip_if("carrierId" not in passpoint_config,
                         "Not a SIM based passpoint network, skip this test")
 
+        # Ensure the carrier is not approved.
+        asserts.assert_false(
+            self.is_carrier_approved(passpoint_config["carrierId"]),
+            "Carrier shouldn't be approved")
+
         self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([passpoint_config]),
             "Failed to add suggestions")
-
-        # Clean the carrier approval in case other test side affect.
-        self.clear_carrier_approved(passpoint_config["carrierId"])
 
         # Start a new scan to trigger auto-join.
         wutils.start_wifi_connection_scan_and_ensure_network_found(
