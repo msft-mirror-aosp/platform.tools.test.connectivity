@@ -143,6 +143,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.wake_gesture.toggle(False))
         self.adb_run(common.doze_mode.toggle(False))
         self.adb_run(common.doze_always_on.toggle(False))
+        self.adb_run(common.doze_tap_gesture.toggle(False))
 
         # Sensors
         self.adb_run(common.auto_rotate.toggle(False))
@@ -151,6 +152,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         if self.file_exists(common.MOISTURE_DETECTION_SETTING_FILE):
             self.adb_run(common.disable_moisture_detection)
+        self.adb_run(common.stop_moisture_detection)
 
         # Time
         self.adb_run(common.auto_time.toggle(False))
@@ -160,6 +162,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Location
         self.adb_run(common.location_gps.toggle(False))
         self.adb_run(common.location_network.toggle(False))
+        self.adb_run(common.location_mode.toggle(False))
 
         # Power
         self.adb_run(common.battery_saver_mode.toggle(False))
@@ -182,7 +185,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             'assist_gesture_wake_enabled': False,
             'system_navigation_keys_enabled': False,
             'camera_lift_trigger_enabled': False,
-            'doze_always_on': False,
             'aware_enabled': False,
             'doze_wake_screen_gesture': False,
             'skip_gesture': False,
@@ -203,12 +205,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             'gms:phenotype:phenotype_flag:debug_bypass_phenotype').toggle(True))
         self.adb_run(DeviceGServices(
             'gms_icing_extension_download_enabled').toggle(False))
+        self.adb_run(common.disable_pixellogger)
 
         # Comms
         self.adb_run(common.wifi.toggle(False))
         self.adb_run(common.bluetooth.toggle(False))
         self.adb_run(common.airplane_mode.toggle(True))
         self.adb_run(common.disable_modem)
+        self.adb_run(common.nfc.toggle(False))
 
         # Misc. Google features
         self.adb_run(goog.disable_playstore)
