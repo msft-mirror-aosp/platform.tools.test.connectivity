@@ -19,6 +19,8 @@ import unittest
 import mock
 from acts.test_utils.instrumentation.device.apps.dismiss_dialogs import \
     DialogDismissalUtil
+from acts.test_utils.instrumentation.device.apps.dismiss_dialogs import \
+    DISMISS_DIALOGS_TIMEOUT
 
 
 class MockDialogDismissalUtil(DialogDismissalUtil):
@@ -47,11 +49,11 @@ class DialogDismissalUtilTest(unittest.TestCase):
         self._dismiss_dialogs_util.dismiss_dialogs(apps)
         expected_cmd = (
             'am instrument -w -f -e apps sample.app.one '
-            'dismiss.dialogs/.DismissDialogsInstrumentation '
-            '-e screenshots true -e quitOnError true'
+            '-e screenshots true -e quitOnError true '
+            'dismiss.dialogs/.DismissDialogsInstrumentation'
         )
         self._dismiss_dialogs_util._dut.adb.shell.assert_called_with(
-            expected_cmd)
+            expected_cmd, timeout=DISMISS_DIALOGS_TIMEOUT)
 
     def test_dismiss_dialog_multiple_apps(self):
         """
@@ -61,11 +63,11 @@ class DialogDismissalUtilTest(unittest.TestCase):
         self._dismiss_dialogs_util.dismiss_dialogs(apps)
         expected_cmd = (
             'am instrument -w -f -e apps sample.app.one,sample.app.two '
-            'dismiss.dialogs/.DismissDialogsInstrumentation '
-            '-e screenshots true -e quitOnError true'
+            '-e screenshots true -e quitOnError true '
+            'dismiss.dialogs/.DismissDialogsInstrumentation'
         )
         self._dismiss_dialogs_util._dut.adb.shell.assert_called_with(
-            expected_cmd)
+            expected_cmd, timeout=DISMISS_DIALOGS_TIMEOUT)
 
 
 if __name__ == '__main__':
