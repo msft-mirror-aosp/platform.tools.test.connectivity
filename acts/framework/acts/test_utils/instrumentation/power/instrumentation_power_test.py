@@ -425,7 +425,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Record the collected metrics with the metric logger."""
         self.log.info('Obtained metrics summaries:')
         for k, m in self._power_metrics.test_metrics.items():
-            self.log.info('%s %s' % (k, str(m.summary)))
+            self.log.info('    %s %s' % (k, str(m.summary)))
 
         for metric_name in PowerMetrics.ALL_METRICS:
             for instr_test_name in self._power_metrics.test_metrics:
