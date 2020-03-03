@@ -34,7 +34,7 @@ from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from threading import Thread
 
 WifiEnums = wutils.WifiEnums
-WIFI_CONFIG_APBAND_AUTO = -1
+WIFI_CONFIG_APBAND_AUTO = WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G
 
 class WifiSoftApAcsTest(WifiBaseTest):
     """Tests for Automatic Channel Selection.
