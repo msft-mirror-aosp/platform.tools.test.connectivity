@@ -20,7 +20,7 @@ from acts.test_utils.instrumentation.power import instrumentation_power_test
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 
-class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
+class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
     """Test class for running instrumentation test RockBottom."""
 
     def _prepare_device(self):
@@ -41,7 +41,7 @@ class RockBottomTest(instrumentation_power_test.InstrumentationPowerTest):
         """Makes sure the device comes back up after rebooting and measures
         power when the device is in a rock bottom state."""
         self.ad_dut.reboot(timeout=180)
-        self.log.debug('giving device extra minute after booting before '
+        self.log.debug('Giving device extra minute after booting before '
                        'starting instrumentation test.')
         time.sleep(60)
         self.run_idle_test_case()
