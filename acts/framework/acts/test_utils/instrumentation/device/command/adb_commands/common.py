@@ -66,7 +66,7 @@ bluetooth = DeviceState('service call bluetooth_manager', '6', '8')
 
 nfc = DeviceState('svc nfc', 'enable', 'disable')
 
-# Disable the ModemService
+# Disables the ModemService
 
 disable_modem = 'pm disable com.google.android.apps.scone'
 
@@ -88,6 +88,9 @@ screen_timeout_ms = DeviceSetting(SYSTEM, 'screen_off_timeout')
 doze_mode = DeviceSetting(SECURE, 'doze_enabled')
 
 doze_always_on = DeviceSetting(SECURE, 'doze_always_on')
+
+#Disables single tap gesture for P19+ devices
+doze_tap_gesture = DeviceSetting(SECURE, 'doze_tap_gesture')
 
 wake_gesture = DeviceSetting(SECURE, 'wake_gesture_enabled')
 
@@ -123,6 +126,9 @@ location_gps = DeviceSetting(SECURE, 'location_providers_allowed',
 location_network = DeviceSetting(SECURE, 'location_providers_allowed',
                                  '+network', '-network')
 
+# if set to true(3), enable location mode(set to high accuracy)
+# if set to false(0), disable location mode(set to OFF)
+location_mode = DeviceSetting(SECURE, 'location_mode', '3', '0')
 
 # Power
 
@@ -139,11 +145,18 @@ disable_doze = 'dumpsys deviceidle disable'
 
 disable_sensors = 'dumpsys sensorservice restrict blah'
 
+# Disable moisture detection
+
 MOISTURE_DETECTION_SETTING_FILE = '/sys/class/power_supply/usb/moisture_detection_enabled'
 disable_moisture_detection = 'echo 0 > %s' % MOISTURE_DETECTION_SETTING_FILE
+stop_moisture_detection = 'setprop vendor.usb.contaminantdisable true'
 
 ## Ambient EQ: https://support.google.com/googlenest/answer/9137130?hl=en
 ambient_eq = DeviceSetting(SECURE, 'display_white_balance_enabled')
+
+# Disables System apps
+
+disable_pixellogger = 'pm disable com.android.pixellogger'
 
 # Miscellaneous
 
