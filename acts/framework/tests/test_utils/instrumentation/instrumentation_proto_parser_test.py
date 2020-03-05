@@ -30,6 +30,10 @@ SOURCE_PATH = 'source/proto/protofile'
 SAMPLE_PROTO = 'data/sample.instrumentation_data_proto'
 SAMPLE_TIMESTAMP_PROTO = 'data/sample_timestamp.instrumentation_data_proto'
 
+SAMPLE_ERROR_TEXT = 'INSTRUMENTATION_FAILED: com.google.android.powertests/' \
+                    'androidx.test.runner.AndroidJUnitRunner'
+SAMPLE_STREAM = '\n\nTime: 16.333\n\nOK (1 test)\n\n'
+
 
 class InstrumentationProtoParserTest(unittest.TestCase):
     """Unit tests for instrumentation proto parser."""
@@ -75,6 +79,29 @@ class InstrumentationProtoParserTest(unittest.TestCase):
             1567029917802)
         self.assertEqual(
             timestamps['partialWakelock'][parser.END_TIMESTAMP], 1567029932879)
+
+    def test_get_instrumentation_result_with_session_aborted(self):
+        proto_file = os.path.join(os.path.dirname(__file__), SAMPLE_PROTO)
+        session = parser.get_session_from_local_file(proto_file)
+        expected = {
+            'status_code': 1,
+            'result_code': 0,
+            'error_text': SAMPLE_ERROR_TEXT
+        }
+        self.assertDictEqual(
+            parser.get_instrumentation_result(session), expected)
+
+    def test_get_instrumentation_result_with_session_completed(self):
+        proto_file = os.path.join(os.path.dirname(__file__),
+                                  SAMPLE_TIMESTAMP_PROTO)
+        session = parser.get_session_from_local_file(proto_file)
+        expected = {
+            'status_code': 0,
+            'result_code': -1,
+            'stream': SAMPLE_STREAM
+        }
+        self.assertDictEqual(
+            parser.get_instrumentation_result(session), expected)
 
 
 if __name__ == '__main__':

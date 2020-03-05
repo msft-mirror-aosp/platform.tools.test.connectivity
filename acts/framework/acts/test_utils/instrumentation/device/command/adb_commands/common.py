@@ -85,8 +85,10 @@ screen_always_on = DeviceState('svc power stayon', 'true', 'false')
 
 screen_timeout_ms = DeviceSetting(SYSTEM, 'screen_off_timeout')
 
+# enables/disables showing notifications in ambient (mostly dark) mode.
 doze_mode = DeviceSetting(SECURE, 'doze_enabled')
 
+# enables/disables ambient mode (mostly dark) always showing the time
 doze_always_on = DeviceSetting(SECURE, 'doze_always_on')
 
 #Disables single tap gesture for P19+ devices

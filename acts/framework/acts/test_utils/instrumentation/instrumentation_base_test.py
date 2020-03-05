@@ -21,10 +21,10 @@ from acts.keys import Config
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 from acts import base_test
 from acts import context
+from acts import error
 from acts import utils
 
 RESOLVE_FILE_MARKER = 'FILE'
@@ -32,7 +32,7 @@ FILE_NOT_FOUND = 'File is missing from ACTS config'
 DEFAULT_INSTRUMENTATION_CONFIG_FILE = 'instrumentation_config.yaml'
 
 
-class InstrumentationTestError(Exception):
+class InstrumentationTestError(error.ActsError):
     pass
 
 
@@ -100,7 +100,8 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def teardown_test(self):
         """Test teardown. Takes bugreport and cleans up device."""
-        self._take_bug_report('teardown_class', utils.get_current_epoch_time())
+        self._take_bug_report(self.current_test_name,
+                              utils.get_current_epoch_time())
         self._cleanup_device()
 
     def _prepare_device(self):
@@ -228,3 +229,27 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         with open(proto_txt_path, 'w') as f:
             f.write(str(session))
         return session
+
+    def log_instrumentation_result(self, session):
+        """Logs instrumentation test result.
+
+        Args:
+            session: an instrumentation_data_pb2.Session
+
+        Returns: The parsed instrumentation result
+        """
+        result = proto_parser.get_instrumentation_result(session)
+
+        if result['status_code']:
+            self.log.error('Instrumentation session aborted!')
+            if 'error_text' in result:
+                self.log.error('Instrumentation error: %s'
+                               % result['error_text'])
+            return result
+
+        log = self.log.info if result['result_code'] == -1 else self.log.error
+        log('Instrumentation command finished with result_code %d.'
+            % result['result_code'])
+        if 'stream' in result:
+            log('Instrumentation output: %s' % result['stream'])
+        return result

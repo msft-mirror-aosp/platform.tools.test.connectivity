@@ -67,7 +67,7 @@ def get_session_from_local_file(proto_file):
     Args:
         proto_file: Path to the proto file (on host)
 
-    Returns: A instrumentation_data_pb2.Session
+    Returns: An instrumentation_data_pb2.Session
     """
     with open(proto_file, 'rb') as f:
         return instrumentation_data_pb2.Session.FromString(f.read())
@@ -82,7 +82,7 @@ def get_session_from_device(ad, proto_file=None):
         proto_file: Path to the proto file (on device). If None, defaults to
             latest proto from DEFAULT_INST_PROTO_DIR.
 
-    Returns: A instrumentation_data_pb2.Session
+    Returns: An instrumentation_data_pb2.Session
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
         pulled_proto = pull_proto(ad, tmp_dir, proto_file)
@@ -94,7 +94,7 @@ def get_test_timestamps(session):
     test.
 
     Args:
-        session: an instrumentation_data.Session object
+        session: an instrumentation_data_pb2.Session
 
     Returns: a dict in the format
         {
@@ -122,3 +122,31 @@ def get_test_timestamps(session):
             if test_name and timestamp and timestamp_type:
                 timestamps[test_name][timestamp_type] = timestamp
     return timestamps
+
+
+def get_instrumentation_result(session):
+    """Parse an instrumentation_data_pb2.Session to get the result code and
+    stream of the session.
+
+    Args:
+        session: an instrumentation_data_pb2.Session
+
+    Returns: a dict of
+        {
+            'status_code': <int>,
+            'result_code': <int>,
+            'error_text': <str>,
+            'stream': <str>
+        }
+    """
+    session_status = session.session_status
+    res = {
+        'status_code': session_status.status_code,
+        'result_code': session_status.result_code
+    }
+    if session_status.error_text:
+        res['error_text'] = session_status.error_text
+    for entry in session.session_status.results.entries:
+        if entry.key == 'stream':
+            res['stream'] = entry.value_string
+    return res

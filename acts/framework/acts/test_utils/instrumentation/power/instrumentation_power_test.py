@@ -352,7 +352,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         start_time = time.time()
         while time.time() < start_time + self._disconnect_usb_timeout:
             if self.ad_dut.adb.shell('ls %s' % disconnect_file):
-                self.log.info('disconnection signal received. File: '
+                self.log.info('Disconnection signal received. File: '
                               '"%s"' % disconnect_file)
                 return
             time.sleep(POLLING_INTERVAL)
@@ -369,10 +369,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Start measurement after receiving disconnect signal
         try:
             self._wait_for_disconnect_signal()
-        except InstrumentationTestError:
-            # TODO: parse the proto for stack traces and raise an error with it.
-            self.dump_instrumentation_result_proto()
-            raise
+        except InstrumentationTestError as e:
+            session = self.dump_instrumentation_result_proto()
+            res = self.log_instrumentation_result(session)
+            raise InstrumentationTestError(
+                'Failed to receive USB disconnect signal.',
+                instrumentation_result=res) from e
 
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
@@ -386,6 +388,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         # Gather relevant metrics from measurements
         session = self.dump_instrumentation_result_proto()
+        self.log_instrumentation_result(session)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)
         self._power_metrics.generate_test_metrics(
