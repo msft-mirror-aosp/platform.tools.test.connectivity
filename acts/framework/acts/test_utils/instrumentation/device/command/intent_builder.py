@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import shlex
 
 TYPE_TO_FLAG = collections.defaultdict(lambda: '--es')
 TYPE_TO_FLAG.update({bool: '--ez', int: '--ei', float: '--ef', str: '--es'})
@@ -79,5 +80,5 @@ class IntentBuilder(object):
                 if isinstance(value, bool):
                     str_value = str_value.lower()
                 cmd.append(' '.join((TYPE_TO_FLAG[type(value)], key,
-                                     str_value)))
+                                     shlex.quote(str_value))))
         return ' '.join(cmd).strip()
