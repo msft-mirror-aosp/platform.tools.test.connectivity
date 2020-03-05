@@ -1393,6 +1393,10 @@ def get_interface_ip_addresses(comm_channel, interface):
             ipv6_private_local_addresses: Any fd00:: addresses
             ipv6_public_addresses: Any publicly routable addresses
     """
+    # Local imports are used here to prevent cyclic dependency.
+    from acts.controllers.android_device import AndroidDevice
+    from acts.controllers.fuchsia_device import FuchsiaDevice
+    from acts.controllers.utils_lib.ssh.connection import SshConnection
     ipv4_private_local_addresses = []
     ipv4_public_addresses = []
     ipv6_link_local_addresses = []
