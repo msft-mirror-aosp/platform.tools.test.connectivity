@@ -103,7 +103,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
-        self.clear_deleted_ephemeral_networks()
+        self.clear_user_disabled_networks()
         wutils.wifi_toggle_state(self.dut, True)
         self.dut.ed.clear_all_events()
         self.clear_carrier_approved(str(self.dut.droid.telephonyGetSimCarrierId()))
@@ -159,10 +159,10 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             "cmd wifi imsi-protection-exemption-clear-user-approved-for-carrier"
             + " " + carrier_id)
 
-    def clear_deleted_ephemeral_networks(self):
-        self.dut.log.debug("Clearing deleted ephemeral networks")
+    def clear_user_disabled_networks(self):
+        self.dut.log.debug("Clearing user disabled networks")
         self.dut.adb.shell(
-            "cmd wifi clear-deleted-ephemeral-networks")
+            "cmd wifi clear-user-disabled-networks")
 
     def add_suggestions_and_ensure_connection(self, network_suggestions,
                                               expected_ssid,
@@ -474,8 +474,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             [network_suggestion], self.wpa_psk_2g[WifiEnums.SSID_KEY],
             True)
 
-        # Simulate user forgetting the ephemeral network.
-        self.dut.droid.wifiDisableEphemeralNetwork(
+        # Simulate user disconnect the network.
+        self.dut.droid.wifiUserDisconnectNetwork(
             self.wpa_psk_2g[WifiEnums.SSID_KEY])
         wutils.wait_for_disconnect(self.dut)
         self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
