@@ -37,9 +37,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 from acts import signals
 from acts.controllers import adb
-from acts.controllers.android_device import AndroidDevice
-from acts.controllers.fuchsia_device import FuchsiaDevice
-from acts.controllers.utils_lib.ssh.connection import SshConnection
 from acts.libs.proc import job
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
