@@ -46,17 +46,13 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             configs: Dict representing the test configuration
         """
         super().__init__(configs)
-        # Take instrumentation config path directly from ACTS config if found,
-        # otherwise try to find the instrumentation config in the same directory
-        # as the ACTS config
-        instrumentation_config_path = ''
         if 'instrumentation_config' in self.user_params:
             instrumentation_config_path = (
                 self.user_params['instrumentation_config'][0])
-        elif Config.key_config_path.value in self.user_params:
-            instrumentation_config_path = os.path.join(
-                self.user_params[Config.key_config_path.value],
-                DEFAULT_INSTRUMENTATION_CONFIG_FILE)
+        else:
+            raise InstrumentationTestError(
+                'Instrumentation config file not specified. Please add a valid '
+                '"instrumentation_config" path to the ACTS config.')
         self._instrumentation_config = ConfigWrapper()
         if os.path.exists(instrumentation_config_path):
             self._instrumentation_config = self._load_instrumentation_config(
@@ -64,9 +60,9 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             self._class_config = self._instrumentation_config.get_config(
                 self.__class__.__name__)
         else:
-            self.log.warning(
-                'Instrumentation config file %s does not exist' %
-                instrumentation_config_path)
+            raise InstrumentationTestError(
+                'Instrumentation config file %s does not exist'
+                % instrumentation_config_path)
 
     def _load_instrumentation_config(self, path):
         """Load the instrumentation config file into an
