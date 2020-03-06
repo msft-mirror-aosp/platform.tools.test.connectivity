@@ -56,6 +56,7 @@ AUTOTESTER_LOG = 'autotester.log'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
+SCREENSHOTS_DIR = 'test_screenshots'
 
 _NETWORK_TYPES = {
     '2g': 1,
@@ -108,6 +109,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         if self._test_apk:
             self._test_apk.uninstall()
         self._permissions_util.close()
+        self.ad_dut.pull_files(
+            os.path.join(self.ad_dut.external_storage_path, SCREENSHOTS_DIR),
+            self.ad_dut.device_log_path
+        )
         self._cleanup_test_files()
 
     def base_device_configuration(self):
@@ -281,7 +286,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Remove test-generated files from the device."""
         self.ad_dut.log.info('Cleaning up test generated files.')
         for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
-                          DEFAULT_NOHUP_LOG, AUTOTESTER_LOG]:
+                          DEFAULT_NOHUP_LOG, AUTOTESTER_LOG,
+                          SCREENSHOTS_DIR]:
             path = os.path.join(self.ad_dut.external_storage_path, file_name)
             self.adb_run('rm -rf %s' % path)
 

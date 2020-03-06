@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import os
+import shlex
 
 DEFAULT_NOHUP_LOG = 'nohup.log'
 
@@ -90,7 +91,7 @@ class InstrumentationCommandBuilder(object):
         for key, value in self._key_value_params.items():
             call.append('-e')
             call.append(key)
-            call.append(value)
+            call.append(shlex.quote(value))
         return call
 
 
