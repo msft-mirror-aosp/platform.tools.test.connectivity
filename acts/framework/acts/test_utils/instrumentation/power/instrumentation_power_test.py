@@ -26,12 +26,7 @@ from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.device.apps.app_installer import \
     AppInstaller
-from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceGServices
-from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceSetprop
-from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceSetting
+from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
@@ -46,7 +41,6 @@ from acts.test_utils.instrumentation.instrumentation_proto_parser import \
     DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import Measurement
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
-from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 
 from acts import asserts
 from acts import context
@@ -366,7 +360,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         try:
             self._wait_for_disconnect_signal()
         except InstrumentationTestError as e:
-            session = self.dump_instrumentation_result_proto()
+            session = self.parse_instrumentation_result_proto()
             res = self.log_instrumentation_result(session)
             raise InstrumentationTestError(
                 'Failed to receive USB disconnect signal.',
@@ -383,7 +377,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Monsoon measurement complete.')
 
         # Gather relevant metrics from measurements
-        session = self.dump_instrumentation_result_proto()
+        session = self.parse_instrumentation_result_proto()
         self.log_instrumentation_result(session)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)

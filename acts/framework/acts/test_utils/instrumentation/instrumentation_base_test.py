@@ -233,16 +233,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             procs[cmd] = self.ad_dut.adb.shell(cmd)
         return procs
 
-    def dump_instrumentation_result_proto(self):
-        """Dump the instrumentation result proto as a human-readable txt file
-        in the log directory.
+    def parse_instrumentation_result_proto(self):
+        """Parse the instrumentation result proto and write it to a
+        human-readable txt file in the log directory.
 
         Returns: The parsed instrumentation_data_pb2.Session
         """
-        session = proto_parser.get_session_from_device(self.ad_dut)
-        proto_txt_path = os.path.join(
-            context.get_current_context().get_full_output_path(),
-            'instrumentation_proto.txt')
+        log_path = context.get_current_context().get_full_output_path()
+        proto_file = proto_parser.pull_proto(self.ad_dut, log_path)
+        session = proto_parser.get_session_from_local_file(proto_file)
+        proto_txt_path = os.path.join(log_path, 'instrumentation_proto.txt')
         with open(proto_txt_path, 'w') as f:
             f.write(str(session))
         return session
