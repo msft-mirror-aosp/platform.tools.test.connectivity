@@ -112,6 +112,11 @@ class DeviceSetprop(DeviceState):
 class DeviceSetting(DeviceState):
     """Class for commands to set a settings.db entry to a value."""
 
+    # common namespaces
+    GLOBAL = 'global'
+    SYSTEM = 'system'
+    SECURE = 'secure'
+
     def __init__(self, namespace, setting, on_val='1', off_val='0', desc=None):
         """Create a DeviceSetting.
 

@@ -184,9 +184,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(
             common.camera_double_tap_power_gesture_disabled.toggle(True))
         self.adb_run(common.camera_double_twist_to_flip_enabled.toggle(False))
-        self.adb_run(common.assist_gesture_enabled.toggle(False))
-        self.adb_run(common.assist_gesture_silence_alerts_enabled.toggle(False))
-        self.adb_run(common.assist_gesture_wake_enabled.toggle(False))
+        self.adb_run(goog.edge_sensor.toggle(False))
         self.adb_run(common.system_navigation_keys_enabled.toggle(False))
         self.adb_run(common.camera_lift_trigger_enabled.toggle(False))
         self.adb_run(common.aware_enabled.toggle(False))

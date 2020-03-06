@@ -25,17 +25,13 @@ from acts.test_utils.instrumentation.device.command.adb_command_types import \
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
   GenericCommand
 
-GLOBAL = 'global'
-SYSTEM = 'system'
-SECURE = 'secure'
-
 """Common device settings for power testing."""
 
 # Network/Connectivity
 
 airplane_mode = DeviceBinaryCommandSeries(
     [
-        DeviceSetting(GLOBAL, 'airplane_mode_on',
+        DeviceSetting(DeviceSetting.GLOBAL, 'airplane_mode_on',
                       desc='Modifies the property that indicates whether '
                            'airplane mode is enabled. This command is always '
                            'used together with an activity manager broadcast.'),
@@ -50,7 +46,7 @@ airplane_mode = DeviceBinaryCommandSeries(
 mobile_data = DeviceBinaryCommandSeries(
     [
         DeviceSetting(
-            GLOBAL, 'mobile_data',
+            DeviceSetting.GLOBAL, 'mobile_data',
             desc='Modifies the property that indicates whether mobile data is '
                  'enabled. This is used always together with an svc data '
                  'command.'),
@@ -62,16 +58,16 @@ mobile_data = DeviceBinaryCommandSeries(
 )
 
 cellular = DeviceSetting(
-    GLOBAL, 'cell_on',
+    DeviceSetting.GLOBAL, 'cell_on',
     desc='Modifies whether to enable the cellular radio.')
 
 preferred_network_mode = DeviceSetting(
-    GLOBAL, 'preferred_network_mode',
+    DeviceSetting.GLOBAL, 'preferred_network_mode',
     desc='Sets the preferred network (lte/3g).')
 
 wifi = DeviceBinaryCommandSeries(
     [
-        DeviceSetting(GLOBAL, 'wifi_on',
+        DeviceSetting(DeviceSetting.GLOBAL, 'wifi_on',
                       desc='Modifies the property that indicates whether wifi '
                            'is enabled. This is always used together with an'
                            'svc wifi command.'),
@@ -110,14 +106,14 @@ disable_dialing = DeviceSetprop(
 # Screen
 
 screen_adaptive_brightness = DeviceSetting(
-    SYSTEM, 'screen_brightness_mode',
+    DeviceSetting.SYSTEM, 'screen_brightness_mode',
     desc='Modifies whether the adaptive brightness feature is enabled. Differs '
          'from ambient EQ modifies the color balance and this feature'
          'modifies the screen brightness. '
          'https://support.google.com/android/answer/9084191?hl=en '
          'http://shortn/_ptmpx4wuVW')
 
-screen_brightness = DeviceSetting(SYSTEM, 'screen_brightness',
+screen_brightness = DeviceSetting(DeviceSetting.SYSTEM, 'screen_brightness',
                                   desc='Sets the brightness level.')
 
 screen_always_on = DeviceState(
@@ -126,87 +122,75 @@ screen_always_on = DeviceState(
          'http://shortn/_0DB29fy5HL')
 
 screen_timeout_ms = DeviceSetting(
-    SYSTEM, 'screen_off_timeout',
+    DeviceSetting.SYSTEM, 'screen_off_timeout',
     desc='Sets the time to wait before turning the screen off.')
 
 doze_mode = DeviceSetting(
-    SECURE, 'doze_enabled',
+    DeviceSetting.SECURE, 'doze_enabled',
     desc='Modifies whether showing notifications in ambient (mostly dark) mode '
          'is enabled.')
 
 doze_always_on = DeviceSetting(
-    SECURE, 'doze_always_on',
+    DeviceSetting.SECURE, 'doze_always_on',
     desc='Modifies whether ambient mode (mostly dark) is enabled. Ambient '
          'mode is the one where the device shows the time all the time.')
 
 # Gestures
 doze_pulse_on_pick_up = DeviceSetting(
-    SECURE, 'doze_pulse_on_pick_up',
+    DeviceSetting.SECURE, 'doze_pulse_on_pick_up',
     desc='Modifies whether to enable gesture to wake up device when picked up.')
 
 # TODO(mdb/android-system-infra): Add description
 camera_double_tap_power_gesture_disabled = DeviceSetting(
-    SECURE, 'camera_double_tap_power_gesture_disabled', desc=None)
+    DeviceSetting.SECURE, 'camera_double_tap_power_gesture_disabled', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 camera_double_twist_to_flip_enabled = DeviceSetting(
-    SECURE, 'camera_double_twist_to_flip_enabled', desc=None)
-
-# TODO(mdb/android-system-infra): Add description
-assist_gesture_enabled = DeviceSetting(
-    SECURE, 'assist_gesture_enabled', desc=None)
-
-# TODO(mdb/android-system-infra): Add description
-assist_gesture_silence_alerts_enabled = DeviceSetting(
-    SECURE, 'assist_gesture_silence_alerts_enabled', desc=None)
-
-# TODO(mdb/android-system-infra): Add description
-assist_gesture_wake_enabled = DeviceSetting(
-    SECURE, 'assist_gesture_wake_enabled', desc=None)
+    DeviceSetting.SECURE, 'camera_double_twist_to_flip_enabled', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 system_navigation_keys_enabled = DeviceSetting(
-    SECURE, 'system_navigation_keys_enabled', desc=None)
+    DeviceSetting.SECURE, 'system_navigation_keys_enabled', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 camera_lift_trigger_enabled = DeviceSetting(
-    SECURE, 'camera_lift_trigger_enabled', desc=None)
+    DeviceSetting.SECURE, 'camera_lift_trigger_enabled', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 aware_enabled = DeviceSetting(
-    SECURE, 'aware_enabled', desc=None)
+    DeviceSetting.SECURE, 'aware_enabled', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 doze_wake_screen_gesture = DeviceSetting(
-    SECURE, 'doze_wake_screen_gesture', desc=None)
+    DeviceSetting.SECURE, 'doze_wake_screen_gesture', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 skip_gesture = DeviceSetting(
-    SECURE, 'skip_gesture', desc=None)
+    DeviceSetting.SECURE, 'skip_gesture', desc=None)
 
 # TODO(mdb/android-system-infra): Add description
 silence_gesture = DeviceSetting(
-    SECURE, 'silence_gesture', desc=None)
+    DeviceSetting.SECURE, 'silence_gesture', desc=None)
 
 doze_tap_gesture = DeviceSetting(
-    SECURE, 'doze_tap_gesture',
+    DeviceSetting.SECURE, 'doze_tap_gesture',
     desc='Modifies whether the single tap gesture is enabled.')
 
 double_tap_gesture = DeviceSetting(
-    SECURE, 'doze_pulse_on_double_tap',
+    DeviceSetting.SECURE, 'doze_pulse_on_double_tap',
     desc='Modifies whether the double tap gesture is enabled.')
 
 wake_gesture = DeviceSetting(
-    SECURE, 'wake_gesture_enabled',
+    DeviceSetting.SECURE, 'wake_gesture_enabled',
     desc='Modifies whether the device should wake when the wake gesture sensor '
          'detects motion.')
 
 screensaver = DeviceSetting(
-    SECURE, 'screensaver_enabled',
+    DeviceSetting.SECURE, 'screensaver_enabled',
     desc='Modifies whether the screensaver is enabled.')
 
 notification_led = DeviceSetting(
-    SYSTEM, 'notification_light_pulse',
+    DeviceSetting.SYSTEM, 'notification_light_pulse',
     desc='Modifies whether the notification led is enabled.')
 
 # Audio
@@ -217,17 +201,17 @@ disable_audio = DeviceSetprop('ro.audio.silent',
 # Accelerometer
 
 auto_rotate = DeviceSetting(
-    SYSTEM, 'accelerometer_rotation',
+    DeviceSetting.SYSTEM, 'accelerometer_rotation',
     desc='Modifies whether auto-rotation is enabled.')
 
 # Time
 
 auto_time = DeviceSetting(
-    GLOBAL, 'auto_time',
+    DeviceSetting.GLOBAL, 'auto_time',
     desc='Modifies whether the time is defined automatically.')
 
 auto_timezone = DeviceSetting(
-    GLOBAL, 'auto_timezone',
+    DeviceSetting.GLOBAL, 'auto_timezone',
     desc='Modifies whether timezone is defined automatically.')
 
 timezone = DeviceSetprop('persist.sys.timezone',
@@ -236,27 +220,27 @@ timezone = DeviceSetprop('persist.sys.timezone',
 # Location
 
 location_gps = DeviceSetting(
-    SECURE, 'location_providers_allowed',
+    DeviceSetting.SECURE, 'location_providers_allowed',
     on_val='+gps', off_val='-gps',
     desc='Modifies whether gps is an allowed location provider.')
 
 location_network = DeviceSetting(
-    SECURE, 'location_providers_allowed',
+    DeviceSetting.SECURE, 'location_providers_allowed',
     on_val='+network', off_val='-network',
     desc='Modifies whether network is an allowed location provider.')
 
 location_mode = DeviceSetting(
-    SECURE, 'location_mode', on_val='3', off_val='0',
+    DeviceSetting.SECURE, 'location_mode', on_val='3', off_val='0',
     desc='Sets location mode to either high accuracy (3) or off (0).')
 
 # Power
 
 battery_saver_mode = DeviceSetting(
-    GLOBAL, 'low_power',
+    DeviceSetting.GLOBAL, 'low_power',
     desc='Modifies whether to enable battery saver mode.')
 
 battery_saver_trigger = DeviceSetting(
-    GLOBAL, 'low_power_trigger_level',
+    DeviceSetting.GLOBAL, 'low_power_trigger_level',
     desc='Defines the battery level [1-100] at which low power mode '
          'automatically turns on. If 0, it will not automatically turn on. For '
          'Q and newer, it will only automatically turn on if the value is '
@@ -290,7 +274,7 @@ stop_moisture_detection = GenericCommand(
          'which will enable / disable moisture detection based on its content.')
 
 ambient_eq = DeviceSetting(
-    SECURE, 'display_white_balance_enabled',
+    DeviceSetting.SECURE, 'display_white_balance_enabled',
     desc='Modifies ambient EQ, which is auto balance of brightness and color '
          'temperature feature. Differs from adaptive brightness in that this '
          'also changes the color balance.'
