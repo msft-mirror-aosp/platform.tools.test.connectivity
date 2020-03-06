@@ -14,8 +14,20 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.device.command.intent_builder import \
-    IntentBuilder
+import logging
+from acts import tracelogger
+
+from acts.test_utils.instrumentation.device.command.intent_builder import IntentBuilder
+
+DESCRIPTION_MISSING_MESSAGE = (
+    'Description for command is mandatory. Provide a brief description on what '
+    'the command "%s" does. Preferably in third person, for example, instead '
+    'of "Turn torch on" you should write "Turns torch on". If a description is '
+    'too long and adding a link would help, adding a link is allowed. Make '
+    'sure that the link is to a specific/fixed version of a document (either '
+    'website or code) so that it doesn\'t lose context over time.')
+
+log = tracelogger.TraceLogger(logging.getLogger())
 
 
 class GenericCommand(object):
@@ -28,6 +40,12 @@ class GenericCommand(object):
           cmd: ADB command.
           desc: Free form string to describe what this command does.
         """
+        if not cmd:
+            raise ValueError('Command can not be left undefined.')
+
+        if not desc:
+            log.warning(DESCRIPTION_MISSING_MESSAGE % cmd)
+
         self.cmd = cmd
         self.desc = desc
 
@@ -45,6 +63,9 @@ class DeviceState(object):
             off_val: Value used for the 'off' state
             desc: Free form string to describes what is this command does.
         """
+        if not desc:
+            log.warning(DESCRIPTION_MISSING_MESSAGE % base_cmd)
+
         self._base_cmd = base_cmd
         self._on_val = on_val
         self._off_val = off_val

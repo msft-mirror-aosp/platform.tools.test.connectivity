@@ -176,40 +176,32 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.disable_doze)
 
         # Camera
-        self.adb_run(DeviceSetprop(
-            'camera.optbar.hdr', 'true', 'false').toggle(True))
+        self.adb_run(goog.camera_hdr_mode.toggle(True))
 
         # Gestures
-        gestures = {
-            'doze_pulse_on_pick_up': False,
-            'doze_pulse_on_double_tap': False,
-            'camera_double_tap_power_gesture_disabled': True,
-            'camera_double_twist_to_flip_enabled': False,
-            'assist_gesture_enabled': False,
-            'assist_gesture_silence_alerts_enabled': False,
-            'assist_gesture_wake_enabled': False,
-            'system_navigation_keys_enabled': False,
-            'camera_lift_trigger_enabled': False,
-            'aware_enabled': False,
-            'doze_wake_screen_gesture': False,
-            'skip_gesture': False,
-            'silence_gesture': False
-        }
+        self.adb_run(common.doze_pulse_on_pick_up.toggle(False))
+        self.adb_run(common.double_tap_gesture.toggle(False))
         self.adb_run(
-            [DeviceSetting(common.SECURE, k).toggle(v)
-             for k, v in gestures.items()])
+            common.camera_double_tap_power_gesture_disabled.toggle(True))
+        self.adb_run(common.camera_double_twist_to_flip_enabled.toggle(False))
+        self.adb_run(common.assist_gesture_enabled.toggle(False))
+        self.adb_run(common.assist_gesture_silence_alerts_enabled.toggle(False))
+        self.adb_run(common.assist_gesture_wake_enabled.toggle(False))
+        self.adb_run(common.system_navigation_keys_enabled.toggle(False))
+        self.adb_run(common.camera_lift_trigger_enabled.toggle(False))
+        self.adb_run(common.aware_enabled.toggle(False))
+        self.adb_run(common.doze_wake_screen_gesture.toggle(False))
+        self.adb_run(common.skip_gesture.toggle(False))
+        self.adb_run(common.silence_gesture.toggle(False))
 
         # GServices
         self.adb_run(goog.location_collection.toggle(False))
         self.adb_run(goog.cast_broadcast.toggle(False))
-        self.adb_run(DeviceGServices(
-            'location:compact_log_enabled').toggle(True))
-        self.adb_run(DeviceGServices('gms:magictether:enable').toggle(False))
-        self.adb_run(DeviceGServices('ocr.cc_ocr_enabled').toggle(False))
-        self.adb_run(DeviceGServices(
-            'gms:phenotype:phenotype_flag:debug_bypass_phenotype').toggle(True))
-        self.adb_run(DeviceGServices(
-            'gms_icing_extension_download_enabled').toggle(False))
+        self.adb_run(goog.compact_location_log.toggle(True))
+        self.adb_run(goog.magic_tether.toggle(False))
+        self.adb_run(goog.ocr.toggle(False))
+        self.adb_run(goog.phenotype.toggle(True))
+        self.adb_run(goog.icing.toggle(False))
         self.adb_run(common.disable_pixellogger)
 
         # Comms

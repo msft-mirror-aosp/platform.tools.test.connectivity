@@ -17,15 +17,14 @@
 import os
 
 import yaml
-from acts.keys import Config
-from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 from acts import base_test
 from acts import context
 from acts import error
 from acts import utils
+from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -208,7 +207,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         for cmd in cmds:
             if isinstance(cmd, GenericCommand):
                 if cmd.desc:
-                    self.log.debug('Applying command to: %s' % cmd.desc)
+                    self.log.debug('Applying command that: %s' % cmd.desc)
                 cmd = cmd.cmd
             out[cmd] = self.ad_dut.adb.shell(cmd)
         return out
