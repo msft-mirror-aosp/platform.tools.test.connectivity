@@ -18,9 +18,9 @@ import os
 
 import yaml
 from acts.keys import Config
-from acts.test_utils.instrumentation import instrumentation_proto_parser \
-    as proto_parser
+from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 from acts import base_test
 from acts import context
@@ -96,9 +96,20 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def teardown_test(self):
         """Test teardown. Takes bugreport and cleans up device."""
-        self._take_bug_report(self.current_test_name,
-                              utils.get_current_epoch_time())
         self._cleanup_device()
+
+    def on_exception(self, test_name, begin_time):
+        self._take_bug_report(test_name,
+                              utils.get_current_epoch_time())
+
+    def on_pass(self, test_name, begin_time):
+        self._take_bug_report(test_name,
+                              utils.get_current_epoch_time())
+
+    def on_fail(self, test_name, begin_time):
+        self._take_bug_report(test_name,
+                              utils.get_current_epoch_time())
+
 
     def _prepare_device(self):
         """Prepares the device for testing."""
@@ -185,14 +196,20 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         """Run the specified command, or list of commands, with the ADB shell.
 
         Args:
-            cmds: A string or list of strings representing ADB shell command(s)
+            cmds: A string, A GenericCommand, a list of strings or a list of
+                  GenericCommand representing ADB shell command(s)
 
         Returns: dict mapping command to resulting stdout
         """
-        if isinstance(cmds, str):
+        if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
             cmds = [cmds]
+
         out = {}
         for cmd in cmds:
+            if isinstance(cmd, GenericCommand):
+                if cmd.desc:
+                    self.log.debug('Applying command to: %s' % cmd.desc)
+                cmd = cmd.cmd
             out[cmd] = self.ad_dut.adb.shell(cmd)
         return out
 
@@ -205,11 +222,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         Returns: dict mapping command to resulting subprocess.Popen object
         """
-        if isinstance(cmds, str):
+        if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
             cmds = [cmds]
+
         procs = {}
         for cmd in cmds:
-            procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
+            if isinstance(cmd, GenericCommand):
+                if cmd.desc:
+                    self.log.debug('Applying command to: %s' % cmd.desc)
+                cmd = cmd.cmd
+            procs[cmd] = self.ad_dut.adb.shell(cmd)
         return procs
 
     def dump_instrumentation_result_proto(self):
