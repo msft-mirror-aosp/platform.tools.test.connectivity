@@ -37,7 +37,7 @@ class ImageCaptureTest(instrumentation_power_test.InstrumentationPowerTest):
         self._dialog_util.close()
         super()._cleanup_device()
 
-    def test_capture_photos(self):
+    def test_image_capture(self):
         """Measures power during photo capture."""
         self.run_and_measure(
             'com.google.android.platform.powertests.CameraTests',
