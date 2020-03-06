@@ -14,14 +14,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.device.command.adb_command_types \
-    import DeviceBinaryCommandSeries
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceSetprop
+  DeviceBinaryCommandSeries
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceSetting
+  DeviceSetprop
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceState
+  DeviceSetting
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  DeviceState
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  GenericCommand
 
 GLOBAL = 'global'
 SYSTEM = 'system'
@@ -29,144 +31,282 @@ SECURE = 'secure'
 
 """Common device settings for power testing."""
 
-# TODO: add descriptions to each setting
-
 # Network/Connectivity
 
 airplane_mode = DeviceBinaryCommandSeries(
     [
-        DeviceSetting(GLOBAL, 'airplane_mode_on'),
+        DeviceSetting(GLOBAL, 'airplane_mode_on',
+                      desc='Modifies the property that indicates whether '
+                           'airplane mode is enabled. This command is always '
+                           'used together with an activity manager broadcast.'),
         DeviceState(
             'am broadcast -a android.intent.action.AIRPLANE_MODE --ez state',
-            on_val='true', off_val='false')
+            on_val='true', off_val='false',
+            desc='Modifies the airplane mode state. This is always done '
+                 'after setting the airplane_mode_on global property.')
     ]
 )
 
 mobile_data = DeviceBinaryCommandSeries(
     [
-        DeviceSetting(GLOBAL, 'mobile_data'),
-        DeviceState('svc data', on_val='enable', off_val='disable')
+        DeviceSetting(
+            GLOBAL, 'mobile_data',
+            desc='Modifies the property that indicates whether mobile data is '
+                 'enabled. This is used always together with an svc data '
+                 'command.'),
+        DeviceState(
+            'svc data', on_val='enable', off_val='disable',
+            desc='Modifies the mobile data state. This is always done'
+                 'after setting the mobile_data global property.')
     ]
 )
 
-cellular = DeviceSetting(GLOBAL, 'cell_on')
+cellular = DeviceSetting(
+    GLOBAL, 'cell_on',
+    desc='Modifies whether to enable the cellular radio.')
 
-preferred_network_mode = DeviceSetting(GLOBAL, 'preferred_network_mode')
+preferred_network_mode = DeviceSetting(
+    GLOBAL, 'preferred_network_mode',
+    desc='Sets the preferred network (lte/3g).')
 
 wifi = DeviceBinaryCommandSeries(
     [
-        DeviceSetting(GLOBAL, 'wifi_on'),
-        DeviceState('svc wifi', on_val='enable', off_val='disable')
+        DeviceSetting(GLOBAL, 'wifi_on',
+                      desc='Modifies the property that indicates whether wifi '
+                           'is enabled. This is always used together with an'
+                           'svc wifi command.'),
+        DeviceState('svc wifi', on_val='enable', off_val='disable',
+                    desc='Modifies the wifi state. This is always done after'
+                         'setting the wifi_on global property.')
     ]
 )
 
-ethernet = DeviceState('ifconfig eth0', on_val='up', off_val='down')
+ethernet = DeviceState(
+    'ifconfig eth0', on_val='up', off_val='down',
+    desc='Modifies whether to enable ethernet.')
 
-bluetooth = DeviceState('service call bluetooth_manager', on_val='6',
-                        off_val='8')
+bluetooth = DeviceState(
+    'service call bluetooth_manager',
+    on_val='6',
+    off_val='8',
+    desc='Modifies whether bluetooth is enabled (6 means enabled, 8 disabled).'
+         'TODO: add the source for these magic numbers. BluetoothAdapter '
+         'http://shortn/_FTBWhfJJs7 makes reference to these enums '
+         'http://shortn/_w9rcHX8jm4, but that doesn\'t seem to be the right '
+         'source.')
 
-nfc = DeviceState('svc nfc', on_val='enable', off_val='disable')
+nfc = DeviceState('svc nfc', on_val='enable', off_val='disable',
+                  desc='Modifies whether to enable nfc.')
 
-# Disables the ModemService
-
-disable_modem = 'pm disable com.google.android.apps.scone'
+disable_modem = GenericCommand('pm disable com.google.android.apps.scone',
+                               desc='Disables modem service.')
 
 # Calling
 
-disable_dialing = DeviceSetprop('ro.telephony.disable-call', on_val='true',
-                                off_val='false')
+disable_dialing = DeviceSetprop(
+    'ro.telephony.disable-call', on_val='true', off_val='false',
+    desc='Modifies whether to allow voice calls.')
 
 # Screen
 
-screen_adaptive_brightness = DeviceSetting(SYSTEM, 'screen_brightness_mode')
+screen_adaptive_brightness = DeviceSetting(
+    SYSTEM, 'screen_brightness_mode',
+    desc='Modifies whether the adaptive brightness feature is enabled. Differs '
+         'from ambient EQ modifies the color balance and this feature'
+         'modifies the screen brightness. '
+         'https://support.google.com/android/answer/9084191?hl=en '
+         'http://shortn/_ptmpx4wuVW')
 
-screen_brightness = DeviceSetting(SYSTEM, 'screen_brightness')
+screen_brightness = DeviceSetting(SYSTEM, 'screen_brightness',
+                                  desc='Sets the brightness level.')
 
-screen_always_on = DeviceState('svc power stayon', on_val='true',
-                               off_val='false')
+screen_always_on = DeviceState(
+    'svc power stayon', on_val='true', off_val='false',
+    desc='Modifies whether the device should stay on while connected. '
+         'http://shortn/_0DB29fy5HL')
 
-screen_timeout_ms = DeviceSetting(SYSTEM, 'screen_off_timeout')
+screen_timeout_ms = DeviceSetting(
+    SYSTEM, 'screen_off_timeout',
+    desc='Sets the time to wait before turning the screen off.')
 
-# enables/disables showing notifications in ambient (mostly dark) mode.
-doze_mode = DeviceSetting(SECURE, 'doze_enabled')
+doze_mode = DeviceSetting(
+    SECURE, 'doze_enabled',
+    desc='Modifies whether showing notifications in ambient (mostly dark) mode '
+         'is enabled.')
 
-# enables/disables ambient mode (mostly dark) always showing the time
-doze_always_on = DeviceSetting(SECURE, 'doze_always_on')
+doze_always_on = DeviceSetting(
+    SECURE, 'doze_always_on',
+    desc='Modifies whether ambient mode (mostly dark) is enabled. Ambient '
+         'mode is the one where the device shows the time all the time.')
 
-# Handles single tap gesture.
-doze_tap_gesture = DeviceSetting(SECURE, 'doze_tap_gesture')
+# Gestures
+doze_pulse_on_pick_up = DeviceSetting(
+    SECURE, 'doze_pulse_on_pick_up',
+    desc='Modifies whether to enable gesture to wake up device when picked up.')
 
-# Handles double tap gesture.
-double_tap_gesture = DeviceSetting(SECURE, 'doze_pulse_on_double_tap')
+# TODO(mdb/android-system-infra): Add description
+camera_double_tap_power_gesture_disabled = DeviceSetting(
+    SECURE, 'camera_double_tap_power_gesture_disabled', desc=None)
 
-wake_gesture = DeviceSetting(SECURE, 'wake_gesture_enabled')
+# TODO(mdb/android-system-infra): Add description
+camera_double_twist_to_flip_enabled = DeviceSetting(
+    SECURE, 'camera_double_twist_to_flip_enabled', desc=None)
 
-screensaver = DeviceSetting(SECURE, 'screensaver_enabled')
+# TODO(mdb/android-system-infra): Add description
+assist_gesture_enabled = DeviceSetting(
+    SECURE, 'assist_gesture_enabled', desc=None)
 
-notification_led = DeviceSetting(SYSTEM, 'notification_light_pulse')
+# TODO(mdb/android-system-infra): Add description
+assist_gesture_silence_alerts_enabled = DeviceSetting(
+    SECURE, 'assist_gesture_silence_alerts_enabled', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+assist_gesture_wake_enabled = DeviceSetting(
+    SECURE, 'assist_gesture_wake_enabled', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+system_navigation_keys_enabled = DeviceSetting(
+    SECURE, 'system_navigation_keys_enabled', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+camera_lift_trigger_enabled = DeviceSetting(
+    SECURE, 'camera_lift_trigger_enabled', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+aware_enabled = DeviceSetting(
+    SECURE, 'aware_enabled', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+doze_wake_screen_gesture = DeviceSetting(
+    SECURE, 'doze_wake_screen_gesture', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+skip_gesture = DeviceSetting(
+    SECURE, 'skip_gesture', desc=None)
+
+# TODO(mdb/android-system-infra): Add description
+silence_gesture = DeviceSetting(
+    SECURE, 'silence_gesture', desc=None)
+
+doze_tap_gesture = DeviceSetting(
+    SECURE, 'doze_tap_gesture',
+    desc='Modifies whether the single tap gesture is enabled.')
+
+double_tap_gesture = DeviceSetting(
+    SECURE, 'doze_pulse_on_double_tap',
+    desc='Modifies whether the double tap gesture is enabled.')
+
+wake_gesture = DeviceSetting(
+    SECURE, 'wake_gesture_enabled',
+    desc='Modifies whether the device should wake when the wake gesture sensor '
+         'detects motion.')
+
+screensaver = DeviceSetting(
+    SECURE, 'screensaver_enabled',
+    desc='Modifies whether the screensaver is enabled.')
+
+notification_led = DeviceSetting(
+    SYSTEM, 'notification_light_pulse',
+    desc='Modifies whether the notification led is enabled.')
 
 # Audio
 
-disable_audio = DeviceSetprop('ro.audio.silent')
+disable_audio = DeviceSetprop('ro.audio.silent',
+                              desc='Modifies the audio silent property.')
 
 # Accelerometer
 
-auto_rotate = DeviceSetting(SYSTEM, 'accelerometer_rotation')
+auto_rotate = DeviceSetting(
+    SYSTEM, 'accelerometer_rotation',
+    desc='Modifies whether auto-rotation is enabled.')
 
 # Time
 
-auto_time = DeviceSetting(GLOBAL, 'auto_time')
+auto_time = DeviceSetting(
+    GLOBAL, 'auto_time',
+    desc='Modifies whether the time is defined automatically.')
 
-auto_timezone = DeviceSetting(GLOBAL, 'auto_timezone')
+auto_timezone = DeviceSetting(
+    GLOBAL, 'auto_timezone',
+    desc='Modifies whether timezone is defined automatically.')
 
-timezone = DeviceSetprop('persist.sys.timezone')
+timezone = DeviceSetprop('persist.sys.timezone',
+                         desc='Sets a specified timezone.')
 
 # Location
 
-location_gps = DeviceSetting(SECURE, 'location_providers_allowed',
-                             on_val='+gps', off_val='-gps')
+location_gps = DeviceSetting(
+    SECURE, 'location_providers_allowed',
+    on_val='+gps', off_val='-gps',
+    desc='Modifies whether gps is an allowed location provider.')
 
-location_network = DeviceSetting(SECURE, 'location_providers_allowed',
-                                 on_val='+network', off_val='-network')
+location_network = DeviceSetting(
+    SECURE, 'location_providers_allowed',
+    on_val='+network', off_val='-network',
+    desc='Modifies whether network is an allowed location provider.')
 
-# if set to true(3), enable location mode(set to high accuracy)
-# if set to false(0), disable location mode(set to OFF)
-location_mode = DeviceSetting(SECURE, 'location_mode', on_val='3', off_val='0')
+location_mode = DeviceSetting(
+    SECURE, 'location_mode', on_val='3', off_val='0',
+    desc='Sets location mode to either high accuracy (3) or off (0).')
 
 # Power
 
-battery_saver_mode = DeviceSetting(GLOBAL, 'low_power')
+battery_saver_mode = DeviceSetting(
+    GLOBAL, 'low_power',
+    desc='Modifies whether to enable battery saver mode.')
 
-battery_saver_trigger = DeviceSetting(GLOBAL, 'low_power_trigger_level')
+battery_saver_trigger = DeviceSetting(
+    GLOBAL, 'low_power_trigger_level',
+    desc='Defines the battery level [1-100] at which low power mode '
+         'automatically turns on. If 0, it will not automatically turn on. For '
+         'Q and newer, it will only automatically turn on if the value is '
+         'greater than 0 and is set to '
+         'PowerManager.POWER_SAVE_MODE_TRIGGER_PERCENTAGE. '
+         'http://shortn/_aGYdmJ8mvf')
 
-enable_full_batterystats_history = 'dumpsys batterystats --enable full-history'
+enable_full_batterystats_history = GenericCommand(
+    'dumpsys batterystats --enable full-history',
+    desc='Enables full battery stats history.')
 
-disable_doze = 'dumpsys deviceidle disable'
+disable_doze = GenericCommand(
+    'dumpsys deviceidle disable',
+    desc='Disables device\'s deep sleep also known as doze (not to be confused '
+         'with ambient, which is also referred to as doze).')
 
 # Sensors
 
-disable_sensors = 'dumpsys sensorservice restrict blah'
-
-# Disable moisture detection
+disable_sensors = GenericCommand('dumpsys sensorservice restrict blah',
+                                 desc='Disables sensors.')
 
 MOISTURE_DETECTION_SETTING_FILE = '/sys/class/power_supply/usb/moisture_detection_enabled'
-disable_moisture_detection = 'echo 0 > %s' % MOISTURE_DETECTION_SETTING_FILE
-stop_moisture_detection = 'setprop vendor.usb.contaminantdisable true'
+disable_moisture_detection = GenericCommand(
+    'echo 0 > %s' % MOISTURE_DETECTION_SETTING_FILE,
+    desc='Modifies /sys/class/power_supply/usb/moisture_detection_enabled so '
+         'that moisture detection will be disabled next time it is read.')
+stop_moisture_detection = GenericCommand(
+    'setprop vendor.usb.contaminantdisable true',
+    desc='Triggers a re-read of '
+         '/sys/class/power_supply/usb/moisture_detection_enabled'
+         'which will enable / disable moisture detection based on its content.')
 
-## Ambient EQ: https://support.google.com/googlenest/answer/9137130?hl=en
-ambient_eq = DeviceSetting(SECURE, 'display_white_balance_enabled')
+ambient_eq = DeviceSetting(
+    SECURE, 'display_white_balance_enabled',
+    desc='Modifies ambient EQ, which is auto balance of brightness and color '
+         'temperature feature. Differs from adaptive brightness in that this '
+         'also changes the color balance.'
+         'https://support.google.com/googlenest/answer/9137130?hl=en. ')
 
-# Disables System apps
-
-disable_pixellogger = 'pm disable com.android.pixellogger'
+disable_pixellogger = GenericCommand('pm disable com.android.pixellogger',
+                                     desc="Disables system apps.")
 
 # Miscellaneous
 
 test_harness = DeviceBinaryCommandSeries(
     [
-        DeviceSetprop('ro.monkey'),
-        DeviceSetprop('ro.test_harness')
+        DeviceSetprop('ro.monkey', desc='Modifies monkey state.'),
+        DeviceSetprop('ro.test_harness', desc='Modifies test_harness property.')
     ]
 )
 
-dismiss_keyguard = 'wm dismiss-keyguard'
+dismiss_keyguard = GenericCommand('wm dismiss-keyguard',
+                                  desc='Dismisses the lockscreen.')
