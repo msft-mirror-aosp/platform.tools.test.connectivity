@@ -14,11 +14,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.device.command.adb_command_types import DeviceBinaryCommandSeries
-from acts.test_utils.instrumentation.device.command.adb_command_types import DeviceGServices
-from acts.test_utils.instrumentation.device.command.adb_command_types import DeviceState
-from acts.test_utils.instrumentation.device.command.adb_command_types import DeviceSetprop
-from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  DeviceBinaryCommandSeries
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  DeviceGServices
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  DeviceState
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  DeviceSetprop
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  DeviceSetting
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+  GenericCommand
 
 """Google-internal device settings for power testing."""
 
@@ -106,3 +113,18 @@ phenotype = DeviceGServices(
 
 # TODO(mdb/android-system-infra): Add description
 icing = DeviceGServices('gms_icing_extension_download_enabled')
+
+edge_sensor = DeviceBinaryCommandSeries([
+    DeviceSetting(
+        DeviceSetting.SECURE, 'assist_gesture_enabled',
+        desc='Modifies whether the edge sensor gesture is enabled.'),
+    DeviceSetting(
+        DeviceSetting.SECURE, 'assist_gesture_wake_enabled',
+        desc='Modifies whether the edge sensor gesture is allowed to wake up '
+             'the device.'),
+    DeviceSetting(
+        DeviceSetting.SECURE, 'assist_gesture_setup_complete',
+        desc='Triggers activation/deactivation of edge sensor gesture. It '
+             'depends on the settings assist_gesture_enabled and '
+             'assist_gesture_wake_enabled to be previously set.')
+])
