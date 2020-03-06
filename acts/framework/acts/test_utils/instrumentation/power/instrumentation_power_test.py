@@ -219,7 +219,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.disable_volta)
         self.adb_run(goog.disable_chre)
         self.adb_run(goog.disable_musiciq)
-        self.adb_run(goog.disable_hotword)
+        self.adb_run(goog.hotword.toggle(False))
 
         # Enable clock dump info
         self.adb_run('echo 1 > /d/clk/debug_suspend')
