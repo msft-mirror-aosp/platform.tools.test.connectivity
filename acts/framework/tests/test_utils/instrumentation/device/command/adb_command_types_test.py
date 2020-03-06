@@ -38,7 +38,7 @@ class AdbCommandTypesTest(unittest.TestCase):
         val1 = 15
         val2 = 24
         device_state = DeviceState(base_cmd)
-        self.assertEqual(device_state.set_value(val1, val2),
+        self.assertEqual(device_state.set_value(val1, val2).cmd,
                          'run command with vals 15 24')
 
     def test_device_state_with_base_cmd_as_format_string(self):
@@ -48,7 +48,7 @@ class AdbCommandTypesTest(unittest.TestCase):
         base_cmd = 'echo %s > /test/data'
         val = 23
         device_state = DeviceState(base_cmd)
-        self.assertEqual(device_state.set_value(val), 'echo 23 > /test/data')
+        self.assertEqual(device_state.set_value(val).cmd, 'echo 23 > /test/data')
 
     def test_device_binary_state(self):
         """Tests that DeviceState returns the correct ADB commands with toggle.
@@ -56,8 +56,8 @@ class AdbCommandTypesTest(unittest.TestCase):
         on_cmd = 'enable this service'
         off_cmd = 'disable the service'
         device_binary_state = DeviceState('', on_cmd, off_cmd)
-        self.assertEqual(device_binary_state.toggle(True), on_cmd)
-        self.assertEqual(device_binary_state.toggle(False), off_cmd)
+        self.assertEqual(device_binary_state.toggle(True).cmd, on_cmd)
+        self.assertEqual(device_binary_state.toggle(False).cmd, off_cmd)
 
     def test_device_setprop(self):
         """Tests that DeviceSetprop returns the correct ADB command with
@@ -66,7 +66,7 @@ class AdbCommandTypesTest(unittest.TestCase):
         prop = 'some.property'
         val = 3
         device_setprop = DeviceSetprop(prop)
-        self.assertEqual(device_setprop.set_value(val),
+        self.assertEqual(device_setprop.set_value(val).cmd,
                          'setprop some.property 3')
 
     def test_device_binary_setprop(self):
@@ -77,9 +77,9 @@ class AdbCommandTypesTest(unittest.TestCase):
         on_val = True
         off_val = False
         device_binary_setprop = DeviceSetprop(prop, on_val, off_val)
-        self.assertEqual(device_binary_setprop.toggle(True),
+        self.assertEqual(device_binary_setprop.toggle(True).cmd,
                          'setprop some.other.property True')
-        self.assertEqual(device_binary_setprop.toggle(False),
+        self.assertEqual(device_binary_setprop.toggle(False).cmd,
                          'setprop some.other.property False')
 
     def test_device_setting(self):
@@ -90,7 +90,7 @@ class AdbCommandTypesTest(unittest.TestCase):
         setting = 'some_new_setting'
         val = 10
         device_setting = DeviceSetting(namespace, setting)
-        self.assertEqual(device_setting.set_value(val),
+        self.assertEqual(device_setting.set_value(val).cmd,
                          'settings put global some_new_setting 10')
 
     def test_device_binary_setting(self):
@@ -104,10 +104,10 @@ class AdbCommandTypesTest(unittest.TestCase):
         device_binary_setting = DeviceSetting(
             namespace, setting, on_val, off_val)
         self.assertEqual(
-            device_binary_setting.toggle(True),
+            device_binary_setting.toggle(True).cmd,
             'settings put system some_other_setting on')
         self.assertEqual(
-            device_binary_setting.toggle(False),
+            device_binary_setting.toggle(False).cmd,
             'settings put system some_other_setting off')
 
     def test_device_gservices(self):
@@ -118,7 +118,7 @@ class AdbCommandTypesTest(unittest.TestCase):
         val = 22
         device_gservices = DeviceGServices(setting)
         self.assertEqual(
-            device_gservices.set_value(val),
+            device_gservices.set_value(val).cmd,
             'am broadcast -a '
             'com.google.gservices.intent.action.GSERVICES_OVERRIDE '
             '--ei some_gservice 22')
@@ -144,8 +144,12 @@ class AdbCommandTypesTest(unittest.TestCase):
                 DeviceState('svc test_svc', 'enable', 'disable')
             ]
         )
-        self.assertEqual(device_binary_command_series.toggle(True), on_cmds)
-        self.assertEqual(device_binary_command_series.toggle(False), off_cmds)
+        self.assertEqual(list(map(lambda c: c.cmd,
+                                  device_binary_command_series.toggle(True))),
+                         on_cmds)
+        self.assertEqual(list(map(lambda c: c.cmd,
+                                  device_binary_command_series.toggle(False))),
+                         off_cmds)
 
 
 if __name__ == "__main__":
