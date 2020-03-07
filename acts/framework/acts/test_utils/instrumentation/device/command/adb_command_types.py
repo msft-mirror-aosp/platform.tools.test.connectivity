@@ -14,14 +14,46 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.device.command.intent_builder import \
-    IntentBuilder
+import logging
+from acts import tracelogger
+
+from acts.test_utils.instrumentation.device.command.intent_builder import IntentBuilder
+
+DESCRIPTION_MISSING_MESSAGE = (
+    'Description for command is mandatory. Provide a brief description on what '
+    'the command "%s" does. Preferably in third person, for example, instead '
+    'of "Turn torch on" you should write "Turns torch on". If a description is '
+    'too long and adding a link would help, adding a link is allowed. Make '
+    'sure that the link is to a specific/fixed version of a document (either '
+    'website or code) so that it doesn\'t lose context over time.')
+
+log = tracelogger.TraceLogger(logging.getLogger())
+
+
+class GenericCommand(object):
+    """Class for generic adb commands."""
+
+    def __init__(self, cmd, desc=None):
+        """ Constructor for GenericCommand.
+
+        Args:
+          cmd: ADB command.
+          desc: Free form string to describe what this command does.
+        """
+        if not cmd:
+            raise ValueError('Command can not be left undefined.')
+
+        if not desc:
+            log.warning(DESCRIPTION_MISSING_MESSAGE % cmd)
+
+        self.cmd = cmd
+        self.desc = desc
 
 
 class DeviceState(object):
     """Class for adb commands for setting device properties to a value."""
 
-    def __init__(self, base_cmd, on_val='1', off_val='0'):
+    def __init__(self, base_cmd, on_val='1', off_val='0', desc=None):
         """Create a DeviceState.
 
         Args:
@@ -29,10 +61,15 @@ class DeviceState(object):
                 generate the full command.
             on_val: Value used for the 'on' state
             off_val: Value used for the 'off' state
+            desc: Free form string to describes what is this command does.
         """
+        if not desc:
+            log.warning(DESCRIPTION_MISSING_MESSAGE % base_cmd)
+
         self._base_cmd = base_cmd
         self._on_val = on_val
         self._off_val = off_val
+        self.desc = desc
 
     def set_value(self, *values):
         """Returns the adb command with the given arguments/values.
@@ -41,10 +78,11 @@ class DeviceState(object):
             values: The value(s) to run the command with
         """
         try:
-            return self._base_cmd % values
+            cmd = self._base_cmd % values
         except TypeError:
-            return str.strip(' '.join(
+            cmd = str.strip(' '.join(
                 [self._base_cmd] + [str(value) for value in values]))
+        return GenericCommand(cmd, self.desc)
 
     def toggle(self, enabled):
         """Returns the command corresponding to the desired state.
@@ -58,21 +96,28 @@ class DeviceState(object):
 class DeviceSetprop(DeviceState):
     """Class for setprop commands."""
 
-    def __init__(self, prop, on_val='1', off_val='0'):
+    def __init__(self, prop, on_val='1', off_val='0', desc=None):
         """Create a DeviceSetprop.
 
         Args:
             prop: Property name
             on_val: Value used for the 'on' state
             off_val: Value used for the 'off' state
+            desc: Free form string to describes what is this command does.
         """
-        super().__init__('setprop %s' % prop, on_val, off_val)
+        super().__init__('setprop %s' % prop, on_val=on_val, off_val=off_val,
+                         desc=desc)
 
 
 class DeviceSetting(DeviceState):
     """Class for commands to set a settings.db entry to a value."""
 
-    def __init__(self, namespace, setting, on_val='1', off_val='0'):
+    # common namespaces
+    GLOBAL = 'global'
+    SYSTEM = 'system'
+    SECURE = 'secure'
+
+    def __init__(self, namespace, setting, on_val='1', off_val='0', desc=None):
         """Create a DeviceSetting.
 
         Args:
@@ -80,9 +125,10 @@ class DeviceSetting(DeviceState):
             setting: Setting name
             on_val: Value used for the 'on' state
             off_val: Value used for the 'off' state
+            desc: Free form string to describes what is this command does.
         """
         super().__init__('settings put %s %s' % (namespace, setting),
-                         on_val, off_val)
+                         on_val=on_val, off_val=off_val, desc=desc)
 
 
 class DeviceGServices(DeviceState):
@@ -91,15 +137,16 @@ class DeviceGServices(DeviceState):
     OVERRIDE_GSERVICES_INTENT = ('com.google.gservices.intent.action.'
                                  'GSERVICES_OVERRIDE')
 
-    def __init__(self, setting, on_val='true', off_val='false'):
+    def __init__(self, setting, on_val='true', off_val='false', desc=None):
         """Create a DeviceGServices.
 
         Args:
             setting: Name of the GServices setting
             on_val: Value used for the 'on' state
             off_val: Value used for the 'off' state
+            desc: Free form string to describes what is this command does.
         """
-        super().__init__(None, on_val, off_val)
+        super().__init__(None, on_val=on_val, off_val=off_val, desc=desc)
         self._intent_builder = IntentBuilder('am broadcast')
         self._intent_builder.set_action(self.OVERRIDE_GSERVICES_INTENT)
         self._setting = setting
@@ -107,7 +154,7 @@ class DeviceGServices(DeviceState):
     def set_value(self, value):
         """Returns the adb command with the given value."""
         self._intent_builder.add_key_value_param(self._setting, value)
-        return self._intent_builder.build()
+        return GenericCommand(self._intent_builder.build(), desc=self.desc)
 
 
 class DeviceBinaryCommandSeries(object):

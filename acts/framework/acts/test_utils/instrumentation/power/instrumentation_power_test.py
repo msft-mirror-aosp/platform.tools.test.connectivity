@@ -26,12 +26,7 @@ from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.device.apps.app_installer import \
     AppInstaller
-from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceGServices
-from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceSetprop
-from acts.test_utils.instrumentation.device.command.adb_command_types import \
-    DeviceSetting
+from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
@@ -46,7 +41,6 @@ from acts.test_utils.instrumentation.instrumentation_proto_parser import \
     DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import Measurement
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
-from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 
 from acts import asserts
 from acts import context
@@ -176,40 +170,30 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.disable_doze)
 
         # Camera
-        self.adb_run(DeviceSetprop(
-            'camera.optbar.hdr', 'true', 'false').toggle(True))
+        self.adb_run(goog.camera_hdr_mode.toggle(True))
 
         # Gestures
-        gestures = {
-            'doze_pulse_on_pick_up': False,
-            'doze_pulse_on_double_tap': False,
-            'camera_double_tap_power_gesture_disabled': True,
-            'camera_double_twist_to_flip_enabled': False,
-            'assist_gesture_enabled': False,
-            'assist_gesture_silence_alerts_enabled': False,
-            'assist_gesture_wake_enabled': False,
-            'system_navigation_keys_enabled': False,
-            'camera_lift_trigger_enabled': False,
-            'aware_enabled': False,
-            'doze_wake_screen_gesture': False,
-            'skip_gesture': False,
-            'silence_gesture': False
-        }
+        self.adb_run(common.doze_pulse_on_pick_up.toggle(False))
+        self.adb_run(common.double_tap_gesture.toggle(False))
         self.adb_run(
-            [DeviceSetting(common.SECURE, k).toggle(v)
-             for k, v in gestures.items()])
+            common.camera_double_tap_power_gesture_disabled.toggle(True))
+        self.adb_run(common.camera_double_twist_to_flip_enabled.toggle(False))
+        self.adb_run(goog.edge_sensor.toggle(False))
+        self.adb_run(common.system_navigation_keys_enabled.toggle(False))
+        self.adb_run(common.camera_lift_trigger_enabled.toggle(False))
+        self.adb_run(common.aware_enabled.toggle(False))
+        self.adb_run(common.doze_wake_screen_gesture.toggle(False))
+        self.adb_run(common.skip_gesture.toggle(False))
+        self.adb_run(common.silence_gesture.toggle(False))
 
         # GServices
         self.adb_run(goog.location_collection.toggle(False))
         self.adb_run(goog.cast_broadcast.toggle(False))
-        self.adb_run(DeviceGServices(
-            'location:compact_log_enabled').toggle(True))
-        self.adb_run(DeviceGServices('gms:magictether:enable').toggle(False))
-        self.adb_run(DeviceGServices('ocr.cc_ocr_enabled').toggle(False))
-        self.adb_run(DeviceGServices(
-            'gms:phenotype:phenotype_flag:debug_bypass_phenotype').toggle(True))
-        self.adb_run(DeviceGServices(
-            'gms_icing_extension_download_enabled').toggle(False))
+        self.adb_run(goog.compact_location_log.toggle(True))
+        self.adb_run(goog.magic_tether.toggle(False))
+        self.adb_run(goog.ocr.toggle(False))
+        self.adb_run(goog.phenotype.toggle(True))
+        self.adb_run(goog.icing.toggle(False))
         self.adb_run(common.disable_pixellogger)
 
         # Comms
@@ -224,7 +208,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.disable_volta)
         self.adb_run(goog.disable_chre)
         self.adb_run(goog.disable_musiciq)
-        self.adb_run(goog.disable_hotword)
+        self.adb_run(goog.hotword.toggle(False))
 
         # Enable clock dump info
         self.adb_run('echo 1 > /d/clk/debug_suspend')
@@ -376,7 +360,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         try:
             self._wait_for_disconnect_signal()
         except InstrumentationTestError as e:
-            session = self.dump_instrumentation_result_proto()
+            session = self.parse_instrumentation_result_proto()
             res = self.log_instrumentation_result(session)
             raise InstrumentationTestError(
                 'Failed to receive USB disconnect signal.',
@@ -393,7 +377,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Monsoon measurement complete.')
 
         # Gather relevant metrics from measurements
-        session = self.dump_instrumentation_result_proto()
+        session = self.parse_instrumentation_result_proto()
         self.log_instrumentation_result(session)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)

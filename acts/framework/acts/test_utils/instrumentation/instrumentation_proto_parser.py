@@ -73,19 +73,19 @@ def get_session_from_local_file(proto_file):
         return instrumentation_data_pb2.Session.FromString(f.read())
 
 
-def get_session_from_device(ad, proto_file=None):
+def get_session_from_device(ad, source_path=None):
     """Get a instrumentation_data_pb2.Session object from a proto file on
     device.
 
     Args:
         ad: AndroidDevice object
-        proto_file: Path to the proto file (on device). If None, defaults to
+        source_path: Path to the proto file (on device). If None, defaults to
             latest proto from DEFAULT_INST_PROTO_DIR.
 
     Returns: An instrumentation_data_pb2.Session
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
-        pulled_proto = pull_proto(ad, tmp_dir, proto_file)
+        pulled_proto = pull_proto(ad, tmp_dir, source_path)
         return get_session_from_local_file(pulled_proto)
 
 

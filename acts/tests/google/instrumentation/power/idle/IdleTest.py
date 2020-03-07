@@ -18,10 +18,11 @@ import time
 
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 from acts.test_utils.instrumentation.device.command.adb_commands import common
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
 
 
 class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation test RockBottom."""
+    """Test class for running instrumentation test idle system cases."""
 
     def _prepare_device(self):
         super()._prepare_device()
@@ -52,3 +53,23 @@ class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
         self.adb_run(common.doze_always_on.toggle(True))
         self.adb_run(common.disable_sensors)
         self.run_idle_test_case()
+
+    def test_ambient(self):
+        """Measures power when the device is rock bottom state plus ambient mode
+        on, which means notifications are alowed to display on top of the
+        mostly dark background screen."""
+        self.adb_run(common.doze_mode.toggle(True))
+        self.run_idle_test_case()
+
+    def test_double_tap(self):
+        """Measures power when the device is rock bottom state plus the double
+        tap gesture is enabled."""
+        self.adb_run(common.double_tap_gesture.toggle(True))
+        self.run_idle_test_case()
+
+    def test_edge_sensor(self):
+        """Measures power when the device is rock bottom state plus the edge
+        sensor (squeeze) is enabled."""
+        self.adb_run(goog.edge_sensor.toggle(True))
+        self.run_idle_test_case()
+

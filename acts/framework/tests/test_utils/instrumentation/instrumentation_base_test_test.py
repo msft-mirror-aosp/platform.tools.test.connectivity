@@ -14,10 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import copy
+import mock
 import unittest
 
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    GenericCommand
 from acts.test_utils.instrumentation.instrumentation_base_test import \
     InstrumentationBaseTest
 
@@ -42,8 +44,11 @@ MOCK_INSTRUMENTATION_CONFIG = {
 
 class MockInstrumentationBaseTest(InstrumentationBaseTest):
     """Mock test class to initialize required attributes."""
+
     def __init__(self):
         self.current_test_name = None
+        self.ad_dut = mock.Mock()
+        self.log = mock.Mock()
         self._instrumentation_config = ConfigWrapper(
             MOCK_INSTRUMENTATION_CONFIG)
         self._class_config = self._instrumentation_config.get_config(
@@ -74,6 +79,26 @@ class InstrumentationBaseTestTest(unittest.TestCase):
         self.assertEqual(config.get('param1'), 1)
         self.assertEqual(config.get('param2'), 2)
         self.assertEqual(config.get('param3'), 5)
+
+    def test_adb_run_literal_commands(self):
+        result = self.instrumentation_test.adb_run('ls /something')
+        self.assertIn('ls /something', result.keys())
+
+        result = self.instrumentation_test.adb_run(
+            ['ls /something', 'ls /other'])
+        self.assertIn('ls /something', result.keys())
+        self.assertIn('ls /other', result.keys())
+
+    def test_adb_run_generic_commands(self):
+        result = self.instrumentation_test.adb_run(
+            GenericCommand('ls /something'))
+        self.assertIn('ls /something', result.keys())
+
+        result = self.instrumentation_test.adb_run(
+            [GenericCommand('ls /something'),
+             GenericCommand('ls /other')])
+        self.assertIn('ls /something', result.keys())
+        self.assertIn('ls /other', result.keys())
 
 
 if __name__ == '__main__':

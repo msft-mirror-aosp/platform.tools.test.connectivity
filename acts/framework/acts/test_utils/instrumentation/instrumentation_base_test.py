@@ -17,15 +17,14 @@
 import os
 
 import yaml
-from acts.keys import Config
-from acts.test_utils.instrumentation import instrumentation_proto_parser \
-    as proto_parser
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 
 from acts import base_test
 from acts import context
 from acts import error
 from acts import utils
+from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -46,17 +45,13 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             configs: Dict representing the test configuration
         """
         super().__init__(configs)
-        # Take instrumentation config path directly from ACTS config if found,
-        # otherwise try to find the instrumentation config in the same directory
-        # as the ACTS config
-        instrumentation_config_path = ''
         if 'instrumentation_config' in self.user_params:
             instrumentation_config_path = (
                 self.user_params['instrumentation_config'][0])
-        elif Config.key_config_path.value in self.user_params:
-            instrumentation_config_path = os.path.join(
-                self.user_params[Config.key_config_path.value],
-                DEFAULT_INSTRUMENTATION_CONFIG_FILE)
+        else:
+            raise InstrumentationTestError(
+                'Instrumentation config file not specified. Please add a valid '
+                '"instrumentation_config" path to the ACTS config.')
         self._instrumentation_config = ConfigWrapper()
         if os.path.exists(instrumentation_config_path):
             self._instrumentation_config = self._load_instrumentation_config(
@@ -64,9 +59,9 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             self._class_config = self._instrumentation_config.get_config(
                 self.__class__.__name__)
         else:
-            self.log.warning(
-                'Instrumentation config file %s does not exist' %
-                instrumentation_config_path)
+            raise InstrumentationTestError(
+                'Instrumentation config file %s does not exist'
+                % instrumentation_config_path)
 
     def _load_instrumentation_config(self, path):
         """Load the instrumentation config file into an
@@ -100,9 +95,20 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def teardown_test(self):
         """Test teardown. Takes bugreport and cleans up device."""
-        self._take_bug_report(self.current_test_name,
-                              utils.get_current_epoch_time())
         self._cleanup_device()
+
+    def on_exception(self, test_name, begin_time):
+        self._take_bug_report(test_name,
+                              utils.get_current_epoch_time())
+
+    def on_pass(self, test_name, begin_time):
+        self._take_bug_report(test_name,
+                              utils.get_current_epoch_time())
+
+    def on_fail(self, test_name, begin_time):
+        self._take_bug_report(test_name,
+                              utils.get_current_epoch_time())
+
 
     def _prepare_device(self):
         """Prepares the device for testing."""
@@ -189,14 +195,20 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         """Run the specified command, or list of commands, with the ADB shell.
 
         Args:
-            cmds: A string or list of strings representing ADB shell command(s)
+            cmds: A string, A GenericCommand, a list of strings or a list of
+                  GenericCommand representing ADB shell command(s)
 
         Returns: dict mapping command to resulting stdout
         """
-        if isinstance(cmds, str):
+        if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
             cmds = [cmds]
+
         out = {}
         for cmd in cmds:
+            if isinstance(cmd, GenericCommand):
+                if cmd.desc:
+                    self.log.debug('Applying command that: %s' % cmd.desc)
+                cmd = cmd.cmd
             out[cmd] = self.ad_dut.adb.shell(cmd)
         return out
 
@@ -209,23 +221,28 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         Returns: dict mapping command to resulting subprocess.Popen object
         """
-        if isinstance(cmds, str):
+        if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
             cmds = [cmds]
+
         procs = {}
         for cmd in cmds:
-            procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
+            if isinstance(cmd, GenericCommand):
+                if cmd.desc:
+                    self.log.debug('Applying command to: %s' % cmd.desc)
+                cmd = cmd.cmd
+            procs[cmd] = self.ad_dut.adb.shell(cmd)
         return procs
 
-    def dump_instrumentation_result_proto(self):
-        """Dump the instrumentation result proto as a human-readable txt file
-        in the log directory.
+    def parse_instrumentation_result_proto(self):
+        """Parse the instrumentation result proto and write it to a
+        human-readable txt file in the log directory.
 
         Returns: The parsed instrumentation_data_pb2.Session
         """
-        session = proto_parser.get_session_from_device(self.ad_dut)
-        proto_txt_path = os.path.join(
-            context.get_current_context().get_full_output_path(),
-            'instrumentation_proto.txt')
+        log_path = context.get_current_context().get_full_output_path()
+        proto_file = proto_parser.pull_proto(self.ad_dut, log_path)
+        session = proto_parser.get_session_from_local_file(proto_file)
+        proto_txt_path = os.path.join(log_path, 'instrumentation_proto.txt')
         with open(proto_txt_path, 'w') as f:
             f.write(str(session))
         return session
