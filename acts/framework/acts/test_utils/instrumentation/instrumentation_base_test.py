@@ -230,7 +230,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                 if cmd.desc:
                     self.log.debug('Applying command to: %s' % cmd.desc)
                 cmd = cmd.cmd
-            procs[cmd] = self.ad_dut.adb.shell(cmd)
+            procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
         return procs
 
     def dump_instrumentation_result_proto(self):
