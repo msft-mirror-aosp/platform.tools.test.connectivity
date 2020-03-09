@@ -17,14 +17,13 @@
 import os
 
 import yaml
+from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 from acts import base_test
 from acts import context
 from acts import error
-from acts import utils
-from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -98,17 +97,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self._cleanup_device()
 
     def on_exception(self, test_name, begin_time):
-        self._take_bug_report(test_name,
-                              utils.get_current_epoch_time())
+        """Called upon unhandled test exception."""
+        self._take_bug_report(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
-        self._take_bug_report(test_name,
-                              utils.get_current_epoch_time())
+        """Called upon test pass."""
+        self._take_bug_report(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
-        self._take_bug_report(test_name,
-                              utils.get_current_epoch_time())
-
+        """Called upon test failure."""
+        self._take_bug_report(test_name, begin_time)
 
     def _prepare_device(self):
         """Prepares the device for testing."""
