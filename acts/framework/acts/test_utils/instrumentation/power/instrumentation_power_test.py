@@ -103,10 +103,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         if self._test_apk:
             self._test_apk.uninstall()
         self._permissions_util.close()
-        self.ad_dut.pull_files(
-            os.path.join(self.ad_dut.external_storage_path, SCREENSHOTS_DIR),
-            self.ad_dut.device_log_path
-        )
+        self._pull_test_files()
         self._cleanup_test_files()
 
     def base_device_configuration(self):
@@ -265,6 +262,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():
             raise InstrumentationTestError('Failed to install test APK.')
+
+    def _pull_test_files(self):
+        """Pull test-generated files from the device onto the log directory."""
+        dest = self.ad_dut.device_log_path
+        self.ad_dut.log.info('Pulling test generated files to %s.' % dest)
+        for file_name in [DEFAULT_NOHUP_LOG, SCREENSHOTS_DIR]:
+            src = os.path.join(self.ad_dut.external_storage_path, file_name)
+            self.ad_dut.pull_files(src, dest)
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
