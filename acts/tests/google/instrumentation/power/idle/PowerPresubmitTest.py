@@ -14,13 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
-
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 
 
 class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running test ACTS instrumentation based power framework
+    """Test class for running ACTS instrumentation based power framework
     presubmit tests."""
 
     def _prepare_device(self):
