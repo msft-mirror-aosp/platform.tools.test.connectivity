@@ -14,13 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
-
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 
 
 class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running test ACTS instrumentation based power framework
+    """Test class for running ACTS instrumentation based power framework
     presubmit tests."""
 
     def _prepare_device(self):
@@ -30,7 +28,10 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
     def test_quick_idle(self):
         """Measures power when the device is in a rock bottom state, hard-coding
         only 20 seconds worth of measurement and 10 of on device test."""
+        # TODO: max_current and voltage should also be hardcoded somehow.
         self._measurement_args['duration'] = 20
+        self._measurement_args['hz'] = 100
+        self._measurement_args['measure_after_seconds'] = 0
         self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff',
