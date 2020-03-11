@@ -503,7 +503,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # update the wifi ap configuration with new ssid
         config = {wutils.WifiEnums.SSID_KEY: self.new_ssid}
         config[wutils.WifiEnums.PWD_KEY] = self.network[wutils.WifiEnums.PWD_KEY]
-        config[wutils.WifiEnums.APBAND_KEY] = WIFI_CONFIG_APBAND_2G
+        config[wutils.WifiEnums.AP_BAND_KEY] = WIFI_CONFIG_APBAND_2G
         self._save_wifi_softap_configuration(dut, config)
 
         # start wifi tethering with new wifi ap configuration
@@ -561,7 +561,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # save open network wifi ap configuration with 2G band
         config = {wutils.WifiEnums.SSID_KEY:
                   self.open_network[wutils.WifiEnums.SSID_KEY]}
-        config[wutils.WifiEnums.APBAND_KEY] = WIFI_CONFIG_APBAND_2G
+        config[wutils.WifiEnums.AP_BAND_KEY] = WIFI_CONFIG_APBAND_2G
         self._save_wifi_softap_configuration(self.hotspot_device, config)
 
         # turn on/off wifi hotspot, connect device
@@ -585,7 +585,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # save open network wifi ap configuration with 5G band
         config = {wutils.WifiEnums.SSID_KEY:
                   self.open_network[wutils.WifiEnums.SSID_KEY]}
-        config[wutils.WifiEnums.APBAND_KEY] = WIFI_CONFIG_APBAND_5G
+        config[wutils.WifiEnums.AP_BAND_KEY] = WIFI_CONFIG_APBAND_5G
         self._save_wifi_softap_configuration(self.hotspot_device, config)
 
         # turn on/off wifi hotspot, connect device
