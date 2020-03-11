@@ -80,8 +80,7 @@ class WifiEnums():
     BSSID_PATTERN_KEY = "bssidPattern"
     PWD_KEY = "password" # Used for Wifi & SoftAp
     frequency_key = "frequency"
-    APBAND_KEY = "apBand" # Used for SoftAp
-    HIDDEN_KEY = "hiddenSSID"
+    HIDDEN_KEY = "hiddenSSID" # Used for Wifi & SoftAp
     IS_APP_INTERACTION_REQUIRED = "isAppInteractionRequired"
     IS_USER_INTERACTION_REQUIRED = "isUserInteractionRequired"
     IS_METERED = "isMetered"
@@ -89,6 +88,15 @@ class WifiEnums():
     SECURITY = "security" # Used for Wifi & SoftAp
 
     # Used for SoftAp
+    AP_BAND_KEY = "apBand"
+    AP_CHANNEL_KEY = "apChannel"
+    AP_MAXCLIENTS_KEY = "MaxNumberOfClients"
+    AP_SHUTDOWNTIMEOUT_KEY = "ShutdownTimeoutMillis"
+    AP_SHUTDOWNTIMEOUTENABLE_KEY = "AutoShutdownEnabled"
+    AP_CLIENTCONTROL_KEY = "ClientControlByUserEnabled"
+    AP_ALLOWEDLIST_KEY = "AllowedClientList"
+    AP_BLOCKEDLIST_KEY = "BlockedClientList"
+
     WIFI_CONFIG_SOFTAP_BAND_2G = 1
     WIFI_CONFIG_SOFTAP_BAND_5G = 2
     WIFI_CONFIG_SOFTAP_BAND_2G_5G = 3
@@ -111,6 +119,12 @@ class WifiEnums():
     WIFI_WPS_INFO_KEYPAD = 2
     WIFI_WPS_INFO_LABEL = 3
     WIFI_WPS_INFO_INVALID = 4
+
+    class SoftApSecurityType():
+        OPEN = "NONE"
+        WPA2 = "WPA2_PSK"
+        WPA3_SAE_TRANSITION = "WPA3_SAE_TRANSITION"
+        WPA3_SAE = "WPA3_SAE"
 
     class CountryCode():
         CHINA = "CN"
@@ -934,7 +948,7 @@ def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
     if password:
         config[WifiEnums.PWD_KEY] = password
     if band:
-        config[WifiEnums.APBAND_KEY] = band
+        config[WifiEnums.AP_BAND_KEY] = band
     if hidden:
       config[WifiEnums.HIDDEN_KEY] = hidden
     asserts.assert_true(
@@ -954,20 +968,121 @@ def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
         ad.droid.wifiStopTrackingTetherStateChange()
 
 
-def save_wifi_soft_ap_config(ad, wifi_config, band=None, hidden=None):
-    """ Save a soft ap configuration """
+def save_wifi_soft_ap_config(ad, wifi_config, band=None, hidden=None,
+                             security=None, password=None,
+                             channel=None, max_clients=None,
+                             shutdown_timeout_enable=None,
+                             shutdown_timeout_millis=None,
+                             client_control_enable=None,
+                             allowedList=None, blockedList=None):
+    """ Save a soft ap configuration and verified
+    Args:
+        ad: android_device to set soft ap configuration.
+        wifi_config: a soft ap configuration object, at least include SSID.
+        band: specifies the band for the soft ap.
+        hidden: specifies the soft ap need to broadcast its SSID or not.
+        security: specifies the security type for the soft ap.
+        password: specifies the password for the soft ap.
+        channel: specifies the channel for the soft ap.
+        max_clients: specifies the maximum connected client number.
+        shutdown_timeout_enable: specifies the auto shut down enable or not.
+        shutdown_timeout_millis: specifies the shut down timeout value.
+        client_control_enable: specifies the client control enable or not.
+        allowedList: specifies allowed clients list.
+        blockedList: specifies blocked clients list.
+    """
+    if security and password:
+       wifi_config[WifiEnums.SECURITY] = security
+       wifi_config[WifiEnums.PWD_KEY] = password
     if band:
-        wifi_config[WifiEnums.APBAND_KEY] = band
+        wifi_config[WifiEnums.AP_BAND_KEY] = band
     if hidden:
         wifi_config[WifiEnums.HIDDEN_KEY] = hidden
+    if channel and band:
+        wifi_config[WifiEnums.AP_BAND_KEY] = band
+        wifi_config[WifiEnums.AP_CHANNEL_KEY] = channel
+    if max_clients:
+        wifi_config[WifiEnums.AP_MAXCLIENTS_KEY] = max_clients
+    if shutdown_timeout_enable:
+        wifi_config[
+            WifiEnums.AP_SHUTDOWNTIMEOUTENABLE_KEY] = shutdown_timeout_enable
+    if shutdown_timeout_millis:
+        wifi_config[
+            WifiEnums.AP_SHUTDOWNTIMEOUT_KEY] = shutdown_timeout_millis
+    if client_control_enable:
+        wifi_config[WifiEnums.AP_CLIENTCONTROL_KEY] = client_control_enable
+    if allowedList:
+        wifi_config[WifiEnums.AP_ALLOWEDLIST_KEY] = allowedList
+    if blockedList:
+        wifi_config[WifiEnums.AP_BLOCKEDLIST_KEY] = blockedList
+
+    if WifiEnums.AP_CHANNEL_KEY in wifi_config and wifi_config[
+        WifiEnums.AP_CHANNEL_KEY] == 0:
+        del wifi_config[WifiEnums.AP_CHANNEL_KEY]
+
+    if WifiEnums.SECURITY in wifi_config and wifi_config[
+        WifiEnums.SECURITY] == WifiEnums.SoftApSecurityType.OPEN:
+        del wifi_config[WifiEnums.SECURITY]
+        del wifi_config[WifiEnums.PWD_KEY]
+
     asserts.assert_true(ad.droid.wifiSetWifiApConfiguration(wifi_config),
                         "Failed to set WifiAp Configuration")
 
     wifi_ap = ad.droid.wifiGetApConfiguration()
     asserts.assert_true(
         wifi_ap[WifiEnums.SSID_KEY] == wifi_config[WifiEnums.SSID_KEY],
-        "Hotspot SSID doesn't match with expected SSID")
+        "Hotspot SSID doesn't match")
+    if WifiEnums.SECURITY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.SECURITY] == wifi_config[WifiEnums.SECURITY],
+            "Hotspot Security doesn't match")
+    if WifiEnums.PWD_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.PWD_KEY] == wifi_config[WifiEnums.PWD_KEY],
+            "Hotspot Password doesn't match")
 
+    if WifiEnums.HIDDEN_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.HIDDEN_KEY] == wifi_config[WifiEnums.HIDDEN_KEY],
+            "Hotspot hidden setting doesn't match")
+
+    if WifiEnums.AP_BAND_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_BAND_KEY] == wifi_config[WifiEnums.AP_BAND_KEY],
+            "Hotspot Band doesn't match")
+    if WifiEnums.AP_CHANNEL_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_CHANNEL_KEY] == wifi_config[
+            WifiEnums.AP_CHANNEL_KEY], "Hotspot Channel doesn't match")
+    if WifiEnums.AP_MAXCLIENTS_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_MAXCLIENTS_KEY] == wifi_config[
+            WifiEnums.AP_MAXCLIENTS_KEY], "Hotspot Max Clients doesn't match")
+    if WifiEnums.AP_SHUTDOWNTIMEOUTENABLE_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_SHUTDOWNTIMEOUTENABLE_KEY] == wifi_config[
+            WifiEnums.AP_SHUTDOWNTIMEOUTENABLE_KEY],
+            "Hotspot ShutDown feature flag doesn't match")
+    if WifiEnums.AP_SHUTDOWNTIMEOUT_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_SHUTDOWNTIMEOUT_KEY] == wifi_config[
+            WifiEnums.AP_SHUTDOWNTIMEOUT_KEY],
+            "Hotspot ShutDown timeout setting doesn't match")
+    if WifiEnums.AP_CLIENTCONTROL_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_CLIENTCONTROL_KEY] == wifi_config[
+            WifiEnums.AP_CLIENTCONTROL_KEY],
+            "Hotspot Client control flag doesn't match")
+    if WifiEnums.AP_ALLOWEDLIST_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_ALLOWEDLIST_KEY] == wifi_config[
+            WifiEnums.AP_ALLOWEDLIST_KEY],
+            "Hotspot Allowed List doesn't match")
+    if WifiEnums.AP_BLOCKEDLIST_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_BLOCKEDLIST_KEY] == wifi_config[
+            WifiEnums.AP_BLOCKEDLIST_KEY],
+            "Hotspot Blocked List doesn't match")
 
 def start_wifi_tethering_saved_config(ad):
     """ Turn on wifi hotspot with a config that is already saved """
@@ -985,7 +1100,6 @@ def start_wifi_tethering_saved_config(ad):
 
 def stop_wifi_tethering(ad):
     """Stops wifi tethering on an android_device.
-
     Args:
         ad: android_device to stop wifi tethering on.
     """
