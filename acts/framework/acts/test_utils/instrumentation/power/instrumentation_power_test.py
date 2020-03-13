@@ -48,6 +48,7 @@ from acts import context
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 AUTOTESTER_LOG = 'autotester.log'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
+DEFAULT_WAIT_FOR_DEVICE_TIMEOUT = 180
 DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
 SCREENSHOTS_DIR = 'test_screenshots'
@@ -245,6 +246,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _on_reconnect(self):
         """Callback invoked by device reconnection to the Monsoon"""
+        self.ad_dut.adb.wait_for_device(timeout=DEFAULT_WAIT_FOR_DEVICE_TIMEOUT)
         # Reinstall SL4A
         if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
             self._sl4a_apk.install()
