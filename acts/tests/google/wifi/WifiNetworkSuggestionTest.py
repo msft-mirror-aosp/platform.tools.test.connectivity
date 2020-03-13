@@ -37,6 +37,13 @@ EapPhase2 = WifiEnums.EapPhase2
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
 ATT = 2
+# Suggestion network Macros
+Untrusted = "untrusted"
+AutoJoin = "enableAutojoin"
+# Network request Macros
+ClearCapabilities = "ClearCapabilities"
+TransportType = "TransportType"
+
 
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
 # for the system to settle down after the operation.
@@ -688,7 +695,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         network_suggestion = self.wpa_psk_5g
         # Set suggestion auto join initial to false.
-        network_suggestion["enableAutojoin"] = False
+        network_suggestion[AutoJoin] = False
         self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([network_suggestion]),
@@ -728,3 +735,40 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.assert_false(
             wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY],
                                     assert_on_fail=False), "Device should not connect.")
+
+    @test_tracker_info(uuid="")
+    def test_untrusted_suggestion_without_untrusted_request(self):
+        """
+        Add an untrusted network suggestion, when no untrusted request, will not connect to it.
+        Steps:
+        1. Create a untrusted network suggestion.
+        2. Add this suggestion, and ensure device do not connect to this network
+        3. Request untrusted network and ensure device connect to this network
+        """
+        network_suggestion = self.open_5g
+        network_suggestion[Untrusted] = True
+        self.dut.log.info("Adding network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([network_suggestion]),
+            "Failed to add suggestions")
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, network_suggestion[WifiEnums.SSID_KEY])
+
+        # Ensure we don't connect to the network.
+        asserts.assert_false(
+            wutils.wait_for_connect(
+                self.dut, network_suggestion[WifiEnums.SSID_KEY], assert_on_fail=False),
+            "Should not connect to untrusted network suggestions with no request")
+        network_request = {ClearCapabilities: True, TransportType: 1}
+        req_key = self.dut.droid.connectivityRequestNetwork(network_request)
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, network_suggestion[WifiEnums.SSID_KEY])
+
+        wutils.wait_for_connect(
+            self.dut, network_suggestion[WifiEnums.SSID_KEY], assert_on_fail=False)
+
+        self.dut.droid.connectivityUnregisterNetworkCallback(req_key)
+
