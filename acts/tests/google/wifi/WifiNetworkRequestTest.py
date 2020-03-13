@@ -333,8 +333,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
                                                   self.wpa_psk_2g)
 
         # Simulate user forgeting the ephemeral network.
-        self.dut.droid.wifiDisableEphemeralNetwork(
-            self.wpa_psk_2g[WifiEnums.SSID_KEY])
+        self.dut.droid.wifiUserDisconnectNetwork(self.wpa_psk_2g[WifiEnums.SSID_KEY])
         # Ensure we disconnected from the network.
         wutils.wait_for_disconnect(self.dut)
         self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
