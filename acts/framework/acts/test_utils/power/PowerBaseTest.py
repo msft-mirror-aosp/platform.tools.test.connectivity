@@ -28,8 +28,6 @@ from acts.controllers.monsoon_lib.api.common import MonsoonError
 from acts.controllers.monsoon_lib.api.common import PassthroughStates
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
-from acts.test_utils.power.loggers.utils.test_name_map import TestNameMap
-from acts.test_utils.power.loggers.utils.test_name_map import TestNameType
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -89,6 +87,24 @@ class PowerBaseTest(base_test.BaseTestClass):
         return len(
             self.results.requested
         ) > 0 and self.current_test_name == self.results.requested[-1]
+
+    @property
+    def display_name_test_suite(self):
+        return getattr(self, '_display_name_test_suite',
+                       self.__class__.__name__)
+
+    @display_name_test_suite.setter
+    def display_name_test_suite(self, name):
+        self._display_name_test_suite = name
+
+    @property
+    def display_name_test_case(self):
+        default_test_name = getattr(self, 'test_name', None)
+        return getattr(self, '_display_name_test_case', default_test_name)
+
+    @display_name_test_case.setter
+    def display_name_test_case(self, name):
+        self._display_name_test_case = name
 
     def setup_class(self):
 
@@ -201,15 +217,6 @@ class PowerBaseTest(base_test.BaseTestClass):
             avg_current_threshold = self.threshold[self.test_name]
             self.power_logger.set_avg_current_threshold(avg_current_threshold)
 
-        # Log the display name of the test suite and test case
-        name_map = TestNameMap()
-        suite_display_name = name_map.get_display_name(self.__class__.__name__,
-                                                       TestNameType.TEST_SUITE)
-        test_case_display_name = name_map.get_display_name(
-            self.test_name, TestNameType.TEST_CASE)
-        self.power_logger.set_test_suite_display_name(suite_display_name)
-        self.power_logger.set_test_case_display_name(test_case_display_name)
-
         build_id = self.dut.build_info.get('build_id', '')
         incr_build_id = self.dut.build_info.get('incremental_build_id', '')
         branch = self.user_params.get('branch', '')
@@ -219,6 +226,15 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_build_id(build_id)
         self.power_logger.set_incremental_build_id(incr_build_id)
         self.power_logger.set_target(target)
+
+        # Log the display name of the test suite and test case
+        if self.display_name_test_suite:
+            name = self.display_name_test_suite
+            self.power_logger.set_test_suite_display_name(name)
+
+        if self.display_name_test_case:
+            name = self.display_name_test_case
+            self.power_logger.set_test_case_display_name(name)
 
         # Take Bugreport
         if self.bug_report:
