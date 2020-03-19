@@ -77,8 +77,8 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                 config_dict = yaml.safe_load(f)
         except Exception as e:
             raise InstrumentationTestError(
-                'Cannot open or parse instrumentation config file %s'
-                % path) from e
+                'Cannot open or parse instrumentation config file %s. Error: %s'
+                % (path, e))
 
         # Write out a copy of the instrumentation config
         with open(os.path.join(

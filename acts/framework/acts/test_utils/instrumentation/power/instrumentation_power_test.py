@@ -18,32 +18,25 @@ import os
 import shutil
 import tempfile
 import time
-
 import tzlocal
-from acts.controllers.android_device import SL4A_APK_NAME
-from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
-from acts.test_utils.instrumentation import instrumentation_proto_parser \
-    as proto_parser
-from acts.test_utils.instrumentation.device.apps.app_installer import \
-    AppInstaller
-from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
-from acts.test_utils.instrumentation.device.command.adb_commands import common
-from acts.test_utils.instrumentation.device.command.adb_commands import goog
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
-    import DEFAULT_NOHUP_LOG
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
-    import InstrumentationTestCommandBuilder
-from acts.test_utils.instrumentation.instrumentation_base_test \
-    import InstrumentationBaseTest
-from acts.test_utils.instrumentation.instrumentation_base_test \
-    import InstrumentationTestError
-from acts.test_utils.instrumentation.instrumentation_proto_parser import \
-    DEFAULT_INST_LOG_DIR
-from acts.test_utils.instrumentation.power.power_metrics import Measurement
-from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 from acts import asserts
 from acts import context
+from acts.controllers.android_device import SL4A_APK_NAME
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
+from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
+from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
+from acts.test_utils.instrumentation.device.apps.app_installer import AppInstaller
+from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
+from acts.test_utils.instrumentation.device.command.adb_commands import common
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_NOHUP_LOG
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
+from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationBaseTest
+from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
+from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
+from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
+from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 AUTOTESTER_LOG = 'autotester.log'
@@ -71,7 +64,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
 
-        self.metric_logger = BlackboxMappedMetricLogger.for_test_case()
+        self.blackbox_logger = BlackboxMappedMetricLogger.for_test_case()
+        self.bounded_metric_logger = BoundedMetricsLogger.for_test_case()
         self._test_apk = None
         self._sl4a_apk = None
         self._instr_cmd_builder = None
@@ -433,20 +427,52 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run_async(instr_cmd)
         return self.measure_power()
 
+    def get_absolute_thresholds_for_metric(self, instr_test_name, metric_name):
+        all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
+        test_thresholds = all_thresholds.get_config(instr_test_name)
+        if metric_name not in test_thresholds:
+            return None
+        thresholds_conf = test_thresholds[metric_name]
+        try:
+            return AbsoluteThresholds.from_threshold_conf(thresholds_conf)
+        except (ValueError, TypeError) as e:
+            self.log.error(
+                'Incorrect threshold definition for %s %s' % (instr_test_name,
+                                                              metric_name))
+            self.log.error('Error detail: %s', str(e))
+            return None
+
     def _log_metrics(self):
         """Record the collected metrics with the metric logger."""
         self.log.info('Obtained metrics summaries:')
-        for k, m in self._power_metrics.test_metrics.items():
-            self.log.info('    %s %s' % (k, str(m.summary)))
+        for instr, power_metrics in self._power_metrics.test_metrics.items():
+            self.log.info(
+                '    %s %s' % (instr, str(power_metrics.summary)))
 
         for metric_name in PowerMetrics.ALL_METRICS:
             for instr_test_name in self._power_metrics.test_metrics:
-                metric_value = getattr(
-                    self._power_metrics.test_metrics[instr_test_name],
-                    metric_name).value
-                # TODO: Refactor this into instr_test_name.metric_name
-                self.metric_logger.add_metric(
-                    '%s__%s' % (metric_name, instr_test_name), metric_value)
+                power_metrics = self._power_metrics.test_metrics[
+                    instr_test_name]
+                metric = getattr(
+                    power_metrics,
+                    metric_name)
+                self.blackbox_logger.add_metric(
+                    '%s__%s' % (metric_name, instr_test_name), metric.value)
+                thresholds = self.get_absolute_thresholds_for_metric(
+                    instr_test_name,
+                    metric_name)
+
+                lower_limit = None
+                upper_limit = None
+                if thresholds:
+                    lower_limit = thresholds.lower.to_unit(metric.unit).value
+                    upper_limit = thresholds.upper.to_unit(metric.unit).value
+
+                self.bounded_metric_logger.add(
+                    '%s.%s' % (instr_test_name, metric_name), metric.value,
+                    lower_limit=lower_limit,
+                    upper_limit=upper_limit,
+                    unit=metric.unit)
 
     def validate_power_results(self, *instr_test_names):
         """Compare power measurements with target values and set the test result
@@ -477,34 +503,33 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     % instr_test_name)
 
             summaries[instr_test_name] = {}
-            test_thresholds = all_thresholds.get_config(instr_test_name)
-            for metric_name, metric in test_thresholds.items():
+            test_thresholds_configs = all_thresholds.get_config(instr_test_name)
+            for metric_name, thresholds_conf in test_thresholds_configs.items():
                 try:
                     actual_result = getattr(test_metrics, metric_name)
-                except AttributeError:
+                except AttributeError as e:
+                    self.log.warning(
+                        'Error while retrieving results for %s: %s' % (
+                        metric_name, str(e)))
                     continue
 
-                if 'unit_type' not in metric or 'unit' not in metric:
+                try:
+                    thresholds = AbsoluteThresholds.from_threshold_conf(
+                        thresholds_conf)
+                except (ValueError, TypeError) as e:
+                    self.log.error(
+                        'Incorrect threshold definition for %s %s',
+                        (instr_test_name, metric_name))
+                    self.log.error('Error detail: %s', str(e))
                     continue
-                unit_type = metric['unit_type']
-                unit = metric['unit']
 
-                lower_value = metric.get_numeric('lower_limit', float('-inf'))
-                upper_value = metric.get_numeric('upper_limit', float('inf'))
-                if 'expected_value' in metric and 'percent_deviation' in metric:
-                    expected_value = metric.get_numeric('expected_value')
-                    percent_deviation = metric.get_numeric('percent_deviation')
-                    lower_value = expected_value * (1 - percent_deviation / 100)
-                    upper_value = expected_value * (1 + percent_deviation / 100)
-
-                lower_bound = Measurement(lower_value, unit_type, unit)
-                upper_bound = Measurement(upper_value, unit_type, unit)
                 summary_entry = {
-                    'expected': '[%s, %s]' % (lower_bound, upper_bound),
-                    'actual': str(actual_result.to_unit(unit))
+                    'expected': '[%s, %s]' % (
+                        thresholds.lower, thresholds.upper),
+                    'actual': str(actual_result.to_unit(thresholds.unit))
                 }
                 summaries[instr_test_name][metric_name] = summary_entry
-                if not lower_bound <= actual_result <= upper_bound:
+                if not thresholds.lower <= actual_result <= thresholds.upper:
                     failure = True
         self.log.info('Validation output: %s' % summaries)
         asserts.assert_false(
