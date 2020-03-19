@@ -172,7 +172,7 @@ skip_gesture = DeviceSetting(
 silence_gesture = DeviceSetting(
     DeviceSetting.SECURE, 'silence_gesture', desc=None)
 
-doze_tap_gesture = DeviceSetting(
+single_tap_gesture = DeviceSetting(
     DeviceSetting.SECURE, 'doze_tap_gesture',
     desc='Modifies whether the single tap gesture is enabled.')
 

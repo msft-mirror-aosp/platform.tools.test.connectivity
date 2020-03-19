@@ -134,7 +134,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.wake_gesture.toggle(False))
         self.adb_run(common.doze_mode.toggle(False))
         self.adb_run(common.doze_always_on.toggle(False))
-        self.adb_run(common.doze_tap_gesture.toggle(False))
+        self.adb_run(common.single_tap_gesture.toggle(False))
 
         # Sensors
         self.adb_run(common.auto_rotate.toggle(False))
