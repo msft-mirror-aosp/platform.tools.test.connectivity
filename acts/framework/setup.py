@@ -54,6 +54,10 @@ if sys.version_info < (3, ):
     install_requires.append('py2-ipaddress')
     install_requires.append('subprocess32')
 
+DEV_PACKAGES = [
+    'shiv'
+]
+
 
 class PyTest(test.test):
     """Class used to execute unit tests using PyTest. This allows us to execute
@@ -178,6 +182,7 @@ def main():
                      include_package_data=False,
                      tests_require=['pytest'],
                      install_requires=install_requires,
+                     extras_require={'dev': DEV_PACKAGES},
                      scripts=scripts,
                      cmdclass={
                          'test': PyTest,
