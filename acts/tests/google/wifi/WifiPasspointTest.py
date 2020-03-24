@@ -85,6 +85,9 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
+        passpoint_configs = self.dut.droid.getPasspointConfigs()
+        for config in passpoint_configs:
+            wutils.delete_passpoint(self.dut, config)
         wutils.reset_wifi(self.dut)
 
 
