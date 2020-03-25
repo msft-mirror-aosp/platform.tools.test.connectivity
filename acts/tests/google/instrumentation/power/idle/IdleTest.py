@@ -73,6 +73,12 @@ class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
         self.adb_run(goog.edge_sensor.toggle(True))
         self.run_idle_test_case()
 
+    def test_wake_gesture(self):
+        """Measures power when the device is rock bottom state plus the wake
+        gesture is enabled."""
+        self.adb_run(common.wake_gesture.toggle(True))
+        self.run_idle_test_case()
+
     def test_pick_up_gesture(self):
         """Measures power when the device is rock bottom state plus the pick up
         gesture is enabled."""
