@@ -405,8 +405,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
         self.dut.droid.wifiRegisterNetworkRequestMatchCallback()
         # Wait for the request to timeout.
-        timeout_secs = \
-            NETWORK_REQUEST_TIMEOUT_MS / 1000 + NETWORK_REQUEST_INSTANT_FAILURE_TIMEOUT_SEC
+        timeout_secs = NETWORK_REQUEST_TIMEOUT_MS * 2 / 1000
         try:
             on_unavailable_event = self.dut.ed.pop_event(
                 wifi_constants.WIFI_NETWORK_CB_ON_UNAVAILABLE, timeout_secs)
