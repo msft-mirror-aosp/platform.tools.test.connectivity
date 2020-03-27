@@ -82,6 +82,7 @@ class WifiSoftApTest(WifiBaseTest):
             self.android_devices[2].droid.wifiEnableVerboseLogging(1)
             asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
                 "Failed to enable WiFi verbose logging on the client dut.")
+            self.dut_client_2 = self.android_devices[2]
 
     def teardown_class(self):
         if self.dut.droid.wifiIsApEnabled():
@@ -720,15 +721,32 @@ class WifiSoftApTest(WifiBaseTest):
     @test_tracker_info(uuid="8a5d81fa-649c-4679-a823-5cef50828a94")
     def test_softap_client_control(self):
         """Test Client Control feature
-        1. Backup config
-        2. Setup configuration which used to start softap
-        3. Register callback after softap enabled
-        4. Trigger client connect to softap
-        5. Verify blocking event
-        6. Add client into allowed list
-        7. Verify client connected
-        8. Restore Config
+        1. Check SoftApCapability to make sure feature is supported
+        2. Backup config
+        3. Setup configuration which used to start softap
+        4. Register callback after softap enabled
+        5. Trigger client connect to softap
+        6. Verify blocking event
+        7. Add client into allowed list
+        8. Verify client connected
+        9. Restore Config
         """
+        # Register callback to check capability first
+        callbackId = self.dut.droid.registerSoftApCallback()
+        # Check capability first to make sure DUT support this test.
+        capabilityEventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_CAPABILITY_CHANGED
+        capability = self.dut.ed.pop_event(capabilityEventStr, 10)
+        asserts.skip_if(not capability['data'][wifi_constants
+            .SOFTAP_CAPABILITY_FEATURE_CLIENT_CONTROL],
+            "Client control isn't supported, ignore test")
+
+        # Unregister callback before start test to avoid
+        # unnecessary callback impact the test
+        self.dut.droid.unregisterSoftApCallback(callbackId)
+
+        # start the test
+
         # Backup config
         original_softap_config = self.dut.droid.wifiGetApConfiguration()
         # Setup configuration which used to start softap
@@ -742,23 +760,15 @@ class WifiSoftApTest(WifiBaseTest):
         # Register callback after softap enabled to avoid unnecessary callback
         # impact the test
         callbackId = self.dut.droid.registerSoftApCallback()
+
         # Verify clients will update immediately after register callback
         wutils.wait_for_expected_number_of_softap_clients(self.dut,
                 callbackId, 0)
         wutils.wait_for_expected_softap_state(self.dut, callbackId,
                 wifi_constants.WIFI_AP_ENABLED_STATE)
 
-        capabilityEventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_CAPABILITY_CHANGED
-        capability = self.dut.ed.pop_event(capabilityEventStr, 10)
-        if (capability['data'][wifi_constants
-            .SOFTAP_CAPABILITY_FEATURE_CLIENT_CONTROL] == False):
-            self.dut.log.info("Client control doesn't support, ignore test")
-            return
-
         # Trigger client connection
         self.dut_client.droid.wifiConnectByConfig(current_softap_config)
-
 
         eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
             callbackId) + wifi_constants.SOFTAP_BLOCKING_CLIENT_CONNECTING
@@ -785,6 +795,94 @@ class WifiSoftApTest(WifiBaseTest):
         # Restore config
         wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
 
+        # Unregister callback
+        self.dut.droid.unregisterSoftApCallback(callbackId)
+
+    @test_tracker_info(uuid="d0b61b58-fa2b-4ced-bc52-3366cb826e79")
+    def test_softap_max_client_setting(self):
+        """Test Client Control feature
+        1. Check device number and capability to make sure feature is supported
+        2. Backup config
+        3. Setup configuration which used to start softap
+        4. Register callback after softap enabled
+        5. Trigger client connect to softap
+        6. Verify blocking event
+        7. Extend max client setting
+        8. Verify client connected
+        9. Restore Config
+        """
+        asserts.skip_if(len(self.android_devices) < 3,
+                        "Device less than 3, skip the test.")
+        # Register callback to check capability first
+        callbackId = self.dut.droid.registerSoftApCallback()
+        # Check capability first to make sure DUT support this test.
+        capabilityEventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_CAPABILITY_CHANGED
+        capability = self.dut.ed.pop_event(capabilityEventStr, 10)
+        asserts.skip_if(not capability['data'][wifi_constants
+            .SOFTAP_CAPABILITY_FEATURE_CLIENT_CONTROL],
+            "Client control isn't supported, ignore test")
+
+        # Unregister callback before start test to avoid
+        # unnecessary callback impact the test
+        self.dut.droid.unregisterSoftApCallback(callbackId)
+
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Setup configuration which used to start softap
+        wutils.save_wifi_soft_ap_config(self.dut, {"SSID":"ACTS_TEST"},
+            band=WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G, hidden=False,
+            security=WifiEnums.SoftApSecurityType.WPA2, password="12345678",
+            max_clients=1)
+
+        wutils.start_wifi_tethering_saved_config(self.dut)
+        current_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Register callback again after softap enabled to avoid
+        # unnecessary callback impact the test
+        callbackId = self.dut.droid.registerSoftApCallback()
+
+        # Verify clients will update immediately after register calliback
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 0)
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_ENABLED_STATE)
+
+        # Trigger client connection
+        self.dut_client.droid.wifiConnectByConfig(current_softap_config)
+        self.dut_client_2.droid.wifiConnectByConfig(current_softap_config)
+        # Wait client connect
+        time.sleep(3)
+
+        # Verify one client connected and one blocked due to max client
+        eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_BLOCKING_CLIENT_CONNECTING
+        blockedClient = self.dut.ed.pop_event(eventStr, 10)
+        asserts.assert_equal(blockedClient['data'][wifi_constants.
+            SOFTAP_BLOCKING_CLIENT_REASON_KEY],
+            wifi_constants.SAP_CLIENT_BLOCK_REASON_CODE_NO_MORE_STAS,
+            "Blocked reason code doesn't match")
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 1)
+
+        # Update configuration, extend client to 2
+        wutils.save_wifi_soft_ap_config(self.dut, current_softap_config,
+            max_clients=2)
+
+        # Wait configuration updated
+        time.sleep(3)
+        # Trigger connection again
+        self.dut_client_2.droid.wifiConnectByConfig(current_softap_config)
+        # Wait client connect
+        time.sleep(3)
+        # Verify client connected
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 2)
+
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+        # Unregister callback
+        self.dut.droid.unregisterSoftApCallback(callbackId)
     """ Tests End """
 
 
