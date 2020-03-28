@@ -90,6 +90,8 @@ class WifiManagerTest(WifiBaseTest):
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
         self.turn_location_off_and_scan_toggle_off()
+        if self.dut.droid.wifiIsApEnabled():
+            wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         if self.dut_client:
             wutils.reset_wifi(self.dut_client)
@@ -919,12 +921,33 @@ class WifiManagerTest(WifiBaseTest):
         3. Let DUT sleep for 5 minutes
         4. Check DUT can be pinged by DUT_Client
         """
+        asserts.skip_if(len(self.android_devices) < 3, "Need 3 devices")
+        self.dut_client_a = self.android_devices[1]
+        self.dut_client_b = self.android_devices[2]
+
+        # enable hotspot on dut and connect client devices to it
+        ap_ssid = "softap_" + acts.utils.rand_ascii_str(8)
+        ap_password = acts.utils.rand_ascii_str(8)
+        self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
+        config = {wutils.WifiEnums.SSID_KEY: ap_ssid}
+        config[wutils.WifiEnums.PWD_KEY] = ap_password
+        wutils.start_wifi_tethering(
+            self.dut,
+            config[wutils.WifiEnums.SSID_KEY],
+            config[wutils.WifiEnums.PWD_KEY],
+            wutils.WifiEnums.WIFI_CONFIG_APBAND_AUTO)
+
         # DUT connect to AP
-        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
-        wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
+        wutils.connect_to_wifi_network(
+            self.dut_client_a, config, check_connectivity=False)
+        wutils.connect_to_wifi_network(
+            self.dut_client_b, config, check_connectivity=False)
         # Check DUT and DUT_Client can ping each other successfully
-        self.verify_traffic_between_devices(self.dut,self.dut_client)
-        self.verify_traffic_between_devices(self.dut_client,self.dut)
+        self.verify_traffic_between_devices(self.dut_client_a,
+                                            self.dut_client_b)
+        self.verify_traffic_between_devices(self.dut_client_a,
+                                            self.dut_client_b)
+
         # DUT turn off screen and go sleep for 5 mins
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
@@ -933,7 +956,8 @@ class WifiManagerTest(WifiBaseTest):
         self.log.info("Sleep for 5 minutes")
         time.sleep(300)
         # Verify DUT_Client can ping DUT when DUT sleeps
-        self.verify_traffic_between_devices(self.dut,self.dut_client)
+        self.verify_traffic_between_devices(self.dut_client_a,
+                                            self.dut_client_b)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
