@@ -20,7 +20,7 @@ from acts.controllers import adb
 from acts import asserts
 from acts import signals
 from acts import utils
-from acts.controllers.adb import AdbError
+from acts.controllers.adb_lib.error import AdbError
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.logger import normalize_log_line_timestamp
