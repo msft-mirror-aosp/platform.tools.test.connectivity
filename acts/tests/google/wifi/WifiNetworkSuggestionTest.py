@@ -270,6 +270,56 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
+    @test_tracker_info(uuid="")
+    def test_connect_to_wpa_psk_2g_modify_meteredness(self):
+        """ Adds a network suggestion and ensure that the device connected.
+        Change the meteredness of the network after the connection.
+
+        Steps:
+        1. Send a network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did not receive the post connection broadcast
+           (isAppInteractionRequired = False).
+        4. Mark the network suggestion metered.
+        5. Ensure that the device disconnected and reconnected back to the
+           suggestion.
+        6. Mark the network suggestion unmetered.
+        7. Ensure that the device did not disconnect.
+        8. Remove the suggestions and ensure the device does not connect back.
+        """
+        self.add_suggestions_and_ensure_connection(
+            [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY],
+            False)
+
+        mod_suggestion = self.wpa_psk_2g
+
+        # Mark the network metered.
+        self.dut.log.debug("Marking suggestion as metered")
+        mod_suggestion[WifiEnums.IS_SUGGESTION_METERED] = True
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([mod_suggestion]),
+            "Failed to add suggestions")
+        # Wait for disconnect.
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.log.info("Disconnected from network %s", mod_suggestion)
+        self.dut.ed.clear_all_events()
+        # Wait for reconnect.
+        wutils.wait_for_connect(self.dut, mod_suggestion[WifiEnums.SSID_KEY])
+
+        # Mark the network unmetered.
+        self.dut.log.debug("Marking suggestion as unmetered")
+        mod_suggestion[WifiEnums.IS_SUGGESTION_METERED] = False
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([mod_suggestion]),
+            "Failed to add suggestions")
+        # Ensure there is no disconnect.
+        wutils.ensure_no_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [mod_suggestion], mod_suggestion[WifiEnums.SSID_KEY])
+
+
     @test_tracker_info(uuid="f54bc250-d9e9-4f00-8b5b-b866e8550b43")
     def test_connect_to_highest_priority(self):
         """
