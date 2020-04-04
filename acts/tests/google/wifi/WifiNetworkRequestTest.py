@@ -84,6 +84,9 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.dut.droid.wifiReleaseNetworkAll()
         self.dut.droid.wifiDisconnect()
         wutils.reset_wifi(self.dut)
+        # Ensure we disconnected from the current network before the next test.
+        if self.dut.droid.wifiGetConnectionInfo()["supplicant_state"] != "disconnected":
+            wutils.wait_for_disconnect(self.dut)
         self.dut.ed.clear_all_events()
 
     def on_fail(self, test_name, begin_time):
