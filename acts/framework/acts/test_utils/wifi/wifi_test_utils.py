@@ -83,7 +83,7 @@ class WifiEnums():
     HIDDEN_KEY = "hiddenSSID" # Used for Wifi & SoftAp
     IS_APP_INTERACTION_REQUIRED = "isAppInteractionRequired"
     IS_USER_INTERACTION_REQUIRED = "isUserInteractionRequired"
-    IS_METERED = "isMetered"
+    IS_SUGGESTION_METERED = "isMetered"
     PRIORITY = "priority"
     SECURITY = "security" # Used for Wifi & SoftAp
 
