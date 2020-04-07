@@ -37,6 +37,11 @@ location_collection = DeviceGServices(
     'location:collection_enabled', on_val='1', off_val='0',
     desc='Modifies whether collecting location is enabled.')
 
+location_off_warning_dialog = DeviceGServices(
+    'location:enable_location_off_warning_dialog', on_val='true', off_val='false',
+    desc='Modifies whether the location off warning dialog should appear.'
+)
+
 location_opt_in = DeviceBinaryCommandSeries(
     [
         DeviceState('content insert --uri content://com.google.settings/'
