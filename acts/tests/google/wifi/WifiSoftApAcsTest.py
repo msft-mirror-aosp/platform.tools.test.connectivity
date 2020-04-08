@@ -103,9 +103,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
         self.access_points[0].close()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
         for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
             wutils.get_cnss_diag_log(ad, test_name)
 
     """Helper Functions"""
