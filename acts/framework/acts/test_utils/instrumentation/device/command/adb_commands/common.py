@@ -291,6 +291,15 @@ test_harness = DeviceBinaryCommandSeries(
         DeviceSetprop('ro.test_harness', desc='Modifies test_harness property.')
     ]
 )
-
 dismiss_keyguard = GenericCommand('wm dismiss-keyguard',
                                   desc='Dismisses the lockscreen.')
+
+modem_diag = DeviceBinaryCommandSeries(
+    [
+        DeviceSetprop('persist.vendor.sys.modem.diag.mdlog', 'true', 'false',
+                      desc='Modifies vendor modem logging property'),
+        DeviceSetprop('persist.sys.modem.diag.mdlog', 'true', 'false',
+                      desc='Modifies modem logging property'),
+    ]
+)
+
