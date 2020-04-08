@@ -80,6 +80,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
                 self.packet_capture[0].configure_monitor_mode(band, int(chan))
                 self.pcap_procs = wutils.start_pcap(
                     self.packet_capture[0], band, self.test_name)
+        wutils.start_cnss_diags(self.android_devices)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
@@ -89,6 +90,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
         wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
+        wutils.stop_cnss_diags(self.android_devices)
         if hasattr(self, 'packet_capture') and self.pcap_procs:
             wutils.stop_pcap(self.packet_capture[0], self.pcap_procs, False)
             self.pcap_procs = None
@@ -103,6 +105,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
+        for ad in self.android_devices:
+            wutils.get_cnss_diag_log(ad, test_name)
 
     """Helper Functions"""
 
