@@ -271,6 +271,45 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="")
+    def test_connect_to_wpa_psk_2g_with_screen_off(self):
+        """ Adds a network suggestion and ensure that the device connected
+        when the screen is off.
+
+        Steps:
+        1. Send an invalid suggestion to the device (Needed for PNO scan to start).
+        2. Toggle screen off.
+        3. Send a valid network suggestion to the device.
+        4. Wait for the device to connect to it.
+        5. Ensure that we did not receive the post connection broadcast
+           (isAppInteractionRequired = False).
+        6. Remove the suggestions and ensure the device does not connect back.
+        """
+        invalid_suggestion = self.wpa_psk_5g
+        network_ssid = invalid_suggestion.pop(WifiEnums.SSID_KEY)
+        invalid_suggestion[WifiEnums.SSID_KEY] = network_ssid + "blah"
+
+        self.dut.log.info("Adding invalid suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([invalid_suggestion]),
+            "Failed to add suggestions")
+
+        # Approve suggestions by the app.
+        self.set_approved(True)
+
+        # Turn screen off to ensure PNO kicks-in.
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
+        time.sleep(10)
+
+        # Add valid suggestions & ensure we restart PNO and connect to it.
+        self.add_suggestions_and_ensure_connection(
+            [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY],
+            False)
+
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="")
     def test_connect_to_wpa_psk_2g_modify_meteredness(self):
         """ Adds a network suggestion and ensure that the device connected.
         Change the meteredness of the network after the connection.
@@ -351,7 +390,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         # In-place modify Reverse the priority, should be no disconnect
         network_suggestion_2g[WifiEnums.PRIORITY] = 2
         network_suggestion_5g[WifiEnums.PRIORITY] = 5
-        self.dut.log.info("Modifying network suggestions");
+        self.dut.log.info("Modifying network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([network_suggestion_2g,
                                                       network_suggestion_5g]),
@@ -472,7 +511,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         3. Now approve the app.
         4. Wait for the device to connect to it.
         """
-        self.dut.log.info("Adding network suggestions");
+        self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([self.wpa_psk_5g]),
             "Failed to add suggestions")
@@ -495,7 +534,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY], assert_on_fail=False),
             "Should not connect to network suggestions from unapproved app")
 
-        self.dut.log.info("Enabling suggestions from test");
+        self.dut.log.info("Enabling suggestions from test")
         # Now Enable suggestions by the app & ensure we connect to the network.
         self.set_approved(True)
 
@@ -658,7 +697,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 self.dut, passpoint_config[WifiEnums.SSID_KEY], assert_on_fail=False),
             "Should not connect to network suggestions from unapproved app")
 
-        self.dut.log.info("Enabling suggestions from test");
+        self.dut.log.info("Enabling suggestions from test")
         # Now Enable suggestions by the app & ensure we connect to the network.
         self.set_approved(True)
 
