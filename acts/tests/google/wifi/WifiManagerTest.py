@@ -572,6 +572,24 @@ class WifiManagerTest(WifiBaseTest):
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, ssid)
 
+    @test_tracker_info(uuid="")
+    def test_scan_after_reboot_with_wifi_off_and_location_scan_on(self):
+        """Put wifi in scan only mode"""
+        self.turn_location_on_and_scan_toggle_on()
+        wutils.wifi_toggle_state(self.dut, False)
+
+        # Reboot the device.
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+
+        """Test wifi connection scan can start and find expected networks."""
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid)
+        ssid = self.open_network_5g[WifiEnums.SSID_KEY]
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid)
+
     @test_tracker_info(uuid="770caebe-bcb1-43ac-95b6-5dd52dd90e80")
     def test_scan_with_wifi_off_and_location_scan_off(self):
         """Turn off wifi and location scan"""
