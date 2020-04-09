@@ -572,7 +572,7 @@ class WifiManagerTest(WifiBaseTest):
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, ssid)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="558652de-c802-405f-b9dc-b7fcc9237673")
     def test_scan_after_reboot_with_wifi_off_and_location_scan_on(self):
         """Put wifi in scan only mode"""
         self.turn_location_on_and_scan_toggle_on()
