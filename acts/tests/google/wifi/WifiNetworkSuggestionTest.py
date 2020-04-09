@@ -270,7 +270,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b2df6ebe-9c5b-4e84-906a-e76f96fcef56")
     def test_connect_to_wpa_psk_2g_with_screen_off(self):
         """ Adds a network suggestion and ensure that the device connected
         when the screen is off.
@@ -309,7 +309,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.remove_suggestions_disconnect_and_ensure_no_connection_back(
             [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f18bf994-ef3b-45d6-aba0-dd6338b07979")
     def test_connect_to_wpa_psk_2g_modify_meteredness(self):
         """ Adds a network suggestion and ensure that the device connected.
         Change the meteredness of the network after the connection.
@@ -825,7 +825,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY],
                                     assert_on_fail=False), "Device should not connect.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="32201b1c-76a0-46dc-9983-2cd24312a783")
     def test_untrusted_suggestion_without_untrusted_request(self):
         """
         Add an untrusted network suggestion, when no untrusted request, will not connect to it.
