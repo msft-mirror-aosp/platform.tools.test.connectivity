@@ -34,25 +34,15 @@ class RttPreFlightTest(WifiBaseTest):
         self.unpack_userparams(req_param_names=required_params)
         self.rpm_telnet = rutils.create_telnet_session(self.rpm_ip)
 
-    ### Helper methods ###
-    def _check_ap_state(self, state=True):
-        curr_time = time.time()
-        while time.time() < curr_time + TIMEOUT:
-            time.sleep(WAIT_TIME)
-            status = wutils.start_wifi_connection_scan_and_check_for_network(
-                self.dut, SSID)
-            if state and status or not state and not status:
-                return True
-        return False
-
     ### Tests ###
 
     def test_turn_on_80211mc_ap(self):
         self.rpm_telnet.turn_on(self.rpm_port)
-        asserts.assert_true(self._check_ap_state(True),
-                            "Failed to turn on AP")
-
-    def test_turn_off_80211mc_ap(self):
-        self.rpm_telnet.turn_off(self.rpm_port)
-        asserts.assert_true(self._check_ap_state(False),
-                            "Failed to turn off AP")
+        curr_time = time.time()
+        while time.time() < curr_time + TIMEOUT:
+            time.sleep(WAIT_TIME)
+            if wutils.start_wifi_connection_scan_and_check_for_network(
+                self.dut, SSID):
+                return True
+        self.log.error("Failed to turn on AP")
+        return False
