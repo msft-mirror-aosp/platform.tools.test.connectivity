@@ -106,6 +106,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             isinstance(self.hidden_networks, list):
               self.hidden_network = self.hidden_networks[0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
+        self.dut.adb.shell(
+            "pm disable com.google.android.apps.carrier.carrierwifi")
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -130,6 +132,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
+        self.dut.adb.shell(
+            "pm enable com.google.android.apps.carrier.carrierwifi")
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
