@@ -87,6 +87,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         # Ensure we disconnected from the current network before the next test.
         if self.dut.droid.wifiGetConnectionInfo()["supplicant_state"] != "disconnected":
             wutils.wait_for_disconnect(self.dut)
+        wutils.wifi_toggle_state(self.dut, False)
         self.dut.ed.clear_all_events()
 
     def on_fail(self, test_name, begin_time):
@@ -203,6 +204,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         # Ensure we disconnected from the previous network.
         wutils.wait_for_disconnect(self.dut)
         self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
+        self.dut.ed.clear_all_events()
         # Complete flow for the second request.
         wutils.wifi_connect_using_network_request(self.dut, self.open_5g,
                                                   self.open_5g)
