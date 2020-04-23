@@ -125,9 +125,10 @@ class WifiAutoUpdateTest(WifiBaseTest):
     def add_wifi_hotspot(self):
         self.wifi_hotspot = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                              "password": "pass_%s" % utils.rand_ascii_str(6)}
-        wutils.save_wifi_soft_ap_config(self.dut,
-                                        self.wifi_hotspot,
-                                        WIFI_CONFIG_APBAND_5G)
+        band = WIFI_CONFIG_APBAND_5G
+        if self.dut.build_id.startswith("Q"):
+            band = WifiEnums.WIFI_CONFIG_APBAND_5G_OLD
+        wutils.save_wifi_soft_ap_config(self.dut, self.wifi_hotspot, band)
 
     def verify_wifi_hotspot(self):
         """Verify wifi tethering."""
