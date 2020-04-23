@@ -31,6 +31,8 @@ class InstrumentationCommandBuilder(object):
         self._nohup = False
         self._proto_path = None
         self._nohup_log_path = None
+        self._no_isolated_storage = False
+        self._output_as_proto = False
 
     def set_manifest_package(self, test_package):
         self._manifest_package_name = test_package
@@ -46,10 +48,16 @@ class InstrumentationCommandBuilder(object):
             value = str(value).lower()
         self._key_value_params[key] = str(value)
 
-    def set_proto_path(self, path):
+    def set_proto_path(self, path=None):
         """Sets a custom path to store result proto. Note that this path will
-        be relative to $EXTERNAL_STORAGE on device.
+        be relative to $EXTERNAL_STORAGE on device. Calling this function
+        automatically enables output as proto.
+
+        Args:
+            path: The $EXTERNAL_STORAGE subdirectory to write the result proto
+            to. If left as None, the default location will be used.
         """
+        self._output_as_proto = True
         self._proto_path = path
 
     def set_nohup(self, log_path=DEFAULT_NOHUP_LOG):
@@ -83,9 +91,15 @@ class InstrumentationCommandBuilder(object):
             raise Exception('instrumentation call build errors: {}'
                             .format(','.join(errors)))
         call = ['am instrument']
+
+        if self._no_isolated_storage:
+            call.append('--no-isolated-storage')
+
         for flag in self._flags:
             call.append(flag)
-        call.append('-f')
+
+        if self._output_as_proto:
+            call.append('-f')
         if self._proto_path:
             call.append(self._proto_path)
         for key, value in self._key_value_params.items():
@@ -106,13 +120,11 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
     def default():
         """Default instrumentation call builder.
 
-        The flags -w, -r and --no-isolated-storage are enabled.
+        The flags -w, -r are enabled.
 
            -w  Forces am instrument to wait until the instrumentation terminates
            (needed for logging)
            -r  Outputs results in raw format.
-           --no-isolated-storage  Disables the isolated storage feature
-           introduced in Q.
            https://developer.android.com/studio/test/command-line#AMSyntax
 
         The default test runner is androidx.test.runner.AndroidJUnitRunner.
@@ -120,7 +132,6 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
         builder = InstrumentationTestCommandBuilder()
         builder.add_flag('-w')
         builder.add_flag('-r')
-        builder.add_flag('--no-isolated-storage')
         builder.set_runner('androidx.test.runner.AndroidJUnitRunner')
         return builder
 
