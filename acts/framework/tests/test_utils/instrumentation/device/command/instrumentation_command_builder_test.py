@@ -43,10 +43,11 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
         with self.assertRaisesRegex(Exception, '.*runner cannot be none.*'):
             builder.build()
 
-    def test_proto_flag_without_set_proto_path(self):
+    def test__output_as_proto(self):
         builder = InstrumentationCommandBuilder()
         builder.set_runner('runner')
         builder.set_manifest_package('some.manifest.package')
+        builder.set_proto_path()
 
         call = builder.build()
         self.assertIn('-f', call)
@@ -58,7 +59,8 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
         builder.set_proto_path('/some/proto/path')
 
         call = builder.build()
-        self.assertIn('-f /some/proto/path', call)
+        self.assertIn('-f', call)
+        self.assertIn('/some/proto/path', call)
 
     def test_set_nohup(self):
         builder = InstrumentationCommandBuilder()
@@ -68,7 +70,7 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
 
         call = builder.build()
         self.assertEqual(
-            call, 'nohup am instrument -f some.manifest.package/runner >> '
+            call, 'nohup am instrument some.manifest.package/runner >> '
                   '$EXTERNAL_STORAGE/nohup.log 2>&1')
 
     def test__key_value_param_definition(self):
