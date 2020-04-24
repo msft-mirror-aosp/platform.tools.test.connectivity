@@ -329,6 +329,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def power_instrumentation_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
+        # produce result proto in default location.
+        builder.set_proto_path(path=None)
+        builder.add_flag('--no-isolated-storage')
         builder.set_manifest_package(self._test_apk.pkg_name)
         builder.set_nohup()
         return builder
