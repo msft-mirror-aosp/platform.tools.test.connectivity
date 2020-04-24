@@ -37,7 +37,7 @@ class PermissionsUtilTest(unittest.TestCase):
         """Test the grant-all command."""
         self._permissions_util.grant_all()
         expected_cmd = (
-            'am instrument -w -r -f -e command grant-all '
+            'am instrument -w -r -e command grant-all '
             'permissions.util/.PermissionInstrumentation'
         )
         self._permissions_util._dut.adb.shell.assert_called_with(

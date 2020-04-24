@@ -48,7 +48,7 @@ class DialogDismissalUtilTest(unittest.TestCase):
         apps = ['sample.app.one']
         self._dismiss_dialogs_util.dismiss_dialogs(apps)
         expected_cmd = (
-            'am instrument -w -f -e apps sample.app.one '
+            'am instrument -w -e apps sample.app.one '
             '-e screenshots true -e quitOnError true '
             'dismiss.dialogs/.DismissDialogsInstrumentation'
         )
@@ -62,7 +62,7 @@ class DialogDismissalUtilTest(unittest.TestCase):
         apps = ['sample.app.one', 'sample.app.two']
         self._dismiss_dialogs_util.dismiss_dialogs(apps)
         expected_cmd = (
-            'am instrument -w -f -e apps sample.app.one,sample.app.two '
+            'am instrument -w -e apps sample.app.one,sample.app.two '
             '-e screenshots true -e quitOnError true '
             'dismiss.dialogs/.DismissDialogsInstrumentation'
         )
