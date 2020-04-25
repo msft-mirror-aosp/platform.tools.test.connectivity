@@ -125,9 +125,19 @@ class WifiAutoUpdateTest(WifiBaseTest):
     def add_wifi_hotspot(self):
         self.wifi_hotspot = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                              "password": "pass_%s" % utils.rand_ascii_str(6)}
-        wutils.save_wifi_soft_ap_config(self.dut,
-                                        self.wifi_hotspot,
-                                        WIFI_CONFIG_APBAND_5G)
+        band = WIFI_CONFIG_APBAND_5G
+        if self.dut.build_info["build_id"].startswith("Q"):
+            band = WifiEnums.WIFI_CONFIG_APBAND_5G_OLD
+            self.wifi_hotspot[WifiEnums.AP_BAND_KEY] = band
+            asserts.assert_true(
+                self.dut.droid.wifiSetWifiApConfiguration(self.wifi_hotspot),
+                "Failed to set WifiAp Configuration")
+            wifi_ap = self.dut.droid.wifiGetApConfiguration()
+            asserts.assert_true(
+                wifi_ap[WifiEnums.SSID_KEY] == self.wifi_hotspot[WifiEnums.SSID_KEY],
+                "Hotspot SSID doesn't match with expected SSID")
+            return
+        wutils.save_wifi_soft_ap_config(self.dut, self.wifi_hotspot, band)
 
     def verify_wifi_hotspot(self):
         """Verify wifi tethering."""
