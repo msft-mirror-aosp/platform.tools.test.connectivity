@@ -31,7 +31,6 @@ class InstrumentationCommandBuilder(object):
         self._nohup = False
         self._proto_path = None
         self._nohup_log_path = None
-        self._no_isolated_storage = False
         self._output_as_proto = False
 
     def set_manifest_package(self, test_package):
@@ -91,9 +90,6 @@ class InstrumentationCommandBuilder(object):
             raise Exception('instrumentation call build errors: {}'
                             .format(','.join(errors)))
         call = ['am instrument']
-
-        if self._no_isolated_storage:
-            call.append('--no-isolated-storage')
 
         for flag in self._flags:
             call.append(flag)
