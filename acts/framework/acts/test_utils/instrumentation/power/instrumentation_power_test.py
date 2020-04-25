@@ -239,7 +239,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Uninstall SL4A
         self._sl4a_apk = AppInstaller.pull_from_device(
             self.ad_dut, SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
-        self._sl4a_apk.uninstall()
+        if self._sl4a_apk:
+          self._sl4a_apk.uninstall()
         time.sleep(1)
 
     def _on_reconnect(self):
@@ -251,8 +252,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             shutil.rmtree(os.path.dirname(self._sl4a_apk.apk_path))
             self._sl4a_apk = None
         self.ad_dut.start_services()
+
         # Release wake lock to put device into sleep.
-        self.ad_dut.droid.goToSleepNow()
+        if self.ad_dut.droid:
+            self.ad_dut.droid.goToSleepNow()
+
         self.ad_dut.log.info('Device reconnected.')
 
     def _install_test_apk(self):
