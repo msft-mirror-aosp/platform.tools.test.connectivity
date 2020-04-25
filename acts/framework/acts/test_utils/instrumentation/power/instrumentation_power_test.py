@@ -70,6 +70,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._sl4a_apk = None
         self._instr_cmd_builder = None
         self._power_metrics = None
+        self._instrumentation_command_options = {
+            'flags': ['--no-isolated-storage'],
+            'output_as_proto': True
+        }
 
     def setup_class(self):
         super().setup_class()
@@ -329,11 +333,15 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def power_instrumentation_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
-        # produce result proto in default location.
-        builder.set_proto_path(path=None)
-        builder.add_flag('--no-isolated-storage')
         builder.set_manifest_package(self._test_apk.pkg_name)
         builder.set_nohup()
+        if 'flags' in self._instrumentation_command_options:
+            for f in self._instrumentation_command_options['flags']:
+                builder.add_flag(f)
+        if 'output_as_proto' in self._instrumentation_command_options and \
+            self._instrumentation_command_options['output_as_proto']:
+            # produce result proto in default location.
+            builder.set_proto_path()
         return builder
 
     def _wait_for_disconnect_signal(self):
@@ -513,7 +521,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 except AttributeError as e:
                     self.log.warning(
                         'Error while retrieving results for %s: %s' % (
-                        metric_name, str(e)))
+                            metric_name, str(e)))
                     continue
 
                 try:
