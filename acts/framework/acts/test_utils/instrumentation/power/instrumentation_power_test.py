@@ -70,6 +70,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._sl4a_apk = None
         self._instr_cmd_builder = None
         self._power_metrics = None
+        self._instrumentation_command_options = {
+            'flags': ['--no-isolated-storage'],
+            'output_as_proto': True
+        }
 
     def setup_class(self):
         super().setup_class()
@@ -235,7 +239,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Uninstall SL4A
         self._sl4a_apk = AppInstaller.pull_from_device(
             self.ad_dut, SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
-        self._sl4a_apk.uninstall()
+        if self._sl4a_apk:
+          self._sl4a_apk.uninstall()
         time.sleep(1)
 
     def _on_reconnect(self):
@@ -247,8 +252,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             shutil.rmtree(os.path.dirname(self._sl4a_apk.apk_path))
             self._sl4a_apk = None
         self.ad_dut.start_services()
+
         # Release wake lock to put device into sleep.
-        self.ad_dut.droid.goToSleepNow()
+        if self.ad_dut.droid:
+            self.ad_dut.droid.goToSleepNow()
+
         self.ad_dut.log.info('Device reconnected.')
 
     def _install_test_apk(self):
@@ -329,11 +337,15 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def power_instrumentation_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
-        # produce result proto in default location.
-        builder.set_proto_path(path=None)
-        builder.add_flag('--no-isolated-storage')
         builder.set_manifest_package(self._test_apk.pkg_name)
         builder.set_nohup()
+        if 'flags' in self._instrumentation_command_options:
+            for f in self._instrumentation_command_options['flags']:
+                builder.add_flag(f)
+        if 'output_as_proto' in self._instrumentation_command_options and \
+            self._instrumentation_command_options['output_as_proto']:
+            # produce result proto in default location.
+            builder.set_proto_path()
         return builder
 
     def _wait_for_disconnect_signal(self):
@@ -513,7 +525,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 except AttributeError as e:
                     self.log.warning(
                         'Error while retrieving results for %s: %s' % (
-                        metric_name, str(e)))
+                            metric_name, str(e)))
                     continue
 
                 try:
