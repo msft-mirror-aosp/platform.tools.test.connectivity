@@ -376,7 +376,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         try:
             self._wait_for_disconnect_signal()
         except InstrumentationTestError as e:
-            session = self.parse_instrumentation_result_proto()
+            session = self.parse_instrumentation_result()
             res = self.log_instrumentation_result(session)
             raise InstrumentationTestError(
                 'Failed to receive USB disconnect signal.',
@@ -393,7 +393,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Monsoon measurement complete.')
 
         # Gather relevant metrics from measurements
-        session = self.parse_instrumentation_result_proto()
+        session = self.parse_instrumentation_result()
         self.log_instrumentation_result(session)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)

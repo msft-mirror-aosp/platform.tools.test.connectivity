@@ -82,8 +82,8 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         # Write out a copy of the instrumentation config
         with open(os.path.join(
-                self.log_path, 'instrumentation_config.yaml'),
-                  mode='w', encoding='utf-8') as f:
+              self.log_path, 'instrumentation_config.yaml'),
+              mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
         return ConfigWrapper(config_dict)
@@ -231,7 +231,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
         return procs
 
-    def parse_instrumentation_result_proto(self):
+    def parse_instrumentation_result(self):
         """Parse the instrumentation result proto and write it to a
         human-readable txt file in the log directory.
 
