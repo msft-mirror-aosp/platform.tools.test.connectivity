@@ -15,15 +15,16 @@
 #   limitations under the License.
 
 import os
-
 import yaml
-from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 
 from acts import base_test
 from acts import context
 from acts import error
+
+from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -82,7 +83,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         # Write out a copy of the instrumentation config
         with open(os.path.join(
-              self.log_path, 'instrumentation_config.yaml'),
+              self.log_path, DEFAULT_INSTRUMENTATION_CONFIG_FILE),
               mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
@@ -189,15 +190,18 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         """
         return self.get_files_from_config(config_key)[-1]
 
-    def adb_run(self, cmds):
+    def adb_run(self, cmds, ad=None):
         """Run the specified command, or list of commands, with the ADB shell.
 
         Args:
             cmds: A string, A GenericCommand, a list of strings or a list of
                   GenericCommand representing ADB shell command(s)
+            ad: The device to run on. Defaults to self.ad_dut.
 
         Returns: dict mapping command to resulting stdout
         """
+        if ad is None:
+            ad = self.ad_dut
         if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
             cmds = [cmds]
 
@@ -205,20 +209,24 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         for cmd in cmds:
             if isinstance(cmd, GenericCommand):
                 if cmd.desc:
-                    self.log.debug('Applying command that: %s' % cmd.desc)
+                    ad.log.debug('Applying command that: %s' % cmd.desc)
                 cmd = cmd.cmd
-            out[cmd] = self.ad_dut.adb.shell(cmd)
+            out[cmd] = ad.adb.shell(cmd)
         return out
 
-    def adb_run_async(self, cmds):
+    def adb_run_async(self, cmds, ad=None):
         """Run the specified command, or list of commands, with the ADB shell.
         (async)
 
         Args:
             cmds: A string or list of strings representing ADB shell command(s)
+            ad: The device to run on. Defaults to self.ad_dut.
 
         Returns: dict mapping command to resulting subprocess.Popen object
         """
+        if ad is None:
+            ad = self.ad_dut
+
         if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
             cmds = [cmds]
 
@@ -226,24 +234,54 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         for cmd in cmds:
             if isinstance(cmd, GenericCommand):
                 if cmd.desc:
-                    self.log.debug('Applying command to: %s' % cmd.desc)
+                    ad.log.debug('Applying command to: %s' % cmd.desc)
                 cmd = cmd.cmd
-            procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
+            procs[cmd] = ad.adb.shell_nb(cmd)
         return procs
 
     def parse_instrumentation_result(self):
-        """Parse the instrumentation result proto and write it to a
-        human-readable txt file in the log directory.
+        """Parse the instrumentation result and write it to a human-readable
+        txt file in the log directory.
 
         Returns: The parsed instrumentation_data_pb2.Session
         """
         log_path = context.get_current_context().get_full_output_path()
-        proto_file = proto_parser.pull_proto(self.ad_dut, log_path)
-        session = proto_parser.get_session_from_local_file(proto_file)
-        proto_txt_path = os.path.join(log_path, 'instrumentation_proto.txt')
-        with open(proto_txt_path, 'w') as f:
-            f.write(str(session))
-        return session
+
+        if proto_parser.has_instrumentation_proto(self.ad_dut):
+            proto_file = proto_parser.pull_proto(self.ad_dut, log_path)
+            session = proto_parser.get_session_from_local_file(proto_file)
+            proto_txt_path = os.path.join(log_path, 'instrumentation_proto.txt')
+            with open(proto_txt_path, 'w') as f:
+                f.write(str(session))
+            return session
+        # TODO(htellez): To implement parsing text output.
+        elif self.file_exists(os.path.join(self.ad_dut.external_storage_path,
+                                           DEFAULT_INSTRUMENTATION_LOG_OUTPUT)):
+            raise InstrumentationTestError('Parsing instrumentation results '
+                                           'from text output, is still under '
+                                           'development.')
+        raise InstrumentationTestError('No instrumentation output was detected '
+                                       'in either proto nor text format.')
+
+    def file_exists(self, file_path, ad=None):
+        """Returns whether a file exists on a device.
+
+        Args:
+            file_path: The path of the file to check for.
+            ad: The AndroiDevice to check on. If left undefined the default
+            device under test will be used.
+        """
+        if ad is None:
+            ad = self.ad_dut
+
+        cmd = '(test -f %s && echo yes) || echo no' % file_path
+        result = self.adb_run(cmd, ad)
+        if result[cmd] == 'yes':
+            return True
+        elif result[cmd] == 'no':
+            return False
+        raise ValueError('Couldn\'t determine if %s exists. '
+                         'Expected yes/no, got %s' % (file_path, result[cmd]))
 
     def log_instrumentation_result(self, session):
         """Logs instrumentation test result.
