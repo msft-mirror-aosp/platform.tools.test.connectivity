@@ -26,8 +26,8 @@ from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
 DEST_DIR = 'dest/proto_dir'
 SOURCE_PATH = 'source/proto/protofile'
-SAMPLE_PROTO = 'data/sample.instrumentation_data_proto'
-SAMPLE_TIMESTAMP_PROTO = 'data/sample_timestamp.instrumentation_data_proto'
+SAMPLE_PROTO = 'data/instrumentation_proto_parser/sample.instrumentation_data_proto'
+SAMPLE_TIMESTAMP_PROTO = 'data/instrumentation_proto_parser/sample_timestamp.instrumentation_data_proto'
 
 SAMPLE_ERROR_TEXT = 'INSTRUMENTATION_FAILED: com.google.android.powertests/' \
                     'androidx.test.runner.AndroidJUnitRunner'
