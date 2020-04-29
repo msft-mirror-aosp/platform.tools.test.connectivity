@@ -14,10 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
+import os
 import unittest
 
 from acts.test_utils.instrumentation import instrumentation_text_output_parser
+
+SAMPLE_WITH_LONG_STATUSES = 'data/instrumentation_text_output_parser/long_statuses.txt'
+SAMPLE_WITH_LONG_INSTRUMENTATION_RESULT = 'data/instrumentation_text_output_parser/long_instrumentation_result.txt'
+SAMPLE_WITH_20_AS_SESSION_RESULT_CODE = 'data/instrumentation_text_output_parser/session_result_code_is_20.txt'
+SAMPLE_WITH_42_AS_TEST_STATUS_RESULT_CODE = 'data/instrumentation_text_output_parser/test_status_result_code_is_42.txt'
 
 
 class InstrumentationTextOutputParserTest(unittest.TestCase):
@@ -51,6 +56,54 @@ class InstrumentationTextOutputParserTest(unittest.TestCase):
 
         self.assertEqual(key, 'hola')
         self.assertEqual(value, 'mundo')
+
+    def test_multiline_status_gets_parsed_correctly(self):
+        file = os.path.join(os.path.dirname(__file__),
+                            SAMPLE_WITH_LONG_STATUSES)
+
+        session = instrumentation_text_output_parser.parse_from_file(
+            file)
+
+        long_message_entry = session.test_status[0].results.entries[0]
+        self.assertEqual(long_message_entry.key, 'long_message')
+        self.assertEqual(long_message_entry.value_string.split('\n'),
+                         ['lorem', 'ipsum', 'dolor'])
+        longer_message_entry = session.test_status[1].results.entries[0]
+        self.assertEqual(longer_message_entry.key, 'longer_message')
+        self.assertEqual(longer_message_entry.value_string.split('\n'),
+                         ['lorem', 'ipsum', 'dolor', 'sit', 'amet'])
+
+    def test_multiline_instrumentation_result_gets_parsed_correctly(self):
+        file = os.path.join(os.path.dirname(__file__),
+                            SAMPLE_WITH_LONG_INSTRUMENTATION_RESULT)
+
+        session = instrumentation_text_output_parser.parse_from_file(
+            file)
+
+        entry = session.session_status.results.entries[0]
+        self.assertEqual(entry.key, 'long_result')
+        self.assertEqual(entry.value_string.split('\n'),
+                         ['never', 'gonna', 'give', 'you', 'up', 'never',
+                          'gonna', 'let', 'you', 'down'])
+
+    def test_session_result_code(self):
+        file = os.path.join(os.path.dirname(__file__),
+                            SAMPLE_WITH_20_AS_SESSION_RESULT_CODE)
+
+        session = instrumentation_text_output_parser.parse_from_file(
+            file)
+
+        self.assertEqual(session.session_status.result_code, 20)
+
+
+    def test_test_status_result_code(self):
+        file = os.path.join(os.path.dirname(__file__),
+                            SAMPLE_WITH_42_AS_TEST_STATUS_RESULT_CODE)
+
+        session = instrumentation_text_output_parser.parse_from_file(
+            file)
+
+        self.assertEqual(session.test_status[0].result_code, 42)
 
 
 if __name__ == '__main__':
