@@ -30,6 +30,29 @@ class ProtoParserError(Exception):
     """Class for exceptions raised by the proto parser."""
 
 
+def _build_proto_location(ad, source_path=None):
+    if source_path:
+        return source_path
+    else:
+        default_full_proto_dir = os.path.join(
+            ad.external_storage_path, DEFAULT_INST_LOG_DIR)
+        filename = ad.adb.shell('ls %s -t | head -n1' % default_full_proto_dir)
+        return os.path.join(default_full_proto_dir,
+                            filename) if filename else None
+
+
+def has_instrumentation_proto(ad, source_path=None):
+    """Determines whether an instrument proto was produced.
+
+    Args:
+        ad: AndroidDevice object
+        source_path: Path on the device where the proto is generated. If None,
+            pull the latest proto from DEFAULT_INST_PROTO_DIR.
+    """
+    ls_out = ad.adb.shell('ls %s' % _build_proto_location(ad, source_path))
+    return ls_out is not None and ls_out != ''
+
+
 def pull_proto(ad, dest_dir, source_path=None):
     """Pull latest instrumentation result proto from device.
 
@@ -41,18 +64,13 @@ def pull_proto(ad, dest_dir, source_path=None):
 
     Returns: Path to the retrieved proto file
     """
-    if source_path:
-        filename = os.path.basename(source_path)
-    else:
-        default_full_proto_dir = os.path.join(
-            ad.external_storage_path, DEFAULT_INST_LOG_DIR)
-        filename = ad.adb.shell('ls %s -t | head -n1' % default_full_proto_dir)
-        if not filename:
-            raise ProtoParserError(
-                'No instrumentation result protos found at default location.')
-        source_path = os.path.join(default_full_proto_dir, filename)
-    ad.pull_files(source_path, dest_dir)
-    dest_path = os.path.join(dest_dir, filename)
+    location = _build_proto_location(ad, source_path)
+    if not source_path and not location:
+        raise ProtoParserError(
+            'No instrumentation result protos found at default location.')
+
+    ad.pull_files(location, dest_dir)
+    dest_path = os.path.join(dest_dir, os.path.basename(location))
     if not os.path.exists(dest_path):
         raise ProtoParserError(
             'Failed to pull instrumentation result proto: %s -> %s'
