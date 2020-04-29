@@ -17,6 +17,7 @@
 from acts import asserts
 import queue
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_constants as wconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
@@ -194,23 +195,30 @@ class NonConcurrencyTest(AwareBaseTest):
 
     ##########################################################################
 
+    @test_tracker_info(uuid="b7c84cbe-d744-440a-9279-a0133e88e8cb")
     def test_run_p2p_then_aware(self):
         """Validate that if p2p is already up then any Aware operation fails"""
         self.run_incompat_service_then_aware(is_p2p=True)
 
+    @test_tracker_info(uuid="1e7b3a6d-575d-4911-80bb-6fcf1157ee9f")
     def test_run_aware_then_p2p(self):
         """Validate that a running Aware session terminates when p2p is started"""
         self.run_aware_then_incompat_service(is_p2p=True)
 
+    @test_tracker_info(uuid="82a0bd98-3022-4831-ac9e-d81f58c742d2")
     def test_run_softap_then_aware(self):
         """Validate that if SoftAp is already up then any Aware operation fails"""
+        asserts.skip_if(self.dut.model not in self.dbs_supported_models,
+                        "Device %s doesn't support STA+AP." % self.dut.model)
         self.run_incompat_service_then_aware(is_p2p=False)
 
+    @test_tracker_info(uuid="0da7661e-8ac2-4f68-b6d3-b3f612369d03")
     def test_run_aware_then_softap(self):
         """Validate that a running Aware session terminates when softAp is
     started"""
         self.run_aware_then_incompat_service(is_p2p=False)
 
+    @test_tracker_info(uuid="2ac27ac6-8010-4d05-b892-00242420b075")
     def test_run_aware_then_connect_new_ap(self):
         """Validate connect new ap during Aware session"""
         self.run_aware_then_connect_to_new_ap()
