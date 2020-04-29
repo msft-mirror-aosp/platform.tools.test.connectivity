@@ -17,7 +17,7 @@
 import os
 import shlex
 
-DEFAULT_NOHUP_LOG = 'nohup.log'
+DEFAULT_INSTRUMENTATION_LOG_OUTPUT = 'instrumentation_output.txt'
 
 
 class InstrumentationCommandBuilder(object):
@@ -59,14 +59,17 @@ class InstrumentationCommandBuilder(object):
         self._output_as_proto = True
         self._proto_path = path
 
-    def set_nohup(self, log_path=DEFAULT_NOHUP_LOG):
+    def set_nohup(self, log_path=None):
         """Enables nohup mode. This enables the instrumentation command to
         continue running after a USB disconnect.
 
         Args:
-            log_path: Path to store stdout of the process. Relative to
-                $EXTERNAL_STORAGE
+            log_path: Path to store stdout of the process. Default is:
+            $EXTERNAL_STORAGE/instrumentation_output.txt
         """
+        if log_path is None:
+            log_path = os.path.join('$EXTERNAL_STORAGE',
+                                    DEFAULT_INSTRUMENTATION_LOG_OUTPUT)
         self._nohup = True
         self._nohup_log_path = log_path
 
@@ -76,7 +79,7 @@ class InstrumentationCommandBuilder(object):
         if self._nohup:
             call = ['nohup'] + call
             call.append('>>')
-            call.append(os.path.join('$EXTERNAL_STORAGE', self._nohup_log_path))
+            call.append(self._nohup_log_path)
             call.append('2>&1')
         return " ".join(call)
 
@@ -174,6 +177,6 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
         if self._nohup:
             call = ['nohup'] + call
             call.append('>>')
-            call.append(os.path.join('$EXTERNAL_STORAGE', self._nohup_log_path))
+            call.append(self._nohup_log_path)
             call.append('2>&1')
         return ' '.join(call)

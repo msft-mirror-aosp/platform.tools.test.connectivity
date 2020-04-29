@@ -71,7 +71,7 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
         call = builder.build()
         self.assertEqual(
             call, 'nohup am instrument some.manifest.package/runner >> '
-                  '$EXTERNAL_STORAGE/nohup.log 2>&1')
+                  '$EXTERNAL_STORAGE/instrumentation_output.txt 2>&1')
 
     def test__key_value_param_definition(self):
         builder = InstrumentationCommandBuilder()

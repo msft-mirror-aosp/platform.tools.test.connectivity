@@ -30,7 +30,7 @@ from acts.test_utils.instrumentation.device.apps.app_installer import AppInstall
 from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_NOHUP_LOG
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationBaseTest
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
@@ -39,11 +39,12 @@ from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
-AUTOTESTER_LOG = 'autotester.log'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
 DEFAULT_WAIT_FOR_DEVICE_TIMEOUT = 180
-DISCONNECT_USB_FILE = 'disconnectusb.log'
 POLLING_INTERVAL = 0.5
+
+AUTOTESTER_LOG = 'autotester.log'
+DISCONNECT_USB_FILE = 'disconnectusb.log'
 SCREENSHOTS_DIR = 'test_screenshots'
 
 _NETWORK_TYPES = {
@@ -271,7 +272,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Pull test-generated files from the device onto the log directory."""
         dest = self.ad_dut.device_log_path
         self.ad_dut.log.info('Pulling test generated files to %s.' % dest)
-        for file_name in [DEFAULT_NOHUP_LOG, SCREENSHOTS_DIR]:
+        for file_name in [DEFAULT_INSTRUMENTATION_LOG_OUTPUT, SCREENSHOTS_DIR]:
             src = os.path.join(self.ad_dut.external_storage_path, file_name)
             self.ad_dut.pull_files(src, dest)
 
@@ -279,26 +280,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Remove test-generated files from the device."""
         self.ad_dut.log.info('Cleaning up test generated files.')
         for file_name in [DISCONNECT_USB_FILE, DEFAULT_INST_LOG_DIR,
-                          DEFAULT_NOHUP_LOG, AUTOTESTER_LOG,
+                          DEFAULT_INSTRUMENTATION_LOG_OUTPUT, AUTOTESTER_LOG,
                           SCREENSHOTS_DIR]:
-            path = os.path.join(self.ad_dut.external_storage_path, file_name)
-            self.adb_run('rm -rf %s' % path)
+            src = os.path.join(self.ad_dut.external_storage_path, file_name)
+            self.adb_run('rm -rf %s' % src)
 
     def trigger_scan_on_external_storage(self):
         cmd = 'am broadcast -a android.intent.action.MEDIA_MOUNTED '
         cmd = cmd + '-d file://%s ' % self.ad_dut.external_storage_path
         cmd = cmd + '--receiver-include-background'
         return self.adb_run(cmd)
-
-    def file_exists(self, file_path):
-        cmd = '(test -f %s && echo yes) || echo no' % file_path
-        result = self.adb_run(cmd)
-        if result[cmd] == 'yes':
-            return True
-        elif result[cmd] == 'no':
-            return False
-        raise ValueError('Couldn\'t determine if %s exists. '
-                         'Expected yes/no, got %s' % (file_path, result[cmd]))
 
     def push_to_external_storage(self, file_path, dest=None,
         timeout=DEFAULT_PUSH_FILE_TIMEOUT):
@@ -353,13 +344,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         to the Monsoon that the device is ready to be disconnected.
         """
         self.log.info('Waiting for USB disconnect signal')
-        disconnect_file = os.path.join(
-            self.ad_dut.external_storage_path, DISCONNECT_USB_FILE)
         start_time = time.time()
+        disconnect_usb_file = os.path.join(self.ad_dut.external_storage_path,
+                            DISCONNECT_USB_FILE)
         while time.time() < start_time + self._disconnect_usb_timeout:
-            if self.ad_dut.adb.shell('ls %s' % disconnect_file):
+            if self.ad_dut.adb.shell('ls %s' % disconnect_usb_file):
                 self.log.info('Disconnection signal received. File: '
-                              '"%s"' % disconnect_file)
+                              '"%s"' % disconnect_usb_file)
                 return
             time.sleep(POLLING_INTERVAL)
         raise InstrumentationTestError('Timeout while waiting for USB '
@@ -376,8 +367,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         try:
             self._wait_for_disconnect_signal()
         except InstrumentationTestError as e:
-            session = self.parse_instrumentation_result_proto()
-            res = self.log_instrumentation_result(session)
+            instrumentation_result = self.parse_instrumentation_result()
+            res = self.log_instrumentation_result(instrumentation_result)
             raise InstrumentationTestError(
                 'Failed to receive USB disconnect signal.',
                 instrumentation_result=res) from e
@@ -393,13 +384,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Monsoon measurement complete.')
 
         # Gather relevant metrics from measurements
-        session = self.parse_instrumentation_result_proto()
-        self.log_instrumentation_result(session)
+        instrumentation_result = self.parse_instrumentation_result()
+        self.log_instrumentation_result(instrumentation_result)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)
         self._power_metrics.generate_test_metrics(
             PowerMetrics.import_raw_data(power_data_path),
-            proto_parser.get_test_timestamps(session))
+            proto_parser.get_test_timestamps(instrumentation_result))
         self._log_metrics()
         return result
 

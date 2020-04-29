@@ -24,11 +24,10 @@ from acts.test_utils.instrumentation.instrumentation_proto_parser import \
     ProtoParserError
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
-
 DEST_DIR = 'dest/proto_dir'
 SOURCE_PATH = 'source/proto/protofile'
-SAMPLE_PROTO = 'data/sample.instrumentation_data_proto'
-SAMPLE_TIMESTAMP_PROTO = 'data/sample_timestamp.instrumentation_data_proto'
+SAMPLE_PROTO = 'data/instrumentation_proto_parser/sample.instrumentation_data_proto'
+SAMPLE_TIMESTAMP_PROTO = 'data/instrumentation_proto_parser/sample_timestamp.instrumentation_data_proto'
 
 SAMPLE_ERROR_TEXT = 'INSTRUMENTATION_FAILED: com.google.android.powertests/' \
                     'androidx.test.runner.AndroidJUnitRunner'
@@ -56,13 +55,25 @@ class InstrumentationProtoParserTest(unittest.TestCase):
     def test_pull_proto_fails_if_no_default_proto_found(self, *_):
         self.ad.adb.shell.return_value = None
         with self.assertRaisesRegex(
-                ProtoParserError, 'No instrumentation result'):
+            ProtoParserError, 'No instrumentation result'):
             parser.pull_proto(self.ad, DEST_DIR)
 
     @mock.patch('os.path.exists', return_value=False)
     def test_pull_proto_fails_if_adb_pull_fails(self, *_):
         with self.assertRaisesRegex(ProtoParserError, 'Failed to pull'):
             parser.pull_proto(self.ad, DEST_DIR, SOURCE_PATH)
+
+    def test_has_instrumentation_proto_with_default_location__existing_proto(
+        self):
+        # Emulates finding a file named default.proto
+        self.ad.adb.shell.return_value = 'default.proto'
+        self.assertTrue(parser.has_instrumentation_proto(self.ad))
+
+    def test_has_instrumentation_proto_with_default_location__non_existing_proto(
+        self):
+        # Emulates not finding a default proto
+        self.ad.adb.shell.return_value = ''
+        self.assertFalse(parser.has_instrumentation_proto(self.ad))
 
     def test_parser_converts_valid_proto(self):
         proto_file = os.path.join(os.path.dirname(__file__), SAMPLE_PROTO)

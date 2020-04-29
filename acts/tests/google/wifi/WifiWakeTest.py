@@ -381,9 +381,4 @@ class WifiWakeTest(WifiBaseTest):
             self.dut.droid.wifiCheckState(),
             "Expect Wifi Wake to enable Wifi, but Wifi is disabled.")
         expected_ssid = self.ap_b[wutils.WifiEnums.SSID_KEY]
-        actual_ssid = self.dut.droid.wifiGetConnectionInfo()[
-            wutils.WifiEnums.SSID_KEY]
-        asserts.assert_equal(
-            expected_ssid, actual_ssid,
-            ("Expected to connect to SSID '{}', but actually connected to "
-             "'{}' instead.").format(expected_ssid, actual_ssid))
+        wutils.wait_for_connect(self.dut, expected_ssid)
