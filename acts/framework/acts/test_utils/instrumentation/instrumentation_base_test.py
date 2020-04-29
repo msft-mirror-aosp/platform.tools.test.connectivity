@@ -22,6 +22,7 @@ from acts import context
 from acts import error
 
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
+from acts.test_utils.instrumentation import instrumentation_text_output_parser
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
@@ -83,8 +84,8 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         # Write out a copy of the instrumentation config
         with open(os.path.join(
-              self.log_path, DEFAULT_INSTRUMENTATION_CONFIG_FILE),
-              mode='w', encoding='utf-8') as f:
+                self.log_path, DEFAULT_INSTRUMENTATION_CONFIG_FILE),
+                mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
         return ConfigWrapper(config_dict)
@@ -249,17 +250,29 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
         if proto_parser.has_instrumentation_proto(self.ad_dut):
             proto_file = proto_parser.pull_proto(self.ad_dut, log_path)
-            session = proto_parser.get_session_from_local_file(proto_file)
             proto_txt_path = os.path.join(log_path, 'instrumentation_proto.txt')
+            session = proto_parser.get_session_from_local_file(proto_file)
             with open(proto_txt_path, 'w') as f:
                 f.write(str(session))
             return session
-        # TODO(htellez): To implement parsing text output.
-        elif self.file_exists(os.path.join(self.ad_dut.external_storage_path,
-                                           DEFAULT_INSTRUMENTATION_LOG_OUTPUT)):
-            raise InstrumentationTestError('Parsing instrumentation results '
-                                           'from text output, is still under '
-                                           'development.')
+
+        on_device = os.path.join(
+            self.ad_dut.external_storage_path,
+            DEFAULT_INSTRUMENTATION_LOG_OUTPUT)
+        if self.file_exists(on_device):
+            plain_output = instrumentation_text_output_parser.pull_output(
+                self.ad_dut,
+                log_path,
+                on_device)
+            proto_txt_path = os.path.join(
+                log_path,
+                'instrumentation_proto.from_plain_text.txt')
+            session = instrumentation_text_output_parser.parse_from_file(
+                plain_output)
+            with open(proto_txt_path, 'w') as f:
+                f.write(str(session))
+            return session
+
         raise InstrumentationTestError('No instrumentation output was detected '
                                        'in either proto nor text format.')
 
