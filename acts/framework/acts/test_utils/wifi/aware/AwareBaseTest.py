@@ -32,7 +32,8 @@ class AwareBaseTest(BaseTestClass):
     device_startup_offset = 2
 
     def setup_test(self):
-        required_params = ("aware_default_power_mode", )
+        required_params = ("aware_default_power_mode",
+                           "dbs_supported_models",)
         self.unpack_userparams(required_params)
 
         for ad in self.android_devices:
