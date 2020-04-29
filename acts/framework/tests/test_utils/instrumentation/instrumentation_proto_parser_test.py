@@ -18,16 +18,16 @@ import os
 import unittest
 
 import mock
-from acts.test_utils.instrumentation import instrumentation_proto_parser \
-    as parser
-from acts.test_utils.instrumentation.instrumentation_proto_parser import \
-    ProtoParserError
+from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
+from acts.test_utils.instrumentation.instrumentation_proto_parser import ProtoParserError
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
+from google.protobuf import text_format
 
 DEST_DIR = 'dest/proto_dir'
 SOURCE_PATH = 'source/proto/protofile'
 SAMPLE_PROTO = 'data/instrumentation_proto_parser/sample.instrumentation_data_proto'
 SAMPLE_TIMESTAMP_PROTO = 'data/instrumentation_proto_parser/sample_timestamp.instrumentation_data_proto'
+SAMPLE_STRING_TIMESTAMP_PROTO = 'data/instrumentation_proto_parser/string_values.prototxt'
 
 SAMPLE_ERROR_TEXT = 'INSTRUMENTATION_FAILED: com.google.android.powertests/' \
                     'androidx.test.runner.AndroidJUnitRunner'
@@ -90,6 +90,23 @@ class InstrumentationProtoParserTest(unittest.TestCase):
             1567029917802)
         self.assertEqual(
             timestamps['partialWakelock'][parser.END_TIMESTAMP], 1567029932879)
+
+    def test_get_test_timestamps_when_defined_as_strings(self):
+        proto_file = os.path.join(os.path.dirname(__file__),
+                                  SAMPLE_STRING_TIMESTAMP_PROTO)
+        session = instrumentation_data_pb2.Session()
+        with open(proto_file) as f:
+            text_format.Parse(f.read(), session)
+
+        timestamps = parser.get_test_timestamps(session)
+        self.assertEqual(
+            timestamps['partialWakeLock'][
+                parser.START_TIMESTAMP], 1587695669034
+
+        )
+        self.assertEqual(
+            timestamps['partialWakeLock'][parser.END_TIMESTAMP],
+            1587695674043)
 
     def test_get_instrumentation_result_with_session_aborted(self):
         proto_file = os.path.join(os.path.dirname(__file__), SAMPLE_PROTO)
