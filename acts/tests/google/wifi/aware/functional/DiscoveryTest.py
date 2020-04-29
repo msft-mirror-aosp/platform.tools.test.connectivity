@@ -22,6 +22,7 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 class DiscoveryTest(AwareBaseTest):
@@ -561,6 +562,7 @@ class DiscoveryTest(AwareBaseTest):
     #######################################
 
     @test_tracker_info(uuid="954ebbde-ed2b-4f04-9e68-88239187d69d")
+    @WifiBaseTest.wifi_test_wrap
     def test_positive_unsolicited_passive_typical(self):
         """Functional test case / Discovery test cases / positive test case:
     - Solicited publish + passive subscribe
