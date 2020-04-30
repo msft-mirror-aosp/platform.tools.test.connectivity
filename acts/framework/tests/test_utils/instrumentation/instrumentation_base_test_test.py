@@ -17,6 +17,8 @@
 import mock
 import unittest
 
+from unittest.mock import MagicMock
+
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
     GenericCommand
@@ -99,6 +101,33 @@ class InstrumentationBaseTestTest(unittest.TestCase):
              GenericCommand('ls /other')])
         self.assertIn('ls /something', result.keys())
         self.assertIn('ls /other', result.keys())
+
+    def test_bugreport_on_fail_by_default(self):
+        self.instrumentation_test._instrumentation_config = ConfigWrapper({})
+        self.instrumentation_test._take_bug_report = MagicMock()
+
+        self.instrumentation_test.on_exception('test', 0)
+        self.assertEqual(1,
+                         self.instrumentation_test._take_bug_report.call_count)
+        self.instrumentation_test.on_pass('test', 0)
+        self.assertEqual(2,
+                         self.instrumentation_test._take_bug_report.call_count)
+        self.instrumentation_test.on_fail('test', 0)
+        self.assertEqual(3,
+                         self.instrumentation_test._take_bug_report.call_count)
+
+    def test_bugreport_on_end_events_can_be_disabled(self):
+        self.instrumentation_test._instrumentation_config = ConfigWrapper({
+            'bugreport_on_pass': False,
+            'bugreport_on_exception': False,
+            'bugreport_on_fail': False
+        })
+        self.instrumentation_test._take_bug_report = MagicMock()
+
+        self.instrumentation_test.on_exception('test', 0)
+        self.instrumentation_test.on_pass('test', 0)
+        self.instrumentation_test.on_fail('test', 0)
+        self.assertFalse(self.instrumentation_test._take_bug_report.called)
 
 
 if __name__ == '__main__':
