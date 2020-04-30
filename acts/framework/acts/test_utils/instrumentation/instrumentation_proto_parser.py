@@ -132,7 +132,10 @@ def get_test_timestamps(session):
                 if entry.key == 'test':
                     test_name = entry.value_string
                 if entry.key == 'timestamp':
-                    timestamp = entry.value_long
+                    if entry.HasField('value_long'):
+                        timestamp = entry.value_long
+                    else:
+                        timestamp = int(entry.value_string)
                 if entry.key == 'start-timestamp':
                     timestamp_type = START_TIMESTAMP
                 if entry.key == 'end-timestamp':

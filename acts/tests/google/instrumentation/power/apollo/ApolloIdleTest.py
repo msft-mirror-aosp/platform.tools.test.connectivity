@@ -15,12 +15,18 @@ class ApolloIdleTest(instrumentation_power_test.InstrumentationPowerTest):
         # OEM devices.
         self._instrumentation_command_options = {}
 
-    def run_idle_test_case(self):
+    def test_apollo_rock_bottom(self):
+        """Measures power when the device is in a rock bottom state. This
+        test is made to use the newer power-tests.apk."""
         self.run_and_measure(
             'com.google.android.device.power.tests.RockBottom',
             'rockBottom')
         self.validate_power_results()
 
-    def test_apollo_rock_bottom(self):
-        """Measures power when the device is in a rock bottom state."""
-        self.run_idle_test_case()
+    def test_apollo_idle_system_screen_off(self):
+        """Measures power when the device is in a rock bottom state. This
+        test is made to use the older Power.apk."""
+        self.run_and_measure(
+            'com.google.android.platform.powertests.IdleTestCase',
+            'testIdleScreenOff')
+        self.validate_power_results()
