@@ -190,7 +190,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.compact_location_log.toggle(True))
         self.adb_run(goog.magic_tether.toggle(False))
         self.adb_run(goog.ocr.toggle(False))
-        self.adb_run(goog.phenotype.toggle(True))
+        if self._instrumentation_config.get('set_gms_phenotype_flag', default=True):
+            self.adb_run(goog.phenotype.toggle(True))
         self.adb_run(goog.icing.toggle(False))
         self.adb_run(common.disable_pixellogger)
 
