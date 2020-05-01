@@ -100,15 +100,21 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def on_exception(self, test_name, begin_time):
         """Called upon unhandled test exception."""
-        self._take_bug_report(test_name, begin_time)
+        if self._instrumentation_config.get('bugreport_on_exception',
+                                            default=True):
+            self._take_bug_report(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
         """Called upon test pass."""
-        self._take_bug_report(test_name, begin_time)
+        if self._instrumentation_config.get('bugreport_on_pass',
+                                            default=True):
+            self._take_bug_report(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         """Called upon test failure."""
-        self._take_bug_report(test_name, begin_time)
+        if self._instrumentation_config.get('bugreport_on_fail',
+                                            default=True):
+            self._take_bug_report(test_name, begin_time)
 
     def _prepare_device(self):
         """Prepares the device for testing."""
