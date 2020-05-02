@@ -18,10 +18,8 @@ import os
 import shutil
 import tempfile
 import time
-import tzlocal
 
-from acts import asserts
-from acts import context
+import tzlocal
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
@@ -30,13 +28,20 @@ from acts.test_utils.instrumentation.device.apps.app_installer import AppInstall
 from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import \
+    DEFAULT_INSTRUMENTATION_LOG_OUTPUT
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import \
+    InstrumentationTestCommandBuilder
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationBaseTest
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
-from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
+from acts.test_utils.instrumentation.power.power_metrics import Measurement
+from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
+from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
+
+from acts import asserts
+from acts import context
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
@@ -377,6 +382,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             context.get_current_context().get_full_output_path(), 'power_data')
         self.log.info('Starting Monsoon measurement.')
         self.monsoon.usb('auto')
+        # TODO(b/155426729): When the Monsoon controller switches to reporting
+        #   time as seconds since epoch (on host), convert its time data to be
+        #   seconds since epoch (on device).
         device_time_cmd = 'echo $EPOCHREALTIME'
         measure_start_time = float(
             self.adb_run(device_time_cmd)[device_time_cmd])
@@ -390,9 +398,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log_instrumentation_result(instrumentation_result)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)
+        raw_data = PowerMetrics.import_raw_data(power_data_path)
         self._power_metrics.generate_test_metrics(
-            PowerMetrics.import_raw_data(power_data_path),
-            proto_parser.get_test_timestamps(instrumentation_result))
+            raw_data, proto_parser.get_test_timestamps(instrumentation_result))
+        self.write_raw_data_in_improved_format(
+            raw_data,
+            os.path.join(os.path.dirname(power_data_path), 'monsoon.txt'),
+            measure_start_time
+        )
         self._log_metrics()
         return result
 
@@ -547,3 +560,22 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         asserts.explicit_pass(
             msg='All measurements meet the criteria',
             extras=summaries)
+
+    @staticmethod
+    def write_raw_data_in_improved_format(raw_data, path, start_time):
+        """Writes the raw data to a file in (seconds since epoch, milliamps).
+
+        TODO(b/155294049): Deprecate this once Monsoon controller output
+            format is updated.
+
+        Args:
+            start_time: Measurement start time in seconds since epoch
+            raw_data: raw data as list or generator of (timestamp, sample)
+            path: path to write output
+        """
+        with open(path, 'w') as f:
+            for timestamp, sample in raw_data:
+                f.write(
+                    ' '.join(timestamp + start_time,
+                             Measurement.amps(sample).to_unit(MILLIAMP).value)
+                )
