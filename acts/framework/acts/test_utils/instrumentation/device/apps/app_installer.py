@@ -23,6 +23,11 @@ PKG_NAME_PATTERN = r"^package:\s+name='(?P<pkg_name>.*?)'"
 PM_PATH_PATTERN = r"^package:(?P<apk_path>.*)"
 
 
+class AppInstallerError(Exception):
+    """Exception class for AppInstaller's errors."""
+    pass
+
+
 class AppInstaller(object):
     """Class that represents an app on an Android device. Includes methods
     for install, uninstall, and getting info.
@@ -74,10 +79,16 @@ class AppInstaller(object):
 
         Returns: The package name, or empty string if not found.
         """
+        try:
+            job.run('which aapt')
+        except job.Error:
+            raise AppInstallerError('aapt not found or is not executable. Make '
+                                    'sure aapt is reachable from PATH and'
+                                    'executable')
+
         if self._pkg_name is None:
             dump = job.run(
-                'aapt dump badging %s' % self.apk_path,
-                ignore_status=True).stdout
+                'aapt dump badging %s' % self.apk_path).stdout
             match = re.compile(PKG_NAME_PATTERN).search(dump)
             self._pkg_name = match.group('pkg_name') if match else ''
         return self._pkg_name
