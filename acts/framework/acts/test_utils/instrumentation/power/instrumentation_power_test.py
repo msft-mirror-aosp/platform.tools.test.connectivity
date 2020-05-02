@@ -377,7 +377,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             context.get_current_context().get_full_output_path(), 'power_data')
         self.log.info('Starting Monsoon measurement.')
         self.monsoon.usb('auto')
-        measure_start_time = time.time()
+        device_time_cmd = 'echo $EPOCHREALTIME'
+        measure_start_time = float(
+            self.adb_run(device_time_cmd)[device_time_cmd])
         result = self.monsoon.measure_power(
             **self._measurement_args, output_path=power_data_path)
         self.monsoon.usb('on')
