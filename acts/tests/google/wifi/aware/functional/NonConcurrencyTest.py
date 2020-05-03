@@ -208,8 +208,9 @@ class NonConcurrencyTest(AwareBaseTest):
     @test_tracker_info(uuid="82a0bd98-3022-4831-ac9e-d81f58c742d2")
     def test_run_softap_then_aware(self):
         """Validate that if SoftAp is already up then any Aware operation fails"""
-        asserts.skip_if(self.dut.model not in self.dbs_supported_models,
-                        "Device %s doesn't support STA+AP." % self.dut.model)
+        asserts.skip_if(
+            self.android_devices[0].model not in self.dbs_supported_models,
+            "Device %s doesn't support STA+AP." % self.android_devices[0].model)
         self.run_incompat_service_then_aware(is_p2p=False)
 
     @test_tracker_info(uuid="0da7661e-8ac2-4f68-b6d3-b3f612369d03")
