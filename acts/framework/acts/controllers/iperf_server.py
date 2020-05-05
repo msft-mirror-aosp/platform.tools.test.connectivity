@@ -63,7 +63,8 @@ def create(configs):
             results.append(
                 IPerfServerOverSsh(c['ssh_config'],
                                    c['port'],
-                                   test_interface=c.get('test_interface')))
+                                   test_interface=c.get('test_interface'),
+                                   use_killall=c.get('use_killall')))
         else:
             raise ValueError(
                 'Config entry %s in %s is not a valid IPerfServer '
@@ -418,7 +419,11 @@ class IPerfServer(IPerfServerBase):
 
 class IPerfServerOverSsh(IPerfServerBase):
     """Class that handles iperf3 operations on remote machines."""
-    def __init__(self, ssh_config, port, test_interface=None):
+    def __init__(self,
+                 ssh_config,
+                 port,
+                 test_interface=None,
+                 use_killall=False):
         super().__init__(port)
         self.ssh_settings = settings.from_config(ssh_config)
         self._ssh_session = None
@@ -427,6 +432,7 @@ class IPerfServerOverSsh(IPerfServerBase):
         self._iperf_pid = None
         self._current_tag = None
         self.hostname = self.ssh_settings.hostname
+        self._use_killall = str(use_killall).lower() == 'true'
         try:
             # A test interface can only be found if an ip address is specified.
             # A fully qualified hostname will return None for the
@@ -533,7 +539,12 @@ class IPerfServerOverSsh(IPerfServerBase):
         if not self.started:
             return
 
-        self._ssh_session.run_async('kill -9 {}'.format(str(self._iperf_pid)))
+        if self._use_killall:
+            self._ssh_session.run('killall iperf3', ignore_status=True)
+        else:
+            self._ssh_session.run_async('kill -9 {}'.format(
+                str(self._iperf_pid)))
+
         iperf_result = self._ssh_session.run('cat {}'.format(
             self._get_remote_log_path()))
 
