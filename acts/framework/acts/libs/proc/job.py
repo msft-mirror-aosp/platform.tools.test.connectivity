@@ -14,7 +14,6 @@
 
 import logging
 import os
-import shlex
 import sys
 import time
 
