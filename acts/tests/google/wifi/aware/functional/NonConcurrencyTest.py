@@ -14,8 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts import asserts
 import queue
+import time
+
+from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -57,6 +59,8 @@ class NonConcurrencyTest(AwareBaseTest):
         # start Aware
         id = dut.droid.wifiAwareAttach()
         autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+        time.sleep(EVENT_TIMEOUT)
 
         # start other service
         if is_p2p:
