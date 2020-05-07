@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import os
+import re
 
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
@@ -74,20 +75,22 @@ class _Markers(object):
     CODE = 'INSTRUMENTATION_CODE:'
 
 
-def _remove_marker(line, marker):
-    return line[len(marker):].lstrip()
+def _remove_prefix(line, marker):
+    match = re.match('(\\S*%s).*' % marker, line)
+    prefix = match.group(1)
+    return line[len(prefix):].lstrip()
 
 
 def _extract_key_value(line, marker):
-    key_value = _remove_marker(line, marker)
+    key_value = _remove_prefix(line, marker)
     return key_value.split('=', 1)
 
 
 def _extract_status_code(line, marker):
-    return int(_remove_marker(line, marker))
+    return int(_remove_prefix(line, marker))
 
 
-class _InstrumentationParserStateMachine(object):
+class InstrumentationParserStateMachine(object):
     """Stateful class that understands transitions in between instrumentation
     output markers and how they translate into corresponding fragments of the
     instrumentation_data_pb2.Session equivalent object."""
@@ -102,7 +105,7 @@ class _InstrumentationParserStateMachine(object):
         self._status_result_entry_is_open = False
         self._session_result_entry_is_open = False
 
-    def add_unmarked_line(self, line):
+    def _add_unmarked_line(self, line):
         """An unmarked line is either part of a status result entry or
         a session result entry."""
         if (self._status_result_entry_is_open
@@ -112,7 +115,7 @@ class _InstrumentationParserStateMachine(object):
             raise InstrumentationOutputError(
                 'Unmarked line misplacement. Line: %s' % line)
 
-    def add_test_status_result_code(self, code):
+    def _add_test_status_result_code(self, code):
         """Adds the test_status to the session since the result_code is the
         last token that appears."""
         self._close_open_states()
@@ -124,7 +127,7 @@ class _InstrumentationParserStateMachine(object):
         self._results_bundle.Clear()
         self._test_status.Clear()
 
-    def add_session_result_code(self, code):
+    def _add_session_result_code(self, code):
         """Adds the results bundle to the session_status since the result_code
         is the last token that appears."""
         self._close_open_states()
@@ -132,12 +135,12 @@ class _InstrumentationParserStateMachine(object):
         self.session.session_status.results.CopyFrom(self._results_bundle)
         self._results_bundle.Clear()
 
-    def add_status_result_entry(self, key):
+    def _add_status_result_entry(self, key):
         self._close_open_states()
         self._status_result_entry_is_open = True
         self._result_entry.key = key
 
-    def add_session_result_entry(self, key):
+    def _add_session_result_entry(self, key):
         self._close_open_states()
         self._session_result_entry_is_open = True
         self._result_entry.key = key
@@ -169,28 +172,31 @@ class _InstrumentationParserStateMachine(object):
         self._result_entry.Clear()
         self._status_result_entry_is_open = False
 
+    def add_line(self, line):
+        if re.match('\\S*%s.*' % _Markers.STATUS, line):
+            (key, value) = _extract_key_value(line, _Markers.STATUS)
+            self._add_status_result_entry(key)
+            self._add_unmarked_line(value)
+        elif re.match('\\S*%s.*' % _Markers.STATUS_CODE, line):
+            code = _extract_status_code(line, _Markers.STATUS_CODE)
+            self._add_test_status_result_code(code)
+        elif re.match('\\S*%s.*' % _Markers.RESULT, line):
+            (key, value) = _extract_key_value(line, _Markers.RESULT)
+            self._add_session_result_entry(key)
+            self._add_unmarked_line(value)
+        elif re.match('\\S*%s.*' % _Markers.CODE, line):
+            code = _extract_status_code(line, _Markers.CODE)
+            self._add_session_result_code(code)
+        else:
+            self._add_unmarked_line(line)
+
 def parse_from_file(source_path):
     """Parses a file into a instrumentation_data_pb2.Session object. All values
     are casted as string."""
-    state_machine = _InstrumentationParserStateMachine()
+    state_machine = InstrumentationParserStateMachine()
 
     with open(source_path, 'r') as f:
         for line in f:
             line = line.rstrip()
-            if line.startswith(_Markers.STATUS):
-                (key, value) = _extract_key_value(line, _Markers.STATUS)
-                state_machine.add_status_result_entry(key)
-                state_machine.add_unmarked_line(value)
-            elif line.startswith(_Markers.STATUS_CODE):
-                code = _extract_status_code(line, _Markers.STATUS_CODE)
-                state_machine.add_test_status_result_code(code)
-            elif line.startswith(_Markers.RESULT):
-                (key, value) = _extract_key_value(line, _Markers.RESULT)
-                state_machine.add_session_result_entry(key)
-                state_machine.add_unmarked_line(value)
-            elif line.startswith(_Markers.CODE):
-                code = _extract_status_code(line, _Markers.CODE)
-                state_machine.add_session_result_code(code)
-            else:
-                state_machine.add_unmarked_line(line)
+            state_machine.add_line(line)
     return state_machine.session
