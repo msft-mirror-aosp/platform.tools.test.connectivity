@@ -398,11 +398,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log_instrumentation_result(instrumentation_result)
         self._power_metrics = PowerMetrics(self._monsoon_voltage,
                                            start_time=measure_start_time)
-        raw_data = PowerMetrics.import_raw_data(power_data_path)
         self._power_metrics.generate_test_metrics(
-            raw_data, proto_parser.get_test_timestamps(instrumentation_result))
+            PowerMetrics.import_raw_data(power_data_path),
+            proto_parser.get_test_timestamps(instrumentation_result))
         self.write_raw_data_in_improved_format(
-            raw_data,
+            PowerMetrics.import_raw_data(power_data_path),
             os.path.join(os.path.dirname(power_data_path), 'monsoon.txt'),
             measure_start_time
         )
@@ -575,7 +575,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """
         with open(path, 'w') as f:
             for timestamp, sample in raw_data:
-                f.write(
-                    ' '.join(timestamp + start_time,
-                             Measurement.amps(sample).to_unit(MILLIAMP).value)
-                )
+                f.write('%s %s\n' %
+                        (timestamp + start_time,
+                         Measurement.amps(sample).to_unit(MILLIAMP).value))
