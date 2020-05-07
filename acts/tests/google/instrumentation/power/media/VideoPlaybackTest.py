@@ -26,17 +26,17 @@ class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
     def _prepare_device(self):
         super()._prepare_device()
         self.base_device_configuration()
-        self._video_location = self.push_to_external_storage(
+
+    def test_playback_high_bit_rate(self):
+        """Measures power when the device is playing a video."""
+        video_location = self.push_to_external_storage(
             self.get_file_from_config('high_bit_rate_video'),
             timeout=BIG_FILE_PUSH_TIMEOUT)
         self.trigger_scan_on_external_storage()
 
-    def test_playback_high_bit_rate(self):
-        """Measures power when the device is playing a video."""
-
         self.run_and_measure(
             'com.google.android.platform.powertests.PhotosTests',
             'testVideoPlaybackThroughIntent',
-            extra_params=[('video_file_path', self._video_location)])
+            extra_params=[('video_file_path', video_location)])
 
         self.validate_power_results()
