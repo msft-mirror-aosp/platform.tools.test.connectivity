@@ -116,6 +116,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+        self.dut.unlock_screen()
         self.clear_user_disabled_networks()
         wutils.wifi_toggle_state(self.dut, True)
         self.dut.ed.clear_all_events()
