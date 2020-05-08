@@ -24,6 +24,8 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
     def _prepare_device(self):
         super()._prepare_device()
         self.base_device_configuration()
+        self._instrumentation_command_options['output_as_proto'] = False
+
 
     def test_quick_idle(self):
         """Measures power when the device is in a rock bottom state, hard-coding
