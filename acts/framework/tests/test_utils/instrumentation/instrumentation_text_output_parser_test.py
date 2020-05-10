@@ -19,10 +19,15 @@ import unittest
 
 from acts.test_utils.instrumentation import instrumentation_text_output_parser
 
-SAMPLE_WITH_LONG_STATUSES = 'data/instrumentation_text_output_parser/long_statuses.txt'
-SAMPLE_WITH_LONG_INSTRUMENTATION_RESULT = 'data/instrumentation_text_output_parser/long_instrumentation_result.txt'
-SAMPLE_WITH_20_AS_SESSION_RESULT_CODE = 'data/instrumentation_text_output_parser/session_result_code_is_20.txt'
-SAMPLE_WITH_42_AS_TEST_STATUS_RESULT_CODE = 'data/instrumentation_text_output_parser/test_status_result_code_is_42.txt'
+SAMPLE_WITH_LONG_STATUSES = \
+    'data/instrumentation_text_output_parser/long_statuses.txt'
+SAMPLE_WITH_LONG_INSTRUMENTATION_RESULT = \
+    'data/instrumentation_text_output_parser/long_instrumentation_result.txt'
+SAMPLE_WITH_20_AS_SESSION_RESULT_CODE = \
+    'data/instrumentation_text_output_parser/session_result_code_is_20.txt'
+SAMPLE_WITH_42_AS_TEST_STATUS_RESULT_CODE = \
+    'data/instrumentation_text_output_parser/test_status_result_code_is_42.txt'
+SAMPLE_MALFORMED = 'data/instrumentation_text_output_parser/malformed.txt'
 
 
 class InstrumentationTextOutputParserTest(unittest.TestCase):
@@ -34,9 +39,27 @@ class InstrumentationTextOutputParserTest(unittest.TestCase):
 
         self.assertEqual(code, 9)
 
+    # sometimes instrumentation output is malformed on some device kinds,
+    # the best we can do is account for the common errors.
+    def test_get_test_result_code_on_malformed_lines(self):
+        code = instrumentation_text_output_parser._extract_status_code(
+            'INSINSTRUMENTATION_STATUS_CODE: 9',
+            instrumentation_text_output_parser._Markers.STATUS_CODE)
+
+        self.assertEqual(code, 9)
+
     def test_get_session_result_code(self):
         code = instrumentation_text_output_parser._extract_status_code(
             'INSTRUMENTATION_CODE: 7',
+            instrumentation_text_output_parser._Markers.CODE)
+
+        self.assertEqual(code, 7)
+
+    # sometimes instrumentation output is malformed on some device kinds,
+    # the best we can do is account for the common errors.
+    def test_get_session_result_code_on_malformed_lines(self):
+        code = instrumentation_text_output_parser._extract_status_code(
+            'ININSTRUMENTATION_CODE: 7',
             instrumentation_text_output_parser._Markers.CODE)
 
         self.assertEqual(code, 7)
@@ -49,13 +72,33 @@ class InstrumentationTextOutputParserTest(unittest.TestCase):
         self.assertEqual(key, 'hello')
         self.assertEqual(value, 'world')
 
+    # sometimes instrumentation output is malformed on some device kinds,
+    # the best we can do is account for the common errors.
+    def test_get_test_status_key_value_on_malformed_lines(self):
+        (key, value) = instrumentation_text_output_parser._extract_key_value(
+            'INSTRUMENINSTRUMENTATION_STATUS: hello=world',
+            instrumentation_text_output_parser._Markers.STATUS)
+
+        self.assertEqual(key, 'hello')
+        self.assertEqual(value, 'world')
+
     def test_get_session_result_key_value(self):
         (key, value) = instrumentation_text_output_parser._extract_key_value(
             'INSTRUMENTATION_RESULT: hola=mundo',
-            instrumentation_text_output_parser._Markers.STATUS)
+            instrumentation_text_output_parser._Markers.RESULT)
 
         self.assertEqual(key, 'hola')
         self.assertEqual(value, 'mundo')
+
+    # sometimes instrumentation output is malformed on some device kinds,
+    # the best we can do is account for the common errors.
+    def test_get_session_result_key_value_on_malformed_lines(self):
+        (key, value) = instrumentation_text_output_parser._extract_key_value(
+            'INSTINSTRUMENTATION_RESULT: hello=world',
+            instrumentation_text_output_parser._Markers.RESULT)
+
+        self.assertEqual(key, 'hello')
+        self.assertEqual(value, 'world')
 
     def test_multiline_status_gets_parsed_correctly(self):
         file = os.path.join(os.path.dirname(__file__),
@@ -95,7 +138,6 @@ class InstrumentationTextOutputParserTest(unittest.TestCase):
 
         self.assertEqual(session.session_status.result_code, 20)
 
-
     def test_test_status_result_code(self):
         file = os.path.join(os.path.dirname(__file__),
                             SAMPLE_WITH_42_AS_TEST_STATUS_RESULT_CODE)
@@ -104,6 +146,36 @@ class InstrumentationTextOutputParserTest(unittest.TestCase):
             file)
 
         self.assertEqual(session.test_status[0].result_code, 42)
+
+    def test_malformed_case(self):
+        file = os.path.join(os.path.dirname(__file__),
+                            SAMPLE_MALFORMED)
+
+        session = instrumentation_text_output_parser.parse_from_file(
+            file)
+
+        entry0 = session.test_status[0].results.entries[0]
+        self.assertEqual(entry0.key, 'wellformed')
+        self.assertEqual(entry0.value_string, 'wellformedvalue')
+
+        entry1 = session.test_status[0].results.entries[1]
+        self.assertEqual(entry1.key, 'malformedmultiline')
+        self.assertEqual(entry1.value_string.split('\n'),
+                         ['line0', 'line1', 'line2'])
+
+        entry2 = session.test_status[0].results.entries[2]
+        self.assertEqual(entry2.key, 'malformedoneline')
+        self.assertEqual(entry2.value_string, 'malformedonelinevalue')
+
+        self.assertEqual(session.test_status[0].result_code, 33)
+
+        session_entry = session.session_status.results.entries[0]
+        self.assertEqual(session_entry.key, 'result_string')
+        self.assertEqual(session_entry.value_string.split('\n'),
+                         ['result_string0', 'result_string1', 'result_string2'])
+        self.assertEqual(session.session_status.result_code, 44)
+
+
 
 
 if __name__ == '__main__':

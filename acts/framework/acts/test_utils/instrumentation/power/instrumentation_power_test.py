@@ -378,9 +378,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 'Failed to receive USB disconnect signal.',
                 instrumentation_result=res) from e
 
+        self.log.info('Starting measurement with options: %s' % str(
+            self._measurement_args))
+
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
-        self.log.info('Starting Monsoon measurement.')
         self.monsoon.usb('auto')
         # TODO(b/155426729): When the Monsoon controller switches to reporting
         #   time as seconds since epoch (on host), convert its time data to be
