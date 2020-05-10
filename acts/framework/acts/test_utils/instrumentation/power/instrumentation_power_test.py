@@ -76,10 +76,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._sl4a_apk = None
         self._instr_cmd_builder = None
         self._power_metrics = None
-        self._instrumentation_command_options = {
-            'flags': ['--no-isolated-storage'],
-            'output_as_proto': True
-        }
 
     def setup_class(self):
         super().setup_class()
@@ -90,7 +86,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Test setup"""
         super().setup_test()
         self._prepare_device()
-        self._instr_cmd_builder = self.power_instrumentation_command_builder()
+        self._instr_cmd_builder = self.power_default_instr_command_builder()
         return True
 
     def _prepare_device(self):
@@ -330,18 +326,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     # Test runtime utils
 
-    def power_instrumentation_command_builder(self):
+    def power_default_instr_command_builder(self):
         """Return the default command builder for power tests"""
         builder = InstrumentationTestCommandBuilder.default()
         builder.set_manifest_package(self._test_apk.pkg_name)
+        builder.add_flag('--no-isolated-storage')
+        builder.set_proto_path()
         builder.set_nohup()
-        if 'flags' in self._instrumentation_command_options:
-            for f in self._instrumentation_command_options['flags']:
-                builder.add_flag(f)
-        if 'output_as_proto' in self._instrumentation_command_options and \
-            self._instrumentation_command_options['output_as_proto']:
-            # produce result proto in default location.
-            builder.set_proto_path()
         return builder
 
     def _wait_for_disconnect_signal(self):

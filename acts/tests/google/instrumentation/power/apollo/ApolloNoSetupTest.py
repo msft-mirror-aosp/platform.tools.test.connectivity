@@ -23,14 +23,11 @@ class ApolloNoSetupTest(instrumentation_power_test.InstrumentationPowerTest):
      reversed with the regular preparation steps. Tests in this class should be
      executed assuming there is no SL4A installed."""
 
-    def _prepare_device(self):
-        super()._prepare_device()
-
-    def __init__(self, configs):
-        super().__init__(configs)
-        # clear additional command options that won't work on the average
-        # OEM devices.
-        self._instrumentation_command_options = {}
+    def setup_test(self):
+        super().setup_test()
+        # clear command options that won't work on OEM devices.
+        self._instr_cmd_builder.set_output_as_text()
+        self._instr_cmd_builder.remove_flag('--no-isolated-storage')
 
     def test_idle_screen_off(self):
         """Calls an instrumentation test that turns the screen off and measures

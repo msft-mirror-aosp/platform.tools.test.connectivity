@@ -9,11 +9,11 @@ class ApolloIdleTest(instrumentation_power_test.InstrumentationPowerTest):
         super()._prepare_device()
         self.base_device_configuration()
 
-    def __init__(self, configs):
-        super().__init__(configs)
-        # clear additional command options that won't work on the average
-        # OEM devices.
-        self._instrumentation_command_options = {}
+    def setup_test(self):
+        super().setup_test()
+        # clear command options that won't work on OEM devices.
+        self._instr_cmd_builder.set_output_as_text()
+        self._instr_cmd_builder.remove_flag('--no-isolated-storage')
 
     def test_apollo_rock_bottom(self):
         """Measures power when the device is in a rock bottom state. This
