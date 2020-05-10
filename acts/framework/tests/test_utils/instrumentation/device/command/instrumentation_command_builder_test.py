@@ -16,10 +16,8 @@
 
 import unittest
 
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
-    import InstrumentationCommandBuilder
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
-    import InstrumentationTestCommandBuilder
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationCommandBuilder
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 
 
 class InstrumentationCommandBuilderTest(unittest.TestCase):
@@ -52,7 +50,7 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
         call = builder.build()
         self.assertIn('-f', call)
 
-    def test_proto_flag_with_set_proto_path(self):
+    def test__proto_flag_with_set_proto_path(self):
         builder = InstrumentationCommandBuilder()
         builder.set_runner('runner')
         builder.set_manifest_package('some.manifest.package')
@@ -62,7 +60,18 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
         self.assertIn('-f', call)
         self.assertIn('/some/proto/path', call)
 
-    def test_set_nohup(self):
+    def test__set_output_as_text_clears_proto_options(self):
+        builder = InstrumentationCommandBuilder()
+        builder.set_runner('runner')
+        builder.set_manifest_package('some.manifest.package')
+        builder.set_proto_path('/some/proto/path')
+        builder.set_output_as_text()
+
+        call = builder.build()
+        self.assertNotIn('-f', call)
+        self.assertNotIn('/some/proto/path', call)
+
+    def test__set_nohup(self):
         builder = InstrumentationCommandBuilder()
         builder.set_runner('runner')
         builder.set_manifest_package('some.manifest.package')
@@ -95,6 +104,19 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
 
         call = builder.build()
         self.assertIn('--flag1', call)
+        self.assertIn('--flag2', call)
+
+    def test__remove_flags(self):
+        builder = InstrumentationCommandBuilder()
+        builder.set_runner('runner')
+        builder.set_manifest_package('some.manifest.package')
+
+        builder.add_flag('--flag1')
+        builder.add_flag('--flag2')
+        builder.remove_flag('--flag1')
+
+        call = builder.build()
+        self.assertNotIn('--flag1', call)
         self.assertIn('--flag2', call)
 
 
