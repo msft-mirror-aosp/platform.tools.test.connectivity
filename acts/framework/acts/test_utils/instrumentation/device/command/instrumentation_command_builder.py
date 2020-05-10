@@ -42,6 +42,10 @@ class InstrumentationCommandBuilder(object):
     def add_flag(self, param):
         self._flags.append(param)
 
+    def remove_flag(self, param):
+        while self._flags.count(param):
+            self._flags.remove(param)
+
     def add_key_value_param(self, key, value):
         if isinstance(value, bool):
             value = str(value).lower()
@@ -58,6 +62,15 @@ class InstrumentationCommandBuilder(object):
         """
         self._output_as_proto = True
         self._proto_path = path
+
+    def set_output_as_text(self):
+        """This is the default behaviour. It will simply output the
+        instrumentation output to the devices stdout. If the nohup option is
+        enabled the instrumentation output will be redirected to the defined
+        path or its default.
+        """
+        self._output_as_proto = False
+        self._proto_path = None
 
     def set_nohup(self, log_path=None):
         """Enables nohup mode. This enables the instrumentation command to
