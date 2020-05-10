@@ -41,6 +41,7 @@ class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
     def test_boot(self):
         """Makes sure the device comes back up after rebooting and measures
         power when the device is in a rock bottom state."""
+        self._instr_cmd_builder.set_output_as_text()
         self.ad_dut.reboot(timeout=180)
         self.log.debug('Giving device extra minute after booting before '
                        'starting instrumentation test.')
