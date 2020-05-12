@@ -24,13 +24,13 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
     def _prepare_device(self):
         super()._prepare_device()
         self.base_device_configuration()
-        self._instrumentation_command_options['output_as_proto'] = False
 
 
     def test_quick_idle(self):
         """Measures power when the device is in a rock bottom state, hard-coding
         only 20 seconds worth of measurement and 10 of on device test."""
         # TODO: max_current and voltage should also be hardcoded somehow.
+        self._instr_cmd_builder.set_output_as_text()
         self._measurement_args['duration'] = 20
         self._measurement_args['hz'] = 100
         self._measurement_args['measure_after_seconds'] = 0
