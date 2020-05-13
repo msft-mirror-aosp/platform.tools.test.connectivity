@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='acts.metrics',
   syntax='proto2',
   serialized_options=_b('\n\030com.android.acts.metrics'),
-  serialized_pb=_b('\n\rmetrics.proto\x12\x0c\x61\x63ts.metrics\"\xeb\x01\n\rBoundedMetric\x12\x12\n\ntest_class\x18\x01 \x01(\t\x12\x13\n\x0btest_method\x18\x02 \x01(\t\x12\x0e\n\x06metric\x18\x03 \x01(\t\x12\r\n\x05value\x18\x04 \x01(\x01\x12.\n\x0blower_limit\x18\x05 \x01(\x0b\x32\x19.acts.metrics.DoubleValue\x12.\n\x0bupper_limit\x18\x06 \x01(\x0b\x32\x19.acts.metrics.DoubleValue\x12\x0c\n\x04unit\x18\x07 \x01(\t\x12$\n\x06\x65xtras\x18\x08 \x01(\x0b\x32\x14.acts.metrics.Extras\"\x1c\n\x0b\x44oubleValue\x12\r\n\x05value\x18\x01 \x01(\x01\"`\n\x06\x45xtras\x12*\n\x03map\x18\x01 \x03(\x0b\x32\x1d.acts.metrics.Extras.MapEntry\x1a*\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x1a\n\x18\x63om.android.acts.metrics')
+  serialized_pb=_b('\n\rmetrics.proto\x12\x0c\x61\x63ts.metrics\"\xeb\x01\n\rBoundedMetric\x12\x12\n\ntest_class\x18\x01 \x01(\t\x12\x13\n\x0btest_method\x18\x02 \x01(\t\x12\x0e\n\x06metric\x18\x03 \x01(\t\x12\r\n\x05value\x18\x04 \x01(\x01\x12.\n\x0blower_limit\x18\x05 \x01(\x0b\x32\x19.acts.metrics.DoubleValue\x12.\n\x0bupper_limit\x18\x06 \x01(\x0b\x32\x19.acts.metrics.DoubleValue\x12\x0c\n\x04unit\x18\x07 \x01(\t\x12$\n\x06\x65xtras\x18\x08 \x01(\x0b\x32\x14.acts.metrics.Extras\"\x1c\n\x0b\x44oubleValue\x12\r\n\x05value\x18\x01 \x01(\x01\"p\n\x06\x45xtras\x12\x35\n\tkey_value\x18\x01 \x03(\x0b\x32\".acts.metrics.Extras.KeyValueEntry\x1a/\n\rKeyValueEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x1a\n\x18\x63om.android.acts.metrics')
 )
 
 
@@ -136,22 +136,22 @@ _DOUBLEVALUE = _descriptor.Descriptor(
 )
 
 
-_EXTRAS_MAPENTRY = _descriptor.Descriptor(
-  name='MapEntry',
-  full_name='acts.metrics.Extras.MapEntry',
+_EXTRAS_KEYVALUEENTRY = _descriptor.Descriptor(
+  name='KeyValueEntry',
+  full_name='acts.metrics.Extras.KeyValueEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='acts.metrics.Extras.MapEntry.key', index=0,
+      name='key', full_name='acts.metrics.Extras.KeyValueEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='value', full_name='acts.metrics.Extras.MapEntry.value', index=1,
+      name='value', full_name='acts.metrics.Extras.KeyValueEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -169,8 +169,8 @@ _EXTRAS_MAPENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=353,
-  serialized_end=395,
+  serialized_start=364,
+  serialized_end=411,
 )
 
 _EXTRAS = _descriptor.Descriptor(
@@ -181,7 +181,7 @@ _EXTRAS = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='map', full_name='acts.metrics.Extras.map', index=0,
+      name='key_value', full_name='acts.metrics.Extras.key_value', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -190,7 +190,7 @@ _EXTRAS = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_EXTRAS_MAPENTRY, ],
+  nested_types=[_EXTRAS_KEYVALUEENTRY, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -200,14 +200,14 @@ _EXTRAS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=299,
-  serialized_end=395,
+  serialized_end=411,
 )
 
 _BOUNDEDMETRIC.fields_by_name['lower_limit'].message_type = _DOUBLEVALUE
 _BOUNDEDMETRIC.fields_by_name['upper_limit'].message_type = _DOUBLEVALUE
 _BOUNDEDMETRIC.fields_by_name['extras'].message_type = _EXTRAS
-_EXTRAS_MAPENTRY.containing_type = _EXTRAS
-_EXTRAS.fields_by_name['map'].message_type = _EXTRAS_MAPENTRY
+_EXTRAS_KEYVALUEENTRY.containing_type = _EXTRAS
+_EXTRAS.fields_by_name['key_value'].message_type = _EXTRAS_KEYVALUEENTRY
 DESCRIPTOR.message_types_by_name['BoundedMetric'] = _BOUNDEDMETRIC
 DESCRIPTOR.message_types_by_name['DoubleValue'] = _DOUBLEVALUE
 DESCRIPTOR.message_types_by_name['Extras'] = _EXTRAS
@@ -229,10 +229,10 @@ _sym_db.RegisterMessage(DoubleValue)
 
 Extras = _reflection.GeneratedProtocolMessageType('Extras', (_message.Message,), dict(
 
-  MapEntry = _reflection.GeneratedProtocolMessageType('MapEntry', (_message.Message,), dict(
-    DESCRIPTOR = _EXTRAS_MAPENTRY,
+  KeyValueEntry = _reflection.GeneratedProtocolMessageType('KeyValueEntry', (_message.Message,), dict(
+    DESCRIPTOR = _EXTRAS_KEYVALUEENTRY,
     __module__ = 'metrics_pb2'
-    # @@protoc_insertion_point(class_scope:acts.metrics.Extras.MapEntry)
+    # @@protoc_insertion_point(class_scope:acts.metrics.Extras.KeyValueEntry)
     ))
   ,
   DESCRIPTOR = _EXTRAS,
@@ -240,9 +240,9 @@ Extras = _reflection.GeneratedProtocolMessageType('Extras', (_message.Message,),
   # @@protoc_insertion_point(class_scope:acts.metrics.Extras)
   ))
 _sym_db.RegisterMessage(Extras)
-_sym_db.RegisterMessage(Extras.MapEntry)
+_sym_db.RegisterMessage(Extras.KeyValueEntry)
 
 
 DESCRIPTOR._options = None
-_EXTRAS_MAPENTRY._options = None
+_EXTRAS_KEYVALUEENTRY._options = None
 # @@protoc_insertion_point(module_scope)
