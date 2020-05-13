@@ -25,5 +25,5 @@ message DoubleValue {
 }
 
 message Extras {
-  map<string, string> map = 1;
+  map<string, string> key_value = 1;
 }
