@@ -145,7 +145,7 @@ FUCHSIA_INTERFACES = {
 CORRECT_FULL_IP_LIST = {
     'ipv4_private': [],
     'ipv4_public': ['100.127.110.79'],
-    'ipv6_link_local': ['fe80:0:0:0:c66d:3c75:2cec:1d72'],
+    'ipv6_link_local': ['fe80::c66d:3c75:2cec:1d72'],
     'ipv6_private_local': [],
     'ipv6_public': [
         '2401:fa00:480:7a00:8d4f:85ff:cc5c:787e',
@@ -467,9 +467,8 @@ class IpAddressUtilTest(unittest.TestCase):
             job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
                        encoding='utf-8')
         ]
-        self.assertTrue(
-            utils.get_interface_ip_addresses(job, 'eno1') ==
-            CORRECT_FULL_IP_LIST)
+        self.assertEqual(utils.get_interface_ip_addresses(job, 'eno1'),
+                         CORRECT_FULL_IP_LIST)
 
     @mock.patch('acts.libs.proc.job.run')
     def test_local_get_interface_ip_addresses_empty(self, job_mock):
@@ -479,9 +478,8 @@ class IpAddressUtilTest(unittest.TestCase):
             job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
                        encoding='utf-8')
         ]
-        self.assertTrue(
-            utils.get_interface_ip_addresses(job, 'wlan1') ==
-            CORRECT_EMPTY_IP_LIST)
+        self.assertEqual(utils.get_interface_ip_addresses(job, 'wlan1'),
+                         CORRECT_EMPTY_IP_LIST)
 
     @mock.patch('acts.controllers.utils_lib.ssh.connection.SshConnection.run')
     def test_ssh_get_interface_ip_addresses_full(self, ssh_mock):
@@ -491,9 +489,9 @@ class IpAddressUtilTest(unittest.TestCase):
             job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
                        encoding='utf-8')
         ]
-        self.assertTrue(
+        self.assertEqual(
             utils.get_interface_ip_addresses(SshConnection('mock_settings'),
-                                             'eno1') == CORRECT_FULL_IP_LIST)
+                                             'eno1'), CORRECT_FULL_IP_LIST)
 
     @mock.patch('acts.controllers.utils_lib.ssh.connection.SshConnection.run')
     def test_ssh_get_interface_ip_addresses_empty(self, ssh_mock):
@@ -503,16 +501,18 @@ class IpAddressUtilTest(unittest.TestCase):
             job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
                        encoding='utf-8')
         ]
-        self.assertTrue(
+        self.assertEqual(
             utils.get_interface_ip_addresses(SshConnection('mock_settings'),
-                                             'wlan1') == CORRECT_EMPTY_IP_LIST)
+                                             'wlan1'), CORRECT_EMPTY_IP_LIST)
 
     @mock.patch('acts.controllers.adb.AdbProxy.shell')
     def test_android_get_interface_ip_addresses_full(self, adb_mock):
-        adb_mock.side_effect = [MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT]
-        self.assertTrue(
-            utils.get_interface_ip_addresses(AndroidDevice(), 'eno1') ==
-            CORRECT_FULL_IP_LIST)
+        adb_mock().shell.side_effect = [
+            MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
+        ]
+        self.assertEqual(
+            utils.get_interface_ip_addresses(AndroidDevice(), 'eno1'),
+           CORRECT_FULL_IP_LIST)
 
     @mock.patch('acts.controllers.adb.AdbProxy.shell')
     def test_android_get_interface_ip_addresses_empty(self, adb_mock):
@@ -530,9 +530,9 @@ class IpAddressUtilTest(unittest.TestCase):
         init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
-        self.assertTrue(
+        self.assertEqual(
             utils.get_interface_ip_addresses(
-                FuchsiaDevice({'ip': '192.168.1.1'}), 'eno1') ==
+                FuchsiaDevice({'ip': '192.168.1.1'}), 'eno1'),
             CORRECT_FULL_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)
@@ -544,9 +544,9 @@ class IpAddressUtilTest(unittest.TestCase):
         init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
-        self.assertTrue(
+        self.assertEqual(
             utils.get_interface_ip_addresses(
-                FuchsiaDevice({'ip': '192.168.1.1'}), 'wlan1') ==
+                FuchsiaDevice({'ip': '192.168.1.1'}), 'wlan1'),
             CORRECT_EMPTY_IP_LIST)
 
 

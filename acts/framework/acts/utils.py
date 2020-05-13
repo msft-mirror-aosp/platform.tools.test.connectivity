@@ -1403,26 +1403,73 @@ def get_interface_ip_addresses(comm_channel, interface):
     ipv6_link_local_addresses = []
     ipv6_private_local_addresses = []
     ipv6_public_addresses = []
-    all_interfaces_and_addresses = comm_channel.run(
-        'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
-        'print $2" "$4}\'').stdout
-    ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    is_local = comm_channel == job
+    if type(comm_channel) is AndroidDevice:
+        all_interfaces_and_addresses = comm_channel.adb.shell(
+            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+            'print $2" "$4}\'')
+        ifconfig_output = comm_channel.adb.shell('ifconfig %s' % interface)
+    elif (type(comm_channel) is SshConnection or is_local):
+        all_interfaces_and_addresses = comm_channel.run(
+            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+            'print $2" "$4}\'').stdout
+        ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    elif type(comm_channel) is FuchsiaDevice:
+        all_interfaces_and_addresses = []
+        comm_channel.netstack_lib.init()
+        interfaces = comm_channel.netstack_lib.netstackListInterfaces()
+        if interfaces.get('error') is not None:
+            raise ActsUtilsError('Failed with {}'.format(
+                interfaces.get('error')))
+        for item in interfaces.get('result'):
+            for ipv4_address in item['ipv4_addresses']:
+                ipv4_address = '.'.join(map(str, ipv4_address))
+                all_interfaces_and_addresses.append(
+                    '%s %s' % (item['name'], ipv4_address))
+            for ipv6_address in item['ipv6_addresses']:
+                converted_ipv6_address = []
+                for octet in ipv6_address:
+                    converted_ipv6_address.append(format(octet, 'x').zfill(2))
+                ipv6_address = ''.join(converted_ipv6_address)
+                ipv6_address = (':'.join(
+                    ipv6_address[i:i + 4]
+                    for i in range(0, len(ipv6_address), 4)))
+                all_interfaces_and_addresses.append(
+                    '%s %s' %
+                    (item['name'], str(ipaddress.ip_address(ipv6_address))))
+        all_interfaces_and_addresses = '\n'.join(all_interfaces_and_addresses)
+        ifconfig_output = all_interfaces_and_addresses
+    else:
+        raise ValueError('Unsupported method to send command to device.')
+
     for interface_line in all_interfaces_and_addresses.split('\n'):
         if interface != interface_line.split()[0]:
             continue
         on_device_ip = ipaddress.ip_address(interface_line.split()[1])
-        if on_device_ip.version() == 4:
-            if on_device_ip.is_private():
-                ipv4_private_local_addresses.append(str(on_device_ip))
-            elif on_device_ip.is_global():
-                ipv4_public_addresses.append(str(on_device_ip))
-        elif on_device_ip.version() == 6:
-            if on_device_ip.is_link_local():
-                ipv6_link_local_addresses.append(str(on_device_ip))
-            elif on_device_ip.is_private():
-                ipv6_private_local_addresses.append(str(on_device_ip))
-            elif on_device_ip.is_global():
-                ipv6_public_addresses.append(str(on_device_ip))
+        if on_device_ip.version == 4:
+            if on_device_ip.is_private:
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_private_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_global or (
+                    # Carrier private doesn't have a property, so we check if
+                    # all other values are left unset.
+                    not on_device_ip.is_reserved
+                    and not on_device_ip.is_unspecified
+                    and not on_device_ip.is_link_local
+                    and not on_device_ip.is_loopback
+                    and not on_device_ip.is_multicast):
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_public_addresses.append(str(on_device_ip))
+        elif on_device_ip.version == 6:
+            if on_device_ip.is_link_local:
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_link_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_private:
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_private_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_global:
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_public_addresses.append(str(on_device_ip))
     return {
         'ipv4_private': ipv4_private_local_addresses,
         'ipv4_public': ipv4_public_addresses,
