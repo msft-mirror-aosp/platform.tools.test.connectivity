@@ -16,7 +16,7 @@ message BoundedMetric {
   optional DoubleValue lower_limit = 5;
   optional DoubleValue upper_limit = 6;
   optional string unit = 7;
-  optional Extras extras = 8;
+  repeated KeyValue extra = 8;
 }
 
 // Wrapper needed to support proto3-like style nullable values.
@@ -24,6 +24,7 @@ message DoubleValue {
   optional double value = 1;
 }
 
-message Extras {
-  map<string, string> key_value = 1;
+message KeyValue {
+  optional string key = 1;
+  optional string value = 2;
 }
