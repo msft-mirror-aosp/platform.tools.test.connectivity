@@ -48,6 +48,7 @@ WIFI_AP_FAILED_STATE = 14
 # WifiManagerSoftApCallback-[callbackId]-OnNumClientsChanged
 SOFTAP_NUMBER_CLIENTS_CHANGED = "-OnNumClientsChanged"
 SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY = "NumClients"
+SOFTAP_CLIENTS_MACS_CALLBACK_KEY = "MacAddresses"
 # Callback Event for softap info change
 SOFTAP_INFO_CHANGED = "-OnInfoChanged"
 SOFTAP_INFO_FREQUENCY_CALLBACK_KEY = "frequency"
