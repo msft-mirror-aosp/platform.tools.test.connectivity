@@ -503,7 +503,7 @@ class WifiSoftApTest(WifiBaseTest):
         6. Unregister second softap callback
         7. Force second client connect to hotspot (if supported)
         8. Turn off hotspot
-        9. Verify second softap callback doesn't respond after unresister
+        9. Verify second softap callback doesn't respond after unregister
         """
         config = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_AUTO)
         # Register callback after softap enabled to avoid unnecessary callback
