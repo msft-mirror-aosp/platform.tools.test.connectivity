@@ -16,6 +16,7 @@
 
 import logging
 import os
+import re
 import shutil
 import time
 
@@ -2218,11 +2219,28 @@ def wait_for_expected_number_of_softap_clients(ad, callbackId,
     """
     eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
             callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
-    asserts.assert_equal(ad.ed.pop_event(eventStr,
-            SHORT_TIMEOUT)['data'][wifi_constants.
-            SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY],
-            expected_num_of_softap_clients,
-            "Number of softap clients doesn't match with expected number")
+    clientData = ad.ed.pop_event(eventStr, SHORT_TIMEOUT)['data']
+    clientCount = clientData[wifi_constants.SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY]
+    clientMacAddresses = clientData[wifi_constants.SOFTAP_CLIENTS_MACS_CALLBACK_KEY]
+    asserts.assert_equal(clientCount, expected_num_of_softap_clients,
+            "The number of softap clients doesn't match the expected number")
+    asserts.assert_equal(len(clientMacAddresses), expected_num_of_softap_clients,
+                         "The number of mac addresses doesn't match the expected number")
+    for macAddress in clientMacAddresses:
+        asserts.assert_true(checkMacAddress(macAddress), "An invalid mac address was returned")
+
+def checkMacAddress(input):
+    """Validate whether a string is a valid mac address or not.
+
+    Args:
+        input: The string to validate.
+
+    Returns: True/False, returns true for a valid mac address and false otherwise.
+    """
+    macValidationRegex = "[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$"
+    if re.match(macValidationRegex, input.lower()):
+        return True
+    return False
 
 def wait_for_expected_softap_state(ad, callbackId, expected_softap_state):
     """Wait for the expected softap state change.
