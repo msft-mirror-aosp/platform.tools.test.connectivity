@@ -64,13 +64,13 @@ class ApolloBaseTest(instrumentation_power_test.InstrumentationPowerTest):
         self.adb_run('logcat -c')  # Clear previous logcat information - reflashing is not performed for Apollo
 
         # Uninstall old APK's and clear flags
-        gmscore_apk_file = self.get_file_from_config('gmscore_apk')
+        gmscore_apk_file = self.get_file_from_config('gmscore_file_' + self.ad_dut.serial)
         gmscore_apk = AppInstaller(self.ad_dut, gmscore_apk_file)
         gmscore_apk.uninstall()
-        nearby_module_apk_file = self.get_file_from_config('nearby_module_apk')
+        nearby_module_apk_file = self.get_file_from_config('gmscore_nearby_en_file_' + self.ad_dut.serial)
         nearby_module_apk = AppInstaller(self.ad_dut, nearby_module_apk_file)
         nearby_module_apk.uninstall()
-        apollo_test_apk_file = self.get_file_from_config('apollo_test_apk')
+        apollo_test_apk_file = self.get_file_from_config('exposure_notification_app')
         apollo_test_apk = AppInstaller(self.ad_dut, apollo_test_apk_file)
         apollo_test_apk.uninstall()
 
