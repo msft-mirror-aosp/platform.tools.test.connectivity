@@ -32,6 +32,6 @@ class ApolloIdleTest(ApolloBaseTest):
         self._start_scanning()
 
         self.run_and_measure(
-            'com.google.android.device.power.tests.RockBottom',
-            'rockBottom')
+            'com.google.android.platform.powertests.IdleTestCase',
+            'testIdleScreenOff')
         self.validate_power_results()
