@@ -1,19 +1,8 @@
-from acts.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.power.apollo.ApolloBaseTest import ApolloBaseTest
 
 
-class ApolloIdleTest(instrumentation_power_test.InstrumentationPowerTest):
-    """Test class for running instrumentation test idle system cases. Tests in
-    this class should be executed assuming there is no SL4A installed."""
-
-    def _prepare_device(self):
-        super()._prepare_device()
-        self.base_device_configuration()
-
-    def setup_test(self):
-        super().setup_test()
-        # clear command options that won't work on OEM devices.
-        self._instr_cmd_builder.set_output_as_text()
-        self._instr_cmd_builder.remove_flag('--no-isolated-storage')
+class ApolloIdleTest(ApolloBaseTest):
+    """Test class for running instrumentation test Apollo system idle cases"""
 
     def test_apollo_rock_bottom(self):
         """Measures power when the device is in a rock bottom state. This
@@ -26,6 +15,22 @@ class ApolloIdleTest(instrumentation_power_test.InstrumentationPowerTest):
     def test_apollo_idle_system_screen_off(self):
         """Measures power when the device is in a rock bottom state. This
         test is made to use the older Power.apk."""
+        self.run_and_measure(
+            'com.google.android.platform.powertests.IdleTestCase',
+            'testIdleScreenOff')
+        self.validate_power_results()
+
+    def test_apollo_scanning(self):
+        """Measures power when the device is scanning with other devices around"""
+
+        # If specific scanning frequencies and times were passed in, used those
+        # Otherwise, just use the default API behavior
+        self._scan_interval_seconds = self._instrumentation_config.get('scan_interval_seconds')
+        self._scan_time_seconds = self._instrumentation_config.get('scan_time_seconds')
+
+        self._sideload_apollo()
+        self._start_scanning()
+
         self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff')
