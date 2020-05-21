@@ -597,15 +597,22 @@ class DataPathTest(AwareBaseTest):
 
         # Initiator & Responder:
         # - expect unavailable on the Initiator party if the
-        #   Initiator or Responder has a bad ID
-        # - but a Responder will keep waiting ...
+        #   Initiator and Responder with mac or encryption mismatch
+        # - For responder:
+        #   - If mac mismatch, responder will keep waiting ...
+        #   - If encryption mismatch, responder expect unavailable
         autils.wait_for_event_with_keys(
             init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_UNAVAILABLE))
         time.sleep(autils.EVENT_NDP_TIMEOUT)
-        autils.fail_on_event_with_keys(
-            resp_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
-            (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+        if init_mismatch_mac or resp_mismatch_mac:
+            autils.fail_on_event_with_keys(
+                resp_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+        else:
+            autils.wait_for_event_with_keys(
+                resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_UNAVAILABLE))
 
         # clean-up
         resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
