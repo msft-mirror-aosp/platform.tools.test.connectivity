@@ -347,7 +347,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         self.check_mac_persistence(self.wpapsk_2g, TOGGLE)
 
-    @test_tracker_info(uuid="a514f-8562-44e8-bfe0-4ecab9af165b")
+    @test_tracker_info(uuid="b3aa514f-8562-44e8-bfe0-4ecab9af165b")
     def test_persistent_mac_after_device_reboot(self):
         """Check if MAC is persistent after a device reboot.
 
