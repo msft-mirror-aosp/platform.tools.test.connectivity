@@ -78,7 +78,7 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         wutils.verify_mac_not_found_in_pcap(self.dut2, self.dut2_mac, packets)
 
     """Test Cases"""
-    @test_tracker_info(uuid=" d04e62dc-e1ef-4cea-86e6-39f0dd08fb6b")
+    @test_tracker_info(uuid="d04e62dc-e1ef-4cea-86e6-39f0dd08fb6b")
     def test_p2p_discovery_sniffer(self):
         """Verify the p2p discovery functionality
         Steps:

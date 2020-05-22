@@ -19,6 +19,7 @@ import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -407,6 +408,7 @@ class MessageTest(AwareBaseTest):
     ############################################################################
 
     @test_tracker_info(uuid="a8cd0512-b279-425f-93cf-949ddba22c7a")
+    @WifiBaseTest.wifi_test_wrap
     def test_message_no_queue_min(self):
         """Functional / Message / No queue
     - Minimal payload size (None or "")
@@ -421,6 +423,7 @@ class MessageTest(AwareBaseTest):
         self.run_message_no_queue(self.PAYLOAD_SIZE_TYPICAL)
 
     @test_tracker_info(uuid="c984860c-b62d-4d9b-8bce-4d894ea3bfbe")
+    @WifiBaseTest.wifi_test_wrap
     def test_message_no_queue_max(self):
         """Functional / Message / No queue
     - Max payload size (based on device capabilities)
