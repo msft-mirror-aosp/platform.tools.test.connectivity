@@ -904,12 +904,14 @@ class WifiDppTest(WifiBaseTest):
         use_mac=True,
         cause_timeout=True)
 
+  @test_tracker_info(uuid="23601af8-118e-4ba8-89e3-5da2e37bbd7d")
   def test_dpp_as_initiator_configurator_fail_r2_no_ap(self):
     asserts.skip_if(self.dpp_r1_test_only == "True",
                     "DPP R1 test, skipping this test for DPP R2 only")
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, use_mac=True, r2_no_ap=True)
 
+  @test_tracker_info(uuid="7f9756d3-f28f-498e-8dcf-ac3816303998")
   def test_dpp_as_initiator_configurator_fail_r2_auth_error(self):
     asserts.skip_if(self.dpp_r1_test_only == "True",
                     "DPP R1 test, skipping this test for DPP R2 only")
