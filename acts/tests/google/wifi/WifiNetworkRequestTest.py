@@ -424,7 +424,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         finally:
             self.dut.droid.wifiStopTrackingStateChange()
 
-    @test_tracker_info(uuid="760c3768-697d-442b-8d61-cfe02f10ceff")
+    @test_tracker_info(uuid="caa96f57-840e-4997-9280-655edd3b76ee")
     def test_connect_failure_user_rejected(self):
         """
         Initiates a connection to network via network request with specific SSID
