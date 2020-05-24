@@ -343,6 +343,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         wutils.wait_for_disconnect(self.dut)
 
 
+    @test_tracker_info(uuid="37ae0223-0cb7-43f3-8ba8-474fad6e4b71")
     def test_install_att_passpoint_profile(self):
         """Add an AT&T Passpoint profile.
 
