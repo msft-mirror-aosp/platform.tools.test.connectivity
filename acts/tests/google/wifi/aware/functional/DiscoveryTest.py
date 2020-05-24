@@ -1242,6 +1242,7 @@ class DiscoveryTest(AwareBaseTest):
 
         ##########################################################
 
+    @test_tracker_info(uuid="78d89d63-1cbc-47f6-a8fc-74057fea655e")
     def test_multiple_concurrent_services_diff_ssi_unsolicited_passive(self):
         """Multi service test on same service name but different Service Specific Info
     - Unsolicited publish
@@ -1251,6 +1252,7 @@ class DiscoveryTest(AwareBaseTest):
             type_x=[aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE],
             type_y=[aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE])
 
+    @test_tracker_info(uuid="5d349491-48e4-4ca1-a8af-7afb44e7bcbc")
     def test_multiple_concurrent_services_diff_ssi_solicited_active(self):
         """Multi service test on same service name but different Service Specific Info
     - Solicited publish
