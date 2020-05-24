@@ -856,7 +856,7 @@ class DataPathTest(AwareBaseTest):
             pub_on_both=True,
             pub_on_both_same=True)
 
-    @test_tracker_info(uuid="57fc9d53-32ae-470f-a8b1-2fe37893687d")
+    @test_tracker_info(uuid="228ea657-82e6-44bc-8369-a2c719a5e252")
     @WifiBaseTest.wifi_test_wrap
     def test_ib_extra_pub_same_unsolicited_passive_open_any(self):
         """Data-path: in-band, unsolicited/passive, open encryption, any peer.
@@ -1319,6 +1319,7 @@ class DataPathTest(AwareBaseTest):
         for init_req_key in init_req_keys:
             init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
+    @test_tracker_info(uuid="34cf12e8-5df6-49bd-b384-e9935d89a5b7")
     @WifiBaseTest.wifi_test_wrap
     def test_identical_network_from_both_sides(self):
         """Validate that requesting two identical NDPs (Open) each being initiated
@@ -2155,7 +2156,7 @@ class DataPathTest(AwareBaseTest):
         self.run_mix_ib_oob(
             same_request=True, ib_first=True, inits_on_same_dut=False)
 
-    @test_tracker_info(uuid="72b16cbf-53ad-4f98-8dcf-a8cc5fa812e3")
+    @test_tracker_info(uuid="48b9005b-7851-4222-b41c-1fcbefbc704d")
     @WifiBaseTest.wifi_test_wrap
     def test_identical_ndps_mix_ib_oob_oob_first_diff_polarity(self):
         """Validate that a single NDP is created for multiple identical requests
@@ -2221,6 +2222,7 @@ class DataPathTest(AwareBaseTest):
 
     ########################################################################
 
+    @test_tracker_info(uuid="5ec10bf9-bfda-4093-8344-7ccc7764737e")
     def test_ndp_loop(self):
         """Validate that can create a loop (chain) of N NDPs between N devices,
     where N >= 3, e.g.
