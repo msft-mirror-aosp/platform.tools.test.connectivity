@@ -17,6 +17,8 @@ class ApolloBaseTest(instrumentation_power_test.InstrumentationPowerTest):
         self._apk_install_wait_time_seconds = 5
         self._scan_interval_seconds = None
         self._scan_time_seconds = None
+        # TODO: remove once b/156301031 is resolved
+        self._disable_consent_dialog = True
 
     def _prepare_device(self):
         super()._prepare_device()
@@ -34,7 +36,8 @@ class ApolloBaseTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def _set_installation_overrides(self):
         self._set_nearby_phenotype_flag('exposure_notification_enable_client_apps_whitelist', 'boolean', 'false')
-        self._set_nearby_phenotype_flag('exposure_notification_use_consent_dialog_for_all_clients', 'boolean', 'false')
+        if self._disable_consent_dialog:
+            self._set_nearby_phenotype_flag('exposure_notification_use_consent_dialog_for_all_clients', 'boolean', 'false')
 
         # Scanning interval and scanning time need to be set here, before scanning starts
         if self._scan_interval_seconds:
