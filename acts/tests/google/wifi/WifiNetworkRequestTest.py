@@ -389,12 +389,17 @@ class WifiNetworkRequestTest(WifiBaseTest):
         that does not match any networks.
 
         Steps:
-        1. Send a network specifier with the non-matching SSID pattern.
-        2. Ensure that the platform does not retrun any matching networks.
-        3. Trigger a connect to one of the networks (as a saved network).
+        1. Trigger a connect to one of the networks (as a saved network).
+        2. Send a network specifier with the non-matching SSID pattern.
+        3. Ensure that the platform does not return any matching networks.
         4. Wait for the request to timeout.
         """
         network = self.wpa_psk_5g
+
+        # Trigger a connection to a network as a saved network before the
+        # request and ensure that this does not change the behavior.
+        wutils.connect_to_wifi_network(self.dut, network, check_connectivity=False)
+
         network_specifier = self.wpa_psk_5g.copy();
         # Remove ssid & replace with invalid ssid pattern.
         network_ssid = network_specifier.pop(WifiEnums.SSID_KEY)
@@ -410,9 +415,6 @@ class WifiNetworkRequestTest(WifiBaseTest):
                     network_specifier)
         time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
         self.dut.droid.wifiRegisterNetworkRequestMatchCallback()
-        # Trigger a connection to a network as a saved network in the
-        # meantime and ensure that this does not change the behavior.
-        wutils.connect_to_wifi_network(self.dut, network, check_connectivity=False)
         # Wait for the request to timeout.
         timeout_secs = NETWORK_REQUEST_TIMEOUT_MS * 2 / 1000
         try:
