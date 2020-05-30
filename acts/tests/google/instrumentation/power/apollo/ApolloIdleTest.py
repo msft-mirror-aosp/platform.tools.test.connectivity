@@ -20,8 +20,21 @@ class ApolloIdleTest(ApolloBaseTest):
             'testIdleScreenOff')
         self.validate_power_results()
 
+    def test_apollo_scanning_off(self):
+        """Measures power when the device is not scanning, but the apollo feature is installed"""
+
+        # TODO: change the below command to using _stop_scanning once b/156301031 is resolved
+        # Not disabling the consent dialog is a workaround.
+        self._disable_consent_dialog = False
+        self._sideload_apollo()
+
+        self.run_and_measure(
+            'com.google.android.platform.powertests.IdleTestCase',
+            'testIdleScreenOff')
+        self.validate_power_results()
+
     def test_apollo_scanning(self):
-        """Measures power when the device is scanning with other devices around"""
+        """Measures power when the device is scanning"""
 
         # If specific scanning frequencies and times were passed in, used those
         # Otherwise, just use the default API behavior
