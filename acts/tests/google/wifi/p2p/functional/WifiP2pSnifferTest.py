@@ -57,6 +57,8 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
             self.packet_capture, '2g', self.test_name)
 
     def teardown_test(self):
+        if self.pcap_procs:
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         super(WifiP2pSnifferTest, self).teardown_test()
 
     def configure_packet_capture(self):
@@ -73,6 +75,7 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         # Verify factory MAC is not leaked in 2G pcaps
         pcap_fname = '%s_%s.pcap' % (self.pcap_procs[BAND_2G][1],
                                      BAND_2G.upper())
+        self.pcap_procs = None
         packets = rdpcap(pcap_fname)
         wutils.verify_mac_not_found_in_pcap(self.dut1, self.dut1_mac, packets)
         wutils.verify_mac_not_found_in_pcap(self.dut2, self.dut2_mac, packets)
