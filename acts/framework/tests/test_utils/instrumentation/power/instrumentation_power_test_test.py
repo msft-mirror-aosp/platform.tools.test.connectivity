@@ -18,10 +18,8 @@ import unittest
 
 import mock
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.power.instrumentation_power_test \
-    import ACCEPTANCE_THRESHOLD
-from acts.test_utils.instrumentation.power.instrumentation_power_test \
-    import InstrumentationPowerTest
+from acts.test_utils.instrumentation.power.instrumentation_power_test import ACCEPTANCE_THRESHOLD
+from acts.test_utils.instrumentation.power.instrumentation_power_test import InstrumentationPowerTest
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 from acts import signals
@@ -48,23 +46,28 @@ class MockInstrumentationPowerTest(InstrumentationPowerTest):
         self._power_metrics.test_metrics['instrTest2'].generate_test_metrics(
             list(zip(range(10), self.SAMPLE_DATA))
         )
-        self._instrumentation_config = ConfigWrapper()
-        self._class_config = ConfigWrapper(
-            {
+        self._instrumentation_config = ConfigWrapper({
+            self.__class__.__name__: {
                 self.current_test_name: {
                     ACCEPTANCE_THRESHOLD: {}
                 }
             }
-        )
+        })
 
     def set_criteria(self, criteria):
         """Set the acceptance criteria for metrics validation."""
-        test_config = self._class_config[self.current_test_name]
-        test_config[ACCEPTANCE_THRESHOLD] = ConfigWrapper(criteria)
+        self._instrumentation_config = ConfigWrapper({
+            self.__class__.__name__: {
+                self.current_test_name: {
+                    ACCEPTANCE_THRESHOLD: criteria
+                }
+            }
+        })
 
 
 class InstrumentationPowerTestTest(unittest.TestCase):
     """Unit tests for InstrumentationPowerTest."""
+
     def setUp(self):
         self.instrumentation_power_test = MockInstrumentationPowerTest()
 
