@@ -223,22 +223,21 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 monsoon_config.get_numeric('max_current'))
 
         self.monsoon.usb('on')
-        self.monsoon.set_on_disconnect(self._on_disconnect)
-        self.monsoon.set_on_reconnect(self._on_reconnect)
+        self.monsoon.set_on_reconnect(self._reinstall_sl4a)
 
-    def _on_disconnect(self):
-        """Callback invoked by device disconnection from the Monsoon."""
-        self.ad_dut.log.info('Disconnecting device.')
+    def _uninstall_sl4a(self):
+        """Stops and uninstalls SL4A if it is available on the DUT"""
+        self.ad_dut.log.info('Stopping and uninstalling SL4A if available.')
         self.ad_dut.stop_services()
         # Uninstall SL4A
         self._sl4a_apk = AppInstaller.pull_from_device(
             self.ad_dut, SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
         if self._sl4a_apk:
-          self._sl4a_apk.uninstall()
+            self._sl4a_apk.uninstall()
         time.sleep(1)
 
-    def _on_reconnect(self):
-        """Callback invoked by device reconnection to the Monsoon"""
+    def _reinstall_sl4a(self):
+        """Re-installs and starts SL4A (if it is available)"""
         self.ad_dut.adb.wait_for_device(timeout=DEFAULT_WAIT_FOR_DEVICE_TIMEOUT)
         # Reinstall SL4A
         if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
@@ -356,13 +355,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             hz=monsoon_config.get_numeric('frequency'),
             measure_after_seconds=monsoon_config.get_numeric('delay')
         )
-
         # Start measurement after receiving disconnect signal
         try:
             self._wait_for_disconnect_signal(disconnect_usb_timeout)
         except InstrumentationTestError as e:
             instrumentation_result = self.parse_instrumentation_result()
             res = self.log_instrumentation_result(instrumentation_result)
+            self._reinstall_sl4a()
             raise InstrumentationTestError(
                 'Failed to receive USB disconnect signal.',
                 instrumentation_result=res) from e
@@ -435,6 +434,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 self._instr_cmd_builder.add_key_value_param(name, value)
 
         instr_cmd = self._instr_cmd_builder.build()
+        self._uninstall_sl4a()
         self.log.info('Running instrumentation call: %s' % instr_cmd)
         self.adb_run_async(instr_cmd)
         return self.measure_power()
