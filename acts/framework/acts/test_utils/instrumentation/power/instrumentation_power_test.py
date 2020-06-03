@@ -80,11 +80,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def setup_class(self):
         super().setup_class()
         self.monsoon = self.monsoons[0]
-        self._setup_monsoon()
 
     def setup_test(self):
         """Test setup"""
         super().setup_test()
+        self._setup_monsoon()
         self._prepare_device()
         self._instr_cmd_builder = self.power_default_instr_command_builder()
         return True
@@ -226,15 +226,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.monsoon.set_on_disconnect(self._on_disconnect)
         self.monsoon.set_on_reconnect(self._on_reconnect)
 
-        self._disconnect_usb_timeout = monsoon_config.get_numeric(
-            'usb_disconnection_timeout', 240)
-
-        self._measurement_args = dict(
-            duration=monsoon_config.get_numeric('duration'),
-            hz=monsoon_config.get_numeric('frequency'),
-            measure_after_seconds=monsoon_config.get_numeric('delay')
-        )
-
     def _on_disconnect(self):
         """Callback invoked by device disconnection from the Monsoon."""
         self.ad_dut.log.info('Disconnecting device.')
@@ -336,7 +327,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         builder.set_nohup()
         return builder
 
-    def _wait_for_disconnect_signal(self):
+    def _wait_for_disconnect_signal(self, disconnect_usb_timeout):
         """Poll the device for a disconnect USB signal file. This will indicate
         to the Monsoon that the device is ready to be disconnected.
         """
@@ -344,7 +335,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         start_time = time.time()
         disconnect_usb_file = os.path.join(self.ad_dut.external_storage_path,
                             DISCONNECT_USB_FILE)
-        while time.time() < start_time + self._disconnect_usb_timeout:
+        while time.time() < start_time + disconnect_usb_timeout:
             if self.ad_dut.adb.shell('ls %s' % disconnect_usb_file):
                 self.log.info('Disconnection signal received. File: '
                               '"%s"' % disconnect_usb_file)
@@ -357,12 +348,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Measures power consumption with the Monsoon. See monsoon_lib API for
         details.
         """
-        if not hasattr(self, '_measurement_args'):
-            raise InstrumentationTestError('Missing Monsoon measurement args.')
+        monsoon_config = self._get_merged_config('Monsoon')
+        disconnect_usb_timeout = monsoon_config.get_numeric(
+            'usb_disconnection_timeout', 240)
+        measurement_args = dict(
+            duration=monsoon_config.get_numeric('duration'),
+            hz=monsoon_config.get_numeric('frequency'),
+            measure_after_seconds=monsoon_config.get_numeric('delay')
+        )
 
         # Start measurement after receiving disconnect signal
         try:
-            self._wait_for_disconnect_signal()
+            self._wait_for_disconnect_signal(disconnect_usb_timeout)
         except InstrumentationTestError as e:
             instrumentation_result = self.parse_instrumentation_result()
             res = self.log_instrumentation_result(instrumentation_result)
@@ -371,7 +368,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                 instrumentation_result=res) from e
 
         self.log.info('Starting measurement with options: %s' % str(
-            self._measurement_args))
+            measurement_args))
 
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
@@ -383,7 +380,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         measure_start_time = float(
             self.adb_run(device_time_cmd)[device_time_cmd])
         result = self.monsoon.measure_power(
-            **self._measurement_args, output_path=power_data_path)
+            **measurement_args, output_path=power_data_path)
         self.monsoon.usb('on')
         self.log.info('Monsoon measurement complete.')
 
