@@ -19,7 +19,7 @@ import unittest
 
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.config_wrapper import InvalidParamError
-
+from acts.test_utils.instrumentation.config_wrapper import merge
 
 REAL_PATHS = ['realpath/1', 'realpath/2']
 MOCK_CONFIG = {
@@ -39,6 +39,7 @@ MOCK_CONFIG = {
 
 class ConfigWrapperTest(unittest.TestCase):
     """Unit tests for the Config Wrapper."""
+
     def setUp(self):
         self.mock_config = ConfigWrapper(MOCK_CONFIG)
 
@@ -104,6 +105,33 @@ class ConfigWrapperTest(unittest.TestCase):
             isinstance(self.mock_config.get('inner_config'), ConfigWrapper))
         self.assertEqual(
             self.mock_config.get('inner_config').get_int('inner_val'), 16)
+
+    def test_merge_appending_values(self):
+        """Test that the merge function appends non-conflicting values.
+        """
+        a = ConfigWrapper({'a': 1})
+        b = ConfigWrapper({'b': 2})
+        result = merge(a, b)
+        self.assertEqual(result, ConfigWrapper({'a': 1, 'b': 2}))
+
+    def test_update_conflicting_values(self):
+        """Test that the merge function appends non-conflicting values.
+        """
+        a = ConfigWrapper({'a': 1})
+        b = ConfigWrapper({'a': [1, 2, 3]})
+        result = merge(a, b)
+        self.assertEqual(result, ConfigWrapper({'a': [1, 2, 3]}))
+
+    def test_merge_merges_sub_dictionaries_recursively(self):
+        """Test that the merge function merges internal dictionaries
+        recursively.
+        """
+        a = ConfigWrapper({'dic': {'a': 0, 'c': 3, 'sub': {'x': 1}}})
+        b = ConfigWrapper({'dic': {'a': 2, 'b': 2, 'sub': {'y': 2}}})
+        result = merge(a, b)
+        self.assertEqual(result,
+                         ConfigWrapper({'dic': {'a': 2, 'b': 2, 'c': 3,
+                                                'sub': {'x': 1, 'y': 2}}}))
 
 
 if __name__ == '__main__':
