@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 from acts.test_utils.instrumentation.power import instrumentation_power_test
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation import config_wrapper
 
 
 class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
@@ -31,13 +31,13 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
         only 20 seconds worth of measurement and 10 of on device test."""
         # TODO: max_current and voltage should also be hardcoded somehow.
         self._instr_cmd_builder.set_output_as_text()
-        overrides = {
+        overrides = self.context_specific_config({
             'Monsoon': {'duration': 20,
                         'frequency': 100,
-                        'delay': 0}
-        }
-        self._instrumentation_config = ConfigWrapper(
-            {**self._instrumentation_config, **overrides})
+                        'delay': 0 }
+        })
+        self._instrumentation_config = config_wrapper.merge(
+            self._instrumentation_config, overrides)
 
         self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
