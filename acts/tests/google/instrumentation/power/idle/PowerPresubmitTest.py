@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 
 
 class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
@@ -25,15 +26,19 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
         super()._prepare_device()
         self.base_device_configuration()
 
-
     def test_quick_idle(self):
         """Measures power when the device is in a rock bottom state, hard-coding
         only 20 seconds worth of measurement and 10 of on device test."""
         # TODO: max_current and voltage should also be hardcoded somehow.
         self._instr_cmd_builder.set_output_as_text()
-        self._measurement_args['duration'] = 20
-        self._measurement_args['hz'] = 100
-        self._measurement_args['measure_after_seconds'] = 0
+        overrides = {
+            'Monsoon': {'duration': 20,
+                        'frequency': 100,
+                        'delay': 0}
+        }
+        self._instrumentation_config = ConfigWrapper(
+            {**self._instrumentation_config, **overrides})
+
         self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff',
