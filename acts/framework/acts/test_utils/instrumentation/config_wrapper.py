@@ -39,7 +39,8 @@ class ConfigWrapper(collections.UserDict):
             config = {}
         super().__init__(
             {
-                key: (ConfigWrapper(val) if _is_dict(val) else val)
+                key: (ConfigWrapper(copy.deepcopy(val))
+                      if _is_dict(val) else val)
                 for key, val in config.items()
             }
         )
