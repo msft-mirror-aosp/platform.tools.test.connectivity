@@ -15,11 +15,15 @@
 #   limitations under the License.
 
 import collections
-import os
+import copy
 
 
 class InvalidParamError(Exception):
     pass
+
+
+def _is_dict(o):
+    return isinstance(o, dict) or isinstance(o, collections.UserDict)
 
 
 class ConfigWrapper(collections.UserDict):
@@ -35,7 +39,7 @@ class ConfigWrapper(collections.UserDict):
             config = {}
         super().__init__(
             {
-                key: (ConfigWrapper(val) if isinstance(val, dict) else val)
+                key: (ConfigWrapper(val) if _is_dict(val) else val)
                 for key, val in config.items()
             }
         )
@@ -62,7 +66,7 @@ class ConfigWrapper(collections.UserDict):
         """Get a sub-config from config. Returns an empty ConfigWrapper if no
         such sub-config is found.
         """
-        return self.get(param_name, default=ConfigWrapper())
+        return ConfigWrapper(copy.deepcopy(self.get(param_name, default={})))
 
     def get_int(self, param_name, default=0):
         """Get integer parameter from config. Will raise an exception
@@ -79,3 +83,36 @@ class ConfigWrapper(collections.UserDict):
         return self.get(param_name, default=default,
                         verify_fn=lambda val: type(val) in (int, float),
                         failure_msg='Param must be of type int or float.')
+
+
+def merge(config_a, config_b):
+    """Merges dic_b into dic_a
+
+    Recursively updates the fields of config_a with the value that comes from
+    config_b.
+
+    For example:
+    config_a = {'dic': {'a': 0, 'c': 3, 'sub': {'x': 1}}}
+    config_b = {'dic': {'a': 2, 'b': 2, 'sub': {'y': 2}}}
+
+    would result in
+    {'dic': {'a': 2, 'b': 2, 'c': 3, 'sub': {'x': 1, 'y': 2}}}
+
+    Args:
+         config_a: A ConfigWrapper
+         config_b: A ConfigWrapper
+    Return:
+        A ConfigWrapper.
+    """
+    res = collections.UserDict(config_a)
+    for (key, value) in config_b.items():
+        if key in res and _is_dict(res[key]):
+            res[key] = merge(res[key], value)
+        else:
+            res[key] = copy.deepcopy(value)
+    return ConfigWrapper(res)
+
+
+
+
+
