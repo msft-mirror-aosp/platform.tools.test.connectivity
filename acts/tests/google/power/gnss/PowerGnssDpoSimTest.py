@@ -20,7 +20,7 @@ from acts.test_utils.gnss import gnss_test_utils as gutil
 import time
 import os
 from acts import utils
-MDLOG_RUNNING_TIME = 300
+MDLOG_RUNNING_TIME = 1200
 DUT_ACTION_WAIT_TIME = 2
 
 class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
@@ -47,13 +47,14 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
                                 self.dpooff_nv_dict, self.modemparfile)
         self.dut.reboot()
         gutil.verify_modemconfig(self.dut, self.dpooff_nv_dict, self.modemparfile)
-        gutil.start_gnss_by_gtw_gpstool(self.dut, state=True, type="gnss", bgdisplay=True)
+        gutil.start_gnss_by_gtw_gpstool(self.dut, state=True, type="gnss",
+                                        bgdisplay=True)
         time.sleep(DUT_ACTION_WAIT_TIME)
-        self.measure_gnsspower_test_func()
         diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
         self.disconnect_usb(self.dut, MDLOG_RUNNING_TIME)
         qxdm_log_path = os.path.join(self.log_path, 'QXDM')
-        diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path)
+        diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path, keep_logs=False)
+        self.measure_gnsspower_test_func()
         gutil.start_gnss_by_gtw_gpstool(self.dut, state=False)
 
     def test_gnss_dpoON_measurement(self):
@@ -64,13 +65,15 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
                                 self.dpoon_nv_dict, self.modemparfile)
         self.dut.reboot()
         gutil.verify_modemconfig(self.dut, self.dpoon_nv_dict, self.modemparfile)
-        gutil.start_gnss_by_gtw_gpstool(self.dut, state=True, type="gnss", bgdisplay=True)
+        gutil.start_gnss_by_gtw_gpstool(self.dut, state=True,type="gnss",
+                                        bgdisplay=True)
         time.sleep(DUT_ACTION_WAIT_TIME)
-        self.measure_gnsspower_test_func()
         diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
         self.disconnect_usb(self.dut, MDLOG_RUNNING_TIME)
         qxdm_log_path = os.path.join(self.log_path, 'QXDM')
-        diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path)
+        diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path, keep_logs=False)
+
+        self.measure_gnsspower_test_func()
         gutil.start_gnss_by_gtw_gpstool(self.dut, state=False)
 
     def test_gnss_rockbottom(self):
