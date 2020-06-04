@@ -32,11 +32,14 @@ from acts import utils
 from acts import signals
 
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
+from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
+
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
+from acts.controllers.fuchsia_lib.gpio_lib import FuchsiaGpioLib
 from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
 from acts.controllers.fuchsia_lib.input_report_lib import FuchsiaInputReportLib
@@ -45,6 +48,7 @@ from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
+from acts.controllers.fuchsia_lib.sysinfo_lib import FuchsiaSysInfoLib
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
@@ -209,6 +213,11 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaAvdtpLib
         self.avdtp_lib = FuchsiaAvdtpLib(self.address, self.test_counter,
                                          self.client_id)
+
+        # Grab commands from FuchsiaLightLib
+        self.light_lib = FuchsiaLightLib(self.address, self.test_counter,
+                                         self.client_id)
+
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
                                      self.client_id)
@@ -221,6 +230,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaGattsLib
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
+
+        # Grab commands from FuchsiaGpioLib
+        self.gpio_lib = FuchsiaGpioLib(self.address, self.test_counter,
+                                       self.client_id)
 
         # Grab commands from FuchsiaHardwarePowerStatecontrolLib
         self.hardware_power_statecontrol_lib = FuchsiaHardwarePowerStatecontrolLib(
@@ -250,6 +263,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaRegulatoryRegionLib
         self.regulatory_region_lib = FuchsiaRegulatoryRegionLib(
             self.address, self.test_counter, self.client_id)
+
+        # Grab commands from FuchsiaSysInfoLib
+        self.sysinfo_lib = FuchsiaSysInfoLib(self.address, self.test_counter,
+                                             self.client_id)
 
         # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
         self.wlan_deprecated_configuration_lib = FuchsiaWlanDeprecatedConfigurationLib(

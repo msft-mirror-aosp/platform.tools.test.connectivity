@@ -57,8 +57,6 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         if os.path.exists(instrumentation_config_path):
             self._instrumentation_config = self._load_instrumentation_config(
                 instrumentation_config_path)
-            self._class_config = self._instrumentation_config.get_config(
-                self.__class__.__name__)
         else:
             raise InstrumentationTestError(
                 'Instrumentation config file %s does not exist'
@@ -162,13 +160,47 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             config_name: Name of the config to fetch
         Returns: The merged config, as a ConfigWrapper
         """
-        merged_config = self._instrumentation_config.get_config(
-            config_name)
-        merged_config.update(self._class_config.get_config(config_name))
+        class_config = self._instrumentation_config.get_config(
+            self.__class__.__name__)
+
+        merged_config = self._instrumentation_config.get_config(config_name)
+        merged_config.update(class_config.get_config(config_name))
         if self.current_test_name:
-            case_config = self._class_config.get_config(self.current_test_name)
+            case_config = class_config.get_config(self.current_test_name)
             merged_config.update(case_config.get_config(config_name))
         return merged_config
+
+    def context_specific_config(self, config):
+        """Constructs a config for the current most specific context.
+
+        If invoked at class level, it will wrap the passed config within the
+        test class context. If invoked at test level, it will wrap the passed
+        config within the test context.
+
+        Examples:
+            If invoked at ActsTestClass level,
+            context_specific_config({'hello':'world'}) returns
+            {
+                'ActsTestClass': {'hello':'world'}
+            }
+
+            If invoked at ActsTestClass.test_case level,
+            context_specific_config({'hello':'world'}) returns
+            {
+                'ActsTestClass': {
+                    'test_case' : {'hello':'world'}
+                 }
+            }
+
+        Args:
+            config: The config to wrap within the context.
+        Returns:
+            A ConfigWrapper.
+        """
+        if not self.current_test_name:
+            return ConfigWrapper({self.__class__.__name__: config})
+        return ConfigWrapper(
+            {self.__class__.__name__: {self.current_test_name: config}})
 
     def get_files_from_config(self, config_key):
         """Get a list of file paths on host from self.user_params with the
