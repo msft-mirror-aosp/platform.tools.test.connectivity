@@ -3623,13 +3623,20 @@ def phone_number_formatter(input_string, formatter=None):
     # make sure input_string is 10 digital
     # Remove white spaces, dashes, dots
     input_string = input_string.replace(" ", "").replace("-", "").replace(
-        ".", "").lstrip("0")
-    if not formatter:
-        return input_string
-    # Remove +81 and add 0 for Japan Carriers only.
-    if (len(input_string) == 13 and input_string[0:3] == "+81"):
+        ".", "")
+
+    # Remove a country code with '+' sign and add 0 for Japan/Korea Carriers.
+    if (len(input_string) == 13
+            and (input_string[0:3] == "+81" or input_string[0:3] == "+82")):
         input_string = "0" + input_string[3:]
         return input_string
+
+    if not formatter:
+        return input_string
+
+    # Remove leading 0 for the phone with area code started with 0
+    input_string = input_string.lstrip("0")
+
     # Remove "1"  or "+1"from front
     if (len(input_string) == PHONE_NUMBER_STRING_FORMAT_11_DIGIT
             and input_string[0] == "1"):
