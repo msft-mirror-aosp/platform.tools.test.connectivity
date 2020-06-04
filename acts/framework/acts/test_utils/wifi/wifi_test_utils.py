@@ -2580,3 +2580,26 @@ def turn_location_off_and_scan_toggle_off(ad):
     ad.droid.wifiScannerToggleAlwaysAvailable(False)
     msg = "Failed to turn off location service's scan."
     asserts.assert_true(not ad.droid.wifiScannerIsAlwaysAvailable(), msg)
+
+
+def set_softap_channel(dut, ap_iface='wlan1', cs_count=10, channel=2462):
+    """ Set SoftAP mode channel
+
+    Args:
+        dut: android device object
+        ap_iface: interface of SoftAP mode.
+        cs_count: how many beacon frames before switch channel, default = 10
+        channel: a wifi channel.
+    """
+    chan_switch_cmd = 'hostapd_cli -i {} chan_switch {} {}'
+    chan_switch_cmd_show = chan_switch_cmd.format(ap_iface,cs_count,channel)
+    dut.log.info('adb shell {}'.format(chan_switch_cmd_show))
+    chan_switch_result = dut.adb.shell(chan_switch_cmd.format(ap_iface,
+                                                              cs_count,
+                                                              channel))
+    if chan_switch_result == 'OK':
+        dut.log.info('switch hotspot channel to {}'.format(channel))
+        return chan_switch_result
+
+    asserts.fail("Failed to switch hotspot channel")
+
