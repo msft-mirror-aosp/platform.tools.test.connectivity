@@ -90,8 +90,8 @@ class BitsServiceTest(unittest.TestCase):
         args, kwargs = mock_process.call_args
         self.assertEqual('timeout', args[0][0])
         self.assertEqual('--signal=SIGTERM', args[0][1])
-        self.assertEqual('42', args[0][2])
-        self.assertEqual('--kill-after=60', args[0][3])
+        self.assertEqual('--kill-after=60', args[0][2])
+        self.assertEqual('42', args[0][3])
         self.assertEqual('binary', args[0][4])
 
     def test_top_level_call_is_binary_if_timeout_is_not_defined(self, _,
