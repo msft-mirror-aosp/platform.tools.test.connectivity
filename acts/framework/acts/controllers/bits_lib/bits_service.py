@@ -112,8 +112,8 @@ class BitsService(object):
         if self._timeout:
             cmd = ['timeout',
                    '--signal=SIGTERM',
-                   str(self._timeout),
-                   '--kill-after=60'] + cmd
+                   '--kill-after=60',
+                   str(self._timeout)] + cmd
 
         self._process = process.Process(cmd)
         self._process.set_on_output_callback(self._output_callback)
