@@ -1475,11 +1475,8 @@ def _wifi_connect(ad, network, num_of_tries=1, check_connectivity=True):
                              ad.serial)
         ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
 
-        # Wait for data connection to stabilize.
-        time.sleep(5)
-
         if check_connectivity:
-            internet = validate_connection(ad, DEFAULT_PING_ADDR, 10)
+            internet = validate_connection(ad, DEFAULT_PING_ADDR)
             if not internet:
                 raise signals.TestFailure("Failed to connect to internet on %s" %
                                           expected_ssid)
@@ -1551,9 +1548,6 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
         expected_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         ad.log.info("Connected to Wi-Fi network %s with %d network id.",
                      expected_ssid, network_id)
-
-        # Wait for data connection to stabilize.
-        time.sleep(5)
 
         internet = validate_connection(ad, DEFAULT_PING_ADDR)
         if not internet:
@@ -1782,9 +1776,6 @@ def _wifi_passpoint_connect(ad, passpoint_network, num_of_tries=1):
                              "Connected to the wrong network on %s." % ad.serial)
         ad.log.info("Connected to Wi-Fi passpoint network %s.", actual_ssid)
 
-        # Wait for data connection to stabilize.
-        time.sleep(5)
-
         internet = validate_connection(ad, DEFAULT_PING_ADDR)
         if not internet:
             raise signals.TestFailure("Failed to connect to internet on %s" %
@@ -1912,7 +1903,7 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
     utils.exe_cmd(cmd)
 
 
-def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2,
+def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=15,
                         ping_gateway=True):
     """Validate internet connection by pinging the address provided.
 
@@ -1925,7 +1916,10 @@ def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2,
         ping output if successful, NULL otherwise.
     """
     # wait_time to allow for DHCP to complete.
-    time.sleep(wait_time)
+    for i in range(wait_time):
+        if ad.droid.connectivityNetworkIsConnected():
+            break
+        time.sleep(1)
     ping = False
     try:
         ping = ad.droid.httpPing(ping_addr)
