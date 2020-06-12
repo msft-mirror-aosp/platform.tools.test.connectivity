@@ -65,15 +65,22 @@ class BitsService(object):
         self._output_log = open(output_log_path, 'w')
         self._collections_dir = tempfile.TemporaryDirectory(
             prefix='bits_service_collections_dir_')
+        self._cleaned_up = False
         self._bits_service_state = BitsServiceStates.NOT_STARTED
-        atexit.register(self._cleanup)
+        atexit.register(self._atexit_cleanup)
+
+    def _atexit_cleanup(self):
+        if not self._cleaned_up:
+            self._log.error('Cleaning up bits_service at exit.')
+            self._cleanup()
 
     def _cleanup(self):
         self.port = None
         self._collections_dir.cleanup()
-        self._output_log.close()
         if self._process and self._process.is_running():
             self._process.stop()
+        self._output_log.close()
+        self._cleaned_up = True
 
     def _service_started_listener(self, line):
         if self._bits_service_state is BitsServiceStates.STARTED:
@@ -138,13 +145,14 @@ class BitsService(object):
         if self._bits_service_state is BitsServiceStates.STARTED:
             raise BitsServiceError('bits_service has already been started.')
 
+        self._log.info('starting a bits_service')
         self._trigger_background_process(self._binary)
 
         # wait 10 seconds for the service to be ready.
         max_startup_wait = time.time() + 10
         while time.time() < max_startup_wait:
             if self._bits_service_state is BitsServiceStates.STARTED:
-                self._log.info('bits_service started on port %s' % self.port)
+                self._log.info('bits_service started on port %s', self.port)
                 return
             time.sleep(0.1)
 
@@ -155,5 +163,8 @@ class BitsService(object):
         """Stops the bits service."""
         if self._bits_service_state is BitsServiceStates.STOPPED:
             raise BitsServiceError('bits service has already been stopped.')
+        port = self.port
+        self._log.info('stopping bits_service on port %s', port)
         self._bits_service_state = 'stopped'
         self._cleanup()
+        self._log.info('bits_service on port %s was stopped', port)
