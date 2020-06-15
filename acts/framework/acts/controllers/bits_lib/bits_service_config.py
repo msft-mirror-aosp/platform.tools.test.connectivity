@@ -22,8 +22,8 @@ DEFAULT_MONSOON_CONFIG_DICT = {
     'type': 'monsooncollector',
     'monsoon_ownership': 0,
     'monsoon_reset': 0,
-    # default to max possible rate.
-    'sampling_rate': 5000,
+    # maximum monsoon sample rate that works best for both lvpm and hvpm
+    'sampling_rate': 4000,
 }
 
 
