@@ -28,10 +28,8 @@ from acts.test_utils.instrumentation.device.apps.app_installer import AppInstall
 from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import \
-    DEFAULT_INSTRUMENTATION_LOG_OUTPUT
-from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import \
-    InstrumentationTestCommandBuilder
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationBaseTest
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
@@ -190,7 +188,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.compact_location_log.toggle(True))
         self.adb_run(goog.magic_tether.toggle(False))
         self.adb_run(goog.ocr.toggle(False))
-        if self._instrumentation_config.get('set_gms_phenotype_flag', default=True):
+        if self._instrumentation_config.get('set_gms_phenotype_flag',
+                                            default=True):
             self.adb_run(goog.phenotype.toggle(True))
         self.adb_run(goog.icing.toggle(False))
         self.adb_run(common.disable_pixellogger)
@@ -284,7 +283,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return self.adb_run(cmd)
 
     def push_to_external_storage(self, file_path, dest=None,
-        timeout=DEFAULT_PUSH_FILE_TIMEOUT):
+                                 timeout=DEFAULT_PUSH_FILE_TIMEOUT):
         """Pushes a file to {$EXTERNAL_STORAGE} and returns its final location.
 
         Args:
@@ -322,7 +321,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         builder = InstrumentationTestCommandBuilder.default()
         builder.set_manifest_package(self._test_apk.pkg_name)
         builder.add_flag('--no-isolated-storage')
-        builder.set_proto_path()
+        builder.set_output_as_text()
         builder.set_nohup()
         return builder
 
@@ -333,7 +332,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.log.info('Waiting for USB disconnect signal')
         start_time = time.time()
         disconnect_usb_file = os.path.join(self.ad_dut.external_storage_path,
-                            DISCONNECT_USB_FILE)
+                                           DISCONNECT_USB_FILE)
         while time.time() < start_time + disconnect_usb_timeout:
             if self.ad_dut.adb.shell('ls %s' % disconnect_usb_file):
                 self.log.info('Disconnection signal received. File: '
@@ -400,7 +399,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return result
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
-        extra_params=None):
+                        extra_params=None):
         """Convenience method for setting up the instrumentation test command,
         running it on the device, and starting the Monsoon measurement.
 
@@ -449,8 +448,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             return AbsoluteThresholds.from_threshold_conf(thresholds_conf)
         except (ValueError, TypeError) as e:
             self.log.error(
-                'Incorrect threshold definition for %s %s' % (instr_test_name,
-                                                              metric_name))
+                'Incorrect threshold definition for %s %s' % (
+                    instr_test_name,
+                    metric_name))
             self.log.error('Error detail: %s', str(e))
             return None
 
