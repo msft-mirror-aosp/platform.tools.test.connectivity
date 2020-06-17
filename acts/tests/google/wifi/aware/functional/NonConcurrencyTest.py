@@ -174,28 +174,36 @@ class NonConcurrencyTest(AwareBaseTest):
         autils.wait_for_event(dut, wconsts.WIFI_STATE_CHANGED)
 
         # Check if the WifiAwareState changes then restart the Aware
+        state_change = False
         try:
             dut.ed.pop_event(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE, EVENT_TIMEOUT)
             dut.log.info(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
             p_id = dut.droid.wifiAwareAttach()
             autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+            wutils.ensure_no_disconnect(dut)
+            state_change = True
         except queue.Empty:
             dut.log.info('WifiAware state was not changed')
 
-        # dut start Publish
-        p_disc_id = dut.droid.wifiAwarePublish(p_id, p_config)
-        autils.wait_for_event(dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
-
-        # dut_ap stop softAp and start Subscribe
+        # dut_ap stop softAp and start publish
         wutils.stop_wifi_tethering(dut_ap)
         autils.wait_for_event(dut_ap, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
         s_id = dut_ap.droid.wifiAwareAttach()
         autils.wait_for_event(dut_ap, aconsts.EVENT_CB_ON_ATTACHED)
-        s_disc_id = dut_ap.droid.wifiAwareSubscribe(s_id, s_config)
-        autils.wait_for_event(dut_ap, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+        s_disc_id = dut_ap.droid.wifiAwarePublish(s_id, s_config)
+        autils.wait_for_event(dut_ap, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+        # dut start subscribe
+        wutils.wait_for_disconnect(dut)
+        if state_change:
+            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+            p_id = dut.droid.wifiAwareAttach()
+            autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+        p_disc_id = dut.droid.wifiAwareSubscribe(p_id, p_config)
+        autils.wait_for_event(dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
 
         # Check discovery session
-        autils.wait_for_event(dut_ap, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+        autils.wait_for_event(dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
 
     ##########################################################################
 
