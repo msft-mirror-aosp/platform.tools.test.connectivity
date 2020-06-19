@@ -65,13 +65,10 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = []
         opt_param = [
-            "open_network", "reference_networks", "radius_conf_2g", "radius_conf_5g", "ca_cert",
-            "eap_identity", "eap_password", "hidden_networks", "passpoint_networks"
-        ]
-        self.unpack_userparams(
-            req_param_names=req_params, opt_param_names=opt_param)
+            "radius_conf_2g", "radius_conf_5g", "ca_cert", "eap_identity",
+            "eap_password", "passpoint_networks", "altsubject_match" ]
+        self.unpack_userparams(opt_param_names=opt_param,)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(
@@ -101,6 +98,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 Ent.PASSWORD: self.eap_password,
                 Ent.PHASE2: int(EapPhase2.MSCHAPV2),
                 WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+                Ent.ALTSUBJECT_MATCH: self.altsubject_match,
             }
         if hasattr(self, "hidden_networks") and \
             isinstance(self.hidden_networks, list):
