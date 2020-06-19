@@ -85,6 +85,12 @@ disable_musiciq = GenericCommand(
     desc='Disables the musiciq feature, which listens to surrounding music to '
          'show what is being played.')
 
+# Email
+
+remove_gmail_account = GenericCommand(
+    'am instrument -w com.google.android.tradefed.account/.RemoveAccounts',
+                                      desc='Removes gmail account.')
+
 # Hotword
 
 hotword = DeviceState(
