@@ -16,7 +16,6 @@
 
 import copy
 
-
 DEFAULT_MONSOON_CONFIG_DICT = {
     'enabled': 1,
     'type': 'monsooncollector',
@@ -47,8 +46,8 @@ class _BitsMonsoonConfig(object):
         Args:
             monsoon_config: The monsoon config as defined in the
             ACTS Bits controller config. Expected format is:
-              { 'serial': <serial number>,
-                'monsoon_voltage': <voltage> }
+              { 'serial': <serial number:int>,
+                'monsoon_voltage': <voltage:double> }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
             Needed if the monsoon is a lvpm monsoon (serial number lower than
             20000).
@@ -56,32 +55,33 @@ class _BitsMonsoonConfig(object):
             monsoons. Needed if the monsoon is a hvpm monsoon (serial number
             greater than 20000).
         """
-        self.config_dic = copy.deepcopy(DEFAULT_MONSOON_CONFIG_DICT)
-
         if 'serial' not in monsoon_config:
             raise ValueError('Monsoon serial can not be undefined. Received '
                              'config was: %s' % monsoon_config)
-
         if 'monsoon_voltage' not in monsoon_config:
             raise ValueError('Monsoon voltage can not be undefined. Received '
                              'config was: %s' % monsoon_config)
 
-        self.config_dic.update(monsoon_config)
+        self.serial = monsoon_config['serial']
+        self.monsoon_voltage = monsoon_config['monsoon_voltage']
 
-        if self.config_dic['serial'] >= 20000:
+        self.config_dic = copy.deepcopy(DEFAULT_MONSOON_CONFIG_DICT)
+        if self.serial >= 20000:
             self.config_dic['hv_monsoon'] = 1
             if hvpm_monsoon_bin is None:
                 raise ValueError('hvpm_monsoon binary is needed but was None. '
                                  'Received config was: %s' % monsoon_config)
-            monsoon_binary_path = hvpm_monsoon_bin
+            self.monsoon_binary = hvpm_monsoon_bin
         else:
             self.config_dic['hv_monsoon'] = 0
             if lvpm_monsoon_bin is None:
                 raise ValueError('lvpm_monsoon binary is needed but was None. '
                                  'Received config was: %s' % monsoon_config)
-            monsoon_binary_path = lvpm_monsoon_bin
+            self.monsoon_binary = lvpm_monsoon_bin
 
-        self.config_dic['monsoon_binary_path'] = monsoon_binary_path
+        self.config_dic['monsoon_binary_path'] = self.monsoon_binary
+        self.config_dic['monsoon_voltage'] = self.monsoon_voltage
+        self.config_dic['serial'] = self.serial
 
 
 DEFAULT_SERVICE_CONFIG_DICT = {
@@ -113,8 +113,8 @@ class BitsServiceConfig(object):
             controller_config: The config as defined in the ACTS  BiTS
             controller config. Expected format is:
               {
-                (optional) 'Monsoon': { 'serial': <serial number>,
-                                        'monsoon_voltage': <voltage> }
+                (optional) 'Monsoon': { 'serial': <serial number:int>,
+                                        'monsoon_voltage': <voltage:double> }
               }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
             Needed if the monsoon is a lvpm monsoon (serial number lower than
@@ -125,11 +125,13 @@ class BitsServiceConfig(object):
         """
         self.config_dic = copy.deepcopy(DEFAULT_SERVICE_CONFIG_DICT)
         self.has_monsoon = False
+        self.monsoon_config = None
         if 'Monsoon' in controller_config:
             self.has_monsoon = True
-            monsoon_config = _BitsMonsoonConfig(controller_config['Monsoon'],
-                                                lvpm_monsoon_bin,
-                                                hvpm_monsoon_bin)
+            self.monsoon_config = _BitsMonsoonConfig(
+                controller_config['Monsoon'],
+                lvpm_monsoon_bin,
+                hvpm_monsoon_bin)
             self.config_dic['devices']['default_device']['collectors'][
-                'Monsoon'] = monsoon_config.config_dic
+                'Monsoon'] = self.monsoon_config.config_dic
         self.has_kibble = False
