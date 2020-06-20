@@ -253,6 +253,30 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             out[cmd] = ad.adb.shell(cmd)
         return out
 
+    def fastboot_run(self, cmds, ad=None):
+        """Run the specified command, or list of commands, with the FASTBOOT shell.
+
+        Args:
+            cmds: A string, A GenericCommand, a list of strings or a list of
+                  GenericCommand representing FASTBOOT command(s)
+            ad: The device to run on. Defaults to self.ad_dut.
+
+        Returns: dict mapping command to resulting stdout
+        """
+        if ad is None:
+            ad = self.ad_dut
+        if isinstance(cmds, str) or isinstance(cmds, GenericCommand):
+            cmds = [cmds]
+
+        out = {}
+        for cmd in cmds:
+            if isinstance(cmd, GenericCommand):
+                if cmd.desc:
+                    ad.log.debug('Applying command that: %s' % cmd.desc)
+                cmd = cmd.cmd
+            out[cmd] = ad.fastboot._exec_fastboot_cmd(cmd, '')
+        return out
+
     def adb_run_async(self, cmds, ad=None):
         """Run the specified command, or list of commands, with the ADB shell.
         (async)
