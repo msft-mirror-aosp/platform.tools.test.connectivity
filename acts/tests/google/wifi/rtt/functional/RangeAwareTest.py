@@ -40,6 +40,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     # Time gap (in seconds) when switching between Initiator and Responder
     TIME_BETWEEN_ROLES = 4
 
+    # Min and max of the test subscribe range.
+    DISTANCE_MIN = 0
+    DISTANCE_MAX = 1000000
+
     def setup_test(self):
         """Manual setup here due to multiple inheritance: explicitly execute the
         setup method from both parents.
@@ -291,6 +295,47 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
 
         asserts.explicit_pass("RTT Aware test done", extras=extras)
 
+    def run_rtt_with_aware_session_disabled_ranging(self, disable_publish):
+        """Try to perform RTT operation when there publish or subscribe disabled ranging.
+
+        Args:
+            disable_publish: if true disable ranging on publish config, otherwise disable ranging on
+                            subscribe config
+        """
+        p_dut = self.android_devices[1]
+        s_dut = self.android_devices[0]
+        pub_config = autils.create_discovery_config(
+            self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED)
+        sub_config = autils.create_discovery_config(
+            self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE)
+        if disable_publish:
+            sub_config = autils.add_ranging_to_sub(sub_config, self.DISTANCE_MIN, self.DISTANCE_MAX)
+        else:
+            pub_config = autils.add_ranging_to_pub(pub_config, True)
+        (p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
+         peer_id_on_pub) = autils.create_discovery_pair(
+            p_dut,
+            s_dut,
+            p_config=pub_config,
+            s_config=sub_config,
+            device_startup_offset=self.device_startup_offset,
+            msg_id=self.get_next_msg_id())
+        for i in range(self.NUM_ITER):
+            result_sub = self.run_rtt_discovery(s_dut, resp_peer_id=peer_id_on_sub)
+            asserts.assert_equal(rconsts.EVENT_CB_RANGING_STATUS_FAIL,
+                                 result_sub[rconsts.EVENT_CB_RANGING_KEY_STATUS],
+                                 "Ranging to publisher should fail.",
+                                 extras={"data": result_sub})
+
+        time.sleep(self.TIME_BETWEEN_ROLES)
+
+        for i in range(self.NUM_ITER):
+            result_pub = self.run_rtt_discovery(p_dut, resp_peer_id=peer_id_on_pub)
+            asserts.assert_equal(rconsts.EVENT_CB_RANGING_STATUS_FAIL,
+                                 result_pub[rconsts.EVENT_CB_RANGING_KEY_STATUS],
+                                 "Ranging to subscriber should fail.",
+                                 extras={"data": result_pub})
+
     #############################################################################
 
     @test_tracker_info(uuid="9e4e7ab4-2254-498c-9788-21e15ed9a370")
@@ -497,3 +542,17 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
             "Aware RTT w/o Aware should FAIL!",
             extras={"data": results})
         asserts.explicit_pass("RTT Aware test done", extras={"data": results})
+
+    @test_tracker_info(uuid="80b0f96e-f87d-4dc9-a2b9-fae48558c8d8")
+    def test_rtt_with_publish_ranging_disabled(self):
+        """
+        Try to perform RTT operation when publish ranging disabled, should fail.
+        """
+        self.run_rtt_with_aware_session_disabled_ranging(True)
+
+    @test_tracker_info(uuid="cb93a902-9b7a-4734-ba81-864878f9fa55")
+    def test_rtt_with_subscribe_ranging_disabled(self):
+        """
+        Try to perform RTT operation when subscribe ranging disabled, should fail.
+        """
+        self.run_rtt_with_aware_session_disabled_ranging(False)
