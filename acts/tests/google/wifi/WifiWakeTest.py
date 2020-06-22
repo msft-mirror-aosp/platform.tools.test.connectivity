@@ -24,6 +24,8 @@ from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
+WifiEnums = wutils.WifiEnums
+SSID = WifiEnums.SSID_KEY
 CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT = 5
 SCANS_REQUIRED_TO_FIND_SSID = 5
 LAST_DISCONNECT_TIMEOUT_MILLIS = 5000
@@ -211,7 +213,7 @@ class WifiWakeTest(WifiBaseTest):
     @test_tracker_info(uuid="3cecd1c5-54bc-44a2-86f7-ad84625bf094")
     def test_reconnect_wifi_network_suggestion(self):
         """Tests that Wifi Wake re-enables Wifi for app provided suggestion."""
-        self.dut.log.info("Adding network suggestions");
+        self.dut.log.info("Adding network suggestions")
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions([self.ap_a]),
             "Failed to add suggestions")
@@ -219,15 +221,23 @@ class WifiWakeTest(WifiBaseTest):
             self.dut.droid.wifiAddNetworkSuggestions([self.ap_b]),
             "Failed to add suggestions")
         # Enable suggestions by the app.
-        self.dut.log.debug("Enabling suggestions from test");
+        self.dut.log.debug("Enabling suggestions from test")
         self.dut.adb.shell("cmd wifi network-suggestions-set-user-approved"
                            + " " + SL4A_APK_NAME + " yes")
         # Ensure network is seen in scan results & auto-connected to.
         self.do_location_scan(2)
         wutils.wait_for_connect(self.dut)
+        current_network = self.dut.droid.wifiGetConnectionInfo()
         self.dut.ed.clear_all_events()
-        self.ap_a_off()
-        self.ap_b_off()
+        if current_network[SSID] == self.ap_a[SSID]:
+            # connected to AP A, so turn AP B off first to prevent the
+            # device from immediately reconnecting to AP B
+            self.ap_b_off()
+            self.ap_a_off()
+        else:
+            self.ap_a_off()
+            self.ap_b_off()
+
         wutils.wait_for_disconnect(self.dut)
         self.log.info("Wifi Disconnected")
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
