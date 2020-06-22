@@ -25,7 +25,6 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts import signals
 
-
 WifiEnums = wutils.WifiEnums
 
 
@@ -38,7 +37,7 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         utils.require_sl4a((self.dut, self.dut_client))
 
         req_params = ["dbs_supported_models"]
-        opt_param = ["stress_count"]
+        opt_param = ["stress_count", "cs_count"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
@@ -55,6 +54,20 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
+            try:
+                if self.dut.droid.wifiIsApEnabled():
+                    wutils.stop_wifi_tethering(self.dut)
+            except signals.TestFailure:
+                pass
+        wutils.wifi_toggle_state(self.dut_client, True)
+        init_sim_state = tel_utils.is_sim_ready(self.log, self.dut)
+        if init_sim_state:
+            self.check_cell_data_and_enable()
+        self.config = wutils.create_softap_config()
+        self.channel_list_2g = self.generate_random_list(
+            WifiEnums.ALL_2G_FREQUENCIES)
+        self.channel_list_5g = self.generate_random_list(
+            WifiEnums.NONE_DFS_5G_FREQUENCIES)
 
     def teardown_test(self):
         for ad in self.android_devices:
@@ -79,7 +92,6 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         requirements on DUTs - without this check, running this set of tests
         after other wifi tests may cause failures.
         """
-
         if not self.dut.droid.telephonyIsDataEnabled():
             self.dut.log.info("need to enable data")
             self.dut.droid.telephonyToggleDataConnection(True)
@@ -87,6 +99,7 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
                                 "Failed to enable cell data for dut.")
 
     def get_wlan0_link(self, dut):
+        """ get wlan0 interface status"""
         get_wlan0 = 'wpa_cli -iwlan0 -g@android:wpa_wlan0 IFNAME=wlan0 status'
         out = dut.adb.shell(get_wlan0)
         out = dict(re.findall(r'(\S+)=(".*?"|\S+)', out))
@@ -94,11 +107,17 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
                             "Client doesn't connect to any network")
         return out
 
+    def get_wlan1_status(self, dut):
+        """ get wlan1 interface status"""
+        get_wlan1 = 'hostapd_cli status'
+        out_wlan1 = dut.adb.shell(get_wlan1)
+        out_wlan1 = dict(re.findall(r'(\S+)=(".*?"|\S+)', out_wlan1))
+        return out_wlan1
+
     def generate_random_list(self, lst):
         """Generate a list where
         the previous and subsequent items
         do not repeat"""
-
         channel_list = []
         num = random.choice(lst)
         channel_list.append(num)
@@ -108,6 +127,41 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
                 num = random.choice(lst)
             channel_list.append(num)
         return channel_list
+
+    @test_tracker_info(uuid="b1a8b00e-eca8-4eba-99e9-c7a3beb2a009")
+    def test_softap_channel_switch_stress_2g(self):
+        """
+        1. Disable DUT's Wi-Fi
+        2. Enable CLIENT's Wi-Fi
+        3. Check DUT's sim is ready or not
+        4. Enable DUT's mobile data
+        5. Bring up DUT's softap in 2g
+        6. CLIENT connect to DUT
+        7. DUT switch to different 2g channel
+        8. Verify CLIENT follow the change
+        9, Repeat step 7 and 8
+        """
+        wutils.start_wifi_tethering(self.dut,
+                                    self.config[wutils.WifiEnums.SSID_KEY],
+                                    self.config[wutils.WifiEnums.PWD_KEY],
+                                    WifiEnums.WIFI_CONFIG_APBAND_2G)
+        wutils.connect_to_wifi_network(self.dut_client, self.config)
+        time.sleep(10)
+        for count in range(len(self.channel_list_2g)):
+            self.dut.log.info("2g channel switch iteration : {}".format(count+1))
+            channel_2g = str(self.channel_list_2g[count])
+            wutils.set_softap_channel(self.dut,
+                                      self.AP_IFACE,
+                                      self.cs_count, channel_2g)
+            time.sleep(10)
+            softap_frequency = int(self.get_wlan1_status(self.dut)['freq'])
+            self.dut.log.info('softap frequency : {}'.format(softap_frequency))
+            client_frequency = int(self.get_wlan0_link(self.dut_client)["freq"])
+            self.dut_client.log.info(
+                "client frequency : {}".format(client_frequency))
+            asserts.assert_true(
+                softap_frequency == client_frequency,
+                "hotspot frequency != client frequency")
 
     @test_tracker_info(uuid="3411cb7c-2609-433a-97b6-202a096dc71b")
     def test_softap_channel_switch_stress_5g(self):
@@ -122,36 +176,87 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         8. Verify CLIENT follow the change
         9, Repeat step 7 and 8
         """
-
-        config = wutils.create_softap_config()
-        wutils.wifi_toggle_state(self.dut_client, True)
-        init_wifi_state = self.dut.droid.wifiCheckState()
-        init_sim_state = tel_utils.is_sim_ready(self.log, self.dut)
-        self.dut.log.info("initial wifi state = {}".format(init_wifi_state))
-        self.dut.log.info("initial sim state = {}".format(init_sim_state))
-        if init_sim_state:
-            self.check_cell_data_and_enable()
         wutils.start_wifi_tethering(self.dut,
-                                    config[wutils.WifiEnums.SSID_KEY],
-                                    config[wutils.WifiEnums.PWD_KEY],
+                                    self.config[wutils.WifiEnums.SSID_KEY],
+                                    self.config[wutils.WifiEnums.PWD_KEY],
                                     WifiEnums.WIFI_CONFIG_APBAND_5G)
-        wutils.connect_to_wifi_network(self.dut_client, config)
-        channel_list = self.generate_random_list(
-            WifiEnums.NONE_DFS_5G_FREQUENCIES)
-        self.log.info("channel_list = {}".format(channel_list))
-        for count in range(len(channel_list)):
-            self.log.info("iteration : {}".format(count))
-            self.dut.log.info('hotspot 5g channel switch START')
-            channel_5g = channel_list[count]
-            hotspot_5g_channel_switch_cmd = (
-                'hostapd_cli -i {} chan_switch 10 {}'.format(self.AP_IFACE,
-                                                             channel_5g))
-            self.dut.adb.shell(hotspot_5g_channel_switch_cmd)
-            self.dut.log.info('softap frequency : {}'.format(channel_5g))
-            time.sleep(30)
+        wutils.connect_to_wifi_network(self.dut_client, self.config)
+        time.sleep(10)
+        for count in range(len(self.channel_list_5g)):
+            self.dut.log.info("5g channel switch iteration : {}".format(count+1))
+            channel_5g = str(self.channel_list_5g[count])
+            wutils.set_softap_channel(self.dut,
+                                      self.AP_IFACE,
+                                      self.cs_count, channel_5g)
+            time.sleep(10)
+            softap_frequency = int(self.get_wlan1_status(self.dut)['freq'])
+            self.dut.log.info('softap frequency : {}'.format(softap_frequency))
             client_frequency = int(self.get_wlan0_link(self.dut_client)["freq"])
             self.dut_client.log.info(
                 "client frequency : {}".format(client_frequency))
             asserts.assert_true(
-                channel_5g == client_frequency,
+                softap_frequency == client_frequency,
                 "hotspot frequency != client frequency")
+
+    @test_tracker_info(uuid="0f279058-119f-49fc-b8d6-fb2991cc35aa")
+    def test_softap_channel_switch_stress_2g_5g(self):
+        """
+        1. Disable DUT's Wi-Fi
+        2. Enable CLIENT's Wi-Fi
+        3. Check DUT's sim is ready or not
+        4. Enable DUT's mobile data
+        5. Bring up DUT's softap in 2g
+        6. CLIENT connect to DUT
+        7. DUT switch to different 2g channel
+        8. Verify CLIENT follow the change
+        9. DUT switch to 5g channel
+        10. Verify CLIENT follow the change
+        11. Repeat step 7 to 10
+        """
+        for count in range(self.stress_count):
+            self.log.info("2g 5g channel switch iteration : {}".format(count+1))
+            wutils.start_wifi_tethering(self.dut,
+                                        self.config[wutils.WifiEnums.SSID_KEY],
+                                        self.config[wutils.WifiEnums.PWD_KEY],
+                                        WifiEnums.WIFI_CONFIG_APBAND_2G)
+            wutils.connect_to_wifi_network(self.dut_client, self.config)
+            self.log.info("wait 10 secs for client reconnect to dut")
+            time.sleep(10)
+            channel_2g = self.channel_list_2g[count]
+            wutils.set_softap_channel(self.dut,
+                                      self.AP_IFACE,
+                                      self.cs_count, channel_2g)
+            time.sleep(10)
+            softap_frequency = int(self.get_wlan1_status(self.dut)['freq'])
+            self.dut.log.info('softap frequency : {}'.format(softap_frequency))
+            client_frequency = int(self.get_wlan0_link(self.dut_client)["freq"])
+            self.dut_client.log.info(
+                "client frequency : {}".format(client_frequency))
+            asserts.assert_true(
+                softap_frequency == client_frequency,
+                "hotspot frequency != client frequency")
+            wutils.stop_wifi_tethering(self.dut)
+            self.dut.log.info('switch to SoftAP 5g')
+
+            # switch to SoftAp 5g
+            wutils.start_wifi_tethering(self.dut,
+                                        self.config[wutils.WifiEnums.SSID_KEY],
+                                        self.config[wutils.WifiEnums.PWD_KEY],
+                                        WifiEnums.WIFI_CONFIG_APBAND_5G)
+            wutils.connect_to_wifi_network(self.dut_client, self.config)
+            self.log.info("wait 10 secs for client reconnect to dut")
+            time.sleep(10)
+            channel_5g = self.channel_list_5g[count]
+            wutils.set_softap_channel(self.dut,
+                                      self.AP_IFACE,
+                                      self.cs_count, channel_5g)
+            time.sleep(10)
+            softap_frequency = int(self.get_wlan1_status(self.dut)['freq'])
+            self.dut.log.info('softap frequency : {}'.format(softap_frequency))
+            client_frequency = int(self.get_wlan0_link(self.dut_client)["freq"])
+            self.dut_client.log.info(
+                "client frequency : {}".format(client_frequency))
+            asserts.assert_true(
+                softap_frequency == client_frequency,
+                "hotspot frequency != client frequency")
+            wutils.stop_wifi_tethering(self.dut)
