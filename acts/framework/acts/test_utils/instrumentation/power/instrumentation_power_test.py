@@ -115,11 +115,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         # Test harness flag
         harness_prop = 'getprop ro.test_harness'
+        # command would fail if properties were previously set, therefore it
+        # needs to be verified first
         if self.adb_run(harness_prop)[harness_prop] != '1':
             self.adb_run(common.test_harness.toggle(True))
 
         # Calling
-        self.adb_run(common.disable_dialing.toggle(True))
+        disable_dialing_prop = 'getprop ro.telephony.disable-call'
+        # command would fail if property was previously set, therefore it needs
+        # to be verified first.
+        if self.adb_run(disable_dialing_prop)[disable_dialing_prop] != 'true':
+            self.adb_run(common.disable_dialing.toggle(True))
 
         # Screen
         self.adb_run(common.screen_always_on.toggle(True))
