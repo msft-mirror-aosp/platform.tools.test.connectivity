@@ -32,10 +32,21 @@ class WifiP2pBaseTest(BaseTestClass):
             super(WifiP2pBaseTest, self).__init__(controllers)
 
     def setup_class(self):
+        required_params = ()
+        optional_params = ("skip_read_factory_mac",)
+        self.unpack_userparams(
+                required_params,
+                optional_params,
+                skip_read_factory_mac=0)
+
         self.dut1 = self.android_devices[0]
         self.dut2 = self.android_devices[1]
-        self.dut1_mac = self.get_p2p_mac_address(self.dut1)
-        self.dut2_mac = self.get_p2p_mac_address(self.dut2)
+        if self.skip_read_factory_mac:
+            self.dut1_mac = None
+            self.dut2_mac = None
+        else:
+            self.dut1_mac = self.get_p2p_mac_address(self.dut1)
+            self.dut2_mac = self.get_p2p_mac_address(self.dut2)
 
         #init location before init p2p
         acts.utils.set_location_service(self.dut1, True)
