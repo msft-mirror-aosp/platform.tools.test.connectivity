@@ -114,7 +114,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.ensure_screen_on()
 
         # Test harness flag
-        self.adb_run(common.test_harness.toggle(True))
+        harness_prop = 'getprop ro.test_harness'
+        if self.adb_run(harness_prop)[harness_prop] != '1':
+            self.adb_run(common.test_harness.toggle(True))
 
         # Calling
         self.adb_run(common.disable_dialing.toggle(True))
@@ -334,7 +336,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         disconnect_usb_file = os.path.join(self.ad_dut.external_storage_path,
                                            DISCONNECT_USB_FILE)
         while time.time() < start_time + disconnect_usb_timeout:
-            if self.ad_dut.adb.shell('ls %s' % disconnect_usb_file):
+            if self.ad_dut.adb.shell('ls %s || true' % disconnect_usb_file):
                 self.log.info('Disconnection signal received. File: '
                               '"%s"' % disconnect_usb_file)
                 return
