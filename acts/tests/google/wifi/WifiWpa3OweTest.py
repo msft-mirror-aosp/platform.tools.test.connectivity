@@ -100,7 +100,7 @@ class WifiWpa3OweTest(WifiBaseTest):
     def test_connect_to_wpa3_personal_5g(self):
         wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
             self.wpa3_personal_5g[WifiEnums.SSID_KEY])
-        wutils.connect_to_wifi_network(self.dut, self.owe_5g)
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_5g)
 
     @test_tracker_info(uuid="a8fb46be-3487-4dc8-a393-5af992b27f45")
     def test_connect_to_wpa3_personal_reconnection(self):
