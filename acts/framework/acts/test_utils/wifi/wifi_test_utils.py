@@ -176,6 +176,7 @@ class WifiEnums():
         FQDN = "FQDN"
         FRIENDLY_NAME = "providerFriendlyName"
         ROAMING_IDS = "roamingConsortiumIds"
+        OCSP = "ocsp"
     # End of Macros for EAP
 
     # Macros for wifi p2p.
