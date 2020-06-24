@@ -36,7 +36,8 @@ def _build_proto_location(ad, source_path=None):
     else:
         default_full_proto_dir = os.path.join(
             ad.external_storage_path, DEFAULT_INST_LOG_DIR)
-        filename = ad.adb.shell('ls %s -t | head -n1' % default_full_proto_dir)
+        filename = ad.adb.shell(
+            '(ls %s -t | head -n1) || true' % default_full_proto_dir)
         return os.path.join(default_full_proto_dir,
                             filename) if filename else None
 
@@ -49,8 +50,11 @@ def has_instrumentation_proto(ad, source_path=None):
         source_path: Path on the device where the proto is generated. If None,
             pull the latest proto from DEFAULT_INST_PROTO_DIR.
     """
-    ls_out = ad.adb.shell('ls %s' % _build_proto_location(ad, source_path))
-    return ls_out is not None and ls_out != ''
+    proto_location = _build_proto_location(ad, source_path)
+    if proto_location is None:
+        return False
+    ls_out = ad.adb.shell('ls %s' % proto_location)
+    return ls_out != ''
 
 
 def pull_proto(ad, dest_dir, source_path=None):
