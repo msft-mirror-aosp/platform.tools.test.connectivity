@@ -55,7 +55,8 @@ class WifiEnterpriseTest(WifiBaseTest):
             "radius_conf_pwd")
         self.unpack_userparams(required_userparam_names,
                                roaming_consortium_ids=None,
-                               plmn=None)
+                               plmn=None,
+                               ocsp=0)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(
@@ -76,6 +77,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PASSWORD: self.eap_password,
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_5g[WifiEnums.SSID_KEY],
+            Ent.OCSP: self.ocsp,
         }
         self.config_peap1 = dict(self.config_peap0)
         self.config_peap1[WifiEnums.SSID_KEY] = \
@@ -87,6 +89,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.CLIENT_CERT: self.client_cert,
             Ent.PRIVATE_KEY_ID: self.client_key,
             Ent.IDENTITY: self.eap_identity,
+            Ent.OCSP: self.ocsp,
         }
         self.config_ttls = {
             Ent.EAP: int(EAP.TTLS),
@@ -95,6 +98,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Ent.PASSWORD: self.eap_password,
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+            Ent.OCSP: self.ocsp,
         }
         self.config_pwd = {
             Ent.EAP: int(EAP.PWD),
