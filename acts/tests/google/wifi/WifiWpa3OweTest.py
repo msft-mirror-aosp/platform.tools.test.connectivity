@@ -100,4 +100,24 @@ class WifiWpa3OweTest(WifiBaseTest):
     def test_connect_to_wpa3_personal_5g(self):
         wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
             self.wpa3_personal_5g[WifiEnums.SSID_KEY])
-        wutils.connect_to_wifi_network(self.dut, self.owe_5g)
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_5g)
+
+    @test_tracker_info(uuid="a8fb46be-3487-4dc8-a393-5af992b27f45")
+    def test_connect_to_wpa3_personal_reconnection(self):
+        """ This is to catch auth reject which is caused by PMKSA cache.
+            Steps:
+            ------------------------------
+            1. Connect STA to WPA3 AP
+            2. Turn off the WiFi or connect to a different AP
+            3. Turn on the WiFi or connect back to WPA3 AP.
+            4. Initial connect request fails
+               Second connect request from framework succeeds.
+        """
+        wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
+            self.wpa3_personal_2g[WifiEnums.SSID_KEY])
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
+        wutils.wifi_toggle_state(ad, False)
+        wutils.wifi_toggle_state(ad, True)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
+            self.wpa3_personal_2g[WifiEnums.SSID_KEY])
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
