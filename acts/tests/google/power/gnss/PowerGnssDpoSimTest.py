@@ -47,6 +47,7 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
                                 self.dpooff_nv_dict, self.modemparfile)
         self.dut.reboot()
         gutil.verify_modemconfig(self.dut, self.dpooff_nv_dict, self.modemparfile)
+        gutil.clear_aiding_data_by_gtw_gpstool(self.dut)
         gutil.start_gnss_by_gtw_gpstool(self.dut, state=True, type="gnss",
                                         bgdisplay=True)
         time.sleep(DUT_ACTION_WAIT_TIME)
@@ -56,6 +57,8 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
         diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path, keep_logs=False)
         self.measure_gnsspower_test_func()
         gutil.start_gnss_by_gtw_gpstool(self.dut, state=False)
+        gps_log_path = os.path.join(self.log_path, 'GPS_LOGS')
+        diaglog.get_gpstool_logs(self.dut, gps_log_path, keep_logs=False)
 
     def test_gnss_dpoON_measurement(self):
         utils.set_location_service(self.dut, True)
@@ -65,6 +68,7 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
                                 self.dpoon_nv_dict, self.modemparfile)
         self.dut.reboot()
         gutil.verify_modemconfig(self.dut, self.dpoon_nv_dict, self.modemparfile)
+        gutil.clear_aiding_data_by_gtw_gpstool(self.dut)
         gutil.start_gnss_by_gtw_gpstool(self.dut, state=True,type="gnss",
                                         bgdisplay=True)
         time.sleep(DUT_ACTION_WAIT_TIME)
@@ -75,6 +79,8 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
 
         self.measure_gnsspower_test_func()
         gutil.start_gnss_by_gtw_gpstool(self.dut, state=False)
+        gps_log_path = os.path.join(self.log_path, 'GPS_LOGS')
+        diaglog.get_gpstool_logs(self.dut, gps_log_path, keep_logs=False)
 
     def test_gnss_rockbottom(self):
         self.dut.send_keycode("SLEEP")
