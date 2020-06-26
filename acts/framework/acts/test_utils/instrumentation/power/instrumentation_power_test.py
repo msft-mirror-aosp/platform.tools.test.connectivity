@@ -20,6 +20,7 @@ import tempfile
 import time
 
 import tzlocal
+from acts.controllers import power_monitor
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
@@ -34,8 +35,6 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
-from acts.test_utils.instrumentation.power.power_metrics import Measurement
-from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 from acts import asserts
@@ -77,15 +76,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        self.monsoon = self.monsoons[0]
+        if hasattr(self, 'monsoons'):
+            self.power_monitor = power_monitor.PowerMonitorFacade(
+                self.monsoons[0])
 
     def setup_test(self):
         """Test setup"""
         super().setup_test()
-        self._setup_monsoon()
+        self._setup_power_monitor()
         self._prepare_device()
         self._instr_cmd_builder = self.power_default_instr_command_builder()
-        return True
 
     def _prepare_device(self):
         """Prepares the device for power testing."""
@@ -219,18 +219,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Enable clock dump info
         self.adb_run('echo 1 > /d/clk/debug_suspend')
 
-    def _setup_monsoon(self):
+    def _setup_power_monitor(self, **kwargs):
         """Set up the Monsoon controller for this testclass/testcase."""
-        self.log.info('Setting up Monsoon %s' % self.monsoon.serial)
         monsoon_config = self._get_merged_config('Monsoon')
-        self._monsoon_voltage = monsoon_config.get_numeric('voltage', 4.2)
-        self.monsoon.set_voltage_safe(self._monsoon_voltage)
-        if 'max_current' in monsoon_config:
-            self.monsoon.set_max_current(
-                monsoon_config.get_numeric('max_current'))
-
-        self.monsoon.usb('on')
-        self.monsoon.set_on_reconnect(self._reinstall_sl4a)
+        self.power_monitor.setup(monsoon_config=monsoon_config)
 
     def _uninstall_sl4a(self):
         """Stops and uninstalls SL4A if it is available on the DUT"""
@@ -378,33 +370,32 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'power_data')
-        self.monsoon.usb('auto')
+
         # TODO(b/155426729): When the Monsoon controller switches to reporting
         #   time as seconds since epoch (on host), convert its time data to be
         #   seconds since epoch (on device).
         device_time_cmd = 'echo $EPOCHREALTIME'
-        measure_start_time = float(
-            self.adb_run(device_time_cmd)[device_time_cmd])
-        result = self.monsoon.measure_power(
-            **measurement_args, output_path=power_data_path)
-        self.monsoon.usb('on')
-        self.log.info('Monsoon measurement complete.')
+        start_time = self.adb_run(device_time_cmd)[device_time_cmd]
+        self.log.debug('device start time %s', start_time)
+        start_time = float(start_time)
+
+        self.power_monitor.disconnect_usb()
+        self.power_monitor.start_measurement(
+            measurement_args=measurement_args, output_path=power_data_path,
+            start_time=start_time)
+        self.power_monitor.connect_usb()
+        self._reinstall_sl4a()
 
         # Gather relevant metrics from measurements
         instrumentation_result = self.parse_instrumentation_result()
         self.log_instrumentation_result(instrumentation_result)
-        self._power_metrics = PowerMetrics(self._monsoon_voltage,
-                                           start_time=measure_start_time)
-        self._power_metrics.generate_test_metrics(
-            PowerMetrics.import_raw_data(power_data_path),
-            proto_parser.get_test_timestamps(instrumentation_result))
-        self.write_raw_data_in_improved_format(
-            PowerMetrics.import_raw_data(power_data_path),
-            os.path.join(os.path.dirname(power_data_path), 'monsoon.txt'),
-            measure_start_time
-        )
-        self._log_metrics()
-        return result
+        self._power_metrics = self.power_monitor.get_metrics(
+            start_time=start_time,
+            voltage=monsoon_config.get_numeric('voltage', 4.2),
+            monsoon_file_path=power_data_path,
+            timestamps=proto_parser.get_test_timestamps(instrumentation_result))
+
+        self._log_metrics(self._power_metrics)
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
                         extra_params=None):
@@ -456,30 +447,27 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             return AbsoluteThresholds.from_threshold_conf(thresholds_conf)
         except (ValueError, TypeError) as e:
             self.log.error(
-                'Incorrect threshold definition for %s %s' % (
-                    instr_test_name,
-                    metric_name))
+                'Incorrect threshold definition for %s %s' % (instr_test_name,
+                                                              metric_name))
             self.log.error('Error detail: %s', str(e))
             return None
 
-    def _log_metrics(self):
+    def _log_metrics(self, power_metrics):
         """Record the collected metrics with the metric logger."""
         self.log.info('Obtained metrics summaries:')
-        for instr, power_metrics in self._power_metrics.test_metrics.items():
+        for instr, metrics in power_metrics.test_metrics.items():
             self.log.info(
-                '    %s %s' % (instr, str(power_metrics.summary)))
+                '    %s %s' % (instr, str(metrics.summary)))
 
         for metric_name in PowerMetrics.ALL_METRICS:
-            for instr_test_name in self._power_metrics.test_metrics:
-                power_metrics = self._power_metrics.test_metrics[
-                    instr_test_name]
+            for instr, metrics in power_metrics.test_metrics.items():
                 metric = getattr(
-                    power_metrics,
+                    metrics,
                     metric_name)
                 self.blackbox_logger.add_metric(
-                    '%s__%s' % (metric_name, instr_test_name), metric.value)
+                    '%s__%s' % (metric_name, instr), metric.value)
                 thresholds = self.get_absolute_thresholds_for_metric(
-                    instr_test_name,
+                    instr,
                     metric_name)
 
                 lower_limit = None
@@ -489,7 +477,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     upper_limit = thresholds.upper.to_unit(metric.unit).value
 
                 self.bounded_metric_logger.add(
-                    '%s.%s' % (instr_test_name, metric_name), metric.value,
+                    '%s.%s' % (instr, metric_name), metric.value,
                     lower_limit=lower_limit,
                     upper_limit=upper_limit,
                     unit=metric.unit)
@@ -559,21 +547,3 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         asserts.explicit_pass(
             msg='All measurements meet the criteria',
             extras=summaries)
-
-    @staticmethod
-    def write_raw_data_in_improved_format(raw_data, path, start_time):
-        """Writes the raw data to a file in (seconds since epoch, milliamps).
-
-        TODO(b/155294049): Deprecate this once Monsoon controller output
-            format is updated.
-
-        Args:
-            start_time: Measurement start time in seconds since epoch
-            raw_data: raw data as list or generator of (timestamp, sample)
-            path: path to write output
-        """
-        with open(path, 'w') as f:
-            for timestamp, sample in raw_data:
-                f.write('%s %s\n' %
-                        (timestamp + start_time,
-                         Measurement.amps(sample).to_unit(MILLIAMP).value))
