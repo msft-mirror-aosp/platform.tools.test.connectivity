@@ -16,6 +16,9 @@
 
 import time
 
+from acts import signals
+from acts.libs.proc.job import TimeoutError
+from acts.controllers.android_lib.errors import AndroidDeviceError
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
@@ -42,7 +45,10 @@ class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
         """Makes sure the device comes back up after rebooting and measures
         power when the device is in a rock bottom state."""
         self._instr_cmd_builder.set_output_as_text()
-        self.ad_dut.reboot(timeout=180)
+        try:
+            self.ad_dut.reboot(timeout=180)
+        except (AndroidDeviceError, TimeoutError):
+            raise signals.TestFailure('Device did not reboot successfully.')
         self.log.debug('Giving device extra minute after booting before '
                        'starting instrumentation test.')
         time.sleep(60)
