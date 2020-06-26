@@ -30,6 +30,7 @@ WPS_PBC = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
 WPS_DISPLAY = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY
 WPS_KEYPAD = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_KEYPAD
 
+
 class WifiP2pManagerTest(WifiP2pBaseTest):
     """Tests for APIs in Android's WifiP2pManager class.
 
@@ -37,7 +38,6 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
     * At least two Android devices
     * 3 Android devices for WifiP2pMultiPeersTest.py
     """
-
     def __init__(self, controllers):
         WifiP2pBaseTest.__init__(self, controllers)
 
