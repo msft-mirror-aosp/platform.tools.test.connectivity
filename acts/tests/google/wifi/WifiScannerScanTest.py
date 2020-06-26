@@ -95,9 +95,6 @@ class WifiScannerScanTest(WifiBaseTest):
         }
         self.log.debug("Run extended test: {}".format(self.run_extended_test))
         self.wifi_chs = wutils.WifiChannelUS(self.dut.model)
-        asserts.assert_true(self.dut.droid.wifiIsScannerSupported(),
-                            "Device %s doesn't support WifiScanner, abort." %
-                            self.dut.model)
         self.attenuators = wutils.group_attenuators(self.attenuators)
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
@@ -548,9 +545,10 @@ class WifiScannerScanTest(WifiBaseTest):
             band: wifi band."""
 
         r = self.dut.droid.wifiScannerGetAvailableChannels(band)
-        self.log.debug(band)
-        self.log.debug(r)
+        self.log.info("Band: %s" % band)
+        self.log.info("Available channels: %s" % r)
         expected = self.wifi_chs.band_to_freq(band)
+        self.log.info("Expected channels: %s" % expected)
         asserts.assert_equal(set(r), set(expected), "Band %s failed." % band)
 
     def connect_to_reference_network(self):
