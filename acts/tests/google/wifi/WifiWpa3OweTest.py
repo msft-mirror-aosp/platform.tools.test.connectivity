@@ -116,8 +116,7 @@ class WifiWpa3OweTest(WifiBaseTest):
         wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
             self.wpa3_personal_2g[WifiEnums.SSID_KEY])
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
-        wutils.wifi_toggle_state(ad, False)
-        wutils.wifi_toggle_state(ad, True)
+        wutils.toggle_wifi_off_and_on(self.dut)
         wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
             self.wpa3_personal_2g[WifiEnums.SSID_KEY])
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
