@@ -284,6 +284,10 @@ class BaseMonsoon(object):
         """Reconnects the Monsoon Serial/USB connection."""
         raise NotImplementedError()
 
+    def is_allocated(self):
+        """Whether the resource is locked."""
+        raise NotImplementedError()
+
     def release_monsoon_connection(self):
         """Releases the underlying monsoon Serial or USB connection.
 
