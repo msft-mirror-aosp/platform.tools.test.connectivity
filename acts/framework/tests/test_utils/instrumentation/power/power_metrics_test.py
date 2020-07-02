@@ -19,6 +19,7 @@ import statistics
 import unittest
 
 from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
+from acts.test_utils.instrumentation.power import power_metrics
 from acts.test_utils.instrumentation.power.power_metrics import CURRENT
 from acts.test_utils.instrumentation.power.power_metrics import HOUR
 from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
@@ -204,44 +205,48 @@ class PowerMetricsTest(unittest.TestCase):
     SAMPLES = [0.13, 0.95, 0.32, 4.84, 2.48, 4.11, 4.85, 4.88, 4.22, 2.2]
     RAW_DATA = list(zip(range(10), SAMPLES))
     VOLTAGE = 4.2
-    START_TIME = 5
 
     def setUp(self):
-        self.power_metrics = PowerMetrics(self.VOLTAGE, self.START_TIME)
+        self.power_metrics = PowerMetrics(self.VOLTAGE)
 
     def test_import_raw_data(self):
         """Test that power metrics can be loaded from file. Simply ensure that
         the number of samples is correct."""
 
-        imported_data = PowerMetrics.import_raw_data(
+        imported_data = power_metrics.import_raw_data(
             os.path.join(os.path.dirname(__file__),
                          '../data/sample_monsoon_data')
         )
-        self.power_metrics.generate_test_metrics(imported_data)
-        self.assertEqual(self.power_metrics._num_samples, 10)
+
+        count = 0
+        for _, __ in imported_data:
+            count = count + 1
+        self.assertEqual(count, 10)
 
     def test_split_by_test_with_timestamps(self):
         """Test that given test timestamps, a power metric is generated from
         a subset of samples corresponding to the test."""
-        sample_test = 'sample_test'
-        test_start = 8500
-        test_end = 13500
-        test_timestamps = {sample_test: {parser.START_TIMESTAMP: test_start,
-                                         parser.END_TIMESTAMP: test_end}}
-        self.power_metrics.generate_test_metrics(self.RAW_DATA, test_timestamps)
-        test_metrics = self.power_metrics.test_metrics[sample_test]
-        self.assertEqual(test_metrics._num_samples, 5)
+        timestamps = {'sample_test': {parser.START_TIMESTAMP: 3500,
+                                           parser.END_TIMESTAMP: 8500}}
+        metrics = power_metrics.generate_test_metrics(self.RAW_DATA,
+                                                      timestamps=timestamps,
+                                                      voltage=self.VOLTAGE)
+        self.assertEqual(metrics['sample_test']._num_samples, 5)
 
     def test_numeric_metrics(self):
         """Test that the numeric metrics have correct values."""
-        self.power_metrics.generate_test_metrics(self.RAW_DATA)
-        self.assertAlmostEqual(self.power_metrics.avg_current.value,
+        timestamps = {'sample_test': {parser.START_TIMESTAMP: 0,
+                                           parser.END_TIMESTAMP: 10000}}
+        metrics = power_metrics.generate_test_metrics(self.RAW_DATA,
+                                                      timestamps=timestamps,
+                                                      voltage=self.VOLTAGE)
+        self.assertAlmostEqual(metrics['sample_test'].avg_current.value,
                                statistics.mean(self.SAMPLES) * 1000)
-        self.assertAlmostEqual(self.power_metrics.max_current.value,
+        self.assertAlmostEqual(metrics['sample_test'].max_current.value,
                                max(self.SAMPLES) * 1000)
-        self.assertAlmostEqual(self.power_metrics.min_current.value,
+        self.assertAlmostEqual(metrics['sample_test'].min_current.value,
                                min(self.SAMPLES) * 1000)
-        self.assertAlmostEqual(self.power_metrics.stdev_current.value,
+        self.assertAlmostEqual(metrics['sample_test'].stdev_current.value,
                                statistics.stdev(self.SAMPLES) * 1000)
         self.assertAlmostEqual(
             self.power_metrics.avg_power.value,

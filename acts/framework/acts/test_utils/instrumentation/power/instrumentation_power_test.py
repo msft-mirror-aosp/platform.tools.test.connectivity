@@ -77,7 +77,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def setup_class(self):
         super().setup_class()
         if hasattr(self, 'monsoons'):
-            self.power_monitor = power_monitor.PowerMonitorFacade(
+            self.power_monitor = power_monitor.PowerMonitorMonsoonFacade(
                 self.monsoons[0])
 
     def setup_test(self):
@@ -369,7 +369,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             measurement_args))
 
         power_data_path = os.path.join(
-            context.get_current_context().get_full_output_path(), 'power_data')
+            context.get_current_context().get_full_output_path(), 'monsoon.txt')
 
         # TODO(b/155426729): When the Monsoon controller switches to reporting
         #   time as seconds since epoch (on host), convert its time data to be
@@ -455,12 +455,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def _log_metrics(self, power_metrics):
         """Record the collected metrics with the metric logger."""
         self.log.info('Obtained metrics summaries:')
-        for instr, metrics in power_metrics.test_metrics.items():
+        for instr, metrics in power_metrics.items():
             self.log.info(
                 '    %s %s' % (instr, str(metrics.summary)))
 
         for metric_name in PowerMetrics.ALL_METRICS:
-            for instr, metrics in power_metrics.test_metrics.items():
+            for instr, metrics in power_metrics.items():
                 metric = getattr(
                     metrics,
                     metric_name)
@@ -502,7 +502,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         for instr_test_name in instr_test_names:
             try:
-                test_metrics = self._power_metrics.test_metrics[instr_test_name]
+                test_metrics = self._power_metrics[instr_test_name]
             except KeyError:
                 raise InstrumentationTestError(
                     'Unable to find test method %s in instrumentation output. '
