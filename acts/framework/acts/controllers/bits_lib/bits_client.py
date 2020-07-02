@@ -55,8 +55,7 @@ class _BitsCollection(object):
 class BitsClient(object):
     """Helper class to issue bits' commands"""
 
-    def __init__(self, binary, service, service_config,
-                 auto_manage_usb=True):
+    def __init__(self, binary, service, service_config):
         """Constructs a BitsClient.
 
         Args:
@@ -65,10 +64,6 @@ class BitsClient(object):
               to be previously setup.
             service_config: The bits_service_config.BitsService object used to
               start the service on service_port.
-            auto_manage_usb: Whether to automatically disconnect and reconnect
-              the monsoons' usb connection at start_collection and
-              stop_collection respectively. If there is no monsoon
-              configuration this is ignored.
         """
         self._log = logging.getLogger()
         self._binary = binary
@@ -76,7 +71,6 @@ class BitsClient(object):
         self._server_config = service_config
         self._active_collection = None
         self._collections_counter = 0
-        self._auto_manage_usb = auto_manage_usb and service_config.has_monsoon
 
     def _acquire_monsoon(self):
         """Gets hold of a Monsoon so no other processes can use it.
@@ -220,9 +214,6 @@ class BitsClient(object):
         if self._server_config.has_monsoon:
             self._acquire_monsoon()
 
-        if self._auto_manage_usb:
-            self.disconnect_usb()
-
         cmd = [self._binary,
                '--port',
                self._service.port,
@@ -265,9 +256,6 @@ class BitsClient(object):
                '--stop'
                ]
         job.run(cmd)
-
-        if self._auto_manage_usb:
-            self.connect_usb()
 
         if self._server_config.has_monsoon:
             self._release_monsoon()
