@@ -72,23 +72,6 @@ class BitsClientTest(unittest.TestCase):
                          'expected a call with acquire_monsoon')
 
     @mock.patch('acts.libs.proc.job.run')
-    def test_start_collection__usb_automanaged__disconnects_monsoon(self,
-                                                                     mock_run):
-        client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
-
-        client.start_collection()
-
-        mock_run.assert_called()
-        args_list = mock_run.call_args_list
-        expected_call = list(
-            filter(lambda call: 'usb_disconnect' in call.args[0],
-                   args_list))
-        self.assertEqual(len(expected_call), 1,
-                         'expected call with usb_disconnect')
-
-    @mock.patch('acts.libs.proc.job.run')
     def test_start_collection__without_monsoon__does_not_disconnect_monsoon(
         self,
         mock_run):
@@ -105,24 +88,6 @@ class BitsClientTest(unittest.TestCase):
         self.assertEqual(len(non_expected_call), 0,
                          'did not expect call with usb_disconnect')
 
-    @mock.patch('acts.libs.proc.job.run')
-    def test_start_collection__usb_not_automanaged__does_not_disconnect_monsoon(
-        self,
-        mock_run):
-        client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=False)
-
-        client.start_collection()
-
-        mock_run.assert_called()
-        args_list = mock_run.call_args_list
-        acquire_monsoon = list(
-            filter(lambda call: 'usb_disconnect' in call.args[0],
-                   args_list))
-        self.assertEqual(len(acquire_monsoon), 0,
-                         'did not expect call with usb_disconnect')
-
     @mock.patch('acts.context.get_current_context')
     @mock.patch('acts.libs.proc.job.run')
     def test_stop_collection__releases_monsoon(self,
@@ -131,8 +96,7 @@ class BitsClientTest(unittest.TestCase):
         output_path = mock.MagicMock(return_value='out')
         mock_context.side_effect = lambda: output_path
         client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
+                                        service_config=MONSOONED_CONFIG)
         client._active_collection = self.mock_active_collection
 
         client.stop_collection()
@@ -147,27 +111,6 @@ class BitsClientTest(unittest.TestCase):
 
     @mock.patch('acts.context.get_current_context')
     @mock.patch('acts.libs.proc.job.run')
-    def test_stop_collection__usb_automanaged__connects_monsoon(self,
-                                                                 mock_run,
-                                                                 mock_context):
-        output_path = mock.MagicMock(return_value='out')
-        mock_context.side_effect = lambda: output_path
-        client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
-        client._active_collection = self.mock_active_collection
-
-        client.stop_collection()
-
-        mock_run.assert_called()
-        args_list = mock_run.call_args_list
-        expected_call = list(
-            filter(lambda call: 'usb_connect' in call.args[0], args_list))
-        self.assertEqual(len(expected_call), 1,
-                         'expected call with usb_connect')
-
-    @mock.patch('acts.context.get_current_context')
-    @mock.patch('acts.libs.proc.job.run')
     def test_stop_collection__usb_not_automanaged__does_not_connect_monsoon(
         self,
         mock_run,
@@ -175,8 +118,7 @@ class BitsClientTest(unittest.TestCase):
         output_path = mock.MagicMock(return_value='out')
         mock_context.side_effect = lambda: output_path
         client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=False)
+                                        service_config=MONSOONED_CONFIG)
         client._active_collection = self.mock_active_collection
 
         client.stop_collection()
@@ -194,8 +136,7 @@ class BitsClientTest(unittest.TestCase):
         output_path = mock.MagicMock(return_value='out')
         mock_context.side_effect = lambda: output_path
         client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
+                                        service_config=MONSOONED_CONFIG)
         client._active_collection = self.mock_active_collection
 
         client.stop_collection()
@@ -210,8 +151,7 @@ class BitsClientTest(unittest.TestCase):
     @mock.patch('acts.libs.proc.job.run')
     def test_add_marker(self, mock_run):
         client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
+                                        service_config=MONSOONED_CONFIG)
         client._active_collection = self.mock_active_collection
 
         client.add_marker(7133, 'my marker')
@@ -226,8 +166,7 @@ class BitsClientTest(unittest.TestCase):
         output_path = mock.MagicMock(return_value='out')
         mock_context.side_effect = lambda: output_path
         client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
+                                        service_config=MONSOONED_CONFIG)
         self.mock_active_collection.markers_buffer.append((3, 'tres'))
         self.mock_active_collection.markers_buffer.append((1, 'uno'))
         self.mock_active_collection.markers_buffer.append((2, 'dos'))
@@ -255,8 +194,7 @@ class BitsClientTest(unittest.TestCase):
     @mock.patch('acts.libs.proc.job.run')
     def test_get_metrics(self, mock_run):
         client = bits_client.BitsClient('bits.par', self.mock_service,
-                                        service_config=MONSOONED_CONFIG,
-                                        auto_manage_usb=True)
+                                        service_config=MONSOONED_CONFIG)
         client._active_collection = self.mock_active_collection
 
         client.get_metrics(8888, 9999)

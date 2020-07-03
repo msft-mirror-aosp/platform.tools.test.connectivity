@@ -17,10 +17,11 @@
 import unittest
 
 import mock
+from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.power import power_metrics
 from acts.test_utils.instrumentation.power.instrumentation_power_test import ACCEPTANCE_THRESHOLD
 from acts.test_utils.instrumentation.power.instrumentation_power_test import InstrumentationPowerTest
-from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 from acts import signals
 
@@ -29,23 +30,23 @@ class MockInstrumentationPowerTest(InstrumentationPowerTest):
     """Mock test class to initialize required attributes."""
 
     # avg: 2.214, stdev: 1.358, max: 4.78, min: 0.61
-    SAMPLE_DATA = [1.64, 2.98, 1.72, 3.45, 1.31, 4.78, 3.43, 0.61, 1.19, 1.03]
+    AMPS = [1.64, 2.98, 1.72, 3.45, 1.31, 4.78, 3.43, 0.61, 1.19, 1.03]
+    RAW_DATA = list(zip(range(10), AMPS))
+    # timestamps that cover all samples
+    TIMESTAMP_LIMITS = {parser.START_TIMESTAMP: 0,
+                        parser.END_TIMESTAMP: 10_000}
+
+    TIMESTAMPS = {'instrTest1': TIMESTAMP_LIMITS,
+                  'instrTest2': TIMESTAMP_LIMITS}
 
     def __init__(self):
         self.log = mock.Mock()
         self.metric_logger = mock.Mock()
         self.current_test_name = 'test_case'
-        self._power_metrics = PowerMetrics(4.2)
-        self._power_metrics.test_metrics = {
-            'instrTest1': PowerMetrics(4.2),
-            'instrTest2': PowerMetrics(4.2)
-        }
-        self._power_metrics.test_metrics['instrTest1'].generate_test_metrics(
-            list(zip(range(10), self.SAMPLE_DATA))
-        )
-        self._power_metrics.test_metrics['instrTest2'].generate_test_metrics(
-            list(zip(range(10), self.SAMPLE_DATA))
-        )
+
+        self._power_metrics = power_metrics.generate_test_metrics(
+            raw_data=self.RAW_DATA, voltage=4.2, timestamps=self.TIMESTAMPS)
+
         self._instrumentation_config = ConfigWrapper({
             self.__class__.__name__: {
                 self.current_test_name: {
