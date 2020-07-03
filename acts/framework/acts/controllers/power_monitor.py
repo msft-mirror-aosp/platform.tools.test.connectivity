@@ -14,13 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
-import os
+import tempfile
 import logging
 from acts.controllers.monsoon_lib.api.common import MonsoonError
-from acts.test_utils.instrumentation.power.power_metrics import Measurement
-from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
-from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
+from acts.test_utils.instrumentation.power import power_metrics
 
 
 class ResourcesRegistryError(Exception):
@@ -55,8 +52,8 @@ def get_registry():
     return _REGISTRY
 
 
-def _write_raw_data_in_improved_format(raw_data, path, start_time):
-    """Writes the raw data to a file in (seconds since epoch, milliamps).
+def _write_raw_data_in_standard_format(raw_data, path, start_time):
+    """Writes the raw data to a file in (seconds since epoch, amps).
 
     TODO(b/155294049): Deprecate this once Monsoon controller output
         format is updated.
@@ -67,13 +64,36 @@ def _write_raw_data_in_improved_format(raw_data, path, start_time):
         path: path to write output
     """
     with open(path, 'w') as f:
-        for timestamp, sample in raw_data:
+        for timestamp, amps in raw_data:
             f.write('%s %s\n' %
-                    (timestamp + start_time,
-                     Measurement.amps(sample).to_unit(MILLIAMP).value))
+                    (timestamp + start_time, amps))
 
 
-class PowerMonitorFacade(object):
+class BasePowerMonitor(object):
+
+    def setup(self, **kwargs):
+        raise NotImplementedError()
+
+    def connect_usb(self, **kwargs):
+        raise NotImplementedError()
+
+    def start_measurement(self, **kwargs):
+        raise NotImplementedError()
+
+    def stop_measurement(self, **kwargs):
+        raise NotImplementedError()
+
+    def disconnect_usb(self, **kwargs):
+        raise NotImplementedError()
+
+    def get_metrics(self, **kwargs):
+        raise NotImplementedError()
+
+    def teardown(self, **kwargs):
+        raise NotImplementedError()
+
+
+class PowerMonitorMonsoonFacade(BasePowerMonitor):
 
     def __init__(self, monsoon):
         """Constructs a PowerMonitorFacade.
@@ -107,15 +127,15 @@ class PowerMonitorFacade(object):
         if measurement_args is None:
             raise MonsoonError('measurement_args can not be None')
 
-        self.monsoon.measure_power(**measurement_args,
-                                   output_path=output_path)
+        with tempfile.NamedTemporaryFile(prefix='monsoon_') as tmon:
+            self.monsoon.measure_power(**measurement_args,
+                                       output_path=tmon.name)
 
-        if output_path and start_time is not None:
-            _write_raw_data_in_improved_format(
-                PowerMetrics.import_raw_data(output_path),
-                os.path.join(os.path.dirname(output_path), 'monsoon.txt'),
-                start_time
-            )
+            if output_path and start_time is not None:
+                _write_raw_data_in_standard_format(
+                    power_metrics.import_raw_data(tmon.name),
+                    output_path,
+                    start_time)
 
     def stop_measurement(self, **__):
         # nothing to do
@@ -132,14 +152,12 @@ class PowerMonitorFacade(object):
             raise MonsoonError('voltage can not be None')
         if monsoon_file_path is None:
             raise MonsoonError('monsoon_file_path can not be None')
+        if timestamps is None:
+            raise MonsoonError('timestamps can not be None')
 
-        power_metrics = PowerMetrics(
-            voltage=voltage,
-            start_time=start_time)
-        power_metrics.generate_test_metrics(
-            PowerMetrics.import_raw_data(monsoon_file_path),
-            timestamps)
-        return power_metrics
+        return power_metrics.generate_test_metrics(
+            power_metrics.import_raw_data(monsoon_file_path),
+            timestamps=timestamps, voltage=voltage)
 
     def teardown(self, **__):
         # nothing to do
