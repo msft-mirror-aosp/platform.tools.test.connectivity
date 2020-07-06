@@ -28,6 +28,10 @@ DEFAULT_TIMEOUT = 30
 DEFAULT_SLEEPTIME = 5
 DEFAULT_FUNCTION_SWITCH_TIME = 10
 DEFAULT_SERVICE_WAITING_TIME = 20
+
+P2P_CONNECT_NEGOTIATION = 0
+P2P_CONNECT_JOIN = 1
+P2P_CONNECT_INVITATION = 2
 ######################################################
 # Wifi P2p sl4a Event String
 ######################################################
@@ -40,6 +44,7 @@ ONGOING_PEER_SET_SUCCESS_EVENT = "WifiP2psetP2pPeerConfigureOnSuccess"
 CONNECT_SUCCESS_EVENT = "WifiP2pConnectOnSuccess"
 CREATE_GROUP_SUCCESS_EVENT = "WifiP2pCreateGroupOnSuccess"
 SET_CHANNEL_SUCCESS_EVENT = "WifiP2pSetChannelsOnSuccess"
+GROUP_INFO_AVAILABLE_EVENT = "WifiP2pOnGroupInfoAvailable"
 
 ######################################################
 # Wifi P2p local service event
