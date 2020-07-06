@@ -80,7 +80,11 @@ class WifiP2pGroupTest(WifiP2pBaseTest):
                             p2pconsts.DEFAULT_TIMEOUT)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         # Request the connection
-        wp2putils.p2p_connect(gc_dut, go_dut, False, wps_type, True)
+        wp2putils.p2p_connect(gc_dut,
+                              go_dut,
+                              False,
+                              wps_type,
+                              p2p_connect_type=p2pconsts.P2P_CONNECT_JOIN)
 
         go_ip = wp2putils.p2p_go_ip(gc_dut)
         wp2putils.p2p_connection_ping_test(gc_dut, go_ip)
