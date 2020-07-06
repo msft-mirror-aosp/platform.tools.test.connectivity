@@ -18,18 +18,14 @@ import time
 import re
 import os
 import math
-import collections
 import shutil
 import fnmatch
-import datetime
 import posixpath
 import tempfile
-from collections import namedtuple
 from collections import namedtuple
 
 from acts import utils
 from acts import signals
-from acts.libs.proc import job
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
@@ -43,7 +39,7 @@ PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
     "/storage/emulated/0/Android/data/com.android.gpstool/files/")
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
-TTFF_REPORT = namedtuple("TTFF_REPORT","ttff_time ttff_loop ttff_sec ttff_pe ttff_cn")
+TTFF_REPORT = namedtuple("TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
 TRACK_REPORT = namedtuple(
     "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
 LOCAL_PROP_FILE_CONTENTS =  """\
@@ -131,35 +127,45 @@ def enable_gnss_verbose_logging(ad):
     ad.adb.shell("sync")
 
 
+def get_am_flags(value):
+    """Returns the (value, type) flags for a given python value."""
+    if type(value) is bool:
+        return str(value).lower(), 'boolean'
+    elif type(value) is str:
+        return value, 'string'
+    raise ValueError("%s should be either 'boolean' or 'string'" % value)
+
+
 def enable_compact_and_particle_fusion_log(ad):
-    """Enable CompactLog and FLP particle fusion log.
+    """Enable CompactLog, FLP particle fusion log and disable gms
+    location-based quake monitoring.
 
     Args:
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    ad.log.info("Enable CompactLog and FLP particle fusion log.")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:compact_log_enabled true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:proks_config 28")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:flp_use_particle_fusion true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e "
-                 "location:flp_particle_fusion_extended_bug_report true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:flp_event_log_size 86400")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e "
-                 "location:flp_particle_fusion_bug_report_window_sec 86400")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:"
-                 "flp_particle_fusion_bug_report_max_buffer_size 86400")
+    ad.log.info("Enable FLP flags and Disable GMS location-based quake "
+                "monitoring.")
+    overrides = {
+        'compact_log_enabled': True,
+        'flp_use_particle_fusion': True,
+        'flp_particle_fusion_extended_bug_report': True,
+        'flp_event_log_size': '86400',
+        'proks_config': '28',
+        'flp_particle_fusion_bug_report_window_sec': '86400',
+        'flp_particle_fusion_bug_report_max_buffer_size': '86400',
+        'seismic_data_collection': False,
+        'Ealert__enable': False,
+    }
+    for flag, python_value in overrides.items():
+        value, type = get_am_flags(python_value)
+        cmd = ("am broadcast -a com.google.android.gms.phenotype.FLAG_OVERRIDE "
+               "--es package com.google.android.location --es user \* "
+               "--esa flags %s --esa values %s --esa types %s "
+               "com.google.android.gms" % (flag, value, type))
+        ad.adb.shell(cmd)
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
-    ad.adb.shell("dumpsys activity service com.google.android.location."
-                 "internal.GoogleLocationManagerService")
 
 
 def disable_xtra_throttle(ad):
@@ -836,11 +842,6 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                             gnss_location_log[8].split("=")[-1].strip(","))
                         ttff_lon = float(
                             gnss_location_log[9].split("=")[-1].strip(","))
-                        ttff_time = int(
-                            gnss_location_log[10].split("=")[-1].strip(","))
-                        ttff_time1 = (
-                            datetime.datetime.fromtimestamp(ttff_time / 1000)
-                                .strftime('%Y-%m-%d %H:%M:%S'))
                 elif type == "flp":
                     flp_results = ad.search_logcat("GPSService: FLP Location",
                                                    begin_time)
@@ -859,15 +860,14 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                                                    ttff_lon))
             ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
                                                true_position)
-            ttff_data[ttff_loop] = TTFF_REPORT(ttff_time=ttff_time1,
-                                               ttff_loop=ttff_loop,
+            ttff_data[ttff_loop] = TTFF_REPORT(ttff_loop=ttff_loop,
                                                ttff_sec=ttff_sec,
                                                ttff_pe=ttff_pe,
                                                ttff_cn=ttff_cn)
-            ad.log.info("TTFF Time = %s, Loop %d = %.1f seconds, "
+            ad.log.info("Loop %d = %.1f seconds, "
                         "Position Error = %.1f meters, "
                         "Average Signal = %.1f dbHz"
-                        % (ttff_time1, ttff_loop, ttff_sec, ttff_pe, ttff_cn))
+                        % (ttff_loop, ttff_sec, ttff_pe, ttff_cn))
     return ttff_data
 
 
@@ -1256,77 +1256,3 @@ def check_location_runtime_permissions(ad, package, permissions):
     else:
         raise signals.TestError(
             "Fail to grant ACCESS_FINE_LOCATION on %s" % package)
-
-
-def install_mdstest_app(ad, mdsapp):
-    """
-        Install MDS test app in DUT
-
-        Args:
-            ad: An Android Device Object
-            mdsapp: Installation path of MDSTest app
-
-    """
-
-    if not ad.is_apk_installed("com.google.mdstest"):
-        ad.adb.install("-r %s" % mdsapp, timeout=300, ignore_status=True)
-
-
-def write_modemconfig(ad, mdsapp, nvitem_dict, modemparfile):
-    """
-        Modify the NV items using modem_tool.par
-        Note: modem_tool.par
-
-        Args:
-            ad:  An Android Device Object
-            mdsapp: Installation path of MDSTest app
-            nvitem_dict: dictionary of NV items and values.
-            modemparfile: modem_tool.par path.
-
-    """
-    ad.log.info("Verify MDSTest app installed in DUT")
-    install_mdstest_app(ad, mdsapp)
-    os.system("chmod 777 %s" % modemparfile)
-
-    for key, value in nvitem_dict.items():
-        if key.isdigit():
-            op_name = "WriteEFS"
-        else:
-            op_name = "WriteNV"
-
-        ad.log.info("Modifying the NV{!r} using {}".format(key, op_name))
-        job.run("{} --op {} --item {} --data '{}'".
-                format(modemparfile, op_name, key, value))
-        time.sleep(2)
-
-
-def verify_modemconfig(ad, nvitem_dict, modemparfile):
-
-    """
-        Verify the NV items using modem_tool.par
-        Note: modem_tool.par
-
-        Args:
-            ad:  An Android Device Object
-            nvitem_dict: dictionary of NV items and values
-            modemparfile: modem_tool.par path.
-
-    """
-    os.system("chmod 777 %s" % modemparfile)
-    for key, value in nvitem_dict.items():
-        if key.isdigit():
-            op_name = "ReadEFS"
-        else:
-            op_name = "ReadNV"
-        # Sleeptime to avoid Modem communication error
-        time.sleep(5)
-        result = job.run("{} --op {} --item {}".
-                         format(modemparfile, op_name, key))
-        output = str(result.stdout)
-        ad.log.info("Actual Value for NV{!r} is {!r}".
-                    format(key, output))
-        if not value.casefold() in output:
-            ad.log.error('NV Value is wrong {!r} in {!r}'.
-                         format(value, result))
-            raise ValueError('could not find {!r} in {!r}'.
-                             format(value, result))
