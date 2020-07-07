@@ -115,8 +115,34 @@ def p2p_go_ip(ad):
     return ad_connect_info_event['data']['groupOwnerHostAddress']
 
 
+def p2p_get_current_group(ad):
+    """Get current group information
+
+    Args:
+        ad: The android device
+    Return:
+        p2p group information
+    """
+    ad.log.debug("get current group")
+    ad.droid.wifiP2pRequestGroupInfo()
+    ad_group_info_event = ad.ed.pop_event(p2pconsts.GROUP_INFO_AVAILABLE_EVENT,
+                                          p2pconsts.DEFAULT_TIMEOUT)
+    ad.log.debug(
+        "p2p group: SSID:%s, password:%s, owner address: %s, interface: %s" %
+        (ad_group_info_event['data']['NetworkName'],
+         ad_group_info_event['data']['Passphrase'],
+         ad_group_info_event['data']['OwnerAddress'],
+         ad_group_info_event['data']['Interface']))
+    return ad_group_info_event['data']
+
+
 #trigger p2p connect to ad2 from ad1
-def p2p_connect(ad1, ad2, isReconnect, wpsSetup, isJoinExistingGroup=False):
+def p2p_connect(ad1,
+                ad2,
+                isReconnect,
+                wpsSetup,
+                p2p_connect_type=p2pconsts.P2P_CONNECT_NEGOTIATION,
+                go_ad=None):
     """trigger p2p connect to ad2 from ad1
 
     Args:
@@ -125,10 +151,17 @@ def p2p_connect(ad1, ad2, isReconnect, wpsSetup, isJoinExistingGroup=False):
         isReconnect: boolean, if persist group is exist,
                 isReconnect is true, otherswise is false.
         wpsSetup: which wps connection would like to use
+        p2p_connect_type: enumeration, which type this p2p connection is
+        go_ad: The group owner android device which is used for the invitation connection
     """
-    ad1.log.info("Create p2p connection from %s to %s via wps: %s" %
-                 (ad1.name, ad2.name, wpsSetup))
-    if isJoinExistingGroup:
+    ad1.log.info("Create p2p connection from %s to %s via wps: %s type %d" %
+                 (ad1.name, ad2.name, wpsSetup, p2p_connect_type))
+    if p2p_connect_type == p2pconsts.P2P_CONNECT_INVITATION:
+        if go_ad is None:
+            go_ad = ad1
+        find_p2p_device(ad1, ad2)
+        find_p2p_group_owner(ad2, go_ad)
+    elif p2p_connect_type == p2pconsts.P2P_CONNECT_JOIN:
         find_p2p_group_owner(ad1, ad2)
     else:
         find_p2p_device(ad1, ad2)
@@ -186,9 +219,16 @@ def p2p_connect(ad1, ad2, isReconnect, wpsSetup, isJoinExistingGroup=False):
             ad2.droid.wifiP2pConfirmConnection()
         elif wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC:
             ad2.droid.wifiP2pAcceptConnection()
+            if p2p_connect_type == p2pconsts.P2P_CONNECT_INVITATION:
+                time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
+                go_ad.droid.wifiP2pAcceptConnection()
 
     #wait connected event
-    ad1.ed.pop_event(p2pconsts.CONNECTED_EVENT, p2pconsts.DEFAULT_TIMEOUT)
+    if p2p_connect_type == p2pconsts.P2P_CONNECT_INVITATION:
+        go_ad.ed.pop_event(p2pconsts.CONNECTED_EVENT,
+                           p2pconsts.DEFAULT_TIMEOUT)
+    else:
+        ad1.ed.pop_event(p2pconsts.CONNECTED_EVENT, p2pconsts.DEFAULT_TIMEOUT)
     ad2.ed.pop_event(p2pconsts.CONNECTED_EVENT, p2pconsts.DEFAULT_TIMEOUT)
 
 
