@@ -100,7 +100,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
         gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(gc_dut, go_dut, True, WPS_PBC)
         wp2putils.p2p_disconnect(gc_dut)
-        wp2putils.check_disconnect(go_dut)
+        wp2putils.check_disconnect(
+            go_dut, timeout=p2pconsts.DEFAULT_GROUP_CLIENT_LOST_TIME)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
 
     @test_tracker_info(uuid="12bbe73a-5a6c-4307-9797-c77c7efdc4b5")
@@ -150,7 +151,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
         gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(gc_dut, go_dut, True, WPS_DISPLAY)
         wp2putils.p2p_disconnect(gc_dut)
-        wp2putils.check_disconnect(go_dut)
+        wp2putils.check_disconnect(
+            go_dut, timeout=p2pconsts.DEFAULT_GROUP_CLIENT_LOST_TIME)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
 
     @test_tracker_info(uuid="efe88f57-5a08-4195-9592-2f6945a9d18a")
@@ -200,5 +202,6 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
         gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(gc_dut, go_dut, True, WPS_KEYPAD)
         wp2putils.p2p_disconnect(gc_dut)
-        wp2putils.check_disconnect(go_dut)
+        wp2putils.check_disconnect(
+            go_dut, timeout=p2pconsts.DEFAULT_GROUP_CLIENT_LOST_TIME)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
