@@ -43,7 +43,7 @@ def is_discovered(event, ad):
     return False
 
 
-def check_disconnect(ad):
+def check_disconnect(ad, timeout=p2pconsts.DEFAULT_TIMEOUT):
     """Check an Android device disconnect or not
 
     Args:
@@ -51,7 +51,7 @@ def check_disconnect(ad):
     """
     ad.droid.wifiP2pRequestConnectionInfo()
     # wait disconnect event
-    ad.ed.pop_event(p2pconsts.DISCONNECTED_EVENT, p2pconsts.DEFAULT_TIMEOUT)
+    ad.ed.pop_event(p2pconsts.DISCONNECTED_EVENT, timeout)
 
 
 def p2p_disconnect(ad):
