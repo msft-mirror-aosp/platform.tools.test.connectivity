@@ -66,8 +66,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         opt_param = [
-            "radius_conf_2g", "radius_conf_5g", "ca_cert", "eap_identity",
-            "eap_password", "passpoint_networks", "altsubject_match" ]
+            "open_network", "reference_networks", "hidden_networks", "radius_conf_2g",
+            "radius_conf_5g", "ca_cert", "eap_identity", "eap_password", "passpoint_networks",
+            "altsubject_match"]
         self.unpack_userparams(opt_param_names=opt_param,)
 
         if "AccessPoint" in self.user_params:
