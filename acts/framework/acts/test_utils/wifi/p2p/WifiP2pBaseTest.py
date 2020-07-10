@@ -33,6 +33,9 @@ class WifiP2pBaseTest(BaseTestClass):
             super(WifiP2pBaseTest, self).__init__(controllers)
 
     def setup_class(self):
+        for ad in self.android_devices:
+            ad.droid.wakeLockAcquireBright()
+            ad.droid.wakeUpNow()
         required_params = ()
         optional_params = ("skip_read_factory_mac", )
         self.unpack_userparams(required_params,
@@ -91,11 +94,12 @@ class WifiP2pBaseTest(BaseTestClass):
         if len(self.android_devices) > 2:
             self.dut3.droid.wifiP2pClose()
             acts.utils.set_location_service(self.dut3, False)
+        for ad in self.android_devices:
+            ad.droid.wakeLockRelease()
+            ad.droid.goToSleepNow()
 
     def setup_test(self):
         for ad in self.android_devices:
-            ad.droid.wakeLockAcquireBright()
-            ad.droid.wakeUpNow()
             ad.ed.clear_all_events()
 
     def teardown_test(self):
@@ -108,8 +112,6 @@ class WifiP2pBaseTest(BaseTestClass):
                 ad.droid.wifiP2pDeletePersistentGroup(network['NetworkId'])
             # Clear p2p local service
             ad.droid.wifiP2pClearLocalServices()
-            ad.droid.wakeLockRelease()
-            ad.droid.goToSleepNow()
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
