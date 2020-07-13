@@ -188,20 +188,18 @@ class WifiPingTest(base_test.BaseTestClass):
         Args:
             result: dict containing ping results and meta data
         """
-        # Get target range
-        #rvr_range = self.get_range_from_rvr()
-        # Set Blackbox metric
-        if self.publish_testcase_metrics:
-            self.testcase_metric_logger.add_metric('ping_range',
-                                                   result['range'])
         # Evaluate test pass/fail
         test_message = ('Attenuation at range is {}dB. '
                         'LLStats at Range: {}'.format(
                             result['range'], result['llstats_at_range']))
         if result['peak_throughput_pct'] < 95:
             asserts.fail("(RESULT NOT RELIABLE) {}".format(test_message))
-        else:
-            asserts.explicit_pass(test_message)
+
+        # If pass, set Blackbox metric
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('ping_range',
+                                                   result['range'])
+        asserts.explicit_pass(test_message)
 
     def pass_fail_check(self, result):
         if 'range' in result['testcase_params']['test_type']:
