@@ -20,7 +20,10 @@ import tempfile
 import time
 
 import tzlocal
-from acts.controllers import power_monitor
+from acts import asserts
+from acts import context
+from acts.controllers import monsoon as monsoon_controller
+from acts.controllers import power_monitor as power_monitor_lib
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
@@ -36,9 +39,6 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
-
-from acts import asserts
-from acts import context
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
@@ -73,12 +73,32 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._sl4a_apk = None
         self._instr_cmd_builder = None
         self._power_metrics = None
+        self.prefer_bits_over_monsoon = False
 
     def setup_class(self):
         super().setup_class()
-        if hasattr(self, 'monsoons'):
-            self.power_monitor = power_monitor.PowerMonitorMonsoonFacade(
-                self.monsoons[0])
+        power_monitor_lib.update_registry(self.user_params)
+        self.power_monitors = self.pick_power_monitor()
+        self.power_monitor = self.power_monitors[0]
+
+    def pick_power_monitor(self):
+        there_are_monsoons = hasattr(self, 'monsoons')
+        there_are_bitses = hasattr(self, 'bitses')
+        asserts.assert_true(there_are_bitses or there_are_monsoons,
+                            'at least one power monitor must be defined')
+        # use bits if there are bitses defined and is preferred
+        # use bits if it is not possible to use monsoons
+        use_bits = there_are_bitses and (
+            self.prefer_bits_over_monsoon or not there_are_monsoons)
+        if use_bits and there_are_monsoons:
+            # the monsoon controller interferes with bits.
+            monsoon_controller.destroy(self.monsoons)
+        if use_bits:
+            power_monitors = self.bitses
+        else:
+            power_monitors = [power_monitor_lib.PowerMonitorMonsoonFacade(
+                monsoon) for monsoon in self.monsoons]
+        return power_monitors
 
     def setup_test(self):
         """Test setup"""
