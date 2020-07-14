@@ -17,19 +17,21 @@
 import os
 import statistics
 import unittest
+from unittest import mock
+from unittest.mock import patch
 
+from acts.test_utils.instrumentation import config_wrapper
 from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
 from acts.test_utils.instrumentation.power import power_metrics
+from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 from acts.test_utils.instrumentation.power.power_metrics import CURRENT
 from acts.test_utils.instrumentation.power.power_metrics import HOUR
+from acts.test_utils.instrumentation.power.power_metrics import Metric
 from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
 from acts.test_utils.instrumentation.power.power_metrics import MINUTE
-from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
-from acts.test_utils.instrumentation.power.power_metrics import Measurement
 from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 from acts.test_utils.instrumentation.power.power_metrics import TIME
 from acts.test_utils.instrumentation.power.power_metrics import WATT
-from acts.test_utils.instrumentation import config_wrapper
 
 FAKE_UNIT_TYPE = 'fake_unit'
 FAKE_UNIT = 'F'
@@ -40,8 +42,8 @@ class AbsoluteThresholdsTest(unittest.TestCase):
         thresholds = AbsoluteThresholds(lower=1, upper=2,
                                         unit_type='power',
                                         unit='mW')
-        self.assertEqual(thresholds.lower, Measurement(1, 'power', 'mW'))
-        self.assertEqual(thresholds.upper, Measurement(2, 'power', 'mW'))
+        self.assertEqual(thresholds.lower, Metric(1, 'power', 'mW'))
+        self.assertEqual(thresholds.upper, Metric(2, 'power', 'mW'))
 
     def test_build_from_percentual_deviation(self):
         """Test construction of thresholds defined by percentual deviation."""
@@ -50,8 +52,8 @@ class AbsoluteThresholdsTest(unittest.TestCase):
                                                  percentage=2,
                                                  unit_type='power',
                                                  unit='mW'))
-        self.assertEqual(thresholds.lower, Measurement(98, 'power', 'mW'))
-        self.assertEqual(thresholds.upper, Measurement(102, 'power', 'mW'))
+        self.assertEqual(thresholds.lower, Metric(98, 'power', 'mW'))
+        self.assertEqual(thresholds.upper, Metric(102, 'power', 'mW'))
 
     def test_build_from_absolutes_config(self):
         """Test that thresholds by absolute values can be built through configs.
@@ -60,8 +62,8 @@ class AbsoluteThresholdsTest(unittest.TestCase):
             {'lower_limit': 1, 'upper_limit': 2,
              'unit_type': 'power', 'unit': 'mW'})
         thresholds = AbsoluteThresholds.from_threshold_conf(config)
-        self.assertEqual(thresholds.lower, Measurement(1, 'power', 'mW'))
-        self.assertEqual(thresholds.upper, Measurement(2, 'power', 'mW'))
+        self.assertEqual(thresholds.lower, Metric(1, 'power', 'mW'))
+        self.assertEqual(thresholds.upper, Metric(2, 'power', 'mW'))
 
     def test_build_from_deviation_config(self):
         """Test that thresholds for percentual deviations can be built."""
@@ -69,8 +71,8 @@ class AbsoluteThresholdsTest(unittest.TestCase):
             {'expected_value': 100, 'percent_deviation': 2,
              'unit_type': 'power', 'unit': 'mW'})
         thresholds = AbsoluteThresholds.from_threshold_conf(config)
-        self.assertEqual(thresholds.lower, Measurement(98, 'power', 'mW'))
-        self.assertEqual(thresholds.upper, Measurement(102, 'power', 'mW'))
+        self.assertEqual(thresholds.lower, Metric(98, 'power', 'mW'))
+        self.assertEqual(thresholds.upper, Metric(102, 'power', 'mW'))
 
     def test_build_from_config_without_unit_type(self):
         """Test that from_threshold_conf raises an error if not given a unit
@@ -134,19 +136,19 @@ class MeasurementTest(unittest.TestCase):
         """Test that a Measurement is properly initialized given a valid unit
         type.
         """
-        measurement = Measurement(2, CURRENT, MILLIAMP)
+        measurement = Metric(2, CURRENT, MILLIAMP)
         self.assertEqual(measurement.value, 2)
-        self.assertEqual(measurement._unit, MILLIAMP)
+        self.assertEqual(measurement.unit, MILLIAMP)
 
     def test_init_with_invalid_unit_type(self):
         """Test that __init__ raises an error if given an invalid unit type."""
         with self.assertRaisesRegex(TypeError, 'valid unit type'):
-            measurement = Measurement(2, FAKE_UNIT_TYPE, FAKE_UNIT)
+            measurement = Metric(2, FAKE_UNIT_TYPE, FAKE_UNIT)
 
     def test_unit_conversion(self):
         """Test that to_unit correctly converts value and unit."""
         ratio = 1000
-        current_amps = Measurement.amps(15)
+        current_amps = Metric.amps(15)
         current_milliamps = current_amps.to_unit(MILLIAMP)
         self.assertEqual(current_milliamps.value / current_amps.value, ratio)
 
@@ -154,16 +156,16 @@ class MeasurementTest(unittest.TestCase):
         """Test that to_unit raises and error if incompatible unit type is
         specified.
         """
-        current_amps = Measurement.amps(3.4)
+        current_amps = Metric.amps(3.4)
         with self.assertRaisesRegex(TypeError, 'Incompatible units'):
             power_watts = current_amps.to_unit(WATT)
 
     def test_comparison_operators(self):
         """Test that the comparison operators work as intended."""
         # time_a == time_b < time_c
-        time_a = Measurement.seconds(120)
-        time_b = Measurement(2, TIME, MINUTE)
-        time_c = Measurement(0.1, TIME, HOUR)
+        time_a = Metric.seconds(120)
+        time_b = Metric(2, TIME, MINUTE)
+        time_c = Metric(0.1, TIME, HOUR)
 
         self.assertEqual(time_a, time_b)
         self.assertEqual(time_b, time_a)
@@ -179,24 +181,24 @@ class MeasurementTest(unittest.TestCase):
 
     def test_arithmetic_operators(self):
         """Test that the addition and subtraction operators work as intended"""
-        time_a = Measurement(3, TIME, HOUR)
-        time_b = Measurement(90, TIME, MINUTE)
+        time_a = Metric(3, TIME, HOUR)
+        time_b = Metric(90, TIME, MINUTE)
 
         sum_ = time_a + time_b
         self.assertEqual(sum_.value, 4.5)
-        self.assertEqual(sum_._unit, HOUR)
+        self.assertEqual(sum_.unit, HOUR)
 
         sum_reversed = time_b + time_a
         self.assertEqual(sum_reversed.value, 270)
-        self.assertEqual(sum_reversed._unit, MINUTE)
+        self.assertEqual(sum_reversed.unit, MINUTE)
 
         diff = time_a - time_b
         self.assertEqual(diff.value, 1.5)
-        self.assertEqual(diff._unit, HOUR)
+        self.assertEqual(diff.unit, HOUR)
 
         diff_reversed = time_b - time_a
         self.assertEqual(diff_reversed.value, -90)
-        self.assertEqual(diff_reversed._unit, MINUTE)
+        self.assertEqual(diff_reversed.unit, MINUTE)
 
 
 class PowerMetricsTest(unittest.TestCase):
@@ -223,31 +225,38 @@ class PowerMetricsTest(unittest.TestCase):
             count = count + 1
         self.assertEqual(count, 10)
 
-    def test_split_by_test_with_timestamps(self):
+    @patch('acts.test_utils.instrumentation.power.power_metrics.PowerMetrics')
+    def test_split_by_test_with_timestamps(self, mock_power_metric_type):
         """Test that given test timestamps, a power metric is generated from
         a subset of samples corresponding to the test."""
         timestamps = {'sample_test': {parser.START_TIMESTAMP: 3500,
-                                           parser.END_TIMESTAMP: 8500}}
+                                      parser.END_TIMESTAMP: 8500}}
+
+        mock_power_metric = mock.Mock()
+        mock_power_metric_type.side_effect = lambda v: mock_power_metric
         metrics = power_metrics.generate_test_metrics(self.RAW_DATA,
                                                       timestamps=timestamps,
                                                       voltage=self.VOLTAGE)
-        self.assertEqual(metrics['sample_test']._num_samples, 5)
+
+        self.assertEqual(mock_power_metric.update_metrics.call_count, 5)
 
     def test_numeric_metrics(self):
         """Test that the numeric metrics have correct values."""
         timestamps = {'sample_test': {parser.START_TIMESTAMP: 0,
-                                           parser.END_TIMESTAMP: 10000}}
+                                      parser.END_TIMESTAMP: 10000}}
         metrics = power_metrics.generate_test_metrics(self.RAW_DATA,
                                                       timestamps=timestamps,
                                                       voltage=self.VOLTAGE)
-        self.assertAlmostEqual(metrics['sample_test'].avg_current.value,
+        metrics_as_dic = {m.name: m for m in metrics['sample_test']}
+        self.assertAlmostEqual(metrics_as_dic['avg_current'].value,
                                statistics.mean(self.SAMPLES) * 1000)
-        self.assertAlmostEqual(metrics['sample_test'].max_current.value,
+        self.assertAlmostEqual(metrics_as_dic['max_current'].value,
                                max(self.SAMPLES) * 1000)
-        self.assertAlmostEqual(metrics['sample_test'].min_current.value,
+        self.assertAlmostEqual(metrics_as_dic['min_current'].value,
                                min(self.SAMPLES) * 1000)
-        self.assertAlmostEqual(metrics['sample_test'].stdev_current.value,
-                               statistics.stdev(self.SAMPLES) * 1000)
+        self.assertAlmostEqual(
+            metrics_as_dic['stdev_current'].value,
+            statistics.stdev(self.SAMPLES) * 1000)
         self.assertAlmostEqual(
             self.power_metrics.avg_power.value,
             self.power_metrics.avg_current.value * self.VOLTAGE)
