@@ -62,6 +62,7 @@ class WifiRoamingTest(WifiBaseTest):
             len(self.open_network) > 1,
             "Need at least two open networks for roaming")
 
+
         self.configure_packet_capture()
 
     def teardown_class(self):
@@ -101,10 +102,12 @@ class WifiRoamingTest(WifiBaseTest):
         5. Validate connection information and ping.
         """
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
-        wutils.connect_to_wifi_network(self.dut, AP1_network)
+        wifi_config = AP1_network.copy()
+        wifi_config.pop("bssid")
+        wutils.connect_to_wifi_network(self.dut, wifi_config)
         self.log.info("Roaming from %s to %s", AP1_network, AP2_network)
-        self.trigger_roaming_and_verify_attenuation(AP1_network)
-        self.validate_roaming(AP2_network)
+        wutils.trigger_roaming_and_validate(
+            self.dut, self.attenuators, "AP1_off_AP2_on", AP2_network)
 
     def get_rssi(self, pcap_file, expected_bssid):
         """Get signal strength of the wifi network attenuated.
