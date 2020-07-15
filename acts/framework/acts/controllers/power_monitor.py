@@ -77,10 +77,10 @@ class BasePowerMonitor(object):
     def connect_usb(self, **kwargs):
         raise NotImplementedError()
 
-    def start_measurement(self, **kwargs):
+    def measure(self, **kwargs):
         raise NotImplementedError()
 
-    def stop_measurement(self, **kwargs):
+    def release_resources(self, **kwargs):
         raise NotImplementedError()
 
     def disconnect_usb(self, **kwargs):
@@ -122,7 +122,7 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
     def connect_usb(self, **__):
         self.monsoon.usb('on')
 
-    def start_measurement(self, measurement_args=None, start_time=None,
+    def measure(self, measurement_args=None, start_time=None,
                           output_path=None, **__):
         if measurement_args is None:
             raise MonsoonError('measurement_args can not be None')
@@ -137,7 +137,7 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
                     output_path,
                     start_time)
 
-    def stop_measurement(self, **__):
+    def release_resources(self, **__):
         # nothing to do
         pass
 

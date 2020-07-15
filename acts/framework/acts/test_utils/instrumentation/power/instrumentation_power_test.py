@@ -38,7 +38,6 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
-from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
@@ -400,7 +399,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         start_time = float(start_time)
 
         self.power_monitor.disconnect_usb()
-        self.power_monitor.start_measurement(
+        self.power_monitor.measure(
             measurement_args=measurement_args, output_path=power_data_path,
             start_time=start_time)
         self.power_monitor.connect_usb()
@@ -415,6 +414,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             monsoon_file_path=power_data_path,
             timestamps=proto_parser.get_test_timestamps(instrumentation_result))
 
+        self.power_monitor.release_resources()
         self._log_metrics(self._power_metrics)
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
@@ -475,20 +475,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def _log_metrics(self, power_metrics):
         """Record the collected metrics with the metric logger."""
         self.log.info('Obtained metrics summaries:')
-        for instr, metrics in power_metrics.items():
-            self.log.info(
-                '    %s %s' % (instr, str(metrics.summary)))
+        for segment_name, metrics in power_metrics.items():
+            for metric in metrics:
+                self.log.info(
+                    '    %s %s %s' % (segment_name, metric.name, metric))
 
-        for metric_name in PowerMetrics.ALL_METRICS:
-            for instr, metrics in power_metrics.items():
-                metric = getattr(
-                    metrics,
-                    metric_name)
+            for metric in metrics:
                 self.blackbox_logger.add_metric(
-                    '%s__%s' % (metric_name, instr), metric.value)
+                    '%s__%s' % (metric.name, segment_name), metric.value)
                 thresholds = self.get_absolute_thresholds_for_metric(
-                    instr,
-                    metric_name)
+                    segment_name,
+                    metric.name)
 
                 lower_limit = None
                 upper_limit = None
@@ -497,7 +494,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     upper_limit = thresholds.upper.to_unit(metric.unit).value
 
                 self.bounded_metric_logger.add(
-                    '%s.%s' % (instr, metric_name), metric.value,
+                    '%s.%s' % (segment_name, metric.name), metric.value,
                     lower_limit=lower_limit,
                     upper_limit=upper_limit,
                     unit=metric.unit)
@@ -522,7 +519,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         for instr_test_name in instr_test_names:
             try:
-                test_metrics = self._power_metrics[instr_test_name]
+                test_metrics = {metric.name: metric for metric in
+                                self._power_metrics[instr_test_name]}
             except KeyError:
                 raise InstrumentationTestError(
                     'Unable to find test method %s in instrumentation output. '
@@ -534,8 +532,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             test_thresholds_configs = all_thresholds.get_config(instr_test_name)
             for metric_name, thresholds_conf in test_thresholds_configs.items():
                 try:
-                    actual_result = getattr(test_metrics, metric_name)
-                except AttributeError as e:
+                    actual_result = test_metrics[metric_name]
+                except KeyError as e:
                     self.log.warning(
                         'Error while retrieving results for %s: %s' % (
                             metric_name, str(e)))
