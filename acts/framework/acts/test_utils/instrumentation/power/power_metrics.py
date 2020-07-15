@@ -66,8 +66,8 @@ class AbsoluteThresholds(object):
     def __init__(self, lower, upper, unit_type, unit):
         self.unit_type = unit_type
         self.unit = unit
-        self.lower = Measurement(lower, unit_type, unit)
-        self.upper = Measurement(upper, unit_type, unit)
+        self.lower = Metric(lower, unit_type, unit)
+        self.upper = Metric(upper, unit_type, unit)
 
     @staticmethod
     def from_percentual_deviation(expected, percentage, unit_type, unit):
@@ -176,49 +176,50 @@ class AbsoluteThresholds(object):
         return thresholds
 
 
-class Measurement(object):
+class Metric(object):
     """Base class for describing power measurement values. Each object contains
     an value and a unit. Enables some basic arithmetic operations with other
     measurements of the same unit type.
 
     Attributes:
-        _value: Numeric value of the measurement
+        value: Numeric value of the measurement
         _unit_type: Unit type of the measurement (e.g. current, power)
-        _unit: Unit of the measurement (e.g. W, mA)
+        unit: Unit of the measurement (e.g. W, mA)
     """
 
-    def __init__(self, value, unit_type, unit):
+    def __init__(self, value, unit_type, unit, name=None):
         if unit_type not in CONVERSION_TABLES:
             raise TypeError(
                 '%s is not a valid unit type, valid unit types are %s' % (
                     unit_type, str(CONVERSION_TABLES.keys)))
-        self._value = value
+        self.value = value
+        self.unit = unit
+        self.name = name
         self._unit_type = unit_type
-        self._unit = unit
 
     # Convenience constructor methods
     @staticmethod
-    def amps(amps):
+    def amps(amps, name=None):
         """Create a new current measurement, in amps."""
-        return Measurement(amps, CURRENT, AMP)
+        return Metric(amps, CURRENT, AMP, name=name)
 
     @staticmethod
-    def watts(watts):
+    def watts(watts, name=None):
         """Create a new power measurement, in watts."""
-        return Measurement(watts, POWER, WATT)
+        return Metric(watts, POWER, WATT, name=name)
 
     @staticmethod
-    def seconds(seconds):
+    def seconds(seconds, name=None):
         """Create a new time measurement, in seconds."""
-        return Measurement(seconds, TIME, SECOND)
+        return Metric(seconds, TIME, SECOND, name=name)
 
     # Comparison methods
 
     def __eq__(self, other):
-        return self.value == other.to_unit(self._unit).value
+        return self.value == other.to_unit(self.unit).value
 
     def __lt__(self, other):
-        return self.value < other.to_unit(self._unit).value
+        return self.value < other.to_unit(self.unit).value
 
     def __le__(self, other):
         return self == other or self < other
@@ -229,31 +230,23 @@ class Measurement(object):
         """Adds measurements of compatible unit types. The result will be in the
         same units as self.
         """
-        return Measurement(self.value + other.to_unit(self._unit).value,
-                           self._unit_type, self._unit)
+        return Metric(self.value + other.to_unit(self.unit).value,
+                      self._unit_type, self.unit, name=self.name)
 
     def __sub__(self, other):
         """Subtracts measurements of compatible unit types. The result will be
         in the same units as self.
         """
-        return Measurement(self.value - other.to_unit(self._unit).value,
-                           self._unit_type, self._unit)
+        return Metric(self.value - other.to_unit(self.unit).value,
+                      self._unit_type, self.unit, name=self.name)
 
     # String representation
 
     def __str__(self):
-        return '%g%s' % (self._value, self._unit)
+        return '%g%s' % (self.value, self.unit)
 
     def __repr__(self):
         return str(self)
-
-    @property
-    def unit(self):
-        return self._unit
-
-    @property
-    def value(self):
-        return self._value
 
     def to_unit(self, new_unit):
         """Create an equivalent measurement under a different unit.
@@ -265,13 +258,13 @@ class Measurement(object):
         Returns: A new measurement with the converted value and unit.
         """
         try:
-            new_value = self._value * (
-                CONVERSION_TABLES[self._unit_type][self._unit] /
+            new_value = self.value * (
+                CONVERSION_TABLES[self._unit_type][self.unit] /
                 CONVERSION_TABLES[self._unit_type][new_unit])
         except KeyError:
             raise TypeError('Incompatible units: %s, %s' %
-                            (self._unit, new_unit))
-        return Measurement(new_value, self._unit_type, new_unit)
+                            (self.unit, new_unit))
+        return Metric(new_value, self._unit_type, new_unit, self.name)
 
 
 def import_raw_data(path):
@@ -306,32 +299,41 @@ def generate_test_metrics(raw_data, timestamps=None,
     test_starts = {}
     test_ends = {}
     test_metrics = {}
-    for test_name, times in timestamps.items():
-        test_metrics[test_name] = PowerMetrics(voltage)
+    for seg_name, times in timestamps.items():
+        test_metrics[seg_name] = PowerMetrics(voltage)
         try:
-            test_starts[test_name] = Measurement(
+            test_starts[seg_name] = Metric(
                 times[parser.START_TIMESTAMP], TIME, MILLISECOND).to_unit(
                 SECOND).value
         except KeyError:
             raise InstrumentationTestError(
                 'Missing start timestamp for test scenario "%s". Refer to '
-                'instrumentation_proto.txt for details.' % test_name)
+                'instrumentation_proto.txt for details.' % seg_name)
         try:
-            test_ends[test_name] = Measurement(
+            test_ends[seg_name] = Metric(
                 times[parser.END_TIMESTAMP], TIME, MILLISECOND).to_unit(
                 SECOND).value
         except KeyError:
             raise InstrumentationTestError(
                 'Missing end timestamp for test scenario "%s". Test '
                 'scenario may have terminated with errors. Refer to '
-                'instrumentation_proto.txt for details.' % test_name)
+                'instrumentation_proto.txt for details.' % seg_name)
 
     # Assign data to tests based on timestamps
     for timestamp, amps in raw_data:
-        for test_name in timestamps:
-            if test_starts[test_name] <= timestamp <= test_ends[test_name]:
-                test_metrics[test_name].update_metrics(amps)
-    return test_metrics
+        for seg_name in timestamps:
+            if test_starts[seg_name] <= timestamp <= test_ends[seg_name]:
+                test_metrics[seg_name].update_metrics(amps)
+
+    result = {}
+    for seg_name, power_metrics in test_metrics.items():
+        result[seg_name] = [
+            power_metrics.avg_current,
+            power_metrics.max_current,
+            power_metrics.min_current,
+            power_metrics.stdev_current,
+            power_metrics.avg_power]
+    return result
 
 
 class PowerMetrics(object):
@@ -371,51 +373,40 @@ class PowerMetrics(object):
             self._min_current = sample
 
     # Numeric metrics
-
-    ALL_METRICS = ('avg_current', 'max_current', 'min_current', 'stdev_current',
-                   'avg_power')
-
     @property
     def avg_current(self):
         """Average current, in milliamps."""
         if not self._num_samples:
-            return Measurement.amps(0).to_unit(MILLIAMP)
-        return (Measurement.amps(self._sum_currents / self._num_samples)
+            return Metric.amps(0).to_unit(MILLIAMP)
+        return (Metric.amps(self._sum_currents / self._num_samples,
+                            'avg_current')
                 .to_unit(MILLIAMP))
 
     @property
     def max_current(self):
         """Max current, in milliamps."""
-        return Measurement.amps(self._max_current or 0).to_unit(MILLIAMP)
+        return Metric.amps(self._max_current or 0, 'max_current').to_unit(
+            MILLIAMP)
 
     @property
     def min_current(self):
         """Min current, in milliamps."""
-        return Measurement.amps(self._min_current or 0).to_unit(MILLIAMP)
+        return Metric.amps(self._min_current or 0, 'min_current').to_unit(
+            MILLIAMP)
 
     @property
     def stdev_current(self):
         """Standard deviation of current values, in milliamps."""
         if self._num_samples < 2:
-            return Measurement.amps(0).to_unit(MILLIAMP)
+            return Metric.amps(0, 'stdev_current').to_unit(MILLIAMP)
         stdev = math.sqrt(
             (self._sum_squares - (
                 self._num_samples * self.avg_current.to_unit(AMP).value ** 2))
             / (self._num_samples - 1))
-        return Measurement.amps(stdev).to_unit(MILLIAMP)
-
-    def current_to_power(self, current):
-        """Converts a current value to a power value."""
-        return (Measurement.watts(current.to_unit(AMP).value * self._voltage))
+        return Metric.amps(stdev, 'stdev_current').to_unit(MILLIAMP)
 
     @property
     def avg_power(self):
         """Average power, in milliwatts."""
-        return self.current_to_power(self.avg_current).to_unit(MILLIWATT)
-
-    @property
-    def summary(self):
-        """A summary of test metrics"""
-        return {'average_current': str(self.avg_current),
-                'max_current': str(self.max_current),
-                'average_power': str(self.avg_power)}
+        return Metric.watts(self.avg_current.to_unit(AMP).value * self._voltage,
+                            'avg_power').to_unit(MILLIWATT)
