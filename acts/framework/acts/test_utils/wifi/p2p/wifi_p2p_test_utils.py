@@ -75,7 +75,7 @@ def p2p_connection_ping_test(ad, target_ip_address):
     ad.log.debug("Run Ping Test, %s ping %s " % (ad.serial, target_ip_address))
     asserts.assert_true(
         acts.utils.adb_shell_ping(ad,
-                                  count=3,
+                                  count=6,
                                   dest_ip=target_ip_address,
                                   timeout=20), "%s ping failed" % (ad.serial))
 
