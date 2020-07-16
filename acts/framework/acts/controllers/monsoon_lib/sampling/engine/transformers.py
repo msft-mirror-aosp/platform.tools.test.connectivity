@@ -57,9 +57,8 @@ class Tee(SequentialTransformer):
         for sample in buffer:
             if sample.sample_time < self.measure_after_seconds:
                 continue
-            self._fd.write('%.9fs %.12f\n' %
-                           (sample.sample_time - self.measure_after_seconds,
-                            sample.main_current))
+            self._fd.write('%0.9f %.12f\n' %
+                           (sample.sample_time, sample.main_current))
         self._fd.flush()
         return BufferList([buffer])
 

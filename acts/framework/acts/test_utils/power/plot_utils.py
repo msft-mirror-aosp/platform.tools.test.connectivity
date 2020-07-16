@@ -62,7 +62,7 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
     avg_current = total_current / total_samples
 
     time_relative = [
-        data_point.time for monsoon_result in monsoon_results
+        data_point.relative_time for monsoon_result in monsoon_results
         for data_point in monsoon_result.get_data_points()
     ]
 

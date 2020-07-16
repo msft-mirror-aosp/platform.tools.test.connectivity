@@ -77,7 +77,7 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         avg_current = total_current / total_samples
 
         time_relative = [
-            data_point.time
+            data_point.relative_time
             for monsoon_result in monsoon_results
             for data_point in monsoon_result.get_data_points()
         ]
