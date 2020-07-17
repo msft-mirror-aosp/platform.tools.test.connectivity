@@ -66,7 +66,7 @@ class _BitsMonsoonConfig(object):
         self.monsoon_voltage = monsoon_config['monsoon_voltage']
 
         self.config_dic = copy.deepcopy(DEFAULT_MONSOON_CONFIG_DICT)
-        if self.serial >= 20000:
+        if float(self.serial) >= 20000:
             self.config_dic['hv_monsoon'] = 1
             if hvpm_monsoon_bin is None:
                 raise ValueError('hvpm_monsoon binary is needed but was None. '
