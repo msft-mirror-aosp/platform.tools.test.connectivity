@@ -32,14 +32,16 @@ class ApolloNoSetupTest(instrumentation_power_test.InstrumentationPowerTest):
     def test_idle_screen_off(self):
         """Calls an instrumentation test that turns the screen off and measures
         power."""
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff')
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
 
     def test_partial_wake_lock(self):
         """Measures power when the device is idle with a partial wake lock."""
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testPartialWakelock')
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
