@@ -34,9 +34,10 @@ class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
             timeout=BIG_FILE_PUSH_TIMEOUT)
         self.trigger_scan_on_external_storage()
 
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.PhotosTests',
             'testVideoPlaybackThroughIntent',
             extra_params=[('video_file_path', video_location)])
 
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)

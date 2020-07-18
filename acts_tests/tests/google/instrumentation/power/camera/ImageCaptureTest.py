@@ -39,7 +39,9 @@ class ImageCaptureTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def test_image_capture(self):
         """Measures power during photo capture."""
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.CameraTests',
             'testImageCapture', req_params=['hdr_mode'])
-        self.validate_power_results()
+
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)

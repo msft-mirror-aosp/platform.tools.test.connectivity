@@ -44,8 +44,9 @@ class LocalMusicPlaybackTest(
 
     def test_local_music_playback(self):
         """Measures power when the device is playing music."""
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.MusicTests',
             'testLocalPlaybackBackground'
         )
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
