@@ -14,8 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+
+import statistics
 import time
 
+from acts import signals
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
@@ -23,6 +26,22 @@ from acts.test_utils.instrumentation.device.apps.app_installer import AppInstall
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 
 DEFAULT_WAIT_TO_FASTBOOT_MODE = 10
+
+def get_median_current(test_results):
+  """Returns the median current, or a failure if the test failed."""
+  # If the last run was not a pass signal, the test exceeded
+  # acceptable_failures.
+  if not isinstance(test_results[-1], signals.TestPass):
+    return test_results[-1]
+
+  # Only look at results within the good range (i.e., passing results).
+  valid_results = filter(lambda result: isinstance(result, signals.TestPass),
+                         test_results)
+  # Gather the current measurements and return the median.
+  median_current = statistics.median(
+      [x.extras[list(x.extras.keys())[0]]['avg_current']['actual'] for x in valid_results])
+  return signals.TestPass('Pass msg! Current: %s' % median_current,
+                          extras={'average_current': median_current})
 
 class VzWDoUAutomationBaseTest(
     instrumentation_power_test.InstrumentationPowerTest):
@@ -81,17 +100,17 @@ class VzWDoUAutomationBaseTest(
     self.ad_dut.reboot()
     self.ad_dut.wait_for_boot_completion()
     self.ad_dut.adb.ensure_root()
-    self.ad_dut.log.info("Reboot to bootloader")
+    self.ad_dut.log.debug('Reboot to bootloader')
     self.ad_dut.stop_services()
-    self.ad_dut.adb.reboot("bootloader", ignore_status=True)
+    self.ad_dut.adb.reboot('bootloader', ignore_status=True)
     time.sleep(DEFAULT_WAIT_TO_FASTBOOT_MODE)
     self.fastboot_run('-w')
-    self.ad_dut.log.info("Reboot in fastboot")
+    self.ad_dut.log.debug('Reboot in fastboot')
     self.ad_dut.fastboot.reboot()
     self.ad_dut.wait_for_boot_completion()
     self.ad_dut.root_adb()
     if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
-        self._sl4a_apk.install()
+      self._sl4a_apk.install()
     self.ad_dut.start_services()
 
   def _install_google_account_util_apk(self):
