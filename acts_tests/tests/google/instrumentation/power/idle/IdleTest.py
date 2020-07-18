@@ -32,10 +32,11 @@ class IdleTest(instrumentation_power_test.InstrumentationPowerTest):
         self.base_device_configuration()
 
     def run_idle_test_case(self):
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff')
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
 
     def test_rock_bottom(self):
         """Measures power when the device is in a rock bottom state."""

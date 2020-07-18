@@ -21,9 +21,10 @@ class VzwDoUIdleTest(vzw_dou_base_test.VzwDoUBaseTest):
 
   def test_vzw_dou_idle(self):
     """Measures power when the device is in a rock bottom state."""
-    self.run_and_measure(
+    metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
         'testIdleStandbyMode')
 
-    self.validate_power_results()
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
 

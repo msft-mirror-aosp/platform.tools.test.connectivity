@@ -15,18 +15,20 @@
 #   limitations under the License.
 
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
-  vzw_dou_automation_base_test
+    vzw_dou_automation_base_test
+
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 
 class VzWDoUAutomationIdleTest(vzw_dou_automation_base_test.VzWDoUAutomationBaseTest):
-  """Class for running VZW DoU idle test cases"""
+    """Class for running VZW DoU idle test cases"""
 
-  def test_flight_mode_idle(self):
-    """Measures power when the device is in airplane mode."""
+    def test_flight_mode_idle(self):
+        """Measures power when the device is in airplane mode."""
 
-    self.adb_run(common.airplane_mode.toggle(True))
-    self.run_and_measure('com.google.android.platform.dou.IdleStandbyModeTests',
-                         'testIdleStandbyMode')
-
-    self.validate_power_results()
+        self.adb_run(common.airplane_mode.toggle(True))
+        metrics = self.run_and_measure(
+            'com.google.android.platform.dou.IdleStandbyModeTests',
+            'testIdleStandbyMode')
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)

@@ -36,13 +36,14 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
                         'frequency': 100,
                         'delay': 0}
         })
-
         self._instrumentation_config = config_wrapper.merge(
             self._instrumentation_config, overrides)
 
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff',
             extra_params=[('IdleTestCase-testIdleScreenOff', '20'),
                           ('settle-time', '1')])
-        self.validate_power_results()
+
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)

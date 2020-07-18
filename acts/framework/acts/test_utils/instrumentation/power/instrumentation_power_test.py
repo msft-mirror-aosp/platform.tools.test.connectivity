@@ -71,7 +71,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._test_apk = None
         self._sl4a_apk = None
         self._instr_cmd_builder = None
-        self._power_metrics = None
         self.prefer_bits_over_monsoon = False
 
     def setup_class(self):
@@ -362,8 +361,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                                        'disconnect signal.')
 
     def measure_power(self):
-        """Measures power consumption with the Monsoon. See monsoon_lib API for
-        details.
+        """Measures power consumption with a power_monitor. See power_monitor's
+        API for more details.
+
+        Returns:
+            A list of power_metrics.Metric.
         """
         monsoon_config = self._get_merged_config('Monsoon')
         disconnect_usb_timeout = monsoon_config.get_numeric(
@@ -408,14 +410,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Gather relevant metrics from measurements
         instrumentation_result = self.parse_instrumentation_result()
         self.log_instrumentation_result(instrumentation_result)
-        self._power_metrics = self.power_monitor.get_metrics(
+        power_metrics = self.power_monitor.get_metrics(
             start_time=start_time,
             voltage=monsoon_config.get_numeric('voltage', 4.2),
             monsoon_file_path=power_data_path,
             timestamps=proto_parser.get_test_timestamps(instrumentation_result))
 
         self.power_monitor.release_resources()
-        self._log_metrics(self._power_metrics)
+        return power_metrics
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
                         extra_params=None):
@@ -472,9 +474,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.log.error('Error detail: %s', str(e))
             return None
 
-    def _log_metrics(self, power_metrics):
+    def record_metrics(self, power_metrics):
         """Record the collected metrics with the metric logger."""
-        self.log.info('Obtained metrics summaries:')
+        self.log.info('Recording metrics summaries:')
         for segment_name, metrics in power_metrics.items():
             for metric in metrics:
                 self.log.info(
@@ -499,11 +501,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     upper_limit=upper_limit,
                     unit=metric.unit)
 
-    def validate_power_results(self, *instr_test_names):
+    def validate_metrics(self, power_metrics, *instr_test_names):
         """Compare power measurements with target values and set the test result
         accordingly.
 
         Args:
+            power_metrics: The metrics to be validated.
             instr_test_names: Name(s) of the instrumentation test method.
                 If none specified, defaults to all test methods run.
 
@@ -520,7 +523,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         for instr_test_name in instr_test_names:
             try:
                 test_metrics = {metric.name: metric for metric in
-                                self._power_metrics[instr_test_name]}
+                                power_metrics[instr_test_name]}
             except KeyError:
                 raise InstrumentationTestError(
                     'Unable to find test method %s in instrumentation output. '

@@ -34,9 +34,9 @@ class ThreeGVoiceCallTest(InstrumentationPowerTest):
         """Measures power when the device is running
         PhoneTestCases#testPhoneCall
         """
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.PhoneTestCases',
             'testPhoneCall',
             extra_params=[('PhoneNumber', '0988102544')])
-
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)

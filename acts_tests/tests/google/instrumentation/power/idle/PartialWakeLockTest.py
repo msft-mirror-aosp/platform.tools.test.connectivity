@@ -26,7 +26,8 @@ class PartialWakeLockTest(instrumentation_power_test.InstrumentationPowerTest):
 
     def test_partial_wake_lock(self):
         """Measures power when the device is idle with a partial wake lock."""
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testPartialWakelock')
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
