@@ -16,9 +16,11 @@
 
 
 import statistics
+import tempfile
 import time
 
 from acts import signals
+from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
@@ -94,6 +96,8 @@ class VzWDoUAutomationBaseTest(
   def _factory_reset(self):
     """Factory reset device before testing."""
     self.log.info('Running factory reset.')
+    self._sl4a_apk = AppInstaller.pull_from_device(
+        self.ad_dut, SL4A_APK_NAME, tempfile.mkdtemp(prefix='sl4a'))
     self.ad_dut.adb.ensure_root()
     self._install_google_account_util_apk()
     self.adb_run(goog.remove_gmail_account)

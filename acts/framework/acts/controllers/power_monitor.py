@@ -146,6 +146,21 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
 
     def get_metrics(self, start_time=None, voltage=None, monsoon_file_path=None,
                     timestamps=None, **__):
+        """Parses a monsoon_file_path to compute the consumed power and other
+        power related metrics.
+
+        Args:
+            start_time: Time when the measurement started, this is used to
+                correlate timestamps from the device and from the power samples.
+            voltage: Voltage used when the measurement started. Used to compute
+                power from current.
+            monsoon_file_path: Path to a monsoon file.
+            timestamps: Named timestamps delimiting the segments of interest.
+            **__:
+
+        Returns:
+            A list of power_metrics.Metric.
+        """
         if start_time is None:
             raise MonsoonError('start_time can not be None')
         if voltage is None:

@@ -32,7 +32,8 @@ class LteStandbyTest(InstrumentationPowerTest):
         """Measures power when the device is running
         ImsTestCases#testVoLTEOnSuspend
         """
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.ImsTestCases',
             'testVoLTEOnSuspend')
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
