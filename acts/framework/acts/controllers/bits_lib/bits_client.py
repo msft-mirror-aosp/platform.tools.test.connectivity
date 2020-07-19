@@ -166,7 +166,9 @@ class BitsClient(object):
                    str(end_ns),
                    '--aggregates_yaml_path',
                    tf.name]
-            job.run(cmd)
+            # TODO(b/161539839): remove ignore_status=True once b/161539839 is
+            # addressed.
+            job.run(cmd, ignore_status=True)
             with open(tf.name) as mf:
                 self._log.debug(
                     'bits aggregates for collection %s [%s-%s]: %s' % (

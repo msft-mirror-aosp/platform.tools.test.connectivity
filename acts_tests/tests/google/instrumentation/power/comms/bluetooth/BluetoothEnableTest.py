@@ -33,7 +33,8 @@ class BluetoothEnableTest(instrumentation_power_test.InstrumentationPowerTest):
         enabled.
         """
 
-        self.run_and_measure(
+        metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff')
-        self.validate_power_results()
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
