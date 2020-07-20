@@ -105,6 +105,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._prepare_device()
         self._instr_cmd_builder = self.power_default_instr_command_builder()
 
+    def teardown_test(self):
+        """Test teardown"""
+        super().teardown_test()
+        self.power_monitor.teardown()
+
     def _prepare_device(self):
         """Prepares the device for power testing."""
         super()._prepare_device()
