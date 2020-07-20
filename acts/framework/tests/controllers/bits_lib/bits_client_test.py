@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import unittest
+
 from acts.controllers.bits_lib import bits_client
 from acts.controllers.bits_lib import bits_service_config
-
-import unittest
 import mock
 
 CONTROLLER_CONFIG_WITH_MONSOON = {
@@ -91,8 +91,8 @@ class BitsClientTest(unittest.TestCase):
     @mock.patch('acts.context.get_current_context')
     @mock.patch('acts.libs.proc.job.run')
     def test_stop_collection__releases_monsoon(self,
-                                                mock_run,
-                                                mock_context):
+                                               mock_run,
+                                               mock_context):
         output_path = mock.MagicMock(return_value='out')
         mock_context.side_effect = lambda: output_path
         client = bits_client.BitsClient('bits.par', self.mock_service,
@@ -148,8 +148,29 @@ class BitsClientTest(unittest.TestCase):
         self.assertEqual(len(expected_call), 1,
                          'expected a call with --export')
 
+    @mock.patch('acts.context.get_current_context')
     @mock.patch('acts.libs.proc.job.run')
-    def test_add_marker(self, mock_run):
+    def test__export_ignores_dataseries_gaps(self, mock_run, mock_context):
+        output_path = mock.MagicMock(return_value='out')
+        mock_context.side_effect = lambda: output_path
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=MONSOONED_CONFIG)
+        client._active_collection = self.mock_active_collection
+
+        client._export()
+
+        mock_run.assert_called()
+        args_list = mock_run.call_args_list
+        expected_call = list(
+            filter(
+                lambda call: '--ignore_gaps' in call.args[0] and '--export' in
+                             call.args[0], args_list))
+        self.assertEqual(len(expected_call), 1,
+                         'expected a call with --ignore_gaps and --export')
+        self.assertIn('--ignore_gaps', expected_call[0].args[0])
+
+    @mock.patch('acts.libs.proc.job.run')
+    def test_add_marker(self, _):
         client = bits_client.BitsClient('bits.par', self.mock_service,
                                         service_config=MONSOONED_CONFIG)
         client._active_collection = self.mock_active_collection
@@ -157,12 +178,12 @@ class BitsClientTest(unittest.TestCase):
         client.add_marker(7133, 'my marker')
 
         client._active_collection.add_marker.assert_called_with(7133,
-                                                                 'my marker')
+                                                                'my marker')
 
     @mock.patch('acts.context.get_current_context')
     @mock.patch('acts.libs.proc.job.run')
     def test_stop_collection__flushes_buffered_markers(self, mock_run,
-                                                     mock_context):
+                                                       mock_context):
         output_path = mock.MagicMock(return_value='out')
         mock_context.side_effect = lambda: output_path
         client = bits_client.BitsClient('bits.par', self.mock_service,
@@ -207,6 +228,7 @@ class BitsClientTest(unittest.TestCase):
         self.assertEqual(len(expected_call), 1,
                          'expected a call with --aggregates_yaml_paty')
         self.assertIn('8888', expected_call[0][0][0])
+        self.assertIn('--ignore_gaps', expected_call[0][0][0])
         self.assertIn('--abs_stop_time', expected_call[0][0][0])
         self.assertIn('9999', expected_call[0][0][0])
 

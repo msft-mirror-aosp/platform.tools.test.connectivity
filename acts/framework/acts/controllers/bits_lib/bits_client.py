@@ -105,10 +105,10 @@ class BitsClient(object):
                self._service.port,
                '--name',
                self._active_collection.name,
+               '--ignore_gaps',
                '--export',
                '--export_path',
-               collection_path,
-               '--delete']
+               collection_path]
         self._log.info('exporting collection %s to %s',
                        self._active_collection.name,
                        collection_path)
@@ -160,15 +160,14 @@ class BitsClient(object):
                    self._service.port,
                    '--name',
                    self._active_collection.name,
+                   '--ignore_gaps',
                    '--abs_start_time',
                    str(start_ns),
                    '--abs_stop_time',
                    str(end_ns),
                    '--aggregates_yaml_path',
                    tf.name]
-            # TODO(b/161539839): remove ignore_status=True once b/161539839 is
-            # addressed.
-            job.run(cmd, ignore_status=True)
+            job.run(cmd)
             with open(tf.name) as mf:
                 self._log.debug(
                     'bits aggregates for collection %s [%s-%s]: %s' % (
