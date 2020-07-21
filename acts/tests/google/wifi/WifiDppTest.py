@@ -261,9 +261,10 @@ class WifiDppTest(WifiBaseTest):
     if "FAIL" in result:
       asserts.fail("gen_uri: Failed to generate a URI. Command used: %s" % cmd)
 
-    if not result.index("\n"):
-      asserts.fail("gen_uri: Helper device not responding correctly, may need to restart it."
-                   " Command used: %s" % cmd)
+    if "\n" not in result:
+      asserts.fail(
+          "gen_uri: Helper device not responding correctly, "
+          "may need to restart it. Command used: %s" % cmd)
 
     result = result[result.index("\n") + 1:]
     device.log.info("Generated URI, id = %s" % result)
