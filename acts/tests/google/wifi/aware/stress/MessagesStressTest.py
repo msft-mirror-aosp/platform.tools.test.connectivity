@@ -35,7 +35,7 @@ class MessagesStressTest(AwareBaseTest):
 
     # Number of iterations in the stress test (number of messages)
     # Should be larger than MESSAGE_QUEUE_DEPTH_PER_UID
-    NUM_ITERATIONS = 100
+    NUM_ITERATIONS = 200
 
     # Number of message to send per round to avoid exceed message queue depth limit
     # Should be less than or equal to 1/2 of MESSAGE_QUEUE_DEPTH_PER_UID
