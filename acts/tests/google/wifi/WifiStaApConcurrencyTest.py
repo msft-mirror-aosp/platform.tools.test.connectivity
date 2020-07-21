@@ -16,6 +16,7 @@
 
 import pprint
 import time
+import re
 
 from acts import asserts
 from acts import base_test
@@ -27,6 +28,8 @@ from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 import acts.test_utils.wifi.wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.utils as utils
+import acts.test_utils.tel.tel_test_utils as tel_utils
+
 
 WifiEnums = wutils.WifiEnums
 WLAN = "wlan0"
@@ -92,8 +95,12 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         wutils.wifi_toggle_state(self.dut, True)
         self.access_points[0].close()
-        del self.user_params["reference_networks"]
-        del self.user_params["open_network"]
+        try:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
+        except KeyError as e:
+            self.log.warn("There is no 'reference_network' or "
+                          "'open_network' to delete")
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
@@ -262,6 +269,38 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         else:
             asserts.fail("%s ping %s failed" % (ad2.serial, ad1_ip))
 
+    def softap_change_band(self, ad):
+        """
+        Switch DUT SoftAp to 5G band if currently in 2G.
+        Switch DUT SoftAp to 2G band if currently in 5G.
+        """
+        wlan1_freq = int(self.get_wlan1_status(self.dut)['freq'])
+        if wlan1_freq in wutils.WifiEnums.ALL_5G_FREQUENCIES:
+            band = WIFI_CONFIG_APBAND_2G
+        elif wlan1_freq in wutils.WifiEnums.ALL_2G_FREQUENCIES:
+            band = WIFI_CONFIG_APBAND_5G
+        wutils.stop_wifi_tethering(ad)
+        self.start_softap_and_verify(band)
+
+    def get_wlan1_status(self, ad):
+        """ get wlan1 interface status"""
+        get_wlan1 = 'hostapd_cli status'
+        out_wlan1 = ad.adb.shell(get_wlan1)
+        out_wlan1 = dict(re.findall(r'(\S+)=(".*?"|\S+)', out_wlan1))
+        return out_wlan1
+
+    def enable_mobile_data(self, ad):
+        """Make sure that cell data is enabled if there is a sim present."""
+        init_sim_state = tel_utils.is_sim_ready(self.log, ad)
+        if init_sim_state:
+            if not ad.droid.telephonyIsDataEnabled():
+                ad.droid.telephonyToggleDataConnection(True)
+            asserts.assert_true(ad.droid.telephonyIsDataEnabled(),
+                                "Failed to enable Mobile Data")
+        else:
+            raise signals.TestSkip("Please insert sim card with "
+                                   "Mobile Data enabled before test")
+
     ### Tests ###
 
     @test_tracker_info(uuid="c396e7ac-cf22-4736-a623-aa6d3c50193a")
@@ -371,3 +410,43 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, self.open_2g[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="a5bae3808-4019-49de-88e6-4faa80664141")
+    def test_wifi_connection_2G_softap_2G_to_softap_5g(self):
+        """Test connection to 2G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
+
+    @test_tracker_info(uuid="59fd9c89-6017-434f-8373-fe5bf0995d34")
+    def test_wifi_connection_5G_softap_2G_to_softap_5g(self):
+        """Test connection to 5G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
+
+    @test_tracker_info(uuid="ed94f92d-d2d0-4a55-af7a-2515b84dadc4")
+    def test_mobile_data_with_wifi_connection_2G_softap_2G_to_softap_5g(self):
+        """Enable Mobile Data then
+        test connection to 2G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.enable_mobile_data(self.dut)
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
+
+    @test_tracker_info(uuid="bdaaedb1-067a-4691-9bb9-c5d5c4637939")
+    def test_mobile_data_with_wifi_connection_5G_softap_2G_to_softap_5g(self):
+        """Enable Mobile Data then
+        test connection to 2G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.enable_mobile_data(self.dut)
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
