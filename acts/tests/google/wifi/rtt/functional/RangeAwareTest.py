@@ -122,9 +122,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                  autils.create_discovery_config(
                      self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
                  True),
-             s_config=autils.add_ranging_to_pub(
+             s_config=autils.add_ranging_to_sub(
                  autils.create_discovery_config(
-                     self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE), True),
+                     self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                 self.DISTANCE_MIN, self.DISTANCE_MAX),
              device_startup_offset=self.device_startup_offset,
              msg_id=self.get_next_msg_id())
 
@@ -302,8 +303,8 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
             disable_publish: if true disable ranging on publish config, otherwise disable ranging on
                             subscribe config
         """
-        p_dut = self.android_devices[1]
-        s_dut = self.android_devices[0]
+        p_dut = self.android_devices[0]
+        s_dut = self.android_devices[1]
         pub_config = autils.create_discovery_config(
             self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED)
         sub_config = autils.create_discovery_config(
