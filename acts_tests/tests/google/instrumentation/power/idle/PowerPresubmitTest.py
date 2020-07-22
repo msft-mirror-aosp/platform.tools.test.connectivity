@@ -32,7 +32,7 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
         # TODO: max_current and voltage should also be hardcoded somehow.
         self._instr_cmd_builder.set_output_as_text()
         overrides = self.context_specific_config({
-            'Monsoon': {'duration': 30,
+            'Monsoon': {'duration': 35,
                         'frequency': 100,
                         'delay': 0}
         })
@@ -43,7 +43,7 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
             'com.google.android.platform.powertests.IdleTestCase',
             'testIdleScreenOff',
             extra_params=[('IdleTestCase-testIdleScreenOff', '20'),
-                          ('settle-time', '1')])
+                          ('settle-time', '5')])
 
         self.record_metrics(metrics)
         self.validate_metrics(metrics)
