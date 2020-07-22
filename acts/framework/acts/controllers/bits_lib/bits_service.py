@@ -96,7 +96,7 @@ class BitsService(object):
         if self.config.has_monsoon:
             job.run([self.config.monsoon_config.monsoon_binary,
                      '--serialno',
-                     str(self.config.monsoon_config.serial),
+                     str(self.config.monsoon_config.serial_num),
                      '--usbpassthrough',
                      'on'],
                     timeout=10)
