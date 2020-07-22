@@ -21,7 +21,7 @@ from acts.controllers.bits_lib import bits_service_config
 import mock
 
 CONTROLLER_CONFIG_WITH_MONSOON = {
-    'Monsoon': {'serial': 1234, 'monsoon_voltage': 4.2}
+    'Monsoon': {'serial_num': 1234, 'monsoon_voltage': 4.2}
 }
 
 MONSOONED_CONFIG = bits_service_config.BitsServiceConfig(

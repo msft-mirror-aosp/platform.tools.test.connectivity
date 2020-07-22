@@ -15,10 +15,14 @@
 #   limitations under the License.
 
 import unittest
-import mock
 
 from acts.controllers.bits_lib import bits_service
 from acts.controllers.bits_lib import bits_service_config
+import mock
+
+SERVICE_CONFIG = bits_service_config.BitsServiceConfig(
+    {'Monsoon': {'serial_num': 538141, 'monsoon_voltage': 4.2}},
+    hvpm_monsoon_bin='hvpm.par')
 
 
 @mock.patch('acts.controllers.bits_lib.bits_service.atexit')
@@ -28,28 +32,24 @@ from acts.controllers.bits_lib import bits_service_config
 @mock.patch('acts.controllers.bits_lib.bits_service.open')
 class BitsServiceTest(unittest.TestCase):
 
-    def setUp(self):
-        self.service_config = bits_service_config.BitsServiceConfig(
-            {'Monsoon': {'serial': 538141, 'monsoon_voltage': 4.2}},
-            hvpm_monsoon_bin='hvpm.par')
-
     def test_output_log_opens_on_creation(self, mock_open, *_):
-        bits_service.BitsService(self.service_config, 'binary', 'log_path')
+        bits_service.BitsService(SERVICE_CONFIG, 'binary', 'log_path')
 
         mock_open.assert_called_with('log_path', 'w')
 
     def test_output_log_gets_closed_on_cleanup(self, mock_open, *_):
         mock_log = mock.Mock()
         mock_open.return_value = mock_log
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
 
         service._cleanup()
 
         mock_log.close.assert_called_with()
 
-    def test_monsoons_usb_gets_connected_on_cleanup(self, _, __, mock_run, *___):
-        service = bits_service.BitsService(self.service_config, 'binary',
+    def test_monsoons_usb_gets_connected_on_cleanup(self, _, __, mock_run,
+                                                    *___):
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
 
         service._cleanup()
@@ -59,28 +59,28 @@ class BitsServiceTest(unittest.TestCase):
         self.assertIn('on', mock_run.call_args[0][0])
 
     def test_service_can_not_be_started_twice(self, *_):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
         service.service_state = bits_service.BitsServiceStates.STARTED
         with self.assertRaises(bits_service.BitsServiceError):
             service.start()
 
     def test_service_can_not_be_stoped_twice(self, *_):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
         service.service_state = bits_service.BitsServiceStates.STOPPED
         with self.assertRaises(bits_service.BitsServiceError):
             service.stop()
 
     def test_stopped_service_can_not_be_started(self, *_):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
         service.service_state = bits_service.BitsServiceStates.STOPPED
         with self.assertRaises(bits_service.BitsServiceError):
             service.start()
 
     def test_service_output_changes_service_reported_state(self, *_):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
         self.assertEqual(bits_service.BitsServiceStates.NOT_STARTED,
                          service.service_state)
@@ -92,7 +92,7 @@ class BitsServiceTest(unittest.TestCase):
                          service.service_state)
 
     def test_service_output_defines_port(self, *_):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
 
         service._output_callback('Server listening on ...:6174.')
@@ -101,7 +101,7 @@ class BitsServiceTest(unittest.TestCase):
 
     def test_top_level_call_is_timeout_if_timeout_is_defined(self, _,
                                                              mock_process, *__):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path',
                                            timeout=42)
 
@@ -123,7 +123,7 @@ class BitsServiceTest(unittest.TestCase):
     def test_top_level_call_is_binary_if_timeout_is_not_defined(self, _,
                                                                 mock_process,
                                                                 *__):
-        service = bits_service.BitsService(self.service_config, 'binary',
+        service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
 
         def side_effect(*_, **__):
