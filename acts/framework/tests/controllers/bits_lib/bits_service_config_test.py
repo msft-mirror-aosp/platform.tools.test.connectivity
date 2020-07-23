@@ -24,7 +24,7 @@ class BitsServiceConfigTest(unittest.TestCase):
 
     def test_monsoon_with_serial_less_than_20000_is_configured_as_non_hv(self):
         config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 19999, 'monsoon_voltage': 1},
+            {'serial_num': 19999, 'monsoon_voltage': 1},
             lvpm_monsoon_bin='lvpm_bin', hvpm_monsoon_bin='hvpm_bin')
         self.assertEqual(0, config.config_dic['hv_monsoon'])
         self.assertEqual('lvpm_bin', config.config_dic['monsoon_binary_path'])
@@ -33,12 +33,12 @@ class BitsServiceConfigTest(unittest.TestCase):
         self.assertRaisesRegex(ValueError,
                                r'lvpm_monsoon binary is needed but was None.',
                                bits_service_config._BitsMonsoonConfig,
-                               {'serial': 19999, 'monsoon_voltage': 1},
+                               {'serial_num': 19999, 'monsoon_voltage': 1},
                                hvpm_monsoon_bin='hvpm_bin')
 
     def test_monsoon_with_serial_greater_than_20000_is_configured_as_hv(self):
         config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 20001, 'monsoon_voltage': 1},
+            {'serial_num': 20001, 'monsoon_voltage': 1},
             lvpm_monsoon_bin='lvpm_bin', hvpm_monsoon_bin='hvpm_bin')
         self.assertEqual(1, config.config_dic['hv_monsoon'])
         self.assertEqual('hvpm_bin', config.config_dic['monsoon_binary_path'])
@@ -47,44 +47,38 @@ class BitsServiceConfigTest(unittest.TestCase):
         self.assertRaisesRegex(ValueError,
                                r'hvpm_monsoon binary is needed but was None.',
                                bits_service_config._BitsMonsoonConfig,
-                               {'serial': 20001, 'monsoon_voltage': 1},
+                               {'serial_num': 20001, 'monsoon_voltage': 1},
                                lvpm_monsoon_bin='hvpm_bin')
 
     def test_monsoon_config_fails_without_voltage(self):
         self.assertRaisesRegex(ValueError,
                                r'Monsoon voltage can not be undefined.',
                                bits_service_config._BitsMonsoonConfig,
-                               {'serial': 1},
+                               {'serial_num': 1},
                                lvpm_monsoon_bin='lvpm_bin')
 
     def test_monsoon_config_fails_without_serial(self):
         self.assertRaisesRegex(ValueError,
-                               r'Monsoon serial can not be undefined.',
+                               r'Monsoon serial_num can not be undefined.',
                                bits_service_config._BitsMonsoonConfig,
                                {'monsoon_voltage': 1},
                                lvpm_monsoon_bin='lvpm_bin')
 
     def test_monsoon_config_is_always_enabled(self):
         config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 1, 'monsoon_voltage': 1},
+            {'serial_num': 1, 'monsoon_voltage': 1},
             lvpm_monsoon_bin='bin')
         self.assertEqual(1, config.config_dic['enabled'])
 
-    def test_monsoon_config_does_not_clame_monsoon_ownership(self):
-        config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 1, 'monsoon_voltage': 1},
-            lvpm_monsoon_bin='bin')
-        self.assertEqual(0, config.config_dic['monsoon_ownership'])
-
     def test_monsoon_config_disables_monsoon_reseting(self):
         config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 1, 'monsoon_voltage': 1},
+            {'serial_num': 1, 'monsoon_voltage': 1},
             lvpm_monsoon_bin='bin')
         self.assertEqual(0, config.config_dic['monsoon_reset'])
 
     def test_monsoon_config_type_is_monsooncollector(self):
         config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 1, 'monsoon_voltage': 1},
+            {'serial_num': 1, 'monsoon_voltage': 1},
             lvpm_monsoon_bin='bin')
         self.assertEqual('monsooncollector', config.config_dic['type'])
 
@@ -106,7 +100,7 @@ class BitsServiceConfigTest(unittest.TestCase):
 
     def test_bits_service_config_with_a_monsoon(self):
         service_config = bits_service_config.BitsServiceConfig(
-            {'Monsoon': {'serial': 1, 'monsoon_voltage': 1}},
+            {'Monsoon': {'serial_num': 1, 'monsoon_voltage': 1}},
             lvpm_monsoon_bin='bin')
         config_dic = service_config.config_dic
 
@@ -120,7 +114,7 @@ class BitsServiceConfigTest(unittest.TestCase):
                           'collectors'])
 
         monsoon_config = bits_service_config._BitsMonsoonConfig(
-            {'serial': 1, 'monsoon_voltage': 1},
+            {'serial_num': 1, 'monsoon_voltage': 1},
             lvpm_monsoon_bin='bin').config_dic
         self.assertEqual(monsoon_config,
                          config_dic['devices']['default_device'][

@@ -19,7 +19,6 @@ import copy
 DEFAULT_MONSOON_CONFIG_DICT = {
     'enabled': 1,
     'type': 'monsooncollector',
-    'monsoon_ownership': 0,
     'monsoon_reset': 0,
     # maximum monsoon sample rate that works best for both lvpm and hvpm
     'sampling_rate': 4000,
@@ -46,7 +45,7 @@ class _BitsMonsoonConfig(object):
         Args:
             monsoon_config: The monsoon config as defined in the
             ACTS Bits controller config. Expected format is:
-              { 'serial': <serial number:int>,
+              { 'serial_num': <serial number:int>,
                 'monsoon_voltage': <voltage:double> }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
             Needed if the monsoon is a lvpm monsoon (serial number lower than
@@ -55,18 +54,19 @@ class _BitsMonsoonConfig(object):
             monsoons. Needed if the monsoon is a hvpm monsoon (serial number
             greater than 20000).
         """
-        if 'serial' not in monsoon_config:
-            raise ValueError('Monsoon serial can not be undefined. Received '
-                             'config was: %s' % monsoon_config)
+        if 'serial_num' not in monsoon_config:
+            raise ValueError(
+                'Monsoon serial_num can not be undefined. Received '
+                'config was: %s' % monsoon_config)
         if 'monsoon_voltage' not in monsoon_config:
             raise ValueError('Monsoon voltage can not be undefined. Received '
                              'config was: %s' % monsoon_config)
 
-        self.serial = monsoon_config['serial']
+        self.serial_num = monsoon_config['serial_num']
         self.monsoon_voltage = monsoon_config['monsoon_voltage']
 
         self.config_dic = copy.deepcopy(DEFAULT_MONSOON_CONFIG_DICT)
-        if float(self.serial) >= 20000:
+        if float(self.serial_num) >= 20000:
             self.config_dic['hv_monsoon'] = 1
             if hvpm_monsoon_bin is None:
                 raise ValueError('hvpm_monsoon binary is needed but was None. '
@@ -81,7 +81,7 @@ class _BitsMonsoonConfig(object):
 
         self.config_dic['monsoon_binary_path'] = self.monsoon_binary
         self.config_dic['monsoon_voltage'] = self.monsoon_voltage
-        self.config_dic['serial'] = self.serial
+        self.config_dic['serial_num'] = self.serial_num
 
 
 DEFAULT_SERVICE_CONFIG_DICT = {
@@ -113,7 +113,7 @@ class BitsServiceConfig(object):
             controller_config: The config as defined in the ACTS  BiTS
             controller config. Expected format is:
               {
-                (optional) 'Monsoon': { 'serial': <serial number:int>,
+                (optional) 'Monsoon': { 'serial_num': <serial number:int>,
                                         'monsoon_voltage': <voltage:double> }
               }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
