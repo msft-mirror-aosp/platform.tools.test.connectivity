@@ -17,6 +17,7 @@
 import time
 import random
 import re
+import logging
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.test_utils.tel.tel_test_utils as tel_utils
 import acts.utils as utils
@@ -24,6 +25,10 @@ from acts import asserts
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts import signals
+from acts.controllers import packet_capture
+from acts.controllers.ap_lib.hostapd_constants import BAND_2G
+from acts.controllers.ap_lib.hostapd_constants import BAND_5G
+
 
 WifiEnums = wutils.WifiEnums
 
@@ -35,6 +40,9 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
         utils.require_sl4a((self.dut, self.dut_client))
+
+        if hasattr(self, 'packet_capture'):
+            self.packet_capture = self.packet_capture[0]
 
         req_params = ["dbs_supported_models"]
         opt_param = ["stress_count", "cs_count"]
@@ -80,6 +88,10 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
             pass
 
     def on_fail(self, test_name, begin_time):
+        try:
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        except signals.TestFailure:
+            pass
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
@@ -128,6 +140,20 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
             channel_list.append(num)
         return channel_list
 
+    def conf_packet_capture(self, band, channel):
+        """Configure packet capture on necessary channels."""
+        freq_to_chan = wutils.WifiEnums.freq_to_channel[int(channel)]
+        logging.info("Capturing packets from "
+                     "frequency:{}, Channel:{}".format(channel, freq_to_chan))
+        result = self.packet_capture.configure_monitor_mode(band, freq_to_chan)
+        if not result:
+            logging.error("Failed to configure channel "
+                          "for {} band".format(band))
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, band, self.test_name)
+
+        time.sleep(5)
+
     @test_tracker_info(uuid="b1a8b00e-eca8-4eba-99e9-c7a3beb2a009")
     def test_softap_channel_switch_stress_2g(self):
         """
@@ -150,6 +176,10 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         for count in range(len(self.channel_list_2g)):
             self.dut.log.info("2g channel switch iteration : {}".format(count+1))
             channel_2g = str(self.channel_list_2g[count])
+            # Configure sniffer before set SoftAP channel
+            if hasattr(self, 'packet_capture'):
+                self.conf_packet_capture(BAND_2G, channel_2g)
+            # Set SoftAP channel
             wutils.set_softap_channel(self.dut,
                                       self.AP_IFACE,
                                       self.cs_count, channel_2g)
@@ -162,6 +192,8 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
             asserts.assert_true(
                 softap_frequency == client_frequency,
                 "hotspot frequency != client frequency")
+            if hasattr(self, 'packet_capture'):
+                wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
 
     @test_tracker_info(uuid="3411cb7c-2609-433a-97b6-202a096dc71b")
     def test_softap_channel_switch_stress_5g(self):
@@ -185,6 +217,10 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         for count in range(len(self.channel_list_5g)):
             self.dut.log.info("5g channel switch iteration : {}".format(count+1))
             channel_5g = str(self.channel_list_5g[count])
+            # Configure sniffer before set SoftAP channel
+            if hasattr(self, 'packet_capture'):
+                self.conf_packet_capture(BAND_5G, channel_5g)
+            # Set SoftAP channel
             wutils.set_softap_channel(self.dut,
                                       self.AP_IFACE,
                                       self.cs_count, channel_5g)
@@ -197,6 +233,8 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
             asserts.assert_true(
                 softap_frequency == client_frequency,
                 "hotspot frequency != client frequency")
+            if hasattr(self, 'packet_capture'):
+                wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
 
     @test_tracker_info(uuid="0f279058-119f-49fc-b8d6-fb2991cc35aa")
     def test_softap_channel_switch_stress_2g_5g(self):
@@ -223,6 +261,8 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
             self.log.info("wait 10 secs for client reconnect to dut")
             time.sleep(10)
             channel_2g = self.channel_list_2g[count]
+            if hasattr(self, 'packet_capture'):
+                self.conf_packet_capture(BAND_2G, channel_2g)
             wutils.set_softap_channel(self.dut,
                                       self.AP_IFACE,
                                       self.cs_count, channel_2g)
@@ -236,6 +276,8 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
                 softap_frequency == client_frequency,
                 "hotspot frequency != client frequency")
             wutils.stop_wifi_tethering(self.dut)
+            if hasattr(self, 'packet_capture'):
+                wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
             self.dut.log.info('switch to SoftAP 5g')
 
             # switch to SoftAp 5g
@@ -247,6 +289,8 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
             self.log.info("wait 10 secs for client reconnect to dut")
             time.sleep(10)
             channel_5g = self.channel_list_5g[count]
+            if hasattr(self, 'packet_capture'):
+                self.conf_packet_capture(BAND_5G, channel_5g)
             wutils.set_softap_channel(self.dut,
                                       self.AP_IFACE,
                                       self.cs_count, channel_5g)
@@ -260,3 +304,5 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
                 softap_frequency == client_frequency,
                 "hotspot frequency != client frequency")
             wutils.stop_wifi_tethering(self.dut)
+            if hasattr(self, 'packet_capture'):
+                wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
