@@ -56,7 +56,7 @@ class WifiChannelSwitchStressTest(WifiBaseTest):
         for ad in self.android_devices:
             wutils.wifi_test_device_init(ad)
             utils.sync_device_time(ad)
-            ad.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+            wutils.set_wifi_country_code(ad, WifiEnums.CountryCode.US)
 
     def setup_test(self):
         for ad in self.android_devices:
