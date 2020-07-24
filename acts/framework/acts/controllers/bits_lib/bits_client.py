@@ -212,9 +212,6 @@ class BitsClient(object):
         self._active_collection = _BitsCollection(
             'bits_collection_%s' % postfix)
 
-        if self._server_config.has_monsoon:
-            self._acquire_monsoon()
-
         cmd = [self._binary,
                '--port',
                self._service.port,
@@ -257,9 +254,6 @@ class BitsClient(object):
                '--stop'
                ]
         job.run(cmd)
-
-        if self._server_config.has_monsoon:
-            self._release_monsoon()
         self._export()
         self._log.info('stopped collection %s', self._active_collection.name)
         self._active_collection = None

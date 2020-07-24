@@ -261,6 +261,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def _reinstall_sl4a(self):
         """Re-installs and starts SL4A (if it is available)"""
         self.ad_dut.adb.wait_for_device(timeout=DEFAULT_WAIT_FOR_DEVICE_TIMEOUT)
+        self.ad_dut.log.debug('device found; allowing 10 seconds for system '
+                              'services to start')
+        time.sleep(10)
         # Reinstall SL4A
         if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
             self._sl4a_apk.install()
@@ -272,7 +275,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         if self.ad_dut.droid:
             self.ad_dut.droid.goToSleepNow()
 
-        self.ad_dut.log.info('Device reconnected.')
+        self.ad_dut.log.info('SL4A reinstalled and started.')
 
     def _install_test_apk(self):
         """Installs test apk on the device."""

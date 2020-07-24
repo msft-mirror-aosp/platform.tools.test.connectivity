@@ -70,12 +70,6 @@ class BitsServiceConfigTest(unittest.TestCase):
             lvpm_monsoon_bin='bin')
         self.assertEqual(1, config.config_dic['enabled'])
 
-    def test_monsoon_config_does_not_clame_monsoon_ownership(self):
-        config = bits_service_config._BitsMonsoonConfig(
-            {'serial_num': 1, 'monsoon_voltage': 1},
-            lvpm_monsoon_bin='bin')
-        self.assertEqual(0, config.config_dic['monsoon_ownership'])
-
     def test_monsoon_config_disables_monsoon_reseting(self):
         config = bits_service_config._BitsMonsoonConfig(
             {'serial_num': 1, 'monsoon_voltage': 1},
