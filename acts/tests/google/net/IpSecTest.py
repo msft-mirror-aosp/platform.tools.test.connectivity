@@ -27,6 +27,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 import random
 
 WLAN = "wlan0"
+WAIT_FOR_IP = 15
 
 
 class IpSecTest(base_test.BaseTestClass):
@@ -39,12 +40,9 @@ class IpSecTest(base_test.BaseTestClass):
 
         req_params = ("wifi_network",)
         self.unpack_userparams(req_params)
-        wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut_a, self.wifi_network['SSID'])
-        wutils.wifi_connect(self.dut_a, self.wifi_network)
-        wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut_b, self.wifi_network['SSID'])
-        wutils.wifi_connect(self.dut_b, self.wifi_network)
+        wutils.connect_to_wifi_network(self.dut_a, self.wifi_network)
+        wutils.connect_to_wifi_network(self.dut_b, self.wifi_network)
+        time.sleep(WAIT_FOR_IP)
 
         self.ipv4_dut_a = self.dut_a.droid.connectivityGetIPv4Addresses(WLAN)[0]
         self.ipv4_dut_b = self.dut_b.droid.connectivityGetIPv4Addresses(WLAN)[0]
@@ -209,7 +207,6 @@ class IpSecTest(base_test.BaseTestClass):
         # dut objects and ip addrs
         dut_a = self.dut_a
         dut_b = self.dut_b
-        port = random.randint(5000, 6000)
         udp_encap_port = 4500
         ip_a = self.ipv4_dut_a
         ip_b = self.ipv4_dut_b
@@ -218,7 +215,6 @@ class IpSecTest(base_test.BaseTestClass):
             ip_b = self.ipv6_dut_b
         self.log.info("DUT_A IP addr: %s" % ip_a)
         self.log.info("DUT_B IP addr: %s" % ip_b)
-        self.log.info("Port: %s" % port)
 
         # create crypt and auth keys
         cl, auth_algo, al, trunc_bits = random.choice(self.crypt_auth_combos)
@@ -227,8 +223,9 @@ class IpSecTest(base_test.BaseTestClass):
         crypt_algo = cconst.CRYPT_AES_CBC
 
         # open sockets
-        socket_a = sutils.open_datagram_socket(dut_a, ip_a, port)
-        socket_b = sutils.open_datagram_socket(dut_b, ip_b, port)
+        socket_a = sutils.open_datagram_socket(dut_a, ip_a, 0)
+        socket_b = sutils.open_datagram_socket(dut_b, ip_b, 0)
+        port = dut_b.droid.getPortOfDatagramSocket(socket_b)
 
         # allocate SPIs
         spi_keys_a = iutils.allocate_spis(dut_a, ip_a, ip_b)
@@ -298,7 +295,6 @@ class IpSecTest(base_test.BaseTestClass):
         # dut objects and ip addrs
         dut_a = self.dut_a
         dut_b = self.dut_b
-        port = random.randint(5000, 6000)
         ip_a = self.ipv4_dut_a
         ip_b = self.ipv4_dut_b
         if domain == cconst.AF_INET6:
@@ -306,13 +302,13 @@ class IpSecTest(base_test.BaseTestClass):
             ip_b = self.ipv6_dut_b
         self.log.info("DUT_A IP addr: %s" % ip_a)
         self.log.info("DUT_B IP addr: %s" % ip_b)
-        self.log.info("Port: %s" % port)
         udp_encap_port = 4500
 
         # open sockets
-        server_sock = sutils.open_server_socket(dut_b, ip_b, port)
+        server_sock = sutils.open_server_socket(dut_b, ip_b, 0)
+        port = dut_b.droid.getPortOfServerSocket(server_sock)
         sock_a, sock_b = sutils.open_connect_socket(
-            dut_a, dut_b, ip_a, ip_b, port, port, server_sock)
+            dut_a, dut_b, ip_a, ip_b, 0, port, server_sock)
 
         # create crypt and auth keys
         cl, auth_algo, al, trunc_bits = random.choice(self.crypt_auth_combos)
