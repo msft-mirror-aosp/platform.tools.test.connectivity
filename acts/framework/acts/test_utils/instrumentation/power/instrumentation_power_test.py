@@ -400,18 +400,19 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         power_data_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'monsoon.txt')
 
-        # TODO(b/155426729): When the Monsoon controller switches to reporting
-        #   time as seconds since epoch (on host), convert its time data to be
-        #   seconds since epoch (on device).
+        # TODO(b/155426729): Create an accurate host-to-device time difference
+        # measurement.
         device_time_cmd = 'echo $EPOCHREALTIME'
-        start_time = self.adb_run(device_time_cmd)[device_time_cmd]
-        self.log.debug('device start time %s', start_time)
-        start_time = float(start_time)
+        device_time = self.adb_run(device_time_cmd)[device_time_cmd]
+        host_time = time.time()
+        self.log.debug('device start time %s, host start time %s', device_time,
+                       host_time)
+        device_to_host_offset = float(device_time) - host_time
 
         self.power_monitor.disconnect_usb()
         self.power_monitor.measure(
             measurement_args=measurement_args, output_path=power_data_path,
-            start_time=start_time)
+            start_time=device_to_host_offset)
         self.power_monitor.connect_usb()
         self._reinstall_sl4a()
 
@@ -419,7 +420,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         instrumentation_result = self.parse_instrumentation_result()
         self.log_instrumentation_result(instrumentation_result)
         power_metrics = self.power_monitor.get_metrics(
-            start_time=start_time,
+            start_time=device_to_host_offset,
             voltage=monsoon_config.get_numeric('voltage', 4.2),
             monsoon_file_path=power_data_path,
             timestamps=proto_parser.get_test_timestamps(instrumentation_result))
