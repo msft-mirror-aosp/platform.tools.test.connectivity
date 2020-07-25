@@ -21,24 +21,10 @@ import mock
 from acts.controllers.monsoon_lib.sampling.engine.transformers import DownSampler
 from acts.controllers.monsoon_lib.sampling.engine.transformers import SampleAggregator
 from acts.controllers.monsoon_lib.sampling.engine.transformers import Tee
+from acts.controllers.monsoon_lib.sampling.hvpm.transformers import HvpmReading
 
 ARGS = 0
 KWARGS = 1
-
-
-# TODO: Import HvpmReading directly when it is added to the codebase.
-class HvpmReading(object):
-    def __init__(self, data, time):
-        self.main_current = data[0]
-        self.sample_time = time
-
-    def __add__(self, other):
-        return HvpmReading([self.main_current + other.main_current],
-                           self.sample_time + other.sample_time)
-
-    def __truediv__(self, other):
-        return HvpmReading([self.main_current / other],
-                           self.sample_time / other)
 
 
 class TeeTest(unittest.TestCase):
@@ -67,8 +53,8 @@ class TeeTest(unittest.TestCase):
         tee.on_begin()
 
         expected_output = [
-            '0.010000000s 1.414213562370\n', '0.020000000s 2.718281828460\n',
-            '0.030000000s 3.141592653590\n'
+            '0.010000000 1.414213562370\n', '0.020000000 2.718281828460\n',
+            '0.030000000 3.141592653590\n'
         ]
 
         tee._transform_buffer([
