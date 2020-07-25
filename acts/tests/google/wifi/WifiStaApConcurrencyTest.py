@@ -411,7 +411,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, self.open_2g[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="a5bae3808-4019-49de-88e6-4faa80664141")
+    @test_tracker_info(uuid="9decb951-4500-4476-8161-f4054760f709")
     def test_wifi_connection_2G_softap_2G_to_softap_5g(self):
         """Test connection to 2G network followed by SoftAp on 2G,
         and switch SoftAp to 5G."""
@@ -420,7 +420,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.open_2g, WIFI_CONFIG_APBAND_2G)
         self.softap_change_band(self.dut)
 
-    @test_tracker_info(uuid="59fd9c89-6017-434f-8373-fe5bf0995d34")
+    @test_tracker_info(uuid="e17e0fb8-2c1d-4f3c-af2a-7374485f210c")
     def test_wifi_connection_5G_softap_2G_to_softap_5g(self):
         """Test connection to 5G network followed by SoftAp on 2G,
         and switch SoftAp to 5G."""
@@ -429,7 +429,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.open_2g, WIFI_CONFIG_APBAND_2G)
         self.softap_change_band(self.dut)
 
-    @test_tracker_info(uuid="ed94f92d-d2d0-4a55-af7a-2515b84dadc4")
+    @test_tracker_info(uuid="96486473-58fb-407b-8912-eee0a33f311b")
     def test_mobile_data_with_wifi_connection_2G_softap_2G_to_softap_5g(self):
         """Enable Mobile Data then
         test connection to 2G network followed by SoftAp on 2G,
@@ -440,7 +440,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.open_2g, WIFI_CONFIG_APBAND_2G)
         self.softap_change_band(self.dut)
 
-    @test_tracker_info(uuid="bdaaedb1-067a-4691-9bb9-c5d5c4637939")
+    @test_tracker_info(uuid="34589851-93f9-4cd4-8cff-5286586a23c2")
     def test_mobile_data_with_wifi_connection_5G_softap_2G_to_softap_5g(self):
         """Enable Mobile Data then
         test connection to 2G network followed by SoftAp on 2G,
