@@ -197,6 +197,7 @@ class WifiWakeTest(WifiBaseTest):
         self.ap_b_off()
         wutils.wait_for_disconnect(self.dut)
         self.log.info("Wifi Disconnected")
+        self.do_location_scan(2)
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
@@ -240,6 +241,7 @@ class WifiWakeTest(WifiBaseTest):
 
         wutils.wait_for_disconnect(self.dut)
         self.log.info("Wifi Disconnected")
+        self.do_location_scan(2)
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
@@ -307,6 +309,7 @@ class WifiWakeTest(WifiBaseTest):
         self.ap_a_off()
         wutils.wait_for_disconnect(self.dut)
         self.log.info("Wifi Disconnected")
+        self.do_location_scan(2)
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
