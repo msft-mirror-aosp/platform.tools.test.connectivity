@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import asserts
 from acts.test_decorators import test_tracker_info
 import acts.test_utils.wifi.wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -60,6 +61,9 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
 
   @test_tracker_info(uuid="404c6165-6e23-4ec1-bc2c-9dfdd5c7dc87")
   def test_connect_to_wpa3_enterprise_ec2(self):
+    asserts.skip_if(
+        self.dut.build_info["build_id"].startswith("R"),
+        "No SL4A support for EC certs in R builds. Skipping this testcase")
     config = {
         Ent.EAP: int(EAP.TLS),
         Ent.CA_CERT: self.ec2_ca_cert,
