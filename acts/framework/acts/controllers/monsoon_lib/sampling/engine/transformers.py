@@ -78,6 +78,8 @@ class SampleAggregator(ParallelTransformer):
         self._num_samples = 0
         self._sum_currents = 0
         self.start_after_seconds = start_after_seconds
+        # The time of the first sample gathered.
+        self._start_time = None
 
     def _transform_buffer(self, buffer):
         """Aggregates the sample data.
@@ -86,7 +88,9 @@ class SampleAggregator(ParallelTransformer):
             buffer: A buffer of H/LvpmReadings.
         """
         for sample in buffer:
-            if sample.sample_time < self.start_after_seconds:
+            if self._start_time is None:
+                self._start_time = sample.sample_time
+            if sample.sample_time - self._start_time < self.start_after_seconds:
                 continue
             self._num_samples += 1
             self._sum_currents += sample.main_current
