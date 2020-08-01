@@ -64,6 +64,11 @@ cast_broadcast = DeviceGServices(
     desc='Modifies whether the cast broadcast is enabled.')
 
 # Apps
+disable_chrome = GenericCommand('pm disable-user com.android.chrome',
+                                desc='Disables the Google chrome.')
+
+force_stop_nexuslauncher = GenericCommand('am force-stop com.google.android.apps.nexuslauncher',
+                                desc='Force stop nexus launcher.')
 
 disable_playstore = GenericCommand('pm disable-user com.android.vending',
                                    desc='Disables the Google playstore.')
