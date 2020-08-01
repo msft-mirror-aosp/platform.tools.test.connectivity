@@ -257,6 +257,9 @@ disable_doze = GenericCommand(
     desc='Disables device\'s deep sleep also known as doze (not to be confused '
          'with ambient, which is also referred to as doze).')
 
+power_stayon = GenericCommand('vc power stayon true',
+                                 desc='Keep awake from entering sleep.')
+
 # Sensors
 
 disable_sensors = GenericCommand('dumpsys sensorservice restrict blah',
