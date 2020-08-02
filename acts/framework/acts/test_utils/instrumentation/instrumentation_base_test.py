@@ -21,6 +21,8 @@ from acts import base_test
 from acts import context
 from acts import error
 
+from acts.controllers.adb import DEFAULT_ADB_TIMEOUT
+
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
 from acts.test_utils.instrumentation import instrumentation_text_output_parser
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
@@ -229,7 +231,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         """
         return self.get_files_from_config(config_key)[-1]
 
-    def adb_run(self, cmds, ad=None):
+    def adb_run(self, cmds, ad=None, timeout=DEFAULT_ADB_TIMEOUT):
         """Run the specified command, or list of commands, with the ADB shell.
 
         Args:
@@ -250,7 +252,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                 if cmd.desc:
                     ad.log.debug('Applying command that: %s' % cmd.desc)
                 cmd = cmd.cmd
-            out[cmd] = ad.adb.shell(cmd)
+            out[cmd] = ad.adb.shell(cmd, timeout=timeout)
         return out
 
     def fastboot_run(self, cmds, ad=None):

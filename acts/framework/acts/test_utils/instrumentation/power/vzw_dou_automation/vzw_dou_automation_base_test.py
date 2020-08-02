@@ -28,6 +28,7 @@ from acts.test_utils.instrumentation.device.apps.app_installer import AppInstall
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 
 DEFAULT_WAIT_TO_FASTBOOT_MODE = 10
+DEFAULT_DEVICE_COOL_DOWN_TIME = 15
 
 def get_median_current(test_results):
   """Returns the median current, or a failure if the test failed."""
@@ -92,6 +93,7 @@ class VzWDoUAutomationBaseTest(
     self._factory_reset()
     super()._prepare_device()
     self.base_device_configuration()
+    self._cut_band()
 
   def _factory_reset(self):
     """Factory reset device before testing."""
@@ -127,3 +129,21 @@ class VzWDoUAutomationBaseTest(
     if not self._google_account_util.is_installed():
       raise InstrumentationTestError(
           'Failed to install google account util APK.')
+
+  def _cut_band(self):
+    band_to_cut = self._instrumentation_config.get('band_to_cut')
+    if band_to_cut:
+      self.log.info('Cutting band: {}'.format(band_to_cut))
+      self.ad_dut.adb.ensure_root()
+      self.adb_run('setprop ro.test_harness 1')
+      lock_band_cmd = ('am instrument -w -r -e lock_band {} -e '
+                       'skip_pre_test_conditions TRUE -e '
+                       'skip_post_test_conditions TRUE -e class '
+                       'com.google.android.platform.dou.MDSSwitchBandTests#testSwitchBand'
+                       ' '
+                       'com.google.android.platform.dou/androidx.test.runner.AndroidJUnitRunner').format(
+          band_to_cut)
+      self.adb_run(lock_band_cmd, timeout=480)
+      self.ad_dut.reboot()
+      self.ad_dut.wait_for_boot_completion()
+      time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
