@@ -72,9 +72,9 @@ class SampleAggregatorTest(unittest.TestCase):
     """Unit tests the transformers.SampleAggregator class."""
 
     def test_transform_buffer_respects_start_after_seconds_flag(self):
-        sample_aggregator = SampleAggregator(start_after_seconds=1)
+        sample_aggregator = SampleAggregator(start_after_seconds=1.0)
         sample_aggregator._transform_buffer([
-            HvpmReading([1.41421356237, 0, 0, 0, 0], 0.01),
+            HvpmReading([1.41421356237, 0, 0, 0, 0], 0.00),
             HvpmReading([2.71828182846, 0, 0, 0, 0], 0.99),
             HvpmReading([3.14159265359, 0, 0, 0, 0], 1.00),
         ])
