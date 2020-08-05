@@ -615,6 +615,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             [network_suggestion], network_suggestion[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="806dff14-7543-482b-bd0a-598de59374b3")
+    @WifiBaseTest.wifi_test_wrap
     def test_connect_to_passpoint_network_with_post_connection_broadcast(self):
         """ Adds a passpoint network suggestion and ensure that the device connected.
 
@@ -639,6 +640,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="159b8b8c-fb00-4d4e-a29f-606881dcbf44")
+    @WifiBaseTest.wifi_test_wrap
     def test_connect_to_passpoint_network_reboot_config_store(self):
         """
         Adds a passpoint network suggestion and ensure that the device connects to it
@@ -665,6 +667,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="34f3d28a-bedf-43fe-a12d-2cfadf6bc6eb")
+    @WifiBaseTest.wifi_test_wrap
     def test_fail_to_connect_to_passpoint_network_when_not_approved(self):
         """
         Adds a passpoint network suggestion and ensure that the device does not
@@ -723,6 +726,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.clear_carrier_approved(passpoint_config["carrierId"])
 
     @test_tracker_info(uuid="cf624cda-4d25-42f1-80eb-6c717fb08338")
+    @WifiBaseTest.wifi_test_wrap
     def test_fail_to_connect_to_passpoint_network_when_imsi_protection_exemption_not_approved(self):
         """
         Adds a passpoint network suggestion using SIM credential without IMSI privacy protection.
