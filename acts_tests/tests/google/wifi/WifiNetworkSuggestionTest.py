@@ -475,6 +475,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.config_aka = {
             Ent.EAP: int(EAP.AKA),
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+            "carrierId": str(self.dut.droid.telephonyGetSimCarrierId()),
         }
         if "carrierId" in self.config_aka:
             self.set_carrier_approved(self.config_aka["carrierId"], True)
@@ -505,6 +506,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             Ent.PASSWORD: self.eap_password,
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+            Ent.ALTSUBJECT_MATCH: self.altsubject_match,
         }
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
