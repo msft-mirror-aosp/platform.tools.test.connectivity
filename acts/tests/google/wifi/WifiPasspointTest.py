@@ -24,11 +24,11 @@ from acts.test_utils.net import ui_utils as uutils
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
 
-import WifiManagerTest
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums
@@ -391,6 +391,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
 
 
     @test_tracker_info(uuid="e3e826d2-7c39-4c37-ab3f-81992d5aa0e8")
+    @WifiBaseTest.wifi_test_wrap
     def test_att_passpoint_network(self):
         """Add a AT&T Passpoint network and verify device connects to it.
 
