@@ -131,7 +131,10 @@ class VzWDoUAutomationBaseTest(
           'Failed to install google account util APK.')
 
   def _cut_band(self):
-    band_to_cut = self._instrumentation_config.get('band_to_cut')
+    additional_setting = self._get_merged_config('additional_setting')
+    band_to_cut = None
+    if additional_setting:
+      band_to_cut = additional_setting.get('band_to_cut')
     if band_to_cut:
       self.log.info('Cutting band: {}'.format(band_to_cut))
       self.ad_dut.adb.ensure_root()
