@@ -363,6 +363,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             if self.ad_dut.adb.shell('ls %s || true' % disconnect_usb_file):
                 self.log.info('Disconnection signal received. File: '
                               '"%s"' % disconnect_usb_file)
+                self.ad_dut.pull_files(disconnect_usb_file,
+                                       self.ad_dut.device_log_path)
                 return
             time.sleep(POLLING_INTERVAL)
         raise InstrumentationTestError('Timeout while waiting for USB '
