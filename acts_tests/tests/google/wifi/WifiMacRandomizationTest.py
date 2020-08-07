@@ -79,7 +79,8 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.configure_packet_capture()
 
         if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start(wep_network=True)
+            self.legacy_configure_ap_and_start(wep_network=True,
+                                               ap_count=2)
         elif "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(open_network=True,
                                                 wpa_network=True,
