@@ -19,6 +19,7 @@ import unittest
 import mock
 
 from acts.controllers.monsoon_lib.sampling.engine.transformers import DownSampler
+from acts.controllers.monsoon_lib.sampling.engine.transformers import PerfgateTee
 from acts.controllers.monsoon_lib.sampling.engine.transformers import SampleAggregator
 from acts.controllers.monsoon_lib.sampling.engine.transformers import Tee
 from acts.controllers.monsoon_lib.sampling.hvpm.transformers import HvpmReading
@@ -61,6 +62,48 @@ class TeeTest(unittest.TestCase):
             HvpmReading([1.41421356237, 0, 0, 0, 0], 0.01),
             HvpmReading([2.71828182846, 0, 0, 0, 0], 0.02),
             HvpmReading([3.14159265359, 0, 0, 0, 0], 0.03),
+        ])
+
+        for call, out in zip(open_mock().write.call_args_list,
+                             expected_output):
+            self.assertEqual(call[ARGS][0], out)
+
+
+class PerfgateTeeTest(unittest.TestCase):
+    """Unit tests the transformers.PerfgateTee class."""
+
+    @mock.patch('builtins.open')
+    def test_begin_opens_file_on_expected_filename(self, open_mock):
+        expected_filename = 'foo'
+
+        PerfgateTee(expected_filename).on_begin()
+
+        open_mock.assert_called_with(expected_filename, 'w+')
+
+    @mock.patch('builtins.open')
+    def test_end_closes_file(self, open_mock):
+        tee = PerfgateTee('foo')
+        tee.on_begin()
+
+        tee.on_end()
+
+        self.assertTrue(open_mock().close.called)
+
+    @mock.patch('builtins.open')
+    def test_transform_buffer_outputs_correct_format(self, open_mock):
+        tee = PerfgateTee('foo')
+        tee.on_begin()
+
+        expected_output = [
+            '1596149635552503296,0.000223,4.193050\n',
+            '1596149635562476032,0.000212,4.193190\n',
+            '1596149635572549376,0.000225,4.193135\n',
+        ]
+
+        tee._transform_buffer([
+            HvpmReading([0.000223, 0, 0, 4.193050, 0], 1596149635.552503296),
+            HvpmReading([0.000212, 0, 0, 4.193190, 0], 1596149635.562476032),
+            HvpmReading([0.000225, 0, 0, 4.193135, 0], 1596149635.572549376),
         ])
 
         for call, out in zip(open_mock().write.call_args_list,
