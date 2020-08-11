@@ -32,6 +32,7 @@ LAST_DISCONNECT_TIMEOUT_MILLIS = 5000
 LAST_DISCONNECT_TIMEOUT_SEC = LAST_DISCONNECT_TIMEOUT_MILLIS / 1000
 PRESCAN_DELAY_SEC = 5
 WIFI_TOGGLE_DELAY_SEC = 3
+DISCONNECT_TIMEOUT_SEC = 20
 
 
 class WifiWakeTest(WifiBaseTest):
@@ -195,7 +196,7 @@ class WifiWakeTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
         self.ap_a_off()
         self.ap_b_off()
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, DISCONNECT_TIMEOUT_SEC)
         self.log.info("Wifi Disconnected")
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
@@ -238,7 +239,7 @@ class WifiWakeTest(WifiBaseTest):
             self.ap_a_off()
             self.ap_b_off()
 
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, DISCONNECT_TIMEOUT_SEC)
         self.log.info("Wifi Disconnected")
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
@@ -305,7 +306,7 @@ class WifiWakeTest(WifiBaseTest):
         wutils.wifi_connect(self.dut, self.ap_a, num_of_tries=5)
         self.dut.ed.clear_all_events()
         self.ap_a_off()
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, DISCONNECT_TIMEOUT_SEC)
         self.log.info("Wifi Disconnected")
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
@@ -372,7 +373,7 @@ class WifiWakeTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
         self.ap_a_off()
         self.ap_b_off()
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, DISCONNECT_TIMEOUT_SEC)
         self.log.info("Wifi Disconnected")
         self.do_location_scan(2)
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
