@@ -107,8 +107,9 @@ class WifiSoftApTest(WifiBaseTest):
             wutils.stop_wifi_tethering(self.dut)
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut_client.take_bug_report(test_name, begin_time)
+        for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
+            ad.cat_adb_log(test_name, begin_time)
 
     """ Helper Functions """
     def create_softap_config(self):

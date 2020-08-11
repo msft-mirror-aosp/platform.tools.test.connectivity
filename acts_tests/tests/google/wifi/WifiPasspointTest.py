@@ -214,6 +214,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                     "Passpoint Provisioning status %s" % dut_event['data'][
                         'status'])
                 if int(dut_event['data']['status']) == 7:
+                    time.sleep(DEFAULT_TIMEOUT)
                     self.ui_automator_boingo()
         # Clear all previous events.
         self.dut.ed.clear_all_events()
