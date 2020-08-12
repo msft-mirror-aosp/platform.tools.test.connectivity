@@ -370,7 +370,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         raise InstrumentationTestError('Timeout while waiting for USB '
                                        'disconnect signal.')
 
-    def measure_power(self):
+    def measure_power(self, count=None):
         """Measures power consumption with a power_monitor. See power_monitor's
         API for more details.
 
@@ -400,7 +400,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             measurement_args))
 
         power_data_path = os.path.join(
-            context.get_current_context().get_full_output_path(), 'monsoon.txt')
+            context.get_current_context().get_full_output_path(),
+            'monsoon.txt' if count is None else 'monsoon_%s.txt' % count)
 
         # TODO(b/155426729): Create an accurate host-to-device time difference
         # measurement.
@@ -431,7 +432,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return power_metrics
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
-                        extra_params=None):
+                        extra_params=None, count=None):
         """Convenience method for setting up the instrumentation test command,
         running it on the device, and starting the Monsoon measurement.
 
@@ -441,6 +442,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             req_params: List of required parameter names
             extra_params: List of ad-hoc parameters to be passed defined as
                 tuples of size 2.
+            count: Measurement count in one test, default None means only measure
+                one time
 
         Returns: summary of Monsoon measurement
         """
@@ -468,7 +471,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._uninstall_sl4a()
         self.log.info('Running instrumentation call: %s' % instr_cmd)
         self.adb_run_async(instr_cmd)
-        return self.measure_power()
+        return self.measure_power(count=count)
 
     def get_absolute_thresholds_for_metric(self, instr_test_name, metric_name):
         all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)

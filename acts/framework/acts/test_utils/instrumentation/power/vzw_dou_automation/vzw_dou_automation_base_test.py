@@ -95,6 +95,10 @@ class VzWDoUAutomationBaseTest(
     self.base_device_configuration()
     self._cut_band()
 
+  def _cleanup_device(self):
+    super()._cleanup_device()
+    self.adb_run('input keyevent 26')
+
   def _factory_reset(self):
     """Factory reset device before testing."""
     self.log.info('Running factory reset.')
@@ -105,6 +109,7 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(goog.remove_gmail_account)
     self.ad_dut.reboot()
     self.ad_dut.wait_for_boot_completion()
+    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
     self.ad_dut.adb.ensure_root()
     self.ad_dut.log.debug('Reboot to bootloader')
     self.ad_dut.stop_services()
@@ -114,6 +119,7 @@ class VzWDoUAutomationBaseTest(
     self.ad_dut.log.debug('Reboot in fastboot')
     self.ad_dut.fastboot.reboot()
     self.ad_dut.wait_for_boot_completion()
+    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
     self.ad_dut.root_adb()
     if not self.ad_dut.is_sl4a_installed() and self._sl4a_apk:
       self._sl4a_apk.install()
