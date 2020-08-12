@@ -23,8 +23,11 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 CURRENT = 'current'
 POWER = 'power'
 TIME = 'time'
+VOLTAGE = 'voltage'
 
 # Unit constants
+MILLIVOLT = 'mV'
+VOLT = 'V'
 MILLIAMP = 'mA'
 AMP = 'A'
 AMPERE = AMP
@@ -49,6 +52,10 @@ CONVERSION_TABLES = {
         SECOND: 1,
         MINUTE: 60,
         HOUR: 3600
+    },
+    VOLTAGE: {
+        MILLIVOLT: 0.001,
+        VOLT : 1
     }
 }
 
