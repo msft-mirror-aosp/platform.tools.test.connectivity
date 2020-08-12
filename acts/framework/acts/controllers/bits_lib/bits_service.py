@@ -186,8 +186,8 @@ class BitsService(object):
             time.sleep(0.1)
 
         self._cleanup()
-        raise BitsServiceError('bits_service %s did not start successfully',
-                               self.name)
+        raise BitsServiceError(
+            'bits_service %s did not start successfully' % self.name)
 
     def stop(self):
         """Stops the bits service."""

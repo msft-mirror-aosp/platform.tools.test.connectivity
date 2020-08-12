@@ -15,12 +15,24 @@
 #   limitations under the License.
 
 import unittest
-import mock
 
 from acts.controllers.bits_lib import bits_service_config
 
 
 class BitsServiceConfigTest(unittest.TestCase):
+
+    def test_basic_config(self):
+        config_dic = bits_service_config.BitsServiceConfig({}).config_dic
+        self.assertIn('devices', config_dic)
+        self.assertIn('default_device', config_dic['devices'])
+        self.assertIn('collectors', config_dic['devices']['default_device'])
+
+    def test_bits_service_config_has_an_enabled_default_device(self):
+        config_dic = bits_service_config.BitsServiceConfig({}).config_dic
+        self.assertEqual(1, config_dic['devices']['default_device']['enabled'])
+
+
+class BitsServiceConfigWithMonsoonTest(unittest.TestCase):
 
     def test_monsoon_with_serial_less_than_20000_is_configured_as_non_hv(self):
         config = bits_service_config._BitsMonsoonConfig(
@@ -82,21 +94,9 @@ class BitsServiceConfigTest(unittest.TestCase):
             lvpm_monsoon_bin='bin')
         self.assertEqual('monsooncollector', config.config_dic['type'])
 
-    def test_bits_service_config_has_an_enabled_default_device(self):
-        service_config = bits_service_config.BitsServiceConfig({})
-        self.assertIn('devices', service_config.config_dic)
-        self.assertIn('default_device', service_config.config_dic['devices'])
-        self.assertEqual(1,
-                         service_config.config_dic['devices']['default_device'][
-                             'enabled'])
-
     def test_bits_service_config_without_monsoon(self):
         service_config = bits_service_config.BitsServiceConfig({})
         self.assertFalse(service_config.has_monsoon)
-
-    def test_bits_service_config_without_kibble(self):
-        service_config = bits_service_config.BitsServiceConfig({})
-        self.assertFalse(service_config.has_kibble)
 
     def test_bits_service_config_with_a_monsoon(self):
         service_config = bits_service_config.BitsServiceConfig(
@@ -105,10 +105,6 @@ class BitsServiceConfigTest(unittest.TestCase):
         config_dic = service_config.config_dic
 
         self.assertTrue(service_config.has_monsoon)
-        self.assertIn('devices', config_dic)
-        self.assertIn('default_device', config_dic['devices'])
-        self.assertIn('collectors',
-                      config_dic['devices']['default_device'])
         self.assertIn('Monsoon',
                       config_dic['devices']['default_device'][
                           'collectors'])
@@ -119,6 +115,58 @@ class BitsServiceConfigTest(unittest.TestCase):
         self.assertEqual(monsoon_config,
                          config_dic['devices']['default_device'][
                              'collectors']['Monsoon'])
+
+
+class BitsServiceConfigWithKibblesTest(unittest.TestCase):
+    def test_bits_service_config_without_kibbles(self):
+        service_config = bits_service_config.BitsServiceConfig({})
+        self.assertFalse(service_config.has_kibbles)
+
+    def test_bits_service_config_with_kibbles(self):
+        service_config = bits_service_config.BitsServiceConfig({'Kibbles': [
+            {'board': 'BOARD', 'connector': 'CONNECTOR', 'serial': 'SERIAL'}]},
+            kibble_bin='bin',
+            kibble_board_file='file.board')
+
+        config_dic = service_config.config_dic
+
+        self.assertTrue(service_config.has_kibbles)
+        self.assertIn('BOARD',
+                      config_dic['devices']['default_device']['collectors'])
+
+        boards_config = bits_service_config._BitsKibblesConfig([
+            {'board': 'BOARD', 'connector': 'CONNECTOR', 'serial': 'SERIAL'}],
+            kibble_bin='bin', kibble_board_file='file.board').boards_configs
+        self.assertEqual(boards_config['BOARD'],
+                         config_dic['devices']['default_device'][
+                             'collectors']['BOARD'])
+
+    def test_kibbles_get_grouped_by_board(self):
+        boards_config = bits_service_config._BitsKibblesConfig([
+            {'board': 'BOARD1', 'connector': 'A', 'serial': 'SERIAL1'},
+            {'board': 'BOARD2', 'connector': 'B', 'serial': 'SERIAL2'},
+            {'board': 'BOARD2', 'connector': 'C', 'serial': 'SERIAL3'}],
+            kibble_bin='bin',
+            kibble_board_file='file.board').boards_configs
+
+        self.assertIn('BOARD1', boards_config)
+        board1 = boards_config['BOARD1']
+        self.assertEqual(1, len(board1['attached_kibbles']))
+        self.assertIn('SERIAL1', board1['attached_kibbles'])
+
+        self.assertIn('BOARD2', boards_config)
+        board2 = boards_config['BOARD2']
+        self.assertEqual(2, len(board2['attached_kibbles']))
+        self.assertIn('SERIAL2', board2['attached_kibbles'])
+        self.assertIn('SERIAL3', board2['attached_kibbles'])
+
+    def test_kibble_config_type_is_kibblecollector(self):
+        board_config = bits_service_config._BitsKibblesConfig([
+            {'board': 'BOARD', 'connector': 'CONNECTOR', 'serial': 'SERIAL'}],
+            kibble_bin='bin',
+            kibble_board_file='file.board').boards_configs['BOARD']
+
+        self.assertEqual('kibblecollector', board_config['type'])
 
 
 if __name__ == '__main__':

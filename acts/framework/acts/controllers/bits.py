@@ -58,6 +58,8 @@ def transform_name(bits_metric_name):
         suffix = 'avg_power'
     elif 'mA' == unit:
         suffix = 'avg_current'
+    elif 'mV' == unit:
+        suffix = 'avg_voltage'
     else:
         logging.getLogger().warning('unknown unit type for unit %s' % unit)
         suffix = ''
@@ -81,6 +83,8 @@ def raw_data_to_metrics(raw_data_obj):
             unit_type = 'power'
         elif 'mA' == unit:
             unit_type = 'current'
+        elif 'mV' == unit:
+            unit_type = 'voltage'
         else:
             logging.getLogger().warning('unknown unit type for unit %s' % unit)
             continue
@@ -112,9 +116,13 @@ class Bits(object):
         bits_client_binary = registry['bits_client'][0]
         lvpm_monsoon_bin = registry.get('lvpm_monsoon', [None])[0]
         hvpm_monsoon_bin = registry.get('hvpm_monsoon', [None])[0]
+        kibble_bin = registry.get('kibble_bin', [None])[0]
+        kibble_board_file = registry.get('kibble_board_file', [None])[0]
         config = bsc.BitsServiceConfig(self.config,
                                        lvpm_monsoon_bin=lvpm_monsoon_bin,
-                                       hvpm_monsoon_bin=hvpm_monsoon_bin)
+                                       hvpm_monsoon_bin=hvpm_monsoon_bin,
+                                       kibble_bin=kibble_bin,
+                                       kibble_board_file=kibble_board_file)
         output_log = os.path.join(
             context.get_current_context().get_full_output_path(),
             'bits_service_out_%s.txt' % self.index)
