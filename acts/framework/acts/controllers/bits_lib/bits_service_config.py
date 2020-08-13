@@ -183,7 +183,7 @@ class BitsServiceConfig(object):
 
     def __init__(self, controller_config, lvpm_monsoon_bin=None,
                  hvpm_monsoon_bin=None, kibble_bin=None,
-                 kibble_board_file=None):
+                 kibble_board_file=None, virtual_metrics_file=None):
         """Creates a BitsServiceConfig.
 
         Args:
@@ -206,18 +206,22 @@ class BitsServiceConfig(object):
                                         }]
               }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
-            Needed if the monsoon is a lvpm monsoon (serial number lower than
-            20000).
+                Needed if the monsoon is a lvpm monsoon (serial number lower
+                than 20000).
             hvpm_monsoon_bin: Binary file to interact with high voltage
-            monsoons. Needed if the monsoon is a hvpm monsoon (serial number
-            greater than 20000).
+                monsoons. Needed if the monsoon is a hvpm monsoon (serial number
+                greater than 20000).
             kibble_bin: Binary file to interact with kibbles.
             kibble_board_file: File describing the distribution of rails on a
-            kibble. go/kibble#setting-up-bits-board-files
+                kibble. go/kibble#setting-up-bits-board-files
+            virtual_metrics_file: A list of virtual metrics files to add
+                data aggregates on top of regular channel aggregates.
+                go/pixel-bits/user-guide/virtual-metrics
         """
         self.config_dic = copy.deepcopy(DEFAULT_SERVICE_CONFIG_DICT)
         self.has_monsoon = False
         self.has_kibbles = False
+        self.has_virtual_metrics_file = False
         self.monsoon_config = None
         self.kibbles_config = None
         if 'Monsoon' in controller_config:
@@ -235,3 +239,7 @@ class BitsServiceConfig(object):
                 kibble_bin, kibble_board_file)
             self.config_dic['devices']['default_device']['collectors'].update(
                 self.kibbles_config.boards_configs)
+            if virtual_metrics_file is not None:
+                self.config_dic['devices']['default_device'][
+                    'vm_files'] = [virtual_metrics_file]
+                self.has_virtual_metrics_file = True

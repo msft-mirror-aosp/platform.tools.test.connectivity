@@ -177,11 +177,31 @@ class BitsClientTest(unittest.TestCase):
             filter(lambda call: '--aggregates_yaml_path' in call.args[0],
                    args_list))
         self.assertEqual(len(expected_call), 1,
-                         'expected a call with --aggregates_yaml_paty')
+                         'expected a call with --aggregates_yaml_path')
         self.assertIn('8888', expected_call[0][0][0])
         self.assertIn('--ignore_gaps', expected_call[0][0][0])
         self.assertIn('--abs_stop_time', expected_call[0][0][0])
         self.assertIn('9999', expected_call[0][0][0])
+
+    @mock.patch('acts.libs.proc.job.run')
+    def test_get_metrics_with_virtual_metrics_file(self, mock_run):
+        service_config = mock.Mock()
+        service_config.has_virtual_metrics_file = True
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=service_config)
+        client._active_collection = self.mock_active_collection
+
+        client.get_metrics(8888, 9999)
+
+        mock_run.assert_called()
+        args_list = mock_run.call_args_list
+        expected_call = list(
+            filter(lambda call: '--aggregates_yaml_path' in call.args[0],
+                   args_list))
+        self.assertEqual(len(expected_call), 1,
+                         'expected a call with --aggregates_yaml_path')
+        self.assertIn('--vm_file', expected_call[0][0][0])
+        self.assertIn('default', expected_call[0][0][0])
 
 
 if __name__ == '__main__':

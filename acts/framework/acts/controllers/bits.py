@@ -118,11 +118,13 @@ class Bits(object):
         hvpm_monsoon_bin = registry.get('hvpm_monsoon', [None])[0]
         kibble_bin = registry.get('kibble_bin', [None])[0]
         kibble_board_file = registry.get('kibble_board_file', [None])[0]
+        vm_file = registry.get('vm_file', [None])[0]
         config = bsc.BitsServiceConfig(self.config,
                                        lvpm_monsoon_bin=lvpm_monsoon_bin,
                                        hvpm_monsoon_bin=hvpm_monsoon_bin,
                                        kibble_bin=kibble_bin,
-                                       kibble_board_file=kibble_board_file)
+                                       kibble_board_file=kibble_board_file,
+                                       virtual_metrics_file=vm_file)
         output_log = os.path.join(
             context.get_current_context().get_full_output_path(),
             'bits_service_out_%s.txt' % self.index)
