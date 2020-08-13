@@ -28,7 +28,7 @@ def get_info(bitses):
     return [bits.config for bits in bitses]
 
 
-def transform_name(bits_metric_name):
+def _transform_name(bits_metric_name):
     """Transform bits metrics names to a more succinct version.
 
     Examples of bits_metrics_name as provided by the client:
@@ -72,7 +72,7 @@ def transform_name(bits_metric_name):
         return '%s_%s' % (rail, suffix)
 
 
-def raw_data_to_metrics(raw_data_obj):
+def _raw_data_to_metrics(raw_data_obj):
     data = raw_data_obj['data']
     metrics = []
     for sample in data:
@@ -89,15 +89,57 @@ def raw_data_to_metrics(raw_data_obj):
             logging.getLogger().warning('unknown unit type for unit %s' % unit)
             continue
 
-        name = transform_name(sample['name'])
+        name = _transform_name(sample['name'])
         avg = sample['avg']
         metrics.append(power_metrics.Metric(avg, unit_type, unit, name=name))
 
     return metrics
 
 
+def _get_single_file(registry, key):
+    if key not in registry:
+        return None
+    entry = registry[key]
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, list):
+        return None if len(entry) == 0 else entry[0]
+    raise ValueError('registry["%s"] is of unsupported type %s for this '
+                     'operation. Supported types are str and list.' % (
+                         key, type(entry)))
+
+
 class Bits(object):
     def __init__(self, index, config):
+        """Creates an instance of a bits controller.
+
+        Args:
+            index: An integer identifier for this instance, this allows to
+                tell apart different instances in the case where multiple
+                bits controllers are being used concurrently.
+            config: The config as defined in the ACTS  BiTS controller config.
+                Expected format is:
+                {
+                    // optional
+                    'Monsoon':   {
+                        'serial_num': <serial number:int>,
+                        'monsoon_voltage': <voltage:double>
+                    }
+                    // optional
+                    'Kibble': [
+                        {
+                            'board': 'BoardName1',
+                            'connector': 'A',
+                            'serial': 'serial_1'
+                        },
+                        {
+                            'board': 'BoardName2',
+                            'connector': 'D',
+                            'serial': 'serial_2'
+                        }
+                    ]
+                }
+        """
         self.index = index
         self.config = config
         self._service = None
@@ -110,27 +152,33 @@ class Bits(object):
         Args:
             registry: A dictionary with files used by bits. Format:
                 {
-                    // required
-                    bits_service: [/path/to/bits_service]
+                    // required, string or list of strings
+                    bits_service: ['/path/to/bits_service']
 
-                    // required
-                    bits_client: [/path/to/bits.par]
+                    // required, string or list of strings
+                    bits_client: ['/path/to/bits.par']
 
-                    // needed for monsoon
-                    lvpm_monsoon: [/path/to/lvpm_monsoon.par]
+                    // needed for monsoon, string or list of strings
+                    lvpm_monsoon: ['/path/to/lvpm_monsoon.par']
 
-                    // needed for monsoon
-                    hvpm_monsoon: [/path/to/hvpm_monsoon.par]
+                    // needed for monsoon, string or list of strings
+                    hvpm_monsoon: ['/path/to/hvpm_monsoon.par']
 
-                    // needed for kibble
-                    kibble_bin: [/path/to/kibble.par]
+                    // needed for kibble, string or list of strings
+                    kibble_bin: ['/path/to/kibble.par']
 
-                    // needed for kibble
-                    kibble_board_file: [/path/to/phone_s.board]
+                    // needed for kibble, string or list of strings
+                    kibble_board_file: ['/path/to/phone_s.board']
 
-                    // optional
-                    vm_file: [/path/to/file.vm]
+                    // optional, string or list of strings
+                    vm_file: ['/path/to/file.vm']
                 }
+
+                All fields in this dictionary can be either a string or a list
+                of strings. If lists are passed, only their first element is
+                taken into account. The reason for supporting lists but only
+                acting on their first element is for easier integration with
+                harnesses that handle resources as lists.
         """
         if registry is None:
             registry = power_monitor.get_registry()
@@ -141,13 +189,13 @@ class Bits(object):
             raise ValueError('No bits_client binary has been defined in the '
                              'global registry.')
 
-        bits_service_binary = registry['bits_service'][0]
-        bits_client_binary = registry['bits_client'][0]
-        lvpm_monsoon_bin = registry.get('lvpm_monsoon', [None])[0]
-        hvpm_monsoon_bin = registry.get('hvpm_monsoon', [None])[0]
-        kibble_bin = registry.get('kibble_bin', [None])[0]
-        kibble_board_file = registry.get('kibble_board_file', [None])[0]
-        vm_file = registry.get('vm_file', [None])[0]
+        bits_service_binary = _get_single_file(registry, 'bits_service')
+        bits_client_binary = _get_single_file(registry, 'bits_client')
+        lvpm_monsoon_bin = _get_single_file(registry, 'lvpm_monsoon')
+        hvpm_monsoon_bin = _get_single_file(registry, 'hvpm_monsoon')
+        kibble_bin = _get_single_file(registry, 'kibble_bin')
+        kibble_board_file = _get_single_file(registry, 'kibble_board_file')
+        vm_file = _get_single_file(registry, 'vm_file')
         config = bsc.BitsServiceConfig(self.config,
                                        lvpm_monsoon_bin=lvpm_monsoon_bin,
                                        hvpm_monsoon_bin=hvpm_monsoon_bin,
@@ -187,6 +235,27 @@ class Bits(object):
         time.sleep(duration)
 
     def get_metrics(self, *_, timestamps=None, **__):
+        """Gets metrics for the segments delimited by the timestamps dictionary.
+
+        Args:
+            timestamps: A dictionary of the shape:
+                {
+                    'segment_name': {
+                        'start' : <seconds_since_epoch>
+                        'end': <seconds_since_epoch>
+                    }
+                    'another_segment': {
+                        'start' : <seconds_since_epoch>
+                        'end': <seconds_since_epoch>
+                    }
+                }
+        Returns:
+            A dictionary of the shape:
+                {
+                    'segment_name': <list of power_metrics.Metric>
+                    'another_segment': <list of power_metrics.Metric>
+                }
+        """
         if timestamps is None:
             raise ValueError('timestamps dictionary can not be left undefined')
 
@@ -197,7 +266,7 @@ class Bits(object):
             self._client.add_marker(start_ns, 'start - %s' % segment_name)
             self._client.add_marker(end_ns, 'end - %s' % segment_name)
             raw_metrics = self._client.get_metrics(start_ns, end_ns)
-            metrics[segment_name] = raw_data_to_metrics(raw_metrics)
+            metrics[segment_name] = _raw_data_to_metrics(raw_metrics)
         return metrics
 
     def release_resources(self):
