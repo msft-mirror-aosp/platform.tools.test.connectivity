@@ -44,15 +44,15 @@ class _BitsMonsoonConfig(object):
 
         Args:
             monsoon_config: The monsoon config as defined in the
-            ACTS Bits controller config. Expected format is:
-              { 'serial_num': <serial number:int>,
-                'monsoon_voltage': <voltage:double> }
+                ACTS Bits controller config. Expected format is:
+                  { 'serial_num': <serial number:int>,
+                    'monsoon_voltage': <voltage:double> }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
-            Needed if the monsoon is a lvpm monsoon (serial number lower than
-            20000).
+                Needed if the monsoon is a lvpm monsoon (serial number lower
+                than 20000).
             hvpm_monsoon_bin: Binary file to interact with high voltage
-            monsoons. Needed if the monsoon is a hvpm monsoon (serial number
-            greater than 20000).
+                monsoons. Needed if the monsoon is a hvpm monsoon (serial number
+                greater than 20000).
         """
         if 'serial_num' not in monsoon_config:
             raise ValueError(
@@ -84,6 +84,82 @@ class _BitsMonsoonConfig(object):
         self.config_dic['serial_num'] = self.serial_num
 
 
+DEFAULT_KIBBLES_BOARD_CONFIG = {
+    'enabled': 1,
+    'type': 'kibblecollector',
+    'attached_kibbles': {}
+}
+
+DEFAULT_KIBBLE_CONFIG = {
+    'ultra_channels_current_hz': 976.5625,
+    'ultra_channels_voltage_hz': 976.5625,
+    'high_channels_current_hz': 976.5625,
+    'high_channels_voltage_hz': 976.5625
+}
+
+
+class _BitsKibblesConfig(object):
+    def __init__(self, kibbles_config, kibble_bin, kibble_board_file):
+        """Constructs _BitsKibblesConfig.
+
+        Args:
+            kibbles_config: A list of compacted kibble boards descriptions.
+                Expected format is:
+                    [{
+                        'board': 'BoardName1',
+                        'connector': 'A',
+                        'serial': 'serial_1'
+                     },
+                    {
+                        'board': 'BoardName2',
+                        'connector': 'D',
+                        'serial': 'serial_2'
+                    }]
+                More details can be found at go/acts-bits.
+            kibble_bin: Binary file to interact with kibbles.
+            kibble_board_file: File describing the distribution of rails on a
+                kibble. go/kibble#setting-up-bits-board-files
+        """
+
+        if not isinstance(kibbles_config, list):
+            raise ValueError(
+                'kibbles_config must be a list. Got %s.' % kibbles_config)
+
+        if kibble_bin is None:
+            raise ValueError('Kibbles were present in the config but no '
+                             'kibble_bin was provided')
+        if kibble_board_file is None:
+            raise ValueError('Kibbles were present in the config but no '
+                             'kibble_board_file was provided')
+
+        self.boards_configs = {}
+
+        for kibble in kibbles_config:
+            if 'board' not in kibble:
+                raise ValueError('An individual kibble config must have a '
+                                 'board')
+            if 'connector' not in kibble:
+                raise ValueError('An individual kibble config must have a '
+                                 'connector')
+            if 'serial' not in kibble:
+                raise ValueError('An individual kibble config must have a '
+                                 'serial')
+
+            board = kibble['board']
+            connector = kibble['connector']
+            serial = kibble['serial']
+            if board not in self.boards_configs:
+                self.boards_configs[board] = copy.deepcopy(
+                    DEFAULT_KIBBLES_BOARD_CONFIG)
+                self.boards_configs[board][
+                    'board_file'] = kibble_board_file
+                self.boards_configs[board]['kibble_py'] = kibble_bin
+            kibble_config = copy.deepcopy(DEFAULT_KIBBLE_CONFIG)
+            kibble_config['connector'] = connector
+            self.boards_configs[board]['attached_kibbles'][
+                serial] = kibble_config
+
+
 DEFAULT_SERVICE_CONFIG_DICT = {
     'devices': {
         'default_device': {
@@ -106,15 +182,28 @@ class BitsServiceConfig(object):
     """
 
     def __init__(self, controller_config, lvpm_monsoon_bin=None,
-                 hvpm_monsoon_bin=None):
+                 hvpm_monsoon_bin=None, kibble_bin=None,
+                 kibble_board_file=None):
         """Creates a BitsServiceConfig.
 
         Args:
             controller_config: The config as defined in the ACTS  BiTS
             controller config. Expected format is:
               {
-                (optional) 'Monsoon': { 'serial_num': <serial number:int>,
-                                        'monsoon_voltage': <voltage:double> }
+                (optional) 'Monsoon':   {
+                                            'serial_num': <serial number:int>,
+                                            'monsoon_voltage': <voltage:double>
+                                        }
+                (optional) 'Kibble':   [{
+                                            'board': 'BoardName1',
+                                            'connector': 'A',
+                                            'serial': 'serial_1'
+                                        },
+                                        {
+                                            'board': 'BoardName2',
+                                            'connector': 'D',
+                                            'serial': 'serial_2'
+                                        }]
               }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
             Needed if the monsoon is a lvpm monsoon (serial number lower than
@@ -122,10 +211,15 @@ class BitsServiceConfig(object):
             hvpm_monsoon_bin: Binary file to interact with high voltage
             monsoons. Needed if the monsoon is a hvpm monsoon (serial number
             greater than 20000).
+            kibble_bin: Binary file to interact with kibbles.
+            kibble_board_file: File describing the distribution of rails on a
+            kibble. go/kibble#setting-up-bits-board-files
         """
         self.config_dic = copy.deepcopy(DEFAULT_SERVICE_CONFIG_DICT)
         self.has_monsoon = False
+        self.has_kibbles = False
         self.monsoon_config = None
+        self.kibbles_config = None
         if 'Monsoon' in controller_config:
             self.has_monsoon = True
             self.monsoon_config = _BitsMonsoonConfig(
@@ -134,4 +228,10 @@ class BitsServiceConfig(object):
                 hvpm_monsoon_bin)
             self.config_dic['devices']['default_device']['collectors'][
                 'Monsoon'] = self.monsoon_config.config_dic
-        self.has_kibble = False
+        if 'Kibbles' in controller_config:
+            self.has_kibbles = True
+            self.kibbles_config = _BitsKibblesConfig(
+                controller_config['Kibbles'],
+                kibble_bin, kibble_board_file)
+            self.config_dic['devices']['default_device']['collectors'].update(
+                self.kibbles_config.boards_configs)

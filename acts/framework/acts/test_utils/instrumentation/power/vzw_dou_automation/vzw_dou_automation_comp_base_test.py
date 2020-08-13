@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import os
+import time
 
 from acts.test_utils.instrumentation.device.apps.app_installer import AppInstaller
 from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
@@ -34,6 +35,7 @@ from acts.test_utils.instrumentation.power.vzw_dou_automation import \
 AUTOTESTER_LOG = 'autotester.log'
 SCREENSHOTS_DIR = 'test_screenshots'
 
+DEFAULT_WAIT_FOR_REBOOT = 120
 
 class VzWDoUAutomationCompBaseTest(
     vzw_dou_automation_base_test.VzWDoUAutomationBaseTest):
@@ -111,7 +113,11 @@ class VzWDoUAutomationCompBaseTest(
     """Runs the adb commands to prepare the companion phone for days of use power testing."""
 
     self.log.info('Running base adb setup commands on companion.')
-    self.ad_dut.adb.ensure_root()
+    self.ad_cp.adb.ensure_root()
+    self.ad_cp.reboot()
+    self.ad_cp.wait_for_boot_completion()
+    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    self.ad_cp.adb.ensure_root()
     self.adb_run(common.test_harness.toggle(True))
     self.adb_run(goog.force_stop_nexuslauncher)
     self.adb_run(goog.disable_playstore)
