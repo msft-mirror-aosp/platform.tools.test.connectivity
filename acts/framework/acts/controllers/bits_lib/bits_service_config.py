@@ -188,23 +188,27 @@ class BitsServiceConfig(object):
 
         Args:
             controller_config: The config as defined in the ACTS  BiTS
-            controller config. Expected format is:
-              {
-                (optional) 'Monsoon':   {
-                                            'serial_num': <serial number:int>,
-                                            'monsoon_voltage': <voltage:double>
-                                        }
-                (optional) 'Kibble':   [{
-                                            'board': 'BoardName1',
-                                            'connector': 'A',
-                                            'serial': 'serial_1'
-                                        },
-                                        {
-                                            'board': 'BoardName2',
-                                            'connector': 'D',
-                                            'serial': 'serial_2'
-                                        }]
-              }
+                controller config. Expected format is:
+                {
+                    // optional
+                    'Monsoon':   {
+                        'serial_num': <serial number:int>,
+                        'monsoon_voltage': <voltage:double>
+                    }
+                    // optional
+                    'Kibble': [
+                        {
+                            'board': 'BoardName1',
+                            'connector': 'A',
+                            'serial': 'serial_1'
+                        },
+                        {
+                            'board': 'BoardName2',
+                            'connector': 'D',
+                            'serial': 'serial_2'
+                        }
+                    ]
+                }
             lvpm_monsoon_bin: Binary file to interact with low voltage monsoons.
                 Needed if the monsoon is a lvpm monsoon (serial number lower
                 than 20000).

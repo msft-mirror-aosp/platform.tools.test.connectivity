@@ -22,16 +22,16 @@ from acts.test_utils.instrumentation.power import power_metrics
 class BitsTest(unittest.TestCase):
 
     def test_metric_name_transformation_for_legacy_support(self):
-        avg_current = bits.transform_name('default_name.Monsoon.Monsoon:mA')
-        avg_power = bits.transform_name('default_name.Monsoon.Monsoon:mW')
+        avg_current = bits._transform_name('default_name.Monsoon.Monsoon:mA')
+        avg_power = bits._transform_name('default_name.Monsoon.Monsoon:mW')
 
         self.assertEqual('avg_current', avg_current)
         self.assertEqual('avg_power', avg_power)
 
     def test_metric_name_transformation(self):
-        avg_current = bits.transform_name('default_name.slider.XYZ:mA')
-        avg_power = bits.transform_name('default_name.slider.ABCD:mW')
-        unknown_unit = bits.transform_name('default_name.aaaaa.QWERTY:unknown')
+        avg_current = bits._transform_name('default_name.slider.XYZ:mA')
+        avg_power = bits._transform_name('default_name.slider.ABCD:mW')
+        unknown_unit = bits._transform_name('default_name.aaaaa.QWERTY:unknown')
 
         self.assertEqual('XYZ_avg_current', avg_current)
         self.assertEqual('ABCD_avg_power', avg_power)
@@ -46,7 +46,7 @@ class BitsTest(unittest.TestCase):
              'avg': 91,
              'unit': 'mW'}]}
 
-        metrics = bits.raw_data_to_metrics(raw_data)
+        metrics = bits._raw_data_to_metrics(raw_data)
         self.assertEqual(2, len(metrics))
         self.assertEqual(
             power_metrics.Metric(21, 'current', 'mA', 'avg_current'),
@@ -64,8 +64,32 @@ class BitsTest(unittest.TestCase):
              'avg': float('nan'),
              'unit': 'Msg'}]}
 
-        metrics = bits.raw_data_to_metrics(raw_data)
+        metrics = bits._raw_data_to_metrics(raw_data)
         self.assertEqual(0, len(metrics))
+
+    def test_get_single_file_get_first_element_of_a_list(self):
+        registry = {'some_key': ['first_element', 'second_element']}
+
+        result = bits._get_single_file(registry, 'some_key')
+
+        self.assertEqual('first_element', result)
+
+    def test_get_single_file_gets_string_if_registry_contains_string(self):
+        registry = {'some_key': 'this_is_a_string'}
+
+        result = bits._get_single_file(registry, 'some_key')
+
+        self.assertEqual('this_is_a_string', result)
+
+    def test_get_single_file_gets_none_if_value_is_undefined_or_empty_list(self):
+        registry = {'some_key': []}
+
+        result1 = bits._get_single_file(registry, 'some_key')
+        result2 = bits._get_single_file(registry, 'key_that_is_not_in_registry')
+
+        self.assertEqual(None, result1)
+        self.assertEqual(None, result2)
+
 
 
 if __name__ == '__main__':
