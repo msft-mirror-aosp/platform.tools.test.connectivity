@@ -112,7 +112,7 @@ class BitsClient(object):
         self._log.info('exporting collection %s to %s',
                        self._active_collection.name,
                        collection_path)
-        job.run(cmd)
+        job.run(cmd, timeout=600)
 
     def _flush_markers(self):
         for ts, marker in sorted(self._active_collection.markers_buffer,
