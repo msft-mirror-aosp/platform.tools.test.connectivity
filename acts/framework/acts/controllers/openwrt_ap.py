@@ -9,7 +9,7 @@ from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 
-ACTS_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
+MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
 OPEN_SECURITY = "none"
 PSK_SECURITY = "psk2"
