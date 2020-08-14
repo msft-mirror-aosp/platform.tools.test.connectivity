@@ -28,12 +28,12 @@ class VzWDoUAutomationIdleTest(
       num_passes=3,
       acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
-  def test_flight_mode_idle(self):
+  def test_flight_mode_idle(self, attempt_number):
     """Measures power when the device is in airplane mode."""
 
     self.adb_run(common.airplane_mode.toggle(True))
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
-        'testIdleStandbyMode')
+        'testIdleStandbyMode', attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
