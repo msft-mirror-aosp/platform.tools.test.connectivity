@@ -103,8 +103,37 @@ class Bits(object):
         self._service = None
         self._client = None
 
-    def setup(self, *_, **__):
-        registry = power_monitor.get_registry()
+    def setup(self, *_, registry=None, **__):
+        """Starts a bits_service in the background.
+
+        This function needs to be
+        Args:
+            registry: A dictionary with files used by bits. Format:
+                {
+                    // required
+                    bits_service: [/path/to/bits_service]
+
+                    // required
+                    bits_client: [/path/to/bits.par]
+
+                    // needed for monsoon
+                    lvpm_monsoon: [/path/to/lvpm_monsoon.par]
+
+                    // needed for monsoon
+                    hvpm_monsoon: [/path/to/hvpm_monsoon.par]
+
+                    // needed for kibble
+                    kibble_bin: [/path/to/kibble.par]
+
+                    // needed for kibble
+                    kibble_board_file: [/path/to/phone_s.board]
+
+                    // optional
+                    vm_file: [/path/to/file.vm]
+                }
+        """
+        if registry is None:
+            registry = power_monitor.get_registry()
         if 'bits_service' not in registry:
             raise ValueError('No bits_service binary has been defined in the '
                              'global registry.')
@@ -118,11 +147,13 @@ class Bits(object):
         hvpm_monsoon_bin = registry.get('hvpm_monsoon', [None])[0]
         kibble_bin = registry.get('kibble_bin', [None])[0]
         kibble_board_file = registry.get('kibble_board_file', [None])[0]
+        vm_file = registry.get('vm_file', [None])[0]
         config = bsc.BitsServiceConfig(self.config,
                                        lvpm_monsoon_bin=lvpm_monsoon_bin,
                                        hvpm_monsoon_bin=hvpm_monsoon_bin,
                                        kibble_bin=kibble_bin,
-                                       kibble_board_file=kibble_board_file)
+                                       kibble_board_file=kibble_board_file,
+                                       virtual_metrics_file=vm_file)
         output_log = os.path.join(
             context.get_current_context().get_full_output_path(),
             'bits_service_out_%s.txt' % self.index)
