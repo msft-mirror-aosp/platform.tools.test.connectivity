@@ -41,6 +41,8 @@ class Tee(SequentialTransformer):
         self._filename = filename
         self._fd = None
         self.measure_after_seconds = measure_after_seconds
+        # The time of the first sample gathered.
+        self._start_time = None
 
     def on_begin(self):
         self._fd = open(self._filename, 'w+')
@@ -55,7 +57,10 @@ class Tee(SequentialTransformer):
             buffer: A list of HvpmReadings.
         """
         for sample in buffer:
-            if sample.sample_time < self.measure_after_seconds:
+            if self._start_time is None:
+                self._start_time = sample.sample_time
+            if (sample.sample_time - self._start_time <
+                    self.measure_after_seconds):
                 continue
             self._fd.write('%0.9f %.12f\n' %
                            (sample.sample_time, sample.main_current))
@@ -95,6 +100,8 @@ class PerfgateTee(SequentialTransformer):
     self._filename = filename
     self._fd = None
     self.measure_after_seconds = measure_after_seconds
+    # The time of the first sample gathered.
+    self._start_time = None
 
   def on_begin(self):
     self._fd = open(self._filename, 'w+')
@@ -109,7 +116,9 @@ class PerfgateTee(SequentialTransformer):
             buffer: A list of HvpmReadings.
     """
     for sample in buffer:
-      if sample.sample_time < self.measure_after_seconds:
+      if self._start_time is None:
+        self._start_time = sample.sample_time
+      if sample.sample_time - self._start_time < self.measure_after_seconds:
         continue
       self._fd.write(
           '%i,%.6f,%.6f\n' %
