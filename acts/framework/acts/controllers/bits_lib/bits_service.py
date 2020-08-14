@@ -131,8 +131,6 @@ class BitsService(object):
             f.write(json.dumps(self.config.config_dic, indent=2))
 
         cmd = [binary,
-               '--verbosity',
-               'debug',
                '--port',
                '0',
                '--collections_folder',
