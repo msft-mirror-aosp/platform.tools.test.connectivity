@@ -122,12 +122,31 @@ class BitsServiceConfigWithKibblesTest(unittest.TestCase):
         service_config = bits_service_config.BitsServiceConfig({})
         self.assertFalse(service_config.has_kibbles)
 
-    def test_bits_service_config_with_kibbles(self):
+    def test_bits_service_config_with_kibbles_but_no_vm_files(self):
         service_config = bits_service_config.BitsServiceConfig({'Kibbles': [
             {'board': 'BOARD', 'connector': 'CONNECTOR', 'serial': 'SERIAL'}]},
             kibble_bin='bin',
             kibble_board_file='file.board')
 
+        self.assertFalse(service_config.has_virtual_metrics_file)
+
+    def test_bits_service_config_with_kibbles_and_vm_files(self):
+        service_config = bits_service_config.BitsServiceConfig({'Kibbles': [
+            {'board': 'BOARD', 'connector': 'CONNECTOR', 'serial': 'SERIAL'}]},
+            kibble_bin='bin',
+            kibble_board_file='file.board',
+            virtual_metrics_file='some_file.vm')
+        config_dic = service_config.config_dic
+
+        self.assertTrue(service_config.has_virtual_metrics_file)
+        self.assertIn('some_file.vm',
+                      config_dic['devices']['default_device']['vm_files'])
+
+    def test_bits_service_config_with_kibbles(self):
+        service_config = bits_service_config.BitsServiceConfig({'Kibbles': [
+            {'board': 'BOARD', 'connector': 'CONNECTOR', 'serial': 'SERIAL'}]},
+            kibble_bin='bin',
+            kibble_board_file='file.board')
         config_dic = service_config.config_dic
 
         self.assertTrue(service_config.has_kibbles)

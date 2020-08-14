@@ -167,6 +167,8 @@ class BitsClient(object):
                    str(end_ns),
                    '--aggregates_yaml_path',
                    tf.name]
+            if self._server_config.has_virtual_metrics_file:
+                cmd = cmd + ['--vm_file', 'default']
             job.run(cmd)
             with open(tf.name) as mf:
                 self._log.debug(
