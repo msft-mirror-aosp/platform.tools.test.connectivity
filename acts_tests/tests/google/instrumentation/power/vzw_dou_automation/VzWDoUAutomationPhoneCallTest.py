@@ -30,7 +30,7 @@ class VzWDoUAutomationPhoneCallTest(
       num_passes=3,
       acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
-  def test_voice_call_over_lte(self):
+  def test_voice_call_over_lte(self, attempt_number):
     """Measures power when the device is on call with mute on and off."""
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
@@ -56,7 +56,7 @@ class VzWDoUAutomationPhoneCallTest(
           'testVoiceCall',
           extra_params=[('recipient_number', dut_phone_number),
                         ('recipient_number_companion', companion_phone_number),
-                        ('enable_mute', is_dut_muted)], count=i)
+                        ('enable_mute', is_dut_muted)], count=i, attempt_number=attempt_number)
       metrics_list.append(metrics)
     final_metrics = self._generate_final_metrics(metrics_list)
     self.record_metrics(final_metrics)
