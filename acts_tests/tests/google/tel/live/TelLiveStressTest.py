@@ -371,11 +371,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.result_info["%s Success" % message_type] += 1
             return True
 
-    def _make_phone_call(self, call_verification_func=None):
+    def _make_phone_call(self, call_verification_func=None, voice_stress_only = False):
         ads = self.android_devices[:]
         slot_id_callee = None
-        if not self.single_phone_test:
-            random.shuffle(ads)
+        if not voice_stress_only:
+            if not self.single_phone_test:
+                random.shuffle(ads)
         if self.dsds_esim:
             slot_id = random.randint(0,1)
             sub_id = get_subid_from_slot_index(self.log, ads[0], slot_id)
@@ -385,7 +386,10 @@ class TelLiveStressTest(TelephonyBaseTest):
             slot_id_callee = random.randint(0,1)
             ads[1].log.info("Voice - MT - slot_id %d", slot_id_callee)
         the_number = self.result_info["Call Total"] + 1
-        duration = random.randrange(self.min_phone_call_duration,
+        if voice_stress_only:
+            duration = 30
+        else:
+            duration = random.randrange(self.min_phone_call_duration,
                                     self.max_phone_call_duration)
         result = True
         test_name = "%s_No_%s_phone_call" % (self.test_name, the_number)
@@ -1116,7 +1120,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info(
             "==== Start voice stress test ====")
         self.perf_data["testing method"] = "parallel"
-        results = (self.call_performance_test, [call_verification_func])
+        results = self.call_performance_test(call_verification_func)
 
         result_message = self._get_result_message()
         self.log.info(result_message)
@@ -1140,11 +1144,12 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["Call Initiate Fail"] += 1
 
     def call_performance_test(self, call_verification_func=None):
-        while time.time() < self.finishing_time:
-            time.sleep(
-                random.randrange(self.min_sleep_time, self.max_sleep_time))
+        count = 0
+        while count < self.phone_call_iteration:
+            time.sleep(15)
+            count += 1
             try:
-                self._make_phone_call(call_verification_func)
+                self._make_phone_call(call_verification_func, True)
             except Exception as e:
                 self.log.exception("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -1152,6 +1157,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
+            self.result_info["Call Success Total"] += 1
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
@@ -1159,7 +1165,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         ]):
             return False
         else:
-            self.result_info["Call Success Total"] += 1
             return True
 
     """ Tests Begin """
