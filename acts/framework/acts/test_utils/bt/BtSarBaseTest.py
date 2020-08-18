@@ -87,6 +87,7 @@ class BtSarBaseTest(BaseTestClass):
             custom_sar_path=None,
             music_files=None,
             sort_order=None,
+            reg_domain_files=None,
             max_error_threshold=DEFAULT_MAX_ERROR_THRESHOLD,
             agg_error_threshold=DEFAULT_AGG_MAX_ERROR_THRESHOLD,
             tpc_threshold=[2, 8],
@@ -610,7 +611,7 @@ class BtSarBaseTest(BaseTestClass):
         self.log.info('BT SAR table read from the phone')
         return df
 
-    def push_table(self, ad, src_path):
+    def push_table(self, ad, src_path, dest_path=''):
         """Pushes a BT SAR table to the phone.
 
         Pushes a BT SAR table to the android device and reboots the device.
@@ -625,7 +626,10 @@ class BtSarBaseTest(BaseTestClass):
             job.run('cp {} {}'.format(src_path, ad.device_log_path))
 
         #Pushing the file provided in the config
-        ad.push_system_file(src_path, self.sar_file_path)
+        if dest_path:
+            ad.push_system_file(src_path, dest_path)
+        else:
+            ad.push_system_file(src_path, self.sar_file_path)
         self.log.info('BT SAR table pushed')
         ad.reboot()
         self.bt_sar_df = self.read_sar_table(self.dut)
