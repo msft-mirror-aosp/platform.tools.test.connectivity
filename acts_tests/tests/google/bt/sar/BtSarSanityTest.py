@@ -30,6 +30,7 @@ class BtSarSanityTest(BtSarBaseTest):
     """
     def __init__(self, controllers):
         super().__init__(controllers)
+
         self.reg_domain_dict = {
             'US': 'bluetooth_power_limits_US.csv',
             'EU': 'bluetooth_power_limits_EU.csv',
@@ -94,6 +95,7 @@ class BtSarSanityTest(BtSarBaseTest):
                     propagated_value = 'NA'
 
                 if enforced_state[key] == propagated_value:
+                    self.sar_test_result.metric_value = 1
                     self.log.info(
                         'scenario: {}, state : {}, forced_value: {}, value:{}'.
                         format(scenario, key, enforced_state[key],
@@ -166,6 +168,7 @@ class BtSarSanityTest(BtSarBaseTest):
         if power_cap_error:
             asserts.fail("Power Caps didn't match powers in the SAR table")
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass('Power Caps were set according to the table')
 
     def test_bt_sar_sanity_country_code(self):
@@ -204,6 +207,7 @@ class BtSarSanityTest(BtSarBaseTest):
             asserts.fail(
                 'Regulatory domains not set according to country code')
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass(
                 'Regulatory domains set according to country code')
 
@@ -240,4 +244,5 @@ class BtSarSanityTest(BtSarBaseTest):
         if reg_domain_error_flag:
             asserts.fail('Regulatory domain sanity tests failed')
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass('Regulatory domain sanity tests passed')
