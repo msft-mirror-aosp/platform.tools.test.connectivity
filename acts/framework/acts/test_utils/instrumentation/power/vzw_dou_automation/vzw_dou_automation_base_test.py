@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 
+import os
 import statistics
 import tempfile
 import time
@@ -156,3 +157,8 @@ class VzWDoUAutomationBaseTest(
       self.ad_dut.reboot()
       self.ad_dut.wait_for_boot_completion()
       time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
+
+  def generate_random_ssid(self):
+    # Generate random permutations as ssid
+    ssid = os.popen('shuf -i 1111111111-9999999999 -n 1').read(10)
+    return ssid.strip()
