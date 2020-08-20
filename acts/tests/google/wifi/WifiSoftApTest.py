@@ -52,8 +52,6 @@ class WifiSoftApTest(WifiBaseTest):
             req_param_names=req_params, opt_param_names=opt_param)
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(open_network=True)
         self.open_network = self.open_network[0]["2g"]
         # Do a simple version of init - mainly just sync the time and enable
         # verbose logging.  This test will fail if the DUT has a sim and cell

@@ -65,13 +65,6 @@ class WifiEnterpriseTest(WifiBaseTest):
                 radius_conf_5g=self.radius_conf_5g,
                 ent_network_pwd=True,
                 radius_conf_pwd=self.radius_conf_pwd,)
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(
-                ent_network=True,
-                radius_conf_2g=self.radius_conf_2g,
-                radius_conf_5g=self.radius_conf_5g,
-                ent_network_pwd=True,
-                radius_conf_pwd=self.radius_conf_pwd,)
         self.ent_network_2g = self.ent_networks[0]["2g"]
         self.ent_network_5g = self.ent_networks[0]["5g"]
         self.ent_network_pwd = self.ent_networks_pwd[0]["2g"]

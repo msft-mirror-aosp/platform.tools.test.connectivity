@@ -57,9 +57,6 @@ class WifiWakeTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(mirror_ap=False, ap_count=2)
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(wpa_network=True,
-                                                ap_count=2)
 
         # use 2G since Wifi Wake does not work if an AP is on a 5G DFS channel
         self.ap_a = self.reference_networks[0]["2g"]
@@ -67,46 +64,28 @@ class WifiWakeTest(WifiBaseTest):
 
         self.ap_a_atten = self.attenuators[0]
         self.ap_b_atten = self.attenuators[2]
-        if "OpenWrtAP" in self.user_params:
-            self.ap_b_atten = self.attenuators[1]
 
     # TODO(b/119040540): this method of disabling/re-enabling Wifi on APs is
     # hacky, switch to using public methods when they are implemented
     def ap_a_off(self):
-        if "OpenWrtAP" in self.user_params:
-            self.access_points[0].stop_ap()
-            self.log.info('Turned AP A off')
-            return
         ap_a_hostapd = self.access_points[0]._aps['wlan0'].hostapd
         if ap_a_hostapd.is_alive():
             ap_a_hostapd.stop()
             self.log.info('Turned AP A off')
 
     def ap_a_on(self):
-        if "OpenWrtAP" in self.user_params:
-            self.access_points[0].start_ap()
-            self.log.info('Turned AP A on')
-            return
         ap_a_hostapd = self.access_points[0]._aps['wlan0'].hostapd
         if not ap_a_hostapd.is_alive():
             ap_a_hostapd.start(ap_a_hostapd.config)
             self.log.info('Turned AP A on')
 
     def ap_b_off(self):
-        if "OpenWrtAP" in self.user_params:
-            self.access_points[1].stop_ap()
-            self.log.info('Turned AP B off')
-            return
         ap_b_hostapd = self.access_points[1]._aps['wlan0'].hostapd
         if ap_b_hostapd.is_alive():
             ap_b_hostapd.stop()
             self.log.info('Turned AP B off')
 
     def ap_b_on(self):
-        if "OpenWrtAP" in self.user_params:
-            self.access_points[1].start_ap()
-            self.log.info('Turned AP B on')
-            return
         ap_b_hostapd = self.access_points[1]._aps['wlan0'].hostapd
         if not ap_b_hostapd.is_alive():
             ap_b_hostapd.start(ap_b_hostapd.config)

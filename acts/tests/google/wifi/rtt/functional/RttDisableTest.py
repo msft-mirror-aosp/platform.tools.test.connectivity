@@ -34,8 +34,6 @@ class RttDisableTest(WifiBaseTest, RttBaseTest):
         super().setup_class()
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(open_network=True)
 
     def run_disable_rtt(self, disable_mode):
         """Validate the RTT disabled flows: whether by disabling Wi-Fi or entering
