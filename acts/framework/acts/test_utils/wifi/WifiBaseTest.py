@@ -19,6 +19,7 @@
 
 import copy
 import itertools
+import os
 import time
 
 import acts.controllers.access_point as ap
@@ -27,6 +28,7 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.base_test import BaseTestClass
+from acts.keys import Config
 from acts.signals import TestSignal
 from acts.controllers import android_device
 from acts.controllers.access_point import AccessPoint
@@ -45,6 +47,11 @@ class WifiBaseTest(BaseTestClass):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
+        self.cnss_diag_file = self.user_params.get("cnss_diag_file")
+        if not os.path.isfile(self.cnss_diag_file):
+            self.cnss_diag_file = os.path.join(
+                self.user_params[Config.key_config_path.value],
+                self.cnss_diag_file)
 
     def get_psk_network(
             self,
