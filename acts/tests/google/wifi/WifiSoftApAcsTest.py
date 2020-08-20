@@ -174,15 +174,20 @@ class WifiSoftApAcsTest(WifiBaseTest):
             channel_5g: The channel number to use for 5GHz network.
 
         """
+        if not channel_2g:
+            channel_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
+        if not channel_5g:
+            channel_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
         if "AccessPoint" in self.user_params:
-            if not channel_2g:
-                channel_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
-            if not channel_5g:
-                channel_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
             self.legacy_configure_ap_and_start(wpa_network=True,
                                                wep_network=True,
                                                channel_2g=channel_2g,
                                                channel_5g=channel_5g)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                wep_network=True,
+                                                channel_2g=channel_2g,
+                                                channel_5g=channel_5g)
 
     def start_traffic_and_softap(self, network, softap_band):
         """Start iPerf traffic on client dut, during softAP bring-up on dut.
