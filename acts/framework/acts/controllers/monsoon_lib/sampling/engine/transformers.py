@@ -69,62 +69,64 @@ class Tee(SequentialTransformer):
 
 
 class PerfgateTee(SequentialTransformer):
-  """Outputs records of nanoseconds,current,voltage to the specified file.
+    """Outputs records of nanoseconds,current,voltage to the specified file.
 
-  Similar to Tee, but this version includes voltage, which may help with
-  accuracy in the power calculations.
+    Similar to Tee, but this version includes voltage, which may help with
+    accuracy in the power calculations.
 
-  This output type can be enabled by passing this transformer to the
-  transformers kwarg in Monsoon.measure_power():
+    This output type can be enabled by passing this transformer to the
+    transformers kwarg in Monsoon.measure_power():
 
-  # Uses the default Tee
-  > monsoon.measure_power(..., output_path=filename])
+    # Uses the default Tee
+    > monsoon.measure_power(..., output_path=filename])
 
-  # Uses PerfgateTee
-  > monsoon.measure_power(..., transformers=[PerfgateTee(filename)])
+    # Uses PerfgateTee
+    > monsoon.measure_power(..., transformers=[PerfgateTee(filename)])
 
-  Attributes:
-      _filename: the name of the file to open.
-      _fd: the filestream written to.
-  """
-
-  def __init__(self, filename, measure_after_seconds=0):
-    """Creates an OutputStream.
-
-    Args:
-        filename: the path to the file to write the collected data to.
-        measure_after_seconds: the number of seconds to skip before logging
-          data as part of the measurement.
+    Attributes:
+        _filename: the name of the file to open.
+        _fd: the filestream written to.
     """
-    super().__init__()
-    self._filename = filename
-    self._fd = None
-    self.measure_after_seconds = measure_after_seconds
-    # The time of the first sample gathered.
-    self._start_time = None
 
-  def on_begin(self):
-    self._fd = open(self._filename, 'w+')
-
-  def on_end(self):
-    self._fd.close()
-
-  def _transform_buffer(self, buffer):
-    """Writes the reading values to a file.
+    def __init__(self, filename, measure_after_seconds=0):
+        """Creates an OutputStream.
 
         Args:
-            buffer: A list of HvpmReadings.
-    """
-    for sample in buffer:
-      if self._start_time is None:
-        self._start_time = sample.sample_time
-      if sample.sample_time - self._start_time < self.measure_after_seconds:
-        continue
-      self._fd.write(
-          '%i,%.6f,%.6f\n' %
-          (sample.sample_time * 1e9, sample.main_current, sample.main_voltage))
-    self._fd.flush()
-    return BufferList([buffer])
+            filename: the path to the file to write the collected data to.
+            measure_after_seconds: the number of seconds to skip before logging
+              data as part of the measurement.
+        """
+        super().__init__()
+        self._filename = filename
+        self._fd = None
+        self.measure_after_seconds = measure_after_seconds
+        # The time of the first sample gathered.
+        self._start_time = None
+
+    def on_begin(self):
+        self._fd = open(self._filename, 'w+')
+
+    def on_end(self):
+        self._fd.close()
+
+    def _transform_buffer(self, buffer):
+        """Writes the reading values to a file.
+
+            Args:
+                buffer: A list of HvpmReadings.
+        """
+        for sample in buffer:
+            if self._start_time is None:
+                self._start_time = sample.sample_time
+            if (sample.sample_time - self._start_time <
+                    self.measure_after_seconds):
+                continue
+            self._fd.write(
+                '%i,%.6f,%.6f\n' %
+                (sample.sample_time * 1e9, sample.main_current,
+                 sample.main_voltage))
+        self._fd.flush()
+        return BufferList([buffer])
 
 
 class SampleAggregator(ParallelTransformer):
