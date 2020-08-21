@@ -50,6 +50,9 @@ SPEED_OF_LIGHT = 299792458
 
 DEFAULT_PING_ADDR = "https://www.google.com/robots.txt"
 
+CNSS_DIAG_CONFIG_PATH = "/data/vendor/wifi/cnss_diag/"
+CNSS_DIAG_CONFIG_FILE = "cnss_diag.conf"
+
 ROAMING_ATTN = {
         "AP1_on_AP2_off": [
             0,
@@ -2396,22 +2399,27 @@ def verify_mac_is_found_in_pcap(ad, mac, packets):
     asserts.fail("Did not find MAC = %s in packet sniffer."
                  "for device %s" % (mac, ad.serial))
 
-def start_cnss_diags(ads):
+def start_cnss_diags(ads, cnss_diag_file):
     for ad in ads:
-        start_cnss_diag(ad)
+        start_cnss_diag(ad, cnss_diag_file)
 
 
-def start_cnss_diag(ad):
+def start_cnss_diag(ad, cnss_diag_file):
     """Start cnss_diag to record extra wifi logs
 
     Args:
         ad: android device object.
+        cnss_diag_file: cnss diag config file to push to device.
     """
     if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
         prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
     else:
         prop = wifi_constants.CNSS_DIAG_PROP
     if ad.adb.getprop(prop) != 'true':
+        if not int(ad.adb.shell("ls -l %s%s | wc -l" %
+                                (CNSS_DIAG_CONFIG_PATH,
+                                 CNSS_DIAG_CONFIG_FILE))):
+            ad.adb.push("%s %s" % (cnss_diag_file, CNSS_DIAG_CONFIG_PATH))
         ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete")
         ad.adb.shell("setprop %s true" % prop, ignore_status=True)
 
