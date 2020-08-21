@@ -46,3 +46,16 @@ class FuchsiaRamLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def getDdrWindowingResults(self):
+        """ Retrieves the results from the DDR Windowing tool, which runs in
+            the bootloader.
+
+        Returns:
+            The register value, prints an error message if error.
+        """
+        test_cmd = "ram_facade.GetDdrWindowingResults"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)

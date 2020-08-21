@@ -46,5 +46,20 @@ class RamTest(BaseTestClass):
 
         result = self.fd.ram_lib.measureBandwidth(MEMORY_CYCLES_TO_MEASURE,
                                                   MEMORY_CHANNELS)
-        asserts.assert_true(result['error'] is None, 'measureBandwidth failed')
+        asserts.assert_true(
+            result['error'] is None,
+            "MeasureBandwidth failed with: {}".format(result['error']))
 
+    def test_get_ddr_results(self):
+        """Test GetDdrWindowingResults FIDL calls.
+
+        There should be no noticable effect. This test will only run
+        if the device config has a 'ram_tests' entry.
+        """
+        asserts.skip_if('ram_tests' not in self.user_params,
+                        'ram_tests not specified in the config')
+
+        result = self.fd.ram_lib.getDdrWindowingResults()
+        asserts.assert_true(
+            result['error'] is None,
+            "GetDdrWindowingResults failed with: {}".format(result['error']))
