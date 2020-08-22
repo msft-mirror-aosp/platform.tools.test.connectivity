@@ -81,7 +81,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
                 self.packet_capture[0].configure_monitor_mode(band, int(chan))
                 self.pcap_procs = wutils.start_pcap(
                     self.packet_capture[0], band, self.test_name)
-        wutils.start_cnss_diags(self.android_devices, self.cnss_diag_file)
+        wutils.start_cnss_diags(self.android_devices)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 

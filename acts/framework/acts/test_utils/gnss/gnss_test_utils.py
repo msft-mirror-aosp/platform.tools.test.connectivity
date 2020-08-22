@@ -1407,3 +1407,39 @@ def check_adblog_functionality(ad):
                     "logcat process now.")
         ad.stop_adb_logcat()
         ad.start_adb_logcat()
+
+def build_instrumentation_call(package,
+                               runner,
+                               test_methods=None,
+                               options=None):
+    """Build an instrumentation call for the tests
+
+    Args:
+        package: A string to identify test package.
+        runner: A string to identify test runner.
+        test_methods: A dictionary contains {class_name, test_method}.
+        options: A dictionary constaion {key, value} param for test.
+
+    Returns:
+        An instrumentation call command.
+    """
+    if test_methods is None:
+        test_methods = {}
+        cmd_builder = InstrumentationCommandBuilder()
+    else:
+        cmd_builder = InstrumentationTestCommandBuilder()
+
+    if options is None:
+        options = {}
+
+    cmd_builder.set_manifest_package(package)
+    cmd_builder.set_runner(runner)
+    cmd_builder.add_flag('-w')
+
+    for class_name, test_method in test_methods.items():
+        cmd_builder.add_test_method(class_name, test_method)
+
+    for option_key, option_value in options.items():
+        cmd_builder.add_key_value_param(option_key, option_value)
+
+    return cmd_builder.build()
