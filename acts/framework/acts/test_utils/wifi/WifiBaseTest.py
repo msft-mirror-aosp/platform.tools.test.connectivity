@@ -48,8 +48,6 @@ class WifiBaseTest(BaseTestClass):
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
         self.cnss_diag_file = self.user_params.get("cnss_diag_file")
-        if isinstance(self.cnss_diag_file, list):
-            self.cnss_diag_file = self.cnss_diag_file[0]
         if not os.path.isfile(self.cnss_diag_file):
             self.cnss_diag_file = os.path.join(
                 self.user_params[Config.key_config_path.value],
