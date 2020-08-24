@@ -26,29 +26,29 @@ SERVICE_CONFIG = bits_service_config.BitsServiceConfig(
 
 
 @mock.patch('acts.controllers.bits_lib.bits_service.atexit')
-@mock.patch('acts.context.get_current_context')
-@mock.patch('acts.libs.proc.job.run')
-@mock.patch('acts.libs.proc.process.Process')
-@mock.patch('acts.controllers.bits_lib.bits_service.open')
 class BitsServiceTest(unittest.TestCase):
-
+    @mock.patch('builtins.open')
     def test_output_log_opens_on_creation(self, mock_open, *_):
         bits_service.BitsService(SERVICE_CONFIG, 'binary', 'log_path')
 
         mock_open.assert_called_with('log_path', 'w')
 
+    @mock.patch.object(bits_service.BitsService, '_write_extra_debug_logs')
+    @mock.patch('acts.libs.proc.job.run')
+    @mock.patch('acts.controllers.bits_lib.bits_service.open')
     def test_output_log_gets_closed_on_cleanup(self, mock_open, *_):
         mock_log = mock.Mock()
         mock_open.return_value = mock_log
         service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
-
         service._cleanup()
 
         mock_log.close.assert_called_with()
 
-    def test_monsoons_usb_gets_connected_on_cleanup(self, _, __, mock_run,
-                                                    *___):
+    @mock.patch('acts.libs.proc.job.run')
+    @mock.patch('builtins.open')
+    def test_monsoons_usb_gets_connected_on_cleanup(self, _, mock_run,
+                                                    *__):
         service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
                                            'log_path')
 
@@ -99,6 +99,9 @@ class BitsServiceTest(unittest.TestCase):
 
         self.assertIsNotNone(service.port)
 
+    @mock.patch('acts.context.get_current_context')
+    @mock.patch('acts.libs.proc.process.Process')
+    @mock.patch('builtins.open')
     def test_top_level_call_is_timeout_if_timeout_is_defined(self, _,
                                                              mock_process, *__):
         service = bits_service.BitsService(SERVICE_CONFIG, 'binary',
@@ -120,6 +123,9 @@ class BitsServiceTest(unittest.TestCase):
         self.assertEqual('42', args[0][3])
         self.assertEqual('binary', args[0][4])
 
+    @mock.patch('acts.context.get_current_context')
+    @mock.patch('acts.libs.proc.process.Process')
+    @mock.patch('builtins.open')
     def test_top_level_call_is_binary_if_timeout_is_not_defined(self, _,
                                                                 mock_process,
                                                                 *__):
