@@ -15,18 +15,17 @@
 #   limitations under the License.
 
 import atexit
+from enum import Enum
 import json
 import logging
-import re
 import os
+import re
 import tempfile
 import time
 
-from enum import Enum
-
 from acts import context
-from acts.libs.proc import process
 from acts.libs.proc import job
+from acts.libs.proc import process
 
 
 class BitsServiceError(Exception):
@@ -87,7 +86,24 @@ class BitsService(object):
             self._log.error('Cleaning up bits_service %s at exit.', self.name)
             self._cleanup()
 
+    def _write_extra_debug_logs(self):
+        dmesg_log = '%s.dmesg.txt' % self._output_log.name
+        dmesg = job.run(['dmesg', '-e'], ignore_status=True)
+        with open(dmesg_log, 'w') as f:
+            f.write(dmesg.stdout)
+
+        free_log = '%s.free.txt' % self._output_log.name
+        free = job.run(['free', '-m'], ignore_status=True)
+        with open(free_log, 'w') as f:
+            f.write(free.stdout)
+
+        df_log = '%s.df.txt' % self._output_log.name
+        df = job.run(['df', '-h'], ignore_status=True)
+        with open(df_log, 'w') as f:
+            f.write(df.stdout)
+
     def _cleanup(self):
+        self._write_extra_debug_logs()
         self.port = None
         self._collections_dir.cleanup()
         if self._process and self._process.is_running():
