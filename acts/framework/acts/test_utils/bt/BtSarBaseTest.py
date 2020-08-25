@@ -24,6 +24,7 @@ from acts import asserts
 from acts.libs.proc import job
 from acts.base_test import BaseTestClass
 
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.bt.bt_power_test_utils import MediaControl
 from acts.test_utils.bt.ble_performance_test_utils import run_ble_throughput_and_read_rssi
 from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bt_factory
@@ -56,6 +57,8 @@ class BtSarBaseTest(BaseTestClass):
             '/vendor/etc/bluetooth_power_limits.csv',
             '/data/vendor/radio/bluetooth_power_limits.csv'
         ]
+        self.sar_test_result = BlackboxMetricLogger.for_test_case(
+            metric_name='pass')
         self.sar_file_name = os.path.basename(self.power_file_paths[0])
         self.power_column = 'BluetoothPower'
         self.REG_DOMAIN_DICT = {
@@ -87,6 +90,7 @@ class BtSarBaseTest(BaseTestClass):
             custom_sar_path=None,
             music_files=None,
             sort_order=None,
+            reg_domain_files=None,
             max_error_threshold=DEFAULT_MAX_ERROR_THRESHOLD,
             agg_error_threshold=DEFAULT_AGG_MAX_ERROR_THRESHOLD,
             tpc_threshold=[2, 8],
@@ -142,6 +146,9 @@ class BtSarBaseTest(BaseTestClass):
 
     def setup_test(self):
         super().setup_test()
+
+        #Reset SAR test result to 0 before every test
+        self.sar_test_result.metric_value = 0
 
         # Starting BT on the master
         self.dut.droid.bluetoothFactoryReset()
@@ -422,6 +429,7 @@ class BtSarBaseTest(BaseTestClass):
                 format(sar_df['delta'].sum(), self.agg_error_threshold))
 
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass('Measured and Expected Power Values in line')
 
     def set_sar_state(self, ad, signal_dict, country_code='us'):
@@ -610,7 +618,7 @@ class BtSarBaseTest(BaseTestClass):
         self.log.info('BT SAR table read from the phone')
         return df
 
-    def push_table(self, ad, src_path):
+    def push_table(self, ad, src_path, dest_path=''):
         """Pushes a BT SAR table to the phone.
 
         Pushes a BT SAR table to the android device and reboots the device.
@@ -625,7 +633,10 @@ class BtSarBaseTest(BaseTestClass):
             job.run('cp {} {}'.format(src_path, ad.device_log_path))
 
         #Pushing the file provided in the config
-        ad.push_system_file(src_path, self.sar_file_path)
+        if dest_path:
+            ad.push_system_file(src_path, dest_path)
+        else:
+            ad.push_system_file(src_path, self.sar_file_path)
         self.log.info('BT SAR table pushed')
         ad.reboot()
         self.bt_sar_df = self.read_sar_table(self.dut)
