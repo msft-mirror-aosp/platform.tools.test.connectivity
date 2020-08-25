@@ -15,17 +15,19 @@
 #   limitations under the License.
 
 import atexit
-from enum import Enum
 import json
 import logging
 import os
 import re
+import signal
 import tempfile
 import time
 
+from enum import Enum
+
 from acts import context
-from acts.libs.proc import job
 from acts.libs.proc import process
+from acts.libs.proc import job
 
 
 class BitsServiceError(Exception):
@@ -107,7 +109,10 @@ class BitsService(object):
         self.port = None
         self._collections_dir.cleanup()
         if self._process and self._process.is_running():
-            self._process.stop()
+            self._process.signal(signal.SIGINT)
+            self._log.debug('SIGINT sent to bits_service %s.' % self.name)
+            self._process.wait(kill_timeout=60.0)
+            self._log.debug('bits_service %s has been stopped.' % self.name)
         self._output_log.close()
         if self.config.has_monsoon:
             job.run([self.config.monsoon_config.monsoon_binary,
