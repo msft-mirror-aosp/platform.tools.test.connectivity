@@ -159,8 +159,7 @@ class Process(object):
         if _on_windows:
             subprocess.check_call('taskkill /F /T /PID %s' % self._process.pid)
         else:
-            pgid = os.getpgid(self._process.pid)
-            os.killpg(pgid, signal.SIGKILL)
+            self.signal(signal.SIGKILL)
 
     def wait(self, kill_timeout=60.0):
         """Waits for the process to finish execution.
@@ -185,6 +184,18 @@ class Process(object):
         finally:
             self._join_threads()
             self._started = False
+
+    def signal(self, sig):
+        """Sends a signal to the process.
+
+        Args:
+            sig: The signal to be sent.
+        """
+        if _on_windows:
+            raise ProcessError('Unable to call Process.signal on windows.')
+
+        pgid = os.getpgid(self._process.pid)
+        os.killpg(pgid, sig)
 
     def stop(self):
         """Stops the process.
