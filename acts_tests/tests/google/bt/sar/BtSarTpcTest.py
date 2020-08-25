@@ -18,6 +18,7 @@ import os
 import time
 import numpy as np
 import acts.test_utils.bt.bt_test_utils as bt_utils
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 import acts.test_utils.wifi.wifi_performance_test_utils as wifi_utils
 
 from acts import asserts
@@ -34,12 +35,14 @@ class BtSarTpcTest(BtSarBaseTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         req_params = ['scenario_count']
+        self.sar_tpc_test_result = BlackboxMetricLogger.for_test_case(
+            metric_name='pass_count')
         self.unpack_userparams(req_params)
         self.tests = self.generate_test_cases()
 
     def setup_class(self):
         super().setup_class()
-
+        self.sar_tpc_test_result = 0
         self.push_table(self.dut, self.custom_sar_path)
         self.attenuator.set_atten(self.atten_min)
         self.pathloss = int(self.calibration_params['pathloss'])
@@ -199,5 +202,6 @@ class BtSarTpcTest(BtSarBaseTest):
             asserts.fail('TPC sweep failed for scenario: {}'.format(scenario))
 
         else:
+            self.sar_tpc_test_result.metric_value += 1
             asserts.explicit_pass(
                 'TPC sweep passed for scenario: {}'.format(scenario))
