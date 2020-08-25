@@ -31,6 +31,38 @@ class BtSarSanityTest(BtSarBaseTest):
     def __init__(self, controllers):
         super().__init__(controllers)
 
+        self.reg_domain_dict = {
+            'US': 'bluetooth_power_limits_US.csv',
+            'EU': 'bluetooth_power_limits_EU.csv',
+            'JP': 'bluetooth_power_limits_JP.csv'
+        }
+
+    def setup_class(self):
+        super().setup_class()
+
+        #Backup BT SAR files on the device
+        for key in self.reg_domain_dict.keys():
+            reg_file_path = os.path.join(
+                os.path.dirname(self.power_file_paths[0]),
+                self.reg_domain_dict[key])
+            self.dut.adb.shell('cp {} {}.backup'.format(
+                reg_file_path, reg_file_path))
+
+        self.log.info('Regulatory files backed up')
+
+    def teardown_class(self):
+        for key in self.reg_domain_dict.keys():
+            reg_file_path = os.path.join(
+                os.path.dirname(self.power_file_paths[0]),
+                self.reg_domain_dict[key])
+            self.dut.adb.shell('mv {}.backup {}'.format(
+                reg_file_path, reg_file_path))
+
+        self.log.info('Regulatory files restored')
+
+        self.dut.reboot()  #TODO: make this better
+        super().teardown_class()
+
     def test_bt_sar_sanity_check_state(self):
         """ Test for BT SAR State Sanity
 
@@ -63,6 +95,7 @@ class BtSarSanityTest(BtSarBaseTest):
                     propagated_value = 'NA'
 
                 if enforced_state[key] == propagated_value:
+                    self.sar_test_result.metric_value = 1
                     self.log.info(
                         'scenario: {}, state : {}, forced_value: {}, value:{}'.
                         format(scenario, key, enforced_state[key],
@@ -135,6 +168,7 @@ class BtSarSanityTest(BtSarBaseTest):
         if power_cap_error:
             asserts.fail("Power Caps didn't match powers in the SAR table")
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass('Power Caps were set according to the table')
 
     def test_bt_sar_sanity_country_code(self):
@@ -173,5 +207,42 @@ class BtSarSanityTest(BtSarBaseTest):
             asserts.fail(
                 'Regulatory domains not set according to country code')
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass(
                 'Regulatory domains set according to country code')
+
+    def test_bt_sar_sanity_reg_domain(self):
+        """ Test for BT SAR Regulatory Domain Sanity
+
+        BT SAR Regulatory Domain Sanity Test to ensure that the correct
+        SAR regulatory domain TX powers get propagated to the firmware.
+        This is done by measuring the TX power for different
+        regulatory domain files
+        """
+
+        reg_domain_error_flag = False
+        self.reg_file_path = os.path.dirname(self.sar_file_name)
+
+        #For different reg domain, sweep the sar table
+        for key in self.reg_domain_dict.keys():
+            reg_file_name = os.path.join(self.reg_file_path,
+                                         self.reg_domain_dict[key])
+            self.push_table(self.dut, self.reg_domain_files[key],
+                            reg_file_name)
+
+            self.set_country_code(self.dut, key.lower())
+            self.bt_sar_df = self.read_sar_table(self.dut)
+
+            sar_df = self.sweep_table()
+            if (sar_df[self.power_column] == self.bt_sar_df[self.power_column]
+                ).bool:
+                self.log.info(
+                    'Regulatory Domain Sanity Test for {} passed'.format(key))
+            else:
+                reg_domain_error_flag = True
+
+        if reg_domain_error_flag:
+            asserts.fail('Regulatory domain sanity tests failed')
+        else:
+            self.sar_test_result.metric_value = 1
+            asserts.explicit_pass('Regulatory domain sanity tests passed')
