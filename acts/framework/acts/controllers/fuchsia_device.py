@@ -33,6 +33,7 @@ from acts import signals
 
 from acts.controllers import pdu
 
+from acts.controllers.fuchsia_lib.audio_lib import FuchsiaAudioLib
 from acts.controllers.fuchsia_lib.backlight_lib import FuchsiaBacklightLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
@@ -270,6 +271,10 @@ class FuchsiaDevice:
         self.fuchsia_log_file_path = os.path.join(
             self.log_path, "fuchsialog_%s_debug.txt" % self.serial)
         self.log_process = None
+
+        # Grab commands from FuchsiaAudioLib
+        self.audio_lib = FuchsiaAudioLib(self.address, self.test_counter,
+                                         self.client_id)
 
         # Grab commands from FuchsiaAvdtpLib
         self.avdtp_lib = FuchsiaAvdtpLib(self.address, self.test_counter,
