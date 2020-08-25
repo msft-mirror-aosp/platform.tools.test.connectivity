@@ -28,26 +28,13 @@ import time
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 
-class FuchsiaBtcLib(BaseLib):
-    # Class representing the Bluetooth Controller Library.
+class FuchsiaBtsLib(BaseLib):
+    # Class representing the Bluetooth Access Library.
 
     def __init__(self, addr, tc, client_id):
         self.address = addr
         self.test_counter = tc
         self.client_id = client_id
-
-    def acceptPairing(self):
-        """Accepts incomming pairing requests.
-
-        Returns:
-            Dictionary, None if success, error if error.
-        """
-        test_cmd = "bt_control_facade.BluetoothAcceptPairing"
-        test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
 
     def setDiscoverable(self, discoverable):
         """Sets the device to be discoverable over BR/EDR.
@@ -59,7 +46,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothSetDiscoverable"
+        test_cmd = "bt_sys_facade.BluetoothSetDiscoverable"
         test_args = {"discoverable": discoverable}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -75,7 +62,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothSetName"
+        test_cmd = "bt_sys_facade.BluetoothSetName"
         test_args = {"name": name}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -91,7 +78,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothInputPairingPin"
+        test_cmd = "bt_sys_facade.BluetoothInputPairingPin"
         test_args = {"pin": pin}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -104,20 +91,20 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothGetPairingPin"
+        test_cmd = "bt_sys_facade.BluetoothGetPairingPin"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def initBluetoothControl(self):
-        """Initialises the Bluetooth Control Interface proxy in SL4F.
+    def initBluetoothSys(self):
+        """Initialises the Bluetooth sys Interface proxy in SL4F.
 
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothInitControl"
+        test_cmd = "bt_sys_facade.BluetoothInitSys"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -134,7 +121,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothRequestDiscovery"
+        test_cmd = "bt_sys_facade.BluetoothRequestDiscovery"
         test_args = {"discovery": discovery}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -147,7 +134,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothGetKnownRemoteDevices"
+        test_cmd = "bt_sys_facade.BluetoothGetKnownRemoteDevices"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -163,7 +150,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothForgetDevice"
+        test_cmd = "bt_sys_facade.BluetoothForgetDevice"
         test_args = {"identifier": identifier}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -179,7 +166,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothDisconnectDevice"
+        test_cmd = "bt_sys_facade.BluetoothDisconnectDevice"
         test_args = {"identifier": identifier}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -195,7 +182,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothConnectDevice"
+        test_cmd = "bt_sys_facade.BluetoothConnectDevice"
         test_args = {"identifier": identifier}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -208,7 +195,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, String address if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothGetActiveAdapterAddress"
+        test_cmd = "bt_sys_facade.BluetoothGetActiveAdapterAddress"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -237,7 +224,7 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothPairDevice"
+        test_cmd = "bt_sys_facade.BluetoothPairDevice"
         test_args = {
             "identifier": identifier,
             "pairing_security_level": pairing_security_level,
@@ -248,8 +235,10 @@ class FuchsiaBtcLib(BaseLib):
         self.test_counter += 1
         return self.send_command(test_id, test_cmd, test_args)
 
-    def setIOCapabilities(self, input, output):
-        """Sets the I/O capabilities during pairing.
+    def acceptPairing(self,
+                      input_capabilities="NONE",
+                      output_capabilities="NONE"):
+        """Accepts incoming pairing requests.
 
         Args:
             input: String - The input I/O capabilities to use
@@ -265,10 +254,10 @@ class FuchsiaBtcLib(BaseLib):
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "bt_control_facade.BluetoothSetIOCapabilities"
+        test_cmd = "bt_sys_facade.BluetoothAcceptPairing"
         test_args = {
-            "input": input,
-            "output": output,
+            "input": input_capabilities,
+            "output": output_capabilities,
         }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
