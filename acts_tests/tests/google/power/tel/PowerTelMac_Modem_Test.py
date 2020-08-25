@@ -22,7 +22,6 @@ class PowerTelMac_Modem_Test(cppt.PowerTelPDCCHTest):
     def display_name_test_suite(self):
         return 'QComm dashboard - RB Test'
 
-    def test_lte_band_4_pul_low_bw_20_tm_4_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1(
-            self):
+    def test_lte_band_4_pul_low_bw_20_tm_4_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_mac(self):
         self.display_name_test_case = 'LTE7E-RB - B4'
         self.power_pdcch_test()
