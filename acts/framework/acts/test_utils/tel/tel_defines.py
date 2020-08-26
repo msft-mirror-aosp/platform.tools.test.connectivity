@@ -213,7 +213,10 @@ POWER_LEVEL_OUT_OF_SERVICE = -100
 # Callbox Power level which will ensure full service on device
 POWER_LEVEL_FULL_SERVICE = -20
 
-
+# set a fake time to test time recovering from network
+FAKE_DATE_TIME = "010203042019.05"
+FAKE_YEAR = "2019"
+WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK = 2
 
 # These are used in phone_number_formatter
 PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7
@@ -324,6 +327,7 @@ RAT_FAMILY_WCDMA = 'wcdma'
 RAT_FAMILY_UMTS = RAT_FAMILY_WCDMA
 RAT_FAMILY_WLAN = 'wlan'
 RAT_FAMILY_LTE = 'lte'
+RAT_FAMILY_NR = 'nr'
 RAT_FAMILY_TDSCDMA = 'tdscdma'
 RAT_FAMILY_UNKNOWN = 'unknown'
 
@@ -461,11 +465,14 @@ CALL_PRESENTATION_UNKNOWN = "UNKNOWN"
 GEN_2G = "2G"
 GEN_3G = "3G"
 GEN_4G = "4G"
+GEN_5G = "5G"
 GEN_UNKNOWN = "UNKNOWN"
 
 # Constant for Network RAT
 RAT_IWLAN = "IWLAN"
+RAT_NR = "NR"
 RAT_LTE = "LTE"
+RAT_5G = "5G"
 RAT_4G = "4G"
 RAT_3G = "3G"
 RAT_2G = "2G"

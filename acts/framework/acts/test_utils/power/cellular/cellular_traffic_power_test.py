@@ -19,6 +19,7 @@ import time
 import scapy.all as scapy
 
 from acts import asserts
+from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import plot_utils
@@ -280,6 +281,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         # The iPerf server is hosted in this computer
         self.iperf_server_address = scapy.get_if_addr(
             self.packet_senders[0].interface)
+
+        self.log.info('Testing IP connectivity with ping.')
+        if not utils.adb_shell_ping(
+                client_host, count=10, dest_ip=self.iperf_server_address):
+            raise RuntimeError('Ping between DUT and host failed.')
 
         # Start iPerf traffic
         iperf_helpers = []

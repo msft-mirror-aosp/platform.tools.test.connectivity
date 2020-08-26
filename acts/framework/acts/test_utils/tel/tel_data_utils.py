@@ -540,7 +540,14 @@ def browsing_test(log, ad, wifi_ssid=None, pass_threshold_in_mb = 1.0):
         "http://www.accuweather.com",
         "https://www.flickr.com",
         "http://world.taobao.com",
-        "http://www.theguardian.com"]
+        "http://www.theguardian.com",
+        "http://www.abc.net.au",
+        "http://www.gumtree.com.au",
+        "http://www.commbank.com.au",
+        "http://www.news.com.au",
+        "http://rakuten.co.jp",
+        "http://livedoor.jp",
+        "http://yahoo.co.jp"]
 
     wifi_connected = False
     if wifi_ssid and check_is_wifi_connected(ad.log, ad, wifi_ssid):
@@ -574,8 +581,8 @@ def browsing_test(log, ad, wifi_ssid=None, pass_threshold_in_mb = 1.0):
             ad.droid.goToSleepNow()
             time.sleep(rest_idle_time)
             ad.log.info("Wake up device.")
-            ad.droid.wakeLockAcquireBright()
-            ad.droid.wakeUpNow()
+            ad.wakeup_screen()
+            ad.adb.shell("input keyevent 82")
             time.sleep(3)
         else:
             time.sleep(idle_time)

@@ -24,6 +24,12 @@ from acts.libs.logging.log_stream import LogStyles
 from acts.controllers.android_lib.logcat import TimestampTracker
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 
+# paramiko-ng has a log line, line number in 1982 in paramiko/transport.py that
+# presents a ERROR log message that is innocuous but could confuse the user.
+# Therefore by setting the log level to CRITICAL the message is not displayed
+# and everything is recovered as expected.
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
+
 
 def _log_line_func(log, timestamp_tracker):
     """Returns a lambda that logs a message to the given logger."""
@@ -96,8 +102,9 @@ class FuchsiaSyslogProcess(object):
     def start(self):
         """Starts reading the data from the syslog ssh connection."""
         if self._started:
-            raise FuchsiaSyslogError('Syslog has already started for '
-                                     'FuchsiaDevice (%s).' % self.ip_address)
+            logging.info('Syslog has already started for FuchsiaDevice (%s).' %
+                         self.ip_address)
+            return None
         self._started = True
 
         self._listening_thread = Thread(target=self._exec_loop)
@@ -116,8 +123,9 @@ class FuchsiaSyslogProcess(object):
         threads.
         """
         if self._stopped:
-            raise FuchsiaSyslogError('Syslog is already being stopped for '
-                                     'FuchsiaDevice (%s).' % self.ip_address)
+            logging.info('Syslog is already stopped for FuchsiaDevice (%s).' %
+                         self.ip_address)
+            return None
         self._stopped = True
 
         try:

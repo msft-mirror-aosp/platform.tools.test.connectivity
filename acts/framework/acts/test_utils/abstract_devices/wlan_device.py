@@ -43,6 +43,9 @@ def create_wlan_device(hardware_device):
                          type(hardware_device))
 
 
+FUCHSIA_VALID_SECURITY_TYPES = {"none", "wep", "wpa", "wpa2", "wpa3"}
+
+
 class WlanDevice(object):
     """Class representing a generic WLAN device.
 
@@ -139,6 +142,18 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def hard_power_cycle(self, pdus=None):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def save_network(self, ssid):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def clear_saved_networks(self):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
 
 class AndroidWlanDevice(WlanDevice):
     """Class wrapper for an Android WLAN device.
@@ -227,6 +242,15 @@ class AndroidWlanDevice(WlanDevice):
                               dest_ip=dest_ip,
                               count=count,
                               timeout=timeout)
+
+    def hard_power_cycle(self, pdus):
+        pass
+
+    def save_network(self, ssid):
+        pass
+
+    def clear_saved_networks(self):
+        pass
 
 
 class FuchsiaWlanDevice(WlanDevice):
@@ -337,4 +361,47 @@ class FuchsiaWlanDevice(WlanDevice):
         return get_interface_ip_addresses(self.device, interface)
 
     def is_connected(self, ssid=None):
-        return fwutils.is_connected(self, ssid)
+        """ Determines if wlan_device is connected to wlan network.
+        
+        Args:
+            ssid (optional): string, to check if device is connect to a specific
+                network.
+
+        Returns:
+            True, if connected to a network or to the correct network when SSID
+                is provided.
+            False, if not connected or connect to incorrect network when SSID is
+                provided.
+        """
+        response = self.status()
+        if response.get('error'):
+            raise ConnectionError(
+                'Failed to get client network connection status')
+
+        status = response.get('result')
+        if status and status.get('connected_to'):
+            if ssid:
+                connected_ssid = ''.join(
+                    chr(i) for i in status['connected_to']['ssid'])
+                if ssid != connected_ssid:
+                    return False
+            return True
+        return False
+
+    def hard_power_cycle(self, pdus):
+        self.device.reboot(reboot_type='hard', testbed_pdus=pdus)
+
+    def save_network(self, target_ssid, security_type=None, target_pwd=None):
+        if security_type and security_type not in FUCHSIA_VALID_SECURITY_TYPES:
+            raise TypeError('Invalid security type: %s' % security_type)
+        response = self.device.wlan_policy_lib.wlanSaveNetwork(
+            target_ssid, security_type, target_pwd=target_pwd)
+        if response.get('error'):
+            raise EnvironmentError('Failed to save network %s. Err: %s' %
+                                   (target_ssid, response.get('error')))
+
+    def clear_saved_networks(self):
+        response = self.device.wlan_policy_lib.wlanRemoveAllNetworks()
+        if response.get('error'):
+            raise EnvironmentError('Failed to clear saved networks: %s' %
+                                   response.get('error'))

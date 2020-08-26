@@ -94,7 +94,7 @@ class PacketCollector(SourceTransformer):
             if data is None:
                 continue
             time_after_read = time.time()
-            time_data = struct.pack('dd', time_after_read - self.start_time,
+            time_data = struct.pack('dd', time_after_read,
                                     time_after_read - time_before_read)
             buffer[index] = time_data + data
 
@@ -169,7 +169,7 @@ class PacketReader(ParallelTransformer):
         for i, packet in enumerate(buffer):
             time_bytes_size = struct.calcsize('dd')
             # Unpacks the two time.time() values sent by PacketCollector.
-            time_since_start, time_of_read = struct.unpack(
+            time_of_read, time_since_last_read = struct.unpack(
                 'dd', packet[:time_bytes_size])
             packet = packet[time_bytes_size:]
             # Magic number explanation:
@@ -182,7 +182,7 @@ class PacketReader(ParallelTransformer):
                 buffer[i] = None
                 continue
 
-            buffer[i] = Packet(packet, time_since_start, time_of_read)
+            buffer[i] = Packet(packet, time_of_read, time_since_last_read)
 
         return buffer
 

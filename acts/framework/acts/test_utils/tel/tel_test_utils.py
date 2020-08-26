@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_PROVISIONING
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING
+from acts.test_utils.tel.tel_defines import CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
@@ -126,6 +127,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK
 from acts.test_utils.tel.tel_defines import WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
@@ -195,8 +197,8 @@ from acts.utils import rand_ascii_str
 
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
-WIFI_CONFIG_APBAND_2G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_2G
-WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
+WIFI_CONFIG_APBAND_2G = 1
+WIFI_CONFIG_APBAND_5G = 2
 WIFI_CONFIG_APBAND_AUTO = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_AUTO
 log = logging
 STORY_LINE = "+19523521350"
@@ -1961,6 +1963,9 @@ def get_phone_capability(ad):
             capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
         if carrier_configs[sub_id][CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
             capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
+        if carrier_configs[sub_id][CarrierConfigs.HIDE_ENHANCED_4G_LTE_BOOL]:
+            capabilities.append(CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL)
+
         ad.log.info("Capabilities of sub ID %s: %s", sub_id, capabilities)
         if not getattr(ad, 'telephony', {}):
             ad.telephony["subscription"] = {}
@@ -3743,6 +3748,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     }
     url_map = {
         "1MB": [
+            "http://146.148.91.8/download/1MB.zip",
             "http://ipv4.download.thinkbroadband.com/1MB.zip"
         ],
         "5MB": [
@@ -4834,13 +4840,6 @@ def _wait_for_nw_data_connection(
 
 def get_cell_data_roaming_state_by_adb(ad):
     """Get Cell Data Roaming state. True for enabled, False for disabled"""
-    adb_str = {"1": True, "0": False}
-    out = ad.adb.shell("settings get global data_roaming")
-    return adb_str[out]
-
-
-def get_cell_data_roaming_state_by_adb(ad):
-    """Get Cell Data Roaming state. True for enabled, False for disabled"""
     state_mapping = {"1": True, "0": False}
     return state_mapping[ad.adb.shell("settings get global data_roaming")]
 
@@ -4940,15 +4939,37 @@ def num_active_calls(log, ad):
     return len(calls) if calls else 0
 
 
+def show_enhanced_4g_lte(ad, sub_id):
+    result = True
+    capabilities = ad.telephony["subscription"][sub_id].get("capabilities", [])
+    if capabilities:
+        if "hide_enhanced_4g_lte" in capabilities:
+            result = False
+            ad.log.info('"Enhanced 4G LTE MODE" is hidden for sub ID %s.', sub_id)
+            show_enhanced_4g_lte_mode = getattr(ad, "show_enhanced_4g_lte_mode", False)
+            if show_enhanced_4g_lte_mode in ["true", "True"]:
+                current_voice_sub_id = get_outgoing_voice_sub_id(ad)
+                if sub_id != current_voice_sub_id:
+                    set_incoming_voice_sub_id(ad, sub_id)
+
+                ad.log.info('Show "Enhanced 4G LTE MODE" forcibly for sub ID %s.', sub_id)
+                ad.adb.shell("am broadcast -a com.google.android.carrier.action.LOCAL_OVERRIDE -n com.google.android.carrier/.ConfigOverridingReceiver --ez hide_enhanced_4g_lte_bool false")
+                ad.telephony["subscription"][sub_id]["capabilities"].remove("hide_enhanced_4g_lte")
+
+                if sub_id != current_voice_sub_id:
+                    set_incoming_voice_sub_id(ad, current_voice_sub_id)
+
+                result = True
+    return result
+
+
 def toggle_volte(log, ad, new_state=None):
     """Toggle enable/disable VoLTE for default voice subscription.
-
     Args:
         ad: Android device object.
         new_state: VoLTE mode state to set to.
             True for enable, False for disable.
             If None, opposite of the current state.
-
     Raises:
         TelTestUtilsError if platform does not support VoLTE.
     """
@@ -4967,6 +4988,9 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
             If None, opposite of the current state.
 
     """
+    if not show_enhanced_4g_lte(ad, sub_id):
+        return False
+
     current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
     if new_state is None:
         new_state = not current_state
@@ -5886,8 +5910,8 @@ def wait_for_matching_sms(log,
                           ad_rx,
                           phonenumber_tx,
                           text,
-                          allow_multi_part_long_sms=True,
-                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
+                          allow_multi_part_long_sms=True):
     """Wait for matching incoming SMS.
 
     Args:
@@ -6070,6 +6094,7 @@ def sms_send_receive_verify_for_subscription(
                     ad_rx,
                     phonenumber_tx,
                     text,
+                    max_wait_time,
                     allow_multi_part_long_sms=True):
                 ad_rx.log.error("No matching received SMS of length %s.",
                                 length)
@@ -6245,6 +6270,7 @@ def mms_send_receive_verify_for_subscription(
             except Empty:
                 ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
                                   EventMmsSentFailure)
+                return False
 
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx,
                                          message, max_wait_time):
@@ -6253,7 +6279,7 @@ def mms_send_receive_verify_for_subscription(
             log.error("Exception error %s", e)
             raise
         finally:
-            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
             for ad in (ad_tx, ad_rx):
                 if toggle_enforce:
                     ad.send_keycode("BACK")
@@ -10329,3 +10355,38 @@ def is_sms_partial_match_among_multiple_sms(event, phonenumber_tx, phonenumber_t
                 return True
 
     return False
+
+def set_time_sync_from_network(ad, action):
+    if (action == 'enable'):
+        ad.log.info('Enabling sync time from network.')
+        ad.adb.shell('settings put global auto_time 1')
+
+    elif (action == 'disable'):
+        ad.log.info('Disabling sync time from network.')
+        ad.adb.shell('settings put global auto_time 0')
+
+    time.sleep(WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK)
+
+def datetime_handle(ad, action, set_datetime_value='', get_year=False):
+    get_value = ''
+    if (action == 'get'):
+        if (get_year):
+            datetime_string = ad.adb.shell('date')
+            datetime_list = datetime_string.split()
+            try:
+                get_value = datetime_list[5]
+            except Exception as e:
+                self.log.error("Fail to get year from datetime: %s. " \
+                                "Exception error: %s", datetime_list
+                                , str(e))
+                raise signals.TestSkip("Fail to get year from datetime" \
+                                    ", the format is changed. Skip the test.")
+        else:
+            get_value = ad.adb.shell('date')
+
+    elif (action == 'set'):
+        ad.adb.shell('date %s' % set_datetime_value)
+        time.sleep(WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK)
+        ad.adb.shell('am broadcast -a android.intent.action.TIME_SET')
+
+    return get_value

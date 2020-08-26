@@ -25,6 +25,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import GEN_5G
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
@@ -49,6 +50,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
@@ -217,7 +219,6 @@ def two_phone_call_short_seq(log,
 
     return tel_result
 
-
 def two_phone_call_msim_short_seq(log,
                              phone_a,
                              phone_a_idle_func,
@@ -234,7 +235,6 @@ def two_phone_call_msim_short_seq(log,
     4. Ensure phone idle and in idle_func check return True.
     5. Call from PhoneA to PhoneB, accept on PhoneB.
     6. Check phone state, hangup on PhoneB.
-
     Args:
         phone_a: PhoneA's android device object.
         phone_a_idle_func: function to check PhoneA's idle state.
@@ -245,20 +245,17 @@ def two_phone_call_msim_short_seq(log,
         call_sequence_func: default parameter, not implemented.
         wait_time_in_call: time to wait in call.
             This is optional, default is WAIT_TIME_IN_CALL
-
     Returns:
         True: if call sequence succeed.
         False: for errors
     """
     ads = [phone_a, phone_b]
-
     call_params = [
         (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
          phone_b_in_call_check_func),
         (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
          phone_b_in_call_check_func),
     ]
-
     for param in call_params:
         # Make sure phones are idle.
         ensure_phones_idle(log, ads)
@@ -268,10 +265,8 @@ def two_phone_call_msim_short_seq(log,
         if phone_b_idle_func and not phone_b_idle_func(log, phone_b):
             phone_b.log.error("Phone B Failed to Reselect")
             return False
-
         # TODO: b/26337871 Need to use proper API to check phone registered.
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
-
         # Make call.
         log.info("--> Call test: %s to %s <--", phone_a.serial, phone_b.serial)
         slots = 2
@@ -290,7 +285,6 @@ def two_phone_call_msim_short_seq(log,
                 log.error("Call Iteration Failed")
                 return False
     return True
-
 
 def two_phone_call_long_seq(log,
                             phone_a,
@@ -365,6 +359,109 @@ def two_phone_call_long_seq(log,
         if not tel_result:
             log.error("Call Iteration Failed")
             break
+
+    return tel_result
+
+def two_phone_call_msim_for_slot(log,
+                             phone_a,
+                             phone_a_slot,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_b_slot,
+                             phone_b_idle_func,
+                             phone_b_in_call_check_func,
+                             call_sequence_func=None,
+                             wait_time_in_call=WAIT_TIME_IN_CALL,
+                             retry=2):
+    """Call process between 2 phones with specific slot.
+    1. Ensure phone idle and in idle_func    check return True.
+    2. Call from PhoneA to PhoneB, accept on PhoneB.
+    3. Check phone state, hangup on PhoneA.
+    4. Ensure phone idle and in idle_func check return True.
+    5. Call from PhoneA to PhoneB, accept on PhoneB.
+    6. Check phone state, hangup on PhoneB.
+
+    Args:
+        phone_a: PhoneA's android device object.
+        phone_a_slot: 0 or 1 (pSIM or eSIM)
+        phone_a_idle_func: function to check PhoneA's idle state.
+        phone_a_in_call_check_func: function to check PhoneA's in-call state.
+        phone_b: PhoneB's android device object.
+        phone_b_slot: 0 or 1 (pSIM or eSIM)
+        phone_b_idle_func: function to check PhoneB's idle state.
+        phone_b_in_call_check_func: function to check PhoneB's in-call state.
+        call_sequence_func: default parameter, not implemented.
+        wait_time_in_call: time to wait in call.
+            This is optional, default is WAIT_TIME_IN_CALL
+        retry: times of retry if call_setup_teardown failed.
+
+    Returns:
+        True: if call sequence succeed.
+        False: for errors
+    """
+    ads = [phone_a, phone_b]
+
+    call_params = [
+        (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+        (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+    ]
+
+    tel_result = TelResultWrapper(CallResult('SUCCESS'))
+    for param in call_params:
+        # Make sure phones are idle.
+        ensure_phones_idle(log, ads)
+        if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
+            phone_a.log.error("Phone A Failed to Reselect")
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
+        if phone_b_idle_func and not phone_b_idle_func(log, phone_b):
+            phone_b.log.error("Phone B Failed to Reselect")
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
+
+        # TODO: b/26337871 Need to use proper API to check phone registered.
+        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+
+        # Make call.
+        log.info("--> Call test: %s slot %s to %s slot %s <--", phone_a.serial,
+            phone_a_slot, phone_b.serial, phone_b_slot)
+
+        mo_default_voice_subid = get_subid_from_slot_index(log,ads[0],
+            phone_a_slot)
+        if mo_default_voice_subid == INVALID_SUB_ID:
+            log.warning("Sub ID of MO (%s) slot %s is invalid.", phone_a.serial,
+                phone_a_slot)
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
+        set_subid_for_outgoing_call(
+                            ads[0], mo_default_voice_subid)
+
+        mt_default_voice_subid = get_subid_from_slot_index(log,ads[1],
+            phone_b_slot)
+        if mt_default_voice_subid == INVALID_SUB_ID:
+            log.warning("Sub ID of MT (%s) slot %s is invalid.", phone_b.serial,
+                phone_b_slot)
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
+
+        tel_result = call_setup_teardown(
+            log,
+            *param,
+            slot_id_callee=phone_b_slot,
+            wait_time_in_call=wait_time_in_call)
+
+        while not tel_result:
+            if retry <= 0:
+                log.error("Call Iteration failed.")
+                break
+            else:
+                log.info("RERUN call_setup_teardown.")
+                tel_result = call_setup_teardown(
+                    log,
+                    *param,
+                    slot_id_callee=phone_b_slot,
+                    wait_time_in_call=wait_time_in_call)
+
+            retry = retry - 1
 
     return tel_result
 
@@ -804,7 +901,7 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
         log: log object
         ad: android device object
         sub_id: subscription id
-        network_generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G
+        network_generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G, GEN_5G
 
     Returns:
         True if success, False if fail.
@@ -823,6 +920,34 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
         get_telephony_signal_strength(ad)
         return False
     return True
+
+
+def phone_setup_5g(log, ad):
+    """Setup Phone default data sub_id data to 5G.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_5g_for_subscription(log, ad,
+                                           get_default_data_sub_id(ad))
+
+
+def phone_setup_5g_for_subscription(log, ad, sub_id):
+    """Setup Phone <sub_id> Data to 5G.
+
+    Args:
+        log: log object
+        ad: android device object
+        sub_id: subscription id
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_5G)
 
 
 def phone_setup_4g(log, ad):
@@ -942,6 +1067,13 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         True if setup successfully.
         False for errors.
     """
+    capabilities = ad.telephony["subscription"][sub_id].get("capabilities", [])
+    if capabilities:
+        if "hide_enhanced_4g_lte" in capabilities:
+            show_enhanced_4g_lte_mode = getattr(ad, "show_enhanced_4g_lte_mode", False)
+            if show_enhanced_4g_lte_mode in ["false", "False", False]:
+                ad.log.warning("'VoLTE' option is hidden. Test will be skipped.")
+                raise signals.TestSkip("'VoLTE' option is hidden. Test will be skipped.")
     if not phone_setup_4g_for_subscription(log, ad, sub_id):
         ad.log.error("Failed to set to 4G data.")
         return False
