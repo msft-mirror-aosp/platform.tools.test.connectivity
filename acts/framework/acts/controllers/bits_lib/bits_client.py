@@ -259,3 +259,19 @@ class BitsClient(object):
         self._export()
         self._log.info('stopped collection %s', self._active_collection.name)
         self._active_collection = None
+
+    def list_devices(self):
+        """Lists devices managed by the bits_server this client is connected
+        to.
+
+        Returns:
+            bits' output when called with --list devices.
+        """
+        cmd = [self._binary,
+               '--port',
+               self._service.port,
+               '--list',
+               'devices']
+        self._log.debug('listing devices')
+        result = job.run(cmd, timeout=20)
+        return result.stdout
