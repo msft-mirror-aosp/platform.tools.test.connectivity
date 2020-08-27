@@ -216,6 +216,9 @@ class Bits(object):
         self._client = bits_client.BitsClient(bits_client_binary,
                                               self._service,
                                               config)
+        # this call makes sure that the client can interact with the server.
+        devices = self._client.list_devices()
+        logging.getLogger().debug(devices)
 
     def disconnect_usb(self, *_, **__):
         self._client.disconnect_usb()
