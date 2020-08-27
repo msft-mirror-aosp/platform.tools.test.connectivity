@@ -46,6 +46,11 @@ class WirelessSettingsApplier(object):
     # set channels for 2G and 5G bands
     self.ssh.run("uci set wireless.radio1.channel='%s'" % self.channel_2g)
     self.ssh.run("uci set wireless.radio0.channel='%s'" % self.channel_5g)
+    if self.channel_5g == 165:
+      self.ssh.run("uci set wireless.radio0.htmode='VHT20'")
+    elif self.channel_5g == 132:
+      self.ssh.run("iw reg set ZA")
+      self.ssh.run("uci set wireless.radio0.htmode='VHT40'")
 
     # disable default OpenWrt SSID
     self.ssh.run("uci set wireless.default_radio1.disabled='%s'" %
@@ -118,6 +123,8 @@ class WirelessSettingsApplier(object):
     self.ssh.run("wifi down")
     self.ssh.run("rm -f /etc/config/wireless")
     self.ssh.run("wifi config")
+    if self.channel_5g == 132:
+      self.ssh.run("iw reg set US")
     self.ssh.run("cp %s.tmp %s" % (LEASE_FILE, LEASE_FILE))
     self.ssh.run(DNSMASQ_RESTART)
     time.sleep(9)
