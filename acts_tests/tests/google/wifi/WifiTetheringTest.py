@@ -49,7 +49,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         self.unpack_userparams(req_params)
         self.network = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                         "password": "pass_%s" % utils.rand_ascii_str(6)}
-        self.new_ssid = "wifi_tethering_test2"
+        self.new_ssid = "hs_%s" % utils.rand_ascii_str(6)
         self.tcpdump_pid=[]
 
         nutils.verify_lte_data_and_tethering_supported(self.hotspot_device)
@@ -59,10 +59,12 @@ class WifiTetheringTest(base_test.BaseTestClass):
     def setup_test(self):
         for ad in self.android_devices:
             self.tcpdump_pid.append(nutils.start_tcpdump(ad, self.test_name))
+        self.tethered_devices[0].droid.telephonyToggleDataConnection(False)
 
     def teardown_test(self):
         if self.hotspot_device.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.hotspot_device)
+        self.tethered_devices[0].droid.telephonyToggleDataConnection(True)
         for ad, pid in zip(self.android_devices, self.tcpdump_pid):
             nutils.stop_tcpdump(ad, pid, self.test_name)
         self.tcpdump_pid = []
@@ -444,38 +446,30 @@ class WifiTetheringTest(base_test.BaseTestClass):
         wutils.stop_wifi_tethering(self.hotspot_device)
 
     @test_tracker_info(uuid="7edfb220-37f8-42ea-8d7c-39712fbe9be5")
-    def test_wifi_tethering_2ghz_ping_hotspot_interfaces(self):
+    def test_wifi_tethering_wpapsk_network_2g(self):
         """ Steps:
 
-            1. Start wifi hotspot with 2ghz band
-            2. Connect tethered device to hotspot device
-            3. Ping 'wlan0' and 'rmnet_data' interface's IPv4
-               and IPv6 interfaces on hotspot device from tethered device
+            1. Start wifi tethering with wpapsk network 2G band
+            2. Connect tethered device to the SSID
+            3. Verify internet connectivity
         """
-        wutils.toggle_wifi_off_and_on(self.hotspot_device)
-        self._start_wifi_tethering(WIFI_CONFIG_APBAND_2G)
-        wutils.wifi_connect(self.tethered_devices[0], self.network)
-        result = self._ping_hotspot_interfaces_from_tethered_device(
-            self.tethered_devices[0])
-        wutils.stop_wifi_tethering(self.hotspot_device)
-        return result
+        self._start_wifi_tethering()
+        wutils.connect_to_wifi_network(self.tethered_devices[0],
+                                       self.network,
+                                       check_connectivity=True)
 
     @test_tracker_info(uuid="17e450f4-795f-4e67-adab-984940dffedc")
-    def test_wifi_tethering_5ghz_ping_hotspot_interfaces(self):
+    def test_wifi_tethering_wpapsk_network_5g(self):
         """ Steps:
 
-            1. Start wifi hotspot with 5ghz band
-            2. Connect tethered device to hotspot device
-            3. Ping 'wlan0' and 'rmnet_data' interface's IPv4
-               and IPv6 interfaces on hotspot device from tethered device
+            1. Start wifi tethering with wpapsk network 5G band
+            2. Connect tethered device to the SSID
+            3. Verify internet connectivity
         """
-        wutils.toggle_wifi_off_and_on(self.hotspot_device)
         self._start_wifi_tethering(WIFI_CONFIG_APBAND_5G)
-        wutils.wifi_connect(self.tethered_devices[0], self.network)
-        result = self._ping_hotspot_interfaces_from_tethered_device(
-            self.tethered_devices[0])
-        wutils.stop_wifi_tethering(self.hotspot_device)
-        return result
+        wutils.connect_to_wifi_network(self.tethered_devices[0],
+                                       self.network,
+                                       check_connectivity=True)
 
     @test_tracker_info(uuid="2bc344cb-0277-4f06-b6cc-65b3972086ed")
     def test_change_wifi_hotspot_ssid_when_hotspot_enabled(self):
@@ -488,7 +482,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
             5. Restart tethering and verify that the tethered device is able
                to connect to the new SSID
         """
-        wutils.toggle_wifi_off_and_on(self.hotspot_device)
         dut = self.hotspot_device
 
         # start tethering and verify the wifi ap configuration settings
@@ -498,12 +491,12 @@ class WifiTetheringTest(base_test.BaseTestClass):
             wifi_ap[wutils.WifiEnums.SSID_KEY] == \
                 self.network[wutils.WifiEnums.SSID_KEY],
             "Configured wifi hotspot SSID did not match with the expected SSID")
-        wutils.wifi_connect(self.tethered_devices[0], self.network)
+        wutils.connect_to_wifi_network(self.tethered_devices[0], self.network)
 
         # update the wifi ap configuration with new ssid
         config = {wutils.WifiEnums.SSID_KEY: self.new_ssid}
         config[wutils.WifiEnums.PWD_KEY] = self.network[wutils.WifiEnums.PWD_KEY]
-        config[wutils.WifiEnums.APBAND_KEY] = WIFI_CONFIG_APBAND_2G
+        config[wutils.WifiEnums.AP_BAND_KEY] = WIFI_CONFIG_APBAND_2G
         self._save_wifi_softap_configuration(dut, config)
 
         # start wifi tethering with new wifi ap configuration
@@ -514,8 +507,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         new_network = {wutils.WifiEnums.SSID_KEY: self.new_ssid,
                        wutils.WifiEnums.PWD_KEY: \
                        self.network[wutils.WifiEnums.PWD_KEY]}
-        wutils.wifi_connect(self.tethered_devices[0], new_network)
-        wutils.stop_wifi_tethering(self.hotspot_device)
+        wutils.connect_to_wifi_network(self.tethered_devices[0], new_network)
 
     @test_tracker_info(uuid="4cf7ab26-ca2d-46f6-9d3f-a935c7e04c97")
     def test_wifi_tethering_open_network_2g(self):
@@ -526,11 +518,17 @@ class WifiTetheringTest(base_test.BaseTestClass):
             2. Connect tethered device to the SSID
             3. Verify internet connectivity
         """
+        open_network = {
+            wutils.WifiEnums.SSID_KEY: "hs_2g_%s" % utils.rand_ascii_str(6)
+        }
         wutils.start_wifi_tethering(
-            self.hotspot_device, self.open_network[wutils.WifiEnums.SSID_KEY],
-            None, WIFI_CONFIG_APBAND_2G)
-        wutils.wifi_connect(self.tethered_devices[0], self.open_network)
-        wutils.stop_wifi_tethering(self.hotspot_device)
+            self.hotspot_device,
+            open_network[wutils.WifiEnums.SSID_KEY],
+            None,
+            WIFI_CONFIG_APBAND_2G)
+        wutils.connect_to_wifi_network(self.tethered_devices[0],
+                                       open_network,
+                                       check_connectivity=True)
 
     @test_tracker_info(uuid="f407049b-1324-40ea-a8d1-f90587933310")
     def test_wifi_tethering_open_network_5g(self):
@@ -541,11 +539,17 @@ class WifiTetheringTest(base_test.BaseTestClass):
             2. Connect tethered device to the SSID
             3. Verify internet connectivity
         """
+        open_network = {
+            wutils.WifiEnums.SSID_KEY: "hs_5g_%s" % utils.rand_ascii_str(6)
+        }
         wutils.start_wifi_tethering(
-            self.hotspot_device, self.open_network[wutils.WifiEnums.SSID_KEY],
-            None, WIFI_CONFIG_APBAND_5G)
-        wutils.wifi_connect(self.tethered_devices[0], self.open_network)
-        wutils.stop_wifi_tethering(self.hotspot_device)
+            self.hotspot_device,
+            open_network[wutils.WifiEnums.SSID_KEY],
+            None,
+            WIFI_CONFIG_APBAND_5G)
+        wutils.connect_to_wifi_network(self.tethered_devices[0],
+                                       open_network,
+                                       check_connectivity=True)
 
     @test_tracker_info(uuid="d964f2e6-0acb-417c-ada9-eb9fc5a470e4")
     def test_wifi_tethering_open_network_2g_stress(self):
@@ -561,7 +565,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # save open network wifi ap configuration with 2G band
         config = {wutils.WifiEnums.SSID_KEY:
                   self.open_network[wutils.WifiEnums.SSID_KEY]}
-        config[wutils.WifiEnums.APBAND_KEY] = WIFI_CONFIG_APBAND_2G
+        config[wutils.WifiEnums.AP_BAND_KEY] = WIFI_CONFIG_APBAND_2G
         self._save_wifi_softap_configuration(self.hotspot_device, config)
 
         # turn on/off wifi hotspot, connect device
@@ -585,7 +589,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # save open network wifi ap configuration with 5G band
         config = {wutils.WifiEnums.SSID_KEY:
                   self.open_network[wutils.WifiEnums.SSID_KEY]}
-        config[wutils.WifiEnums.APBAND_KEY] = WIFI_CONFIG_APBAND_5G
+        config[wutils.WifiEnums.AP_BAND_KEY] = WIFI_CONFIG_APBAND_5G
         self._save_wifi_softap_configuration(self.hotspot_device, config)
 
         # turn on/off wifi hotspot, connect device
