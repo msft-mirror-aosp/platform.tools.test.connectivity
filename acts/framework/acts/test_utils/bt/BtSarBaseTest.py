@@ -81,14 +81,15 @@ class BtSarBaseTest(BaseTestClass):
                 'bt_sar_test_params was not found in the config file.')
 
         self.user_params.update(self.test_params)
-        req_params = ['bt_devices', 'calibration_params']
+        req_params = [
+            'bt_devices', 'calibration_params', 'custom_sar_path',
+            'music_files', 'reg_domain_files'
+        ]
 
         self.unpack_userparams(
             req_params,
             country_code='us',
             duration=DEFAULT_DURATION,
-            custom_sar_path=None,
-            music_files=None,
             sort_order=None,
             reg_domain_files=None,
             max_error_threshold=DEFAULT_MAX_ERROR_THRESHOLD,
