@@ -33,6 +33,8 @@ from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.tel import tel_test_utils as tutils
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationCommandBuilder
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 from acts.utils import get_current_epoch_time
 from acts.utils import epoch_to_human_time
 
@@ -599,25 +601,35 @@ def clear_aiding_data_by_gtw_gpstool(ad):
     time.sleep(10)
 
 
-def start_gnss_by_gtw_gpstool(ad, state, type="gnss", bgdisplay=False):
+def start_gnss_by_gtw_gpstool(ad,
+                              state,
+                              type="gnss",
+                              bgdisplay=False,
+                              freq=0,
+                              lowpower=False,
+                              meas=False):
     """Start or stop GNSS on GTW_GPSTool.
 
     Args:
         ad: An AndroidDevice object.
         state: True to start GNSS. False to Stop GNSS.
         type: Different API for location fix. Use gnss/flp/nmea
-        bgdisplay: true to run GTW when Display off.
-                   false to not run GTW when Display off.
+        bgdisplay: true to run GTW when Display off. false to not run GTW when
+          Display off.
+        freq: An integer to set location update frequency.
+        meas: A Boolean to set GNSS measurement registeration.
+        lowpower: A boolean to set GNSS LowPowerMode.
     """
-    if state and not bgdisplay:
-        ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool "
-                     "--es mode gps --es type %s" % type)
-    elif state and bgdisplay:
-        ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode "
-                     "gps --es type {} --ez BG {}".format(type, bgdisplay))
+    cmd = "am start -S -n com.android.gpstool/.GPSTool --es mode gps"
     if not state:
         ad.log.info("Stop %s on GTW_GPSTool." % type)
-        ad.adb.shell("am broadcast -a com.android.gpstool.stop_gps_action")
+        cmd = "am broadcast -a com.android.gpstool.stop_gps_action"
+    else:
+        options = ("--es type {} --ei freq {} --ez BG {} --ez meas {} --ez "
+                   "lowpower {}").format(type, freq, bgdisplay, meas, lowpower)
+        cmd = cmd + " " + options
+
+    ad.adb.shell(cmd)
     time.sleep(3)
 
 
@@ -1434,7 +1446,7 @@ def build_instrumentation_call(package,
 
     cmd_builder.set_manifest_package(package)
     cmd_builder.set_runner(runner)
-    cmd_builder.add_flag('-w')
+    cmd_builder.add_flag("-w")
 
     for class_name, test_method in test_methods.items():
         cmd_builder.add_test_method(class_name, test_method)
