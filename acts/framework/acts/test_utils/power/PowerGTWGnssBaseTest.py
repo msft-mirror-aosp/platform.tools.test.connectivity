@@ -59,16 +59,22 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
 
     def start_gnss_tracking_with_power_data(self,
                                             mode='default',
-                                            is_signal=True):
+                                            is_signal=True,
+                                            freq=0,
+                                            lowpower=False,
+                                            meas=False):
         """Start GNSS tracking and collect power metrics.
 
         Args:
             is_signal: default True, False for no Gnss signal test.
+            freq: an integer to set location update frequency.
+            lowpower: a boolean to set GNSS Low Power Mode.
+            mean: a boolean to set GNSS Measurement registeration.
         """
         self.ad.adb.shell('settings put secure location_mode 3')
         gutils.clear_aiding_data_by_gtw_gpstool(self.ad)
-        gutils.start_gnss_by_gtw_gpstool(
-            self.ad, state=True, type='gnss', bgdisplay=True)
+        gutils.start_gnss_by_gtw_gpstool(self.ad, True, 'gnss', True, freq,
+                                         lowpower, meas)
         self.ad.droid.goToSleepNow()
 
         sv_collecting_time = DEFAULT_WAIT_TIME
@@ -82,7 +88,7 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
         self.ad.log.info('TestResult AVG_Current %.2f' % result.average_current)
         self.calibrate_avg_current(result)
         self.ad.send_keycode('WAKEUP')
-        gutils.start_gnss_by_gtw_gpstool(self.ad, False, type='gnss')
+        gutils.start_gnss_by_gtw_gpstool(self.ad, False, 'gnss')
         if is_signal:
             gutils.parse_gtw_gpstool_log(
                 self.ad, self.test_location, type='gnss')
