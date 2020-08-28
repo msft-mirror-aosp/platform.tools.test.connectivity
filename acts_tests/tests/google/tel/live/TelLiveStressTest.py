@@ -1138,7 +1138,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("Call Success Rate is %s", call_success_rate)
         self.log.info("Call Drop Rate is %s", call_success_rate)
 
-        return all(results)
+        return results
 
     def _update_initiate_call_fail_count(self):
         self.result_info["Call Initiate Fail"] += 1
