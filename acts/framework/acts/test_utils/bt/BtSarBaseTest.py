@@ -117,8 +117,8 @@ class BtSarBaseTest(BaseTestClass):
             custom_file_suffix = 'version1'
 
         for file in self.custom_files:
-            if 'custom_sar_path_{}.csv'.format(custom_file_suffix) in file:
-                self.custom_sar_path = 'custom_sar_path_{}.csv'.format(
+            if 'custom_sar_table_{}.csv'.format(custom_file_suffix) in file:
+                self.custom_sar_path = 'custom_sar_table_{}.csv'.format(
                     custom_file_suffix)
             else:
                 raise RuntimeError('Custom Sar File is missing')
