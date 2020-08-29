@@ -227,7 +227,6 @@ class BtSarSanityTest(BtSarBaseTest):
                 break
         else:
             self.log.error('Regulatory file for {} missing'.format(cc.upper()))
-            break
 
             reg_file_name = os.path.join(reg_file_phone_path, custom_reg_file)
             self.push_table(self.dut, custom_reg_file, reg_file_name)
