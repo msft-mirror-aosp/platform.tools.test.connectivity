@@ -238,6 +238,14 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         return True
 
+    def collect_power_data(self):
+        """ Collect power data using base class method and plot result
+        histogram. """
+
+        result = super().collect_power_data()
+        plot_utils.monsoon_histogram_plot(self.mon_info, result)
+        return result
+
     def teardown_test(self):
         """ Executed after every test case, even if it failed or an exception
         happened.
