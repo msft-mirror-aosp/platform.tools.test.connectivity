@@ -93,6 +93,7 @@ def verify_ping_to_vpn_ip(ad, vpn_ping_addr):
     """
     ping_result = None
     pkt_loss = "100% packet loss"
+    logging.info("Pinging: %s" % vpn_ping_addr)
     try:
         ping_result = ad.adb.shell("ping -c 3 -W 2 %s" % vpn_ping_addr)
     except AdbError:
@@ -172,6 +173,7 @@ def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
                                     vpn_params['client_pkcs_file_name'])
 
     local_file_path = os.path.join(log_path, local_cert_name)
+    logging.info("URL is: %s" % url)
     try:
         ret = urllib.request.urlopen(url)
         with open(local_file_path, "wb") as f:
@@ -229,6 +231,50 @@ def generate_legacy_vpn_profile(ad,
                                     vpn_params['cert_password'])
     else:
         vpn_profile[VPN_CONST.MPPE] = "mppe"
+
+    return vpn_profile
+
+
+def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
+    """Generate VPN profile for IKEv2 VPN.
+
+    Args:
+        ad: android device object.
+        vpn_params: vpn params from config file.
+        vpn_type: ikev2 vpn type.
+        server_addr: vpn server addr.
+        log_path: log path to download cert.
+
+    Returns:
+        Vpn profile.
+    """
+    vpn_profile = {
+        VPN_CONST.TYPE: vpn_type.value,
+        VPN_CONST.SERVER: server_addr,
+    }
+
+    if vpn_type.name == "IKEV2_IPSEC_USER_PASS":
+        vpn_profile[VPN_CONST.USER] = vpn_params["vpn_username"]
+        vpn_profile[VPN_CONST.PWD] = vpn_params["vpn_password"]
+        vpn_profile[VPN_CONST.IPSEC_ID] = vpn_params["vpn_identity"]
+        cert_name = download_load_certs(
+            ad, vpn_params, vpn_type, server_addr, "IKEV2_IPSEC_USER_PASS",
+            log_path)
+        vpn_profile[VPN_CONST.IPSEC_CA_CERT] = cert_name.split('.')[0]
+        ad.droid.installCertificate(
+            vpn_profile, cert_name, vpn_params['cert_password'])
+    elif vpn_type.name == "IKEV2_IPSEC_PSK":
+        vpn_profile[VPN_CONST.IPSEC_ID] = vpn_params["vpn_identity"]
+        vpn_profile[VPN_CONST.IPSEC_SECRET] = vpn_params["psk_secret"]
+    else:
+        vpn_profile[VPN_CONST.IPSEC_ID] = "%s@%s" % (
+            vpn_params["vpn_identity"], vpn_params["server_addr"])
+        cert_name = download_load_certs(
+            ad, vpn_params, vpn_type, server_addr, "IKEV2_IPSEC_RSA", log_path)
+        vpn_profile[VPN_CONST.IPSEC_USER_CERT] = cert_name.split('.')[0]
+        vpn_profile[VPN_CONST.IPSEC_CA_CERT] = cert_name.split('.')[0]
+        ad.droid.installCertificate(
+            vpn_profile, cert_name, vpn_params['cert_password'])
 
     return vpn_profile
 
