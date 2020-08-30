@@ -81,17 +81,13 @@ class BtSarBaseTest(BaseTestClass):
                 'bt_sar_test_params was not found in the config file.')
 
         self.user_params.update(self.test_params)
-        req_params = [
-            'bt_devices', 'calibration_params', 'custom_sar_path',
-            'music_files', 'reg_domain_files'
-        ]
+        req_params = ['bt_devices', 'calibration_params', 'custom_files']
 
         self.unpack_userparams(
             req_params,
             country_code='us',
             duration=DEFAULT_DURATION,
             sort_order=None,
-            reg_domain_files=None,
             max_error_threshold=DEFAULT_MAX_ERROR_THRESHOLD,
             agg_error_threshold=DEFAULT_AGG_MAX_ERROR_THRESHOLD,
             tpc_threshold=[2, 8],
@@ -99,6 +95,7 @@ class BtSarBaseTest(BaseTestClass):
 
         self.attenuator = self.attenuators[0]
         self.dut = self.android_devices[0]
+
         for key in self.REG_DOMAIN_DICT.keys():
             if self.country_code.lower() in key:
                 self.reg_domain = self.REG_DOMAIN_DICT[key]
@@ -113,6 +110,19 @@ class BtSarBaseTest(BaseTestClass):
                 os.path.dirname(self.power_file_paths[0]),
                 'bluetooth_power_limits_{}.csv'.format(self.reg_domain))
             self.sar_file_name = os.path.basename(self.power_file_paths[0])
+
+        if self.sar_version_2:
+            custom_file_suffix = 'version2'
+        else:
+            custom_file_suffix = 'version1'
+
+        for file in self.custom_files:
+            if 'custom_sar_table_{}.csv'.format(custom_file_suffix) in file:
+                self.custom_sar_path = 'custom_sar_table_{}.csv'.format(
+                    custom_file_suffix)
+                break
+        else:
+            raise RuntimeError('Custom Sar File is missing')
 
         self.sar_file_path = self.power_file_paths[0]
         self.atten_min = 0
