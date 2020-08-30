@@ -346,7 +346,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.avg_current = result.average_current
 
         plot_utils.monsoon_data_plot(self.mon_info, result)
-        plot_utils.monsoon_histogram_plot(self.mon_info, result)
 
         return result
 
