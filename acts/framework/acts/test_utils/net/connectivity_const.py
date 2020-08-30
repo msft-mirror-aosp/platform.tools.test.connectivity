@@ -123,6 +123,9 @@ class VpnProfileType(enum.Enum):
     IPSEC_XAUTH_PSK = 3
     IPSEC_XAUTH_RSA = 4
     IPSEC_HYBRID_RSA = 5
+    IKEV2_IPSEC_USER_PASS = 6
+    IKEV2_IPSEC_PSK = 7
+    IKEV2_IPSEC_RSA = 8
 
 
 # Constants for config file
@@ -140,3 +143,5 @@ class VpnReqParams(object):
     cert_password = "cert_password"
     pptp_mppe = "pptp_mppe"
     ipsec_server_type = "ipsec_server_type"
+    wifi_network = "wifi_network"
+    vpn_identity = "vpn_identity"
