@@ -128,9 +128,10 @@ class BtSarBaseTest(BaseTestClass):
         self.atten_min = 0
         self.atten_max = int(self.attenuator.get_max_atten())
 
-        # Initializing media controller
-        if self.music_files:
-            music_src = self.music_files[0]
+        # Get music file and push it to the phone and initialize Media controller
+        music_files = self.user_params.get('music_files', [])
+        if music_files:
+            music_src = music_files[0]
             music_dest = PHONE_MUSIC_FILE_DIRECTORY
             success = self.dut.push_system_file(music_src, music_dest)
             if success:
