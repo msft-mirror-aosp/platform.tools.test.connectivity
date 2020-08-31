@@ -222,11 +222,12 @@ class BtSarSanityTest(BtSarBaseTest):
 
         #For different reg domain, sweep the sar table
         for cc in self.REG_DOMAIN_DICT.values():
-            if 'bluetooth_power_limits_{}.csv'.format(cc) in self.custom_files:
-                custom_reg_file = 'bluetooth_power_limits_{}.csv'.format(cc)
-                break
-        else:
-            self.log.error('Regulatory file for {} missing'.format(cc.upper()))
+            for file in self.custom_files:
+                if 'bluetooth_power_limits_{}.csv'.format(cc) in file:
+                    custom_reg_file = file
+                    break
+            else:
+                self.log.error('Regulatory file for {} missing'.format(cc.upper()))
 
             reg_file_name = os.path.join(reg_file_phone_path, custom_reg_file)
             self.push_table(self.dut, custom_reg_file, reg_file_name)
