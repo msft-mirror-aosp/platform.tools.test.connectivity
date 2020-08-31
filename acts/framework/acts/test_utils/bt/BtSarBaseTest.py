@@ -118,8 +118,7 @@ class BtSarBaseTest(BaseTestClass):
 
         for file in self.custom_files:
             if 'custom_sar_table_{}.csv'.format(custom_file_suffix) in file:
-                self.custom_sar_path = 'custom_sar_table_{}.csv'.format(
-                    custom_file_suffix)
+                self.custom_sar_path =  file
                 break
         else:
             raise RuntimeError('Custom Sar File is missing')
