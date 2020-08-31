@@ -55,7 +55,7 @@ class IKEv2VpnOverWifiTest(base_test.BaseTestClass):
 
   ### Test cases ###
 
-  @test_tracker_info(uuid="")
+  @test_tracker_info(uuid="4991755c-321d-4e9a-ada9-fc821a35bb5b")
   def test_ikev2_psk_vpn_wifi(self):
     vpn = VPN_TYPE.IKEV2_IPSEC_PSK
     server_addr = self.vpn_server_addresses[vpn.name][0]
@@ -64,7 +64,7 @@ class IKEv2VpnOverWifiTest(base_test.BaseTestClass):
         self.dut, self.vpn_params, vpn, server_addr, self.log_path)
     nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
 
-  @test_tracker_info(uuid="")
+  @test_tracker_info(uuid="04d88575-7b96-4746-bff8-a1d6841e202e")
   def test_ikev2_mschapv2_vpn_wifi(self):
     vpn = VPN_TYPE.IKEV2_IPSEC_USER_PASS
     server_addr = self.vpn_server_addresses[vpn.name][0]
@@ -73,7 +73,7 @@ class IKEv2VpnOverWifiTest(base_test.BaseTestClass):
         self.dut, self.vpn_params, vpn, server_addr, self.log_path)
     nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
 
-  @test_tracker_info(uuid="")
+  @test_tracker_info(uuid="e65f8a3e-f807-4493-822e-377dd6fa89cd")
   def test_ikev2_rsa_vpn_wifi(self):
     vpn = VPN_TYPE.IKEV2_IPSEC_RSA
     server_addr = self.vpn_server_addresses[vpn.name][0]
