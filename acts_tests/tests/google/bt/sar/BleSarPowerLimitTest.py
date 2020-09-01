@@ -46,6 +46,9 @@ class BleSarPowerLimitTest(BtSarBaseTest):
         #self.dut.droid.bluetoothFactoryReset()
         #bt_utils.enable_bluetooth(self.dut.droid, self.bt_device.ed)
 
+        #Reset SAR test result to 0 before every test
+        self.sar_test_result.metric_value = 0
+
         # To prevent default file from being overwritten
         self.dut.adb.shell('cp {} {}'.format(self.power_file_paths[0],
                                              self.power_file_paths[1]))
