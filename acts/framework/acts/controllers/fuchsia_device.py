@@ -51,6 +51,7 @@ from acts.controllers.fuchsia_lib.kernel_lib import FuchsiaKernelLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
+from acts.controllers.fuchsia_lib.ram_lib import FuchsiaRamLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.sysinfo_lib import FuchsiaSysInfoLib
@@ -279,6 +280,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaNetstackLib
         self.netstack_lib = FuchsiaNetstackLib(self.address, self.test_counter,
                                                self.client_id)
+
+        # Grab commands from FuchsiaLightLib
+        self.ram_lib = FuchsiaRamLib(self.address, self.test_counter,
+                                     self.client_id)
 
         # Grab commands from FuchsiaProfileServerLib
         self.sdp_lib = FuchsiaProfileServerLib(self.address, self.test_counter,
