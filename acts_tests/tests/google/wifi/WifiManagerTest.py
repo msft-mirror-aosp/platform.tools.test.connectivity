@@ -90,6 +90,8 @@ class WifiManagerTest(WifiBaseTest):
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
         self.turn_location_off_and_scan_toggle_off()
+        if self.dut.droid.wifiIsApEnabled():
+            wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         if self.dut_client:
             wutils.reset_wifi(self.dut_client)
@@ -97,6 +99,8 @@ class WifiManagerTest(WifiBaseTest):
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
+        if self.dut_client:
+            self.dut_client.take_bug_report(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -568,6 +572,24 @@ class WifiManagerTest(WifiBaseTest):
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, ssid)
 
+    @test_tracker_info(uuid="558652de-c802-405f-b9dc-b7fcc9237673")
+    def test_scan_after_reboot_with_wifi_off_and_location_scan_on(self):
+        """Put wifi in scan only mode"""
+        self.turn_location_on_and_scan_toggle_on()
+        wutils.wifi_toggle_state(self.dut, False)
+
+        # Reboot the device.
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+
+        """Test wifi connection scan can start and find expected networks."""
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid)
+        ssid = self.open_network_5g[WifiEnums.SSID_KEY]
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid)
+
     @test_tracker_info(uuid="770caebe-bcb1-43ac-95b6-5dd52dd90e80")
     def test_scan_with_wifi_off_and_location_scan_off(self):
         """Turn off wifi and location scan"""
@@ -613,32 +635,6 @@ class WifiManagerTest(WifiBaseTest):
             asserts.assert_true(
                 nw[WifiEnums.BSSID_KEY] != ssid,
                 "Found forgotten network %s in configured networks." % ssid)
-
-    @test_tracker_info(uuid="b306d65c-6df3-4eb5-a178-6278bdc76c3e")
-    def test_reconnect_to_connected_network(self):
-        """Connect to a network and immediately issue reconnect.
-
-        Steps:
-        1. Connect to a 2GHz network.
-        2. Reconnect to the network using its network id.
-        3. Connect to a 5GHz network.
-        4. Reconnect to the network using its network id.
-
-        """
-        connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
-        reconnect_2g = self.connect_to_wifi_network_with_id(
-            connect_2g_data[WifiEnums.NETID_KEY],
-            connect_2g_data[WifiEnums.SSID_KEY])
-        if not reconnect_2g:
-            raise signals.TestFailure("Device did not connect to the correct"
-                                      " 2GHz network.")
-        connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
-        reconnect_5g = self.connect_to_wifi_network_with_id(
-            connect_5g_data[WifiEnums.NETID_KEY],
-            connect_5g_data[WifiEnums.SSID_KEY])
-        if not reconnect_5g:
-            raise signals.TestFailure("Device did not connect to the correct"
-                                      " 5GHz network.")
 
     @test_tracker_info(uuid="3cff17f6-b684-4a95-a438-8272c2ad441d")
     def test_reconnect_to_previously_connected(self):
@@ -943,12 +939,33 @@ class WifiManagerTest(WifiBaseTest):
         3. Let DUT sleep for 5 minutes
         4. Check DUT can be pinged by DUT_Client
         """
+        asserts.skip_if(len(self.android_devices) < 3, "Need 3 devices")
+        self.dut_client_a = self.android_devices[1]
+        self.dut_client_b = self.android_devices[2]
+
+        # enable hotspot on dut and connect client devices to it
+        ap_ssid = "softap_" + acts.utils.rand_ascii_str(8)
+        ap_password = acts.utils.rand_ascii_str(8)
+        self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
+        config = {wutils.WifiEnums.SSID_KEY: ap_ssid}
+        config[wutils.WifiEnums.PWD_KEY] = ap_password
+        wutils.start_wifi_tethering(
+            self.dut,
+            config[wutils.WifiEnums.SSID_KEY],
+            config[wutils.WifiEnums.PWD_KEY],
+            wutils.WifiEnums.WIFI_CONFIG_APBAND_AUTO)
+
         # DUT connect to AP
-        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
-        wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
+        wutils.connect_to_wifi_network(
+            self.dut_client_a, config, check_connectivity=False)
+        wutils.connect_to_wifi_network(
+            self.dut_client_b, config, check_connectivity=False)
         # Check DUT and DUT_Client can ping each other successfully
-        self.verify_traffic_between_devices(self.dut,self.dut_client)
-        self.verify_traffic_between_devices(self.dut_client,self.dut)
+        self.verify_traffic_between_devices(self.dut_client_a,
+                                            self.dut_client_b)
+        self.verify_traffic_between_devices(self.dut_client_a,
+                                            self.dut_client_b)
+
         # DUT turn off screen and go sleep for 5 mins
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
@@ -957,7 +974,8 @@ class WifiManagerTest(WifiBaseTest):
         self.log.info("Sleep for 5 minutes")
         time.sleep(300)
         # Verify DUT_Client can ping DUT when DUT sleeps
-        self.verify_traffic_between_devices(self.dut,self.dut_client)
+        self.verify_traffic_between_devices(self.dut_client_a,
+                                            self.dut_client_b)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
@@ -976,3 +994,42 @@ class WifiManagerTest(WifiBaseTest):
                 "wifi state changed after reboot")
 
         disable_bluetooth(self.dut.droid)
+
+    @test_tracker_info(uuid="d0e14a2d-a28f-4551-8988-1e15d9d8bb1a")
+    def test_scan_result_api(self):
+        """Register scan result callback, start scan and wait for event"""
+        self.dut.ed.clear_all_events()
+        self.dut.droid.wifiStartScanWithListener()
+        try:
+            events = self.dut.ed.pop_events(
+                "WifiManagerScanResultsCallbackOnSuccess", 60)
+        except queue.Empty:
+            asserts.fail(
+                "Wi-Fi scan results did not become available within 60s.")
+
+    @test_tracker_info(uuid="03cfbc86-7fcc-48d8-ab0f-1f6f3523e596")
+    def test_enable_disable_auto_join_saved_network(self):
+        """
+        Add a saved network, simulate user change the auto join to false, ensure the device doesn't
+        auto connect to this network
+
+        Steps:
+        1. Create a saved network.
+        2. Add this saved network, and ensure we connect to this network
+        3. Simulate user change the auto join to false.
+        4. Toggle the Wifi off and on
+        4. Ensure device doesn't connect to his network
+        """
+        network = self.open_network_5g
+        wutils.connect_to_wifi_network(self.dut, network)
+        info = self.dut.droid.wifiGetConnectionInfo()
+        network_id = info[WifiEnums.NETID_KEY]
+        self.dut.log.info("Disable auto join on network")
+        self.dut.droid.wifiEnableAutojoin(network_id, False)
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.wifi_toggle_state(self.dut, True)
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut, network[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False), "Device should not connect.")
+        self.dut.droid.wifiEnableAutojoin(network_id, True)
+        wutils.wait_for_connect(self.dut, network[WifiEnums.SSID_KEY], assert_on_fail=False)

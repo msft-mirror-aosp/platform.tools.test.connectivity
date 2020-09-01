@@ -14,13 +14,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import logging
+import os
 
-from acts.controllers import adb
 from acts import asserts
+from acts import signals
+from acts import utils
+from acts.controllers import adb
 from acts.controllers.adb_lib.error import AdbError
 from acts.logger import epoch_to_log_line_timestamp
-from acts.utils import get_current_epoch_time
 from acts.logger import normalize_log_line_timestamp
+from acts.utils import get_current_epoch_time
 from acts.utils import start_standing_subprocess
 from acts.utils import stop_standing_subprocess
 from acts.test_utils.net import connectivity_const as cconst
@@ -42,6 +45,9 @@ TCPDUMP_PATH = "/data/local/tmp/"
 USB_CHARGE_MODE = "svc usb setFunctions"
 USB_TETHERING_MODE = "svc usb setFunctions rndis"
 DEVICE_IP_ADDRESS = "ip address"
+
+GCE_SSH = "gcloud compute ssh "
+GCE_SCP = "gcloud compute scp "
 
 
 def verify_lte_data_and_tethering_supported(ad):
@@ -335,6 +341,85 @@ def stop_tcpdump(ad,
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
     return "%s/%s" % (log_path, file_name)
 
+def start_tcpdump_gce_server(ad, test_name, dest_port, gce):
+    """ Start tcpdump on gce server
+
+    Args:
+        ad: android device object
+        test_name: test case name
+        dest_port: port to collect tcpdump
+        gce: dictionary of gce instance
+
+    Returns:
+       process id and pcap file path from gce server
+    """
+    ad.log.info("Starting tcpdump on gce server")
+
+    # pcap file name
+    fname = "/tmp/%s_%s_%s_%s" % \
+        (test_name, ad.model, ad.serial,
+         time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime(time.time())))
+
+    # start tcpdump
+    tcpdump_cmd = "sudo bash -c \'tcpdump -i %s -w %s.pcap port %s > \
+        %s.txt 2>&1 & echo $!\'" % (gce["interface"], fname, dest_port, fname)
+    gcloud_ssh_cmd = "%s --project=%s --zone=%s %s@%s --command " % \
+        (GCE_SSH, gce["project"], gce["zone"], gce["username"], gce["hostname"])
+    gce_ssh_cmd = '%s "%s"' % (gcloud_ssh_cmd, tcpdump_cmd)
+    utils.exe_cmd(gce_ssh_cmd)
+
+    # get process id
+    ps_cmd = '%s "ps aux | grep tcpdump | grep %s"' % (gcloud_ssh_cmd, fname)
+    tcpdump_pid = utils.exe_cmd(ps_cmd).decode("utf-8", "ignore").split()
+    if not tcpdump_pid:
+        raise signals.TestFailure("Failed to start tcpdump on gce server")
+    return tcpdump_pid[1], fname
+
+def stop_tcpdump_gce_server(ad, tcpdump_pid, fname, gce):
+    """ Stop and pull tcpdump file from gce server
+
+    Args:
+        ad: android device object
+        tcpdump_pid: process id for tcpdump file
+        fname: tcpdump file path
+        gce: dictionary of gce instance
+
+    Returns:
+       pcap file from gce server
+    """
+    ad.log.info("Stop and pull pcap file from gce server")
+
+    # stop tcpdump
+    tcpdump_cmd = "sudo kill %s" % tcpdump_pid
+    gcloud_ssh_cmd = "%s --project=%s --zone=%s %s@%s --command " % \
+        (GCE_SSH, gce["project"], gce["zone"], gce["username"], gce["hostname"])
+    gce_ssh_cmd = '%s "%s"' % (gcloud_ssh_cmd, tcpdump_cmd)
+    utils.exe_cmd(gce_ssh_cmd)
+
+    # verify tcpdump is stopped
+    ps_cmd = '%s "ps aux | grep tcpdump"' % gcloud_ssh_cmd
+    res = utils.exe_cmd(ps_cmd).decode("utf-8", "ignore")
+    if tcpdump_pid in res.split():
+        raise signals.TestFailure("Failed to stop tcpdump on gce server")
+    if not fname:
+        return None
+
+    # pull pcap file
+    gcloud_scp_cmd = "%s --project=%s --zone=%s %s@%s:" % \
+        (GCE_SCP, gce["project"], gce["zone"], gce["username"], gce["hostname"])
+    pull_file = '%s%s.pcap %s/' % (gcloud_scp_cmd, fname, ad.device_log_path)
+    utils.exe_cmd(pull_file)
+    if not os.path.exists(
+        "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])):
+        raise signals.TestFailure("Failed to pull tcpdump from gce server")
+
+    # delete pcaps
+    utils.exe_cmd('%s "sudo rm %s.*"' % (gcloud_ssh_cmd, fname))
+
+    # return pcap file
+    pcap_file = "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])
+    return pcap_file
+
 def is_ipaddress_ipv6(ip_address):
     """Verify if the given string is a valid IPv6 address.
 
@@ -425,4 +510,3 @@ def wait_for_new_iface(old_ifaces):
             return new_ifaces.pop()
         time.sleep(1)
     asserts.fail("Timeout waiting for tethering interface on host")
-
