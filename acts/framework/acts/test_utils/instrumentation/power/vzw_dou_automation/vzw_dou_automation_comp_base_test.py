@@ -37,9 +37,11 @@ SCREENSHOTS_DIR = 'test_screenshots'
 
 DEFAULT_WAIT_FOR_REBOOT = 120
 
+
 class VzWDoUAutomationCompBaseTest(
     vzw_dou_automation_base_test.VzWDoUAutomationBaseTest):
   """Base class that implements common functionality of
+
   days of use test cases with companion phone
   """
 
@@ -118,14 +120,14 @@ class VzWDoUAutomationCompBaseTest(
     self.ad_cp.wait_for_boot_completion()
     time.sleep(DEFAULT_WAIT_FOR_REBOOT)
     self.ad_cp.adb.ensure_root()
-    self.adb_run(common.test_harness.toggle(True))
-    self.adb_run(goog.force_stop_nexuslauncher)
-    self.adb_run(goog.disable_playstore)
-    self.adb_run(goog.disable_chrome)
-    self.adb_run(common.power_stayon)
-    self.adb_run(common.mobile_data.toggle(True))
-    self.adb_run('input keyevent 82')
-    self.adb_run('input keyevent 3')
+    self.adb_run(common.test_harness.toggle(True), ad=self.ad_cp)
+    self.adb_run(goog.force_stop_nexuslauncher, ad=self.ad_cp)
+    self.adb_run(goog.disable_playstore, ad=self.ad_cp)
+    self.adb_run(goog.disable_chrome, ad=self.ad_cp)
+    self.adb_run(common.power_stayon, ad=self.ad_cp)
+    self.adb_run(common.mobile_data.toggle(True), ad=self.ad_cp)
+    self.adb_run('input keyevent 82', ad=self.ad_cp)
+    self.adb_run('input keyevent 3', ad=self.ad_cp)
 
   def _instr_command_builder(self):
     """Return a command builder for companion devices in power tests """
@@ -137,11 +139,12 @@ class VzWDoUAutomationCompBaseTest(
     return builder
 
   def run_instrumentation_on_companion(self,
-                    instr_class,
-                    instr_method=None,
-                    req_params=None,
-                    extra_params=None):
+                                       instr_class,
+                                       instr_method=None,
+                                       req_params=None,
+                                       extra_params=None):
     """Convenience method for setting up the instrumentation test command,
+
     running it on the companion device.
 
     Args:
@@ -189,3 +192,16 @@ class VzWDoUAutomationCompBaseTest(
            ' "\\n" | sed "s/\.//g"')
     result = self.adb_run(cmd, ad=ad)
     return result[cmd]
+
+  def pair_dut_bluetooth(self):
+    # Push the bt_config.conf file to Android device
+    # so it can pair and connect automatically.
+    bt_conf_path_dut = '/data/misc/bluedroid/bt_config.conf'
+    bt_config_file = 'bt_config.conf'
+    bt_config_path = self.user_params['bt_configs']
+    self.log.info('Base bt config path %s' % bt_config_path)
+    self.ad_dut.adb.push(bt_config_path + '/' + self.ad_dut.serial + '/' +
+                         bt_config_file + ' %s' % bt_conf_path_dut)
+    self.ad_dut.reboot()
+    self.ad_dut.wait_for_boot_completion()
+    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
