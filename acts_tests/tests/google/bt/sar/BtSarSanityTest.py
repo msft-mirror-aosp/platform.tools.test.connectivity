@@ -28,17 +28,14 @@ class BtSarSanityTest(BtSarBaseTest):
     This class defines sanity test cases on BT SAR. The tests include
     a software state sanity check and a software power sanity check.
     """
-    def __init__(self, controllers):
-        super().__init__(controllers)
+    def setup_class(self):
+        super().setup_class()
 
         self.reg_domain_dict = {
             'US': 'bluetooth_power_limits_US.csv',
             'EU': 'bluetooth_power_limits_EU.csv',
             'JP': 'bluetooth_power_limits_JP.csv'
         }
-
-    def setup_class(self):
-        super().setup_class()
 
         #Backup BT SAR files on the device
         for key in self.reg_domain_dict.keys():
@@ -221,23 +218,28 @@ class BtSarSanityTest(BtSarBaseTest):
         """
 
         reg_domain_error_flag = False
-        self.reg_file_path = os.path.dirname(self.sar_file_name)
+        reg_file_phone_path = os.path.dirname(self.sar_file_path)
 
         #For different reg domain, sweep the sar table
-        for key in self.reg_domain_dict.keys():
-            reg_file_name = os.path.join(self.reg_file_path,
-                                         self.reg_domain_dict[key])
-            self.push_table(self.dut, self.reg_domain_files[key],
-                            reg_file_name)
+        for cc in self.REG_DOMAIN_DICT.values():
+            for file in self.custom_files:
+                if 'bluetooth_power_limits_{}.csv'.format(cc) in file:
+                    custom_reg_file = file
+                    break
+            else:
+                self.log.error('Regulatory file for {} missing'.format(cc.upper()))
 
-            self.set_country_code(self.dut, key.lower())
+            reg_file_name = os.path.join(reg_file_phone_path, custom_reg_file)
+            self.push_table(self.dut, custom_reg_file, reg_file_name)
+
+            self.set_country_code(self.dut, cc.lower())
             self.bt_sar_df = self.read_sar_table(self.dut)
 
             sar_df = self.sweep_table()
             if (sar_df[self.power_column] == self.bt_sar_df[self.power_column]
                 ).bool:
                 self.log.info(
-                    'Regulatory Domain Sanity Test for {} passed'.format(key))
+                    'Regulatory Domain Sanity Test for {} passed'.format(cc))
             else:
                 reg_domain_error_flag = True
 
