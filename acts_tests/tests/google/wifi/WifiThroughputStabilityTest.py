@@ -400,6 +400,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             testcase_params['channel'])
         testcase_params['test_network'] = self.main_network[band]
 
+        if testcase_params['traffic_type'] == 'TCP':
+            testcase_params['iperf_socket_size'] = self.testclass_params.get(
+                'tcp_socket_size', None)
+            testcase_params['iperf_processes'] = self.testclass_params.get(
+                'tcp_processes', 1)
+        elif testcase_params['traffic_type'] == 'UDP':
+            testcase_params['iperf_socket_size'] = self.testclass_params.get(
+                'udp_socket_size', None)
+            testcase_params['iperf_processes'] = self.testclass_params.get(
+                'udp_processes', 1)
         if (testcase_params['traffic_direction'] == 'DL'
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
             ) or (testcase_params['traffic_direction'] == 'UL'
@@ -407,13 +417,17 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
                 duration=self.testclass_params['iperf_duration'],
                 reverse_direction=1,
-                traffic_type=testcase_params['traffic_type'])
+                traffic_type=testcase_params['traffic_type'],
+                socket_size=testcase_params['iperf_socket_size'],
+                num_processes=testcase_params['iperf_processes'])
             testcase_params['use_client_output'] = True
         else:
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
                 duration=self.testclass_params['iperf_duration'],
                 reverse_direction=0,
-                traffic_type=testcase_params['traffic_type'])
+                traffic_type=testcase_params['traffic_type'],
+                socket_size=testcase_params['iperf_socket_size'],
+                num_processes=testcase_params['iperf_processes'])
             testcase_params['use_client_output'] = False
 
         return testcase_params
