@@ -1,4 +1,7 @@
 import time
+import os
+import tempfile
+
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
@@ -22,25 +25,32 @@ class GnssSimInventoryTest(BaseTestClass):
         if not is_sim_ready_by_adb(self.ad.log, self.ad):
             raise signals.TestFailure("SIM card is not loaded and ready.")
 
-    def test_gnss_sim_inventory(self):
-        self.check_device_status()
-        android_version = int(self.ad.adb.getprop("ro.build.version.release"))
-        if android_version == 10:
-            imsi = str(self.ad.adb.shell("service call iphonesubinfo 7"))
-        elif android_version == 11:
-            imsi = str(self.ad.adb.shell("service call iphonesubinfo 8"))
-        else:
-            raise signals.TestFailure("Couldn't get imsi")
+    def get_imsi(self):
+        self.ad.log.info("Get imsi from netpolicy.xml")
+        tmp_path = tempfile.mkdtemp()
+        self.ad.pull_files("/data/system/netpolicy.xml", tmp_path)
+        netpolicy_path = os.path.join(tmp_path, "netpolicy.xml")
+        with open(netpolicy_path, "r", encoding="utf-8") as file:
+            for line in file.readlines():
+                if "subscriberId" in line:
+                    imsi = line.split(" ")[2].split("=")[-1].strip('"')
+                    return imsi
+        raise signals.TestFailure("Fail to get imsi")
+
+    def get_iccid(self):
         iccid = str(get_iccid_by_adb(self.ad))
         if not isinstance(iccid, int):
             self.ad.log.info("Unable to get iccid via adb. Changed to isub.")
             iccid = str(self.ad.adb.shell(
                 "dumpsys isub | grep iccid")).split(" ")[4].strip(",")
-        if not iccid:
-            raise signals.TestFailure("Couldn't get iccid")
-        sms_message = "imsi: %s, iccid: %s, ldap: %s, model: %s, sn: %s" % \
-                      (imsi, iccid, self.sim_inventory_ldap, self.ad.model,
-                       self.ad.serial)
+            return iccid
+        raise signals.TestFailure("Fail to get iccid")
+
+    def test_gnss_sim_inventory(self):
+        self.check_device_status()
+        sms_message = "imsi: %s, iccid: %s, ldap: %s, model: %s, sn: %s" % (
+            self.get_imsi(), self.get_iccid(), self.sim_inventory_ldap,
+            self.ad.model, self.ad.serial)
         self.ad.log.info(sms_message)
         try:
             self.ad.log.info("Send SMS by SL4A.")
