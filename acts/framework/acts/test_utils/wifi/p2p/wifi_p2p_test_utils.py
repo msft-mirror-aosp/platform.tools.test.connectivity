@@ -175,17 +175,29 @@ def p2p_connect(ad1,
     ad1.droid.wifiP2pConnect(wifi_p2p_config)
     ad1.ed.pop_event(p2pconsts.CONNECT_SUCCESS_EVENT,
                      p2pconsts.DEFAULT_TIMEOUT)
-    time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
+    time.sleep(p2pconsts.DEFAULT_CONNECT_SLEEPTIME)
     if not isReconnect:
         ad1.droid.requestP2pPeerConfigure()
         ad1_peerConfig = ad1.ed.pop_event(
             p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
             p2pconsts.DEFAULT_TIMEOUT)
         ad1.log.debug(ad1_peerConfig['data'])
-        ad2.droid.requestP2pPeerConfigure()
-        ad2_peerConfig = ad2.ed.pop_event(
-            p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
-            p2pconsts.DEFAULT_TIMEOUT)
+        maxPollingCount = 5
+        while maxPollingCount > 0:
+            ad2.droid.requestP2pPeerConfigure()
+            ad2_peerConfig = ad2.ed.pop_event(
+                p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
+                p2pconsts.DEFAULT_TIMEOUT)
+            maxPollingCount -= 1
+            if ad2_peerConfig['data'][
+                    WifiP2PEnums.WifiP2pConfig.DEVICEADDRESS_KEY]:
+                break
+            ad2.log.debug("%s is not ready for next step" % (ad2.name))
+            time.sleep(p2pconsts.DEFAULT_POLLING_SLEEPTIME)
+        asserts.assert_true(
+            ad2_peerConfig['data'][
+                WifiP2PEnums.WifiP2pConfig.DEVICEADDRESS_KEY],
+            "DUT %s does not receive the request." % (ad2.name))
         ad2.log.debug(ad2_peerConfig['data'])
         if wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY:
             asserts.assert_true(
@@ -212,10 +224,7 @@ def p2p_connect(ad1,
             ad1.droid.setP2pPeerConfigure(ad1_peerConfig['data'])
             ad1.ed.pop_event(p2pconsts.ONGOING_PEER_SET_SUCCESS_EVENT,
                              p2pconsts.DEFAULT_TIMEOUT)
-            #Need to Accept first in ad1 to avoid connect time out in ad2,
-            #the timeout just 1 sec in ad2
             ad1.droid.wifiP2pAcceptConnection()
-            time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
             ad2.droid.wifiP2pConfirmConnection()
         elif wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC:
             ad2.droid.wifiP2pAcceptConnection()
