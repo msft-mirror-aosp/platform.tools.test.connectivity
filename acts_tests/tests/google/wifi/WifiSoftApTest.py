@@ -109,7 +109,8 @@ class WifiSoftApTest(WifiBaseTest):
         for ad in self.android_devices:
             wutils.wifi_toggle_state(ad, True)
         if hasattr(self, "cnss_diag_file"):
-            wutils.start_cnss_diags(ad, self.cnss_diag_file, self.pixel_models)
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
 
     def teardown_test(self):
         if hasattr(self, "cnss_diag_file"):

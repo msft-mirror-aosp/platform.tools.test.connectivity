@@ -93,7 +93,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ad.droid.wakeUpNow()
         self.turn_location_off_and_scan_toggle_off()
         if hasattr(self, "cnss_diag_file"):
-            wutils.start_cnss_diags(ad, self.cnss_diag_file, self.pixel_models)
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
 
     def teardown_test(self):
         if hasattr(self, "cnss_diag_file"):
