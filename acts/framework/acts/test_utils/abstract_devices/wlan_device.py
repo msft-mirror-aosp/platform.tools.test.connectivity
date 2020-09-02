@@ -58,6 +58,7 @@ class WlanDevice(object):
     def __init__(self, device):
         self.device = device
         self.log = logging
+        self.identifier = None
 
     def wifi_toggle_state(self, state):
         """Base generic WLAN interface.  Only called if not overridden by
@@ -166,6 +167,7 @@ class AndroidWlanDevice(WlanDevice):
     """
     def __init__(self, android_device):
         super().__init__(android_device)
+        self.identifier = android_device.serial
 
     def wifi_toggle_state(self, state):
         awutils.wifi_toggle_state(self.device, state)
@@ -264,6 +266,7 @@ class FuchsiaWlanDevice(WlanDevice):
     """
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
+        self.identifier = fuchsia_device.ip
 
     def wifi_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
