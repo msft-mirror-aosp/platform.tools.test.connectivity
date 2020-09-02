@@ -508,10 +508,18 @@ class WifiRvrTest(base_test.BaseTestClass):
             wutils.reset_wifi(self.sta_dut)
             wutils.set_wifi_country_code(self.sta_dut,
                                          self.testclass_params['country_code'])
+            if self.testbed_params['sniffer_enable']:
+                self.sniffer.start_capture(
+                    network={'SSID': testcase_params['test_network']['SSID']},
+                    chan=testcase_params['channel'],
+                    bw=testcase_params['mode'][3:],
+                    duration=180)
             wutils.wifi_connect(self.sta_dut,
                                 testcase_params['test_network'],
                                 num_of_tries=5,
                                 check_connectivity=True)
+            if self.testbed_params['sniffer_enable']:
+                self.sniffer.stop_capture(tag='connection_setup')
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -562,6 +570,16 @@ class WifiRvrTest(base_test.BaseTestClass):
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         testcase_params['test_network'] = self.main_network[band]
+        if testcase_params['traffic_type'] == 'TCP':
+            testcase_params['iperf_socket_size'] = self.testclass_params.get(
+                'tcp_socket_size', None)
+            testcase_params['iperf_processes'] = self.testclass_params.get(
+                'tcp_processes', 1)
+        elif testcase_params['traffic_type'] == 'UDP':
+            testcase_params['iperf_socket_size'] = self.testclass_params.get(
+                'udp_socket_size', None)
+            testcase_params['iperf_processes'] = self.testclass_params.get(
+                'udp_processes', 1)
         if (testcase_params['traffic_direction'] == 'DL'
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
             ) or (testcase_params['traffic_direction'] == 'UL'
@@ -569,13 +587,17 @@ class WifiRvrTest(base_test.BaseTestClass):
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
                 duration=self.testclass_params['iperf_duration'],
                 reverse_direction=1,
-                traffic_type=testcase_params['traffic_type'])
+                traffic_type=testcase_params['traffic_type'],
+                socket_size=testcase_params['iperf_socket_size'],
+                num_processes=testcase_params['iperf_processes'])
             testcase_params['use_client_output'] = True
         else:
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
                 duration=self.testclass_params['iperf_duration'],
                 reverse_direction=0,
-                traffic_type=testcase_params['traffic_type'])
+                traffic_type=testcase_params['traffic_type'],
+                socket_size=testcase_params['iperf_socket_size'],
+                num_processes=testcase_params['iperf_processes'])
             testcase_params['use_client_output'] = False
         return testcase_params
 
