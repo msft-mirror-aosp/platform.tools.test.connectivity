@@ -14,8 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import copy
+import time
 
 from acts.test_decorators import repeated_test
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_comp_base_test
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
@@ -61,6 +63,86 @@ class VzWDoUAutomationPhoneCallTest(
     final_metrics = self._generate_final_metrics(metrics_list)
     self.record_metrics(final_metrics)
     self.validate_metrics(final_metrics)
+
+  def test_voice_call_bluetooth(self):
+    """Measures power when the device is on call with bluetooth paired."""
+    self.ad_cp.adb.ensure_root()
+    self.adb_run(goog.remove_gmail_account, ad=self.ad_cp)
+    self.ad_cp.reboot()
+    self.ad_cp.wait_for_boot_completion()
+    time.sleep(vzw_dou_automation_comp_base_test.DEFAULT_WAIT_FOR_REBOOT)
+    self.pair_dut_bluetooth()
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+    dut_phone_number = self.get_phone_number(self.ad_dut)
+    self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    bt_device_address = self.user_params['bt_device_address']
+    self.log.info('The bt device address is {}'.format(bt_device_address))
+
+    self.run_instrumentation_on_companion(
+        'com.google.android.platform.dou.CompanionSimulateVoiceTests',
+        'testPlayYoutube',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number)])
+
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.PhoneVoiceCallTests',
+        'testVoiceCall',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number),
+                      ('bluetooth_device_mac_addr', bt_device_address)])
+
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  def test_voice_call(self):
+    """Measures power when the device is on call."""
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+    dut_phone_number = self.get_phone_number(self.ad_dut)
+    self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+
+    self.run_instrumentation_on_companion(
+        'com.google.android.platform.dou.CompanionSimulateVoiceTests',
+        'testPlayYoutube',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number)])
+
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.PhoneVoiceCallTests',
+        'testVoiceCall',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number)])
+
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  def test_mobile_hotspot(self):
+    """Measures power for companion connect to the dut mobile hotspot."""
+
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+
+    dut_mhs_ssid = self.generate_random_ssid()
+    self.log.info('The dut_mhs_ssid is {}'.format(dut_mhs_ssid))
+
+    self.run_instrumentation_on_companion(
+        'com.google.android.platform.dou.CompanionMHSTests',
+        'testPlayYoutubeViaMHS',
+        extra_params=[('recipient_number', dut_mhs_ssid),
+                      ('recipient_number_companion', companion_phone_number)])
+
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.MobileHotspotTests',
+        'testMobileHotspot',
+        extra_params=[('recipient_number', dut_mhs_ssid),
+                      ('recipient_number_companion', companion_phone_number)])
+
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
 
   def _generate_final_metrics(self, metrics_list):
     """General a final metrics by combine each weighted value in the original metrics.
