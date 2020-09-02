@@ -694,8 +694,8 @@ def get_iperf_arg_string(duration,
                          reverse_direction,
                          interval=1,
                          traffic_type='TCP',
-                         tcp_window=None,
-                         tcp_processes=1,
+                         socket_size=None,
+                         num_processes=1,
                          udp_throughput='1000M',
                          ipv6=False):
     """Function to format iperf client arguments.
@@ -708,8 +708,8 @@ def get_iperf_arg_string(duration,
         reverse_direction: boolean controlling the -R flag for iperf clients
         interval: iperf print interval
         traffic_type: string specifying TCP or UDP traffic
-        tcp_window: string specifying TCP window, e.g., 2M
-        tcp_processes: int specifying number of tcp processes
+        socket_size: string specifying TCP window or socket buffer, e.g., 2M
+        num_processes: int specifying number of iperf processes
         udp_throughput: string specifying TX throughput in UDP tests, e.g. 100M
         ipv6: boolean controlling the use of IP V6
     Returns:
@@ -719,11 +719,12 @@ def get_iperf_arg_string(duration,
     if ipv6:
         iperf_args = iperf_args + '-6 '
     if traffic_type.upper() == 'UDP':
-        iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
+        iperf_args = iperf_args + '-u -b {} -l 1400 -P {}'.format(
+            udp_throughput, num_processes)
     elif traffic_type.upper() == 'TCP':
-        iperf_args = iperf_args + '-P {}'.format(tcp_processes)
-        if tcp_window:
-            iperf_args = iperf_args + '-w {}'.format(tcp_window)
+        iperf_args = iperf_args + '-P {}'.format(num_processes)
+    if socket_size:
+        iperf_args = iperf_args + '-w {}'.format(socket_size)
     if reverse_direction:
         iperf_args = iperf_args + ' -R'
     return iperf_args
