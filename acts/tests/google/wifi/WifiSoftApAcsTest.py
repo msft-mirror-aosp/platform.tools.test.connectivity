@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import itertools
+import os
 import pprint
 import queue
 import sys
@@ -27,6 +28,7 @@ import acts.utils as utils
 
 from acts import asserts
 from acts.controllers.ap_lib import hostapd_constants
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
@@ -67,11 +69,19 @@ class WifiSoftApAcsTest(WifiBaseTest):
             "Failed to enable WiFi verbose logging on the client dut.")
         req_params = []
         opt_param = ["iperf_server_address", "reference_networks",
-                     "iperf_server_port"]
+                     "iperf_server_port", "pixel_models"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
         self.chan_map = {v: k for k, v in hostapd_constants.CHANNEL_MAP.items()}
         self.pcap_procs = None
+        if "cnss_diag_file" in self.user_params:
+            self.cnss_diag_file = self.user_params.get("cnss_diag_file")
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
 
     def setup_test(self):
         if hasattr(self, 'packet_capture'):
@@ -81,7 +91,9 @@ class WifiSoftApAcsTest(WifiBaseTest):
                 self.packet_capture[0].configure_monitor_mode(band, int(chan))
                 self.pcap_procs = wutils.start_pcap(
                     self.packet_capture[0], band, self.test_name)
-        wutils.start_cnss_diags(self.android_devices)
+        if hasattr(self, "cnss_diag_file"):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
@@ -91,7 +103,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
         wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
-        wutils.stop_cnss_diags(self.android_devices)
+        if hasattr(self, "cnss_diag_file"):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
         if hasattr(self, 'packet_capture') and self.pcap_procs:
             wutils.stop_pcap(self.packet_capture[0], self.pcap_procs, False)
             self.pcap_procs = None
