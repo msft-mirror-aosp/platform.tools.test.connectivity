@@ -243,13 +243,7 @@ def connect_phone_to_headset(android,
             android.droid.bluetoothConnectBonded(headset_mac_address)
         else:
             #Headset is connected, but A2DP profile is not
-            android.droid.bluetoothFactoryReset()
-            headset.reset()
-            headset.power_on()
-            enable_bluetooth(android.droid, android.ed)
-            headset.enter_pairing_mode()
-            android.droid.bluetoothStartPairingHelper()
-            android.droid.bluetoothDiscoverAndBond(headset_mac_address)
+            android.droid.bluetoothA2dpConnect(headset_mac_address)
         log.info('Waiting for connection...')
         time.sleep(connection_check_period)
         # Check for connection.
