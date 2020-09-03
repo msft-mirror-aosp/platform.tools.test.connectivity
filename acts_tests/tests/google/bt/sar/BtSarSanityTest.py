@@ -49,6 +49,15 @@ class BtSarSanityTest(BtSarBaseTest):
 
         self.log.info('Regulatory files backed up')
 
+    def setup_test(self):
+
+        #Reset SAR test result to 0 before every test
+        self.sar_test_result.metric_value = 0
+
+        # Starting BT on the master
+        self.dut.droid.bluetoothFactoryReset()
+        bt_utils.enable_bluetooth(self.dut.droid, self.dut.ed)
+
     def teardown_class(self):
         for key in self.reg_domain_dict.keys():
             reg_file_path = os.path.join(
