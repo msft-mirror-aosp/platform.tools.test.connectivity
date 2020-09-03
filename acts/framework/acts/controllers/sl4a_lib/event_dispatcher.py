@@ -215,8 +215,10 @@ class EventDispatcher:
                 # Block forever on event wait
                 return e_queue.get(True)
         except queue.Empty:
-            raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
-                timeout, event_name))
+            msg = 'Timeout after {}s waiting for event: {}'.format(
+                timeout, event_name)
+            self.log.error(msg)
+            raise queue.Empty(msg)
 
     def wait_for_event(self,
                        event_name,
@@ -273,9 +275,10 @@ class EventDispatcher:
             if time.time() > deadline:
                 for ignored_event in ignored_events:
                     self.get_event_q(event_name).put(ignored_event)
-                raise queue.Empty(
-                    'Timeout after {}s waiting for event: {}'.format(
-                        timeout, event_name))
+                msg = 'Timeout after {}s waiting for event: {}'.format(
+                    timeout, event_name)
+                self.log.error(msg)
+                raise queue.Empty(msg)
 
     def pop_events(self, regex_pattern, timeout, freq=1):
         """Pop events whose names match a regex pattern.
@@ -312,8 +315,10 @@ class EventDispatcher:
                 break
             time.sleep(freq)
         if len(results) == 0:
-            raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
-                timeout, regex_pattern))
+            msg = 'Timeout after {}s waiting for event: {}'.format(
+                timeout, regex_pattern)
+            self.log.error(msg)
+            raise queue.Empty(msg)
 
         return sorted(results, key=lambda event: event['time'])
 
