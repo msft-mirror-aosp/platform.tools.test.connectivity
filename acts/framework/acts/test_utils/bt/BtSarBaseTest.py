@@ -473,22 +473,27 @@ class BtSarBaseTest(BaseTestClass):
         Args:
              sar_df: processed BT SAR table
         """
-
-        # checks for errors at particular points in the sweep
-        max_error_result = abs(
-            sar_df['delta']) > self.max_error_threshold[type]
-        if False in max_error_result:
-            asserts.fail('Maximum Error Threshold Exceeded')
-
-        # checks for error accumulation across the sweep
-        if sar_df['delta'].sum() > self.agg_error_threshold[type]:
-            asserts.fail(
-                'Aggregate Error Threshold Exceeded. Error: {} Threshold: {}'.
-                format(sar_df['delta'].sum(), self.agg_error_threshold))
+        if self.sar_version_2:
+            breach_error_result = (sar_df['expected_tx_power'] >
+                                   sar_df['measured_tx_power']).all()
+            if not breach_error_result:
+                asserts.fail('Measured TX power exceeds expected')
 
         else:
-            self.sar_test_result.metric_value = 1
-            asserts.explicit_pass('Measured and Expected Power Values in line')
+            # checks for errors at particular points in the sweep
+            max_error_result = abs(
+                sar_df['delta']) > self.max_error_threshold[type]
+            if max_error_result:
+                asserts.fail('Maximum Error Threshold Exceeded')
+
+            # checks for error accumulation across the sweep
+            if sar_df['delta'].sum() > self.agg_error_threshold[type]:
+                asserts.fail(
+                    'Aggregate Error Threshold Exceeded. Error: {} Threshold: {}'.
+                    format(sar_df['delta'].sum(), self.agg_error_threshold))
+
+        self.sar_test_result.metric_value = 1
+        asserts.explicit_pass('Measured and Expected Power Values in line')
 
     def set_sar_state(self, ad, signal_dict, country_code='us'):
         """Sets the SAR state corresponding to the BT SAR signal.
