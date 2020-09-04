@@ -19,6 +19,7 @@ import re
 import time
 
 from acts import asserts
+import acts.test_utils.bt.bt_test_utils as bt_utils
 from acts.test_utils.bt.BtSarBaseTest import BtSarBaseTest
 
 
@@ -28,6 +29,7 @@ class BtSarSanityTest(BtSarBaseTest):
     This class defines sanity test cases on BT SAR. The tests include
     a software state sanity check and a software power sanity check.
     """
+
     def setup_class(self):
         super().setup_class()
 
@@ -46,6 +48,15 @@ class BtSarSanityTest(BtSarBaseTest):
                 reg_file_path, reg_file_path))
 
         self.log.info('Regulatory files backed up')
+
+    def setup_test(self):
+
+        #Reset SAR test result to 0 before every test
+        self.sar_test_result.metric_value = 0
+
+        # Starting BT on the master
+        self.dut.droid.bluetoothFactoryReset()
+        bt_utils.enable_bluetooth(self.dut.droid, self.dut.ed)
 
     def teardown_class(self):
         for key in self.reg_domain_dict.keys():
@@ -112,56 +123,8 @@ class BtSarSanityTest(BtSarBaseTest):
         the BT SAR file to the power cap read from logcat
         """
 
-        sar_df = self.bt_sar_df
-        sar_df['BDR_power_cap'] = -128
-        sar_df['EDR_power_cap'] = -128
-        sar_df['BLE_power_cap'] = -128
+        power_cap_error = self.sweep_power_cap()
 
-        if self.sar_version_2:
-            power_column_dict = {
-                'BDR': 'BluetoothBDRPower',
-                'EDR': 'BluetoothEDRPower',
-                'BLE': 'BluetoothLEPower'
-            }
-        else:
-            power_column_dict = {'EDR': self.power_column}
-
-        power_cap_error = False
-
-        for type, column_name in power_column_dict.items():
-
-            self.log.info("Performing sanity test on {}".format(type))
-            #Iterating through the BT SAR scenarios
-            for scenario in range(0, self.bt_sar_df.shape[0]):
-
-                # Reading BT SAR table row into dict
-                read_scenario = sar_df.loc[scenario].to_dict()
-                start_time = self.dut.adb.shell('date +%s.%m')
-                time.sleep(1)
-
-                #Setting SAR state to the read BT SAR row
-                self.set_sar_state(self.dut, read_scenario, self.country_code)
-
-                #Reading device power cap from logcat after forcing SAR State
-                scenario_power_cap = self.get_current_power_cap(self.dut,
-                                                                start_time,
-                                                                type=type)
-                sar_df.loc[scenario,
-                           '{}_power_cap'.format(type)] = scenario_power_cap
-                self.log.info('scenario: {}, '
-                              'sar_power: {}, power_cap:{}'.format(
-                                  scenario, sar_df.loc[scenario, column_name],
-                                  sar_df.loc[scenario,
-                                             '{}_power_cap'.format(type)]))
-
-        if not sar_df['{}_power_cap'.format(type)].equals(sar_df[column_name]):
-            power_cap_error = True
-
-        results_file_path = os.path.join(
-            self.log_path, '{}.csv'.format(self.current_test_name))
-        sar_df.to_csv(results_file_path)
-
-        # Comparing read device power cap to expected device power cap
         if power_cap_error:
             asserts.fail("Power Caps didn't match powers in the SAR table")
         else:
@@ -189,8 +152,7 @@ class BtSarSanityTest(BtSarBaseTest):
                 set_regulatory_domain = self.get_country_code(
                     self.dut, start_time)
 
-                if set_regulatory_domain != self.REG_DOMAIN_DICT[
-                        country_code_tuple]:
+                if set_regulatory_domain != self.REG_DOMAIN_DICT[country_code_tuple]:
                     error_flag = 1
                     self.log.error(
                         'Country Code: {} set to regulatory domain: {}'.format(
@@ -217,33 +179,43 @@ class BtSarSanityTest(BtSarBaseTest):
         regulatory domain files
         """
 
-        reg_domain_error_flag = False
+        reg_domain_test_error_flag = True
         reg_file_phone_path = os.path.dirname(self.sar_file_path)
 
         #For different reg domain, sweep the sar table
-        for cc in self.REG_DOMAIN_DICT.values():
+        for cc, reg_domain in self.REG_DOMAIN_DICT.items():
+            self.country_code = cc[0]
             for file in self.custom_files:
-                if 'bluetooth_power_limits_{}.csv'.format(cc) in file:
+                if 'bluetooth_power_limits_{}.csv'.format(reg_domain) in file:
                     custom_reg_file = file
+                    reg_file_name = os.path.join(
+                        reg_file_phone_path,
+                        'bluetooth_power_limits_{}.csv'.format(reg_domain))
                     break
             else:
-                self.log.error('Regulatory file for {} missing'.format(cc.upper()))
+                self.log.error(
+                    'Regulatory file for {} missing'.format(reg_domain))
 
-            reg_file_name = os.path.join(reg_file_phone_path, custom_reg_file)
             self.push_table(self.dut, custom_reg_file, reg_file_name)
 
-            self.set_country_code(self.dut, cc.lower())
-            self.bt_sar_df = self.read_sar_table(self.dut)
+            start_time = self.dut.adb.shell('date +%s.%m')
+            self.set_country_code(self.dut, cc[0])
+            # Read regulatory code from logcat
+            read_reg_domain = self.get_country_code(self.dut, start_time)
+            self.log.info(
+                'Regulatory domain set to {}'.format(read_reg_domain))
+            self.bt_sar_df = self.read_sar_table(self.dut, custom_reg_file)
 
-            sar_df = self.sweep_table()
-            if (sar_df[self.power_column] == self.bt_sar_df[self.power_column]
-                ).bool:
+            reg_domain_error_flag = self.sweep_power_cap()
+
+            if not reg_domain_error_flag:
                 self.log.info(
-                    'Regulatory Domain Sanity Test for {} passed'.format(cc))
-            else:
-                reg_domain_error_flag = True
+                    'Regulatory Domain Sanity Test for {} passed'.format(
+                        reg_domain))
 
-        if reg_domain_error_flag:
+            reg_domain_test_error_flag &= reg_domain_error_flag
+
+        if reg_domain_test_error_flag:
             asserts.fail('Regulatory domain sanity tests failed')
         else:
             self.sar_test_result.metric_value = 1
