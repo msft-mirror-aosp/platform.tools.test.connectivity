@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import pprint
 import time
 import re
@@ -21,6 +22,7 @@ import re
 from acts import asserts
 from acts import base_test
 from acts.controllers.ap_lib import hostapd_constants
+from acts.keys import Config
 import acts.signals as signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
@@ -69,20 +71,34 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ad.droid.wifiEnableVerboseLogging(1)
 
         req_params = ["dbs_supported_models",
+                      "pixel_models",
                       "iperf_server_address",
                       "iperf_server_port"]
         self.unpack_userparams(req_param_names=req_params,)
         asserts.abort_class_if(
             self.dut.model not in self.dbs_supported_models,
             "Device %s does not support dual interfaces." % self.dut.model)
+        if "cnss_diag_file" in self.user_params:
+            self.cnss_diag_file = self.user_params.get("cnss_diag_file")
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
 
     def setup_test(self):
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
         self.turn_location_off_and_scan_toggle_off()
+        if hasattr(self, "cnss_diag_file"):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
 
     def teardown_test(self):
+        if hasattr(self, "cnss_diag_file"):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
         # Prevent the stop wifi tethering failure to block ap close
         try:
             wutils.stop_wifi_tethering(self.dut)
@@ -107,6 +123,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
+            wutils.get_cnss_diag_log(ad, test_name)
 
     ### Helper Functions ###
 

@@ -15,12 +15,14 @@
 #   limitations under the License.
 
 import logging
+import os
 import queue
 import random
 import time
 
 from acts import asserts
 from acts import utils
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.net import socket_test_utils as sutils
@@ -46,7 +48,7 @@ class WifiSoftApTest(WifiBaseTest):
         """
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        req_params = ["dbs_supported_models"]
+        req_params = ["dbs_supported_models", "pixel_models"]
         opt_param = ["open_network"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -85,6 +87,14 @@ class WifiSoftApTest(WifiBaseTest):
             asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
                 "Failed to enable WiFi verbose logging on the client dut.")
             self.dut_client_2 = self.android_devices[2]
+        if "cnss_diag_file" in self.user_params:
+            self.cnss_diag_file = self.user_params.get("cnss_diag_file")
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
 
     def teardown_class(self):
         if self.dut.droid.wifiIsApEnabled():
@@ -98,8 +108,13 @@ class WifiSoftApTest(WifiBaseTest):
     def setup_test(self):
         for ad in self.android_devices:
             wutils.wifi_toggle_state(ad, True)
+        if hasattr(self, "cnss_diag_file"):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
 
     def teardown_test(self):
+        if hasattr(self, "cnss_diag_file"):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
         self.dut.log.debug("Toggling Airplane mode OFF.")
         asserts.assert_true(utils.force_airplane_mode(self.dut, False),
                             "Can not turn off airplane mode: %s" % self.dut.serial)
@@ -110,6 +125,7 @@ class WifiSoftApTest(WifiBaseTest):
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
+            wutils.get_cnss_diag_log(ad, test_name)
 
     """ Helper Functions """
     def create_softap_config(self):
