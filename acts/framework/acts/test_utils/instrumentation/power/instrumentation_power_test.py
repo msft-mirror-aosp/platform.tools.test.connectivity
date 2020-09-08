@@ -19,7 +19,6 @@ import shutil
 import tempfile
 import time
 
-import tzlocal
 from acts import asserts
 from acts import context
 from acts.controllers import monsoon as monsoon_controller
@@ -38,6 +37,7 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
+import tzlocal
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 DEFAULT_PUSH_FILE_TIMEOUT = 180
@@ -404,11 +404,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             'monsoon.txt' if count is None else 'monsoon_%s.txt' % count)
 
         if attempt_number != None:
-          power_data_path = os.path.join(
-              context.get_current_context().get_full_output_path(),
-              'monsoon_attempt_%s.txt' %
-              attempt_number if count is None else 'monsoon_%s_attempt_%s.txt' %
-              (count, attempt_number))
+            power_data_path = os.path.join(
+                context.get_current_context().get_full_output_path(),
+                'monsoon_attempt_%s.txt' %
+                attempt_number if count is None else 'monsoon_%s_attempt_%s.txt' %
+                                                     (count, attempt_number))
 
         # TODO(b/155426729): Create an accurate host-to-device time difference
         # measurement.
@@ -425,7 +425,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             start_time=device_to_host_offset)
         self.power_monitor.connect_usb()
         self._reinstall_sl4a()
-
         # Gather relevant metrics from measurements
         instrumentation_result = self.parse_instrumentation_result()
         self.log_instrumentation_result(instrumentation_result)
