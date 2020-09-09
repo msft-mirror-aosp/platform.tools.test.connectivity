@@ -260,17 +260,12 @@ class AdbProxy(object):
     def shell_nb(self, command):
         return self._exec_adb_cmd_nb('shell', shlex.quote(command))
 
-    def pull(self,
-             command,
-             ignore_status=False,
-             timeout=DEFAULT_ADB_PULL_TIMEOUT):
-        return self._exec_adb_cmd(
-            'pull', command, ignore_status=ignore_status, timeout=timeout)
-
     def __getattr__(self, name):
         def adb_call(*args, **kwargs):
             usage_metadata_logger.log_usage(self.__module__, name)
             clean_name = name.replace('_', '-')
+            if clean_name in ['pull', 'push'] and 'timeout' not in kwargs:
+                kwargs['timeout'] = DEFAULT_ADB_PULL_TIMEOUT
             arg_str = ' '.join(str(elem) for elem in args)
             return self._exec_adb_cmd(clean_name, arg_str, **kwargs)
 
