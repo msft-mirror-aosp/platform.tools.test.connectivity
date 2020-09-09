@@ -21,11 +21,11 @@ import acts.controllers.cellular_simulator as simulator
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
 from acts.controllers.rohdeschwarz_lib import cmx500_cellular_simulator as cmx
-from acts.test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
-from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
-from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
-from acts.test_utils.power.tel_simulations.LteCaSimulation import LteCaSimulation
-from acts.test_utils.power.tel_simulations.LteImsSimulation import LteImsSimulation
+from acts.controllers.cellular_lib.GsmSimulation import GsmSimulation
+from acts.controllers.cellular_lib.LteSimulation import LteSimulation
+from acts.controllers.cellular_lib.UmtsSimulation import UmtsSimulation
+from acts.controllers.cellular_lib.LteCaSimulation import LteCaSimulation
+from acts.controllers.cellular_lib.LteImsSimulation import LteImsSimulation
 from acts.test_utils.tel import tel_test_utils as telutils
 
 
