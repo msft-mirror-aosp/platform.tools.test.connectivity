@@ -225,6 +225,7 @@ def p2p_connect(ad1,
             ad1.ed.pop_event(p2pconsts.ONGOING_PEER_SET_SUCCESS_EVENT,
                              p2pconsts.DEFAULT_TIMEOUT)
             ad1.droid.wifiP2pAcceptConnection()
+            time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
             ad2.droid.wifiP2pConfirmConnection()
         elif wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC:
             ad2.droid.wifiP2pAcceptConnection()
