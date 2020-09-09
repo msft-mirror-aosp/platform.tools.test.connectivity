@@ -35,8 +35,6 @@ from acts.test_utils.instrumentation.power.vzw_dou_automation import \
 AUTOTESTER_LOG = 'autotester.log'
 SCREENSHOTS_DIR = 'test_screenshots'
 
-DEFAULT_WAIT_FOR_REBOOT = 120
-
 
 class VzWDoUAutomationCompBaseTest(
     vzw_dou_automation_base_test.VzWDoUAutomationBaseTest):
@@ -118,7 +116,7 @@ class VzWDoUAutomationCompBaseTest(
     self.ad_cp.adb.ensure_root()
     self.ad_cp.reboot()
     self.ad_cp.wait_for_boot_completion()
-    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
     self.ad_cp.adb.ensure_root()
     self.adb_run(common.test_harness.toggle(True), ad=self.ad_cp)
     self.adb_run(goog.force_stop_nexuslauncher, ad=self.ad_cp)
@@ -204,4 +202,4 @@ class VzWDoUAutomationCompBaseTest(
                          bt_config_file + ' %s' % bt_conf_path_dut)
     self.ad_dut.reboot()
     self.ad_dut.wait_for_boot_completion()
-    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)

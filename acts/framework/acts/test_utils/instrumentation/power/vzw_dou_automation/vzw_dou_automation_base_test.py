@@ -29,7 +29,8 @@ from acts.test_utils.instrumentation.device.apps.app_installer import AppInstall
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 
 DEFAULT_WAIT_TO_FASTBOOT_MODE = 10
-DEFAULT_DEVICE_COOL_DOWN_TIME = 15
+DEFAULT_DEVICE_COOL_DOWN_TIME = 25
+DEFAULT_WAIT_FOR_REBOOT = 120
 
 def get_median_current(test_results):
   """Returns the median current, or a failure if the test failed."""
@@ -162,3 +163,41 @@ class VzWDoUAutomationBaseTest(
     # Generate random permutations as ssid
     ssid = os.popen('shuf -i 1111111111-9999999999 -n 1').read(10)
     return ssid.strip()
+
+  def push_movies_to_dut(self):
+    # Push the movies folder to Android device
+    sdcard_movies_path_dut = '/sdcard/Movies/'
+    sdcard_movies_path = self.user_params['sdcard_movies_path']
+    self.log.info('sdcard_movies_path is %s' % sdcard_movies_path)
+    self.ad_dut.adb.push(sdcard_movies_path + '/*', sdcard_movies_path_dut)
+    self.ad_dut.reboot()
+    self.ad_dut.wait_for_boot_completion()
+    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+
+  def log_in_gmail_account(self):
+    # Log in to gmail account
+    self._install_google_account_util_apk()
+    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
+    additional_setting = self._get_merged_config('additional_setting')
+    gmail_account = additional_setting.get('gmail_account')
+    gmail_phrase = additional_setting.get('gmail_phrase')
+    log_in_cmd = (
+        'am instrument -w -e account {} -e '
+        'password {} -e sync false -e wait-for-checkin false '
+        'com.google.android.tradefed.account/.AddAccount'
+    ).format(gmail_account, gmail_phrase)
+    self.log.info('gmail log in commands %s' % log_in_cmd)
+    self.adb_run(log_in_cmd, timeout=300)
+    self.ad_dut.reboot()
+    self.ad_dut.wait_for_boot_completion()
+    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+
+  def push_music_to_dut(self):
+    # Push the music folder to Android device
+    sdcard_music_path_dut = '/sdcard/Music/'
+    sdcard_music_path = self.user_params['sdcard_music_path']
+    self.log.info('sdcard_music_path is %s' % sdcard_music_path)
+    self.ad_dut.adb.push(sdcard_music_path + '/*', sdcard_music_path_dut)
+    self.ad_dut.reboot()
+    self.ad_dut.wait_for_boot_completion()
+    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
