@@ -32,6 +32,7 @@ class BtSarTpcTest(BtSarBaseTest):
     This class defines tests to detect any anomalies in the
     Transmit power control mechanisms
     """
+
     def __init__(self, controllers):
         super().__init__(controllers)
         req_params = ['scenario_count']
@@ -46,7 +47,6 @@ class BtSarTpcTest(BtSarBaseTest):
         self.push_table(self.dut, self.custom_sar_path)
         self.attenuator.set_atten(self.atten_min)
         self.pathloss = int(self.calibration_params['pathloss'])
-
         self.sar_df = self.bt_sar_df.copy()
         self.sar_df['power_cap'] = -128
         self.sar_df['TPC_result'] = -1
@@ -56,6 +56,7 @@ class BtSarTpcTest(BtSarBaseTest):
 
         self.tpc_sweep_range = range(self.atten_min, self.pl10_atten)
         self.log.info(self.current_test_name)
+
         self.tpc_plots_figure = wifi_utils.BokehFigure(
             title='{}_{}'.format(self.current_test_name, 'curve'),
             x_label='Pathloss(dBm)',
@@ -99,26 +100,24 @@ class BtSarTpcTest(BtSarBaseTest):
         """
 
         tpc_verdict = 'FAIL'
-
-        # Locating power level changes in the sweep
-        pwlv_derivative_bool = list(
-            np.diff([pwlv_list[0]] + np.rint(pwlv_list)) == 1)
-
-        # Diff-ing the list to get derivative of the list
-        tx_power_derivative = np.diff([tx_power_list[0]] + tx_power_list)
+        tx_power_derivative = np.diff(tx_power_list)
 
         # Checking for negative peaks
-        negative_peaks = tx_power_derivative[np.where(
-            tx_power_derivative < self.tpc_threshold['negative'])]
+        negative_peaks = list(
+            np.where(tx_power_derivative < self.tpc_threshold['negative']))[0]
+
         for negative_peak in negative_peaks:
-            dip_index = list(tx_power_derivative).index(negative_peak)
             # Compensating for TPC algo quirk
-            if (pwlv_list[dip_index - 2]
-                    == 8.0) & (pwlv_list[dip_index - 1] >
-                               8.0) & (pwlv_list[dip_index] == 8.0):
-                pass
+            if (pwlv_list[negative_peak - 1] == 8.0) & (
+                    pwlv_list[negative_peak] >
+                    8.0) & (pwlv_list[negative_peak + 1] == 8.0):
+                pwlv_list[negative_peak] = 9.0
             else:
                 return [tpc_verdict, tx_power_derivative]
+
+        pwlv_list = np.rint(pwlv_list)
+        # Locating power level changes in the sweep
+        pwlv_derivative_bool = list(np.diff(pwlv_list) == 1)
 
         # Locating legitimate tx power changes
         tx_power_derivative_bool = [
@@ -173,26 +172,29 @@ class BtSarTpcTest(BtSarBaseTest):
             pwlv_list.append(processed_bqr['pwlv'][self.dut.serial])
 
         # Processing tpc sweep results
-        [self.sar_df.loc[scenario, 'TPC_result'], tx_power_derivative
-         ] = self.process_tpc_results(master_tx_power_list, pwlv_list)
+        [self.sar_df.loc[scenario, 'TPC_result'],
+         tx_power_derivative] = self.process_tpc_results(
+             master_tx_power_list, pwlv_list)
 
         # Plot TPC curves
-        self.tpc_plots_figure.add_line(self.tpc_sweep_range,
-                                       master_tx_power_list,
-                                       str(scenario),
-                                       marker='circle')
+        self.tpc_plots_figure.add_line(
+            self.tpc_sweep_range[:-1],
+            master_tx_power_list,
+            str(scenario),
+            marker='circle')
 
-        self.tpc_plots_derivative_figure.add_line(self.tpc_sweep_range,
-                                                  tx_power_derivative,
-                                                  str(scenario),
-                                                  marker='circle')
+        self.tpc_plots_derivative_figure.add_line(
+            self.tpc_sweep_range[:-1],
+            tx_power_derivative,
+            str(scenario),
+            marker='circle')
 
         self.tpc_plots_figure.generate_figure()
         self.tpc_plots_derivative_figure.generate_figure()
 
         # Saving the TPC curves
-        plot_file_path = os.path.join(self.log_path,
-                                      '{}.html'.format(self.current_test_name))
+        plot_file_path = os.path.join(self.log_path, '{}.html'.format(
+            self.current_test_name))
         wifi_utils.BokehFigure.save_figures(
             [self.tpc_plots_figure, self.tpc_plots_derivative_figure],
             plot_file_path)
@@ -202,6 +204,6 @@ class BtSarTpcTest(BtSarBaseTest):
             asserts.fail('TPC sweep failed for scenario: {}'.format(scenario))
 
         else:
-            self.sar_tpc_test_result.metric_value += 1
+            self.sar_tpc_test_result += 1
             asserts.explicit_pass(
                 'TPC sweep passed for scenario: {}'.format(scenario))
