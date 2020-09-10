@@ -952,10 +952,7 @@ def adb_shell_ping(ad,
                  default www.google.com
         timeout: timeout for icmp pings to complete.
     """
-    if is_valid_ipv6_address(dest_ip):
-        ping_cmd = "ping6 -W 1"
-    else:
-        ping_cmd = "ping -W 1"
+    ping_cmd = "ping -W 1"
     if count:
         ping_cmd += " -c %d" % count
     if dest_ip:
@@ -1393,7 +1390,7 @@ def get_interface_ip_addresses(comm_channel, interface):
 
     Returns:
         A list of dictionaries of the the various IP addresses:
-            ipv4_private_local_addresses: Any 192.168, 172.16, 10, or 169.254
+            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
                 addresses
             ipv4_public_addresses: Any IPv4 public addresses
             ipv6_link_local_addresses: Any fe80:: addresses
@@ -1501,6 +1498,14 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
     all_ips_and_interfaces = comm_channel.run(
         '(ip -o -4 addr show; ip -o -6 addr show) | '
         'awk \'{print $2" "$4}\'').stdout
+    #ipv4_addresses = comm_channel.run(
+    #    'ip -o -4 addr show| awk \'{print $2": "$4}\'').stdout
+    #ipv6_addresses = comm_channel._ssh_session.run(
+    #    'ip -o -6 addr show| awk \'{print $2": "$4}\'').stdout
+    #if desired_ip_address in ipv4_addresses:
+    #    ip_addresses_to_search = ipv4_addresses
+    #elif desired_ip_address in ipv6_addresses:
+    #    ip_addresses_to_search = ipv6_addresses
     for ip_address_and_interface in all_ips_and_interfaces.split('\n'):
         if desired_ip_address in ip_address_and_interface:
             return ip_address_and_interface.split()[1][:-1]
@@ -1510,19 +1515,6 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
 def renew_linux_ip_address(comm_channel, interface):
     comm_channel.run('sudo ifconfig %s down' % interface)
     comm_channel.run('sudo ifconfig %s up' % interface)
-    comm_channel.run('sudo killall dhcpcd 2>/dev/null; echo""')
-    is_dhcpcd_dead = False
-    dhcpcd_counter = 0
-    dhcpcd_checker_max_times = 3
-    while not is_dhcpcd_dead:
-        if dhcpcd_counter == dhcpcd_checker_max_times:
-            raise TimeoutError('Unable to stop dhcpcd')
-        time.sleep(1)
-        if 'dhcpcd' in comm_channel.run('ps axu').stdout:
-            dhcpcd_counter += 1
-        else:
-            is_dhcpcd_dead = True
-    comm_channel.run('sudo dhcpcd -q -b')
     comm_channel.run('sudo dhclient -r %s' % interface)
     comm_channel.run('sudo dhclient %s' % interface)
 

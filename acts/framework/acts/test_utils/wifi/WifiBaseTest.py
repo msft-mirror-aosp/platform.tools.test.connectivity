@@ -316,11 +316,6 @@ class WifiBaseTest(BaseTestClass):
             ent_network_pwd=False,
             radius_conf_pwd=None,
             ap_count=1):
-        asserts.assert_true(
-            len(self.user_params["AccessPoint"]) == 2,
-            "Exactly two access points must be specified. \
-             Each access point has 2 radios, one each for 2.4GHZ \
-             and 5GHz. A test can choose to use one or both APs.")
 
         config_count = 1
         count = 0
