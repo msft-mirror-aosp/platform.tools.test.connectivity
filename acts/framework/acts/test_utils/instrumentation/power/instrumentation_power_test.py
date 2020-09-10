@@ -16,7 +16,6 @@
 
 import os
 import shutil
-import subprocess
 import tempfile
 import time
 
@@ -38,6 +37,7 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
+from acts.test_utils.instrumentation.power.data_graph import power_audio_chart
 import tzlocal
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
@@ -600,16 +600,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Generate power chat by using the monsoon raw data."""
         power_chart_path = power_data_path.rsplit('.', 1)[0] + '.html'
         self.log.info('power_chart_path: %s' % power_chart_path)
-        cwd_path = os.getcwd()
-        self.log.info('cwd_path: %s' % cwd_path)
-        file_path = \
-            '%s/acts/test_utils/instrumentation/power/data_graph/power_audio_chart.py' \
-            % cwd_path
-        self.log.info('python file_path: %s' % file_path)
-        template_file_path = \
-            '%s/acts/test_utils/instrumentation/power/data_graph/template.html' \
-            % cwd_path
-        subprocess.call([
-            'python3', file_path, '--input-file', power_data_path, '--output-file',
-            power_chart_path, '--template-file', template_file_path
-        ])
+        template_path = \
+            'acts/acts_framework/acts/test_utils/instrumentation/power/data_graph/template.html'
+        file_path = os.path.dirname(__file__)
+        self.log.info('current file directory: %s' % file_path)
+        template_file_path = file_path.replace(
+            file_path[file_path.index("lib"):], template_path)
+        self.log.info('template file path: %s' % template_file_path)
+
+        power_audio_chart.generate_chart(
+            power_data_path, power_chart_path, template_file_path)
