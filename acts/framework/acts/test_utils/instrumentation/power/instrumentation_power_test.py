@@ -40,6 +40,7 @@ from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT
 from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
+DEFAULT_DEVICE_STABILIZATION_TIME = 300
 DEFAULT_PUSH_FILE_TIMEOUT = 180
 DEFAULT_WAIT_FOR_DEVICE_TIMEOUT = 180
 POLLING_INTERVAL = 0.5
@@ -478,6 +479,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         instr_cmd = self._instr_cmd_builder.build()
         self._uninstall_sl4a()
+
+        # Allow device to stabilize for 5 minutes
+        self.ad_dut.log.debug('Waiting 5 minutes for device to stabilize')
+        time.sleep(self._instrumentation_config.get_int(
+            'device_stabilization_time', DEFAULT_DEVICE_STABILIZATION_TIME))
+
         self.log.info('Running instrumentation call: %s' % instr_cmd)
         self.adb_run_async(instr_cmd)
         return self.measure_power(count=count, attempt_number=attempt_number)
