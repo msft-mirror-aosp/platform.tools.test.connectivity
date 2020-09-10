@@ -94,7 +94,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         is_roaming = False
         for ad in self.android_devices:
             ad.sms_over_wifi = False
-            #verizon supports sms over wifi. will add more carriers later
+            # verizon supports sms over wifi. will add more carriers later
             for sub in ad.telephony["subscription"].values():
                 if sub["operator"] in SMS_OVER_WIFI_PROVIDERS:
                     ad.sms_over_wifi = True
@@ -456,13 +456,13 @@ class TelLiveSmsTest(TelephonyBaseTest):
             message_array = [rand_ascii_str(length)]
             message_array2 = [rand_ascii_str(length)]
             if not sms_in_collision_send_receive_verify(
-                self.log,
-                ads[0],
-                ads[0],
-                ads[1],
-                ads[2],
-                message_array,
-                message_array2):
+                    self.log,
+                    ads[0],
+                    ads[0],
+                    ads[1],
+                    ads[2],
+                    message_array,
+                    message_array2):
                 ads[0].log.warning(
                     "Test of SMS collision with length %s failed", length)
                 return False
@@ -477,14 +477,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
     def _sms_in_collision_when_power_off_test(self, ads):
         for length in self.message_lengths:
             if not sms_rx_power_off_multiple_send_receive_verify(
-                self.log,
-                ads[0],
-                ads[1],
-                ads[2],
-                length,
-                length,
-                5,
-                5):
+                    self.log,
+                    ads[0],
+                    ads[1],
+                    ads[2],
+                    length,
+                    length,
+                    5,
+                    5):
                 ads[0].log.warning(
                     "Test of SMS collision when power off with length %s failed",
                     length)
@@ -703,7 +703,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
-
 
     @test_tracker_info(uuid="17fafc41-7e12-47ab-a4cc-fb9bd94e79b9")
     @TelephonyBaseTest.tel_test_wrap
@@ -1701,6 +1700,65 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
+    @test_tracker_info(uuid="fe862c8a-9fe0-4563-885e-9a819f5c8ba6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_mt_in_call_volte_5g_nsa(self):
+        """ Test MO SMS during a MO VoLTE call over 5G NSA.
+
+        Make sure PhoneA/B are in 5G NSA (with VoLTE).
+        Make sure PhoneA/B is able to make/receive call.
+        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA.
+        Make sure PhoneA/B are in 5G NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
+                                                           (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        self.log.info("Begin In Call SMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
+            return False
+
+        if not self._sms_test_mo(ads):
+            self.log.error("SMS test fail.")
+            return False
+
+        # Check if phoneA/B are attached to 5g after sending mms.
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after call.")
+            return False
+
+        return True
+
     @test_tracker_info(uuid="3bf8ff74-baa6-4dc6-86eb-c13816fa9bc8")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_volte(self):
@@ -1769,6 +1827,65 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         if not self._mms_test_mt(ads):
             self.log.error("MMS test fail.")
+            return False
+
+        return True
+
+    @test_tracker_info(uuid="ffcb1afe-0118-40f8-9830-35847826d405")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_mt_in_call_volte_5g_nsa(self):
+        """ Test MO MMS during a MO VoLTE call over 5G NSA.
+
+        Make sure PhoneA/B are in 5G NSA (with VoLTE).
+        Make sure PhoneA/B is able to make/receive call.
+        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA.
+        Make sure PhoneA/B are in 5G NSA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
+                                                           (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        self.log.info("Begin In Call MMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
+            return False
+
+        if not self._mms_test_mo(ads):
+            self.log.error("MMS test fail.")
+            return False
+
+        # Check if phoneA/B are attached to 5g after sending mms.
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after call.")
             return False
 
         return True
@@ -1847,6 +1964,72 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         if not self._mms_test_mt(ads):
             self.log.error("MMS test fail.")
+            return False
+
+        return True
+
+    @test_tracker_info(uuid="a5b95867-133f-4576-8a44-bd057ee0188f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_mt_in_call_volte_wifi_5g_nsa(self):
+        """ Test MO MMS during a MO VoLTE call over 5G NSA.
+
+        Make sure PhoneA/B are in 5G NSA (with VoLTE).
+        Make sure PhoneA/B are able to make/receive call.
+        Connect PhoneA/B to Wifi.
+        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
+        Make sure PhoneA/B are in 5G NSA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
+                                                           (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        tasks = [(ensure_wifi_connected, (self.log, ad, self.wifi_network_ssid,
+                                          self.wifi_network_pass))
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to connect to wifi.")
+            return False
+        self.log.info("Begin In Call MMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
+            return False
+
+        if not self._mms_test_mo(ads):
+            self.log.error("MMS test fail.")
+            return False
+
+        # Check if phoneA/B are attached to 5g after sending mms.
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after call.")
             return False
 
         return True
@@ -2583,7 +2766,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
                    self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
-                                              (self.log, ads[1]))]
+                                                       (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -2611,7 +2794,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
                    self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
-                                              (self.log, ads[1]))]
+                                                       (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -2639,7 +2822,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
                    self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
-                                              (self.log, ads[1]))]
+                                                       (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -2667,7 +2850,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
                    self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
-                                              (self.log, ads[1]))]
+                                                       (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
