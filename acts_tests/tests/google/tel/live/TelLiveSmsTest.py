@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import \
     sms_in_collision_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import \
@@ -2144,6 +2145,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
     def test_sms_mo_mt_iwlan_5g_nsa(self):
         """ Test SMS text function between two phones, Phones in APM, WiFi connected, WFC Cell Preferred mode.
 
+        Make sure airplane mode is off
         Set Phones are operated at 5G NSA
         Make sure Phones are operated at 5G NSA
         Make sure PhoneA/B APM, WiFi connected, WFC wifi preferred mode.
@@ -2156,6 +2158,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+
+        # Turn off airplane mode to ensure attaching to 5g nsa is working
+        self.log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                 (toggle_airplane_mode, (self.log, ads[1], False))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to turn off airplane mode")
+            return False
 
         # Mode Pref
         tasks = [(set_preferred_mode_for_5g, [ad])
@@ -2194,6 +2204,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
     def test_mms_mo_mt_iwlan_5g_nsa(self):
         """ Test MMS text function between two phones, Phones in APM, WiFi connected, WFC Cell Preferred mode.
 
+        Make sure airplane mode is off
         Set Phones are operated at 5G NSA
         Make sure Phones are operated at 5G NSA
         Make sure PhoneA/B APM, WiFi connected, WFC wifi preferred mode.
@@ -2206,6 +2217,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+
+        # Turn off airplane mode to ensure attaching to 5g nsa is working
+        self.log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                 (toggle_airplane_mode, (self.log, ads[1], False))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to turn off airplane mode")
+            return False
 
         # Mode Pref
         tasks = [(set_preferred_mode_for_5g, [ad])
