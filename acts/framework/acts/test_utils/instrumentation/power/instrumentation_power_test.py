@@ -16,6 +16,7 @@
 
 import os
 import shutil
+import subprocess
 import tempfile
 import time
 
@@ -40,6 +41,7 @@ from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThreshol
 import tzlocal
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
+DEFAULT_DEVICE_STABILIZATION_TIME = 300
 DEFAULT_PUSH_FILE_TIMEOUT = 180
 DEFAULT_WAIT_FOR_DEVICE_TIMEOUT = 180
 POLLING_INTERVAL = 0.5
@@ -72,6 +74,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._sl4a_apk = None
         self._instr_cmd_builder = None
         self.prefer_bits_over_monsoon = False
+        self.generate_chart = False
 
     def setup_class(self):
         super().setup_class()
@@ -96,6 +99,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         else:
             power_monitors = [power_monitor_lib.PowerMonitorMonsoonFacade(
                 monsoon) for monsoon in self.monsoons]
+            self.generate_chart = True
         return power_monitors
 
     def setup_test(self):
@@ -435,6 +439,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             timestamps=proto_parser.get_test_timestamps(instrumentation_result))
 
         self.power_monitor.release_resources()
+        if self.generate_chart:
+          self.generate_power_chart(power_data_path)
         return power_metrics
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
@@ -451,7 +457,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             count: Measurement count in one test, default None means only measure
                 one time
             attempt_number: Repeat test run attempt number, default None means no
-            repeated test
+                repeated test
 
         Returns: summary of Monsoon measurement
         """
@@ -477,6 +483,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         instr_cmd = self._instr_cmd_builder.build()
         self._uninstall_sl4a()
+
+        # Allow device to stabilize for 5 minutes
+        self.ad_dut.log.debug('Waiting 5 minutes for device to stabilize')
+        time.sleep(self._instrumentation_config.get_int(
+            'device_stabilization_time', DEFAULT_DEVICE_STABILIZATION_TIME))
+
         self.log.info('Running instrumentation call: %s' % instr_cmd)
         self.adb_run_async(instr_cmd)
         return self.measure_power(count=count, attempt_number=attempt_number)
@@ -590,3 +602,21 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         asserts.explicit_pass(
             msg='All measurements meet the criteria',
             extras=summaries)
+
+    def generate_power_chart(self, power_data_path):
+        """Generate power chat by using the monsoon raw data."""
+        power_chart_path = power_data_path.rsplit('.', 1)[0] + '.html'
+        self.log.info('power_chart_path: %s' % power_chart_path)
+        cwd_path = os.getcwd()
+        self.log.info('cwd_path: %s' % cwd_path)
+        file_path = \
+            '%s/acts/test_utils/instrumentation/power/data_graph/power_audio_chart.py' \
+            % cwd_path
+        self.log.info('python file_path: %s' % file_path)
+        template_file_path = \
+            '%s/acts/test_utils/instrumentation/power/data_graph/template.html' \
+            % cwd_path
+        subprocess.call([
+            'python3', file_path, '--input-file', power_data_path, '--output-file',
+            power_chart_path, '--template-file', template_file_path
+        ])
