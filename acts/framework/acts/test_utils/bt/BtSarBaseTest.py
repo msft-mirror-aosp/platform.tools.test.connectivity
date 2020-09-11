@@ -93,7 +93,11 @@ class BtSarBaseTest(BaseTestClass):
             max_error_threshold=DEFAULT_MAX_ERROR_THRESHOLD,
             agg_error_threshold=DEFAULT_AGG_MAX_ERROR_THRESHOLD,
             tpc_threshold=[2, 8],
-        )
+            sar_margin={
+                'BDR': 0,
+                'EDR': 0,
+                'BLE': 0
+            })
 
         self.attenuator = self.attenuators[0]
         self.dut = self.android_devices[0]
@@ -474,8 +478,9 @@ class BtSarBaseTest(BaseTestClass):
              sar_df: processed BT SAR table
         """
         if self.sar_version_2:
-            breach_error_result = (sar_df['expected_tx_power'] >
-                                   sar_df['measured_tx_power']).all()
+            breach_error_result = (
+                sar_df['expected_tx_power'] + self.sar_margin[type] >
+                sar_df['measured_tx_power']).all()
             if not breach_error_result:
                 asserts.fail('Measured TX power exceeds expected')
 
