@@ -53,32 +53,46 @@ class IKEv2VpnOverWifiTest(base_test.BaseTestClass):
   def on_fail(self, test_name, begin_time):
     self.dut.take_bug_report(test_name, begin_time)
 
+  ### Helper methods ###
+  def _test_ikev2_vpn(self, vpn, hostname=None):
+    """Verify IKEv2 VPN connection.
+
+    Args:
+      vpn: type of VPN.
+      hostname: hostname or IP address of the server.
+    """
+    server_addr = self.vpn_server_addresses[vpn.name][0]
+    self.vpn_params["server_addr"] = server_addr
+    if not hostname:
+      hostname = server_addr
+    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
+    vpn_profile = nutils.generate_ikev2_vpn_profile(
+        self.dut, self.vpn_params, vpn, hostname, self.log_path)
+    nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
+
   ### Test cases ###
 
   @test_tracker_info(uuid="4991755c-321d-4e9a-ada9-fc821a35bb5b")
   def test_ikev2_psk_vpn_wifi(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_PSK
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(VPN_TYPE.IKEV2_IPSEC_PSK)
 
   @test_tracker_info(uuid="04d88575-7b96-4746-bff8-a1d6841e202e")
   def test_ikev2_mschapv2_vpn_wifi(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_USER_PASS
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(VPN_TYPE.IKEV2_IPSEC_USER_PASS)
 
   @test_tracker_info(uuid="e65f8a3e-f807-4493-822e-377dd6fa89cd")
   def test_ikev2_rsa_vpn_wifi(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_RSA
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    self.vpn_params["server_addr"] = server_addr
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(VPN_TYPE.IKEV2_IPSEC_RSA)
+
+  @test_tracker_info(uuid="bdd8a967-8dac-4e48-87b7-2ce9f7d32158")
+  def test_ikev2_psk_vpn_wifi_with_hostname(self):
+    self._test_ikev2_vpn(VPN_TYPE.IKEV2_IPSEC_PSK, self.vpn_server_hostname)
+
+  @test_tracker_info(uuid="19692520-c123-4b42-8549-08dda9c4873e")
+  def test_ikev2_mschapv2_vpn_wifi_with_hostname(self):
+    self._test_ikev2_vpn(VPN_TYPE.IKEV2_IPSEC_USER_PASS,
+                         self.vpn_server_hostname)
+
+  @test_tracker_info(uuid="bdaaf6e3-6671-4533-baba-2951009c7d69")
+  def test_ikev2_rsa_vpn_wifi_with_hostname(self):
+    self._test_ikev2_vpn(VPN_TYPE.IKEV2_IPSEC_RSA, self.vpn_server_hostname)
