@@ -108,9 +108,9 @@ class BtSarTpcTest(BtSarBaseTest):
 
         for negative_peak in negative_peaks:
             # Compensating for TPC algo quirk
-            if (pwlv_list[negative_peak - 1] == 8.0) & (
+            if (round(pwlv_list[negative_peak - 1]) == 8.0) & (
                     pwlv_list[negative_peak] >
-                    8.0) & (pwlv_list[negative_peak + 1] == 8.0):
+                    8.0) & (round(pwlv_list[negative_peak + 1]) == 8.0):
                 pwlv_list[negative_peak] = 9.0
             else:
                 return [tpc_verdict, tx_power_derivative]
