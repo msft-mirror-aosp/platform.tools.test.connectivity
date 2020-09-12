@@ -70,7 +70,7 @@ class VzWDoUAutomationPhoneCallTest(
     self.adb_run(goog.remove_gmail_account, ad=self.ad_cp)
     self.ad_cp.reboot()
     self.ad_cp.wait_for_boot_completion()
-    time.sleep(vzw_dou_automation_comp_base_test.DEFAULT_WAIT_FOR_REBOOT)
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
     self.pair_dut_bluetooth()
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(

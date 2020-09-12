@@ -68,10 +68,23 @@ disable_chrome = GenericCommand('pm disable-user com.android.chrome',
                                 desc='Disables the Google chrome.')
 
 force_stop_nexuslauncher = GenericCommand('am force-stop com.google.android.apps.nexuslauncher',
-                                desc='Force stop nexus launcher.')
+                                          desc='Force stop nexus launcher.')
 
 disable_playstore = GenericCommand('pm disable-user com.android.vending',
                                    desc='Disables the Google playstore.')
+
+duo_grant_camera = GenericCommand(
+    'pm grant com.google.android.apps.faketachyon android.permission.CAMERA',
+    desc='Grants camera permissions to the duo(faketachyon) app')
+
+duo_grant_audio = GenericCommand(
+    'pm grant com.google.android.apps.faketachyon android.permission.RECORD_AUDIO',
+    desc='Grants audio permissions to the duo(faketachyon) app')
+
+duo_grant_contacts = GenericCommand(
+    'pm grant com.google.android.apps.faketachyon android.permission.READ_CONTACTS',
+    desc='Grants contacts permissions to the duo(faketachyon) app')
+
 
 # Volta
 
@@ -94,7 +107,7 @@ disable_musiciq = GenericCommand(
 
 remove_gmail_account = GenericCommand(
     'am instrument -w com.google.android.tradefed.account/.RemoveAccounts',
-                                      desc='Removes gmail account.')
+    desc='Removes gmail account.')
 
 # Hotword
 
