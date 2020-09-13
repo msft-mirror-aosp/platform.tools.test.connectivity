@@ -21,7 +21,7 @@ from acts.test_utils.bt.BtSarBaseTest import BtSarBaseTest
 from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
 import acts.test_utils.wifi.wifi_performance_test_utils as wifi_utils
 
-SLEEP_DURATION = 3
+SLEEP_DURATION = 2
 
 class BtSarPowerLimitTest(BtSarBaseTest):
     """Class to define BT SAR power cap tests.
@@ -63,6 +63,8 @@ class BtSarPowerLimitTest(BtSarBaseTest):
         self.attenuator.set_atten(0)
 
         # Connect master and slave
+        self.bt_device.reset()
+        self.dut.droid.bluetoothFactoryReset()
         bt_utils.connect_phone_to_headset(self.dut, self.bt_device, 60)
         time.sleep(SLEEP_DURATION)
         ramp_attenuation(self.attenuator, self.pl10_atten)
