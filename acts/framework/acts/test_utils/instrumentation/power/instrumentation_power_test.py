@@ -157,16 +157,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # Screen
         self.adb_run(common.screen_always_on.toggle(True))
         self.adb_run(common.screen_adaptive_brightness.toggle(False))
-
-        brightness_level = None
-        if 'brightness_level' in self._instrumentation_config:
-            brightness_level = self._instrumentation_config['brightness_level']
-
-        if brightness_level is None:
-            raise ValueError('no brightness level defined (or left as None) '
-                             'and it is needed.')
-
-        self.adb_run(common.screen_brightness.set_value(brightness_level))
+        self.set_screen_brightness_level()
         self.adb_run(common.screen_timeout_ms.set_value(1800000))
         self.adb_run(common.notification_led.toggle(False))
         self.adb_run(common.screensaver.toggle(False))
@@ -245,6 +236,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         # Enable clock dump info
         self.adb_run('echo 1 > /d/clk/debug_suspend')
+
+    def set_screen_brightness_level(self):
+        """set screen brightness level"""
+        brightness_level = None
+        if 'brightness_level' in self._instrumentation_config:
+            brightness_level = self._instrumentation_config['brightness_level']
+
+        if brightness_level is None:
+            raise ValueError('no brightness level defined (or left as None) '
+                             'and it is needed.')
+
+        self.adb_run(common.screen_brightness.set_value(brightness_level))
 
     def _setup_power_monitor(self, **kwargs):
         """Set up the Monsoon controller for this testclass/testcase."""
