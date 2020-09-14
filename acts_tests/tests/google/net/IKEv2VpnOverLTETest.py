@@ -69,7 +69,7 @@ class IKEv2VpnOverLTETest(base_test.BaseTestClass):
       hostname = server_addr
     vpn_addr = self.vpn_verify_addresses[vpn.name][0]
     vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.dut, self.vpn_params, vpn, hostname, self.log_path)
+        ad, self.vpn_params, vpn, hostname, self.log_path)
     nutils.legacy_vpn_connection_test_logic(ad, vpn_profile, vpn_addr)
 
   ### Test cases ###
