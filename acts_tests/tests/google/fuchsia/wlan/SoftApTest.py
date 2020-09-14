@@ -25,6 +25,7 @@ from acts.controllers import iperf_server
 from acts.controllers import iperf_client
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
+from acts.libs.proc import job
 from acts.test_utils.abstract_devices.utils_lib import wlan_utils
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
@@ -320,7 +321,7 @@ class SoftApTest(BaseTestClass):
         """
         self.log.info('Attempting to ping from device %s to dest ip %s' %
                       (w_device.device.serial, dest_ip))
-        if not w_device.ping(dest_ip):
+        if not w_device.can_ping(dest_ip):
             asserts.fail('Device %s could not ping dest ip %s' %
                          (w_device.device.serial, dest_ip))
         self.log.info('Ping successful.')
