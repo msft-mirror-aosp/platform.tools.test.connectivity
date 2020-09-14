@@ -57,6 +57,7 @@ from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts.test_utils.tel.tel_defines import \
     WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
@@ -376,6 +377,68 @@ class TelLiveDataTest(TelephonyBaseTest):
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ad.log.info("5g mode pref from 3G test FAIL for all 3 iterations")
         return False
+
+
+    @test_tracker_info(uuid="a3229fbf-48d8-4b88-9a36-4875b55426de")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_data_stall_recovery(self):
+        """ Verifies 5G NSA data stall
+
+        Set Mode to 5G
+        Wait for 5G attached on NSA
+        Browse websites for success
+        Trigger data stall and verify browsing fails
+        Resume data and verify browsing success
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        result = True
+        wifi_toggle_state(ad.log, ad, False)
+        toggle_airplane_mode(ad.log, ad, False)
+
+        set_preferred_mode_for_5g(ad)
+        if not is_current_network_5g_nsa(ad):
+            ad.log.error("Phone not attached on 5G NSA")
+            return False
+
+        cmd = ('ss -l -p -n | grep "tcp.*droid_script" | tr -s " " '
+               '| cut -d " " -f 5 | sed s/.*://g')
+        sl4a_port = ad.adb.shell(cmd)
+
+        if not test_data_browsing_success_using_sl4a(ad.log, ad):
+            ad.log.error("Browsing failed before the test, aborting!")
+            return False
+
+        begin_time = get_device_epoch_time(ad)
+        break_internet_except_sl4a_port(ad, sl4a_port)
+
+        if not test_data_browsing_failure_using_sl4a(ad.log, ad):
+            ad.log.error("Browsing success even after breaking " \
+                              "the internet, aborting!")
+            result = False
+
+        if not check_data_stall_detection(ad):
+            ad.log.warning("NetworkMonitor unable to detect Data Stall")
+
+        if not check_network_validation_fail(ad, begin_time):
+            ad.log.warning("Unable to detect NW validation fail")
+
+        if not check_data_stall_recovery(ad, begin_time):
+            ad.log.error("Recovery was not triggered")
+            result = False
+
+        resume_internet_with_sl4a_port(ad, sl4a_port)
+        time.sleep(MAX_WAIT_TIME_USER_PLANE_DATA)
+        if not test_data_browsing_success_using_sl4a(ad.log, ad):
+            ad.log.error("Browsing failed after resuming internet")
+            result = False
+        if result:
+            ad.log.info("PASS - data stall over 5G NSA")
+        else:
+            ad.log.error("FAIL - data stall over 5G NSA")
+        return result
 
 
     @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
