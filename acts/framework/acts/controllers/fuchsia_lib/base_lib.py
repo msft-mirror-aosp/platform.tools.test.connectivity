@@ -28,6 +28,7 @@ import time
 from urllib.parse import urlparse
 
 from acts import utils
+from acts.libs.proc import job
 
 
 class DeviceOffline(Exception):
@@ -61,7 +62,7 @@ class BaseLib():
         Returns:
             Dictionary, Result of sl4f command executed.
         """
-        if not utils.is_pingable(urlparse(self.address).hostname):
+        if not utils.can_ping(job, urlparse(self.address).hostname):
             raise DeviceOffline("FuchsiaDevice %s is not reachable via the "
                                 "network." % urlparse(self.address).hostname)
         test_data = json.dumps({
@@ -75,7 +76,7 @@ class BaseLib():
                                 data=test_data,
                                 timeout=response_timeout).json()
         except requests.exceptions.Timeout as e:
-            if not utils.is_pingable(urlparse(self.address).hostname):
+            if not utils.can_ping(job, urlparse(self.address).hostname):
                 raise DeviceOffline(
                     "FuchsiaDevice %s is not reachable via the "
                     "network." % urlparse(self.address).hostname)

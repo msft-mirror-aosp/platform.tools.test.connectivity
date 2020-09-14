@@ -335,7 +335,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                 else:
                     raise ValueError('Invalid IP version: %s' % ip_version)
             if ip_address_checker_counter == ip_address_checker_max_attempts:
-                if self.dut.ping(iperf_server_ip_address):
+                if self.dut.can_ping(iperf_server_ip_address):
                     self.log.error('IPerf server is pingable. Continuing with '
                                    'test.  The missing IP address information '
                                    'should be marked as a bug.')
@@ -477,7 +477,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                 else:
                     self.log.info('DUT has the following IPv6 address: "%s"' %
                                   dut_ip_addresses['ipv6_link_local'][0])
-            server_pingable = self.dut.ping(iperf_server_ip_address)
+            server_pingable = self.dut.can_ping(iperf_server_ip_address)
             if not server_pingable:
                 self.log.info('Iperf server "%s" is not pingable. Marking '
                               'a 0 %s for throughput. Skipping running '

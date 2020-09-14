@@ -556,7 +556,6 @@ def timeout(sec):
     Raises:
         TimeoutError is raised when time out happens.
     """
-
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -1285,7 +1284,6 @@ class SuppressLogOutput(object):
     """Context manager used to suppress all logging output for the specified
     logger and level(s).
     """
-
     def __init__(self, logger=logging.getLogger(), log_levels=None):
         """Create a SuppressLogOutput context manager
 
@@ -1318,7 +1316,6 @@ class BlockingTimer(object):
     """Context manager used to block until a specified amount of time has
      elapsed.
      """
-
     def __init__(self, secs):
         """Initializes a BlockingTimer
 
@@ -1519,37 +1516,185 @@ def renew_linux_ip_address(comm_channel, interface):
     comm_channel.run('sudo dhclient %s' % interface)
 
 
-def is_pingable(ip):
-    """Returns whether an ip is pingable or not.
+def get_ping_command(dest_ip,
+                     count=3,
+                     interval=1000,
+                     timeout=1000,
+                     size=56,
+                     os_type='Linux',
+                     additional_ping_params=None):
+    """Builds ping command string based on address type, os, and params.
 
     Args:
-        ip: string, ip address to ping
+        dest_ip: string, address to ping (ipv4 or ipv6)
+        count: int, number of requests to send
+        interval: int, time in seconds between requests
+        timeout: int, time in seconds to wait for response
+        size: int, number of bytes to send,
+        os_type: string, os type of the source device (supports 'Linux',
+            'Darwin')
+        additional_ping_params: string, command option flags to
+            append to the command string
+
     Returns:
-        True if ping was successful, else False
+        List of string, represetning the ping command.
     """
-    if is_valid_ipv4_address(ip):
+    if is_valid_ipv4_address(dest_ip):
         ping_binary = 'ping'
-    elif is_valid_ipv6_address(ip):
+    elif is_valid_ipv6_address(dest_ip):
         ping_binary = 'ping6'
     else:
-        raise ValueError('Invalid ip addr: %s' % ip)
+        raise ValueError('Invalid ip addr: %s' % dest_ip)
 
-    os_type = platform.system()
     if os_type == 'Darwin':
-        if is_valid_ipv6_address(ip):
+        if is_valid_ipv6_address(dest_ip):
             # ping6 on MacOS doesn't support timeout
+            logging.warn(
+                'Ignoring timeout, as ping6 on MacOS does not support it.')
             timeout_flag = []
         else:
-            timeout_flag = ['-t', '1']
+            timeout_flag = ['-t', str(timeout / 1000)]
     elif os_type == 'Linux':
-        timeout_flag = ['-W', '1']
+        timeout_flag = ['-W', str(timeout / 1000)]
     else:
         raise ValueError('Invalid OS.  Only Linux and MacOS are supported.')
 
-    ping_cmd = [ping_binary, *timeout_flag, '-c', '1', ip]
+    if not additional_ping_params:
+        additional_ping_params = ''
 
-    result = job.run(ping_cmd, timeout=10, ignore_status=True)
-    return result.exit_status == 0
+    ping_cmd = [
+        ping_binary, *timeout_flag, '-c',
+        str(count), '-i',
+        str(interval / 1000), '-s',
+        str(size), additional_ping_params, dest_ip
+    ]
+    return ' '.join(ping_cmd)
+
+
+def ping(comm_channel,
+         dest_ip,
+         count=3,
+         interval=1000,
+         timeout=1000,
+         size=56,
+         additional_ping_params=None):
+    """ Generic linux ping function, supports local (acts.libs.proc.job) and
+    SshConnections (acts.libs.proc.job over ssh) to Linux based OSs and MacOS.
+
+    NOTES: This will work with Android over SSH, but does not function over ADB
+    as that has a unique return format.
+
+    Args:
+        comm_channel: communication channel over which to send ping command.
+            Must have 'run' function that returns at least command, stdout,
+            stderr, and exit_status (see acts.libs.proc.job)
+        dest_ip: address to ping (ipv4 or ipv6)
+        count: int, number of packets to send
+        interval: int, time in milliseconds between pings
+        timeout: int, time in milliseconds to wait for response
+        size: int, size of packets in bytes
+        additional_ping_params: string, command option flags to
+            append to the command string
+
+    Returns:
+        Dict containing:
+            command: string
+            exit_status: int (0 or 1)
+            stdout: string
+            stderr: string
+            transmitted: int, number of packets transmitted
+            received: int, number of packets received
+            packet_loss: int, percentage packet loss
+            time: int, time of ping command execution (in milliseconds)
+            rtt_min: float, minimum round trip time
+            rtt_avg: float, average round trip time
+            rtt_max: float, maximum round trip time
+            rtt_mdev: float, round trip time standard deviation
+
+        Any values that cannot be parsed are left as None
+    """
+    from acts.controllers.utils_lib.ssh.connection import SshConnection
+    is_local = comm_channel == job
+    os_type = platform.system() if is_local else 'Linux'
+    ping_cmd = get_ping_command(dest_ip,
+                                count=count,
+                                interval=interval,
+                                timeout=timeout,
+                                size=size,
+                                os_type=os_type,
+                                additional_ping_params=additional_ping_params)
+
+    if (type(comm_channel) is SshConnection or is_local):
+        logging.debug(
+            'Running ping with parameters (count: %s, interval: %s, timeout: '
+            '%s, size: %s)' % (count, interval, timeout, size))
+        ping_result = comm_channel.run(ping_cmd, ignore_status=True)
+    else:
+        raise ValueError('Unsupported comm_channel: %s' % type(comm_channel))
+
+    if isinstance(ping_result, job.Error):
+        ping_result = ping_result.result
+
+    transmitted = None
+    received = None
+    packet_loss = None
+    time = None
+    rtt_min = None
+    rtt_avg = None
+    rtt_max = None
+    rtt_mdev = None
+
+    summary = re.search(
+        '([0-9]+) packets transmitted.*?([0-9]+) received.*?([0-9]+)% packet '
+        'loss.*?time ([0-9]+)', ping_result.stdout)
+    if summary:
+        transmitted = summary[1]
+        received = summary[2]
+        packet_loss = summary[3]
+        time = summary[4]
+
+    rtt_stats = re.search('= ([0-9.]+)/([0-9.]+)/([0-9.]+)/([0-9.]+)',
+                          ping_result.stdout)
+    if rtt_stats:
+        rtt_min = rtt_stats[1]
+        rtt_avg = rtt_stats[2]
+        rtt_max = rtt_stats[3]
+        rtt_mdev = rtt_stats[4]
+
+    return {
+        'command': ping_result.command,
+        'exit_status': ping_result.exit_status,
+        'stdout': ping_result.stdout,
+        'stderr': ping_result.stderr,
+        'transmitted': transmitted,
+        'received': received,
+        'packet_loss': packet_loss,
+        'time': time,
+        'rtt_min': rtt_min,
+        'rtt_avg': rtt_avg,
+        'rtt_max': rtt_max,
+        'rtt_mdev': rtt_mdev
+    }
+
+
+def can_ping(comm_channel,
+             dest_ip,
+             count=1,
+             interval=1000,
+             timeout=1000,
+             size=56,
+             additional_ping_params=None):
+    """Returns whether device connected via comm_channel can ping a dest
+    address"""
+    ping_results = ping(comm_channel,
+                        dest_ip,
+                        count=count,
+                        interval=interval,
+                        timeout=timeout,
+                        size=size,
+                        additional_ping_params=additional_ping_params)
+
+    return ping_results['exit_status'] == 0
 
 
 def ip_in_subnet(ip, subnet):
