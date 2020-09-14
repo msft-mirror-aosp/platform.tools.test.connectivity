@@ -53,60 +53,47 @@ class IKEv2VpnOverLTETest(base_test.BaseTestClass):
     for ad in self.android_devices:
       ad.take_bug_report(test_name, begin_time)
 
+  ### Helper methods ###
+
+  def _test_ikev2_vpn(self, ad, vpn, hostname=None):
+    """Verify IKEv2 VPN connection.
+
+    Args:
+      ad: android device to run the test.
+      vpn: type of VPN.
+      hostname: hostname or IP address of the server.
+    """
+    server_addr = self.vpn_server_addresses[vpn.name][0]
+    self.vpn_params["server_addr"] = server_addr
+    if not hostname:
+      hostname = server_addr
+    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
+    vpn_profile = nutils.generate_ikev2_vpn_profile(
+        self.dut, self.vpn_params, vpn, hostname, self.log_path)
+    nutils.legacy_vpn_connection_test_logic(ad, vpn_profile, vpn_addr)
+
   ### Test cases ###
 
   @test_tracker_info(uuid="31fac6c5-f76c-403c-8b76-29c01557a48a")
   def test_ikev2_psk_vpn_tmo(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_PSK
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.tmo_dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.tmo_dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(self.tmo_dut, VPN_TYPE.IKEV2_IPSEC_PSK)
 
   @test_tracker_info(uuid="c28adef0-6578-4841-a833-e52a5b16a390")
   def test_ikev2_mschapv2_vpn_tmo(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_USER_PASS
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.tmo_dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.tmo_dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(self.tmo_dut, VPN_TYPE.IKEV2_IPSEC_USER_PASS)
 
   @test_tracker_info(uuid="6c7daad9-ae7a-493d-bbab-9001068f22c5")
   def test_ikev2_rsa_vpn_tmo(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_RSA
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    self.vpn_params["server_addr"] = server_addr
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.tmo_dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.tmo_dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(self.tmo_dut, VPN_TYPE.IKEV2_IPSEC_RSA)
 
   @test_tracker_info(uuid="1275a2f-e939-4557-879d-fbbd9c5dbd93")
   def test_ikev2_psk_vpn_vzw(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_PSK
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.vzw_dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.vzw_dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(self.vzw_dut, VPN_TYPE.IKEV2_IPSEC_PSK)
 
   @test_tracker_info(uuid="fd146163-f28d-4514-96a0-82f51b70e218")
   def test_ikev2_mschapv2_vpn_vzw(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_USER_PASS
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.vzw_dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.vzw_dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(self.vzw_dut, VPN_TYPE.IKEV2_IPSEC_USER_PASS)
 
   @test_tracker_info(uuid="722de9b5-834f-4854-b4a6-e31860628fe9")
   def test_ikev2_rsa_vpn_vzw(self):
-    vpn = VPN_TYPE.IKEV2_IPSEC_RSA
-    server_addr = self.vpn_server_addresses[vpn.name][0]
-    self.vpn_params["server_addr"] = server_addr
-    vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-    vpn_profile = nutils.generate_ikev2_vpn_profile(
-        self.vzw_dut, self.vpn_params, vpn, server_addr, self.log_path)
-    nutils.legacy_vpn_connection_test_logic(self.vzw_dut, vpn_profile, vpn_addr)
+    self._test_ikev2_vpn(self.vzw_dut, VPN_TYPE.IKEV2_IPSEC_RSA)
