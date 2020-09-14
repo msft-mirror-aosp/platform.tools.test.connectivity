@@ -120,6 +120,7 @@ class AccessPoint(object):
         self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
                                         (self.ssh_settings.hostname, msg))
         self.device_pdu_config = configs.get('PduDevice', None)
+        self.identifier = self.ssh_settings.hostname
 
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
