@@ -234,7 +234,6 @@ def generate_legacy_vpn_profile(ad,
 
     return vpn_profile
 
-
 def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
     """Generate VPN profile for IKEv2 VPN.
 
@@ -258,8 +257,8 @@ def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
         vpn_profile[VPN_CONST.PWD] = vpn_params["vpn_password"]
         vpn_profile[VPN_CONST.IPSEC_ID] = vpn_params["vpn_identity"]
         cert_name = download_load_certs(
-            ad, vpn_params, vpn_type, server_addr, "IKEV2_IPSEC_USER_PASS",
-            log_path)
+            ad, vpn_params, vpn_type, vpn_params["server_addr"],
+            "IKEV2_IPSEC_USER_PASS", log_path)
         vpn_profile[VPN_CONST.IPSEC_CA_CERT] = cert_name.split('.')[0]
         ad.droid.installCertificate(
             vpn_profile, cert_name, vpn_params['cert_password'])
@@ -268,16 +267,17 @@ def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
         vpn_profile[VPN_CONST.IPSEC_SECRET] = vpn_params["psk_secret"]
     else:
         vpn_profile[VPN_CONST.IPSEC_ID] = "%s@%s" % (
-            vpn_params["vpn_identity"], vpn_params["server_addr"])
+            vpn_params["vpn_identity"], server_addr)
+        logging.info("ID: %s@%s" % (vpn_params["vpn_identity"], server_addr))
         cert_name = download_load_certs(
-            ad, vpn_params, vpn_type, server_addr, "IKEV2_IPSEC_RSA", log_path)
+            ad, vpn_params, vpn_type, vpn_params["server_addr"],
+            "IKEV2_IPSEC_RSA", log_path)
         vpn_profile[VPN_CONST.IPSEC_USER_CERT] = cert_name.split('.')[0]
         vpn_profile[VPN_CONST.IPSEC_CA_CERT] = cert_name.split('.')[0]
         ad.droid.installCertificate(
             vpn_profile, cert_name, vpn_params['cert_password'])
 
     return vpn_profile
-
 
 def start_tcpdump(ad, test_name):
     """Start tcpdump on all interfaces
