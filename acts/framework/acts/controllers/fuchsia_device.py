@@ -61,7 +61,7 @@ from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import Fuchs
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
-from acts.libs.proc.job import Error
+from acts.libs.proc import job
 
 MOBLY_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -348,52 +348,6 @@ class FuchsiaDevice:
         """
         return self.client_id + "." + str(test_id)
 
-    def verify_ping(self, timeout=30):
-        """Verify the fuchsia device can be pinged.
-
-        Args:
-            timeout: int, seconds to retry before raising an exception
-
-        Raise:
-            ConnecitonError, if device still can't be pinged after timeout.
-        """
-        end_time = time.time() + timeout
-        while time.time() < end_time:
-            if utils.is_pingable(self.ip):
-                break
-            else:
-                self.log.debug('Device is not pingable. Retrying in 1 second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('Device never came back online.')
-
-    def verify_ssh(self, timeout=30):
-        """Verify the fuchsia device can be reached via ssh.
-
-        In self.reboot, this function is used to verify SSH is up before
-        attempting to restart SL4F, as that has more risky thread implications
-        if it fails. Also, create_ssh_connection has a short backoff loop,
-        but was not intended for waiting for SSH to come up.
-
-        Args:
-            timeout: int, seconds to retry before raising an exception
-
-        Raise:
-            ConnecitonError, if device still can't reached after timeout.
-        """
-        end_time = time.time() + timeout
-        while time.time() < end_time:
-            try:
-                self.send_command_ssh('\n')
-            except Exception:
-                self.log.debug(
-                    'Could not SSH to device. Retrying in 1 second.')
-                time.sleep(1)
-            else:
-                break
-        else:
-            raise ConnectionError('Failed to connect to device via SSH.')
-
     def reboot(self,
                use_ssh=False,
                unreachable_timeout=30,
@@ -460,7 +414,7 @@ class FuchsiaDevice:
         self.log.info('Verifying device is unreachable.')
         timeout = time.time() + unreachable_timeout
         while (time.time() < timeout):
-            if utils.is_pingable(self.ip):
+            if utils.can_ping(job, self.ip):
                 self.log.debug('Device is still pingable. Retrying.')
             else:
                 if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
@@ -480,11 +434,30 @@ class FuchsiaDevice:
             device_pdu.on(str(device_pdu_port))
 
         self.log.info('Waiting for device to respond to pings.')
-        self.verify_ping(timeout=ping_timeout)
+        end_time = time.time() + ping_timeout
+        while time.time() < end_time:
+            if utils.can_ping(job, self.ip):
+                break
+            else:
+                self.log.debug('Device is not pingable. Retrying in 1 second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Device never came back online.')
         self.log.info('Device responded to pings.')
 
         self.log.info('Waiting for device to allow ssh connection.')
-        self.verify_ssh(timeout=ssh_timeout)
+        end_time = time.time() + ssh_timeout
+        while time.time() < end_time:
+            try:
+                self.send_command_ssh('\n')
+            except Exception:
+                self.log.debug(
+                    'Could not SSH to device. Retrying in 1 second.')
+                time.sleep(1)
+            else:
+                break
+        else:
+            raise ConnectionError('Failed to connect to device via SSH.')
         self.log.info('Device now available via ssh.')
 
         # Creating new log process, start it, start new persistent ssh session,
@@ -550,7 +523,13 @@ class FuchsiaDevice:
                     ssh_conn.close()
         return command_result
 
-    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+    def ping(self,
+             dest_ip,
+             count=3,
+             interval=1000,
+             timeout=1000,
+             size=25,
+             additional_ping_params=None):
         """Pings from a Fuchsia device to an IPv4 address or hostname
 
         Args:
@@ -560,6 +539,8 @@ class FuchsiaDevice:
             timeout: (int) How long to wait before having the icmp packet
                 timeout (ms).
             size: (int) Size of the icmp packet.
+            additional_ping_params: (str) command option flags to
+                append to the command string
 
         Returns:
             A dictionary for the results of the ping.  The dictionary contains
@@ -575,10 +556,12 @@ class FuchsiaDevice:
         rtt_max = None
         rtt_avg = None
         self.log.debug("Pinging %s..." % dest_ip)
+        if not additional_ping_params:
+            additional_ping_params = ''
         ping_result = self.send_command_ssh(
-            'ping -c %s -i %s -t %s -s %s %s' %
-            (count, interval, timeout, size, dest_ip))
-        if isinstance(ping_result, Error):
+            'ping -c %s -i %s -t %s -s %s %s %s' %
+            (count, interval, timeout, size, additional_ping_params, dest_ip))
+        if isinstance(ping_result, job.Error):
             ping_result = ping_result.result
 
         if ping_result.stderr:
@@ -599,6 +582,22 @@ class FuchsiaDevice:
             'stdout': ping_result.stdout,
             'stderr': ping_result.stderr
         }
+
+    def can_ping(self,
+                 dest_ip,
+                 count=1,
+                 interval=1000,
+                 timeout=1000,
+                 size=25,
+                 additional_ping_params=None):
+        """Returns whether fuchsia device can ping a given dest address"""
+        ping_result = self.ping(dest_ip,
+                                count=count,
+                                interval=interval,
+                                timeout=timeout,
+                                size=size,
+                                additional_ping_params=additional_ping_params)
+        return ping_result['status']
 
     def print_clients(self):
         """Gets connected clients from SL4F server"""
