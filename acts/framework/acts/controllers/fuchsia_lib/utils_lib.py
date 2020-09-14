@@ -23,6 +23,7 @@ import time
 
 from acts import utils
 from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
+from acts.libs.proc import job
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 # paramiko-ng will throw INFO messages when things get disconnect or cannot
@@ -87,7 +88,7 @@ def create_ssh_connection(ip_address,
     Returns:
         A paramiko ssh object
     """
-    if not utils.is_pingable(ip_address):
+    if not utils.can_ping(job, ip_address):
         raise DeviceOffline("Device %s is not reachable via "
                             "the network." % ip_address)
     ssh_key = get_private_key(ip_address=ip_address, ssh_config=ssh_config)
