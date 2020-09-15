@@ -145,3 +145,4 @@ class VpnReqParams(object):
     ipsec_server_type = "ipsec_server_type"
     wifi_network = "wifi_network"
     vpn_identity = "vpn_identity"
+    vpn_server_hostname = "vpn_server_hostname"

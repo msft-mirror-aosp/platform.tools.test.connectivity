@@ -120,6 +120,7 @@ class AccessPoint(object):
         self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
                                         (self.ssh_settings.hostname, msg))
         self.device_pdu_config = configs.get('PduDevice', None)
+        self.identifier = self.ssh_settings.hostname
 
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
@@ -573,25 +574,38 @@ class AccessPoint(object):
         if ra_count_str:
             return int(ra_count_str.split()[1])
 
-    def is_pingable(self):
-        """Attempts to ping the access point.
-
-        Returns:
-            True if ping is successful, else False
+    def ping(self,
+             dest_ip,
+             count=3,
+             interval=1000,
+             timeout=1000,
+             size=56,
+             additional_ping_params=None):
+        """Pings from AP to dest_ip, returns dict of ping stats (see utils.ping)
         """
-        return utils.is_pingable(self.ssh_settings.hostname)
+        return utils.ping(self.ssh,
+                          dest_ip,
+                          count=count,
+                          interval=interval,
+                          timeout=timeout,
+                          size=size,
+                          additional_ping_params=additional_ping_params)
 
-    def is_sshable(self):
-        """Attempts to run command via ssh.
-
-        Returns:
-            True if no exceptions, else False
-        """
-        try:
-            self.ssh.run('echo')
-        except connection.Error:
-            return False
-        return True
+    def can_ping(self,
+                 dest_ip,
+                 count=1,
+                 interval=1000,
+                 timeout=1000,
+                 size=56,
+                 additional_ping_params=None):
+        """Returns whether ap can ping dest_ip (see utils.can_ping)"""
+        return utils.can_ping(self.ssh,
+                              dest_ip,
+                              count=count,
+                              interval=interval,
+                              timeout=timeout,
+                              size=size,
+                              additional_ping_params=additional_ping_params)
 
     def hard_power_cycle(self,
                          pdus,
@@ -608,12 +622,12 @@ class AccessPoint(object):
                 unreachable
             ping_timeout: int, time to wait for AccessPoint to responsd to pings
             ssh_timeout: int, time to wait for AccessPoint to allow SSH
-            hostapd_configs (optional): list, containing hostapd settings. If 
+            hostapd_configs (optional): list, containing hostapd settings. If
                 present, these networks will be spun up after the AP has
                 rebooted. This list can either contain HostapdConfig objects, or
-                    dictionaries with the start_ap params 
-                    (i.e  { 'hostapd_config': <HostapdConfig>, 
-                            'setup_bridge': <bool>, 
+                    dictionaries with the start_ap params
+                    (i.e  { 'hostapd_config': <HostapdConfig>,
+                            'setup_bridge': <bool>,
                             'additional_parameters': <dict> } ).
         Raise:
             Error, if no PduDevice is provided in AccessPoint config.
@@ -637,7 +651,7 @@ class AccessPoint(object):
         self.log.info('Verifying AccessPoint is unreachable.')
         timeout = time.time() + unreachable_timeout
         while time.time() < timeout:
-            if not self.is_pingable():
+            if not utils.can_ping(job, self.ssh_settings.hostname):
                 self.log.info('AccessPoint is unreachable as expected.')
                 break
             else:
@@ -657,7 +671,7 @@ class AccessPoint(object):
         self.log.info('Waiting for AccessPoint to respond to pings.')
         timeout = time.time() + ping_timeout
         while time.time() < timeout:
-            if self.is_pingable():
+            if utils.can_ping(job, self.ssh_settings.hostname):
                 self.log.info('AccessPoint responded to pings.')
                 break
             else:
@@ -672,13 +686,15 @@ class AccessPoint(object):
         self.log.info('Waiting for AccessPoint to allow ssh connection.')
         timeout = time.time() + ssh_timeout
         while time.time() < timeout:
-            if self.is_sshable():
-                self.log.info('AccessPoint available via ssh.')
-                break
-            else:
+            try:
+                self.ssh.run('echo')
+            except connection.Error:
                 self.log.debug('AccessPoint is not allowing ssh connection. '
                                'Retrying in 1 second.')
                 time.sleep(1)
+            else:
+                self.log.info('AccessPoint available via ssh.')
+                break
         else:
             raise ConnectionError('Timed out waiting for AccessPoint (%s) to '
                                   'allow ssh connection.' %
