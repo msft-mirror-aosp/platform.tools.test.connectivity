@@ -64,7 +64,11 @@ class VzWDoUAutomationPhoneCallTest(
     self.record_metrics(final_metrics)
     self.validate_metrics(final_metrics)
 
-  def test_voice_call_bluetooth(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_voice_call_bluetooth(self, attempt_number):
     """Measures power when the device is on call with bluetooth paired."""
     self.ad_cp.adb.ensure_root()
     self.adb_run(goog.remove_gmail_account, ad=self.ad_cp)
@@ -91,12 +95,17 @@ class VzWDoUAutomationPhoneCallTest(
         'testVoiceCall',
         extra_params=[('recipient_number', dut_phone_number),
                       ('recipient_number_companion', companion_phone_number),
-                      ('bluetooth_device_mac_addr', bt_device_address)])
+                      ('bluetooth_device_mac_addr', bt_device_address)],
+        attempt_number=attempt_number)
 
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_voice_call(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_voice_call(self, attempt_number):
     """Measures power when the device is on call."""
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
@@ -114,12 +123,17 @@ class VzWDoUAutomationPhoneCallTest(
         'com.google.android.platform.dou.PhoneVoiceCallTests',
         'testVoiceCall',
         extra_params=[('recipient_number', dut_phone_number),
-                      ('recipient_number_companion', companion_phone_number)])
+                      ('recipient_number_companion', companion_phone_number)],
+        attempt_number=attempt_number)
 
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_mobile_hotspot(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_mobile_hotspot(self, attempt_number):
     """Measures power for companion connect to the dut mobile hotspot."""
 
     companion_phone_number = self.get_phone_number(self.ad_cp)
@@ -139,7 +153,8 @@ class VzWDoUAutomationPhoneCallTest(
         'com.google.android.platform.dou.MobileHotspotTests',
         'testMobileHotspot',
         extra_params=[('recipient_number', dut_mhs_ssid),
-                      ('recipient_number_companion', companion_phone_number)])
+                      ('recipient_number_companion', companion_phone_number)],
+        attempt_number=attempt_number)
 
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
