@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from acts import logger
-from acts.test_utils.power import tel_simulations as sims
+from acts.controllers import cellular_lib as sims
 
 
 class AbstractCellularSimulator:
