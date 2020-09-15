@@ -367,6 +367,33 @@ class SoftApTest(BaseTestClass):
             'on interface %s.' %
             (timeout, w_device.device.serial, interface_name))
 
+    def get_ap_ipv4_address(self, channel, timeout=DEFAULT_TIMEOUT):
+        """Get APs ipv4 address (actual AP, not soft ap on DUT)
+
+        Args:
+            channel: int, channel of the network used to determine
+                which interface to use
+        """
+        lowest_5ghz_channel = 36
+        if channel < lowest_5ghz_channel:
+            ap_interface = self.access_point.wlan_2g
+        else:
+            ap_interface = self.access_point.wlan_5g
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            ap_ipv4_addresses = utils.get_interface_ip_addresses(
+                self.access_point.ssh, ap_interface)['ipv4_private']
+            if len(ap_ipv4_addresses) > 0:
+                return ap_ipv4_addresses[0]
+            else:
+                self.log.debug(
+                    'Access point does not have an ipv4 address on interface '
+                    '%s. Retrying in 1 second.' % ap_interface)
+        else:
+            raise ConnectionError(
+                'Access point never had an ipv4 address on interface %s.' %
+                ap_interface)
+
     def device_can_ping_addr(self, w_device, dest_ip, timeout=DEFAULT_TIMEOUT):
         """ Verify wlan_device can ping a destination ip.
 
@@ -478,7 +505,123 @@ class SoftApTest(BaseTestClass):
             return ip_client._android_device_or_serial
         return ip_client._ssh_settings.hostname
 
+    def dut_is_connected_as_client(self,
+                                   channel,
+                                   check_traffic=False,
+                                   wait_for_addr_timeout=DEFAULT_TIMEOUT):
+        """Checks if DUT is successfully connected to AP.
+
+        Args:
+            channel: int, channel of the AP network (to retrieve interfaces)
+            check_traffic: bool, if true, verifies traffic between DUT and AP,
+                else just checks ping.
+            wait_for_addr_timeout: int, time, in seconds, to wait when getting
+                DUT and AP addresses
+
+        Returns:
+            True, if connected correctly
+            False, otherwise
+        """
+        try:
+            dut_client_interface = self.get_dut_interface_by_role(
+                INTERFACE_ROLE_CLIENT,
+                wait_for_addr_timeout=wait_for_addr_timeout)
+            ap_ipv4 = self.get_ap_ipv4_address(channel,
+                                               timeout=wait_for_addr_timeout)
+        except ConnectionError as err:
+            self.log.error(
+                'Failed to retrieve interfaces and addresses. Err: %s' % err)
+            return False
+
+        if not self.device_can_ping_addr(self.dut, ap_ipv4):
+            self.log.error('Failed to ping from DUT to AP.')
+            return False
+
+        if not self.device_can_ping_addr(self.access_point,
+                                         dut_client_interface.ipv4):
+            self.log.error('Failed to ping from AP to DUT.')
+            return False
+
+        if check_traffic:
+            try:
+                self.run_iperf_traffic(self.ap_iperf_client,
+                                       dut_client_interface.ipv4)
+            except ConnectionError as err:
+                self.log.error('Failed to run traffic between DUT and AP.')
+                return False
+        return True
+
+    def client_is_connected_to_soft_ap(
+            self,
+            client,
+            client_interface=ANDROID_DEFAULT_WLAN_INTERFACE,
+            check_traffic=False,
+            wait_for_addr_timeout=DEFAULT_TIMEOUT):
+        """Checks if client is successfully connected to DUT SoftAP.
+
+        Args:
+            client: SoftApClient to check
+            client_interface: string, wlan interface name of client
+            check_traffic: bool, if true, verifies traffic between client and
+                DUT, else just checks ping.
+            wait_for_addr_timeout: int, time, in seconds, to wait when getting
+                DUT and client addresses
+
+        Returns:
+            True, if connected correctly
+            False, otherwise
+        """
+
+        try:
+            dut_ap_interface = self.get_dut_interface_by_role(
+                INTERFACE_ROLE_AP, wait_for_addr_timeout=wait_for_addr_timeout)
+            client_ipv4 = self.wait_for_ipv4_address(
+                client.w_device,
+                client_interface,
+                timeout=wait_for_addr_timeout)
+        except ConnectionError as err:
+            self.log.error(
+                'Failed to retrieve interfaces and addresses. Err: %s' % err)
+            return False
+
+        if not self.device_can_ping_addr(self.dut, client_ipv4):
+            self.log.error('Failed to ping client (%s) from DUT.' %
+                           client_ipv4)
+            return False
+        if not self.device_can_ping_addr(client.w_device,
+                                         dut_ap_interface.ipv4):
+            self.log.error('Failed to ping DUT from client (%s)' % client_ipv4)
+            return False
+
+        if check_traffic:
+            try:
+                self.run_iperf_traffic(client.ip_client, dut_ap_interface.ipv4)
+            except ConnectionError as err:
+                self.log.error(
+                    'Ffailed to pass traffic between client (%s) and DUT.' %
+                    client_ipv4)
+                return False
+        return True
+
 # Test Types
+
+    def verify_soft_ap_associate_only(self, client, settings):
+        if not self.associate_with_soft_ap(client.w_device, settings):
+            asserts.fail('Failed to associate client with SoftAP.')
+
+    def verify_soft_ap_associate_and_ping(self, client, settings):
+        self.verify_soft_ap_associate_only(client, settings)
+        if not self.client_is_connected_to_soft_ap(client):
+            asserts.fail('Client and SoftAP could not ping eachother.')
+
+    def verify_soft_ap_associate_and_pass_traffic(self, client, settings):
+        self.verify_soft_ap_associate_only(client, settings)
+        if not self.client_is_connected_to_soft_ap(client, check_traffic=True):
+            asserts.fail(
+                'Client and SoftAP not responding to pings and passing traffic '
+                'as expected.')
+
+# Runners for Generated Test Cases
 
     def run_soft_ap_association_stress_test(self, settings):
         """Sets up a SoftAP, and repeatedly associates and disassociates a
@@ -538,451 +681,385 @@ class SoftApTest(BaseTestClass):
             'SoftAp association stress test passed on %s/%s runs.' %
             (passed_count, iterations))
 
-    def verify_soft_ap_associate_only(self, client, settings):
-        self.start_soft_ap(settings)
-        self.associate_with_soft_ap(client.w_device, settings)
-
-    def verify_soft_ap_associate_and_ping(self, client, settings):
-        self.start_soft_ap(settings)
-        self.associate_with_soft_ap(client.w_device, settings)
-        dut_ap_interface = self.get_dut_interface_by_role(INTERFACE_ROLE_AP)
-        client_ipv4 = self.wait_for_ipv4_address(
-            self.primary_client.w_device, ANDROID_DEFAULT_WLAN_INTERFACE)
-        self.device_can_ping_addr(client.w_device, dut_ap_interface.ipv4)
-        self.device_can_ping_addr(self.dut, client_ipv4)
-
-    def verify_soft_ap_associate_and_pass_traffic(self, client, settings):
-        self.start_soft_ap(settings)
-        self.associate_with_soft_ap(client.w_device, settings)
-        dut_ap_interface = self.get_dut_interface_by_role(INTERFACE_ROLE_AP)
-        client_ipv4 = self.wait_for_ipv4_address(
-            self.primary_client.w_device, ANDROID_DEFAULT_WLAN_INTERFACE)
-        self.device_can_ping_addr(client.w_device, dut_ap_interface.ipv4)
-        self.device_can_ping_addr(self.dut, client_ipv4)
-        self.run_iperf_traffic(client.ip_client, dut_ap_interface.ipv4)
-
 
 # Test Cases
 
     def test_soft_ap_2g_open_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid': utils.rand_ascii_str(
-                    hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type': SECURITY_OPEN,
-                'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
-                'operating_band': OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_OPEN,
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_open_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid': utils.rand_ascii_str(
-                    hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type': SECURITY_OPEN,
-                'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
-                'operating_band': OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_OPEN,
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_open_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid': utils.rand_ascii_str(
-                    hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type': SECURITY_OPEN,
-                'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
-                'operating_band': OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_OPEN,
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wep_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WEP,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WEP,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wep_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WEP,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WEP,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wep_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WEP,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WEP,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client, )
 
     def test_soft_ap_2g_wpa_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WPA,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WPA,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wpa_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wpa_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wpa2_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WPA2,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WPA2,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wpa2_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA2,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA2,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wpa2_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA2,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA2,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wpa3_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WPA3,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WPA3,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wpa3_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA3,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA3,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wpa3_local(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA3,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_LOCAL,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA3,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_open_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid': utils.rand_ascii_str(
-                    hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type': SECURITY_OPEN,
-                'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band': OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_OPEN,
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_open_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid': utils.rand_ascii_str(
-                    hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type': SECURITY_OPEN,
-                'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band': OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_OPEN,
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_open_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid': utils.rand_ascii_str(
-                    hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type': SECURITY_OPEN,
-                'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band': OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_OPEN,
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wep_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WEP,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WEP,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wep_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WEP,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WEP,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wep_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WEP,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WEP,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wpa_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WPA,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WPA,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wpa_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wpa_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wpa2_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WPA2,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WPA2,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wpa2_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA2,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_5G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA2,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_5G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wpa2_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA2,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA2,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_2g_wpa3_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-                'security_type':
-                SECURITY_WPA3,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_2G
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
+            'security_type': SECURITY_WPA3,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_2G
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_5g_wpa3_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA3,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA3,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_soft_ap_any_wpa3_unrestricted(self):
-        self.verify_soft_ap_associate_and_pass_traffic(
-            self.primary_client, {
-                'ssid':
-                utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
-                'security_type':
-                SECURITY_WPA3,
-                'password':
-                utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
-                'connectivity_mode':
-                CONNECTIVITY_MODE_UNRESTRICTED,
-                'operating_band':
-                OPERATING_BAND_ANY
-            })
+        soft_ap_params = {
+            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
+            'security_type': SECURITY_WPA3,
+            'password':
+            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
+            'operating_band': OPERATING_BAND_ANY
+        }
+        self.start_soft_ap(soft_ap_params)
+        self.verify_soft_ap_associate_and_pass_traffic(self.primary_client,
+                                                       soft_ap_params)
 
     def test_multi_client(self):
         """Tests multi-client association with a single soft AP network.
@@ -1031,18 +1108,13 @@ class SoftApTest(BaseTestClass):
                 self.log.info(
                     'Verifying previously associated client %s still functions correctly.'
                     % associated_client.w_device.device.serial)
-                try:
-                    self.device_can_ping_addr(self.dut, associated_client_ipv4)
-                    self.device_can_ping_addr(associated_client.w_device,
-                                              dut_ap_interface.ipv4)
-                    self.run_iperf_traffic(associated_client.ip_client,
-                                           dut_ap_interface.ipv4)
-                except signals.TestFailure as err:
+                if not self.client_is_connected_to_soft_ap(associated_client,
+                                                           check_traffic=True):
                     asserts.fail(
                         'Previously associated client %s failed checks after '
-                        'client %s associated. Error: %s' %
+                        'client %s associated.' %
                         (associated_client.w_device.device.serial,
-                         client.w_device.device.serial, err))
+                         client.w_device.device.serial))
 
             associated.append({'client': client, 'ipv4': client_ipv4})
 
@@ -1058,22 +1130,17 @@ class SoftApTest(BaseTestClass):
             for client_map in associated:
                 associated_client = client_map['client']
                 associated_client_ipv4 = client_map['ipv4']
-                try:
-                    self.log.info(
-                        'Verifying still associated client %s still functions '
-                        'correctly.' %
-                        associated_client.w_device.device.serial)
-                    self.device_can_ping_addr(self.dut, associated_client_ipv4)
-                    self.device_can_ping_addr(associated_client.w_device,
-                                              dut_ap_interface.ipv4)
-                    self.run_iperf_traffic(associated_client.ip_client,
-                                           dut_ap_interface.ipv4)
-                except signals.TestFailure as err:
+
+                self.log.info(
+                    'Verifying still associated client %s still functions '
+                    'correctly.' % associated_client.w_device.device.serial)
+                if not self.client_is_connected_to_soft_ap(associated_client,
+                                                           check_traffic=True):
                     asserts.fail(
                         'Previously associated client %s failed checks after'
-                        ' client %s disassociated. Error: %s' %
+                        ' client %s disassociated.' %
                         (associated_client.w_device.device.serial,
-                         client.w_device.device.serial, err))
+                         client.w_device.device.serial))
 
         self.log.info('All disassociations occurred smoothly.')
 
@@ -1186,6 +1253,7 @@ class SoftApTest(BaseTestClass):
         # Run iperf processes simultaneously
         self.log.info('Running simultaneous iperf traffic: between AP and DUT '
                       'client interface, and DUT AP interface and client.')
+
         iperf_soft_ap.start()
         iperf_fuchsia_client.start()
 
