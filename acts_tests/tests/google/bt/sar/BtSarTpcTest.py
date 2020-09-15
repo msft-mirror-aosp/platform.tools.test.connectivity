@@ -42,7 +42,6 @@ class BtSarTpcTest(BtSarBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        self.sar_tpc_test_result = 0
         self.push_table(self.dut, self.custom_sar_path)
         self.attenuator.set_atten(self.atten_min)
         self.pathloss = int(self.calibration_params['pathloss'])
@@ -206,6 +205,6 @@ class BtSarTpcTest(BtSarBaseTest):
             asserts.fail('TPC sweep failed for scenario: {}'.format(scenario))
 
         else:
-            self.sar_tpc_test_result += 1
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass(
                 'TPC sweep passed for scenario: {}'.format(scenario))
