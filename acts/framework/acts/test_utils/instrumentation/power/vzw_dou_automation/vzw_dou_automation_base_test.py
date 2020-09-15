@@ -63,7 +63,7 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(goog.location_off_warning_dialog.toggle(False))
     self.adb_run(common.airplane_mode.toggle(False))
     self.adb_run(common.auto_rotate.toggle(False))
-    self.adb_run(common.screen_brightness.set_value(58))
+    self.set_screen_brightness_level()
     self.adb_run(common.screen_adaptive_brightness.toggle(False))
     self.adb_run(common.modem_diag.toggle(False))
     self.adb_run(common.skip_gesture.toggle(False))
