@@ -2587,6 +2587,146 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         return True
 
+    @test_tracker_info(uuid="b5475061-30b4-4543-85c4-0ef2ecb2c0ef")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_mo_hold_unhold_5g_nsa(self):
+        """ VoLTE MO call hold/unhold test in 5G NSA network.
+
+        1. Attach PhoneA/B to 5G NSA.
+        2. Make Sure PhoneA/B is in 5G NSA (with VoLTE).
+        3. Make Sure PhoneA/B is able to make/receive call.
+        4. Call from PhoneA to PhoneB, accept on PhoneB.
+        5. Make sure PhoneA/B are in call.
+        6. Hold and unhold on PhoneA.
+        7. Make sure PhoneA/B are in 5G NSA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_volte, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        ads[0].droid.telecomCallClearCallList()
+        if num_active_calls(self.log, ads[0]) != 0:
+            ads[0].log.error("Call List is not empty.")
+            return False
+
+        self.log.info("Begin MO Call Hold/Unhold Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
+            return False
+
+        if not self._hold_unhold_test(ads):
+            self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
+        # Check if phoneA are attached to 5g after Hold/Unhold test.
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after call.")
+            return False
+
+        return True
+
+    @test_tracker_info(uuid="ecbc7ea3-a591-4b81-930e-39598c7ee5b8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_mt_hold_unhold_5g_nsa(self):
+        """ VoLTE MT call hold/unhold test in 5G NSA network.
+
+        1. Attach PhoneA/B to 5G NSA.
+        2. Make Sure PhoneA/B is in 5G NSA (with VoLTE).
+        3. Make Sure PhoneB/A is able to make/receive call.
+        4. Call from PhoneB to PhoneA, accept on PhoneA.
+        5. Make sure PhoneA/B are in call.
+        6. Hold and unhold on PhoneA.
+        7. Make sure PhoneA/B are in 5G NSA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_volte, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        ads[0].droid.telecomCallClearCallList()
+        if num_active_calls(self.log, ads[0]) != 0:
+            ads[0].log.error("Call List is not empty.")
+            return False
+
+        self.log.info("Begin MT Call Hold/Unhold Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_volte):
+            return False
+
+        if not self._hold_unhold_test(ads):
+            self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
+        # Check if phoneA are attached to 5g after Hold/Unhold test.
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after call.")
+            return False
+
+        return True
+
     @test_tracker_info(uuid="ffe724ae-4223-4c15-9fed-9aba17de9a63")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_wcdma_mo_hold_unhold(self):
