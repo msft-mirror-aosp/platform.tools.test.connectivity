@@ -13,7 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
+from acts.controllers.cellular_lib.LteSimulation import LteSimulation
 import acts.test_utils.tel.anritsu_utils as anritsu_utils
 import acts.controllers.anritsu_lib.md8475a as md8475a
 
