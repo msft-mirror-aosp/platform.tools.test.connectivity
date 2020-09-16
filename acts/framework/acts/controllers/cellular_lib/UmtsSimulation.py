@@ -20,7 +20,7 @@ import time
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
-from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
+from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 
 
