@@ -16,6 +16,7 @@
 
 from mobly import signals
 import multiprocessing as mp
+import random
 import time
 
 from acts import utils
@@ -641,7 +642,7 @@ class SoftApTest(BaseTestClass):
                 self.run_iperf_traffic(client.ip_client, dut_ap_interface.ipv4)
             except ConnectionError as err:
                 self.log.error(
-                    'Ffailed to pass traffic between client (%s) and DUT.' %
+                    'Failed to pass traffic between client (%s) and DUT.' %
                     client_ipv4)
                 return False
         return True
@@ -754,6 +755,133 @@ class SoftApTest(BaseTestClass):
             'SoftAp association stress test passed on %s/%s runs.' %
             (passed_count, iterations))
 
+# Alternate SoftAP and Client mode test
+
+    def run_soft_ap_and_client_mode_alternating_test(self, settings):
+        """Runs a single soft_ap and client alternating stress test.
+
+        See test_soft_ap_and_client_mode_alternating_stress for details.
+        """
+        iterations = settings['iterations']
+        pass_count = 0
+        client = self.primary_client
+        current_soft_ap_state = STATE_DOWN
+        current_client_mode_state = STATE_DOWN
+
+        self.client_mode_toggle_pre_test(settings)
+        for iteration in range(iterations):
+            passes = True
+
+            # Attempt to toggle SoftAP on, then off
+            for _ in range(2):
+                (current_soft_ap_state, err) = self.run_toggle_iteration_func(
+                    self.soft_ap_toggle_test_iteration, settings,
+                    current_soft_ap_state)
+                if err:
+                    self.log.error('Iteration %s failed. Err: %s' %
+                                   (str(iteration + 1), err))
+                    passes = False
+                if current_soft_ap_state == STATE_DOWN:
+                    break
+
+            # Attempt to toggle Client mode on, then off
+            for _ in range(2):
+                (current_client_mode_state,
+                 err) = self.run_toggle_iteration_func(
+                     self.client_mode_toggle_test_iteration, settings,
+                     current_client_mode_state)
+                if err:
+                    self.log.error('Iteration %s failed. Err: %s' %
+                                   (str(iteration + 1), err))
+                    passes = False
+                if current_client_mode_state == STATE_DOWN:
+                    break
+
+            if passes:
+                pass_count += 1
+
+        if pass_count == iterations:
+            asserts.explicit_pass(
+                'Toggle SoftAP and client mode stress test passed %s/%s times.'
+                % (pass_count, iterations))
+        else:
+            asserts.fail(
+                'Toggle SoftAP and client mode stress test only passed %s/%s '
+                'times.' % (pass_count, iterations))
+
+# Toggle Stress Test Helper Functions
+
+    def run_toggle_stress_test(self, settings):
+        """Runner function for toggle stress tests.
+
+        Repeats some test function through stress test iterations, logging
+        failures, tracking pass rate, managing states, etc.
+
+        Args:
+            settings: dict, stress test settings
+
+        Asserts:
+            PASS: if all iterations of the test function pass
+            FAIL: if any iteration of the test function fails
+        """
+        test_runner_func = settings['test_runner_func']
+        pre_test_func = settings.get('pre_test_func', None)
+        iterations = settings['iterations']
+        if pre_test_func:
+            pre_test_func(settings)
+
+        pass_count = 0
+        current_state = STATE_DOWN
+        for iteration in range(iterations):
+            (current_state,
+             err) = self.run_toggle_iteration_func(test_runner_func, settings,
+                                                   current_state)
+            if err:
+                self.log.error('Iteration %s failed. Err: %s' %
+                               (str(iteration + 1), err))
+            else:
+                pass_count += 1
+
+        if pass_count == iterations:
+            asserts.explicit_pass('Stress test passed %s/%s times.' %
+                                  (pass_count, iterations))
+        else:
+            asserts.fail('Stress test only passed %s/%s '
+                         'times.' % (pass_count, iterations))
+
+    def run_toggle_iteration_func(self, func, settings, current_state):
+        """Runs a toggle iteration function, updating the current state
+        based on what the toggle iteration function raises.
+
+        Used for toggle stress tests.
+
+        Note on EnvironmentError vs StressTestIterationFailure:
+            StressTestIterationFailure is raised by func when the toggle occurs
+                but connectivty or some other post-toggle check fails (i.e. the
+                next iteration should toggle to the next state.)
+
+            EnvironmentError is raise by func when the toggle itself fails (i.e
+                the next iteration should retry the same toggle again.)
+
+        Args:
+            func: toggle iteration func to run (e.g soft_ap_toggle_iteration)
+            settings: dict, stress test settings
+            current_state: bool, the current state of the mode being toggled
+
+        Returns:
+            (new_state, err):
+                new_state: bool, state of the mode after toggle attempt
+                err: exception, if any are raise, else None
+        """
+        try:
+            func(settings, current_state)
+        except EnvironmentError as err:
+            return (current_state, err)
+        except StressTestIterationFailure as err:
+            return (not current_state, err)
+        else:
+            return (not current_state, None)
+
 # Stress Test Toggle Functions
 
     def start_soft_ap_and_verify_connected(self, client, soft_ap_params):
@@ -841,6 +969,224 @@ class SoftApTest(BaseTestClass):
         if not self.verify_client_mode_connectivity_from_state(
                 STATE_DOWN, ap_params['channel']):
             raise EnvironmentError('DUT can still ping AP.')
+
+# Toggle Stress Test Iteration and Pre-Test Functions
+
+# SoftAP Toggle Stress Test Helper Functions
+
+    def soft_ap_toggle_test_iteration(self, settings, current_state):
+        """Runs a single iteration of SoftAP toggle stress test
+
+        Args:
+            settings: dict, containing test settings
+            current_state: bool, current state of SoftAP (True if up,
+                else False)
+
+        Raises:
+            StressTestIterationFailure, if toggle occurs but mode isn't
+                functioning correctly.
+            EnvironmentError, if toggle fails to occur at all
+        """
+        soft_ap_params = settings['soft_ap_params']
+        self.log.info('Toggling SoftAP %s.' %
+                      ('down' if current_state else 'up'))
+
+        if current_state == STATE_DOWN:
+            self.start_soft_ap_and_verify_connected(self.primary_client,
+                                                    soft_ap_params)
+
+        else:
+            self.stop_soft_ap_and_verify_disconnected(self.primary_client,
+                                                      soft_ap_params)
+
+# Client Mode Toggle Stress Test Helper Functions
+
+    def client_mode_toggle_pre_test(self, settings):
+        """Prepares the AP before client mode toggle tests
+
+        Args:
+            settings: dict, stress test settings
+
+        Raises:
+            ConnectionError, if AP setup fails
+        """
+        ap_params = settings['ap_params']
+        ap_channel = ap_params['channel']
+        ap_profile = ap_params.pop('profile')
+        self.log.info('Setting up AP with params: %s' % ap_params)
+        setup_ap(access_point=self.access_point,
+                 profile_name=ap_profile,
+                 **ap_params)
+        # Confirms AP assigned itself an address
+        self.get_ap_ipv4_address(ap_channel)
+
+    def client_mode_toggle_test_iteration(self, settings, current_state):
+        """Runs a single iteration of client mode toggle stress test
+
+        Args:
+            settings: dict, containing test settings
+            current_state: bool, current state of client mode (True if up,
+                else False)
+
+        Raises:
+            StressTestIterationFailure, if toggle occurs but mode isn't
+                functioning correctly.
+            EnvironmentError, if toggle fails to occur at all
+        """
+        # TODO(b/168054673): Use client connections and policy connect
+        ap_params = settings['ap_params']
+        self.log.info('Toggling client mode %s' %
+                      ('off' if current_state else 'on'))
+
+        if current_state == STATE_DOWN:
+            self.start_client_mode_and_verify_connected(ap_params)
+
+        else:
+            self.stop_client_mode_and_verify_disconnected(ap_params)
+
+# Toggle SoftAP with Client Mode Up Test Helper Functions
+
+    def soft_ap_toggle_with_client_mode_pre_test(self, settings):
+        """Sets up and verifies client mode before SoftAP toggle test.
+        Args:
+            settings: dict, stress test settings
+
+        Raises:
+            ConnectionError, if client mode setup fails
+        """
+        self.client_mode_toggle_pre_test(settings)
+        try:
+            self.start_client_mode_and_verify_connected(settings['ap_params'])
+        except StressTestIterationFailure as err:
+            # This prevents it being treated as a routine error
+            raise ConnectionError(
+                'Failed to set up DUT client mode before SoftAP toggle test.'
+                'Err: %s' % err)
+
+    def soft_ap_toggle_with_client_mode_iteration(
+        self,
+        settings,
+        current_state,
+    ):
+        """Runs single iteration of SoftAP toggle stress with client mode test.
+
+        Args:
+            settings: dict, containing test settings
+            current_state: bool, current state of SoftAP (True if up,
+                else False)
+
+        Raises:
+            StressTestIterationFailure, if toggle occurs but mode isn't
+                functioning correctly.
+            EnvironmentError, if toggle fails to occur at all
+        """
+        ap_params = settings['ap_params']
+        ap_channel = ap_params['channel']
+        self.soft_ap_toggle_test_iteration(settings, current_state)
+        if not self.dut_is_connected_as_client(ap_channel):
+            raise StressTestIterationFailure(
+                'DUT client mode is no longer functional after SoftAP toggle.')
+
+# Toggle Client Mode with SoftAP Up Test Helper Functions
+
+    def client_mode_toggle_with_soft_ap_pre_test(self, settings):
+        """Sets up and verifies softap before client mode toggle test.
+        Args:
+            settings: dict, stress test settings
+
+        Raises:
+            ConnectionError, if softap setup fails
+        """
+        self.client_mode_toggle_pre_test(settings)
+        try:
+            self.start_soft_ap_and_verify_connected(self.primary_client,
+                                                    settings['soft_ap_params'])
+        except StressTestIterationFailure as err:
+            # This prevents it being treated as a routine error
+            raise ConnectionError(
+                'Failed to set up SoftAP before client mode toggle test. Err: %s'
+                % err)
+
+    def client_mode_toggle_with_soft_ap_iteration(self, settings,
+                                                  current_state):
+        """Runs single iteration of client mode toggle stress with SoftAP test.
+
+        Args:
+            settings: dict, containing test settings
+            current_state: bool, current state of client mode (True if up,
+                else False)
+
+        Raises:
+            StressTestIterationFailure, if toggle occurs but mode isn't
+                functioning correctly.
+            EnvironmentError, if toggle fails to occur at all
+        """
+        self.client_mode_toggle_test_iteration(settings, current_state)
+        if not self.client_is_connected_to_soft_ap(self.primary_client):
+            raise StressTestIterationFailure(
+                'SoftAP is no longer functional after client mode toggle.')
+
+# Toggle SoftAP and Client Mode Randomly
+
+    def run_soft_ap_and_client_mode_random_toggle_stress_test(self, settings):
+        """Runner function for SoftAP and client mode random toggle tests.
+
+        Each iteration, randomly chooses if a mode will be toggled or not.
+
+        Args:
+            settings: dict, containing test settings
+        """
+        iterations = settings['iterations']
+        pass_count = 0
+        current_soft_ap_state = STATE_DOWN
+        current_client_mode_state = STATE_DOWN
+        ap_channel = settings['ap_params']['channel']
+
+        self.client_mode_toggle_pre_test(settings)
+        for iteration in range(iterations):
+            self.log.info('Starting iteration %s out of %s.' %
+                          (str(iteration + 1), iterations))
+            passes = True
+
+            # Randomly determine if softap, client mode, or both should
+            # be toggled.
+            rand_toggle_choice = random.randrange(0, 3)
+            if rand_toggle_choice <= 1:
+                (current_soft_ap_state, err) = self.run_toggle_iteration_func(
+                    self.soft_ap_toggle_test_iteration, settings,
+                    current_soft_ap_state)
+                if err:
+                    self.log.error(
+                        'Iteration %s failed toggling SoftAP. Err: %s' %
+                        (str(iteration + 1), err))
+                    passes = False
+            if rand_toggle_choice >= 1:
+                (current_client_mode_state,
+                 err) = self.run_toggle_iteration_func(
+                     self.client_mode_toggle_test_iteration, settings,
+                     current_client_mode_state)
+                if err:
+                    self.log.error(
+                        'Iteration %s failed toggling client mode. Err: %s' %
+                        (str(iteration + 1), err))
+                    passes = False
+
+            soft_ap_verified = self.verify_soft_ap_connectivity_from_state(
+                current_soft_ap_state, self.primary_client)
+            client_mode_verified = self.verify_client_mode_connectivity_from_state(
+                current_client_mode_state, ap_channel)
+
+            if not soft_ap_verified or not client_mode_verified:
+                passes = False
+            if passes:
+                pass_count += 1
+
+        if pass_count == iterations:
+            asserts.explicit_pass('Stress test passed %s/%s times.' %
+                                  (pass_count, iterations))
+        else:
+            asserts.fail('Stress test only passed %s/%s '
+                         'times.' % (pass_count, iterations))
 
 
 # Test Cases
@@ -1450,3 +1796,249 @@ class SoftApTest(BaseTestClass):
         self.run_generated_testcases(self.run_soft_ap_association_stress_test,
                                      test_settings_list,
                                      name_func=get_test_name_from_settings)
+
+    def test_soft_ap_and_client_mode_alternating_stress(self):
+        """ Runs tests that alternate between SoftAP and Client modes.
+
+        Each tests sets up an AP. Then, for each iteration:
+            - DUT starts up SoftAP, client associates with SoftAP,
+                connection is verified, then disassociates
+            - DUT associates to the AP, connection is verified, then
+                disassociates
+
+        Example Config:
+        "soft_ap_test_params": {
+            "toggle_soft_ap_and_client_tests": [
+                {
+                    "test_name": "test_wpa2_client_ap_toggle",
+                    "ap_params": {
+                        "channel": 6,
+                        "ssid": "test-ap-network",
+                        "security_mode": "wpa2",
+                        "password": "password"
+                    },
+                    "soft_ap_params": {
+                        "ssid": "test-soft-ap-network",
+                        "security_type": "wpa2",
+                        "password": "other-password",
+                        "connectivity_mode": "local_only",
+                        "operating_band": "only_2_4_ghz"
+                    },
+                    "iterations": 5
+                }
+            ]
+        }
+        """
+        asserts.skip_if(not self.access_point, 'No access point provided.')
+        tests = self.soft_ap_test_params.get(
+            'test_soft_ap_and_client_mode_alternating_stress', [
+                dict(test_name=
+                     'test_soft_ap_and_client_mode_alternating_stress_default')
+            ])
+
+        test_settings_list = []
+        for config_settings in tests:
+            ap_params = get_ap_params_from_config_or_default(
+                config_settings.get('ap_params', {}))
+            soft_ap_params = get_soft_ap_params_from_config_or_default(
+                config_settings.get('soft_ap_params', {}))
+            iterations = config_settings.get('iterations',
+                                             DEFAULT_STRESS_TEST_ITERATIONS)
+
+            test_settings = {
+                'test_name': config_settings['test_name'],
+                'iterations': iterations,
+                'soft_ap_params': soft_ap_params,
+                'ap_params': ap_params,
+            }
+
+            test_settings_list.append(test_settings)
+        self.run_generated_testcases(
+            test_func=self.run_soft_ap_and_client_mode_alternating_test,
+            settings=test_settings_list,
+            name_func=get_test_name_from_settings)
+
+    def test_soft_ap_toggle_stress(self):
+        """ Runs SoftAP toggling stress test.
+
+        Each iteration toggles SoftAP to the opposite state (up or down).
+
+        If toggled up, a client is associated and connection is verified
+        If toggled down, test verifies client is not connected
+
+        Will run with default params, but custom tests can be provided in the
+        ACTS config.
+
+        Example Config
+        "soft_ap_test_params" : {
+            "test_soft_ap_toggle_stress": [
+                "soft_ap_params": {
+                    "security_type": "wpa2",
+                    "password": "password",
+                    "connectivity_mode": "local_only",
+                    "operating_band": "only_2_4_ghz",
+                },
+                "iterations": 10
+            ]
+        }
+        """
+        tests = self.soft_ap_test_params.get(
+            'test_soft_ap_toggle_stress',
+            [dict(test_name='test_soft_ap_toggle_stress_default')])
+
+        test_settings_list = []
+        for config_settings in tests:
+            soft_ap_params = get_soft_ap_params_from_config_or_default(
+                config_settings)
+            iterations = config_settings.get('iterations',
+                                             DEFAULT_STRESS_TEST_ITERATIONS)
+            test_settings = {
+                'test_name': config_settings['test_name'],
+                'test_runner_func': self.soft_ap_toggle_test_iteration,
+                'soft_ap_params': soft_ap_params,
+                'iterations': iterations
+            }
+            test_settings_list.append(test_settings)
+
+        self.run_generated_testcases(self.run_toggle_stress_test,
+                                     test_settings_list,
+                                     name_func=get_test_name_from_settings)
+
+    def test_client_mode_toggle_stress(self):
+        """ Runs client mode toggling stress test.
+
+        Each iteration toggles client mode to the opposite state (up or down).
+
+        If toggled up, DUT associates to AP, and connection is verified
+        If toggled down, test verifies DUT is not connected to AP
+
+        Will run with default params, but custom tests can be provided in the
+        ACTS config.
+
+        Example Config
+        "soft_ap_test_params" : {
+            "test_client_mode_toggle_stress": [
+                "soft_ap_params": {
+                    'ssid': ssid,
+                    'channel': channel,
+                    'security_mode': security,
+                    'password': password
+                },
+                "iterations": 10
+            ]
+        }
+        """
+        asserts.skip_if(not self.access_point, 'No access point provided.')
+        tests = self.soft_ap_test_params.get(
+            'test_client_mode_toggle_stress',
+            [dict(test_name='test_client_mode_toggle_stress_default')])
+
+        test_settings_list = []
+        for config_settings in tests:
+            ap_params = get_ap_params_from_config_or_default(config_settings)
+            iterations = config_settings.get('iterations',
+                                             DEFAULT_STRESS_TEST_ITERATIONS)
+            test_settings = {
+                'test_name': config_settings['test_name'],
+                'test_runner_func': self.client_mode_toggle_test_iteration,
+                'pre_test_func': self.client_mode_toggle_pre_test,
+                'ap_params': ap_params,
+                'iterations': iterations
+            }
+            test_settings_list.append(test_settings)
+        self.run_generated_testcases(self.run_toggle_stress_test,
+                                     test_settings_list,
+                                     name_func=get_test_name_from_settings)
+
+    def test_soft_ap_toggle_stress_with_client_mode(self):
+        """Same as test_soft_ap_toggle_stress, but client mode is set up
+        at test start and verified after every toggle."""
+        asserts.skip_if(not self.access_point, 'No access point provided.')
+        tests = self.soft_ap_test_params.get(
+            'test_soft_ap_toggle_stress_with_client_mode', [
+                dict(test_name=
+                     'test_soft_ap_toggle_stress_with_client_mode_default')
+            ])
+
+        test_settings_list = []
+        for config_settings in tests:
+            soft_ap_params = get_soft_ap_params_from_config_or_default(
+                config_settings)
+            ap_params = get_ap_params_from_config_or_default(config_settings)
+            iterations = config_settings.get('iterations',
+                                             DEFAULT_STRESS_TEST_ITERATIONS)
+            test_settings = {
+                'test_name': config_settings['test_name'],
+                'test_runner_func':
+                self.soft_ap_toggle_with_client_mode_iteration,
+                'pre_test_func': self.soft_ap_toggle_with_client_mode_pre_test,
+                'soft_ap_params': soft_ap_params,
+                'ap_params': ap_params,
+                'iterations': iterations
+            }
+            test_settings_list.append(test_settings)
+        self.run_generated_testcases(self.run_toggle_stress_test,
+                                     test_settings_list,
+                                     name_func=get_test_name_from_settings)
+
+    def test_client_mode_toggle_stress_with_soft_ap(self):
+        """Same as test_client_mode_toggle_stress, but softap is set up at
+        test start and verified after every toggle."""
+        asserts.skip_if(not self.access_point, 'No access point provided.')
+        tests = self.soft_ap_test_params.get(
+            'test_client_mode_toggle_stress_with_soft_ap', [
+                dict(test_name=
+                     'test_client_mode_toggle_stress_with_soft_ap_default')
+            ])
+
+        test_settings_list = []
+        for config_settings in tests:
+            soft_ap_params = get_soft_ap_params_from_config_or_default(
+                config_settings)
+            ap_params = get_ap_params_from_config_or_default(config_settings)
+            iterations = config_settings.get('iterations',
+                                             DEFAULT_STRESS_TEST_ITERATIONS)
+            test_settings = {
+                'test_name': config_settings['test_name'],
+                'test_runner_func':
+                self.client_mode_toggle_with_soft_ap_iteration,
+                'pre_test_func': self.client_mode_toggle_with_soft_ap_pre_test,
+                'soft_ap_params': soft_ap_params,
+                'ap_params': ap_params,
+                'iterations': iterations
+            }
+            test_settings_list.append(test_settings)
+        self.run_generated_testcases(self.run_toggle_stress_test,
+                                     test_settings_list,
+                                     name_func=get_test_name_from_settings)
+
+    def test_soft_ap_and_client_mode_random_toggle_stress(self):
+        """Same as above toggle stres tests, but each iteration, either softap,
+        client mode, or both are toggled, then states are verified."""
+        asserts.skip_if(not self.access_point, 'No access point provided.')
+        tests = self.soft_ap_test_params.get(
+            'test_soft_ap_and_client_mode_random_toggle_stress', [
+                dict(
+                    test_name=
+                    'test_soft_ap_and_client_mode_random_toggle_stress_default'
+                )
+            ])
+
+        test_settings_list = []
+        for config_settings in tests:
+            soft_ap_params = get_soft_ap_params_from_config_or_default(
+                config_settings)
+            ap_params = get_ap_params_from_config_or_default(config_settings)
+            iterations = config_settings.get('iterations',
+                                             DEFAULT_STRESS_TEST_ITERATIONS)
+            test_settings = {
+                'test_name': config_settings['test_name'],
+                'soft_ap_params': soft_ap_params,
+                'ap_params': ap_params,
+                'iterations': iterations
+            }
+            test_settings_list.append(test_settings)
+        self.run_generated_testcases(
+            self.run_soft_ap_and_client_mode_random_toggle_stress_test,
+            test_settings_list,
+            name_func=get_test_name_from_settings)
