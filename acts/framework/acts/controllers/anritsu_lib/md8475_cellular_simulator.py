@@ -18,7 +18,7 @@ import math
 import ntpath
 import time
 import acts.controllers.cellular_simulator as cc
-from acts.test_utils.power.tel_simulations import LteSimulation
+from acts.controllers.cellular_lib import LteSimulation
 from acts.controllers.anritsu_lib import md8475a
 from acts.controllers.anritsu_lib import _anritsu_utils as anritsu
 
