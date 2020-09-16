@@ -27,7 +27,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.test_utils.abstract_devices.utils_lib import wlan_utils
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
+from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 
 ANDROID_DEFAULT_WLAN_INTERFACE = 'wlan0'
 CONNECTIVITY_MODE_LOCAL = 'local_only'
@@ -37,6 +37,7 @@ DEFAULT_IPERF_PORT = 5201
 DEFAULT_STRESS_TEST_ITERATIONS = 10
 DEFAULT_TIMEOUT = 30
 DEFAULT_IPERF_TIMEOUT = 60
+DEFAULT_NO_ADDR_EXPECTED_TIMEOUT = 5
 INTERFACE_ROLE_AP = 'Ap'
 INTERFACE_ROLE_CLIENT = 'Client'
 INTERFACE_ROLES = {INTERFACE_ROLE_AP, INTERFACE_ROLE_CLIENT}
@@ -48,6 +49,8 @@ SECURITY_WEP = 'wep'
 SECURITY_WPA = 'wpa'
 SECURITY_WPA2 = 'wpa2'
 SECURITY_WPA3 = 'wpa3'
+STATE_UP = True
+STATE_DOWN = False
 TEST_TYPE_ASSOCIATE_ONLY = 'associate_only'
 TEST_TYPE_ASSOCIATE_AND_PING = 'associate_and_ping'
 TEST_TYPE_ASSOCIATE_AND_PASS_TRAFFIC = 'associate_and_pass_traffic'
@@ -59,6 +62,35 @@ TEST_TYPES = {
 
 def get_test_name_from_settings(settings):
     return settings['test_name']
+
+
+def get_ap_params_from_config_or_default(config):
+    """Retrieves AP parameters from ACTS config, or returns default settings.
+
+    Args:
+        config: dict, from ACTS config, that may contain custom ap parameters
+
+    Returns:
+        dict, containing all AP parameters
+    """
+    profile = config.get('profile', DEFAULT_AP_PROFILE)
+    ssid = config.get(
+        'ssid', utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G))
+    channel = config.get('channel', hostapd_constants.AP_DEFAULT_CHANNEL_2G)
+    security_mode = config.get('security_mode', None)
+    password = config.get('password', None)
+    if security_mode:
+        security = hostapd_security.Security(security_mode, password)
+    else:
+        security = None
+
+    return {
+        'profile': profile,
+        'ssid': ssid,
+        'channel': channel,
+        'security': security,
+        'password': password
+    }
 
 
 def get_soft_ap_params_from_config_or_default(config):
@@ -88,6 +120,11 @@ def get_soft_ap_params_from_config_or_default(config):
     }
 
 
+class StressTestIterationFailure(Exception):
+    """Used to differentiate a subtest failure from an actual exception"""
+    pass
+
+
 class SoftApClient(object):
     def __init__(self, device):
         self.w_device = create_wlan_device(device)
@@ -105,8 +142,14 @@ class SoftApTest(BaseTestClass):
     """Tests for Fuchsia SoftAP
 
     Testbed requirement:
-    * One Fuchsia Device
-    * One Client (Android) Device
+    * One Fuchsia device
+    * At least one dlient (Android) device
+        * For multi-client tests, at least two dlient (Android) devices are
+          required. Test will be skipped if less than two client devices are
+          present.
+    * For any tests that exercise client-mode (e.g. toggle tests, simultaneous
+        tests), a physical AP (whirlwind) is also required. Those tests will be
+        skipped if physical AP is not present.
     """
     def setup_class(self):
         self.soft_ap_test_params = self.user_params.get(
@@ -603,6 +646,36 @@ class SoftApTest(BaseTestClass):
                 return False
         return True
 
+    def verify_soft_ap_connectivity_from_state(self, state, client):
+        """Verifies SoftAP state based on a client connection.
+
+        Args:
+            state: bool, whether SoftAP should be up
+            client: SoftApClient, to verify connectivity (or lack therof)
+        """
+        if state == STATE_UP:
+            return self.client_is_connected_to_soft_ap(client)
+        else:
+            with utils.SuppressLogOutput():
+                return not self.client_is_connected_to_soft_ap(
+                    client,
+                    wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
+
+    def verify_client_mode_connectivity_from_state(self, state, channel):
+        """Verifies client mode state based on DUT-AP connection.
+
+        Args:
+            state: bool, whether client mode should be up
+            channel: int, channel of the APs network
+        """
+        if state == STATE_UP:
+            return self.dut_is_connected_as_client(channel)
+        else:
+            with utils.SuppressLogOutput():
+                return not self.dut_is_connected_as_client(
+                    channel,
+                    wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
+
 # Test Types
 
     def verify_soft_ap_associate_only(self, client, settings):
@@ -680,6 +753,94 @@ class SoftApTest(BaseTestClass):
         asserts.explicit_pass(
             'SoftAp association stress test passed on %s/%s runs.' %
             (passed_count, iterations))
+
+# Stress Test Toggle Functions
+
+    def start_soft_ap_and_verify_connected(self, client, soft_ap_params):
+        """Sets up SoftAP, associates a client, then verifies connection.
+
+        Args:
+            client: SoftApClient, client to use to verify SoftAP
+            soft_ap_params: dict, containing parameters to setup softap
+
+        Raises:
+            StressTestIterationFailure, if toggle occurs, but connection
+            is not functioning as expected
+        """
+        # Change SSID every time, to avoid client connection issues.
+        soft_ap_params['ssid'] = utils.rand_ascii_str(
+            hostapd_constants.AP_SSID_LENGTH_2G)
+        self.start_soft_ap(soft_ap_params)
+        associated = self.associate_with_soft_ap(client.w_device,
+                                                 soft_ap_params)
+        if not associated:
+            raise StressTestIterationFailure(
+                'Failed to associated client to DUT SoftAP. '
+                'Continuing with iterations.')
+
+        if not self.verify_soft_ap_connectivity_from_state(STATE_UP, client):
+            raise StressTestIterationFailure(
+                'Failed to ping between client and DUT. Continuing '
+                'with iterations.')
+
+    def stop_soft_ap_and_verify_disconnected(self, client, soft_ap_params):
+        """Tears down SoftAP, and verifies connection is down.
+
+        Args:
+            client: SoftApClient, client to use to verify SoftAP
+            soft_ap_params: dict, containing parameters of SoftAP to teardown
+
+        Raise:
+            EnvironmentError, if client and AP can still communicate
+        """
+        self.log.info('Stopping SoftAP on DUT.')
+        self.stop_soft_ap(soft_ap_params)
+
+        if not self.verify_soft_ap_connectivity_from_state(STATE_DOWN, client):
+            raise EnvironmentError(
+                'Client can still ping DUT. Continuing with '
+                'iterations.')
+
+    def start_client_mode_and_verify_connected(self, ap_params):
+        """Connects DUT to AP in client mode and verifies connection
+
+        Args:
+            ap_params: dict, containing parameters of the AP network
+
+        Raises:
+            EnvironmentError, if DUT fails to associate altogether
+            StressTestIterationFailure, if DUT associates but connection is not
+                functioning as expected.
+        """
+        ap_ssid = ap_params['ssid']
+        ap_password = ap_params['password']
+        ap_channel = ap_params['channel']
+        self.log.info('Associating DUT with AP network: %s' % ap_ssid)
+        associated = self.dut.associate(target_ssid=ap_ssid,
+                                        target_pwd=ap_password)
+        if not associated:
+            raise EnvironmentError('Failed to associate DUT in client mode.')
+        else:
+            self.log.info('Association successful.')
+
+        if not self.verify_client_mode_connectivity_from_state(
+                STATE_UP, ap_channel):
+            raise StressTestIterationFailure('Failed to ping AP from DUT.')
+
+    def stop_client_mode_and_verify_disconnected(self, ap_params):
+        """Disconnects DUT from AP and verifies connection is down.
+
+        Args:
+            ap_params: dict, containing parameters of the AP network
+
+        Raises:
+            EnvironmentError, if DUT and AP can still communicate
+        """
+        self.log.info('Disconnecting DUT from AP.')
+        self.dut.disconnect()
+        if not self.verify_client_mode_connectivity_from_state(
+                STATE_DOWN, ap_params['channel']):
+            raise EnvironmentError('DUT can still ping AP.')
 
 
 # Test Cases
@@ -1158,70 +1319,33 @@ class SoftApTest(BaseTestClass):
         asserts.skip_if(not self.access_point, 'No access point provided.')
 
         self.log.info('Setting up AP using hostapd.')
+        test_params = self.soft_ap_test_params.get(
+            'soft_ap_and_client_test_params', {})
 
         # Configure AP
-        ap_params = self.user_params.get('soft_ap_test_params',
-                                         {}).get('ap_params', {})
-        channel = ap_params.get('channel', 11)
-        ssid = ap_params.get('ssid', 'apnet')
-        security_mode = ap_params.get('security_mode', None)
-        password = ap_params.get('password', None)
-        if security_mode:
-            security = hostapd_security.Security(security_mode, password)
-        else:
-            security = None
+        ap_params = get_ap_params_from_config_or_default(
+            test_params.get('ap_params', {}))
 
         # Setup AP and associate DUT
-        if not setup_ap_and_associate(access_point=self.access_point,
-                                      client=self.dut,
-                                      profile_name='whirlwind',
-                                      channel=channel,
-                                      security=security,
-                                      password=password,
-                                      ssid=ssid):
-            raise ConnectionError(
-                'FuchsiaDevice DUT failed to connect as client to AP.')
-        self.log.info('DUT successfully associated to AP network.')
-
-        # Verify FuchsiaDevice's client interface has an ip address from AP
-        dut_client_interface = self.get_dut_interface_by_role(
-            INTERFACE_ROLE_CLIENT)
-
-        # Verify FuchsiaDevice can ping AP
-        lowest_5ghz_channel = 36
-        if channel < lowest_5ghz_channel:
-            ap_interface = self.access_point.wlan_2g
-        else:
-            ap_interface = self.access_point.wlan_5g
-        ap_ipv4 = utils.get_interface_ip_addresses(
-            self.access_point.ssh, ap_interface)['ipv4_private'][0]
-
-        self.device_can_ping_addr(self.dut, ap_ipv4)
+        ap_profile = ap_params.pop('profile')
+        setup_ap(access_point=self.access_point,
+                 profile_name=ap_profile,
+                 **ap_params)
+        try:
+            self.start_client_mode_and_verify_connected(ap_params)
+        except Exception as err:
+            asserts.fail('Failed to set up client mode. Err: %s' % err)
 
         # Setup SoftAP
-        soft_ap_settings = {
-            'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
-            'security_type': SECURITY_OPEN,
-            'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
-            'operating_band': OPERATING_BAND_2G
-        }
-        self.start_soft_ap(soft_ap_settings)
+        soft_ap_params = get_soft_ap_params_from_config_or_default(
+            test_params.get('soft_ap_params', {}))
+        self.start_soft_ap_and_verify_connected(self.primary_client,
+                                                soft_ap_params)
 
         # Get FuchsiaDevice's AP interface info
         dut_ap_interface = self.get_dut_interface_by_role(INTERFACE_ROLE_AP)
-
-        # Associate primary client with SoftAP
-        self.associate_with_soft_ap(self.primary_client.w_device,
-                                    soft_ap_settings)
-
-        # Verify primary client has an ip address from SoftAP
-        client_ipv4 = self.wait_for_ipv4_address(
-            self.primary_client.w_device, ANDROID_DEFAULT_WLAN_INTERFACE)
-
-        # Verify primary client can ping SoftAP, and reverse
-        self.device_can_ping_addr(self.primary_client.w_device,
-                                  dut_ap_interface.ipv4)
-        self.device_can_ping_addr(self.dut, client_ipv4)
+        dut_client_interface = self.get_dut_interface_by_role(
+            INTERFACE_ROLE_CLIENT)
 
         # Set up secondary iperf server of FuchsiaDevice
         self.log.info('Setting up second iperf server on FuchsiaDevice DUT.')
