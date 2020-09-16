@@ -223,7 +223,7 @@ class BitsClient(object):
                '--time',
                ONE_YEAR,
                '--default_sampling_rate',
-               '5000',
+               '1000',
                '--disk_space_saver',
                ]
         self._log.info('starting collection %s', self._active_collection.name)
