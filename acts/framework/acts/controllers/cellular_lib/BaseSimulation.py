@@ -19,10 +19,6 @@ from enum import Enum
 
 import numpy as np
 from acts.controllers import cellular_simulator
-from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import toggle_cell_data_roaming
-from acts.test_utils.tel.tel_test_utils import get_rx_tx_power_levels
 
 
 class BaseSimulation():
@@ -106,7 +102,7 @@ class BaseSimulation():
         Args:
             simulator: a cellular simulator controller
             log: a logger handle
-            dut: the android device handler
+            dut: a device handler implementing BaseCellularDut
             test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
@@ -168,13 +164,13 @@ class BaseSimulation():
 
         # Set to default APN
         log.info("Configuring APN.")
-        dut.droid.telephonySetAPN("test", "test", "default")
+        self.dut.set_apn('test', 'test')
 
         # Enable roaming on the phone
-        toggle_cell_data_roaming(self.dut, True)
+        self.dut.toggle_data_roaming(True)
 
         # Make sure airplane mode is on so the phone won't attach right away
-        toggle_airplane_mode(self.log, self.dut, True)
+        self.dut.toggle_airplane_mode(True)
 
         # Wait for airplane mode setting to propagate
         time.sleep(2)
@@ -197,7 +193,7 @@ class BaseSimulation():
         """
 
         # Turn on airplane mode
-        toggle_airplane_mode(self.log, self.dut, True)
+        self.dut.toggle_airplane_mode(True)
 
         # Wait for airplane mode setting to propagate
         time.sleep(2)
@@ -215,7 +211,7 @@ class BaseSimulation():
             try:
 
                 # Turn off airplane mode
-                toggle_airplane_mode(self.log, self.dut, False)
+                self.dut.toggle_airplane_mode(False)
 
                 # Wait for the phone to attach.
                 self.simulator.wait_until_attached(timeout=self.attach_timeout)
@@ -227,7 +223,7 @@ class BaseSimulation():
                     "UE failed to attach on attempt number {}.".format(i + 1))
 
                 # Turn airplane mode on to prepare the phone for a retry.
-                toggle_airplane_mode(self.log, self.dut, True)
+                self.dut.toggle_airplane_mode(True)
 
                 # Wait for APM to propagate
                 time.sleep(3)
@@ -256,7 +252,7 @@ class BaseSimulation():
 
         # Set the DUT to airplane mode so it doesn't see the
         # cellular network going off
-        toggle_airplane_mode(self.log, self.dut, True)
+        self.dut.toggle_airplane_mode(True)
 
         # Wait for APM to propagate
         time.sleep(2)
@@ -271,7 +267,7 @@ class BaseSimulation():
 
         # Set the DUT to airplane mode so it doesn't see the
         # cellular network going off
-        toggle_airplane_mode(self.log, self.dut, True)
+        self.dut.toggle_airplane_mode(True)
 
         # Wait for APM to propagate
         time.sleep(2)
@@ -312,7 +308,7 @@ class BaseSimulation():
 
         # Verify signal level
         try:
-            rx_power, tx_power = get_rx_tx_power_levels(self.log, self.dut)
+            rx_power, tx_power = self.dut.get_rx_tx_power_levels()
 
             if not tx_power or not rx_power[0]:
                 raise RuntimeError('The method return invalid Tx/Rx values.')
@@ -627,7 +623,7 @@ class BaseSimulation():
         down_power_measured = []
         for i in range(0, self.NUM_DL_CAL_READS):
             # For some reason, the RSRP gets updated on Screen ON event
-            signal_strength = get_telephony_signal_strength(self.dut)
+            signal_strength = self.dut.get_telephony_signal_strength()
             down_power_measured.append(signal_strength[rat])
             time.sleep(5)
 
