@@ -80,7 +80,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         Args:
             simulator: the cellular instrument controller
             log: a logger handle
-            dut: the android device handler
+            dut: a device handler implementing BaseCellularDut
             test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
