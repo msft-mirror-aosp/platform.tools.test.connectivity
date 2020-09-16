@@ -864,10 +864,23 @@ class FuchsiaDevice:
             acts_logger.epoch_to_log_line_timestamp(begin_time))
         out_name = "FuchsiaDevice%s_%s" % (
             self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
+        bugreport_out_name = f"{out_name}.zip"
         out_name = "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
+        full_br_out_path = os.path.join(br_path, bugreport_out_name)
         self.log.info("Taking bugreport for %s on FuchsiaDevice%s." %
                       (test_name, self.serial))
+        if self.ssh_config is not None:
+            try:
+                subprocess.run([
+                    f"ssh -F {self.ssh_config} {self.ip} bugreport > {full_br_out_path}"
+                ],
+                               shell=True)
+                self.log.info(
+                    "Bugreport saved at: {}".format(full_br_out_path))
+            except Exception as err:
+                self.log.error("Failed to take bugreport with: {}".format(err))
+
         system_objects = self.send_command_ssh('iquery --find /hub').stdout
         system_objects = system_objects.split()
 
