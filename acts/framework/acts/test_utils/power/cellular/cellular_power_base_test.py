@@ -21,11 +21,12 @@ import acts.controllers.cellular_simulator as simulator
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
 from acts.controllers.rohdeschwarz_lib import cmx500_cellular_simulator as cmx
-from acts.controllers.cellular_lib.GsmSimulation import GsmSimulation
-from acts.controllers.cellular_lib.LteSimulation import LteSimulation
-from acts.controllers.cellular_lib.UmtsSimulation import UmtsSimulation
-from acts.controllers.cellular_lib.LteCaSimulation import LteCaSimulation
-from acts.controllers.cellular_lib.LteImsSimulation import LteImsSimulation
+from acts.controllers.cellular_lib import AndroidCellularDut
+from acts.controllers.cellular_lib import GsmSimulation
+from acts.controllers.cellular_lib import LteSimulation
+from acts.controllers.cellular_lib import UmtsSimulation
+from acts.controllers.cellular_lib import LteCaSimulation
+from acts.controllers.cellular_lib import LteImsSimulation
 from acts.test_utils.tel import tel_test_utils as telutils
 
 
@@ -366,11 +367,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         """
 
         simulation_dictionary = {
-            self.PARAM_SIM_TYPE_LTE: LteSimulation,
-            self.PARAM_SIM_TYPE_UMTS: UmtsSimulation,
-            self.PARAM_SIM_TYPE_GSM: GsmSimulation,
-            self.PARAM_SIM_TYPE_LTE_CA: LteCaSimulation,
-            self.PARAM_SIM_TYPE_LTE_IMS: LteImsSimulation
+            self.PARAM_SIM_TYPE_LTE: LteSimulation.LteSimulation,
+            self.PARAM_SIM_TYPE_UMTS: UmtsSimulation.UmtsSimulation,
+            self.PARAM_SIM_TYPE_GSM: GsmSimulation.GsmSimulation,
+            self.PARAM_SIM_TYPE_LTE_CA: LteCaSimulation.LteCaSimulation,
+            self.PARAM_SIM_TYPE_LTE_IMS: LteImsSimulation.LteImsSimulation
         }
 
         if not sim_type in simulation_dictionary:
@@ -391,9 +392,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         if sim_type not in self.calibration_table:
             self.calibration_table[sim_type] = {}
 
+        cellular_dut = AndroidCellularDut.AndroidCellularDut(
+            self.dut, self.log)
         # Instantiate a new simulation
         self.simulation = simulation_class(self.cellular_simulator, self.log,
-                                           self.dut, self.test_params,
+                                           cellular_dut, self.test_params,
                                            self.calibration_table[sim_type])
 
     def ensure_valid_calibration_table(self, calibration_table):
