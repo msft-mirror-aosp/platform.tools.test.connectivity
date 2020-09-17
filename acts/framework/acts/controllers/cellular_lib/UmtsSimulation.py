@@ -20,8 +20,8 @@ import time
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
-from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
+from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
+from acts.controllers.cellular_lib import BaseCellularDut
 
 
 class UmtsSimulation(BaseSimulation):
@@ -98,7 +98,7 @@ class UmtsSimulation(BaseSimulation):
         Args:
             simulator: a cellular simulator controller
             log: a logger handle
-            dut: the android device handler
+            dut: a device handler implementing BaseCellularDut
             test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
@@ -117,12 +117,8 @@ class UmtsSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
-        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
-                NETWORK_MODE_WCDMA_ONLY,
-                dut.droid.subscriptionGetDefaultSubId()):
-            log.error("Coold not set preferred network type.")
-        else:
-            log.info("Preferred network type set.")
+        self.dut.set_preferred_network_type(
+            BaseCellularDut.PreferredNetworkType.WCDMA_ONLY)
 
         self.release_version = None
         self.packet_rate = None

@@ -66,7 +66,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        req_params = ["dbs_supported_models"]
+        req_params = ["dbs_supported_models", "roaming_attn"]
         opt_param = [
             "open_network", "reference_networks", "wep_networks"
         ]
@@ -79,8 +79,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.configure_packet_capture()
 
         if "AccessPoint" in self.user_params:
-            if "AccessPoint" in self.user_params:
-                self.legacy_configure_ap_and_start(wep_network=True, ap_count=2)
+            self.legacy_configure_ap_and_start(wep_network=True, ap_count=2)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -242,8 +241,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
         for pkt in packets:
             self.log.debug("Packet Summary = %s" % pkt.summary())
             if mac in pkt.summary():
-                raise signals.TestFailure("Caught Factory MAC in packet sniffer."
-                                          "Packet = %s" % pkt.show())
+                raise signals.TestFailure("Caught Factory MAC in packet sniffer"
+                                          "Packet = %s Device = %s"
+                                           % (pkt.show(), self.dut))
 
     def verify_mac_is_found_in_pcap(self, mac, packets):
         for pkt in packets:
@@ -251,7 +251,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
             if mac in pkt.summary():
                 return
         raise signals.TestFailure("Did not find MAC = %s in packet sniffer."
-                                  % mac)
+                                  "for device %s" % (mac, self.dut))
 
     def get_sta_mac_address(self):
         """Gets the current MAC address being used for client mode."""
@@ -348,7 +348,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         self.check_mac_persistence(self.wpapsk_2g, TOGGLE)
 
-    @test_tracker_info(uuid="a514f-8562-44e8-bfe0-4ecab9af165b")
+    @test_tracker_info(uuid="b3aa514f-8562-44e8-bfe0-4ecab9af165b")
     def test_persistent_mac_after_device_reboot(self):
         """Check if MAC is persistent after a device reboot.
 
@@ -490,18 +490,18 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
-        wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
+        wutils.set_attns(self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
         mac_before_roam = self.connect_to_network_and_verify_mac_randomization(
                 AP1_network)
         wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
-                "AP1_off_AP2_on", AP2_network)
+                "AP1_off_AP2_on", AP2_network, self.roaming_attn)
         mac_after_roam = self.get_randomized_mac(AP2_network)
         if mac_after_roam != mac_before_roam:
             raise signals.TestFailure("Randomized MAC address changed after "
                    "roaming from AP1 to AP2.\nMAC before roam = %s\nMAC after "
                    "roam = %s" %(mac_before_roam, mac_after_roam))
         wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
-                "AP1_on_AP2_off", AP1_network)
+                "AP1_on_AP2_off", AP1_network, self.roaming_attn)
         mac_after_roam = self.get_randomized_mac(AP1_network)
         if mac_after_roam != mac_before_roam:
             raise signals.TestFailure("Randomized MAC address changed after "

@@ -173,6 +173,7 @@ FUCHSIA_INIT_NETSTACK = ('acts.controllers.fuchsia_lib.netstack.'
 
 class ByPassSetupWizardTests(unittest.TestCase):
     """This test class for unit testing acts.utils.bypass_setup_wizard."""
+
     def test_start_standing_subproc(self):
         with self.assertRaisesRegex(utils.ActsUtilsError,
                                     'Process .* has terminated'):
@@ -306,6 +307,7 @@ class BypassSetupWizardReturn:
 
 class ConcurrentActionsTest(unittest.TestCase):
     """Tests acts.utils.run_concurrent_actions and related functions."""
+
     @staticmethod
     def function_returns_passed_in_arg(arg):
         return arg
@@ -389,6 +391,7 @@ class ConcurrentActionsTest(unittest.TestCase):
 
 class SuppressLogOutputTest(unittest.TestCase):
     """Tests SuppressLogOutput"""
+
     def test_suppress_log_output(self):
         """Tests that the SuppressLogOutput context manager removes handlers
         of the specified levels upon entry and re-adds handlers upon exit.
@@ -411,6 +414,7 @@ class SuppressLogOutputTest(unittest.TestCase):
 
 
 class IpAddressUtilTest(unittest.TestCase):
+
     def test_positive_ipv4_normal_address(self):
         ip_address = "192.168.1.123"
         self.assertTrue(utils.is_valid_ipv4_address(ip_address))
@@ -501,22 +505,20 @@ class IpAddressUtilTest(unittest.TestCase):
             utils.get_interface_ip_addresses(SshConnection('mock_settings'),
                                              'wlan1'), CORRECT_EMPTY_IP_LIST)
 
-    @mock.patch('acts.controllers.adb.AdbProxy')
+    @mock.patch('acts.controllers.adb.AdbProxy.shell')
     def test_android_get_interface_ip_addresses_full(self, adb_mock):
         adb_mock().shell.side_effect = [
             MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
         ]
         self.assertEqual(
             utils.get_interface_ip_addresses(AndroidDevice(), 'eno1'),
-            CORRECT_FULL_IP_LIST)
+           CORRECT_FULL_IP_LIST)
 
-    @mock.patch('acts.controllers.adb.AdbProxy')
+    @mock.patch('acts.controllers.adb.AdbProxy.shell')
     def test_android_get_interface_ip_addresses_empty(self, adb_mock):
-        adb_mock().shell.side_effect = [
-            MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
-        ]
-        self.assertEqual(
-            utils.get_interface_ip_addresses(AndroidDevice(), 'wlan1'),
+        adb_mock.side_effect = [MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT]
+        self.assertTrue(
+            utils.get_interface_ip_addresses(AndroidDevice(), 'wlan1') ==
             CORRECT_EMPTY_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)

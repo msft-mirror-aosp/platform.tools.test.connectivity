@@ -70,12 +70,13 @@ class MacRandomNoLeakageTest(AwareBaseTest, WifiBaseTest):
         pcaps = pcap_5g + pcap_2g
 
         # Verify factory MAC is not leaked in both 2G and 5G pcaps
-        for mac in factory_mac_addresses:
-            wutils.verify_mac_not_found_in_pcap(mac, pcaps)
+        ads = [self.android_devices[0], self.android_devices[1]]
+        for i, mac in enumerate(factory_mac_addresses):
+            wutils.verify_mac_not_found_in_pcap(ads[i], mac, pcaps)
 
         # Verify random MACs are being used and in pcaps
-        for mac in mac_addresses:
-            wutils.verify_mac_is_found_in_pcap(mac, pcaps)
+        for i, mac in enumerate(mac_addresses):
+            wutils.verify_mac_is_found_in_pcap(ads[i], mac, pcaps)
 
     def transfer_mac_format(self, mac):
         """add ':' to mac String, and transfer to lower case

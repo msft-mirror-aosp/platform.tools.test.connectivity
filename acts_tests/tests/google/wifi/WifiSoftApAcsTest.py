@@ -34,7 +34,8 @@ from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from threading import Thread
 
 WifiEnums = wutils.WifiEnums
-WIFI_CONFIG_APBAND_AUTO = -1
+WIFI_CONFIG_APBAND_AUTO = WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G
+GET_FREQUENCY_NUM_RETRIES = 3
 
 class WifiSoftApAcsTest(WifiBaseTest):
     """Tests for Automatic Channel Selection.
@@ -103,9 +104,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
         self.access_points[0].close()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
         for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
             wutils.get_cnss_diag_log(ad, test_name)
 
     """Helper Functions"""
@@ -155,10 +155,15 @@ class WifiSoftApAcsTest(WifiBaseTest):
         """
         wutils.connect_to_wifi_network(self.dut_client, softap,
             check_connectivity=False)
-        softap_info = self.dut_client.droid.wifiGetConnectionInfo()
-        self.log.debug("DUT is connected to softAP %s with details: %s" %
-                       (softap[wutils.WifiEnums.SSID_KEY], softap_info))
-        frequency = softap_info['frequency']
+        for _ in range(GET_FREQUENCY_NUM_RETRIES):
+            softap_info = self.dut_client.droid.wifiGetConnectionInfo()
+            self.log.debug("DUT is connected to softAP %s with details: %s" %
+                           (softap[wutils.WifiEnums.SSID_KEY], softap_info))
+            frequency = softap_info['frequency']
+            if frequency > 0:
+                break
+            time.sleep(1) # frequency not updated yet, try again after a delay
+
         return hostapd_constants.CHANNEL_MAP[frequency]
 
     def configure_ap(self, channel_2g=None, channel_5g=None):

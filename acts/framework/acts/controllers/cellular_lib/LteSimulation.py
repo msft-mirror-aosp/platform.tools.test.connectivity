@@ -17,8 +17,8 @@
 import math
 from enum import Enum
 
-from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
+from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
+from acts.controllers.cellular_lib import BaseCellularDut
 
 
 class TransmissionMode(Enum):
@@ -459,7 +459,7 @@ class LteSimulation(BaseSimulation):
         Args:
             simulator: a cellular simulator controller
             log: a logger handle
-            dut: the android device handler
+            dut: a device handler implementing BaseCellularDut
             test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
@@ -468,12 +468,8 @@ class LteSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
-        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
-                NETWORK_MODE_LTE_ONLY,
-                dut.droid.subscriptionGetDefaultSubId()):
-            log.error("Couldn't set preferred network type.")
-        else:
-            log.info("Preferred network type set.")
+        self.dut.set_preferred_network_type(
+            BaseCellularDut.PreferredNetworkType.LTE_ONLY)
 
         # Get TBS pattern setting from the test configuration
         if self.KEY_TBS_PATTERN not in test_config:

@@ -66,6 +66,8 @@ MULTIPATH_PREFERENCE_PERFORMANCE = 1 << 2
 
 # Private DNS constants
 DNS_GOOGLE = "dns.google"
+DNS_QUAD9 = "dns.quad9.net"
+DNS_CLOUDFLARE = "1dot1dot1dot1.cloudflare-dns.com"
 PRIVATE_DNS_MODE_OFF = "off"
 PRIVATE_DNS_MODE_OPPORTUNISTIC = "opportunistic"
 PRIVATE_DNS_MODE_STRICT = "hostname"
@@ -143,3 +145,4 @@ class VpnReqParams(object):
     ipsec_server_type = "ipsec_server_type"
     wifi_network = "wifi_network"
     vpn_identity = "vpn_identity"
+    vpn_server_hostname = "vpn_server_hostname"
