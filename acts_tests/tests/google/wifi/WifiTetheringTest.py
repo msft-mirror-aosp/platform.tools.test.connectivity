@@ -24,18 +24,20 @@ from acts import test_runner
 from acts import utils
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.net import arduino_test_utils as dutils
+from acts.test_utils.net import net_test_utils as nutils
+from acts.test_utils.net import socket_test_utils as sutils
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.net import socket_test_utils as sutils
-from acts.test_utils.net import arduino_test_utils as dutils
-from acts.test_utils.net import net_test_utils as nutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
+
 WAIT_TIME = 5
+
 
 class WifiTetheringTest(base_test.BaseTestClass):
     """ Tests for Wifi Tethering """
@@ -45,10 +47,12 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
         self.hotspot_device = self.android_devices[0]
         self.tethered_devices = self.android_devices[1:]
-        req_params = ("url", "open_network")
+        req_params = ("url", "open_network", "carrier_supports_ipv6",
+                      "carrier_supports_tethering")
         self.unpack_userparams(req_params)
         self.network = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                         "password": "pass_%s" % utils.rand_ascii_str(6)}
+
         self.new_ssid = "hs_%s" % utils.rand_ascii_str(6)
         self.tcpdump_pid=[]
 
@@ -106,10 +110,8 @@ class WifiTetheringTest(base_test.BaseTestClass):
             True: if provider supports IPv6 tethering
             False: if not
         """
-        # Currently only Verizon support IPv6 tethering
-        carrier_supports_tethering = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
         operator = get_operator_name(self.log, dut)
-        return operator in carrier_supports_tethering
+        return operator in self.carrier_supports_tethering
 
     def _carrier_supports_ipv6(self,dut):
         """ Verify if carrier supports ipv6
@@ -119,10 +121,9 @@ class WifiTetheringTest(base_test.BaseTestClass):
             True: if carrier supports ipv6
             False: if not
         """
-        carrier_supports_ipv6 = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
         operator = get_operator_name(self.log, dut)
         self.log.info("Carrier is %s" % operator)
-        return operator in carrier_supports_ipv6
+        return operator in self.carrier_supports_ipv6
 
     def _verify_ipv6_tethering(self, dut):
         """ Verify IPv6 tethering """
