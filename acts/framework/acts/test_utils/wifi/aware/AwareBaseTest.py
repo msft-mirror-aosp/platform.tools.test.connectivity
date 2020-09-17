@@ -37,6 +37,7 @@ class AwareBaseTest(BaseTestClass):
         self.unpack_userparams(required_params)
 
         for ad in self.android_devices:
+            ad.droid.wifiEnableVerboseLogging(1)
             asserts.skip_if(
                 not ad.droid.doesDeviceSupportWifiAwareFeature(),
                 "Device under test does not support Wi-Fi Aware - skipping test"
