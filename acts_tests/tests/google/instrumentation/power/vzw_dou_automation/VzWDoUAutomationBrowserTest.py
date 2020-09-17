@@ -24,51 +24,76 @@ class VzWDoUAutomationBrowserTest(
     vzw_dou_automation_base_test.VzWDoUAutomationBaseTest):
   """Class for running VZW DoU browsing test cases"""
 
-  def test_browser(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_browser(self, attempt_number):
     """Measures power when the device is browsing."""
 
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
-        'testBrowser')
+        'testBrowser',
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_streaming_video(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_streaming_video(self, attempt_number):
     """Measures power when the device is streaming video."""
 
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YouTubeV15Tests',
-        'testStreamingVideo')
+        'testStreamingVideo',
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_video_recording(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_video_recording(self, attempt_number):
     """Measures power when the device is recording."""
 
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.CameraVideoRecordingTests',
-        'testVideoRecording')
+        'testVideoRecording',
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_video_playback(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_video_playback(self, attempt_number):
     """Measures power when the device is playing video."""
 
     self.log_in_gmail_account()
     self.push_movies_to_dut()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.PhotosVideoPlaybackTests',
-        'testVideoPlayback')
+        'testVideoPlayback',
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_audio_playback(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_audio_playback(self, attempt_number):
     """Measures power when the device is playing audio."""
 
     self.log_in_gmail_account()
     self.push_music_to_dut()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YTMusicPlaybackTests',
-        'testAudioPlayback')
+        'testAudioPlayback',
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
