@@ -145,6 +145,7 @@ class BtSarSanityTest(BtSarBaseTest):
             for country_code in country_code_tuple:
                 start_time = self.dut.adb.shell('date +%s.%m')
 
+                time.sleep(1)
                 #Force country code using adb command
                 self.set_country_code(self.dut, country_code)
 
