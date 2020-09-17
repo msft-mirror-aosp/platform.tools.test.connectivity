@@ -617,15 +617,9 @@ class BaseSimulation():
         restoration_config.output_power = self.primary_config.output_power
 
         # Set BTS to a good output level to minimize measurement error
-        initial_screen_timeout = self.dut.droid.getScreenTimeout()
         new_config = self.BtsConfig()
         new_config.output_power = self.simulator.MAX_DL_POWER - 5
         self.simulator.configure_bts(new_config)
-
-        # Set phone sleep time out
-        self.dut.droid.setScreenTimeout(1800)
-        self.dut.droid.goToSleepNow()
-        time.sleep(2)
 
         # Starting IP traffic
         self.start_traffic_for_calibration()
@@ -633,19 +627,14 @@ class BaseSimulation():
         down_power_measured = []
         for i in range(0, self.NUM_DL_CAL_READS):
             # For some reason, the RSRP gets updated on Screen ON event
-            self.dut.droid.wakeUpNow()
-            time.sleep(4)
             signal_strength = get_telephony_signal_strength(self.dut)
             down_power_measured.append(signal_strength[rat])
-            self.dut.droid.goToSleepNow()
             time.sleep(5)
 
         # Stop IP traffic
         self.stop_traffic_for_calibration()
 
-        # Reset phone and bts to original settings
-        self.dut.droid.goToSleepNow()
-        self.dut.droid.setScreenTimeout(initial_screen_timeout)
+        # Reset bts to original settings
         self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
@@ -691,15 +680,9 @@ class BaseSimulation():
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER
-        initial_screen_timeout = self.dut.droid.getScreenTimeout()
         new_config = self.BtsConfig()
         new_config.input_power = self.MAX_BTS_INPUT_POWER
         self.simulator.configure_bts(new_config)
-
-        # Set phone sleep time out
-        self.dut.droid.setScreenTimeout(1800)
-        self.dut.droid.wakeUpNow()
-        time.sleep(2)
 
         # Start IP traffic
         self.start_traffic_for_calibration()
@@ -729,9 +712,7 @@ class BaseSimulation():
         # Stop IP traffic
         self.stop_traffic_for_calibration()
 
-        # Reset phone and bts to original settings
-        self.dut.droid.goToSleepNow()
-        self.dut.droid.setScreenTimeout(initial_screen_timeout)
+        # Reset bts to original settings
         self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
