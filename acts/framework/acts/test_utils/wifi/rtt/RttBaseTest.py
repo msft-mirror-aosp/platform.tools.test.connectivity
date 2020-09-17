@@ -40,6 +40,7 @@ class RttBaseTest(BaseTestClass):
 
         for ad in self.android_devices:
             utils.set_location_service(ad, True)
+            ad.droid.wifiEnableVerboseLogging(1)
             asserts.skip_if(
                 not ad.droid.doesDeviceSupportWifiRttFeature(),
                 "Device under test does not support Wi-Fi RTT - skipping test")
