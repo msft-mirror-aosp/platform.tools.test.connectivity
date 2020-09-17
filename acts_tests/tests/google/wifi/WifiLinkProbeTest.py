@@ -55,6 +55,7 @@ class WifiLinkProbeTest(WifiBaseTest):
         self.attenuators = wutils.group_attenuators(self.attenuators)
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         wutils.wifi_toggle_state(self.dut, True)
@@ -62,13 +63,10 @@ class WifiLinkProbeTest(WifiBaseTest):
         self.attenuators[1].set_atten(0)
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
