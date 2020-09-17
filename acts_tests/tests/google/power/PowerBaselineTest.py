@@ -37,7 +37,7 @@ class PowerBaselineTest(PowerBaseTest):
         self.dut.droid.goToSleepNow()
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         # Check if power measurement is below the required value
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check(self.avg_current)

@@ -178,7 +178,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         iperf_helpers = self.start_tel_traffic(self.dut)
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         # Wait for iPerf to finish
         time.sleep(self.IPERF_MARGIN + 2)
@@ -187,9 +187,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.iperf_results = self.get_iperf_results(self.dut, iperf_helpers)
 
         # Check if power measurement is below the required value
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check(self.avg_current)
 
-        return result.average_current, self.iperf_results
+        return self.avg_current, self.iperf_results
 
     def get_iperf_results(self, device, iperf_helpers):
         """ Pulls iperf results from the device.
@@ -539,10 +539,11 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
     def create_power_plot(self, currents, txs):
         """ Creates average current vs tx power plot
         """
-        tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
-                                self.dut.build_info['build_id'])
-        plot_utils.monsoon_tx_power_sweep_plot(self.mon_info, tag, currents,
-                                               txs)
+        title = '{}_{}_{}_tx_power_sweep'.format(
+            self.test_name, self.dut.model, self.dut.build_info['build_id'])
+
+        plot_utils.monsoon_tx_power_sweep_plot(self.mon_info.data_path, title,
+                                               currents, txs)
 
     def power_tel_tx_sweep(self):
         """ Main function for the Tx power sweep test.
@@ -559,7 +560,7 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
             iperf_helpers = self.start_tel_traffic(self.dut)
 
             # Measure power
-            result = self.collect_power_data()
+            self.collect_power_data()
 
             # Wait for iPerf to finish
             time.sleep(self.IPERF_MARGIN + 2)
@@ -567,7 +568,7 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
             # Collect and check throughput measurement
             iperf_result = self.get_iperf_results(self.dut, iperf_helpers)
 
-            currents.append(result.average_current)
+            currents.append(self.avg_current)
 
             # Get the actual Tx power as measured from the callbox side
             measured_tx = self.simulation.get_measured_ul_power()
