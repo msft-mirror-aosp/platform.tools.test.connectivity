@@ -719,12 +719,12 @@ def get_iperf_arg_string(duration,
     if ipv6:
         iperf_args = iperf_args + '-6 '
     if traffic_type.upper() == 'UDP':
-        iperf_args = iperf_args + '-u -b {} -l 1400 -P {}'.format(
+        iperf_args = iperf_args + '-u -b {} -l 1400 -P {} '.format(
             udp_throughput, num_processes)
     elif traffic_type.upper() == 'TCP':
-        iperf_args = iperf_args + '-P {}'.format(num_processes)
+        iperf_args = iperf_args + '-P {} '.format(num_processes)
     if socket_size:
-        iperf_args = iperf_args + '-w {}'.format(socket_size)
+        iperf_args = iperf_args + '-w {} '.format(socket_size)
     if reverse_direction:
         iperf_args = iperf_args + ' -R'
     return iperf_args
