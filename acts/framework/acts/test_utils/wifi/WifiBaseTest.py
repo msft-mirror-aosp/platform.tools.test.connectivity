@@ -341,6 +341,9 @@ class WifiBaseTest(BaseTestClass):
             radius_conf_pwd: dictionary with enterprise radiuse server details.
             ap_count: APs to configure.
         """
+        if mirror_ap and ap_count == 1:
+             raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
+
         self.reference_networks = []
         self.wpa_networks = []
         self.wep_networks = []
@@ -349,7 +352,8 @@ class WifiBaseTest(BaseTestClass):
         self.open_network = []
         self.owe_networks = []
         self.sae_networks = []
-        for _ in range(ap_count):
+        self.bssid_map = []
+        for i in range(ap_count):
             network_list = []
             if wpa_network:
                 wpa_dict = self.get_psk_network(mirror_ap,
@@ -428,10 +432,20 @@ class WifiBaseTest(BaseTestClass):
                 sae_dict[hostapd_constants.BAND_2G]["security"] = "sae"
                 sae_dict[hostapd_constants.BAND_5G]["security"] = "sae"
                 network_list.append(sae_dict)
-            self.access_points[_].configure_ap(network_list,
+            self.access_points[i].configure_ap(network_list,
                                                channel_2g,
                                                channel_5g)
-            self.access_points[_].start_ap()
+            self.access_points[i].start_ap()
+            self.bssid_map.append(
+                self.access_points[i].get_bssids_for_wifi_networks())
+            if mirror_ap:
+              self.access_points[i+1].configure_ap(network_list,
+                                                   channel_2g,
+                                                   channel_5g)
+              self.access_points[i+1].start_ap()
+              self.bssid_map.append(
+                  self.access_points[i+1].get_bssids_for_wifi_networks())
+              break
 
     def legacy_configure_ap_and_start(
             self,
