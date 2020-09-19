@@ -39,7 +39,7 @@ class GattConnectionStressTest(BaseTestClass):
     gatt_connect_err_message = "Gatt connection failed with: {}"
     gatt_disconnect_err_message = "Gatt disconnection failed with: {}"
     ble_advertise_interval = 50
-    scan_timeout_seconds = 10
+    scan_timeout_seconds = 60
     default_iterations = 1000
 
     def setup_class(self):
@@ -48,6 +48,10 @@ class GattConnectionStressTest(BaseTestClass):
         self.fuchsia_server_dut = self.fuchsia_devices[1]
         self.default_iterations = self.user_params.get(
             "gatt_connect_stress_test_iterations", self.default_iterations)
+
+    def on_fail(self, test_name, begin_time):
+        for fd in self.fuchsia_devices:
+            fd.take_bug_report(test_name, begin_time)
 
     def _orchestrate_single_connect_disconnect(self):
         adv_name = generate_id_by_size(10)
