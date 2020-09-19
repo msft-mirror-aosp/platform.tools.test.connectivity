@@ -337,7 +337,7 @@ class WifiPasspointTest(WifiBaseTest):
         # Install both Passpoint profiles on the device.
         passpoint_ssid = list()
         for passpoint_config in self.passpoint_networks[:2]:
-            passpoint_ssid.append(passpoint_config[WifiEnums.SSID_KEY])
+            passpoint_ssid.extend(passpoint_config[WifiEnums.SSID_KEY])
             self.install_passpoint_profile(passpoint_config)
             time.sleep(DEFAULT_TIMEOUT)
 
@@ -350,12 +350,12 @@ class WifiPasspointTest(WifiBaseTest):
                                      "configured Passpoint networks.")
 
         expected_ssid =  self.passpoint_networks[0][WifiEnums.SSID_KEY]
-        if current_ssid == expected_ssid:
+        if current_ssid in expected_ssid:
             expected_ssid = self.passpoint_networks[1][WifiEnums.SSID_KEY]
 
         # Remove the current Passpoint profile.
         for network in self.passpoint_networks[:2]:
-            if network[WifiEnums.SSID_KEY] == current_ssid:
+            if current_ssid in network[WifiEnums.SSID_KEY]:
                 if not wutils.delete_passpoint(self.dut, network["fqdn"]):
                     raise signals.TestFailure("Failed to delete Passpoint"
                                               " configuration with FQDN = %s" %
@@ -364,7 +364,7 @@ class WifiPasspointTest(WifiBaseTest):
         time.sleep(DEFAULT_TIMEOUT)
 
         current_passpoint = self.dut.droid.wifiGetConnectionInfo()
-        if current_passpoint[WifiEnums.SSID_KEY] != expected_ssid:
+        if current_passpoint[WifiEnums.SSID_KEY] not in expected_ssid:
             raise signals.TestFailure("Device did not failover to the %s"
                                       " passpoint network" % expected_ssid)
 

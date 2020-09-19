@@ -610,12 +610,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """Generate power chat by using the monsoon raw data."""
         power_chart_path = power_data_path.rsplit('.', 1)[0] + '.html'
         self.log.info('power_chart_path: %s' % power_chart_path)
-        template_path = \
-            'acts/acts_framework/acts/test_utils/instrumentation/power/data_graph/template.html'
         file_path = os.path.dirname(__file__)
         self.log.info('current file directory: %s' % file_path)
-        template_file_path = file_path.replace(
-            file_path[file_path.index("lib"):], template_path)
+        template_file_path = os.path.join(file_path, 'data_graph/template.html')
         self.log.info('template file path: %s' % template_file_path)
 
         power_audio_chart.generate_chart(
