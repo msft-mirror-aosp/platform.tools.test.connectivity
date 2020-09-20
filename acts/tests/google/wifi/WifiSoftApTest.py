@@ -24,7 +24,6 @@ from acts import asserts
 from acts import utils
 from acts.keys import Config
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.net import socket_test_utils as sutils
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel import tel_test_utils as tel_utils
@@ -153,31 +152,6 @@ class WifiSoftApTest(WifiBaseTest):
         wutils.start_wifi_connection_scan_and_ensure_network_not_found(
             self.dut_client, ap_ssid);
 
-    def validate_traffic_between_softap_clients(self, config):
-        """Send traffic between softAp clients.
-
-        Connect SoftAp clients to the wifi hotspot; one android
-        device and the other arduino wifi controller. Send UDP traffic
-        between the clients and verify that expected messages are received.
-
-        Args:
-            config: wifi network config with SSID, password
-        """
-        ad = self.dut_client
-        wd = self.arduino_wifi_dongles[0]
-        wutils.wifi_connect(ad, config, check_connectivity=False)
-        dutils.connect_wifi(wd, config)
-        local_ip = ad.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        remote_ip = wd.ip_address()
-        port = random.randint(8000, 9000)
-        self.log.info("IP addr on android device: %s" % local_ip)
-        self.log.info("IP addr on arduino device: %s" % remote_ip)
-
-        socket = sutils.open_datagram_socket(ad, local_ip, port)
-        sutils.send_recv_data_datagram_sockets(
-            ad, ad, socket, socket, remote_ip, port)
-        sutils.close_datagram_socket(ad, socket)
-
     def check_cell_data_and_enable(self):
         """Make sure that cell data is enabled if there is a sim present.
 
@@ -227,8 +201,6 @@ class WifiSoftApTest(WifiBaseTest):
         if test_ping:
             self.validate_ping_between_softap_and_client(config)
         if test_clients:
-            if hasattr(self, 'arduino_wifi_dongles'):
-                self.validate_traffic_between_softap_clients(config)
             if len(self.android_devices) > 2:
                 self.validate_ping_between_two_clients(config)
         wutils.stop_wifi_tethering(self.dut)
@@ -443,24 +415,6 @@ class WifiSoftApTest(WifiBaseTest):
                             "Can not turn on airplane mode: %s" % self.dut.serial)
         wutils.wifi_toggle_state(self.dut, True)
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G)
-
-    @test_tracker_info(uuid="05c6f929-7754-477f-a9cd-f77e850b818b")
-    def test_full_tether_startup_2G_multiple_clients(self):
-        """Test full startup of wifi tethering in 2G band, connect clients
-        to softAp and send traffic between them.
-
-        1. Report current state.
-        2. Switch to AP mode.
-        3. verify SoftAP active.
-        4. Connect clients to softAp.
-        5. Send and recv UDP traffic between them.
-        6. Shutdown wifi tethering.
-        7. verify back to previous mode.
-        """
-        asserts.skip_if(not hasattr(self, 'arduino_wifi_dongles'),
-                        "No wifi dongles connected. Skipping test")
-        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G,
-                                          test_clients=True)
 
     @test_tracker_info(uuid="883dd5b1-50c6-4958-a50f-bb4bea77ccaf")
     def test_full_tether_startup_2G_one_client_ping_softap(self):
