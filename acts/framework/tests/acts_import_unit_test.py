@@ -62,6 +62,7 @@ DENYLIST = [
     'acts/test_utils/tel/twilio_client.py',
     'tests/google/ble/beacon_tests/BeaconSwarmTest.py',
     'tests/google/bt/pts/BtCmdLineTest.py',
+    'tests/google/bt/performance/BtA2dpOtaRangeTest.py',
     'tests/google/bt/headphone_automation/SineWaveQualityTest.py',
     'tests/google/bt/audio_lab/BtChameleonTest.py',
     'tests/google/native/bt/BtNativeTest.py',
