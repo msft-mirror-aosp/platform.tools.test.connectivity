@@ -17,15 +17,15 @@
 import ntpath
 
 import time
+from acts.controllers.anritsu_lib.band_constants import GSM_BAND_DCS1800
+from acts.controllers.anritsu_lib.band_constants import GSM_BAND_EGSM900
+from acts.controllers.anritsu_lib.band_constants import GSM_BAND_GSM850
+from acts.controllers.anritsu_lib.band_constants import GSM_BAND_RGSM900
 from acts.controllers.anritsu_lib.md8475a import BtsGprsMode
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.cellular_lib import BaseCellularDut
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
-from acts.test_utils.tel.anritsu_utils import GSM_BAND_DCS1800
-from acts.test_utils.tel.anritsu_utils import GSM_BAND_EGSM900
-from acts.test_utils.tel.anritsu_utils import GSM_BAND_GSM850
-from acts.test_utils.tel.anritsu_utils import GSM_BAND_RGSM900
 
 
 class GsmSimulation(BaseSimulation):

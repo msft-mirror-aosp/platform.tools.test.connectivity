@@ -18,6 +18,7 @@ import time
 
 from queue import Empty
 from datetime import datetime
+from acts.controllers.anritsu_lib import band_constants
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuUtils
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsNwNameEnable
@@ -145,22 +146,6 @@ Fi_CSCF_IPV6_ADDR_IMS = "2001:0:0:1::3"
 Fi_CSCF_IPV4_ADDR_911 = "192.168.1.12"
 Fi_CSCF_IPV6_ADDR_911 = "2001:0:0:2::2"
 
-# GSM BAND constants
-GSM_BAND_GSM450 = "GSM450"
-GSM_BAND_GSM480 = "GSM480"
-GSM_BAND_GSM850 = "GSM850"
-GSM_BAND_PGSM900 = "P-GSM900"
-GSM_BAND_EGSM900 = "E-GSM900"
-GSM_BAND_RGSM900 = "R-GSM900"
-GSM_BAND_DCS1800 = "DCS1800"
-GSM_BAND_PCS1900 = "PCS1900"
-
-LTE_BAND_2 = 2
-LTE_BAND_4 = 4
-LTE_BAND_12 = 12
-WCDMA_BAND_1 = 1
-WCDMA_BAND_2 = 2
-
 # Default Cell Parameters
 DEFAULT_OUTPUT_LEVEL = -30
 DEFAULT_1X_OUTPUT_LEVEL = -35
@@ -169,10 +154,10 @@ DEFAULT_LTE_BAND = [2, 4]
 Fi_LTE_TMO_BAND = [4]
 Fi_LTE_SPR_BAND = [25]
 Fi_LTE_USCC_BAND = [12]
-Fi_GSM_TMO_BAND = GSM_BAND_PGSM900
+Fi_GSM_TMO_BAND = band_constants.GSM_BAND_PGSM900
 DEFAULT_WCDMA_BAND = 1
 DEFAULT_WCDMA_PACKET_RATE = BtsPacketRate.WCDMA_DLHSAUTO_REL7_ULHSAUTO
-DEFAULT_GSM_BAND = GSM_BAND_GSM850
+DEFAULT_GSM_BAND = band_constants.GSM_BAND_GSM850
 
 #Google Fi CDMA Bands
 
