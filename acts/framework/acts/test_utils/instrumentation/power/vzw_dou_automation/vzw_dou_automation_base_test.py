@@ -167,7 +167,7 @@ class VzWDoUAutomationBaseTest(
   def push_movies_to_dut(self):
     # Push the movies folder to Android device
     sdcard_movies_path_dut = '/sdcard/Movies/'
-    sdcard_movies_path = self.user_params['sdcard_movies_path']
+    sdcard_movies_path = self.user_params['sdcard_movies_path'][0]
     self.log.info('sdcard_movies_path is %s' % sdcard_movies_path)
     self.ad_dut.adb.push(sdcard_movies_path + '/*', sdcard_movies_path_dut)
     self.ad_dut.reboot()
@@ -195,7 +195,7 @@ class VzWDoUAutomationBaseTest(
   def push_music_to_dut(self):
     # Push the music folder to Android device
     sdcard_music_path_dut = '/sdcard/Music/'
-    sdcard_music_path = self.user_params['sdcard_music_path']
+    sdcard_music_path = self.user_params['sdcard_music_path'][0]
     self.log.info('sdcard_music_path is %s' % sdcard_music_path)
     self.ad_dut.adb.push(sdcard_music_path + '/*', sdcard_music_path_dut)
     self.ad_dut.reboot()
