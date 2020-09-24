@@ -92,8 +92,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         wutils.wifi_toggle_state(self.dut, True)
         self.access_points[0].close()
-        del self.user_params["reference_networks"]
-        del self.user_params["open_network"]
+        if "AccessPoint" in self.user_params:
+            try:
+                del self.user_params["reference_networks"]
+                del self.user_params["open_network"]
+            except KeyError as e:
+                self.log.warn("There is no 'reference_network' or "
+                              "'open_network' to delete")
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
@@ -114,8 +119,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             channel_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
         if not channel_5g:
             channel_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
-        self.legacy_configure_ap_and_start(channel_2g=channel_2g,
-                                           channel_5g=channel_5g)
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start(channel_2g=channel_2g,
+                                               channel_5g=channel_5g)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                channel_2g=channel_2g,
+                                                channel_5g=channel_5g)
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
 
