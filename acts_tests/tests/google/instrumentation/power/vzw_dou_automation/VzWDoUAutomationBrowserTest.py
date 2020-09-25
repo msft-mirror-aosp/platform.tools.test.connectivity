@@ -31,10 +31,22 @@ class VzWDoUAutomationBrowserTest(
   def test_browser(self, attempt_number):
     """Measures power when the device is browsing."""
 
+    self.log_in_gmail_account()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
         'testBrowser',
         attempt_number=attempt_number)
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  def test_browser_wifi(self):
+    """Measures power when the device is browsing with wifi connected."""
+
+    self.log_in_gmail_account()
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.BrowserTests',
+        'testBrowser',
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)])
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
@@ -49,6 +61,16 @@ class VzWDoUAutomationBrowserTest(
         'com.google.android.platform.dou.YouTubeV15Tests',
         'testStreamingVideo',
         attempt_number=attempt_number)
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  def test_streaming_video_wifi(self):
+    """Measures power when the device is streaming video with wifi connected."""
+
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.YouTubeV15Tests',
+        'testStreamingVideo',
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)])
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 

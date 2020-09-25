@@ -31,6 +31,7 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 DEFAULT_WAIT_TO_FASTBOOT_MODE = 10
 DEFAULT_DEVICE_COOL_DOWN_TIME = 25
 DEFAULT_WAIT_FOR_REBOOT = 120
+WIFI_SSID = 'TP-Link-VZW-DoU'
 
 def get_median_current(test_results):
   """Returns the median current, or a failure if the test failed."""

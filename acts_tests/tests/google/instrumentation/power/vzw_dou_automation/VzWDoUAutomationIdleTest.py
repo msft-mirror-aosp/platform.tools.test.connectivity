@@ -51,3 +51,14 @@ class VzWDoUAutomationIdleTest(
         'testIdleStandbyMode', attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
+
+  def test_idle_wifi(self):
+    """Measures power when the device is in idle mode with wifi connected."""
+
+    self.log_in_gmail_account()
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.IdleStandbyModeTests',
+        'testIdleStandbyMode',
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)])
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)

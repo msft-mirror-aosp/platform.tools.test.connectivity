@@ -64,6 +64,40 @@ class VzWDoUAutomationPhoneCallTest(
     self.record_metrics(final_metrics)
     self.validate_metrics(final_metrics)
 
+  def test_voice_call_over_lte_wifi(self):
+    """Measures power when the device is on call with mute on and off
+    with wifi connected."""
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+    dut_phone_number = self.get_phone_number(self.ad_dut)
+    self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    # In this test case three calls are made
+    PHONE_CALL_COUNT = 3
+    metrics_list = []
+    for i in range(PHONE_CALL_COUNT):
+      # The companion phone mutes on 1st and 3rd calls
+      is_companion_muted = 'TRUE' if i % PHONE_CALL_COUNT != 1 else 'FALSE'
+      self.run_instrumentation_on_companion(
+          'com.google.android.platform.dou.CompanionPhoneVoiceCallTests',
+          'testReceiveVoiceCall',
+          extra_params=[('recipient_number', dut_phone_number),
+                        ('recipient_number_companion', companion_phone_number),
+                        ('enable_mute', is_companion_muted)])
+      # The dut mutes on 2nd and 3rd calls
+      is_dut_muted = 'TRUE' if i % PHONE_CALL_COUNT != 0 else 'FALSE'
+      metrics = self.run_and_measure(
+          'com.google.android.platform.dou.PhoneVoiceCallWithMuteTests',
+          'testVoiceCall',
+          extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                        ('recipient_number', dut_phone_number),
+                        ('recipient_number_companion', companion_phone_number),
+                        ('enable_mute', is_dut_muted)])
+      metrics_list.append(metrics)
+    final_metrics = self._generate_final_metrics(metrics_list)
+    self.record_metrics(final_metrics)
+    self.validate_metrics(final_metrics)
+
   @repeated_test(
       num_passes=3,
       acceptable_failures=2,
