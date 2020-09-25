@@ -36,8 +36,8 @@ from acts.test_utils.instrumentation.device.command.instrumentation_command_buil
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationBaseTest
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
-from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 from acts.test_utils.instrumentation.power.data_graph import power_audio_chart
+from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
 import tzlocal
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
@@ -145,6 +145,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # command would fail if properties were previously set, therefore it
         # needs to be verified first
         if self.adb_run(harness_prop)[harness_prop] != '1':
+            self.adb_run('echo ro.test_harness=1 >> /data/local.prop')
+            self.adb_run('chmod 644 /data/local.prop')
             self.adb_run(common.test_harness.toggle(True))
 
         # Calling
@@ -152,6 +154,9 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         # command would fail if property was previously set, therefore it needs
         # to be verified first.
         if self.adb_run(disable_dialing_prop)[disable_dialing_prop] != 'true':
+            self.adb_run(
+                'echo ro.telephony.disable-call=true >> /data/local.prop')
+            self.adb_run('chmod 644 /data/local.prop')
             self.adb_run(common.disable_dialing.toggle(True))
 
         # Screen
@@ -443,7 +448,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         self.power_monitor.release_resources()
         if self.generate_chart:
-          self.generate_power_chart(power_data_path)
+            self.generate_power_chart(power_data_path)
         return power_metrics
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
@@ -487,10 +492,12 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         instr_cmd = self._instr_cmd_builder.build()
         self._uninstall_sl4a()
 
-        # Allow device to stabilize for 5 minutes
-        self.ad_dut.log.debug('Waiting 5 minutes for device to stabilize')
-        time.sleep(self._instrumentation_config.get_int(
-            'device_stabilization_time', DEFAULT_DEVICE_STABILIZATION_TIME))
+        # Allow device to stabilize
+        stabilization_time = self._instrumentation_config.get_int(
+            'device_stabilization_time', DEFAULT_DEVICE_STABILIZATION_TIME)
+        self.ad_dut.log.debug('Waiting %s seconds for device to stabilize',
+                              stabilization_time)
+        time.sleep(stabilization_time)
 
         self.log.info('Running instrumentation call: %s' % instr_cmd)
         self.adb_run_async(instr_cmd)
