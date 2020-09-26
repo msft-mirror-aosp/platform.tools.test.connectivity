@@ -30,7 +30,7 @@ class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
     def test_playback_high_bit_rate(self):
         """Measures power when the device is playing a video."""
         video_location = self.push_to_external_storage(
-            self.get_file_from_config('high_bit_rate_video'),
+            self.get_file_from_config('video_high_bit_rate'),
             timeout=BIG_FILE_PUSH_TIMEOUT)
         self.trigger_scan_on_external_storage()
 
@@ -42,10 +42,10 @@ class VideoPlaybackTest(instrumentation_power_test.InstrumentationPowerTest):
         self.record_metrics(metrics)
         self.validate_metrics(metrics)
 
-    def test_playback_4k_60fps(self):
+    def test_playback_4k_60fps_h265(self):
         """Measures power when the device is playing a video."""
         video_location = self.push_to_external_storage(
-            self.get_file_from_config('4k_60fps_video'),
+            self.get_file_from_config('video_4k_60fps_h265'),
             timeout=BIG_FILE_PUSH_TIMEOUT)
         self.trigger_scan_on_external_storage()
 
