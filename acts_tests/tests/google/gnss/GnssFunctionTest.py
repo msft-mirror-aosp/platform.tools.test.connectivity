@@ -419,7 +419,7 @@ class GnssFunctionTest(BaseTestClass):
         sap_state = str(self.ad.adb.shell("cat vendor/etc/izat.conf | grep "
                                           "SAP="))
         self.ad.log.info("SAP Valid Modes - %s" % sap_state)
-        asserts.assert_true(sap_state == "SAP=PREMIUM",
+        asserts.assert_true("SAP=PREMIUM" in sap_state,
                             "Wrong SAP Valid Modes is set")
 
     @test_tracker_info(uuid="14daaaba-35b4-42d9-8d2c-2a803dd746a6")
