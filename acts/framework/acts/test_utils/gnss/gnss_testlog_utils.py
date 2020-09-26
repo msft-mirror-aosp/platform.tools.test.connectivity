@@ -117,11 +117,12 @@ CONFIG_GPSTTFFLOG = {
     r'(?P<start_datetime>\d+\/\d+\/\d+-\d+:\d+:\d+.\d+)\s+'
     r'(?P<stop_datetime>\d+\/\d+\/\d+-\d+:\d+:\d+.\d+)\s+'
     r'(?P<ttff>\d+.\d+)\s+'
-    r'\[Avg Top4 : (?P<avg_top4_cn0>\d+.\d+)\]\s'
-    r'\[Avg : (?P<avg_cn0>\d+.\d+)\]\s+\[(?P<fix_type>\d+\w+ fix)\]\s+'
+    r'\[Antenna_Avg Top4 : (?P<ant_avg_top4_cn0>\d+.\d+)\]\s'
+    r'\[Antenna_Avg : (?P<ant_avg_cn0>\d+.\d+)\]\s'
+    r'\[Baseband_Avg Top4 : (?P<bb_avg_top4_cn0>\d+.\d+)\]\s'
+    r'\[Baseband_Avg : (?P<<bb_avg_cn0>\d+.\d+)\]\s+\[(?P<fix_type>\d+\w+ fix)\]\s+'
     r'\[Satellites used for fix : (?P<satnum_for_fix>\d+)\]'
 }
-
 LOGPARSE_UTIL_LOGGER = logger.create_logger()
 
 
