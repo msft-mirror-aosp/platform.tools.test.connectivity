@@ -109,7 +109,8 @@ class WifiP2pRvrTest(WifiRvrTest):
         wutils.reset_wifi(ad)
         utils.sync_device_time(ad)
         ad.droid.telephonyToggleDataConnection(False)
-        wutils.set_wifi_country_code(ad, wutils.WifiEnums.CountryCode.US)
+        country_code = self.testclass_params.get('country_code', 'US')
+        wutils.set_wifi_country_code(ad, country_code)
         ad.droid.wifiP2pInitialize()
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         asserts.assert_true(
