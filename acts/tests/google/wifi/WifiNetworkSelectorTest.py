@@ -58,6 +58,7 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.configure_packet_capture()
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.dut.ed.clear_all_events()
@@ -68,6 +69,7 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         time.sleep(ATTN_SLEEP)
 
     def teardown_test(self):
+        super().teardown_test()
         for a in self.attenuators:
             a.set_atten(MIN_ATTN)
         wutils.reset_wifi(self.dut)
@@ -79,8 +81,7 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
     def on_fail(self, test_name, begin_time):
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
+        super().on_fail(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:

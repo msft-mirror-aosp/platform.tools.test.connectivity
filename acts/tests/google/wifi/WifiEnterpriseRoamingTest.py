@@ -108,6 +108,7 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         self.set_attns("default")
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wifiStartTrackingStateChange()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
@@ -115,14 +116,11 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiStopTrackingStateChange()
         self.set_attns("default")
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def set_attns(self, attn_val_name):
         """Sets attenuation values on attenuators used in this test.
