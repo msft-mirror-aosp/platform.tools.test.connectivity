@@ -96,6 +96,9 @@ disable_volta = GenericCommand('pm disable-user com.google.android.volta',
 disable_chre = GenericCommand('setprop ctl.stop vendor.chre',
                               desc='Disables chre.')
 
+enable_chre = GenericCommand('setprop ctl.start vendor.chre',
+                              desc='Enables chre.')
+
 # MusicIQ
 
 disable_musiciq = GenericCommand(
