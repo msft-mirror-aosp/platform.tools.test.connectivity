@@ -22,11 +22,14 @@ from acts.utils import rand_ascii_str
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
@@ -607,3 +610,108 @@ def browsing_test(log, ad, wifi_ssid=None, pass_threshold_in_mb = 1.0):
         usage = "unknown"
         ad.log.info("Usage of browsing: %s MB" % usage)
         return False
+
+def reboot_test(log, ad, wifi_ssid=None):
+    """ Reboot test to verify the service availability after reboot.
+
+    Test procedure:
+    1. Reboot
+    2. Wait WAIT_TIME_AFTER_REBOOT for reboot complete.
+    3. Check service state. False will be returned if service state is not "IN_SERVICE".
+    4. Check if network is connected. False will be returned if not.
+    5. Check if cellular data or Wi-Fi connection is available. False will be returned if not.
+    6. Check if internet connection is available. False will be returned if not.
+    7. Check if DSDS mode, data sub ID, voice sub ID and message sub ID still keep the same.
+
+    Args:
+        log: log object.
+        ad: android object.
+        wifi_ssid: SSID of Wi-Fi AP for Wi-Fi connection.
+
+    Returns:
+        True if pass; False if fail.
+    """
+    try:
+        wifi_connected = False
+        if wifi_ssid and check_is_wifi_connected(ad.log, ad, wifi_ssid):
+            wifi_connected = True
+
+        data_subid = get_default_data_sub_id(ad)
+        voice_subid = get_outgoing_voice_sub_id(ad)
+        sms_subid = get_outgoing_message_sub_id(ad)
+
+        ad.reboot()
+        time.sleep(WAIT_TIME_AFTER_REBOOT)
+
+        if not wait_for_state(
+                get_service_state_by_adb,
+                "IN_SERVICE",
+                MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                WAIT_TIME_BETWEEN_STATE_CHECK,
+                log,
+                ad):
+            ad.log.error("Current service state: %s" % service_state)
+            return False
+
+        if not ad.droid.connectivityNetworkIsConnected():
+            ad.log.error("Network is NOT connected!")
+            return False
+
+        if wifi_connected:
+            if not check_is_wifi_connected(ad.log, ad, wifi_ssid):
+                return False
+        else:
+            if not wait_for_cell_data_connection(log, ad, True):
+                ad.log.error("Failed to enable data connection.")
+                return False
+
+        if not verify_internet_connection(log, ad):
+            ad.log.error("Internet connection is not available")
+            return False
+
+        sim_mode = ad.droid.telephonyGetPhoneCount()
+        if hasattr(ad, "dsds"):
+            if sim_mode == 1:
+                ad.log.error("Phone is in single SIM mode after reboot.")
+                return False
+            elif sim_mode == 2:
+                ad.log.info("Phone keeps being in dual SIM mode after reboot.")
+        else:
+            if sim_mode == 1:
+                ad.log.info("Phone keeps being in single SIM mode after reboot.")
+            elif sim_mode == 2:
+                ad.log.error("Phone is in dual SIM mode after reboot.")
+                return False
+
+        data_subid_after_reboot = get_default_data_sub_id(ad)
+        if data_subid_after_reboot != data_subid:
+            ad.log.error(
+                "Data sub ID changed! (Before reboot: %s; after reboot: %s)",
+                data_subid, data_subid_after_reboot)
+            return False
+        else:
+            ad.log.info("Data sub ID does not change after reboot.")
+
+        voice_subid_after_reboot = get_outgoing_voice_sub_id(ad)
+        if voice_subid_after_reboot != voice_subid:
+            ad.log.error(
+                "Voice sub ID changed! (Before reboot: %s; after reboot: %s)",
+                voice_subid, voice_subid_after_reboot)
+            return False
+        else:
+            ad.log.info("Voice sub ID does not change after reboot.")
+
+        sms_subid_after_reboot = get_outgoing_message_sub_id(ad)
+        if sms_subid_after_reboot != sms_subid:
+            ad.log.error(
+                "Message sub ID changed! (Before reboot: %s; after reboot: %s)",
+                sms_subid, sms_subid_after_reboot)
+            return False
+        else:
+            ad.log.info("Message sub ID does not change after reboot.")
+
+    except Exception as e:
+        ad.log.error(e)
+        return False
+
+    return True
