@@ -138,7 +138,105 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         self.ad_dut.adb.ensure_root()
         self.adb_run(common.dismiss_keyguard)
+        self.adb_run(goog.location_off_warning_dialog.toggle(False))
         self.ad_dut.ensure_screen_on()
+
+        self.adb_run(goog.location_off_warning_dialog.toggle(False))
+        self.adb_run(common.screen_always_on.toggle(True))
+        self.adb_run(common.menu_button)
+        self.adb_run(common.home_button)
+        self.adb_run(common.airplane_mode.toggle(True))
+
+        self.set_screen_brightness_level()
+        self.adb_run(common.screen_adaptive_brightness.toggle(False))
+        self.adb_run(common.location_gps.toggle(False))
+        self.adb_run(common.location_network.toggle(False))
+        self.adb_run(common.auto_time.toggle(False))
+        self.adb_run(common.wifi_global.toggle(False))
+        self.adb_run(common.auto_timezone.toggle(False))
+        self.adb_run(common.bluetooth.toggle(False))
+        self.adb_run(common.crashed_activities)
+
+        self.adb_run(goog.location_off_warning_dialog.toggle(False))
+        self.adb_run(common.screen_always_on.toggle(True))
+        self.adb_run(common.menu_button)
+        self.adb_run(common.home_button)
+        self.adb_run(common.airplane_mode.toggle(True))
+        self.set_screen_brightness_level()
+
+        self.adb_run(common.notification_led.toggle(False))
+        self.adb_run(common.screen_timeout_ms.set_value(1800000))
+        self.adb_run(common.auto_rotate.toggle(False))
+        self.adb_run(common.screen_adaptive_brightness.toggle(False))
+        self.adb_run(common.skip_gesture.toggle(False))
+        self.adb_run(common.screensaver.toggle(False))
+        self.adb_run(common.doze_pulse_on_pick_up.toggle(False))
+        self.adb_run(goog.edge_sensor.toggle(False))
+        self.adb_run(common.system_navigation_keys_enabled.toggle(False))
+        self.adb_run(common.camera_lift_trigger_enabled.toggle(False))
+        self.adb_run(common.doze_wake_screen_gesture.toggle(False))
+        self.adb_run(goog.edge_sensor_wakeup.toggle(False))
+        self.adb_run(common.doze_always_on.toggle(False))
+        self.adb_run(common.location_mode.toggle(False))
+        self.adb_run(common.single_tap_gesture.toggle(False))
+        self.adb_run(common.camera_double_twist_to_flip_enabled.toggle(False))
+        self.adb_run(common.silence_gesture.toggle(False))
+        self.adb_run(common.location_gps.toggle(False))
+        self.adb_run(common.location_network.toggle(False))
+        self.adb_run(goog.edge_sensor_alerts.toggle(False))
+
+        self.adb_run(common.aware_enabled.toggle(False))
+        self.adb_run(
+            common.camera_double_tap_power_gesture_disabled.toggle(True))
+        self.adb_run(common.doze_mode.toggle(False))
+        self.adb_run(common.wake_gesture.toggle(False))
+        self.adb_run(common.double_tap_gesture.toggle(False))
+        self.adb_run(common.battery_saver_trigger.set_value(0))
+        self.adb_run(common.auto_time.toggle(False))
+        self.adb_run(common.wifi_global.toggle(False))
+        self.adb_run(common.auto_timezone.toggle(False))
+        self.adb_run(common.battery_saver_mode.toggle(False))
+
+        self.adb_run(goog.magic_tether.toggle(False))
+        self.adb_run(goog.location_collection.toggle(False))
+        self.adb_run(goog.compact_location_log.toggle(True))
+        self.adb_run(goog.cast_broadcast.toggle(False))
+        self.adb_run(goog.ocr.toggle(False))
+        if self._instrumentation_config.get('set_gms_phenotype_flag',
+                                            default=True):
+            self.adb_run(goog.phenotype.toggle(True))
+        self.adb_run(goog.icing.toggle(False))
+
+        self.adb_run('echo 1 > /d/clk/debug_suspend')
+        self.adb_run(common.wifi_state.toggle(False))
+        self.adb_run(common.bluetooth.toggle(False))
+        self.adb_run(common.nfc.toggle(False))
+        self.adb_run(common.enable_full_batterystats_history)
+        self.adb_run(common.disable_doze)
+        self.adb_run(goog.disable_playstore)
+        self.adb_run(goog.disable_musiciq)
+        self.adb_run(goog.enable_musiciq)
+        self.adb_run(common.home_button)
+        self.adb_run(common.disable_pixellogger)
+        self.adb_run(goog.hotword.toggle(False))
+        self.adb_run(goog.disable_volta)
+        self.adb_run(common.crashed_activities)
+
+        self.adb_run(goog.finsky_instrumentation)
+        try:
+            self.ad_dut.reboot(timeout=180)
+        except (AndroidDeviceError, TimeoutError):
+            raise signals.TestFailure('Device did not reboot successfully.')
+        self.log.debug('Giving device extra minute after booting before '
+                       'starting instrumentation test.')
+        time.sleep(60)
+
+        self.adb_run(goog.location_off_warning_dialog.toggle(False))
+        self.adb_run(common.hidden_api_exemption)
+        if self.file_exists(common.MOISTURE_DETECTION_SETTING_FILE):
+            self.adb_run(common.disable_moisture_detection)
+        self.adb_run(common.stop_moisture_detection)
+        self.adb_run(common.ambient_eq.toggle(False))
 
         # Test harness flag
         harness_prop = 'getprop ro.test_harness'
@@ -159,88 +257,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.adb_run('chmod 644 /data/local.prop')
             self.adb_run(common.disable_dialing.toggle(True))
 
-        # Screen
-        self.adb_run(common.screen_always_on.toggle(True))
-        self.adb_run(common.screen_adaptive_brightness.toggle(False))
-        self.set_screen_brightness_level()
-        self.adb_run(common.screen_timeout_ms.set_value(1800000))
-        self.adb_run(common.notification_led.toggle(False))
-        self.adb_run(common.screensaver.toggle(False))
-        self.adb_run(common.wake_gesture.toggle(False))
-        self.adb_run(common.doze_mode.toggle(False))
-        self.adb_run(common.doze_always_on.toggle(False))
-        self.adb_run(common.single_tap_gesture.toggle(False))
-
-        # Sensors
-        self.adb_run(common.auto_rotate.toggle(False))
-        self.adb_run(common.disable_sensors)
-        self.adb_run(common.ambient_eq.toggle(False))
-
-        if self.file_exists(common.MOISTURE_DETECTION_SETTING_FILE):
-            self.adb_run(common.disable_moisture_detection)
-        self.adb_run(common.stop_moisture_detection)
-
-        # Time
-        self.adb_run(common.auto_time.toggle(False))
-        self.adb_run(common.auto_timezone.toggle(False))
-        self.adb_run(common.timezone.set_value(str(tzlocal.get_localzone())))
-
-        # Location
-        self.adb_run(common.location_gps.toggle(False))
-        self.adb_run(common.location_network.toggle(False))
-        self.adb_run(common.location_mode.toggle(False))
-
-        # Power
-        self.adb_run(common.battery_saver_mode.toggle(False))
-        self.adb_run(common.battery_saver_trigger.set_value(0))
-        self.adb_run(common.enable_full_batterystats_history)
-        self.adb_run(common.disable_doze)
-
-        # Camera
-        self.adb_run(goog.camera_hdr_mode.toggle(True))
-
-        # Gestures
-        self.adb_run(common.doze_pulse_on_pick_up.toggle(False))
-        self.adb_run(common.double_tap_gesture.toggle(False))
-        self.adb_run(
-            common.camera_double_tap_power_gesture_disabled.toggle(True))
-        self.adb_run(common.camera_double_twist_to_flip_enabled.toggle(False))
-        self.adb_run(goog.edge_sensor.toggle(False))
-        self.adb_run(common.system_navigation_keys_enabled.toggle(False))
-        self.adb_run(common.camera_lift_trigger_enabled.toggle(False))
-        self.adb_run(common.aware_enabled.toggle(False))
-        self.adb_run(common.doze_wake_screen_gesture.toggle(False))
-        self.adb_run(common.skip_gesture.toggle(False))
-        self.adb_run(common.silence_gesture.toggle(False))
-
-        # GServices
-        self.adb_run(goog.location_collection.toggle(False))
-        self.adb_run(goog.cast_broadcast.toggle(False))
-        self.adb_run(goog.compact_location_log.toggle(True))
-        self.adb_run(goog.magic_tether.toggle(False))
-        self.adb_run(goog.ocr.toggle(False))
-        if self._instrumentation_config.get('set_gms_phenotype_flag',
-                                            default=True):
-            self.adb_run(goog.phenotype.toggle(True))
-        self.adb_run(goog.icing.toggle(False))
-        self.adb_run(common.disable_pixellogger)
-
-        # Comms
-        self.adb_run(common.wifi.toggle(False))
-        self.adb_run(common.bluetooth.toggle(False))
-        self.adb_run(common.airplane_mode.toggle(True))
-        self.adb_run(common.disable_modem)
-        self.adb_run(common.nfc.toggle(False))
-
-        # Misc. Google features
-        self.adb_run(goog.disable_playstore)
-        self.adb_run(goog.disable_volta)
-        self.adb_run(goog.disable_chre)
-        self.adb_run(goog.disable_musiciq)
-        self.adb_run(goog.hotword.toggle(False))
-
-        # Enable clock dump info
-        self.adb_run('echo 1 > /d/clk/debug_suspend')
 
     def set_screen_brightness_level(self):
         """set screen brightness level"""
@@ -321,7 +337,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return self.adb_run(cmd)
 
     def push_to_external_storage(self, file_path, dest=None,
-                                 timeout=DEFAULT_PUSH_FILE_TIMEOUT):
+        timeout=DEFAULT_PUSH_FILE_TIMEOUT):
         """Pushes a file to {$EXTERNAL_STORAGE} and returns its final location.
 
         Args:
@@ -452,7 +468,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return power_metrics
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
-                        extra_params=None, count=None, attempt_number=None):
+        extra_params=None, count=None, attempt_number=None):
         """Convenience method for setting up the instrumentation test command,
         running it on the device, and starting the Monsoon measurement.
 

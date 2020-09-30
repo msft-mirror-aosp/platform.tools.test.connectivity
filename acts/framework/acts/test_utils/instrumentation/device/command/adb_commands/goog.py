@@ -57,11 +57,9 @@ location_opt_in = DeviceBinaryCommandSeries(
 )
 
 # Cast
-
-# TODO(mdb/android-system-infra): Define what is 'cast broadcast' exactly.
 cast_broadcast = DeviceGServices(
     'gms:cast:mdns_device_scanner:is_enabled',
-    desc='Modifies whether the cast broadcast is enabled.')
+    desc='Disable devices sending CAST messages to prevent frequent wakeups by WiFi')
 
 # Apps
 disable_chrome = GenericCommand('pm disable-user com.android.chrome',
@@ -99,9 +97,15 @@ disable_chre = GenericCommand('setprop ctl.stop vendor.chre',
 # MusicIQ
 
 disable_musiciq = GenericCommand(
-    'pm disable-user com.google.intelligence.sense',
-    desc='Disables the musiciq feature, which listens to surrounding music to '
+    'am force-stop com.google.intelligence.sense',
+    desc='Disables the musiciq feature, whch listens to surrounding music to '
          'show what is being played.')
+
+enable_musiciq = GenericCommand(
+    'am start -n com.google.intelligence.sense/com.google.intelligence.sense.'
+    'ambientmusic.AmbientMusicSettingsActivity',
+    desc='Enables the musiciq feature')
+
 
 # Email
 
@@ -126,34 +130,40 @@ camera_hdr_mode = DeviceSetprop(
     'camera.optbar.hdr', on_val='true', off_val='false',
     desc="Modifies whether to use HDR camera mode.")
 
-# TODO(mdb/android-system-infra): Add description
 compact_location_log = DeviceGServices(
-    'location:compact_log_enabled')
+    'location:compact_log_enabled',
+    desc = 'Enables compact location logging')
 
-# TODO(mdb/android-system-infra): Add description
-magic_tether = DeviceGServices('gms:magictether:enable')
+magic_tether = DeviceGServices('gms:magictether:enable',
+                               desc='Disables magic tethering')
 
-# TODO(mdb/android-system-infra): Add description
-ocr = DeviceGServices('ocr.cc_ocr_enabled')
+ocr = DeviceGServices('ocr.cc_ocr_enabled',
+                      desc = 'Turns off OCR download for testing purposes')
 
-# TODO(mdb/android-system-infra): Add description
 phenotype = DeviceGServices(
-    'gms:phenotype:phenotype_flag:debug_bypass_phenotype')
+    'gms:phenotype:phenotype_flag:debug_bypass_phenotype',
+    desc = 'Bypasses GMS core phenotype experiments')
 
-# TODO(mdb/android-system-infra): Add description
-icing = DeviceGServices('gms_icing_extension_download_enabled')
+icing = DeviceGServices('gms_icing_extension_download_enabled',
+                        desc = 'Turns off icing download for testing purposes')
 
-edge_sensor = DeviceBinaryCommandSeries([
-    DeviceSetting(
-        DeviceSetting.SECURE, 'assist_gesture_enabled',
-        desc='Modifies whether the edge sensor gesture is enabled.'),
-    DeviceSetting(
-        DeviceSetting.SECURE, 'assist_gesture_wake_enabled',
-        desc='Modifies whether the edge sensor gesture is allowed to wake up '
-             'the device.'),
-    DeviceSetting(
-        DeviceSetting.SECURE, 'assist_gesture_setup_complete',
-        desc='Triggers activation/deactivation of edge sensor gesture. It '
-             'depends on the settings assist_gesture_enabled and '
-             'assist_gesture_wake_enabled to be previously set.')
-])
+edge_sensor = DeviceSetting(
+    DeviceSetting.SECURE, 'assist_gesture_enabled',
+    desc='Modifies whether the edge sensor gesture is enabled.')
+
+edge_sensor_wakeup = DeviceSetting(
+    DeviceSetting.SECURE, 'assist_gesture_wake_enabled',
+    desc='Modifies whether the edge sensor gesture is allowed to wake up '
+         'the device.')
+
+edge_sensor_alerts = DeviceSetting(
+    DeviceSetting.SECURE, 'assist_gesture_silence_alerts_enabled',
+    desc='Triggers activation/deactivation of edge sensor gesture. It '
+         'depends on the settings assist_gesture_enabled and '
+         'assist_gesture_wake_enabled to be previously set.')
+
+finsky_instrumentation = GenericCommand(
+    'am instrument -w -r -e command auto_update -e value false com.google'
+    '.android.apps.platformutils/.FinskyInstrumentation',
+    desc = 'Prevents playstore auto updates'
+)
