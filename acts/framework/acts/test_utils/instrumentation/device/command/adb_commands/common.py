@@ -283,6 +283,9 @@ ambient_eq = DeviceSetting(
 disable_pixellogger = GenericCommand('pm disable com.android.pixellogger',
                                      desc="Disables system apps.")
 
+oslo_gating = DeviceSetprop('pixel.oslo.gating',
+                            desc='Disables oslo gating.')
+
 # Miscellaneous
 
 hidden_api_exemption = GenericCommand('settings put global hidden_api_blacklist_exemptions *',
