@@ -56,6 +56,11 @@ location_opt_in = DeviceBinaryCommandSeries(
     ]
 )
 
+location_activity_low_power = DeviceGServices(
+    'location:activity_low_power_mode_enabled', on_val='true', off_val='false',
+    desc='Enables or disables location activity low power mode.'
+)
+
 # Cast
 cast_broadcast = DeviceGServices(
     'gms:cast:mdns_device_scanner:is_enabled',
@@ -167,3 +172,10 @@ finsky_instrumentation = GenericCommand(
     '.android.apps.platformutils/.FinskyInstrumentation',
     desc = 'Prevents playstore auto updates'
 )
+
+activity_recognition = GenericCommand('am instrument -e interval_ms 180000'
+                                      ' -e class com.google.android.gms.testapps.location.activity.power.'
+                                      'ActivityPowerUtil#testRegisterAR -w '
+                                      'com.google.android.gms.testapps.location.'
+                                      'activity.power/.ARTestRunner',
+                                      desc = 'Turns activity recognition on')
