@@ -17,7 +17,7 @@ import time
 
 from acts.controllers.rohdeschwarz_lib import cmw500
 from acts.controllers import cellular_simulator as cc
-from acts.test_utils.power.tel_simulations import LteSimulation
+from acts.controllers.cellular_lib import LteSimulation
 
 CMW_TM_MAPPING = {
     LteSimulation.TransmissionMode.TM1: cmw500.TransmissionModes.TM1,

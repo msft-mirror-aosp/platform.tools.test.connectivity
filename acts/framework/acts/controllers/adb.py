@@ -19,6 +19,7 @@ from builtins import str
 import logging
 import re
 import shlex
+import shutil
 
 from acts.controllers.adb_lib.error import AdbError
 from acts.libs.proc import job
@@ -73,7 +74,7 @@ class AdbProxy(object):
         """
         self.serial = serial
         self._server_local_port = None
-        adb_path = job.run("which adb").stdout
+        adb_path = shutil.which('adb')
         adb_cmd = [shlex.quote(adb_path)]
         if serial:
             adb_cmd.append("-s %s" % serial)
@@ -259,17 +260,12 @@ class AdbProxy(object):
     def shell_nb(self, command):
         return self._exec_adb_cmd_nb('shell', shlex.quote(command))
 
-    def pull(self,
-             command,
-             ignore_status=False,
-             timeout=DEFAULT_ADB_PULL_TIMEOUT):
-        return self._exec_adb_cmd(
-            'pull', command, ignore_status=ignore_status, timeout=timeout)
-
     def __getattr__(self, name):
         def adb_call(*args, **kwargs):
             usage_metadata_logger.log_usage(self.__module__, name)
             clean_name = name.replace('_', '-')
+            if clean_name in ['pull', 'push'] and 'timeout' not in kwargs:
+                kwargs['timeout'] = DEFAULT_ADB_PULL_TIMEOUT
             arg_str = ' '.join(str(elem) for elem in args)
             return self._exec_adb_cmd(clean_name, arg_str, **kwargs)
 

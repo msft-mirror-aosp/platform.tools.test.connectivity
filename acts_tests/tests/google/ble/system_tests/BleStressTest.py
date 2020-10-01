@@ -37,6 +37,7 @@ from acts.test_utils.bt.bt_constants import scan_result
 class BleStressTest(BluetoothBaseTest):
     default_timeout = 10
     PAIRING_TIMEOUT = 20
+    droid_list = []
 
     def setup_class(self):
         super().setup_class()
@@ -45,7 +46,7 @@ class BleStressTest(BluetoothBaseTest):
         self.adv_ad = self.android_devices[1]
 
     def teardown_test(self):
-        super(BluetoothBaseTest, self).teardown_test()
+        super().teardown_test()
         self.log_stats()
 
     def bleadvertise_verify_onsuccess_handler(self, event):

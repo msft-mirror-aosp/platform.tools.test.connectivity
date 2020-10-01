@@ -43,6 +43,9 @@ def create_wlan_device(hardware_device):
                          type(hardware_device))
 
 
+FUCHSIA_VALID_SECURITY_TYPES = {"none", "wep", "wpa", "wpa2", "wpa3"}
+
+
 class WlanDevice(object):
     """Class representing a generic WLAN device.
 
@@ -55,6 +58,7 @@ class WlanDevice(object):
     def __init__(self, device):
         self.device = device
         self.log = logging
+        self.identifier = None
 
     def wifi_toggle_state(self, state):
         """Base generic WLAN interface.  Only called if not overridden by
@@ -135,11 +139,35 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+    def can_ping(self,
+                 dest_ip,
+                 count=3,
+                 interval=1000,
+                 timeout=1000,
+                 size=25,
+                 additional_ping_params=None):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def ping(self,
+             dest_ip,
+             count=3,
+             interval=1000,
+             timeout=1000,
+             size=25,
+             additional_ping_params=None):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def hard_power_cycle(self, pdus=None):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def save_network(self, ssid):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def clear_saved_networks(self):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
@@ -155,6 +183,7 @@ class AndroidWlanDevice(WlanDevice):
     """
     def __init__(self, android_device):
         super().__init__(android_device)
+        self.identifier = android_device.serial
 
     def wifi_toggle_state(self, state):
         awutils.wifi_toggle_state(self.device, state)
@@ -226,13 +255,28 @@ class AndroidWlanDevice(WlanDevice):
             return 'BSSID' in wifi_info and wifi_info['SSID'] == ssid
         return 'BSSID' in wifi_info
 
-    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+    def can_ping(self,
+                 dest_ip,
+                 count=3,
+                 interval=1000,
+                 timeout=1000,
+                 size=25,
+                 additional_ping_params=None):
         return adb_shell_ping(self.device,
                               dest_ip=dest_ip,
                               count=count,
                               timeout=timeout)
 
+    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+        pass
+
     def hard_power_cycle(self, pdus):
+        pass
+
+    def save_network(self, ssid):
+        pass
+
+    def clear_saved_networks(self):
         pass
 
 
@@ -247,6 +291,7 @@ class FuchsiaWlanDevice(WlanDevice):
     """
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
+        self.identifier = fuchsia_device.ip
 
     def wifi_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
@@ -302,13 +347,34 @@ class FuchsiaWlanDevice(WlanDevice):
     def status(self):
         return self.device.wlan_lib.wlanStatus()
 
-    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
-        ping_result = self.device.ping(dest_ip,
-                                       count=count,
-                                       interval=interval,
-                                       timeout=timeout,
-                                       size=size)
-        return ping_result['status']
+    def can_ping(self,
+                 dest_ip,
+                 count=3,
+                 interval=1000,
+                 timeout=1000,
+                 size=25,
+                 additional_ping_params=None):
+        return self.device.can_ping(
+            dest_ip,
+            count=count,
+            interval=interval,
+            timeout=timeout,
+            size=size,
+            additional_ping_params=additional_ping_params)
+
+    def ping(self,
+             dest_ip,
+             count=3,
+             interval=1000,
+             timeout=1000,
+             size=25,
+             additional_ping_params=None):
+        return self.device.ping(dest_ip,
+                                count=count,
+                                interval=interval,
+                                timeout=timeout,
+                                size=size,
+                                additional_ping_params=additional_ping_params)
 
     def get_wlan_interface_id_list(self):
         """Function to list available WLAN interfaces.
@@ -345,7 +411,7 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def is_connected(self, ssid=None):
         """ Determines if wlan_device is connected to wlan network.
-        
+
         Args:
             ssid (optional): string, to check if device is connect to a specific
                 network.
@@ -373,3 +439,18 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def hard_power_cycle(self, pdus):
         self.device.reboot(reboot_type='hard', testbed_pdus=pdus)
+
+    def save_network(self, target_ssid, security_type=None, target_pwd=None):
+        if security_type and security_type not in FUCHSIA_VALID_SECURITY_TYPES:
+            raise TypeError('Invalid security type: %s' % security_type)
+        response = self.device.wlan_policy_lib.wlanSaveNetwork(
+            target_ssid, security_type, target_pwd=target_pwd)
+        if response.get('error'):
+            raise EnvironmentError('Failed to save network %s. Err: %s' %
+                                   (target_ssid, response.get('error')))
+
+    def clear_saved_networks(self):
+        response = self.device.wlan_policy_lib.wlanRemoveAllNetworks()
+        if response.get('error'):
+            raise EnvironmentError('Failed to clear saved networks: %s' %
+                                   response.get('error'))

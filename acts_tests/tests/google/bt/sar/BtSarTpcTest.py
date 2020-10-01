@@ -18,6 +18,7 @@ import os
 import time
 import numpy as np
 import acts.test_utils.bt.bt_test_utils as bt_utils
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 import acts.test_utils.wifi.wifi_performance_test_utils as wifi_utils
 
 from acts import asserts
@@ -34,21 +35,16 @@ class BtSarTpcTest(BtSarBaseTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         req_params = ['scenario_count']
+        self.sar_tpc_test_result = BlackboxMetricLogger.for_test_case(
+            metric_name='pass_count')
         self.unpack_userparams(req_params)
         self.tests = self.generate_test_cases()
 
     def setup_class(self):
         super().setup_class()
-
-        # Pushing custom table
-        self.backup_sar_path = os.path.join(self.dut.device_log_path,
-                                            self.BACKUP_BT_SAR_TABLE_NAME)
-        self.dut.adb.pull(self.sar_file_path, self.backup_sar_path)
         self.push_table(self.dut, self.custom_sar_path)
-
         self.attenuator.set_atten(self.atten_min)
         self.pathloss = int(self.calibration_params['pathloss'])
-
         self.sar_df = self.bt_sar_df.copy()
         self.sar_df['power_cap'] = -128
         self.sar_df['TPC_result'] = -1
@@ -58,6 +54,7 @@ class BtSarTpcTest(BtSarBaseTest):
 
         self.tpc_sweep_range = range(self.atten_min, self.pl10_atten)
         self.log.info(self.current_test_name)
+
         self.tpc_plots_figure = wifi_utils.BokehFigure(
             title='{}_{}'.format(self.current_test_name, 'curve'),
             x_label='Pathloss(dBm)',
@@ -69,13 +66,8 @@ class BtSarTpcTest(BtSarBaseTest):
             primary_y_label='Tx Power(dB)')
 
     def teardown_class(self):
+        self.dut.adb.shell('rm {}'.format(self.power_file_paths[1]))
         super().teardown_class()
-        result_file_name = '{}.csv'.format(self.__class__.__name__)
-        result_file_path = os.path.join(self.log_path, result_file_name)
-        self.sar_df.to_csv(result_file_path)
-
-        # Pushing default table back
-        self.push_table(self.dut, self.backup_sar_path)
 
     def generate_test_cases(self):
         """Function to generate test cases.
@@ -106,23 +98,37 @@ class BtSarTpcTest(BtSarBaseTest):
         """
 
         tpc_verdict = 'FAIL'
+        tx_power_derivative = np.diff(tx_power_list)
+
+        #Remove the PL transition points when checking pass/fail
+        pwlv_list_int = [item % 1 for item in pwlv_list]
+        pwlv_steady_index = [
+            idx for idx, val in enumerate(pwlv_list_int) if val == 0
+        ]
+        pwlv_steady_state_list = [
+            pwlv_list[index] for index in pwlv_steady_index
+        ]
+        tx_power_steady_state_list = [
+            tx_power_list[index] for index in pwlv_steady_index
+        ]
+        tx_power_steady_state_derivative = np.diff(tx_power_steady_state_list)
+
+        #Report issue if the transition period is too long
+        transition_points_count = len(
+            [i for i in list(np.diff(pwlv_steady_index)) if i > 3])
+        if transition_points_count > 0:
+            self.log.warning('TPC transition takes too long')
+            return [tpc_verdict, tx_power_derivative]
 
         # Locating power level changes in the sweep
-        pwlv_derivative_bool = list(np.diff([pwlv_list[0]] + pwlv_list) == 1)
-
-        # Diff-ing the list to get derivative of the list
-        tx_power_derivative = np.diff([tx_power_list[0]] + tx_power_list)
-
-        # Checking for negative peaks
-        if tx_power_derivative.min() < self.tpc_threshold['negative']:
-            return [tpc_verdict, tx_power_derivative]
+        pwlv_derivative_bool = list(np.diff(pwlv_steady_state_list) == 1)
 
         # Locating legitimate tx power changes
         tx_power_derivative_bool = [
             self.tpc_threshold['positive'][0] < x <
-            self.tpc_threshold['positive'][1] for x in tx_power_derivative
+            self.tpc_threshold['positive'][1]
+            for x in tx_power_steady_state_derivative
         ]
-
         # Ensuring that changes in power level correspond to tx power changes
         if pwlv_derivative_bool == tx_power_derivative_bool:
             tpc_verdict = 'PASS'
@@ -174,12 +180,12 @@ class BtSarTpcTest(BtSarBaseTest):
          ] = self.process_tpc_results(master_tx_power_list, pwlv_list)
 
         # Plot TPC curves
-        self.tpc_plots_figure.add_line(self.tpc_sweep_range,
+        self.tpc_plots_figure.add_line(self.tpc_sweep_range[:-1],
                                        master_tx_power_list,
                                        str(scenario),
                                        marker='circle')
 
-        self.tpc_plots_derivative_figure.add_line(self.tpc_sweep_range,
+        self.tpc_plots_derivative_figure.add_line(self.tpc_sweep_range[:-1],
                                                   tx_power_derivative,
                                                   str(scenario),
                                                   marker='circle')
@@ -199,5 +205,6 @@ class BtSarTpcTest(BtSarBaseTest):
             asserts.fail('TPC sweep failed for scenario: {}'.format(scenario))
 
         else:
+            self.sar_test_result.metric_value = 1
             asserts.explicit_pass(
                 'TPC sweep passed for scenario: {}'.format(scenario))

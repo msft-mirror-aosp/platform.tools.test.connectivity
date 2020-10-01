@@ -54,7 +54,8 @@ class PingStressTest(BaseTestClass):
                                client=self.wlan_device,
                                profile_name='whirlwind',
                                channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                               ssid=self.ssid)
+                               ssid=self.ssid,
+                               setup_bridge=True)
 
     def teardown_test(self):
         self.wlan_device.disconnect()
@@ -67,8 +68,8 @@ class PingStressTest(BaseTestClass):
                   interval=1000,
                   timeout=1000,
                   size=25):
-        ping_result = self.wlan_device.ping(dest_ip, count, interval, timeout,
-                                            size)
+        ping_result = self.wlan_device.can_ping(dest_ip, count, interval,
+                                                timeout, size)
         if ping_result:
             self.log.info('Ping was successful.')
         else:
@@ -80,7 +81,7 @@ class PingStressTest(BaseTestClass):
         return True
 
     def ping_thread(self, dest_ip):
-        ping_result = self.wlan_device.ping(dest_ip, count=10, size=50)
+        ping_result = self.wlan_device.can_ping(dest_ip, count=10, size=50)
         if ping_result:
             self.log.info('Success pinging: %s' % dest_ip)
         else:

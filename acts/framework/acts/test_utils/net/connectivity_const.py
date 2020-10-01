@@ -66,6 +66,8 @@ MULTIPATH_PREFERENCE_PERFORMANCE = 1 << 2
 
 # Private DNS constants
 DNS_GOOGLE = "dns.google"
+DNS_QUAD9 = "dns.quad9.net"
+DNS_CLOUDFLARE = "1dot1dot1dot1.cloudflare-dns.com"
 PRIVATE_DNS_MODE_OFF = "off"
 PRIVATE_DNS_MODE_OPPORTUNISTIC = "opportunistic"
 PRIVATE_DNS_MODE_STRICT = "hostname"
@@ -121,6 +123,9 @@ class VpnProfileType(enum.Enum):
     IPSEC_XAUTH_PSK = 3
     IPSEC_XAUTH_RSA = 4
     IPSEC_HYBRID_RSA = 5
+    IKEV2_IPSEC_USER_PASS = 6
+    IKEV2_IPSEC_PSK = 7
+    IKEV2_IPSEC_RSA = 8
 
 
 # Constants for config file
@@ -138,3 +143,6 @@ class VpnReqParams(object):
     cert_password = "cert_password"
     pptp_mppe = "pptp_mppe"
     ipsec_server_type = "ipsec_server_type"
+    wifi_network = "wifi_network"
+    vpn_identity = "vpn_identity"
+    vpn_server_hostname = "vpn_server_hostname"

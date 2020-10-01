@@ -3248,6 +3248,45 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self._is_phone_in_call_iwlan,
             self._increase_lte_decrease_wifi_rssi_check_phone_hand_out, True)
 
+    def _decrease_then_increase_cellular_rssi_check_phone_hand_out(self):
+        """Private Test utility for hand_out test.
+        Step1
+        Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE 5db per sec
+        PhoneA should still be in call. PhoneA should hand-out to iWLAN.
+        Step2
+        Increase Cellular RSSI to MAX_RSSI_RESERVED_VALUE
+        PhoneA should still be in call. PhoneA should hand-out to LTE.
+        """
+        self._decrease_cellular_rssi_check_phone_hand_out()
+        self._increase_lte_decrease_wifi_rssi_check_phone_hand_out()
+
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lte_iwlan_lte_handoff_cellular_preferred(self):
+        """VoLET to VoWiFi then back to VoLTE In Call Handover Test
+        Step1
+        VoLTE to VoWiFi in call handover
+        PhoneA on LTE, VoLTE enabled, WFC WiFi preferred, WiFi associated.
+        Cellular strong, WiFi signal strong.
+        Call from PhoneA to PhoneB, PhoneA should be on LTE.
+        Attenuate LTE
+        PhoneA should still be in call. PhoneA should handover to iWLAN.
+
+        Step2
+        PhoneA on LTE, VoLTE enabled, WFC Cellular preferred, WiFi associated.
+        Cellular absent, WiFi signal strong.
+        Call from PhoneA to PhoneB, PhoneA should be on iwlan.
+        Attenuate WiFi and Bring up LTE
+        PhoneA should still be in call. PhoneA should handover to LTE.
+        """
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_cellular_preferred, self._phone_idle_volte,
+            self._is_phone_in_call_volte,
+            self._decrease_then_increase_cellular_rssi_check_phone_hand_out, True)
+
     def _decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in(self):
         if not self._decrease_wifi_rssi_check_phone_hand_out():
             return False

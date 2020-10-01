@@ -84,7 +84,8 @@ class LinkLayerStats():
     def update_stats(self):
         if self.llstats_enabled:
             try:
-                llstats_output = self.dut.adb.shell(self.LLSTATS_CMD, timeout=0.1)
+                llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
+                                                    timeout=0.1)
             except:
                 llstats_output = ''
         else:
@@ -682,10 +683,51 @@ def get_ping_stats_nb(src_device, dest_address, ping_duration, ping_interval,
                           ping_interval, ping_size)
 
 
+# Iperf utilities
 @nonblocking
 def start_iperf_client_nb(iperf_client, iperf_server_address, iperf_args, tag,
                           timeout):
     return iperf_client.start(iperf_server_address, iperf_args, tag, timeout)
+
+
+def get_iperf_arg_string(duration,
+                         reverse_direction,
+                         interval=1,
+                         traffic_type='TCP',
+                         socket_size=None,
+                         num_processes=1,
+                         udp_throughput='1000M',
+                         ipv6=False):
+    """Function to format iperf client arguments.
+
+    This function takes in iperf client parameters and returns a properly
+    formatter iperf arg string to be used in throughput tests.
+
+    Args:
+        duration: iperf duration in seconds
+        reverse_direction: boolean controlling the -R flag for iperf clients
+        interval: iperf print interval
+        traffic_type: string specifying TCP or UDP traffic
+        socket_size: string specifying TCP window or socket buffer, e.g., 2M
+        num_processes: int specifying number of iperf processes
+        udp_throughput: string specifying TX throughput in UDP tests, e.g. 100M
+        ipv6: boolean controlling the use of IP V6
+    Returns:
+        iperf_args: string of formatted iperf args
+    """
+    iperf_args = '-i {} -t {} -J '.format(interval, duration)
+    if ipv6:
+        iperf_args = iperf_args + '-6 '
+    if traffic_type.upper() == 'UDP':
+        iperf_args = iperf_args + '-u -b {} -l 1400 -P {} '.format(
+            udp_throughput, num_processes)
+    elif traffic_type.upper() == 'TCP':
+        iperf_args = iperf_args + '-P {} '.format(num_processes)
+    if socket_size:
+        iperf_args = iperf_args + '-w {} '.format(socket_size)
+    if reverse_direction:
+        iperf_args = iperf_args + ' -R'
+    return iperf_args
 
 
 # Rssi Utilities
@@ -699,7 +741,8 @@ def get_connected_rssi(dut,
                        polling_frequency=SHORT_SLEEP,
                        first_measurement_delay=0,
                        disconnect_warning=True,
-                       ignore_samples=0):
+                       ignore_samples=0,
+                       interface=None):
     """Gets all RSSI values reported for the connected access point/BSSID.
 
     Args:
@@ -716,7 +759,7 @@ def get_connected_rssi(dut,
     # yapf: disable
     connected_rssi = collections.OrderedDict(
         [('time_stamp', []),
-         ('bssid', []), ('frequency', []),
+         ('bssid', []), ('ssid', []), ('frequency', []),
          ('signal_poll_rssi', empty_rssi_result()),
          ('signal_poll_avg_rssi', empty_rssi_result()),
          ('chain_0_rssi', empty_rssi_result()),
@@ -729,7 +772,11 @@ def get_connected_rssi(dut,
         measurement_start_time = time.time()
         connected_rssi['time_stamp'].append(measurement_start_time - t0)
         # Get signal poll RSSI
-        status_output = dut.adb.shell(WPA_CLI_STATUS)
+        if interface is None:
+            status_output = dut.adb.shell(WPA_CLI_STATUS)
+        else:
+            status_output = dut.adb.shell(
+                'wpa_cli -i {} status'.format(interface))
         match = re.search('bssid=.*', status_output)
         if match:
             current_bssid = match.group(0).split('=')[1]
@@ -740,7 +787,17 @@ def get_connected_rssi(dut,
             if disconnect_warning and previous_bssid != 'disconnected':
                 logging.warning('WIFI DISCONNECT DETECTED!')
         previous_bssid = current_bssid
-        signal_poll_output = dut.adb.shell(SIGNAL_POLL)
+        match = re.search('\s+ssid=.*', status_output)
+        if match:
+            ssid = match.group(0).split('=')[1]
+            connected_rssi['ssid'].append(ssid)
+        else:
+            connected_rssi['ssid'].append('disconnected')
+        if interface is None:
+            signal_poll_output = dut.adb.shell(SIGNAL_POLL)
+        else:
+            signal_poll_output = dut.adb.shell(
+                'wpa_cli -i {} signal_poll'.format(interface))
         match = re.search('FREQUENCY=.*', signal_poll_output)
         if match:
             frequency = int(match.group(0).split('=')[1])
@@ -764,8 +821,12 @@ def get_connected_rssi(dut,
         else:
             connected_rssi['signal_poll_avg_rssi']['data'].append(
                 RSSI_ERROR_VAL)
+
         # Get per chain RSSI
-        per_chain_rssi = dut.adb.shell(STATION_DUMP)
+        if interface is None:
+            per_chain_rssi = dut.adb.shell(STATION_DUMP)
+        else:
+            per_chain_rssi = ''
         match = re.search('.*signal avg:.*', per_chain_rssi)
         if match:
             per_chain_rssi = per_chain_rssi[per_chain_rssi.find('[') +
@@ -808,10 +869,11 @@ def get_connected_rssi_nb(dut,
                           polling_frequency=SHORT_SLEEP,
                           first_measurement_delay=0,
                           disconnect_warning=True,
-                          ignore_samples=0):
+                          ignore_samples=0,
+                          interface=None):
     return get_connected_rssi(dut, num_measurements, polling_frequency,
                               first_measurement_delay, disconnect_warning,
-                              ignore_samples)
+                              ignore_samples, interface)
 
 
 def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
@@ -1104,41 +1166,6 @@ def get_server_address(ssh_connection, dut_ip, subnet_mask):
         if current_subnet == dut_subnet:
             return current_ip
     logging.error('No IP address found in requested subnet')
-
-
-def get_iperf_arg_string(duration,
-                         reverse_direction,
-                         interval=1,
-                         traffic_type='TCP',
-                         tcp_window=None,
-                         tcp_processes=1,
-                         udp_throughput='1000M'):
-    """Function to format iperf client arguments.
-
-    This function takes in iperf client parameters and returns a properly
-    formatter iperf arg string to be used in throughput tests.
-
-    Args:
-        duration: iperf duration in seconds
-        reverse_direction: boolean controlling the -R flag for iperf clients
-        interval: iperf print interval
-        traffic_type: string specifying TCP or UDP traffic
-        tcp_window: string specifying TCP window, e.g., 2M
-        tcp_processes: int specifying number of tcp processes
-        udp_throughput: string specifying TX throughput in UDP tests, e.g. 100M
-    Returns:
-        iperf_args: string of formatted iperf args
-    """
-    iperf_args = '-i {} -t {} -J '.format(interval, duration)
-    if traffic_type.upper() == 'UDP':
-        iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
-    elif traffic_type.upper() == 'TCP':
-        iperf_args = iperf_args + '-P {}'.format(tcp_processes)
-        if tcp_window:
-            iperf_args = iperf_args + '-w {}'.format(tcp_window)
-    if reverse_direction:
-        iperf_args = iperf_args + ' -R'
-    return iperf_args
 
 
 def get_dut_temperature(dut):

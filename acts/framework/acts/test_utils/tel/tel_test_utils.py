@@ -127,6 +127,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK
 from acts.test_utils.tel.tel_defines import WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
@@ -179,6 +180,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts.test_utils.wifi import wifi_test_utils
@@ -3747,6 +3749,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     }
     url_map = {
         "1MB": [
+            "http://146.148.91.8/download/1MB.zip",
             "http://ipv4.download.thinkbroadband.com/1MB.zip"
         ],
         "5MB": [
@@ -4943,16 +4946,25 @@ def show_enhanced_4g_lte(ad, sub_id):
     if capabilities:
         if "hide_enhanced_4g_lte" in capabilities:
             result = False
-            ad.log.info('"Enhanced 4G LTE MODE" is hidden for sub ID %s.', sub_id)
-            show_enhanced_4g_lte_mode = getattr(ad, "show_enhanced_4g_lte_mode", False)
+            ad.log.info(
+                '"Enhanced 4G LTE MODE" is hidden for sub ID %s.', sub_id)
+            show_enhanced_4g_lte_mode = getattr(
+                ad, "show_enhanced_4g_lte_mode", False)
             if show_enhanced_4g_lte_mode in ["true", "True"]:
                 current_voice_sub_id = get_outgoing_voice_sub_id(ad)
                 if sub_id != current_voice_sub_id:
                     set_incoming_voice_sub_id(ad, sub_id)
 
-                ad.log.info('Show "Enhanced 4G LTE MODE" forcibly for sub ID %s.', sub_id)
-                ad.adb.shell("am broadcast -a com.google.android.carrier.action.LOCAL_OVERRIDE -n com.google.android.carrier/.ConfigOverridingReceiver --ez hide_enhanced_4g_lte_bool false")
-                ad.telephony["subscription"][sub_id]["capabilities"].remove("hide_enhanced_4g_lte")
+                ad.log.info(
+                    'Show "Enhanced 4G LTE MODE" forcibly for sub ID %s.',
+                    sub_id)
+                ad.adb.shell(
+                    "am broadcast \
+                        -a com.google.android.carrier.action.LOCAL_OVERRIDE \
+                        -n com.google.android.carrier/.ConfigOverridingReceiver \
+                        --ez hide_enhanced_4g_lte_bool false")
+                ad.telephony["subscription"][sub_id]["capabilities"].remove(
+                    "hide_enhanced_4g_lte")
 
                 if sub_id != current_voice_sub_id:
                     set_incoming_voice_sub_id(ad, current_voice_sub_id)
@@ -4963,11 +4975,13 @@ def show_enhanced_4g_lte(ad, sub_id):
 
 def toggle_volte(log, ad, new_state=None):
     """Toggle enable/disable VoLTE for default voice subscription.
+
     Args:
         ad: Android device object.
         new_state: VoLTE mode state to set to.
             True for enable, False for disable.
             If None, opposite of the current state.
+
     Raises:
         TelTestUtilsError if platform does not support VoLTE.
     """
@@ -4980,7 +4994,8 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
 
     Args:
         ad: Android device object.
-        sub_id: subscription ID
+        sub_id: Optional. If not assigned the default sub ID for voice call will
+            be used.
         new_state: VoLTE mode state to set to.
             True for enable, False for disable.
             If None, opposite of the current state.
@@ -4989,19 +5004,74 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     if not show_enhanced_4g_lte(ad, sub_id):
         return False
 
-    current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
-    if new_state is None:
-        new_state = not current_state
-    if new_state != current_state:
-        ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s", current_state,
-                    new_state, sub_id)
-        ad.droid.imsMmTelSetAdvancedCallingEnabled(sub_id, new_state)
-    check_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
-    if check_state != new_state:
-        ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, still set to %s on sub_id %s",
-                     new_state, check_state, sub_id)
-        return False
-    return True
+    current_state = None
+    result = True
+
+    if sub_id is None:
+        sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+
+    try:
+        current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
+    except Exception as e:
+        ad.log.warning(e)
+
+    if current_state is not None:
+        if new_state is None:
+            new_state = not current_state
+        if new_state != current_state:
+            ad.log.info(
+                "Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s",
+                current_state, new_state, sub_id)
+            ad.droid.imsMmTelSetAdvancedCallingEnabled(sub_id, new_state)
+        check_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
+        if check_state != new_state:
+            ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, still \
+                set to %s on sub_id %s", new_state, check_state, sub_id)
+            result = False
+        return result
+    else:
+        # TODO: b/26293960 No framework API available to set IMS by SubId.
+        voice_sub_id_changed = False
+        current_sub_id = get_incoming_voice_sub_id(ad)
+        if current_sub_id != sub_id:
+            set_incoming_voice_sub_id(ad, sub_id)
+            voice_sub_id_changed = True
+
+        # b/139641554
+        ad.terminate_all_sessions()
+        bring_up_sl4a(ad)
+
+        if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
+            ad.log.info(
+                "Enhanced 4G Lte Mode Setting is not enabled by platform for \
+                    sub ID %s.", sub_id)
+            return False
+
+        current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+        ad.log.info("Current state of Enhanced 4G Lte Mode Setting for sub \
+            ID %s: %s", sub_id, current_state)
+        ad.log.info("New desired state of Enhanced 4G Lte Mode Setting for sub \
+            ID %s: %s", sub_id, new_state)
+
+        if new_state is None:
+            new_state = not current_state
+        if new_state != current_state:
+            ad.log.info(
+                "Toggle Enhanced 4G LTE Mode from %s to %s for sub ID %s.",
+                current_state, new_state, sub_id)
+            ad.droid.imsSetEnhanced4gMode(new_state)
+            time.sleep(5)
+
+        check_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+        if check_state != new_state:
+            ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, \
+                still set to %s on sub_id %s", new_state, check_state, sub_id)
+            result = False
+
+        if voice_sub_id_changed:
+            set_incoming_voice_sub_id(ad, current_sub_id)
+
+        return result
 
 
 def toggle_wfc(log, ad, new_state=None):
@@ -5010,43 +5080,124 @@ def toggle_wfc(log, ad, new_state=None):
     Args:
         log: Log object
         ad: Android device object.
-        new_state: True or False
+        new_state: WFC state to set to.
+            True for enable, False for disable.
+            If None, opposite of the current state.
     """
-    if not ad.droid.imsIsWfcEnabledByPlatform():
-        ad.log.info("WFC is not enabled by platform")
-        return False
-    current_state = ad.droid.imsIsWfcEnabledByUser()
-    if current_state is None:
-        new_state = not current_state
-    if new_state != current_state:
-        ad.log.info("Toggle WFC user enabled from %s to %s", current_state,
-                    new_state)
-        ad.droid.imsSetWfcSetting(new_state)
-    return True
+    return toggle_wfc_for_subscription(
+        log, ad, new_state, get_outgoing_voice_sub_id(ad))
 
 
-def toggle_wfc_for_subscription(ad, new_state=None, sub_id=None):
-    """ Toggle WFC enable/disable
+def toggle_wfc_for_subscription(log, ad, new_state=None, sub_id=None):
+    """ Toggle WFC enable/disable for specified voice subscription.
 
     Args:
         ad: Android device object.
-        sub_id: subscription Id
-        new_state: True or False
+        sub_id: Optional. If not assigned the default sub ID for voice call will
+            be used.
+        new_state: WFC state to set to.
+            True for enable, False for disable.
+            If None, opposite of the current state.
     """
+    current_state = None
+    result = True
+
     if sub_id is None:
         sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    current_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
-    if current_state is None:
-        new_state = not current_state
-    if new_state != current_state:
-        ad.log.info("SubId %s - Toggle WFC from %s to %s", sub_id,
-                    current_state, new_state)
-        ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, new_state)
+
+    try:
+        current_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
+    except Exception as e:
+        ad.log.warning(e)
+
+    if current_state is not None:
+        if new_state is None:
+            new_state = not current_state
+        if new_state != current_state:
+            ad.log.info(
+                "Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s",
+                current_state, new_state, sub_id)
+            ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, new_state)
+        check_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
+        if check_state != new_state:
+            ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, \
+                still set to %s on sub_id %s", new_state, check_state, sub_id)
+            result = False
+        return result
+    else:
+        voice_sub_id_changed = False
+        if not sub_id:
+            sub_id = get_outgoing_voice_sub_id(ad)
+        else:
+            current_sub_id = get_incoming_voice_sub_id(ad)
+            if current_sub_id != sub_id:
+                set_incoming_voice_sub_id(ad, sub_id)
+                voice_sub_id_changed = True
+
+        # b/139641554
+        ad.terminate_all_sessions()
+        bring_up_sl4a(ad)
+
+        if not ad.droid.imsIsWfcEnabledByPlatform():
+            ad.log.info("WFC is not enabled by platform for sub ID %s.", sub_id)
+            return False
+
+        current_state = ad.droid.imsIsWfcEnabledByUser()
+        ad.log.info("Current state of WFC Setting for sub ID %s: %s",
+            sub_id, current_state)
+        ad.log.info("New desired state of WFC Setting for sub ID %s: %s",
+            sub_id, new_state)
+
+        if new_state is None:
+            new_state = not current_state
+        if new_state != current_state:
+            ad.log.info("Toggle WFC user enabled from %s to %s for sub ID %s",
+                current_state, new_state, sub_id)
+            ad.droid.imsSetWfcSetting(new_state)
+
+        if voice_sub_id_changed:
+            set_incoming_voice_sub_id(ad, current_sub_id)
+
+        return True
+
+def is_enhanced_4g_lte_mode_setting_enabled(ad, sub_id, enabled_by="platform"):
+    voice_sub_id_changed = False
+    current_sub_id = get_incoming_voice_sub_id(ad)
+    if current_sub_id != sub_id:
+        set_incoming_voice_sub_id(ad, sub_id)
+        voice_sub_id_changed = True
+    if enabled_by == "platform":
+        res = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform()
+    else:
+        res = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+    if not res:
+        ad.log.info("Enhanced 4G Lte Mode Setting is NOT enabled by %s for sub \
+            ID %s.", enabled_by, sub_id)
+        if voice_sub_id_changed:
+            set_incoming_voice_sub_id(ad, current_sub_id)
+        return False
+    if voice_sub_id_changed:
+        set_incoming_voice_sub_id(ad, current_sub_id)
+    ad.log.info("Enhanced 4G Lte Mode Setting is enabled by %s for sub ID %s.",
+        enabled_by, sub_id)
     return True
 
+def set_enhanced_4g_mode(ad, sub_id, state):
+    voice_sub_id_changed = False
+    current_sub_id = get_incoming_voice_sub_id(ad)
+    if current_sub_id != sub_id:
+        set_incoming_voice_sub_id(ad, sub_id)
+        voice_sub_id_changed = True
+
+    ad.droid.imsSetEnhanced4gMode(state)
+    time.sleep(5)
+
+    if voice_sub_id_changed:
+        set_incoming_voice_sub_id(ad, current_sub_id)
 
 def wait_for_enhanced_4g_lte_setting(log,
                                      ad,
+                                     sub_id,
                                      max_time=MAX_WAIT_TIME_FOR_STATE_CHANGE):
     """Wait for android device to enable enhance 4G LTE setting.
 
@@ -5060,9 +5211,13 @@ def wait_for_enhanced_4g_lte_setting(log,
         Return False if timeout.
     """
     return wait_for_state(
-        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform,
+        is_enhanced_4g_lte_mode_setting_enabled,
         True,
-        max_wait_time=max_time)
+        max_time,
+        WAIT_TIME_BETWEEN_STATE_CHECK,
+        ad,
+        sub_id,
+        enabled_by="platform")
 
 
 def set_wfc_mode(log, ad, wfc_mode):
@@ -5078,29 +5233,8 @@ def set_wfc_mode(log, ad, wfc_mode):
     Returns:
         True if success. False if ad does not support WFC or error happened.
     """
-    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony[
-        "subscription"][get_outgoing_voice_sub_id(ad)].get("wfc_modes", []):
-        ad.log.error("WFC mode %s is not supported", wfc_mode)
-        raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
-    try:
-        ad.log.info("Set wfc mode to %s", wfc_mode)
-        if wfc_mode != WFC_MODE_DISABLED:
-            start_adb_tcpdump(ad, interface="wlan0", mask="all")
-        if not ad.droid.imsIsWfcEnabledByPlatform():
-            if wfc_mode == WFC_MODE_DISABLED:
-                return True
-            else:
-                ad.log.error("WFC not supported by platform.")
-                return False
-        ad.droid.imsSetWfcMode(wfc_mode)
-        mode = ad.droid.imsGetWfcMode()
-        if mode != wfc_mode:
-            ad.log.error("WFC mode is %s, not in %s", mode, wfc_mode)
-            return False
-    except Exception as e:
-        log.error(e)
-        return False
-    return True
+    return set_wfc_mode_for_subscription(
+        ad, wfc_mode, get_outgoing_voice_sub_id(ad))
 
 
 def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
@@ -5116,22 +5250,97 @@ def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
     Returns:
         True if success. False if ad does not support WFC or error happened.
     """
-    try:
-        if sub_id is None:
-            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-        if not ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id):
-            ad.log.info("SubId %s - Enabling WiFi Calling", sub_id)
-            ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, True)
-        ad.log.info("SubId %s - setwfcmode to %s", sub_id, wfc_mode)
-        ad.droid.imsMmTelSetVoWiFiModeSetting(sub_id, wfc_mode)
-        mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
-        if mode != wfc_mode:
-            ad.log.error("SubId %s - getwfcmode shows %s", sub_id, mode)
-            return False
-    except Exception as e:
-        ad.log.error(e)
+    if wfc_mode not in [
+        WFC_MODE_WIFI_ONLY,
+        WFC_MODE_CELLULAR_PREFERRED,
+        WFC_MODE_WIFI_PREFERRED,
+        WFC_MODE_DISABLED]:
+
+        ad.log.error("Given WFC mode (%s) is not correct.", wfc_mode)
         return False
-    return True
+
+    current_mode = None
+    result = True
+
+    if sub_id is None:
+        sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+
+    try:
+        current_mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
+        ad.log.info("Current WFC mode of sub ID: %s", current_mode)
+    except Exception as e:
+        ad.log.warning(e)
+
+    if current_mode is not None:
+        try:
+            if not ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id):
+                if wfc_mode is WFC_MODE_DISABLED:
+                    return True
+                ad.log.info(
+                    "WFC is disabled for sub ID %s. Enabling WFC...", sub_id)
+                ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, True)
+
+            if wfc_mode is WFC_MODE_DISABLED:
+                ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, False)
+                return True
+
+            ad.log.info("Set wfc mode to %s for sub ID %s.", wfc_mode, sub_id)
+            ad.droid.imsMmTelSetVoWiFiModeSetting(sub_id, wfc_mode)
+            mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
+            if mode != wfc_mode:
+                ad.log.error("WFC mode for sub ID %s is %s, not in %s",
+                    sub_id, mode, wfc_mode)
+                return False
+        except Exception as e:
+            ad.log.error(e)
+            return False
+        return True
+    else:
+        voice_sub_id_changed = False
+        if not sub_id:
+            sub_id = get_outgoing_voice_sub_id(ad)
+        else:
+            current_sub_id = get_incoming_voice_sub_id(ad)
+            if current_sub_id != sub_id:
+                set_incoming_voice_sub_id(ad, sub_id)
+                voice_sub_id_changed = True
+
+        # b/139641554
+        ad.terminate_all_sessions()
+        bring_up_sl4a(ad)
+
+        if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony[
+            "subscription"][get_outgoing_voice_sub_id(ad)].get("wfc_modes", []):
+            ad.log.error("WFC mode %s is not supported", wfc_mode)
+            raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
+        try:
+            ad.log.info("Set wfc mode to %s", wfc_mode)
+            if wfc_mode != WFC_MODE_DISABLED:
+                start_adb_tcpdump(ad, interface="wlan0", mask="all")
+            if not ad.droid.imsIsWfcEnabledByPlatform():
+                if wfc_mode == WFC_MODE_DISABLED:
+                    if voice_sub_id_changed:
+                        set_incoming_voice_sub_id(ad, current_sub_id)
+                    return True
+                else:
+                    ad.log.error("WFC not supported by platform.")
+                    if voice_sub_id_changed:
+                        set_incoming_voice_sub_id(ad, current_sub_id)
+                    return False
+            ad.droid.imsSetWfcMode(wfc_mode)
+            mode = ad.droid.imsGetWfcMode()
+            if voice_sub_id_changed:
+                set_incoming_voice_sub_id(ad, current_sub_id)
+            if mode != wfc_mode:
+                ad.log.error("WFC mode is %s, not in %s", mode, wfc_mode)
+                return False
+        except Exception as e:
+            log.error(e)
+            if voice_sub_id_changed:
+                set_incoming_voice_sub_id(ad, current_sub_id)
+            return False
+        return True
+
 
 
 def set_ims_provisioning_for_subscription(ad, feature_flag, value, sub_id=None):
@@ -5562,18 +5771,24 @@ def wait_for_data_attach_for_subscription(log, ad, sub_id, max_time):
         NETWORK_SERVICE_DATA)
 
 
-def is_ims_registered(log, ad):
+def is_ims_registered(log, ad, sub_id=None):
     """Return True if IMS registered.
 
     Args:
         log: log object.
         ad: android device.
+        sub_id: Optional. If not assigned the default sub ID of voice call will
+            be used.
 
     Returns:
         Return True if IMS registered.
         Return False if IMS not registered.
     """
-    return ad.droid.telephonyIsImsRegistered()
+    if not sub_id:
+        return ad.droid.telephonyIsImsRegistered()
+    else:
+        return change_voice_subid_temporarily(
+            ad, sub_id, ad.droid.telephonyIsImsRegistered)
 
 
 def wait_for_ims_registered(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
@@ -5590,26 +5805,48 @@ def wait_for_ims_registered(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
     """
     return _wait_for_droid_in_state(log, ad, max_time, is_ims_registered)
 
+def is_volte_available(log, ad, sub_id):
+    """Return True if VoLTE is available.
 
-def is_volte_enabled(log, ad):
+    Args:
+        log: log object.
+        ad: android device.
+        sub_id: Optional. If not assigned the default sub ID of voice call will
+            be used.
+
+    Returns:
+        Return True if VoLTE is available.
+        Return False if VoLTE is not available.
+    """
+    if not sub_id:
+        return ad.droid.telephonyIsVolteAvailable()
+    else:
+        return change_voice_subid_temporarily(
+            ad, sub_id, ad.droid.telephonyIsVolteAvailable)
+
+def is_volte_enabled(log, ad, sub_id=None):
     """Return True if VoLTE feature bit is True.
 
     Args:
         log: log object.
         ad: android device.
+        sub_id: Optional. If not assigned the default sub ID of voice call will
+            be used.
 
     Returns:
         Return True if VoLTE feature bit is True and IMS registered.
         Return False if VoLTE feature bit is False or IMS not registered.
     """
-    if not is_ims_registered(log, ad):
-        ad.log.info("IMS is not registered.")
+    if not is_ims_registered(log, ad, sub_id):
+        ad.log.info("IMS is not registered for sub ID %s.", sub_id)
         return False
-    if not ad.droid.telephonyIsVolteAvailable():
-        ad.log.info("IMS is registered, IsVolteCallingAvailble is False")
+    if not is_volte_available(log, ad, sub_id):
+        ad.log.info("IMS is registered for sub ID %s, IsVolteCallingAvailable \
+            is False", sub_id)
         return False
     else:
-        ad.log.info("IMS is registered, IsVolteCallingAvailble is True")
+        ad.log.info("IMS is registered for sub ID %s, IsVolteCallingAvailable \
+            is True", sub_id)
         return True
 
 
@@ -5632,7 +5869,8 @@ def is_video_enabled(log, ad):
     return video_status
 
 
-def wait_for_volte_enabled(log, ad, max_time=MAX_WAIT_TIME_VOLTE_ENABLED):
+def wait_for_volte_enabled(
+    log, ad, max_time=MAX_WAIT_TIME_VOLTE_ENABLED,sub_id=None):
     """Wait for android device to report VoLTE enabled bit true.
 
     Args:
@@ -5644,7 +5882,11 @@ def wait_for_volte_enabled(log, ad, max_time=MAX_WAIT_TIME_VOLTE_ENABLED):
         Return True if device report VoLTE enabled bit true within max_time.
         Return False if timeout.
     """
-    return _wait_for_droid_in_state(log, ad, max_time, is_volte_enabled)
+    if not sub_id:
+        return _wait_for_droid_in_state(log, ad, max_time, is_volte_enabled)
+    else:
+        return _wait_for_droid_in_state_for_subscription(
+            log, ad, sub_id, max_time, is_volte_enabled)
 
 
 def wait_for_video_enabled(log, ad, max_time=MAX_WAIT_TIME_VOLTE_ENABLED):
@@ -5677,10 +5919,10 @@ def is_wfc_enabled(log, ad):
         ad.log.info("IMS is not registered.")
         return False
     if not ad.droid.telephonyIsWifiCallingAvailable():
-        ad.log.info("IMS is registered, IsWifiCallingAvailble is False")
+        ad.log.info("IMS is registered, IsWifiCallingAvailable is False")
         return False
     else:
-        ad.log.info("IMS is registered, IsWifiCallingAvailble is True")
+        ad.log.info("IMS is registered, IsWifiCallingAvailable is True")
         return True
 
 
@@ -6353,7 +6595,7 @@ def mms_receive_verify_after_call_hangup_for_subscription(
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
                 return False
         finally:
-            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
     return True
 
 
@@ -10312,44 +10554,110 @@ def wait_for_matching_multiple_sms(log,
 
         return True
 
-def is_sms_in_collision_match(event, phonenumber_tx, phonenumber_tx2, text, text2):
+def is_sms_in_collision_match(
+    event, phonenumber_tx, phonenumber_tx2, text, text2):
     event_text = event['data']['Text'].strip()
     if event_text.startswith("("):
         event_text = event_text.split(")")[-1]
 
     for phonenumber, txt in [[phonenumber_tx, text], [phonenumber_tx2, text2]]:
-        if check_phone_number_match(event['data']['Sender'], phonenumber) and txt.startswith(event_text):
+        if check_phone_number_match(
+            event['data']['Sender'], phonenumber) and txt.startswith(event_text):
             return True
     return False
 
-def is_sms_in_collision_partial_match(event, phonenumber_tx, phonenumber_tx2, text, text2):
+def is_sms_in_collision_partial_match(
+    event, phonenumber_tx, phonenumber_tx2, text, text2):
     for phonenumber, txt in [[phonenumber_tx, text], [phonenumber_tx2, text2]]:
-        if check_phone_number_match(event['data']['Sender'], phonenumber) and event['data']['Text'].strip() == txt:
+        if check_phone_number_match(
+            event['data']['Sender'], phonenumber) and \
+                event['data']['Text'].strip() == txt:
             return True
     return False
 
-def is_sms_match_among_multiple_sms(event, phonenumber_tx, phonenumber_tx2, texts=[], texts2=[]):
+def is_sms_match_among_multiple_sms(
+    event, phonenumber_tx, phonenumber_tx2, texts=[], texts2=[]):
     for txt in texts:
-        if check_phone_number_match(event['data']['Sender'], phonenumber_tx) and event['data']['Text'].strip() == txt:
+        if check_phone_number_match(
+            event['data']['Sender'], phonenumber_tx) and \
+                event['data']['Text'].strip() == txt:
                 return True
 
     for txt in texts2:
-        if check_phone_number_match(event['data']['Sender'], phonenumber_tx2) and event['data']['Text'].strip() == txt:
+        if check_phone_number_match(
+            event['data']['Sender'], phonenumber_tx2) and \
+                event['data']['Text'].strip() == txt:
                 return True
 
     return False
 
-def is_sms_partial_match_among_multiple_sms(event, phonenumber_tx, phonenumber_tx2, texts=[], texts2=[]):
+def is_sms_partial_match_among_multiple_sms(
+    event, phonenumber_tx, phonenumber_tx2, texts=[], texts2=[]):
     event_text = event['data']['Text'].strip()
     if event_text.startswith("("):
         event_text = event_text.split(")")[-1]
 
     for txt in texts:
-        if check_phone_number_match(event['data']['Sender'], phonenumber_tx) and txt.startswith(event_text):
+        if check_phone_number_match(
+            event['data']['Sender'], phonenumber_tx) and \
+                txt.startswith(event_text):
                 return True
 
     for txt in texts2:
-        if check_phone_number_match(event['data']['Sender'], phonenumber_tx2) and txt.startswith(event_text):
+        if check_phone_number_match(
+            event['data']['Sender'], phonenumber_tx2) and \
+                txt.startswith(event_text):
                 return True
 
     return False
+
+def set_time_sync_from_network(ad, action):
+    if (action == 'enable'):
+        ad.log.info('Enabling sync time from network.')
+        ad.adb.shell('settings put global auto_time 1')
+
+    elif (action == 'disable'):
+        ad.log.info('Disabling sync time from network.')
+        ad.adb.shell('settings put global auto_time 0')
+
+    time.sleep(WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK)
+
+def datetime_handle(ad, action, set_datetime_value='', get_year=False):
+    get_value = ''
+    if (action == 'get'):
+        if (get_year):
+            datetime_string = ad.adb.shell('date')
+            datetime_list = datetime_string.split()
+            try:
+                get_value = datetime_list[5]
+            except Exception as e:
+                self.log.error("Fail to get year from datetime: %s. " \
+                                "Exception error: %s", datetime_list
+                                , str(e))
+                raise signals.TestSkip("Fail to get year from datetime" \
+                                    ", the format is changed. Skip the test.")
+        else:
+            get_value = ad.adb.shell('date')
+
+    elif (action == 'set'):
+        ad.adb.shell('date %s' % set_datetime_value)
+        time.sleep(WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK)
+        ad.adb.shell('am broadcast -a android.intent.action.TIME_SET')
+
+    return get_value
+
+def change_voice_subid_temporarily(ad, sub_id, state_check_func):
+    result = False
+    voice_sub_id_changed = False
+    current_sub_id = get_incoming_voice_sub_id(ad)
+    if current_sub_id != sub_id:
+        set_incoming_voice_sub_id(ad, sub_id)
+        voice_sub_id_changed = True
+
+    if state_check_func():
+        result = True
+
+    if voice_sub_id_changed:
+        set_incoming_voice_sub_id(ad, current_sub_id)
+
+    return result

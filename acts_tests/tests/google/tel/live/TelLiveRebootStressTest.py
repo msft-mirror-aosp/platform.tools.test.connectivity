@@ -123,6 +123,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if not func():
                 self.log.error("%s failed", method)
                 failed_tests.append(method)
+            self.log.info("Wait 5s before each function check.")
+            time.sleep(5)
+        self.log.info("Wait 30s before NW mode switch.")
+        time.sleep(30)
         for method in args:
             func = getattr(self, method)
             try:
@@ -936,7 +940,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test("qtidataservice",
+        return self._crash_recovery_test(".qtidataservices",
                                          *self.default_testing_func_names)
 
     @test_tracker_info(uuid="fa34f994-bc49-4444-9187-87691c94b4f4")

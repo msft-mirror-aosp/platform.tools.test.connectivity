@@ -24,6 +24,7 @@ from acts import asserts
 from acts.libs.proc import job
 from acts.base_test import BaseTestClass
 
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.bt.bt_power_test_utils import MediaControl
 from acts.test_utils.bt.ble_performance_test_utils import run_ble_throughput_and_read_rssi
 from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bt_factory
@@ -36,6 +37,8 @@ PHONE_MUSIC_FILE_DIRECTORY = '/sdcard/Music'
 FORCE_SAR_ADB_COMMAND = ('am broadcast -n'
                          'com.google.android.apps.scone/.coex.TestReceiver -a '
                          'com.google.android.apps.scone.coex.SIMULATE_STATE ')
+
+SLEEP_DURATION = 2
 
 DEFAULT_DURATION = 5
 DEFAULT_MAX_ERROR_THRESHOLD = 2
@@ -56,6 +59,8 @@ class BtSarBaseTest(BaseTestClass):
             '/vendor/etc/bluetooth_power_limits.csv',
             '/data/vendor/radio/bluetooth_power_limits.csv'
         ]
+        self.sar_test_result = BlackboxMetricLogger.for_test_case(
+            metric_name='pass')
         self.sar_file_name = os.path.basename(self.power_file_paths[0])
         self.power_column = 'BluetoothPower'
         self.REG_DOMAIN_DICT = {
@@ -78,22 +83,25 @@ class BtSarBaseTest(BaseTestClass):
                 'bt_sar_test_params was not found in the config file.')
 
         self.user_params.update(self.test_params)
-        req_params = ['bt_devices', 'calibration_params']
+        req_params = ['bt_devices', 'calibration_params', 'custom_files']
 
         self.unpack_userparams(
             req_params,
             country_code='us',
             duration=DEFAULT_DURATION,
-            custom_sar_path=None,
-            music_files=None,
             sort_order=None,
             max_error_threshold=DEFAULT_MAX_ERROR_THRESHOLD,
             agg_error_threshold=DEFAULT_AGG_MAX_ERROR_THRESHOLD,
             tpc_threshold=[2, 8],
-        )
+            sar_margin={
+                'BDR': 0,
+                'EDR': 0,
+                'BLE': 0
+            })
 
         self.attenuator = self.attenuators[0]
         self.dut = self.android_devices[0]
+
         for key in self.REG_DOMAIN_DICT.keys():
             if self.country_code.lower() in key:
                 self.reg_domain = self.REG_DOMAIN_DICT[key]
@@ -103,21 +111,32 @@ class BtSarBaseTest(BaseTestClass):
         if 'Error' not in self.dut.adb.shell('bluetooth_sar_test -r'):
             #Flag for SAR version 2
             self.sar_version_2 = True
-            phone_sku = self.dut.adb.shell('getprop ro.boot.hardware.sku')
             self.power_column = 'BluetoothEDRPower'
             self.power_file_paths[0] = os.path.join(
                 os.path.dirname(self.power_file_paths[0]),
-                'bluetooth_power_limits_{}_{}.csv'.format(
-                    phone_sku, self.reg_domain))
+                'bluetooth_power_limits_{}.csv'.format(self.reg_domain))
             self.sar_file_name = os.path.basename(self.power_file_paths[0])
+
+        if self.sar_version_2:
+            custom_file_suffix = 'version2'
+        else:
+            custom_file_suffix = 'version1'
+
+        for file in self.custom_files:
+            if 'custom_sar_table_{}.csv'.format(custom_file_suffix) in file:
+                self.custom_sar_path = file
+                break
+        else:
+            raise RuntimeError('Custom Sar File is missing')
 
         self.sar_file_path = self.power_file_paths[0]
         self.atten_min = 0
         self.atten_max = int(self.attenuator.get_max_atten())
 
-        # Initializing media controller
-        if self.music_files:
-            music_src = self.music_files[0]
+        # Get music file and push it to the phone and initialize Media controller
+        music_files = self.user_params.get('music_files', [])
+        if music_files:
+            music_src = music_files[0]
             music_dest = PHONE_MUSIC_FILE_DIRECTORY
             success = self.dut.push_system_file(music_src, music_dest)
             if success:
@@ -144,6 +163,9 @@ class BtSarBaseTest(BaseTestClass):
 
     def setup_test(self):
         super().setup_test()
+
+        #Reset SAR test result to 0 before every test
+        self.sar_test_result.metric_value = 0
 
         # Starting BT on the master
         self.dut.droid.bluetoothFactoryReset()
@@ -197,23 +219,73 @@ class BtSarBaseTest(BaseTestClass):
         Args:
             df: Processed SAR table sweep results
         """
-        self.plot.add_line(df.index,
-                           df['expected_tx_power'],
-                           legend='expected',
-                           marker='circle')
-        self.plot.add_line(df.index,
-                           df['measured_tx_power'],
-                           legend='measured',
-                           marker='circle')
-        self.plot.add_line(df.index,
-                           df['delta'],
-                           legend='delta',
-                           marker='circle')
+        self.plot.add_line(
+            df.index,
+            df['expected_tx_power'],
+            legend='expected',
+            marker='circle')
+        self.plot.add_line(
+            df.index,
+            df['measured_tx_power'],
+            legend='measured',
+            marker='circle')
+        self.plot.add_line(
+            df.index, df['delta'], legend='delta', marker='circle')
 
-        results_file_path = os.path.join(
-            self.log_path, '{}.html'.format(self.current_test_name))
+        results_file_path = os.path.join(self.log_path, '{}.html'.format(
+            self.current_test_name))
         self.plot.generate_figure()
         wifi_utils.BokehFigure.save_figures([self.plot], results_file_path)
+
+    def sweep_power_cap(self):
+        sar_df = self.bt_sar_df
+        sar_df['BDR_power_cap'] = -128
+        sar_df['EDR_power_cap'] = -128
+        sar_df['BLE_power_cap'] = -128
+
+        if self.sar_version_2:
+            power_column_dict = {
+                'BDR': 'BluetoothBDRPower',
+                'EDR': 'BluetoothEDRPower',
+                'BLE': 'BluetoothLEPower'
+            }
+        else:
+            power_column_dict = {'EDR': self.power_column}
+
+        power_cap_error = False
+
+        for type, column_name in power_column_dict.items():
+
+            self.log.info("Performing sanity test on {}".format(type))
+            # Iterating through the BT SAR scenarios
+            for scenario in range(0, self.bt_sar_df.shape[0]):
+                # Reading BT SAR table row into dict
+                read_scenario = sar_df.loc[scenario].to_dict()
+                start_time = self.dut.adb.shell('date +%s.%m')
+                time.sleep(SLEEP_DURATION)
+
+                # Setting SAR state to the read BT SAR row
+                self.set_sar_state(self.dut, read_scenario, self.country_code)
+
+                # Reading device power cap from logcat after forcing SAR State
+                scenario_power_cap = self.get_current_power_cap(
+                    self.dut, start_time, type=type)
+                sar_df.loc[scenario, '{}_power_cap'.format(
+                    type)] = scenario_power_cap
+                self.log.info(
+                    'scenario: {}, '
+                    'sar_power: {}, power_cap:{}'.format(
+                        scenario, sar_df.loc[scenario, column_name],
+                        sar_df.loc[scenario, '{}_power_cap'.format(type)]))
+
+        if not sar_df['{}_power_cap'.format(type)].equals(sar_df[column_name]):
+            power_cap_error = True
+
+        results_file_path = os.path.join(self.log_path, '{}.csv'.format(
+            self.current_test_name))
+        sar_df.to_csv(results_file_path)
+
+        return power_cap_error
 
     def sweep_table(self,
                     client_ad=None,
@@ -248,11 +320,11 @@ class BtSarBaseTest(BaseTestClass):
         # Sorts the table
         if self.sort_order:
             if self.sort_order.lower() == 'ascending':
-                sar_df = sar_df.sort_values(by=[self.power_column],
-                                            ascending=True)
+                sar_df = sar_df.sort_values(
+                    by=[self.power_column], ascending=True)
             else:
-                sar_df = sar_df.sort_values(by=[self.power_column],
-                                            ascending=False)
+                sar_df = sar_df.sort_values(
+                    by=[self.power_column], ascending=False)
             sar_df = sar_df.reset_index(drop=True)
 
         # Sweeping BT SAR table
@@ -261,7 +333,7 @@ class BtSarBaseTest(BaseTestClass):
             read_scenario = sar_df.loc[scenario].to_dict()
 
             start_time = self.dut.adb.shell('date +%s.%m')
-            time.sleep(1)
+            time.sleep(SLEEP_DURATION)
 
             #Setting SAR State
             self.set_sar_state(self.dut, read_scenario, self.country_code)
@@ -270,10 +342,10 @@ class BtSarBaseTest(BaseTestClass):
                 sar_df.loc[scenario, 'power_cap'] = self.get_current_power_cap(
                     self.dut, start_time, type='BLE')
 
-                sar_df.loc[scenario,
-                           'ble_rssi'] = run_ble_throughput_and_read_rssi(
-                               client_ad, server_ad, client_conn_id,
-                               gatt_server, gatt_callback)
+                sar_df.loc[
+                    scenario, 'ble_rssi'] = run_ble_throughput_and_read_rssi(
+                        client_ad, server_ad, client_conn_id, gatt_server,
+                        gatt_callback)
 
                 self.log.info('scenario:{}, power_cap:{},  ble_rssi:{}'.format(
                     scenario, sar_df.loc[scenario, 'power_cap'],
@@ -327,17 +399,15 @@ class BtSarBaseTest(BaseTestClass):
             self.otp = bt_utils.read_otp(self.dut)
 
             #OTP backoff
-            edr_otp = min(0, float(self.otp['EDR']['10']) / 4.0)
-            bdr_otp = min(0, float(self.otp['BDR']['10']) / 4.0)
-            ble_otp = min(0, float(self.otp['BLE']['10']) / 4.0)
+            edr_otp = min(0, float(self.otp['EDR']['10']))
+            bdr_otp = min(0, float(self.otp['BR']['10']))
+            ble_otp = min(0, float(self.otp['BLE']['10']))
 
             # EDR TX Power for PL10
-            edr_tx_power_pl10 = self.calibration_params['target_power']['EDR'][
-                '10'] - edr_otp
+            edr_tx_power_pl10 = self.calibration_params['target_power']['EDR']['10'] - edr_otp
 
             # BDR TX Power for PL10
-            bdr_tx_power_pl10 = self.calibration_params['target_power']['BDR'][
-                '10'] - bdr_otp
+            bdr_tx_power_pl10 = self.calibration_params['target_power']['BDR']['10'] - bdr_otp
 
             # RSSI being measured is BDR
             offset = bdr_tx_power_pl10 - edr_tx_power_pl10
@@ -350,8 +420,8 @@ class BtSarBaseTest(BaseTestClass):
 
             # Adding a target power column
             if 'ble_rssi' in sar_df.columns:
-                sar_df['target_power'] = self.calibration_params[
-                    'target_power']['BLE']['10'] - ble_otp
+                sar_df[
+                    'target_power'] = self.calibration_params['target_power']['BLE']['10'] - ble_otp
             else:
                 sar_df['target_power'] = sar_df['pwlv'].astype(str).map(
                     self.calibration_params['target_power']['EDR']) - edr_otp
@@ -364,11 +434,11 @@ class BtSarBaseTest(BaseTestClass):
             ]].min(axis=1)
 
             if hasattr(self, 'pl10_atten'):
-                sar_df['measured_tx_power'] = sar_df['slave_rssi'] + sar_df[
-                    'pathloss'] + self.pl10_atten - offset
+                sar_df[
+                    'measured_tx_power'] = sar_df['slave_rssi'] + sar_df['pathloss'] + self.pl10_atten - offset
             else:
-                sar_df['measured_tx_power'] = sar_df['ble_rssi'] + sar_df[
-                    'pathloss'] + FIXED_ATTENUATION
+                sar_df[
+                    'measured_tx_power'] = sar_df['ble_rssi'] + sar_df['pathloss'] + FIXED_ATTENUATION
 
         else:
 
@@ -384,11 +454,11 @@ class BtSarBaseTest(BaseTestClass):
 
             sar_df[
                 'expected_tx_power'] = sar_df['ftm_power'] - sar_df['backoff']
-            sar_df['measured_tx_power'] = sar_df['slave_rssi'] + sar_df[
-                'pathloss'] + self.pl10_atten
+            sar_df[
+                'measured_tx_power'] = sar_df['slave_rssi'] + sar_df['pathloss'] + self.pl10_atten
 
-        sar_df['delta'] = sar_df['expected_tx_power'] - sar_df[
-            'measured_tx_power']
+        sar_df[
+            'delta'] = sar_df['expected_tx_power'] - sar_df['measured_tx_power']
 
         self.log.info('Sweep results processed')
 
@@ -407,21 +477,28 @@ class BtSarBaseTest(BaseTestClass):
         Args:
              sar_df: processed BT SAR table
         """
-
-        # checks for errors at particular points in the sweep
-        max_error_result = abs(
-            sar_df['delta']) > self.max_error_threshold[type]
-        if False in max_error_result:
-            asserts.fail('Maximum Error Threshold Exceeded')
-
-        # checks for error accumulation across the sweep
-        if sar_df['delta'].sum() > self.agg_error_threshold[type]:
-            asserts.fail(
-                'Aggregate Error Threshold Exceeded. Error: {} Threshold: {}'.
-                format(sar_df['delta'].sum(), self.agg_error_threshold))
+        if self.sar_version_2:
+            breach_error_result = (
+                sar_df['expected_tx_power'] + self.sar_margin[type] >
+                sar_df['measured_tx_power']).all()
+            if not breach_error_result:
+                asserts.fail('Measured TX power exceeds expected')
 
         else:
-            asserts.explicit_pass('Measured and Expected Power Values in line')
+            # checks for errors at particular points in the sweep
+            max_error_result = abs(
+                sar_df['delta']) > self.max_error_threshold[type]
+            if max_error_result:
+                asserts.fail('Maximum Error Threshold Exceeded')
+
+            # checks for error accumulation across the sweep
+            if sar_df['delta'].sum() > self.agg_error_threshold[type]:
+                asserts.fail(
+                    'Aggregate Error Threshold Exceeded. Error: {} Threshold: {}'.
+                    format(sar_df['delta'].sum(), self.agg_error_threshold))
+
+        self.sar_test_result.metric_value = 1
+        asserts.explicit_pass('Measured and Expected Power Values in line')
 
     def set_sar_state(self, ad, signal_dict, country_code='us'):
         """Sets the SAR state corresponding to the BT SAR signal.
@@ -453,16 +530,15 @@ class BtSarBaseTest(BaseTestClass):
         }
 
         if 'BTHotspot' in signal_dict.keys():
-            device_state_dict[('BT Tethering',
+            device_state_dict[('Bluetooth tethering',
                                'bt_tethering')] = signal_dict['BTHotspot']
 
         enforced_state = {}
         sar_state_command = FORCE_SAR_ADB_COMMAND
         for key in device_state_dict:
             enforced_state[key[0]] = device_state_dict[key]
-            sar_state_command = '{} --ei {} {}'.format(sar_state_command,
-                                                       key[1],
-                                                       device_state_dict[key])
+            sar_state_command = '{} --ei {} {}'.format(
+                sar_state_command, key[1], device_state_dict[key])
         if self.sar_version_2:
             sar_state_command = '{} --es country_iso "{}"'.format(
                 sar_state_command, country_code.lower())
@@ -491,7 +567,7 @@ class BtSarBaseTest(BaseTestClass):
              stat: the desired BT stat.
         """
         # Waiting for logcat to update
-        time.sleep(1)
+        time.sleep(SLEEP_DURATION)
         bt_adb_log = ad.adb.logcat('-b all -t %s' % begin_time)
         for line in bt_adb_log.splitlines():
             if re.findall(regex, line):
@@ -516,7 +592,7 @@ class BtSarBaseTest(BaseTestClass):
     def get_country_code(self, ad, begin_time):
         """Returns the enforced regulatory domain since begin_time
 
-        Returns the enforced regulatory domain since begin_time by parsing logcat.
+        Returns enforced regulatory domain since begin_time by parsing logcat.
         Function should follow a function call to set a country code
 
         Args:
@@ -584,14 +660,14 @@ class BtSarBaseTest(BaseTestClass):
         """
 
         device_state_regex = 'updateDeviceState: DeviceState: ([\s*\S+\s]+)'
-        time.sleep(2)
+        time.sleep(SLEEP_DURATION)
         device_state = self.parse_bt_logs(ad, begin_time, device_state_regex)
         if device_state:
             return device_state
 
         raise ValueError("Couldn't fetch device state")
 
-    def read_sar_table(self, ad):
+    def read_sar_table(self, ad, output_path=''):
         """Extracts the BT SAR table from the phone.
 
         Extracts the BT SAR table from the phone into the android device
@@ -599,17 +675,19 @@ class BtSarBaseTest(BaseTestClass):
 
         Args:
             ad: android_device object.
-
+            output_path: path to custom sar table
         Returns:
             df : BT SAR table (as pandas DataFrame).
         """
-        output_path = os.path.join(ad.device_log_path, self.sar_file_name)
-        ad.adb.pull('{} {}'.format(self.sar_file_path, output_path))
-        df = pd.read_csv(os.path.join(ad.device_log_path, self.sar_file_name))
+        if not output_path:
+            output_path = os.path.join(ad.device_log_path, self.sar_file_name)
+            ad.adb.pull('{} {}'.format(self.sar_file_path, output_path))
+
+        df = pd.read_csv(output_path)
         self.log.info('BT SAR table read from the phone')
         return df
 
-    def push_table(self, ad, src_path):
+    def push_table(self, ad, src_path, dest_path=''):
         """Pushes a BT SAR table to the phone.
 
         Pushes a BT SAR table to the android device and reboots the device.
@@ -624,10 +702,14 @@ class BtSarBaseTest(BaseTestClass):
             job.run('cp {} {}'.format(src_path, ad.device_log_path))
 
         #Pushing the file provided in the config
-        ad.push_system_file(src_path, self.sar_file_path)
+        if dest_path:
+            ad.push_system_file(src_path, dest_path)
+        else:
+            ad.push_system_file(src_path, self.sar_file_path)
         self.log.info('BT SAR table pushed')
         ad.reboot()
-        self.bt_sar_df = self.read_sar_table(self.dut)
+
+        self.bt_sar_df = self.read_sar_table(self.dut, src_path)
 
     def set_PL10_atten_level(self, ad):
         """Finds the attenuation level at which the phone is at PL10
@@ -646,11 +728,11 @@ class BtSarBaseTest(BaseTestClass):
         for atten in range(self.atten_min, self.atten_max, BT_SAR_ATTEN_STEP):
             self.attenuator.set_atten(atten)
             # Sleep required for BQR to reflect the change in parameters
-            time.sleep(2)
+            time.sleep(SLEEP_DURATION)
             metrics = bt_utils.get_bt_metric(ad)
             if metrics['pwlv'][ad.serial] == 10:
-                self.log.info('PL10 located at {}'.format(atten +
-                                                          BT_SAR_ATTEN_STEP))
+                self.log.info(
+                    'PL10 located at {}'.format(atten + BT_SAR_ATTEN_STEP))
                 return atten + BT_SAR_ATTEN_STEP
 
         self.log.warn(
