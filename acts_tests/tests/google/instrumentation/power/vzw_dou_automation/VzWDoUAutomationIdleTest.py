@@ -60,7 +60,7 @@ class VzWDoUAutomationIdleTest(
   def test_idle_wifi(self, attempt_number):
     """Measures power when the device is in idle mode with wifi connected."""
 
-    self.adb_run(common.wifi.toggle(True))
+    self.adb_run(common.wifi_state.toggle(True))
     self.log_in_gmail_account()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',

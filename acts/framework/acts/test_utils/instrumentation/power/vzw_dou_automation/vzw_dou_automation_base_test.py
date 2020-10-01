@@ -89,7 +89,7 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(goog.icing.toggle(False))
     self.adb_run(common.stop_moisture_detection)
     self.adb_run(common.ambient_eq.toggle(False))
-    self.adb_run(common.wifi.toggle(False))
+    self.adb_run(common.wifi_state.toggle(False))
     self.adb_run('echo 1 > /d/clk/debug_suspend')
     self.adb_run(common.bluetooth.toggle(True))
     self.adb_run(common.enable_full_batterystats_history)
