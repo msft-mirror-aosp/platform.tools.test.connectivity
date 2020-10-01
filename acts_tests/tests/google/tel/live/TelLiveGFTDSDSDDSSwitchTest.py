@@ -272,7 +272,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
         for attempt in range(3):
-            if attempt is not 0:
+            if attempt != 0:
                 ad.log.info("Repeat step 1 to 4.")
 
             ad.log.info("Step 1: Switch DDS.")
@@ -436,7 +436,8 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
         enable_volte=[True, True],
         enable_wfc=[True, True],
         wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
-        is_airplane_mode=False):
+        is_airplane_mode=False,
+        is_wifi_connected=False):
         """Switch DDS and make VoLTE/WFC call together with Youtube playing
         after each DDS switch at specific slot in specific RAT.
 
@@ -484,6 +485,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
         ad.log.info(
             "Step 0: Set up phone in desired RAT (slot 0: %s, slot 1: %s)",
             slot_0_nw_gen, slot_1_nw_gen)
+
         if slot_0_nw_gen == "volte":
             slot0_phone_setup_func = phone_setup_volte_for_subscription
             is_slot0_in_call = is_phone_in_call_volte
@@ -538,6 +540,16 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
+        if is_wifi_connected:
+            if not ensure_wifi_connected(
+                self.log,
+                ad,
+                self.wifi_network_ssid,
+                self.wifi_network_pass,
+                apm=False):
+                return False
+            time.sleep(5)
+
         ad.log.info("Step 1: Enable/disable VoLTE and WFC.")
         for sub_id, volte in zip([slot_0_subid, slot_1_subid], enable_volte):
             if not toggle_volte_for_subscription(
@@ -586,9 +598,9 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                     time.sleep(5)
 
         if cellular_data_cycling:
-            if call_slot is 0:
+            if call_slot == 0:
                 sub_id = slot_0_subid
-            elif call_slot is 1:
+            elif call_slot == 1:
                 sub_id = slot_1_subid
             ad.log.info("Step 2: Cellular data cycling")
             ad.log.info("Step 2-1: Toggle off cellular data.")
@@ -640,8 +652,8 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             ad.droid.wifiToggleState(False)
             time.sleep(5)
 
-            if (call_slot is 0 and slot_0_nw_gen == "wfc") or \
-                (call_slot is 1 and slot_1_nw_gen == "wfc"):
+            if (call_slot == 0 and slot_0_nw_gen == "wfc") or \
+                (call_slot == 1 and slot_1_nw_gen == "wfc") or is_wifi_connected:
                 if not ensure_wifi_connected(
                     self.log,
                     ad,
@@ -651,7 +663,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                     return False
 
         for attempt in range(3):
-            if attempt is not 0:
+            if attempt != 0:
                 ad.log.info("Repeat step 1 to 4.")
 
             ad.log.info("Step 3: Switch DDS.")
@@ -709,8 +721,8 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                         is_mt_in_call = is_slot1_in_call
                     is_mo_in_call = None
 
-                if (call_slot is 0 and slot_0_nw_gen == "wfc") or \
-                    (call_slot is 1 and slot_1_nw_gen == "wfc"):
+                if (call_slot == 0 and slot_0_nw_gen == "wfc") or \
+                    (call_slot == 1 and slot_1_nw_gen == "wfc"):
                     if not wait_for_wfc_enabled(self.log, ad):
                         return False
 
@@ -762,9 +774,9 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
         slot_0_subid = get_subid_from_slot_index(self.log, ad, 0)
         slot_1_subid = get_subid_from_slot_index(self.log, ad, 1)
 
-        if slot is 0:
+        if slot == 0:
             sub_id = slot_0_subid
-        elif slot is 1:
+        elif slot == 1:
             sub_id = slot_1_subid
 
         ad.log.info("Step 1: Enable VoLTE for sub ID %s.", sub_id)
@@ -772,7 +784,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             return False
 
         for attempt in range(3):
-            if attempt is not 0:
+            if attempt != 0:
                 ad.log.info("Repeat step 2 to 4.")
 
             ad.log.info("Step 2-1: Disable VoLTE for sub ID %s.", sub_id)
@@ -1174,6 +1186,66 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             enable_wfc=[True, True],
             wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED])
 
+    @test_tracker_info(uuid="8823e87c-0e4d-435d-a17f-84e1b65c1012")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mo_volte_psim_with_wfc_on_wifi_on_apm_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=0,
+            call_direction="mo",
+            streaming=True,
+            airplane_mode_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="bd038a77-baa6-483d-9af0-fe18d50d7f1f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mo_volte_esim_with_wfc_on_wifi_on_apm_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=1,
+            call_direction="mo",
+            streaming=True,
+            airplane_mode_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="3f96fb8a-d4ee-49b8-8958-45cd509ed7b8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mt_volte_psim_with_wfc_on_wifi_on_apm_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=0,
+            call_direction="mt",
+            streaming=True,
+            airplane_mode_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="1f89da8b-e559-4e96-afc7-0d2127616c56")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mt_volte_esim_with_wfc_on_wifi_on_apm_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=1,
+            call_direction="mt",
+            streaming=True,
+            airplane_mode_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
     @test_tracker_info(uuid="bc522b4d-2d26-4b5f-b82c-f92356f103d0")
     @TelephonyBaseTest.tel_test_wrap
     def test_dds_switch_voice_call_mo_wfc_psim_cellular_preferred_apm_on_with_volte_on_apm_cycling(self):
@@ -1350,6 +1422,66 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             enable_wfc=[True, True],
             wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED])
 
+    @test_tracker_info(uuid="fbd88b9d-e27b-4c06-a983-a780d0c00623")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mo_volte_psim_with_wfc_on_wifi_on_cellular_data_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=0,
+            call_direction="mo",
+            streaming=True,
+            cellular_data_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="0fabca6f-28c4-4843-af70-f33d806d8dc1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mo_volte_esim_with_wfc_on_wifi_on_cellular_data_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=1,
+            call_direction="mo",
+            streaming=True,
+            cellular_data_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="9b060264-69d8-437e-9981-b86e213952c5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mt_volte_psim_with_wfc_on_wifi_on_cellular_data_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=0,
+            call_direction="mt",
+            streaming=True,
+            cellular_data_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="3a2effa4-728a-4160-9e0c-2aeafc7ba153")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mt_volte_esim_with_wfc_on_wifi_on_cellular_data_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=1,
+            call_direction="mt",
+            streaming=True,
+            cellular_data_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
     @test_tracker_info(uuid="ad491362-8bcc-4097-84af-932878002ce6")
     @TelephonyBaseTest.tel_test_wrap
     def test_dds_switch_voice_call_mo_wfc_psim_cellular_preferred_apm_on_with_volte_on_cellular_data_cycling(self):
@@ -1525,6 +1657,66 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             enable_volte=[True, True],
             enable_wfc=[True, True],
             wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED])
+
+    @test_tracker_info(uuid="380bd592-5437-4e16-9564-5f47b066cab2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mo_volte_psim_with_wfc_on_wifi_on_wifi_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=0,
+            call_direction="mo",
+            streaming=True,
+            wifi_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="90bb2647-71f1-44cd-bff3-5bbb720e59b7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mo_volte_esim_with_wfc_on_wifi_on_wifi_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=1,
+            call_direction="mo",
+            streaming=True,
+            wifi_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="5bca72c8-62d0-41bf-8888-310cd235dac4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mt_volte_psim_with_wfc_on_wifi_on_wifi_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=0,
+            call_direction="mt",
+            streaming=True,
+            wifi_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="13805ecf-3cf9-44c8-98bc-a099edb36340")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_voice_call_mt_volte_esim_with_wfc_on_wifi_on_wifi_cycling(self):
+        return self._test_dds_switch_during_data_transfer_with_apm_cycling_and_ims_setting(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            call_slot=1,
+            call_direction="mt",
+            streaming=True,
+            wifi_cycling=True,
+            enable_volte=[True, True],
+            enable_wfc=[True, True],
+            wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+            is_wifi_connected=True)
 
     @test_tracker_info(uuid="33ed3dee-581f-4ae8-b236-1317377a6ca1")
     @TelephonyBaseTest.tel_test_wrap

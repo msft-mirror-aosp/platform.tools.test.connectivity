@@ -65,17 +65,14 @@ preferred_network_mode = DeviceSetting(
     DeviceSetting.GLOBAL, 'preferred_network_mode',
     desc='Sets the preferred network (lte/3g).')
 
-wifi = DeviceBinaryCommandSeries(
-    [
-        DeviceSetting(DeviceSetting.GLOBAL, 'wifi_on',
-                      desc='Modifies the property that indicates whether wifi '
-                           'is enabled. This is always used together with an'
-                           'svc wifi command.'),
-        DeviceState('svc wifi', on_val='enable', off_val='disable',
-                    desc='Modifies the wifi state. This is always done after'
-                         'setting the wifi_on global property.')
-    ]
-)
+wifi_global = DeviceSetting(DeviceSetting.GLOBAL, 'wifi_on',
+                            desc='Modifies the property that indicates whether wifi '
+                                 'is enabled. This is always used together with an'
+                                 'svc wifi command.')
+
+wifi_state = DeviceState('svc wifi', on_val='enable', off_val='disable',
+                         desc='Modifies the wifi state. This is always done after'
+                              'setting the wifi_on global property.')
 
 ethernet = DeviceState(
     'ifconfig eth0', on_val='up', off_val='down',
@@ -258,7 +255,7 @@ disable_doze = GenericCommand(
          'with ambient, which is also referred to as doze).')
 
 power_stayon = GenericCommand('vc power stayon true',
-                                 desc='Keep awake from entering sleep.')
+                              desc='Keep awake from entering sleep.')
 
 # Sensors
 
@@ -286,7 +283,13 @@ ambient_eq = DeviceSetting(
 disable_pixellogger = GenericCommand('pm disable com.android.pixellogger',
                                      desc="Disables system apps.")
 
+oslo_gating = DeviceSetprop('pixel.oslo.gating',
+                            desc='Disables oslo gating.')
+
 # Miscellaneous
+
+hidden_api_exemption = GenericCommand('settings put global hidden_api_blacklist_exemptions *',
+                                      desc='Allows all private apis for testing')
 
 test_harness = DeviceBinaryCommandSeries(
     [
@@ -294,8 +297,21 @@ test_harness = DeviceBinaryCommandSeries(
         DeviceSetprop('ro.test_harness', desc='Modifies test_harness property.')
     ]
 )
+
+crashed_activities = GenericCommand('dumpsys activity processes | grep -e'
+                                    ' .*crashing=true.*AppErrorDialog.* -e'
+                                    ' .*notResponding=true.'
+                                    '*AppNotRespondingDialog.*',
+                                    desc = 'Logs crashed processes')
+
 dismiss_keyguard = GenericCommand('wm dismiss-keyguard',
                                   desc='Dismisses the lockscreen.')
+
+home_button = GenericCommand('input keyevent 3',
+                             desc='Goes to home screen')
+
+menu_button = GenericCommand('input keyevent 82',
+                             desc='Unlocks screen by pressing menu button')
 
 modem_diag = DeviceBinaryCommandSeries(
     [
@@ -306,3 +322,5 @@ modem_diag = DeviceBinaryCommandSeries(
     ]
 )
 
+reboot_power = GenericCommand('svc power reboot null',
+                              desc='Reboots device')
