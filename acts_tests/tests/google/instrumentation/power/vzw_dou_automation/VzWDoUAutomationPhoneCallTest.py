@@ -71,7 +71,7 @@ class VzWDoUAutomationPhoneCallTest(
   def test_voice_call_over_lte_wifi(self, attempt_number):
     """Measures power when the device is on call with mute on and off
     with wifi connected."""
-    self.adb_run(common.wifi.toggle(True))
+    self.adb_run(common.wifi_state.toggle(True))
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
         'The companion phone number is {}'.format(companion_phone_number))
