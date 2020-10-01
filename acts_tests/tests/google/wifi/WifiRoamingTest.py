@@ -13,57 +13,32 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import pprint
-import random
-import time
-from acts import context
-from scapy.all import *
-
 from acts import asserts
-from acts import base_test
-from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
-WifiEnums = wutils.WifiEnums
-DEF_ATTN = 60
-MAX_ATTN = 95
-ROAM_DBM = -75
-WAIT_AFTER_ATTN = 12
-ATTN_STEP = 5
 
 class WifiRoamingTest(WifiBaseTest):
 
     def setup_class(self):
-        """Setup required dependencies from config file and configure
-           the required networks for testing roaming.
-
-        Returns:
-            True if successfully configured the requirements for testing.
-        """
+        """Configure the required networks for testing roaming."""
         super().setup_class()
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["roaming_attn", "roam_interval", "ping_addr",
-                      "max_bugreports"]
-        opt_param = ["open_network", "reference_networks",]
-        self.unpack_userparams(
-            req_param_names=req_params, opt_param_names=opt_param)
+        req_params = ["roaming_attn",]
+        self.unpack_userparams(req_param_names=req_params,)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(ap_count=2)
-
-        asserts.assert_true(
-            len(self.reference_networks) > 1,
-            "Need at least two psk networks for roaming.")
-        asserts.assert_true(
-            len(self.open_network) > 1,
-            "Need at least two open networks for roaming")
-
-
-        self.configure_packet_capture()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                owe_network=True,
+                                                sae_network=True,
+                                                ap_count=2,
+                                                mirror_ap=True)
 
     def teardown_class(self):
         self.dut.ed.clear_all_events()
@@ -82,8 +57,9 @@ class WifiRoamingTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        for a in self.attenuators:
-            a.set_atten(0)
+        wutils.set_attns(self.attenuators, "default")
+
+    ### Helper Methods ###
 
     def roaming_from_AP1_and_AP2(self, AP1_network, AP2_network):
         """Test roaming between two APs.
@@ -99,119 +75,88 @@ class WifiRoamingTest(WifiBaseTest):
         4. Expect DUT to roam to AP2.
         5. Validate connection information and ping.
         """
-        wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
+        wutils.set_attns(self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
         wifi_config = AP1_network.copy()
         wifi_config.pop("bssid")
         wutils.connect_to_wifi_network(self.dut, wifi_config)
         self.log.info("Roaming from %s to %s", AP1_network, AP2_network)
         wutils.trigger_roaming_and_validate(
-            self.dut, self.attenuators, "AP1_off_AP2_on", AP2_network)
+            self.dut, self.attenuators, "AP1_off_AP2_on", AP2_network,
+            self.roaming_attn)
 
-    def get_rssi(self, pcap_file, expected_bssid):
-        """Get signal strength of the wifi network attenuated.
+    ### Test Cases ###
 
-        Args:
-            pcap_file: PCAP file path.
-            expected_bssid: BSSID of the wifi network attenuated.
-        """
-        packets = []
-        try:
-            packets = rdpcap(pcap_file)
-        except Scapy_Exception:
-            self.log.error("Failed to read pcap file")
-        if not packets:
-            return 0
-
-        dbm = -100
-        for pkt in packets:
-            if pkt and hasattr(pkt, 'type') and pkt.type == 0 and \
-                pkt.subtype == 8 and hasattr(pkt, 'info'):
-                  bssid = pkt.addr3
-                  if expected_bssid == bssid:
-                      dbm = int(pkt.dBm_AntSignal)
-        self.log.info("RSSI: %s" % dbm)
-        return dbm
-
-    def trigger_roaming_and_verify_attenuation(self, network):
-        """Trigger roaming and verify signal strength is below roaming limit.
-
-        Args:
-            network: Wifi network that is being attenuated.
-        """
-        wutils.set_attns_steps(self.attenuators, "AP1_off_AP2_on")
-        band = '5G' if network['SSID'].startswith('5g_') else '2G'
-        attn = DEF_ATTN + ATTN_STEP
-        while attn <= MAX_ATTN:
-            self.pcap_procs = wutils.start_pcap(
-                self.packet_capture, 'dual', self.test_name)
-            time.sleep(WAIT_AFTER_ATTN/3)
-            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
-            pcap_file = os.path.join(
-                context.get_current_context().get_full_output_path(),
-                'PacketCapture',
-                '%s_%s.pcap' % (self.test_name, band))
-
-            rssi = self.get_rssi(pcap_file, network["bssid"])
-            if rssi == 0:
-                self.log.error("Failed to verify signal strength")
-                break
-            if self.get_rssi(pcap_file, network["bssid"]) < ROAM_DBM:
-                break
-
-            self.attenuators[0].set_atten(attn)
-            self.attenuators[1].set_atten(attn)
-            time.sleep(WAIT_AFTER_ATTN) # allow some time for attenuation
-            attn += 5
-
-    def validate_roaming(self, expected_con):
-        """Validate roaming.
-
-        Args:
-            expected_con: Expected wifi network after roaming.
-        """
-        expected_con = {
-            WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
-            WifiEnums.BSSID_KEY: expected_con["bssid"],
-        }
-        curr_con = self.dut.droid.wifiGetConnectionInfo()
-        for key in expected_con:
-            if expected_con[key] != curr_con[key]:
-                asserts.fail("Expected '%s' to be %s, actual is %s." %
-                             (key, expected_con[key], curr_con[key]))
-        self.log.info("Roamed to %s successfully",
-                      expected_con[WifiEnums.BSSID_KEY])
-        if not wutils.validate_connection(self.dut):
-            raise signals.TestFailure("Fail to connect to internet on %s" %
-                                      expected_con[WifiEnums.BSSID_KEY])
-
-    """ Tests Begin.
-
-        The following tests are designed to test inter-SSID Roaming only.
-
-        """
     @test_tracker_info(uuid="db8a46f9-713f-4b98-8d9f-d36319905b0a")
     def test_roaming_between_AP1_to_AP2_open_2g(self):
-        AP1_network = self.open_network[0]["2g"]
-        AP2_network = self.open_network[1]["2g"]
-        self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
+        ap1_network = self.open_network[0]["2g"]
+        ap2_network = self.open_network[1]["2g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
 
     @test_tracker_info(uuid="0db67d9b-6ea9-4f40-acf2-155c4ecf9dc5")
     def test_roaming_between_AP1_to_AP2_open_5g(self):
-        AP1_network = self.open_network[0]["5g"]
-        AP2_network = self.open_network[1]["5g"]
-        self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
+        ap1_network = self.open_network[0]["5g"]
+        ap2_network = self.open_network[1]["5g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["5g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
 
     @test_tracker_info(uuid="eabc7319-d962-4bef-b679-725e9ff00420")
     def test_roaming_between_AP1_to_AP2_psk_2g(self):
-        AP1_network = self.reference_networks[0]["2g"]
-        AP2_network = self.reference_networks[1]["2g"]
-        self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
+        ap1_network = self.reference_networks[0]["2g"]
+        ap2_network = self.reference_networks[1]["2g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
 
     @test_tracker_info(uuid="1cf9c681-4ff0-45c1-9719-f01629f6a7f7")
     def test_roaming_between_AP1_to_AP2_psk_5g(self):
-        AP1_network = self.reference_networks[0]["5g"]
-        AP2_network = self.reference_networks[1]["5g"]
-        self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
+        ap1_network = self.reference_networks[0]["5g"]
+        ap2_network = self.reference_networks[1]["5g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["5g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+
+    @test_tracker_info(uuid="a28f7d2e-fae4-4e66-b633-7ee59f8b46e0")
+    def test_roaming_between_AP1_to_AP2_owe_2g(self):
+        ap1_network = self.owe_networks[0]["2g"]
+        ap2_network = self.owe_networks[1]["2g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+
+    @test_tracker_info(uuid="3c39110a-9336-4abd-b885-acbba85dc10d")
+    def test_roaming_between_AP1_to_AP2_owe_5g(self):
+        ap1_network = self.owe_networks[0]["5g"]
+        ap2_network = self.owe_networks[1]["5g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["5g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+
+    @test_tracker_info(uuid="68b2baf6-162a-44f2-a00d-4973e5ac9471")
+    def test_roaming_between_AP1_to_AP2_sae_2g(self):
+        ap1_network = self.sae_networks[0]["2g"]
+        ap2_network = self.sae_networks[1]["2g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+
+    @test_tracker_info(uuid="20e24ed3-0cd1-46dd-bd26-2183ffb443e6")
+    def test_roaming_between_AP1_to_AP2_sae_5g(self):
+        ap1_network = self.sae_networks[0]["5g"]
+        ap2_network = self.sae_networks[1]["5g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["5g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
 
     @test_tracker_info(uuid="3114d625-5cdd-4205-bb46-5a9d057dc80d")
     def test_roaming_fail_psk_2g(self):
@@ -237,5 +182,3 @@ class WifiRoamingTest(WifiBaseTest):
             self.log.info("Re-configuring AP2 with correct password.")
             wutils.ap_setup(self, 1, self.access_points[1], network)
         self.roaming_from_AP1_and_AP2(network, network_fail)
-
-    """ Tests End """
