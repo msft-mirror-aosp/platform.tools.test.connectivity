@@ -22,16 +22,16 @@ from unittest.mock import patch
 
 from acts.test_utils.instrumentation import config_wrapper
 from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
-from acts.test_utils.instrumentation.power import power_metrics
-from acts.test_utils.instrumentation.power.power_metrics import AbsoluteThresholds
-from acts.test_utils.instrumentation.power.power_metrics import CURRENT
-from acts.test_utils.instrumentation.power.power_metrics import HOUR
-from acts.test_utils.instrumentation.power.power_metrics import Metric
-from acts.test_utils.instrumentation.power.power_metrics import MILLIAMP
-from acts.test_utils.instrumentation.power.power_metrics import MINUTE
-from acts.test_utils.instrumentation.power.power_metrics import PowerMetrics
-from acts.test_utils.instrumentation.power.power_metrics import TIME
-from acts.test_utils.instrumentation.power.power_metrics import WATT
+from acts.controllers import power_metrics
+from acts.controllers.power_metrics import AbsoluteThresholds
+from acts.controllers.power_metrics import CURRENT
+from acts.controllers.power_metrics import HOUR
+from acts.controllers.power_metrics import Metric
+from acts.controllers.power_metrics import MILLIAMP
+from acts.controllers.power_metrics import MINUTE
+from acts.controllers.power_metrics import PowerMetrics
+from acts.controllers.power_metrics import TIME
+from acts.controllers.power_metrics import WATT
 
 FAKE_UNIT_TYPE = 'fake_unit'
 FAKE_UNIT = 'F'
@@ -217,7 +217,7 @@ class PowerMetricsTest(unittest.TestCase):
 
         imported_data = power_metrics.import_raw_data(
             os.path.join(os.path.dirname(__file__),
-                         '../data/sample_monsoon_data')
+                         'data/sample_monsoon_data')
         )
 
         count = 0
@@ -225,7 +225,7 @@ class PowerMetricsTest(unittest.TestCase):
             count = count + 1
         self.assertEqual(count, 10)
 
-    @patch('acts.test_utils.instrumentation.power.power_metrics.PowerMetrics')
+    @patch('acts.controllers.power_metrics.PowerMetrics')
     def test_split_by_test_with_timestamps(self, mock_power_metric_type):
         """Test that given test timestamps, a power metric is generated from
         a subset of samples corresponding to the test."""
