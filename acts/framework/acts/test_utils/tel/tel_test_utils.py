@@ -41,7 +41,8 @@ from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
 from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
-from acts.test_utils.tel.tel_defines import CarrierConfigs
+from acts.test_utils.tel.tel_defines import CarrierConfigs, CARRIER_NTT_DOCOMO, CARRIER_KDDI, CARRIER_RAKUTEN, \
+    CARRIER_SBM
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
 from acts.test_utils.tel.tel_defines import CARD_POWER_UP
@@ -2092,6 +2093,28 @@ def call_reject_leave_message(log,
         verify_caller_func, wait_time_in_call)
 
 
+def check_reject_needed_for_voice_mail(log, ad_callee):
+    """Check if the carrier requires reject call to receive voice mail or just keep ringing
+    Requested in b//155935290
+    Four Japan carriers do not need to reject
+    SBM, KDDI, Ntt Docomo, Rakuten
+    Args:
+        log: log object
+        ad_callee: android device object
+    Returns:
+        True if callee's carrier is not one of the four Japan carriers
+        False if callee's carrier is one of the four Japan carriers
+    """
+
+    operators_no_reject = [CARRIER_NTT_DOCOMO,
+                           CARRIER_KDDI,
+                           CARRIER_RAKUTEN,
+                           CARRIER_SBM]
+    operator_name = get_operator_name(log, ad_callee)
+
+    return operator_name not in operators_no_reject
+
+
 def call_reject_leave_message_for_subscription(
         log,
         ad_caller,
@@ -2146,9 +2169,15 @@ def call_reject_leave_message_for_subscription(
         if not initiate_call(log, ad_caller, callee_number):
             ad_caller.log.error("Initiate call failed.")
             return False
+        if check_reject_needed_for_voice_mail(log, ad_callee):
+            carrier_specific_delay_reject = 30
+        else:
+            carrier_specific_delay_reject = 2
+        carrier_reject_call = not check_reject_needed_for_voice_mail(log, ad_callee)
 
         if not wait_and_reject_call_for_subscription(
-                log, ad_callee, subid_callee, incoming_number=caller_number):
+                log, ad_callee, subid_callee, incoming_number=caller_number, delay_reject=carrier_specific_delay_reject,
+                reject=carrier_reject_call):
             ad_callee.log.error("Reject call fail.")
             return False
 
