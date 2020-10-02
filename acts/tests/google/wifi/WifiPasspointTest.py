@@ -20,16 +20,15 @@ import queue
 import time
 
 import acts.base_test
+from acts.test_utils.net import ui_utils as uutils
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
 
-import WifiManagerTest
 from acts import asserts
 from acts import signals
-from acts.libs.uicd.uicd_cli import UicdCli
-from acts.libs.uicd.uicd_cli import UicdError
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums
@@ -49,6 +48,12 @@ TOGGLE = 2
 
 UNKNOWN_FQDN = "@#@@!00fffffx"
 
+# Constants for Boingo UI automator
+EDIT_TEXT_CLASS_NAME = "android.widget.EditText"
+PASSWORD_TEXT = "Password"
+PASSPOINT_BUTTON = "Get Passpoint"
+BOINGO_UI_TEXT = "Online Sign Up"
+
 class WifiPasspointTest(acts.base_test.BaseTestClass):
     """Tests for APIs in Android's WifiManager class.
 
@@ -61,19 +66,15 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["passpoint_networks", "uicd_workflows", "uicd_zip"]
-        opt_param = []
-        self.unpack_userparams(
-            req_param_names=req_params, opt_param_names=opt_param)
-        self.unpack_userparams(req_params)
+        req_params = ["passpoint_networks",
+                      "boingo_username",
+                      "boingo_password",]
+        self.unpack_userparams(req_param_names=req_params,)
         asserts.assert_true(
             len(self.passpoint_networks) > 0,
             "Need at least one Passpoint network.")
         wutils.wifi_toggle_state(self.dut, True)
         self.unknown_fqdn = UNKNOWN_FQDN
-        # Setup Uicd cli object for UI interation.
-        self.ui = UicdCli(self.uicd_zip[0], self.uicd_workflows)
-        self.passpoint_workflow = "passpoint-login_%s" % self.dut.model
 
 
     def setup_test(self):
@@ -146,6 +147,36 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
             raise signals.TestFailure("Failed to delete Passpoint configuration"
                                       " with FQDN = %s" % passpoint_config[0])
 
+    def ui_automator_boingo(self):
+        """Run UI automator for boingo passpoint."""
+        # Verify the boingo login page shows
+        asserts.assert_true(
+            uutils.has_element(self.dut, text=BOINGO_UI_TEXT),
+            "Failed to launch boingohotspot login page")
+
+        # Go to the bottom of the page
+        for _ in range(3):
+            self.dut.adb.shell("input swipe 300 900 300 300")
+
+        # Enter username
+        uutils.wait_and_input_text(self.dut,
+                                   input_text=self.boingo_username,
+                                   text="",
+                                   class_name=EDIT_TEXT_CLASS_NAME)
+        self.dut.adb.shell("input keyevent 111")  # collapse keyboard
+        self.dut.adb.shell("input swipe 300 900 300 750")  # swipe up to show text
+
+        # Enter password
+        uutils.wait_and_input_text(self.dut,
+                                   input_text=self.boingo_password,
+                                   text=PASSWORD_TEXT)
+        self.dut.adb.shell("input keyevent 111")  # collapse keyboard
+        self.dut.adb.shell("input swipe 300 900 300 750")  # swipe up to show text
+
+        # Login
+        uutils.wait_and_click(self.dut, text=PASSPOINT_BUTTON)
+
+
     def start_subscription_provisioning(self, state):
         """Start subscription provisioning with a default provider."""
 
@@ -183,7 +214,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                     "Passpoint Provisioning status %s" % dut_event['data'][
                         'status'])
                 if int(dut_event['data']['status']) == 7:
-                    self.ui.run(self.dut.serial, self.passpoint_workflow)
+                    self.ui_automator_boingo()
         # Clear all previous events.
         self.dut.ed.clear_all_events()
 
@@ -307,7 +338,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         # Install both Passpoint profiles on the device.
         passpoint_ssid = list()
         for passpoint_config in self.passpoint_networks[:2]:
-            passpoint_ssid.append(passpoint_config[WifiEnums.SSID_KEY])
+            passpoint_ssid.extend(passpoint_config[WifiEnums.SSID_KEY])
             self.install_passpoint_profile(passpoint_config)
             time.sleep(DEFAULT_TIMEOUT)
 
@@ -320,12 +351,12 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                                      "configured Passpoint networks.")
 
         expected_ssid =  self.passpoint_networks[0][WifiEnums.SSID_KEY]
-        if current_ssid == expected_ssid:
+        if current_ssid in expected_ssid:
             expected_ssid = self.passpoint_networks[1][WifiEnums.SSID_KEY]
 
         # Remove the current Passpoint profile.
         for network in self.passpoint_networks[:2]:
-            if network[WifiEnums.SSID_KEY] == current_ssid:
+            if current_ssid in network[WifiEnums.SSID_KEY]:
                 if not wutils.delete_passpoint(self.dut, network["fqdn"]):
                     raise signals.TestFailure("Failed to delete Passpoint"
                                               " configuration with FQDN = %s" %
@@ -334,7 +365,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         time.sleep(DEFAULT_TIMEOUT)
 
         current_passpoint = self.dut.droid.wifiGetConnectionInfo()
-        if current_passpoint[WifiEnums.SSID_KEY] != expected_ssid:
+        if current_passpoint[WifiEnums.SSID_KEY] not in expected_ssid:
             raise signals.TestFailure("Device did not failover to the %s"
                                       " passpoint network" % expected_ssid)
 
@@ -360,6 +391,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
 
 
     @test_tracker_info(uuid="e3e826d2-7c39-4c37-ab3f-81992d5aa0e8")
+    @WifiBaseTest.wifi_test_wrap
     def test_att_passpoint_network(self):
         """Add a AT&T Passpoint network and verify device connects to it.
 
