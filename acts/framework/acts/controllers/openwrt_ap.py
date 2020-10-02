@@ -15,7 +15,10 @@ OPEN_SECURITY = "none"
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
+OWE_SECURITY = "owe"
+SAE_SECURITY = "sae"
 ENABLE_RADIO = "0"
+PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
 
@@ -190,6 +193,23 @@ class OpenWrtAP(object):
                                              config["security"],
                                              hostapd_constants.BAND_2G,
                                              hidden=config["hiddenSSID"]))
+        elif config["security"] == OWE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_2G,
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
+        elif config["security"] == SAE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_2G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
         elif config["security"] == ENT_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig(
@@ -227,6 +247,23 @@ class OpenWrtAP(object):
                                              config["security"],
                                              hostapd_constants.BAND_5G,
                                              hidden=config["hiddenSSID"]))
+        elif config["security"] == OWE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_5G,
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
+        elif config["security"] == SAE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_5G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
         elif config["security"] == ENT_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig(
