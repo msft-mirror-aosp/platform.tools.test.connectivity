@@ -123,7 +123,8 @@ class WifiBaseTest(BaseTestClass):
                          hidden=False,
                          same_ssid=False,
                          ssid_length_2g=hostapd_constants.AP_SSID_LENGTH_2G,
-                         ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G):
+                         ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G,
+                         security_mode='none'):
         """Generates SSIDs for a open network using a random generator.
 
         Args:
@@ -134,6 +135,7 @@ class WifiBaseTest(BaseTestClass):
                        SSID.
             ssid_length_2g: Int, number of characters to use for 2G SSID.
             ssid_length_5g: Int, number of characters to use for 5G SSID.
+            security_mode: 'none' for open and 'OWE' for WPA3 OWE.
 
         Returns: A dict of 2G and 5G network lists for hostapd configuration.
 
@@ -151,13 +153,13 @@ class WifiBaseTest(BaseTestClass):
 
         network_dict_2g = {
             "SSID": open_2g_ssid,
-            "security": 'none',
+            "security": security_mode,
             "hiddenSSID": hidden
         }
 
         network_dict_5g = {
             "SSID": open_5g_ssid,
-            "security": 'none',
+            "security": security_mode,
             "hiddenSSID": hidden
         }
 
@@ -311,6 +313,8 @@ class WifiBaseTest(BaseTestClass):
             wep_network=False,
             ent_network=False,
             ent_network_pwd=False,
+            owe_network=False,
+            sae_network=False,
             radius_conf_2g=None,
             radius_conf_5g=None,
             radius_conf_pwd=None,
@@ -330,6 +334,8 @@ class WifiBaseTest(BaseTestClass):
             wep_network: Boolean, to check if wep network should be configured.
             ent_network: Boolean, to check if ent network should be configured.
             ent_network_pwd: Boolean, to check if ent pwd network should be configured.
+            owe_network: Boolean, to check if owe network should be configured.
+            sae_network: Boolean, to check if sae network should be configured.
             radius_conf_2g: dictionary with enterprise radius server details.
             radius_conf_5g: dictionary with enterprise radius server details.
             radius_conf_pwd: dictionary with enterprise radiuse server details.
@@ -341,6 +347,8 @@ class WifiBaseTest(BaseTestClass):
         self.ent_networks = []
         self.ent_networks_pwd = []
         self.open_network = []
+        self.owe_networks = []
+        self.sae_networks = []
         for _ in range(ap_count):
             network_list = []
             if wpa_network:
@@ -396,6 +404,30 @@ class WifiBaseTest(BaseTestClass):
                                                   ssid_length_2g,
                                                   ssid_length_5g)
                 network_list.append(open_dict)
+            if owe_network:
+                owe_dict = self.get_open_network(mirror_ap,
+                                                 self.owe_networks,
+                                                 hidden,
+                                                 same_ssid,
+                                                 ssid_length_2g,
+                                                 ssid_length_5g,
+                                                 "OWE")
+                owe_dict[hostapd_constants.BAND_2G]["security"] = "owe"
+                owe_dict[hostapd_constants.BAND_5G]["security"] = "owe"
+                network_list.append(owe_dict)
+            if sae_network:
+                sae_dict = self.get_psk_network(mirror_ap,
+                                                self.sae_networks,
+                                                hidden,
+                                                same_ssid,
+                                                hostapd_constants.WPA3_KEY_MGMT,
+                                                ssid_length_2g,
+                                                ssid_length_5g,
+                                                passphrase_length_2g,
+                                                passphrase_length_5g)
+                sae_dict[hostapd_constants.BAND_2G]["security"] = "sae"
+                sae_dict[hostapd_constants.BAND_5G]["security"] = "sae"
+                network_list.append(sae_dict)
             self.access_points[_].configure_ap(network_list,
                                                channel_2g,
                                                channel_5g)
