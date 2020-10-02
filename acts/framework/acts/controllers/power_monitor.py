@@ -17,7 +17,7 @@
 import tempfile
 import logging
 from acts.controllers.monsoon_lib.api.common import MonsoonError
-from acts.test_utils.instrumentation.power import power_metrics
+from acts.controllers import power_metrics
 
 
 class ResourcesRegistryError(Exception):

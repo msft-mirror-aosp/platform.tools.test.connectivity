@@ -16,7 +16,7 @@
 
 import unittest
 from acts.controllers import bits
-from acts.test_utils.instrumentation.power import power_metrics
+from acts.controllers import power_metrics
 
 
 class BitsTest(unittest.TestCase):

@@ -19,7 +19,7 @@ import unittest
 from acts import signals
 from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.power import power_metrics
+from acts.controllers import power_metrics
 from acts.test_utils.instrumentation.power.instrumentation_power_test import ACCEPTANCE_THRESHOLD
 from acts.test_utils.instrumentation.power.instrumentation_power_test import InstrumentationPowerTest
 import mock
