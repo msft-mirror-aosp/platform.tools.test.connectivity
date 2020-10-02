@@ -14,12 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
 import os
 import random
 import statistics
 import tempfile
 import time
+import json
 
 from acts import signals
 from acts.controllers.android_device import SL4A_APK_NAME
@@ -28,6 +28,7 @@ from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
 from acts.test_utils.instrumentation.device.apps.app_installer import AppInstaller
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
+from acts.controllers import power_metrics
 
 from enum import Enum
 
@@ -36,7 +37,7 @@ DEFAULT_DEVICE_COOL_DOWN_TIME = 25
 DEFAULT_WAIT_FOR_REBOOT = 120
 WIFI_SSID = 'TP-Link-VZW-DoU'
 
-def get_median_current(test_results):
+def get_median_current(test_results, test_instance):
   """Returns the median current, or a failure if the test failed."""
   # If the last run was not a pass signal, the test exceeded
   # acceptable_failures.
@@ -44,11 +45,36 @@ def get_median_current(test_results):
     return test_results[-1]
 
   # Only look at results within the good range (i.e., passing results).
-  valid_results = filter(lambda result: isinstance(result, signals.TestPass),
-                         test_results)
+  valid_results = list(filter(lambda result: isinstance(result, signals.TestPass),
+                         test_results))
   # Gather the current measurements and return the median.
   median_current = statistics.median(
       [x.extras[list(x.extras.keys())[0]]['avg_current']['actual'] for x in valid_results])
+
+  # Get the median metrics for test results recording.
+  final_metrics = {}
+  result_dict_list = []
+  key = ''
+  for x in valid_results:
+    if str(x.extras[list(x.extras.keys())[0]]['avg_current']['actual']) == str(median_current):
+      median_metric = x.extras[list(x.extras.keys())[0]]['avg_current']['power_metric']
+      result_dict_list = json.loads(median_metric)
+      test_instance.log.debug('Median metrics result dict list is %s' % result_dict_list)
+      key = list(x.extras.keys())[0]
+      test_instance.log.debug('The key of the median result dict is %s' % key)
+      break
+
+  test_instance.log.debug('The key of the final_metrics is %s' % key)
+  test_instance.log.debug('The result dict list of the final_metrics %s' % result_dict_list)
+
+  result_object_list = test_instance.convert_power_metric_dict_to_object(result_dict_list)
+  test_instance.log.debug('The result object list of the final_metrics %s' % result_object_list)
+
+  final_metrics[key] = result_object_list
+
+  # Record median metrics
+  test_instance.record_metrics(final_metrics)
+
   return signals.TestPass('Pass msg! Current: %s' % median_current,
                           extras={'average_current': median_current})
 
@@ -70,8 +96,8 @@ class VzWDoUAutomationBaseTest(
     self.log.info('Running base adb setup commands.')
     self.ad_dut.adb.ensure_root()
     self.adb_run(common.dismiss_keyguard)
-    self.adb_run(goog.location_off_warning_dialog.toggle(False))
-    self.adb_run(common.airplane_mode.toggle(False))
+    self.adb_run(goog.location_off_warning_dialog.toggle(False), timeout=120)
+    self.adb_run(common.airplane_mode.toggle(False), timeout=120)
     self.adb_run(common.auto_rotate.toggle(False))
     self.set_screen_brightness_level()
     self.adb_run(common.screen_adaptive_brightness.toggle(False))
@@ -230,3 +256,12 @@ class VzWDoUAutomationBaseTest(
       email_account = 'pixelvzwdou%s@gtestmailer.com' % num
       self.log.info('Exchange email is %s' % email_account)
     return email_account
+
+  def convert_power_metric_dict_to_object(self, power_meric_dict):
+    # Convert power metric dict to object
+    metric_object_list = []
+    for metric in power_meric_dict:
+      metric_object = power_metrics.Metric(metric['value'], metric['_unit_type'],
+                                           metric['unit'], name=metric['name'])
+      metric_object_list.append(metric_object)
+    return metric_object_list

@@ -18,6 +18,7 @@ import os
 import shutil
 import tempfile
 import time
+import json
 
 from acts import asserts
 from acts import context
@@ -591,6 +592,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     'instrumentation_proto.txt.'
                     % instr_test_name)
 
+            metric_list = []
+            for metric in power_metrics[instr_test_name]:
+                metric_dic = {
+                    'name' : metric.name,
+                    'value' : metric.value,
+                    'unit': metric.unit,
+                    '_unit_type' : metric._unit_type
+                }
+                metric_list.append(metric_dic)
+
             summaries[instr_test_name] = {}
             test_thresholds_configs = all_thresholds.get_config(instr_test_name)
             for metric_name, thresholds_conf in test_thresholds_configs.items():
@@ -612,10 +623,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     self.log.error('Error detail: %s', str(e))
                     continue
 
+                power_metrics_json_string = json.dumps(metric_list)
+
                 summary_entry = {
                     'expected': '[%s, %s]' % (
                         thresholds.lower, thresholds.upper),
-                    'actual': str(actual_result.to_unit(thresholds.unit))
+                    'actual': str(actual_result.to_unit(thresholds.unit)),
+                    'power_metric': power_metrics_json_string
                 }
                 summaries[instr_test_name][metric_name] = summary_entry
                 if not thresholds.lower <= actual_result <= thresholds.upper:

@@ -234,7 +234,7 @@ class VzWDoUAutomationPhoneCallTest(
               self.log.info('The result metrix index is %s and value is %s',
                             index, result_metrics.value)
             final_list[i].value += result_metrics.value * 0.4
-        if '0' in key:
+        if combined_seg_name == '':
           combined_seg_name = key
 
     final_metrics[combined_seg_name] = final_list
