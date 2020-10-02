@@ -17,7 +17,6 @@
 from acts.test_decorators import repeated_test
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_base_test
-from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 
 class VzWDoUAutomationBrowserTest(
@@ -39,14 +38,19 @@ class VzWDoUAutomationBrowserTest(
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_browser_wifi(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_browser_wifi(self, attempt_number):
     """Measures power when the device is browsing with wifi connected."""
 
     self.log_in_gmail_account()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
         'testBrowser',
-        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)])
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)],
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
@@ -116,6 +120,28 @@ class VzWDoUAutomationBrowserTest(
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YTMusicPlaybackTests',
         'testAudioPlayback',
+        attempt_number=attempt_number)
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_touch_screen(self, attempt_number):
+    """Measures power for touch screen actions on the device."""
+
+    exchange_email = self.generate_random_exchange_email_account(
+        vzw_dou_automation_base_test.TestCase.TC25)
+    additional_setting = self._get_merged_config('additional_setting')
+    exchange_phrase = additional_setting.get('exchange_phrase')
+    self.log_in_gmail_account(sync='true', wait_for_checkin='true')
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.TouchScreenTests',
+        'testTouchScreen',
+        extra_params=[('email_recipient', exchange_email),
+                      ('touchscreen_exchange_account', exchange_email),
+                      ('touchscreen_exchange_account_password', exchange_phrase)],
         attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)

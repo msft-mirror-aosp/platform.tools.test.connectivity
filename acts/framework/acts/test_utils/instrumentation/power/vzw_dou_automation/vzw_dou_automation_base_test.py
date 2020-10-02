@@ -16,6 +16,7 @@
 
 
 import os
+import random
 import statistics
 import tempfile
 import time
@@ -27,6 +28,8 @@ from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
 from acts.test_utils.instrumentation.device.apps.app_installer import AppInstaller
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
+
+from enum import Enum
 
 DEFAULT_WAIT_TO_FASTBOOT_MODE = 10
 DEFAULT_DEVICE_COOL_DOWN_TIME = 25
@@ -48,6 +51,12 @@ def get_median_current(test_results):
       [x.extras[list(x.extras.keys())[0]]['avg_current']['actual'] for x in valid_results])
   return signals.TestPass('Pass msg! Current: %s' % median_current,
                           extras={'average_current': median_current})
+
+class TestCase(Enum):
+    TC25 = 'TC25'
+    TC28 = 'TC28'
+    TC29 = 'TC29'
+    TC34 = 'TC34'
 
 class VzWDoUAutomationBaseTest(
     instrumentation_power_test.InstrumentationPowerTest):
@@ -76,11 +85,11 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(common.doze_always_on.toggle(False))
     self.adb_run(common.silence_gesture.toggle(False))
     self.adb_run(common.single_tap_gesture.toggle(False))
-    self.adb_run(goog.location_collection.toggle(False))
+    self.adb_run(goog.location_collection.toggle(False), timeout=120)
     self.adb_run(goog.icing.toggle(False))
     self.adb_run(common.stop_moisture_detection)
     self.adb_run(common.ambient_eq.toggle(False))
-    self.adb_run(common.wifi.toggle(False))
+    self.adb_run(common.wifi_state.toggle(False))
     self.adb_run('echo 1 > /d/clk/debug_suspend')
     self.adb_run(common.bluetooth.toggle(True))
     self.adb_run(common.enable_full_batterystats_history)
@@ -175,7 +184,7 @@ class VzWDoUAutomationBaseTest(
     self.ad_dut.wait_for_boot_completion()
     time.sleep(DEFAULT_WAIT_FOR_REBOOT)
 
-  def log_in_gmail_account(self):
+  def log_in_gmail_account(self, sync='false', wait_for_checkin='false'):
     # Log in to gmail account
     self._install_google_account_util_apk()
     time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
@@ -184,9 +193,9 @@ class VzWDoUAutomationBaseTest(
     gmail_phrase = additional_setting.get('gmail_phrase')
     log_in_cmd = (
         'am instrument -w -e account {} -e '
-        'password {} -e sync false -e wait-for-checkin false '
+        'password {} -e sync {} -e wait-for-checkin {} '
         'com.google.android.tradefed.account/.AddAccount'
-    ).format(gmail_account, gmail_phrase)
+    ).format(gmail_account, gmail_phrase, sync, wait_for_checkin)
     self.log.info('gmail log in commands %s' % log_in_cmd)
     self.adb_run(log_in_cmd, timeout=300)
     self.ad_dut.reboot()
@@ -202,3 +211,22 @@ class VzWDoUAutomationBaseTest(
     self.ad_dut.reboot()
     self.ad_dut.wait_for_boot_completion()
     time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
+
+  def generate_random_exchange_email_account(self, test_name: TestCase):
+    # Generate random exchange email account based on test case
+    if test_name == TestCase.TC25:
+      random_num = str(random.randint(1, 25))
+      num = random_num.zfill(3)
+      email_account = 'pixelvzwdoutouch%s@gtestmailer.com' % num
+      self.log.info('TC25 exchange email is %s' % email_account)
+    elif test_name == TestCase.TC34:
+      random_num = str(random.randint(2, 25))
+      num = random_num.zfill(3)
+      email_account = 'pixelvzwdoupure%s@gtestmailer.com' % num
+      self.log.info('TC34 exchange email is %s' % email_account)
+    else:
+      random_num = str(random.randint(1, 50))
+      num = random_num.zfill(3)
+      email_account = 'pixelvzwdou%s@gtestmailer.com' % num
+      self.log.info('Exchange email is %s' % email_account)
+    return email_account

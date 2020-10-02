@@ -9,7 +9,7 @@ from acts.controllers import power_monitor
 from acts.controllers.bits_lib import bits_client
 from acts.controllers.bits_lib import bits_service
 from acts.controllers.bits_lib import bits_service_config as bsc
-from acts.test_utils.instrumentation.power import power_metrics
+from acts.controllers import power_metrics
 
 MOBLY_CONTROLLER_CONFIG_NAME = 'Bits'
 ACTS_CONTROLLER_REFERENCE_NAME = 'bitses'

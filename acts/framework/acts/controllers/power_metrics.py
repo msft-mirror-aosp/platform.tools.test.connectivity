@@ -16,8 +16,9 @@
 
 import math
 
-from acts.test_utils.instrumentation import instrumentation_proto_parser as parser
-from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
+# Metrics timestamp keys
+START_TIMESTAMP = 'start'
+END_TIMESTAMP = 'end'
 
 # Unit type constants
 CURRENT = 'current'
@@ -310,18 +311,18 @@ def generate_test_metrics(raw_data, timestamps=None,
         test_metrics[seg_name] = PowerMetrics(voltage)
         try:
             test_starts[seg_name] = Metric(
-                times[parser.START_TIMESTAMP], TIME, MILLISECOND).to_unit(
+                times[START_TIMESTAMP], TIME, MILLISECOND).to_unit(
                 SECOND).value
         except KeyError:
-            raise InstrumentationTestError(
+            raise ValueError(
                 'Missing start timestamp for test scenario "%s". Refer to '
                 'instrumentation_proto.txt for details.' % seg_name)
         try:
             test_ends[seg_name] = Metric(
-                times[parser.END_TIMESTAMP], TIME, MILLISECOND).to_unit(
+                times[END_TIMESTAMP], TIME, MILLISECOND).to_unit(
                 SECOND).value
         except KeyError:
-            raise InstrumentationTestError(
+            raise ValueError(
                 'Missing end timestamp for test scenario "%s". Test '
                 'scenario may have terminated with errors. Refer to '
                 'instrumentation_proto.txt for details.' % seg_name)
