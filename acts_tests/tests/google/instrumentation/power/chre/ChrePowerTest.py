@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
 from acts.test_utils.instrumentation.power import instrumentation_power_test
 
@@ -41,6 +42,62 @@ class ChrePowerTest(instrumentation_power_test.InstrumentationPowerTest):
 
         self.push_to_external_storage(src_path, dest=dest_path, timeout = BIG_FILE_PUSH_TIMEOUT)
 
+    def test_chre_audio(self):
+        """Measures power for enabling CHRE audio buffering."""
+
+        self._push_chre_power_power_test_files(False)
+        test_params = [
+            ('tcm_mode', 'false'),
+            ('power_test_host_app_path', '/data/local/tmp/chre_power_test_client'),
+            ('power_test_nanoapp_path', '/data/local/tmp/power_test.so'),
+            ('duration_ns', '2000000000'),
+        ]
+
+        metrics = self.run_and_measure(
+            'com.google.android.platform.powertests.ChrePowerTests',
+            'testChreAudio',
+            extra_params = test_params)
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
+
+    def test_chre_cell(self):
+        """Measures power for CHRE cell scan."""
+
+        self._push_chre_power_power_test_files(False)
+        self.adb_run(common.cellular.toggle(True))
+        test_params = [
+            ('tcm_mode', 'false'),
+            ('power_test_host_app_path', '/data/local/tmp/chre_power_test_client'),
+            ('power_test_nanoapp_path', '/data/local/tmp/power_test.so'),
+            ('interval_ns', '5000000000'),
+        ]
+
+        metrics = self.run_and_measure(
+            'com.google.android.platform.powertests.ChrePowerTests',
+            'testChreCell',
+            extra_params = test_params)
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
+
+    def test_chre_gnss(self):
+        """Measures power for CHRE gnss scan."""
+
+        self._push_chre_power_power_test_files(False)
+        self.adb_run(common.location_gps.toggle(True))
+        test_params = [
+            ('tcm_mode', 'false'),
+            ('power_test_host_app_path', '/data/local/tmp/chre_power_test_client'),
+            ('power_test_nanoapp_path', '/data/local/tmp/power_test.so'),
+            ('interval_ms', '10000'),
+        ]
+
+        metrics = self.run_and_measure(
+            'com.google.android.platform.powertests.ChrePowerTests',
+            'testChreGnss',
+            extra_params = test_params)
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
+
     def test_chre_timer(self):
         """Measures power for CHRE timer wakeup scan."""
 
@@ -58,3 +115,23 @@ class ChrePowerTest(instrumentation_power_test.InstrumentationPowerTest):
             extra_params = test_params)
         self.record_metrics(metrics)
         self.validate_metrics(metrics)
+
+    def test_chre_wifi(self):
+        """Measures power for CHRE wifi scan."""
+
+        self._push_chre_power_power_test_files(False)
+        self.adb_run(common.wifi_global.toggle(True))
+        test_params = [
+            ('tcm_mode', 'false'),
+            ('power_test_host_app_path', '/data/local/tmp/chre_power_test_client'),
+            ('power_test_nanoapp_path', '/data/local/tmp/power_test.so'),
+            ('interval_ns', '5000000000'),
+        ]
+
+        metrics = self.run_and_measure(
+            'com.google.android.platform.powertests.ChrePowerTests',
+            'testChreWifi',
+            extra_params = test_params)
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
+
