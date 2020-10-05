@@ -70,6 +70,9 @@ wifi_global = DeviceSetting(DeviceSetting.GLOBAL, 'wifi_on',
                                  'is enabled. This is always used together with an'
                                  'svc wifi command.')
 
+wifi_scan_always_enabled = DeviceSetting(DeviceSetting.GLOBAL, 'wifi_scan_always_enabled',
+                                         desc='Modifies whether to enable the wifi scan always.')
+
 wifi_state = DeviceState('svc wifi', on_val='enable', off_val='disable',
                          desc='Modifies the wifi state. This is always done after'
                               'setting the wifi_on global property.')
@@ -93,6 +96,10 @@ nfc = DeviceState('svc nfc', on_val='enable', off_val='disable',
 
 disable_modem = GenericCommand('pm disable com.google.android.apps.scone',
                                desc='Disables modem service.')
+
+mobile_network_settings = GenericCommand('am start -n com.android.phone/'
+                                         '.MobileNetworkSettings',
+                                         desc='Opens network settings')
 
 # Calling
 
@@ -121,6 +128,9 @@ screen_always_on = DeviceState(
 screen_timeout_ms = DeviceSetting(
     DeviceSetting.SYSTEM, 'screen_off_timeout',
     desc='Sets the time to wait before turning the screen off.')
+
+disable_doze = GenericCommand('dumpsys deviceidle disable',
+                              desc = 'Disables device from going into doze mode')
 
 doze_mode = DeviceSetting(
     DeviceSetting.SECURE, 'doze_enabled',
