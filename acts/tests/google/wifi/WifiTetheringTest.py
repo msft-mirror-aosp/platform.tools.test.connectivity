@@ -19,7 +19,6 @@ import socket
 import time
 
 from acts import asserts
-from acts import base_test
 from acts import test_runner
 from acts import utils
 from acts.controllers import adb
@@ -34,15 +33,16 @@ from acts.test_utils.net import socket_test_utils as sutils
 from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.net import net_test_utils as nutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WAIT_TIME = 5
 
-class WifiTetheringTest(base_test.BaseTestClass):
+class WifiTetheringTest(WifiBaseTest):
     """ Tests for Wifi Tethering """
 
     def setup_class(self):
         """ Setup devices for tethering and unpack params """
-
+        super().setup_class()
         self.hotspot_device = self.android_devices[0]
         self.tethered_devices = self.android_devices[1:]
         req_params = ("url", "open_network")
@@ -57,11 +57,13 @@ class WifiTetheringTest(base_test.BaseTestClass):
             wutils.wifi_test_device_init(ad)
 
     def setup_test(self):
+        super().setup_test()
         for ad in self.android_devices:
             self.tcpdump_pid.append(nutils.start_tcpdump(ad, self.test_name))
         self.tethered_devices[0].droid.telephonyToggleDataConnection(False)
 
     def teardown_test(self):
+        super().teardown_test()
         if self.hotspot_device.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.hotspot_device)
         self.tethered_devices[0].droid.telephonyToggleDataConnection(True)
@@ -74,11 +76,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
         """ Reset devices """
         for ad in self.tethered_devices:
             wutils.reset_wifi(ad)
-
-    def on_fail(self, test_name, begin_time):
-        """ Collect bug report on failure """
-        for ad in self.android_devices:
-            ad.take_bug_report(test_name, begin_time)
 
     """ Helper functions """
 
