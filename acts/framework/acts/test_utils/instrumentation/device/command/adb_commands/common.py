@@ -317,6 +317,14 @@ crashed_activities = GenericCommand('dumpsys activity processes | grep -e'
 dismiss_keyguard = GenericCommand('wm dismiss-keyguard',
                                   desc='Dismisses the lockscreen.')
 
+disable_live_captions = GenericCommand('device_config put '
+                                       'device_personalization_services Captions__disable_prod true',
+                                       desc='Disables live captions')
+
+disable_super_packs =  GenericCommand('device_config put '
+                                      'device_personalization_services Overview__enable_superpacks_download false',
+                                      desc='Disables AiAi Webref download')
+
 home_button = GenericCommand('input keyevent 3',
                              desc='Goes to home screen')
 
