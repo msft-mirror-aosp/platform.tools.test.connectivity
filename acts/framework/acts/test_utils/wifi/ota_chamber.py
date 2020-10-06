@@ -16,6 +16,7 @@
 
 import contextlib
 import io
+import serial
 import time
 from acts import logger
 from acts import utils
@@ -240,3 +241,38 @@ class BluetestChamber(OtaChamber):
             self._init_continuous_mode()
         else:
             self._init_manual_mode()
+
+
+class EInstrumentChamber(OtaChamber):
+    """Class that implements Einstrument Chamber."""
+    def __init__(self, config):
+        self.config = config.copy()
+        self.device_id = self.config['device_id']
+        self.log = logger.create_tagged_trace_logger('EInstrumentChamber|{}'.format(
+            self.device_id))
+        self.current_mode = None
+        self.ser = self._get_serial(config['port'])
+
+    def _get_serial(self, port, baud=9600):
+        """Read com port.
+
+        Args:
+            port: turn table com port
+            baud: baud rate
+        """
+        ser = serial.Serial(port, baud)
+        return ser
+
+    def set_orientation(self, orientation):
+        if int(orientation) > 360:
+            orientation = int(orientation) % 360
+        elif int(orientation) < 0:
+            orientation = 0
+        self.log.info('Setting orientation to {} degrees.'.format(orientation))
+        orientation = str('DG') + str(orientation) + str(';')
+        self.ser.write(orientation.encode())
+        return orientation
+
+    def reset_chamber(self):
+        self.log.info('Resetting turn table to zero degree')
+        self.set_orientation(0)
