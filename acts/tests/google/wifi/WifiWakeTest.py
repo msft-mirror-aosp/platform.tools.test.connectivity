@@ -93,6 +93,7 @@ class WifiWakeTest(WifiBaseTest):
             self.log.info('Turned AP B on')
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.ap_a_on()
@@ -107,12 +108,9 @@ class WifiWakeTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def find_ssid_in_scan_results(self, scan_results_batches, ssid):
         scan_results_batch = scan_results_batches[0]

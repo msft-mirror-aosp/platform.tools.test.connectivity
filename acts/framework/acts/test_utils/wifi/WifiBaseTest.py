@@ -19,6 +19,7 @@
 
 import copy
 import itertools
+import os
 import time
 
 import acts.controllers.access_point as ap
@@ -34,6 +35,8 @@ from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
+from acts.keys import Config
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 AP_1 = 0
 AP_2 = 1
@@ -45,6 +48,40 @@ class WifiBaseTest(BaseTestClass):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
+        opt_param = ["pixel_models", "cnss_diag_file"]
+        self.unpack_userparams(opt_param_names=opt_param)
+        if hasattr(self, "cnss_diag_file"):
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
+
+    def setup_test(self):
+        if (hasattr(self, "android_devices") and
+                hasattr(self, "cnss_diag_file") and
+                hasattr(self, "pixel_models")):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
+
+    def teardown_test(self):
+        if (hasattr(self, "android_devices") and
+                hasattr(self, "cnss_diag_file") and
+                hasattr(self, "pixel_models")):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+
+    def on_fail(self, test_name, begin_time):
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                ad.take_bug_report(test_name, begin_time)
+                ad.cat_adb_log(test_name, begin_time)
+                wutils.get_ssrdumps(ad)
+            if (hasattr(self, "cnss_diag_file") and
+                    hasattr(self, "pixel_models")):
+                wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+                for ad in self.android_devices:
+                    wutils.get_cnss_diag_log(ad)
 
     def get_psk_network(
             self,
