@@ -26,11 +26,16 @@ from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_
 from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
+from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
@@ -622,6 +627,7 @@ def reboot_test(log, ad, wifi_ssid=None):
     5. Check if cellular data or Wi-Fi connection is available. False will be returned if not.
     6. Check if internet connection is available. False will be returned if not.
     7. Check if DSDS mode, data sub ID, voice sub ID and message sub ID still keep the same.
+    8. Check if voice and data RAT keep the same.
 
     Args:
         log: log object.
@@ -639,6 +645,11 @@ def reboot_test(log, ad, wifi_ssid=None):
         data_subid = get_default_data_sub_id(ad)
         voice_subid = get_outgoing_voice_sub_id(ad)
         sms_subid = get_outgoing_message_sub_id(ad)
+
+        data_rat_before_reboot = get_network_rat_for_subscription(
+            log, ad, data_subid, NETWORK_SERVICE_DATA)
+        voice_rat_before_reboot = get_network_rat_for_subscription(
+            log, ad, voice_subid, NETWORK_SERVICE_VOICE)
 
         ad.reboot()
         time.sleep(WAIT_TIME_AFTER_REBOOT)
@@ -709,6 +720,33 @@ def reboot_test(log, ad, wifi_ssid=None):
             return False
         else:
             ad.log.info("Message sub ID does not change after reboot.")
+
+        data_rat_after_reboot = get_network_rat_for_subscription(
+            log, ad, data_subid_after_reboot, NETWORK_SERVICE_DATA)
+        voice_rat_after_reboot = get_network_rat_for_subscription(
+            log, ad, voice_subid_after_reboot, NETWORK_SERVICE_VOICE)
+
+        if data_rat_after_reboot == data_rat_before_reboot:
+            ad.log.info(
+                "Data RAT (%s) does not change after reboot.",
+                data_rat_after_reboot)
+        else:
+            ad.log.error(
+                "Data RAT changed! (Before reboot: %s; after reboot: %s)",
+                data_rat_before_reboot,
+                data_rat_after_reboot)
+            return False
+
+        if voice_rat_after_reboot == voice_rat_before_reboot:
+            ad.log.info(
+                "Voice RAT (%s) does not change after reboot.",
+                voice_rat_after_reboot)
+        else:
+            ad.log.error(
+                "Voice RAT changed! (Before reboot: %s; after reboot: %s)",
+                voice_rat_before_reboot,
+                voice_rat_after_reboot)
+            return False
 
     except Exception as e:
         ad.log.error(e)
