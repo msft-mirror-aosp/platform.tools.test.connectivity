@@ -138,10 +138,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
         self.ad_dut.adb.ensure_root()
         self.adb_run(common.dismiss_keyguard)
-        self.adb_run(goog.location_off_warning_dialog.toggle(False))
         self.ad_dut.ensure_screen_on()
-
-        self.adb_run(goog.location_off_warning_dialog.toggle(False))
         self.adb_run(common.screen_always_on.toggle(True))
         self.adb_run(common.menu_button)
         self.adb_run(common.home_button)
@@ -154,10 +151,10 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(common.auto_time.toggle(False))
         self.adb_run(common.wifi_global.toggle(False))
         self.adb_run(common.auto_timezone.toggle(False))
+        self.adb_run(common.wifi_state.toggle(False))
         self.adb_run(common.bluetooth.toggle(False))
         self.adb_run(common.crashed_activities)
-
-        self.adb_run(goog.location_off_warning_dialog.toggle(False))
+        self.adb_run(common.dismiss_keyguard)
         self.adb_run(common.screen_always_on.toggle(True))
         self.adb_run(common.menu_button)
         self.adb_run(common.home_button)
@@ -217,6 +214,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.disable_musiciq)
         self.adb_run(goog.enable_musiciq)
         self.adb_run(common.home_button)
+        self.adb_run(common.disable_live_captions)
+        self.adb_run(common.disable_super_packs)
         self.adb_run(common.disable_pixellogger)
         self.adb_run(goog.hotword.toggle(False))
         self.adb_run(goog.disable_volta)
