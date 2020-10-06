@@ -159,6 +159,7 @@ class WifiEnterpriseTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wifiStartTrackingStateChange()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
@@ -167,14 +168,11 @@ class WifiEnterpriseTest(WifiBaseTest):
         self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
 
     def teardown_test(self):
+        super().teardown_test()
         stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiStopTrackingStateChange()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     """Helper Functions"""
 
