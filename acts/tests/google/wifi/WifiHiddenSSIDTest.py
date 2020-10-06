@@ -65,16 +65,14 @@ class WifiHiddenSSIDTest(WifiBaseTest):
         self.wpa_hidden_5g = self.reference_networks[0]["5g"]
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
