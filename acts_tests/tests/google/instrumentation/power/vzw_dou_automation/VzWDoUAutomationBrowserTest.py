@@ -17,6 +17,7 @@
 from acts.test_decorators import repeated_test
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_base_test
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
 
 
 class VzWDoUAutomationBrowserTest(
@@ -30,7 +31,7 @@ class VzWDoUAutomationBrowserTest(
   def test_browser(self, attempt_number):
     """Measures power when the device is browsing."""
 
-    self.log_in_gmail_account()
+    self.adb_run(goog.remove_gmail_account)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
         'testBrowser',
@@ -45,7 +46,7 @@ class VzWDoUAutomationBrowserTest(
   def test_browser_wifi(self, attempt_number):
     """Measures power when the device is browsing with wifi connected."""
 
-    self.log_in_gmail_account()
+    self.adb_run(goog.remove_gmail_account)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
         'testBrowser',
@@ -61,6 +62,7 @@ class VzWDoUAutomationBrowserTest(
   def test_streaming_video(self, attempt_number):
     """Measures power when the device is streaming video."""
 
+    self.adb_run(goog.remove_gmail_account)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YouTubeV15Tests',
         'testStreamingVideo',
@@ -71,6 +73,7 @@ class VzWDoUAutomationBrowserTest(
   def test_streaming_video_wifi(self):
     """Measures power when the device is streaming video with wifi connected."""
 
+    self.adb_run(goog.remove_gmail_account)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YouTubeV15Tests',
         'testStreamingVideo',
@@ -99,7 +102,6 @@ class VzWDoUAutomationBrowserTest(
   def test_video_playback(self, attempt_number):
     """Measures power when the device is playing video."""
 
-    self.log_in_gmail_account()
     self.push_movies_to_dut()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.PhotosVideoPlaybackTests',
@@ -115,7 +117,6 @@ class VzWDoUAutomationBrowserTest(
   def test_audio_playback(self, attempt_number):
     """Measures power when the device is playing audio."""
 
-    self.log_in_gmail_account()
     self.push_music_to_dut()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YTMusicPlaybackTests',

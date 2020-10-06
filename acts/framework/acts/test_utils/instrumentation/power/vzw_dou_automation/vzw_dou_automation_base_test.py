@@ -35,6 +35,7 @@ DEFAULT_WAIT_TO_FASTBOOT_MODE = 10
 DEFAULT_DEVICE_COOL_DOWN_TIME = 25
 DEFAULT_WAIT_FOR_REBOOT = 120
 WIFI_SSID = 'TP-Link-VZW-DoU'
+GMAIL_ACCOUNT = 'vdou001@gmail.com'
 
 def get_median_current(test_results):
   """Returns the median current, or a failure if the test failed."""
@@ -89,7 +90,7 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(goog.icing.toggle(False))
     self.adb_run(common.stop_moisture_detection)
     self.adb_run(common.ambient_eq.toggle(False))
-    self.adb_run(common.wifi_state.toggle(False))
+    self.adb_run(common.wifi_state.toggle(True))
     self.adb_run('echo 1 > /d/clk/debug_suspend')
     self.adb_run(common.bluetooth.toggle(True))
     self.adb_run(common.enable_full_batterystats_history)
@@ -105,6 +106,7 @@ class VzWDoUAutomationBaseTest(
     self._factory_reset()
     super()._prepare_device()
     self.base_device_configuration()
+    self.log_in_gmail_account()
     self._cut_band()
 
   def _cleanup_device(self):
@@ -189,13 +191,12 @@ class VzWDoUAutomationBaseTest(
     self._install_google_account_util_apk()
     time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
     additional_setting = self._get_merged_config('additional_setting')
-    gmail_account = additional_setting.get('gmail_account')
     gmail_phrase = additional_setting.get('gmail_phrase')
     log_in_cmd = (
         'am instrument -w -e account {} -e '
         'password {} -e sync {} -e wait-for-checkin {} '
         'com.google.android.tradefed.account/.AddAccount'
-    ).format(gmail_account, gmail_phrase, sync, wait_for_checkin)
+    ).format(GMAIL_ACCOUNT, gmail_phrase, sync, wait_for_checkin)
     self.log.info('gmail log in commands %s' % log_in_cmd)
     self.adb_run(log_in_cmd, timeout=300)
     self.ad_dut.reboot()
