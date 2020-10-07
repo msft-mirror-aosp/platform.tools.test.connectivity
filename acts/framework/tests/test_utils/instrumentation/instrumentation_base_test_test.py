@@ -15,11 +15,13 @@
 #   limitations under the License.
 
 import mock
-import unittest
 
+import unittest
 from unittest.mock import MagicMock
 
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+
+
 from acts.test_utils.instrumentation.device.command.adb_command_types import \
     GenericCommand
 from acts.test_utils.instrumentation.instrumentation_base_test import \
@@ -51,8 +53,7 @@ class MockInstrumentationBaseTest(InstrumentationBaseTest):
         self.current_test_name = None
         self.ad_dut = mock.Mock()
         self.log = mock.Mock()
-        self._instrumentation_config = ConfigWrapper(
-            MOCK_INSTRUMENTATION_CONFIG)
+        self._instrumentation_config = ConfigWrapper(MOCK_INSTRUMENTATION_CONFIG)
         self._class_config = self._instrumentation_config.get_config(
             self.__class__.__name__)
 
@@ -60,27 +61,6 @@ class MockInstrumentationBaseTest(InstrumentationBaseTest):
 class InstrumentationBaseTestTest(unittest.TestCase):
     def setUp(self):
         self.instrumentation_test = MockInstrumentationBaseTest()
-
-    def test_get_controller_config_for_test_case(self):
-        """Test that _get_controller_config returns the corresponding
-        controller config for the current test case.
-        """
-        self.instrumentation_test.current_test_name = 'test_case'
-        config = self.instrumentation_test._get_merged_config(
-            'MockController')
-        self.assertEqual(config.get('param1'), 1)
-        self.assertEqual(config.get('param2'), 2)
-        self.assertEqual(config.get('param3'), 3)
-
-    def test_get_controller_config_for_test_class(self):
-        """Test that _get_controller_config returns the controller config for
-        the current test class (while no test case is running).
-        """
-        config = self.instrumentation_test._get_merged_config(
-            'MockController')
-        self.assertEqual(config.get('param1'), 1)
-        self.assertEqual(config.get('param2'), 2)
-        self.assertEqual(config.get('param3'), 5)
 
     def test_adb_run_literal_commands(self):
         result = self.instrumentation_test.adb_run('ls /something')
@@ -118,10 +98,10 @@ class InstrumentationBaseTestTest(unittest.TestCase):
 
     def test_bugreport_on_end_events_can_be_disabled(self):
         self.instrumentation_test._instrumentation_config = ConfigWrapper({
-            'bugreport_on_pass': False,
-            'bugreport_on_exception': False,
-            'bugreport_on_fail': False
-        })
+                'bugreport_on_pass': False,
+                'bugreport_on_exception': False,
+                'bugreport_on_fail': False
+            })
         self.instrumentation_test._take_bug_report = MagicMock()
 
         self.instrumentation_test.on_exception('test', 0)
