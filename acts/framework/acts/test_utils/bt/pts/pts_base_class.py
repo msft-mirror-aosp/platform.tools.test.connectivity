@@ -170,7 +170,7 @@ class PtsBaseClass(BaseTestClass):
     def process_next_action(self, action):
         func = self.pts_action_mapping.get(
             self.pts.pts_profile_mmi_request).get(action, "Nothing")
-        if func is not 'Nothing':
+        if func != 'Nothing':
             func()
 
     ### BEGIN A2DP MMI Actions ###
