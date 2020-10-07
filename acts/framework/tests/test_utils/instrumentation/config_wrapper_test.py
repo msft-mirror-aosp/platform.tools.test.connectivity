@@ -16,8 +16,11 @@
 
 import mock
 import unittest
+from mock import MagicMock
 
+from acts import context
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.config_wrapper import ContextualConfigWrapper
 from acts.test_utils.instrumentation.config_wrapper import InvalidParamError
 from acts.test_utils.instrumentation.config_wrapper import merge
 
@@ -35,6 +38,74 @@ MOCK_CONFIG = {
         'inner_val': 16
     }
 }
+
+MOCK_INSTRUMENTATION_CONFIG = {
+    'MockController': {
+        'param1': 1,
+        'param2': 4
+    },
+    'MockInstrumentationBaseTest': {
+        'MockController': {
+            'param2': 2,
+            'param3': 5
+        },
+        'test_case': {
+            'MockController': {
+                'param3': 3
+            }
+        }
+    }
+}
+
+
+class ContextualConfigWrapperTest(unittest.TestCase):
+    @mock.patch('acts.context.get_current_context')
+    def test_get_controller_config_for_test_case(self, mock_get_current_context):
+        """Test that _get_controller_config returns the corresponding
+        controller config for the current test case.
+        """
+        mock_case_context = mock.MagicMock(spec=context.TestCaseContext)
+        mock_case_context.test_class_name = 'MockInstrumentationBaseTest'
+        mock_case_context.test_case_name = 'test_case'
+        mock_get_current_context.return_value = mock_case_context
+
+        config = ContextualConfigWrapper(
+            MOCK_INSTRUMENTATION_CONFIG).get_config('MockController')
+
+        self.assertEqual(config.get('param1'), 1)
+        self.assertEqual(config.get('param2'), 2)
+        self.assertEqual(config.get('param3'), 3)
+
+    @mock.patch('acts.context.get_current_context')
+    def test_get_controller_config_for_test_class(self, mock_current_context):
+        """Test that _get_controller_config returns the controller config for
+        the current test class (while no test case is running).
+        """
+        mock_class_context = MagicMock(spec=context.TestClassContext)
+        mock_class_context.test_class_name = 'MockInstrumentationBaseTest'
+        mock_current_context.return_value = mock_class_context
+
+        config = ContextualConfigWrapper(
+            MOCK_INSTRUMENTATION_CONFIG).get_config('MockController')
+
+        self.assertEqual(config.get('param1'), 1)
+        self.assertEqual(config.get('param2'), 2)
+        self.assertEqual(config.get('param3'), 5)
+
+    @mock.patch('acts.context.get_current_context')
+    def test_original_config_is_accessible(self, mock_get_current_context):
+        """Test that _get_controller_config returns the corresponding
+        controller config for the current test case.
+        """
+        mock_case_context = mock.MagicMock(spec=context.TestCaseContext)
+        mock_case_context.test_class_name = 'MockInstrumentationBaseTest'
+        mock_case_context.test_case_name = 'test_case'
+        mock_get_current_context.return_value = mock_case_context
+
+        config = ContextualConfigWrapper(
+            MOCK_INSTRUMENTATION_CONFIG)
+
+        self.assertEqual(config.original_config, MOCK_INSTRUMENTATION_CONFIG)
 
 
 class ConfigWrapperTest(unittest.TestCase):
