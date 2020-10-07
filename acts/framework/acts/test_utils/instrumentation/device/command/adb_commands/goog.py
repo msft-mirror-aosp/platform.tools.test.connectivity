@@ -61,6 +61,12 @@ location_activity_low_power = DeviceGServices(
     desc='Enables or disables location activity low power mode.'
 )
 
+location_policy_set = GenericCommand(
+  'am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE '
+  '-e gms:chimera:dev_module_packages "com.google.android.gms.policy_location"',
+  desc='Allows location policy set'
+)
+
 # Cast
 cast_broadcast = DeviceGServices(
     'gms:cast:mdns_device_scanner:is_enabled',

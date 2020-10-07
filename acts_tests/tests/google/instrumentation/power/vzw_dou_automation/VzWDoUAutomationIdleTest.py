@@ -31,7 +31,6 @@ class VzWDoUAutomationIdleTest(
   def test_flight_mode_idle(self, attempt_number):
     """Measures power when the device is in airplane mode."""
 
-    self.log_in_gmail_account()
     self.adb_run(common.airplane_mode.toggle(True))
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
@@ -46,7 +45,6 @@ class VzWDoUAutomationIdleTest(
   def test_idle(self, attempt_number):
     """Measures power when the device is in idle mode."""
 
-    self.log_in_gmail_account()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
         'testIdleStandbyMode', attempt_number=attempt_number)
@@ -61,7 +59,6 @@ class VzWDoUAutomationIdleTest(
     """Measures power when the device is in idle mode with wifi connected."""
 
     self.adb_run(common.wifi_state.toggle(True))
-    self.log_in_gmail_account()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
         'testIdleStandbyMode',
