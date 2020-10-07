@@ -123,11 +123,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
         self._install_test_apk()
+        self._install_google_apps_test_utils_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
         if self._test_apk:
             self._test_apk.uninstall()
+        if self._google_utils_apk:
+            self._google_utils_apk.uninstall()
         self._permissions_util.close()
         self._pull_test_files()
         self._cleanup_test_files()
@@ -312,6 +315,14 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():
             raise InstrumentationTestError('Failed to install test APK.')
+
+    def _install_google_apps_test_utils_apk(self):
+        """Installs GoogleAppsTestUtils apk on the device."""
+        google_utils_apk = self.get_file_from_config('google_apps_test_utils_apk')
+        self._google_utils_apk = AppInstaller(self.ad_dut, google_utils_apk)
+        self._google_utils_apk.install('-g')
+        if not self._google_utils_apk.is_installed():
+            raise InstrumentationTestError('Failed to install google utils APK.')
 
     def _pull_test_files(self):
         """Pull test-generated files from the device onto the log directory."""
