@@ -783,7 +783,7 @@ class E2eBtCarkitLib():
     def cycle_absolute_volume_control(self, pri_dut):
         result = input(
             "Does carkit support Absolute Volume Control? (Y/n) ").lower()
-        if result is "n":
+        if result == "n":
             return True
         android_volume_steps = 25
         for i in range(android_volume_steps):
@@ -805,7 +805,7 @@ class E2eBtCarkitLib():
     def test_voice_recognition_from_phone(self, pri_dut):
         result = input(
             "Does carkit support voice recognition (BVRA)? (Y/n) ").lower()
-        if result is "n":
+        if result == "n":
             return True
         input("Press enter to start voice recognition from phone.")
         self.pri_dut.droid.bluetoothHspStartVoiceRecognition(
@@ -817,7 +817,7 @@ class E2eBtCarkitLib():
     def test_audio_and_voice_recognition_from_phone(self, pri_dut):
         result = input(
             "Does carkit support voice recognition (BVRA)? (Y/n) ").lower()
-        if result is "n":
+        if result == "n":
             return True
         # Start playing music here
         input("Press enter to start voice recognition from phone.")
