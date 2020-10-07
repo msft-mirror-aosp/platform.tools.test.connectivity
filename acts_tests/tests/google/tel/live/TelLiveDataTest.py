@@ -66,6 +66,7 @@ from acts.test_utils.tel.tel_defines import \
 from acts.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts.test_utils.tel.tel_data_utils import browsing_test
+from acts.test_utils.tel.tel_data_utils import reboot_test
 from acts.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
 from acts.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
 from acts.test_utils.tel.tel_data_utils import tethering_check_internet_connection
@@ -128,6 +129,7 @@ from acts.test_utils.tel.tel_test_utils import datetime_handle
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
@@ -3908,5 +3910,43 @@ class TelLiveDataTest(TelephonyBaseTest):
         wifi_toggle_state(ad.log, ad, False)
         return self._test_sync_time_from_network(ad, data_on=False)
 
+    @test_tracker_info(uuid="2d739779-3beb-4e6e-8396-84f28e626379")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_4g(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to LTE and verify internet connection.")
+        if not phone_setup_4g(self.log, ad):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return reboot_test(self.log, ad)
+
+    @test_tracker_info(uuid="5ce671f7-c2a4-46aa-a9f2-e5571c144fad")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_3g(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to 3G and verify internet connection.")
+        if not phone_setup_3g(self.log, ad):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return reboot_test(self.log, ad)
+
+    @test_tracker_info(uuid="9e094f0e-7bef-479e-a5fa-a6bfa95289a5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_wifi(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to Wi-Fi and verify internet connection.")
+        if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            return False
+        if not wait_for_wifi_data_connection(self.log, ad, True):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return reboot_test(self.log, ad, wifi_ssid=self.wifi_network_ssid)
 
     """ Tests End """
