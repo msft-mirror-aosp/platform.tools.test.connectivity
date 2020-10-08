@@ -203,8 +203,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.compact_location_log.toggle(True))
         self.adb_run(goog.cast_broadcast.toggle(False))
         self.adb_run(goog.ocr.toggle(False))
-        if self._instrumentation_config.get('set_gms_phenotype_flag',
-                                            default=True):
+        if self._test_options.get('set_gms_phenotype_flag', default=True):
             self.adb_run(goog.phenotype.toggle(True))
         self.adb_run(goog.icing.toggle(False))
 
@@ -263,8 +262,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def set_screen_brightness_level(self):
         """set screen brightness level"""
         brightness_level = None
-        if 'brightness_level' in self._instrumentation_config:
-            brightness_level = self._instrumentation_config['brightness_level']
+        if 'brightness_level' in self._test_options:
+            brightness_level = self._test_options['brightness_level']
 
         if brightness_level is None:
             raise ValueError('no brightness level defined (or left as None) '
@@ -274,7 +273,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _setup_power_monitor(self, **kwargs):
         """Set up the Monsoon controller for this testclass/testcase."""
-        monsoon_config = self._instrumentation_config.get_config('Monsoon')
+        monsoon_config = self._test_options.get_config('Monsoon')
         self.power_monitor.setup(monsoon_config=monsoon_config)
 
     def _uninstall_sl4a(self):
@@ -417,7 +416,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         Returns:
             A list of power_metrics.Metric.
         """
-        monsoon_config = self._instrumentation_config.get_config('Monsoon')
+        monsoon_config = self._test_options.get_config('Monsoon')
         disconnect_usb_timeout = monsoon_config.get_numeric(
             'usb_disconnection_timeout', 240)
         measurement_args = dict(
@@ -502,7 +501,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         else:
             self._instr_cmd_builder.add_test_class(instr_class)
         params = {}
-        instr_call_config = self._instrumentation_config.get_config('instrumentation_call')
+        instr_call_config = self._test_options.get_config('instrumentation_call')
         # Add required parameters
         for param_name in req_params or []:
             params[param_name] = instr_call_config.get(
@@ -521,7 +520,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._uninstall_sl4a()
 
         # Allow device to stabilize
-        stabilization_time = self._instrumentation_config.get_int(
+        stabilization_time = self._test_options.get_int(
             'device_stabilization_time', DEFAULT_DEVICE_STABILIZATION_TIME)
         self.ad_dut.log.debug('Waiting %s seconds for device to stabilize',
                               stabilization_time)
@@ -532,7 +531,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return self.measure_power(count=count, attempt_number=attempt_number)
 
     def get_absolute_thresholds_for_metric(self, instr_test_name, metric_name):
-        all_thresholds = self._instrumentation_config.get_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._test_options.get_config(ACCEPTANCE_THRESHOLD)
         test_thresholds = all_thresholds.get_config(instr_test_name)
         if metric_name not in test_thresholds:
             return None
@@ -587,7 +586,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """
         summaries = {}
         failure = False
-        all_thresholds = self._instrumentation_config.get_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._test_options.get_config(ACCEPTANCE_THRESHOLD)
 
         if not instr_test_names:
             instr_test_names = all_thresholds.keys()

@@ -45,11 +45,11 @@ class MockInstrumentationPowerTest(InstrumentationPowerTest):
         self.log = mock.Mock()
         self.metric_logger = mock.Mock()
         self.current_test_name = 'test_case'
-        self._instrumentation_config = ConfigWrapper({ACCEPTANCE_THRESHOLD: {}})
+        self._test_options = ConfigWrapper({ACCEPTANCE_THRESHOLD: {}})
 
     def set_criteria(self, criteria):
         """Set the acceptance criteria for metrics validation."""
-        self._instrumentation_config = ConfigWrapper(
+        self._test_options = ConfigWrapper(
             {ACCEPTANCE_THRESHOLD: criteria})
 
 

@@ -38,7 +38,7 @@ MOCK_CONFIG = {
     }
 }
 
-MOCK_INSTRUMENTATION_CONFIG = {
+MOCK_TEST_OPTIONS = {
     'MockController': {
         'param1': 'param1_global_level',
         'param2': 'param2_global_level'
@@ -79,7 +79,7 @@ class ContextualConfigWrapperTest(unittest.TestCase):
         mock_get_current_context.return_value = mock_case_context
 
         config = ContextualConfigWrapper(
-            MOCK_INSTRUMENTATION_CONFIG).get_config('MockController')
+            MOCK_TEST_OPTIONS).get_config('MockController')
 
         self.assertEqual(config.get('param1'), 'param1_global_level')
         self.assertEqual(config.get('param2'), 'param2_within_test_class')
@@ -97,7 +97,7 @@ class ContextualConfigWrapperTest(unittest.TestCase):
         mock_get_current_context.return_value = mock_class_context
 
         config = ContextualConfigWrapper(
-            MOCK_INSTRUMENTATION_CONFIG).get_config('MockController')
+            MOCK_TEST_OPTIONS).get_config('MockController')
 
         self.assertEqual(config.get('param1'), 'param1_global_level')
         self.assertEqual(config.get('param2'), 'param2_within_test_class')
@@ -114,8 +114,7 @@ class ContextualConfigWrapperTest(unittest.TestCase):
         mock_class_context.test_class_name = 'MockInstrumentationBaseTest'
         mock_get_current_context.return_value = mock_class_context
 
-        context_config = ContextualConfigWrapper(
-            MOCK_INSTRUMENTATION_CONFIG)
+        context_config = ContextualConfigWrapper(MOCK_TEST_OPTIONS)
 
         # validate the class level values
         config = context_config.get_config('MockController')
@@ -159,10 +158,9 @@ class ContextualConfigWrapperTest(unittest.TestCase):
         mock_case_context.test_case_name = 'test_case'
         mock_get_current_context.return_value = mock_case_context
 
-        config = ContextualConfigWrapper(
-            MOCK_INSTRUMENTATION_CONFIG)
+        config = ContextualConfigWrapper(MOCK_TEST_OPTIONS)
 
-        self.assertEqual(config.original_config, MOCK_INSTRUMENTATION_CONFIG)
+        self.assertEqual(config.original_config, MOCK_TEST_OPTIONS)
 
 
 class ConfigWrapperTest(unittest.TestCase):
