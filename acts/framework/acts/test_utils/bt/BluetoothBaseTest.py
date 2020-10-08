@@ -25,8 +25,6 @@ from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 from acts.utils import dump_string_to_file
 
-from acts.controllers import android_device
-from acts.libs.proto.proto_utils import compile_import_proto
 from acts.libs.proto.proto_utils import parse_proto_to_ascii
 from acts.test_utils.bt.bt_metrics_utils import get_bluetooth_metrics
 from acts.test_utils.bt.bt_test_utils import get_device_selector_dictionary
@@ -61,8 +59,7 @@ class BluetoothBaseTest(BaseTestClass):
             serial = ad.serial
             out_name = "{}_{}_{}".format(serial, test_name,
                                          "bluetooth_metrics.txt")
-            bluetooth_log = get_bluetooth_metrics(ad,
-                                                  ad.bluetooth_proto_module)
+            bluetooth_log = get_bluetooth_metrics(ad)
             bluetooth_log_ascii = parse_proto_to_ascii(bluetooth_log)
             dump_string_to_file(bluetooth_log_ascii,
                                 os.path.join(ad.metrics_path, out_name))
@@ -142,31 +139,11 @@ class BluetoothBaseTest(BaseTestClass):
         self.device_selector = get_device_selector_dictionary(
             self.android_devices)
         if "bluetooth_proto_path" in self.user_params:
-            from google import protobuf
-
-            self.bluetooth_proto_path = self.user_params[
-                "bluetooth_proto_path"][0]
-            if not os.path.isfile(self.bluetooth_proto_path):
-                try:
-                    self.bluetooth_proto_path = "{}/bluetooth.proto".format(
-                        os.path.dirname(os.path.realpath(__file__)))
-                except Exception:
-                    self.log.error("File not found.")
-                if not os.path.isfile(self.bluetooth_proto_path):
-                    self.log.error("Unable to find Bluetooth proto {}.".format(
-                        self.bluetooth_proto_path))
-                    return False
             for ad in self.android_devices:
                 ad.metrics_path = os.path.join(ad.log_path, "BluetoothMetrics")
                 os.makedirs(ad.metrics_path, exist_ok=True)
-                ad.bluetooth_proto_module = \
-                    compile_import_proto(ad.metrics_path, self.bluetooth_proto_path)
-                if not ad.bluetooth_proto_module:
-                    self.log.error("Unable to compile bluetooth proto at " +
-                                   self.bluetooth_proto_path)
-                    return False
                 # Clear metrics.
-                get_bluetooth_metrics(ad, ad.bluetooth_proto_module)
+                get_bluetooth_metrics(ad)
         return True
 
     def teardown_class(self):
