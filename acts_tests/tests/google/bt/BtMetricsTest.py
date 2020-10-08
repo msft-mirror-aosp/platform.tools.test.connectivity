@@ -20,6 +20,7 @@ from acts.test_utils.bt.BtMetricsBaseTest import BtMetricsBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.protos import bluetooth_pb2
 from acts.utils import get_current_epoch_time, sync_device_time
 
 
@@ -104,8 +105,8 @@ class BtMetricsTest(BtMetricsBaseTest):
                                 (t, start_time, end_time))
             device_info = pair_event.device_paired_with
             asserts.assert_true(device_info, "Device info is none")
-            asserts.assert_equal(device_info.device_type, self.android_devices[
-                0].bluetooth_proto_module.DeviceInfo.DEVICE_TYPE_BREDR,
+            asserts.assert_equal(device_info.device_type,
+                                 bluetooth_pb2.DeviceInfo.DEVICE_TYPE_BREDR,
                                  "Device type does not match")
 
     def test_bluetooth_metrics_parsing(self):
