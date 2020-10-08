@@ -18,6 +18,7 @@ from acts.test_decorators import repeated_test
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_base_test
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
+from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 
 class VzWDoUAutomationBrowserTest(
@@ -32,6 +33,8 @@ class VzWDoUAutomationBrowserTest(
     """Measures power when the device is browsing."""
 
     self.adb_run(goog.remove_gmail_account)
+    self.adb_run(common.test_harness.toggle(True))
+    self.adb_run('am force-stop com.google.android.apps.nexuslauncher')
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
         'testBrowser',
@@ -137,6 +140,7 @@ class VzWDoUAutomationBrowserTest(
     additional_setting = self._get_merged_config('additional_setting')
     exchange_phrase = additional_setting.get('exchange_phrase')
     self.log_in_gmail_account(sync='true', wait_for_checkin='true')
+    self.adb_run(common.test_harness.toggle(True))
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.TouchScreenTests',
         'testTouchScreen',
