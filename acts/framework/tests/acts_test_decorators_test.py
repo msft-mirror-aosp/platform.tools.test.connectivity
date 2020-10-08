@@ -231,7 +231,7 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
 
 class RepeatedTestTests(unittest.TestCase):
     def test_all_error_types_count_toward_failures(self):
-        def result_selector(results):
+        def result_selector(results, _):
             self.assertIsInstance(results[0], AssertionError)
             self.assertIsInstance(results[1], signals.TestFailure)
             self.assertIsInstance(results[2], signals.TestError)
@@ -255,7 +255,7 @@ class RepeatedTestTests(unittest.TestCase):
             test_case(mock.Mock())
 
     def test_passes_stop_repeating_the_test_case(self):
-        def result_selector(results):
+        def result_selector(results, _):
             self.assertEqual(len(results), 3)
             for result in results:
                 self.assertIsInstance(result, signals.TestPass)
