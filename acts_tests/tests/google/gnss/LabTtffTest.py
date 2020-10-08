@@ -116,6 +116,7 @@ class LabTtffTest(base_test.BaseTestClass):
 
     def setup_test(self):
 
+	self.clear_gps_log()
         self.spectracom = gsg6.GSG6(self.spectracom_ip, self.spectracom_port)
 
         self.spectracom.stop_scenario()
