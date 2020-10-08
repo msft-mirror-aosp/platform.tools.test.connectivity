@@ -19,13 +19,58 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 
 from acts.libs.proc import job
-from acts.libs.proto import proto_utils
 
 COMMIT_ID_ENV_KEY = 'PREUPLOAD_COMMIT'
 GIT_FILE_NAMES_CMD = 'git diff-tree --no-commit-id --name-status -r %s'
+
+
+def compile_proto(proto_path, output_dir):
+    """Invoke Protocol Compiler to generate python from given source .proto."""
+    # Find compiler path
+    protoc = None
+    if 'PROTOC' in os.environ and os.path.exists(os.environ['PROTOC']):
+        protoc = os.environ['PROTOC']
+    if not protoc:
+        protoc = shutil.which('protoc')
+    if not protoc:
+        logging.error(
+            "Cannot find protobuf compiler (>=3.0.0), please install"
+            "protobuf-compiler package. Prefer copying from <top>/prebuilts/tools"
+        )
+        logging.error("    prebuilts/tools/linux-x86_64/protoc/bin/protoc")
+        logging.error("If prebuilts are not available, use apt-get:")
+        logging.error("    sudo apt-get install protobuf-compiler")
+        return None
+    # Validate input proto path
+    if not os.path.exists(proto_path):
+        logging.error('Can\'t find required file: %s\n' % proto_path)
+        return None
+    # Validate output py-proto path
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    elif not os.path.isdir(output_dir):
+        logging.error("Output path is not a valid directory: %s" %
+                      (output_dir))
+        return None
+    input_dir = os.path.dirname(proto_path)
+    output_filename = os.path.basename(proto_path).replace('.proto', '_pb2.py')
+    output_path = os.path.join(output_dir, output_filename)
+    # Compiling proto
+    logging.debug('Generating %s' % output_path)
+    protoc_command = [
+        protoc, '-I=%s' % (input_dir), '--python_out=%s' % (output_dir),
+        proto_path
+    ]
+    logging.debug('Running command %s' % protoc_command)
+    if subprocess.call(protoc_command, stderr=subprocess.STDOUT) != 0:
+        logging.error("Fail to compile proto")
+        return None
+    output_module_name = os.path.splitext(output_filename)[0]
+    return output_module_name
 
 
 def proto_generates_gen_file(proto_file, proto_gen_file):
@@ -39,7 +84,7 @@ def proto_generates_gen_file(proto_file, proto_gen_file):
     Returns: True if the compiled proto matches the given proto_gen_file.
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
-        module_name = proto_utils.compile_proto(proto_file, tmp_dir)
+        module_name = compile_proto(proto_file, tmp_dir)
         if not module_name:
             return False
         tmp_proto_gen_file = os.path.join(tmp_dir, '%s.py' % module_name)
