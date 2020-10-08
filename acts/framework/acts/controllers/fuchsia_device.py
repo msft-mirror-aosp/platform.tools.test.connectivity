@@ -858,28 +858,27 @@ class FuchsiaDevice:
         for additional_log_object in additional_log_objects:
             if additional_log_object not in matching_log_items:
                 matching_log_items.append(additional_log_object)
-        br_path = context.get_current_context().get_full_output_path()
-        os.makedirs(br_path, exist_ok=True)
+        sn_path = context.get_current_context().get_full_output_path()
+        os.makedirs(sn_path, exist_ok=True)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
         out_name = "FuchsiaDevice%s_%s" % (
             self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
-        bugreport_out_name = f"{out_name}.zip"
+        snapshot_out_name = f"{out_name}.zip"
         out_name = "%s.txt" % out_name
-        full_out_path = os.path.join(br_path, out_name)
-        full_br_out_path = os.path.join(br_path, bugreport_out_name)
-        self.log.info("Taking bugreport for %s on FuchsiaDevice%s." %
+        full_out_path = os.path.join(sn_path, out_name)
+        full_sn_out_path = os.path.join(sn_path, snapshot_out_name)
+        self.log.info("Taking snapshot for %s on FuchsiaDevice%s." %
                       (test_name, self.serial))
         if self.ssh_config is not None:
             try:
                 subprocess.run([
-                    f"ssh -F {self.ssh_config} {self.ip} bugreport > {full_br_out_path}"
+                    f"ssh -F {self.ssh_config} {self.ip} snapshot > {full_sn_out_path}"
                 ],
                                shell=True)
-                self.log.info(
-                    "Bugreport saved at: {}".format(full_br_out_path))
+                self.log.info("Snapshot saved at: {}".format(full_sn_out_path))
             except Exception as err:
-                self.log.error("Failed to take bugreport with: {}".format(err))
+                self.log.error("Failed to take snapshot with: {}".format(err))
 
         system_objects = self.send_command_ssh('iquery --find /hub').stdout
         system_objects = system_objects.split()
