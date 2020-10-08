@@ -17,6 +17,9 @@
 import collections
 import copy
 
+from acts import context
+from acts.event import event_bus
+
 
 class InvalidParamError(Exception):
     pass
@@ -86,6 +89,61 @@ class ConfigWrapper(collections.UserDict):
                         failure_msg='Param must be of type int or float.')
 
 
+def _for_current_context(config_wrapper):
+    current_context = context.get_current_context()
+    test_class_name = None
+    test_case_name = None
+
+    if isinstance(current_context, context.TestClassContext):
+        test_class_name = current_context.test_class_name
+    if isinstance(current_context, context.TestCaseContext):
+        test_class_name = current_context.test_class_name
+        test_case_name = current_context.test_case_name
+
+    class_config = config_wrapper.get_config(test_class_name)
+    test_config = class_config.get_config(test_case_name)
+
+    base_config_without_classes = {
+        k: v for (k, v) in config_wrapper.items() if not k.endswith('Test')
+    }
+
+    class_config_without_test_cases = {
+        k: v for (k, v) in class_config.items() if not k.startswith('test_')
+    }
+
+    result = merge(class_config_without_test_cases, test_config)
+    result = merge(base_config_without_classes, result)
+    return result
+
+
+class ContextualConfigWrapper(object):
+    """An object ala ConfigWrapper that automatically restricts to the context
+    relevant portion of the original configuration.
+    """
+
+    def __init__(self, config):
+        """Instantiates a ContextualConfigWrapper.
+
+        Args:
+            config: A dict or collections.UserDict.
+        """
+        self.original_config = ConfigWrapper(config)
+        self._context_config = _for_current_context(self.original_config)
+
+        def updater():
+            self._context_config = _for_current_context(self.original_config)
+
+        self._registration_for_context_change = event_bus.register(
+            context.NewContextEvent, updater)
+
+    def __del__(self):
+        event_bus.unregister(self._registration_for_context_change)
+
+    def __getattr__(self, name):
+        """Delegate all calls to _context_config."""
+        return getattr(self._context_config, name)
+
+
 def merge(config_a, config_b):
     """Merges dic_b into dic_a
 
@@ -112,8 +170,3 @@ def merge(config_a, config_b):
         else:
             res[key] = copy.deepcopy(value)
     return ConfigWrapper(res)
-
-
-
-
-

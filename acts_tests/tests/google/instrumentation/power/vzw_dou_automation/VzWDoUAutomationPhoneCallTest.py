@@ -128,7 +128,8 @@ class VzWDoUAutomationPhoneCallTest(
     self.run_instrumentation_on_companion(
         'com.google.android.platform.dou.CompanionSimulateVoiceTests',
         'testPlayYoutube',
-        extra_params=[('recipient_number', dut_phone_number),
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                      ('recipient_number', dut_phone_number),
                       ('recipient_number_companion', companion_phone_number)])
 
     metrics = self.run_and_measure(
@@ -157,7 +158,8 @@ class VzWDoUAutomationPhoneCallTest(
     self.run_instrumentation_on_companion(
         'com.google.android.platform.dou.CompanionSimulateVoiceTests',
         'testPlayYoutube',
-        extra_params=[('recipient_number', dut_phone_number),
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                      ('recipient_number', dut_phone_number),
                       ('recipient_number_companion', companion_phone_number)])
 
     metrics = self.run_and_measure(
