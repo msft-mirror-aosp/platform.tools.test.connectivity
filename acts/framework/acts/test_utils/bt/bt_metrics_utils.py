@@ -12,22 +12,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 import base64
+from acts.test_utils.bt.protos import bluetooth_pb2
 
 
-def get_bluetooth_metrics(ad, bluetooth_proto_module):
+def get_bluetooth_metrics(ad):
     """
     Get metric proto from the Bluetooth stack
 
     Parameter:
       ad - Android device
-      bluetooth_proto_module - the Bluetooth protomodule returned by
-                                compile_import_proto()
 
     Return:
       a protobuf object representing Bluetooth metric
 
     """
-    bluetooth_log = bluetooth_proto_module.BluetoothLog()
+    bluetooth_log = bluetooth_pb2.BluetoothLog()
     proto_native_str_64 = \
         ad.adb.shell("/system/bin/dumpsys bluetooth_manager --proto-bin")
     proto_native_str = base64.b64decode(proto_native_str_64)
