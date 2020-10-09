@@ -39,6 +39,7 @@ SCAN = 'wpa_cli scan'
 SCAN_RESULTS = 'wpa_cli scan_results'
 SIGNAL_POLL = 'wpa_cli signal_poll'
 WPA_CLI_STATUS = 'wpa_cli status'
+DISCONNECTION_MESSAGE_BRCM = 'driver adapter not found'
 CONST_3dB = 3.01029995664
 RSSI_ERROR_VAL = float('nan')
 RTT_REGEX = re.compile(r'^\[(?P<timestamp>\S+)\] .*? time=(?P<rtt>\S+)')
@@ -925,25 +926,36 @@ def health_check(dut, batt_thresh=5, temp_threshold=53, cooldown=1):
     return health_check
 
 
+# Wifi Device utils
+def detect_wifi_platform(dut):
+    ini_check = len(dut.get_file_names('/vendor/firmware/wlan/qca_cld/'))
+    if ini_check:
+        wifi_platform = 'qcom'
+    else:
+        wifi_platform = 'brcm'
+    return wifi_platform
+
+
+def detect_wifi_decorator(f):
+    def wrap(*args, **kwargs):
+        if 'dut' in kwargs:
+            dut = kwargs['dut']
+        else:
+            dut = next(arg for arg in args if type(arg) == AndroidDevice)
+        f_decorated = '{}_{}'.format(f.__name__, detect_wifi_platform(dut))
+        f_decorated = globals()[f_decorated]
+        return (f_decorated(*args, **kwargs))
+
+    return wrap
+
+
 # Rssi Utilities
 def empty_rssi_result():
     return collections.OrderedDict([('data', []), ('mean', None),
                                     ('stdev', None)])
 
 
-@nonblocking
-def get_connected_rssi_nb(dut,
-                          num_measurements=1,
-                          polling_frequency=SHORT_SLEEP,
-                          first_measurement_delay=0,
-                          disconnect_warning=True,
-                          ignore_samples=0,
-                          interface=None):
-    return get_connected_rssi(dut, num_measurements, polling_frequency,
-                              first_measurement_delay, disconnect_warning,
-                              ignore_samples, interface)
-
-
+@detect_wifi_decorator
 def get_connected_rssi(dut,
                        num_measurements=1,
                        polling_frequency=SHORT_SLEEP,
@@ -964,6 +976,29 @@ def get_connected_rssi(dut,
         all reported RSSI values (signal_poll, per chain, etc.) and their
         statistics
     """
+    pass
+
+
+@nonblocking
+def get_connected_rssi_nb(dut,
+                          num_measurements=1,
+                          polling_frequency=SHORT_SLEEP,
+                          first_measurement_delay=0,
+                          disconnect_warning=True,
+                          ignore_samples=0,
+                          interface=None):
+    return get_connected_rssi(dut, num_measurements, polling_frequency,
+                              first_measurement_delay, disconnect_warning,
+                              ignore_samples, interface)
+
+
+def get_connected_rssi_qcom(dut,
+                            num_measurements=1,
+                            polling_frequency=SHORT_SLEEP,
+                            first_measurement_delay=0,
+                            disconnect_warning=True,
+                            ignore_samples=0,
+                            interface=None):
     # yapf: disable
     connected_rssi = collections.OrderedDict(
         [('time_stamp', []),
@@ -1071,11 +1106,105 @@ def get_connected_rssi(dut,
     return connected_rssi
 
 
-@nonblocking
-def get_scan_rssi_nb(dut, tracked_bssids, num_measurements=1):
-    return get_scan_rssi(dut, tracked_bssids, num_measurements)
+def get_connected_rssi_brcm(dut,
+                            num_measurements=1,
+                            polling_frequency=SHORT_SLEEP,
+                            first_measurement_delay=0,
+                            disconnect_warning=True,
+                            ignore_samples=0,
+                            interface=None):
+    # yapf: disable
+    connected_rssi = collections.OrderedDict(
+        [('time_stamp', []),
+         ('bssid', []), ('ssid', []), ('frequency', []),
+         ('signal_poll_rssi', empty_rssi_result()),
+         ('signal_poll_avg_rssi', empty_rssi_result()),
+         ('chain_0_rssi', empty_rssi_result()),
+         ('chain_1_rssi', empty_rssi_result())])
+
+    # yapf: enable
+    previous_bssid = 'disconnected'
+    t0 = time.time()
+    time.sleep(first_measurement_delay)
+    for idx in range(num_measurements):
+        measurement_start_time = time.time()
+        connected_rssi['time_stamp'].append(measurement_start_time - t0)
+        # Get signal poll RSSI
+        status_output = dut.adb.shell('wl assoc')
+        match = re.search('BSSID:.*', status_output)
+
+        if match:
+            current_bssid = match.group(0).split('\t')[0]
+            current_bssid = current_bssid.split(' ')[1]
+            connected_rssi['bssid'].append(current_bssid)
+
+        else:
+            current_bssid = 'disconnected'
+            connected_rssi['bssid'].append(current_bssid)
+            if disconnect_warning and previous_bssid != 'disconnected':
+                logging.warning('WIFI DISCONNECT DETECTED!')
+
+        previous_bssid = current_bssid
+        match = re.search('SSID:.*', status_output)
+        if match:
+            ssid = match.group(0).split(': ')[1]
+            connected_rssi['ssid'].append(ssid)
+        else:
+            connected_rssi['ssid'].append('disconnected')
+
+        #TODO: SEARCH MAP ; PICK CENTER CHANNEL
+        match = re.search('Primary channel:.*', status_output)
+        if match:
+            frequency = int(match.group(0).split(':')[1])
+            connected_rssi['frequency'].append(frequency)
+        else:
+            connected_rssi['frequency'].append(RSSI_ERROR_VAL)
+
+        temp_rssi = int(dut.adb.shell('wl rssi'))
+        if temp_rssi:
+            connected_rssi['signal_poll_rssi']['data'].append(temp_rssi)
+            connected_rssi['signal_poll_avg_rssi']['data'].append(temp_rssi)
+        else:
+            connected_rssi['signal_poll_rssi']['data'].append(RSSI_ERROR_VAL)
+            connected_rssi['signal_poll_avg_rssi']['data'].append(
+                RSSI_ERROR_VAL)
+
+        per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
+
+        if DISCONNECTION_MESSAGE_BRCM not in per_chain_rssi:
+            per_chain_rssi = per_chain_rssi.split(' ')
+            connected_rssi['chain_0_rssi']['data'].append(
+                int(per_chain_rssi[1]))
+            connected_rssi['chain_1_rssi']['data'].append(
+                int(per_chain_rssi[4]))
+        else:
+            connected_rssi['chain_0_rssi']['data'].append(RSSI_ERROR_VAL)
+            connected_rssi['chain_1_rssi']['data'].append(RSSI_ERROR_VAL)
+        measurement_elapsed_time = time.time() - measurement_start_time
+        time.sleep(max(0, polling_frequency - measurement_elapsed_time))
+
+    # Statistics, Statistics
+    for key, val in connected_rssi.copy().items():
+        if 'data' not in val:
+            continue
+        filtered_rssi_values = [x for x in val['data'] if not math.isnan(x)]
+        if len(filtered_rssi_values) > ignore_samples:
+            filtered_rssi_values = filtered_rssi_values[ignore_samples:]
+        if filtered_rssi_values:
+            connected_rssi[key]['mean'] = statistics.mean(filtered_rssi_values)
+            if len(filtered_rssi_values) > 1:
+                connected_rssi[key]['stdev'] = statistics.stdev(
+                    filtered_rssi_values)
+            else:
+                connected_rssi[key]['stdev'] = 0
+        else:
+            connected_rssi[key]['mean'] = RSSI_ERROR_VAL
+            connected_rssi[key]['stdev'] = RSSI_ERROR_VAL
+
+    return connected_rssi
 
 
+@detect_wifi_decorator
 def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
     """Gets scan RSSI for specified BSSIDs.
 
@@ -1087,6 +1216,15 @@ def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
         scan_rssi: dict containing the measurement results as well as the
         statistics of the scan RSSI for all BSSIDs in tracked_bssids
     """
+    pass
+
+
+@nonblocking
+def get_scan_rssi_nb(dut, tracked_bssids, num_measurements=1):
+    return get_scan_rssi(dut, tracked_bssids, num_measurements)
+
+
+def get_scan_rssi_qcom(dut, tracked_bssids, num_measurements=1):
     scan_rssi = collections.OrderedDict()
     for bssid in tracked_bssids:
         scan_rssi[bssid] = empty_rssi_result()
@@ -1120,6 +1258,42 @@ def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
     return scan_rssi
 
 
+def get_scan_rssi_brcm(dut, tracked_bssids, num_measurements=1):
+    scan_rssi = collections.OrderedDict()
+    for bssid in tracked_bssids:
+        scan_rssi[bssid] = empty_rssi_result()
+    for idx in range(num_measurements):
+        scan_output = dut.adb.shell('cmd wifi start-scan')
+        time.sleep(MED_SLEEP)
+        scan_output = dut.adb.shell('cmd wifi list-scan-results')
+        for bssid in tracked_bssids:
+            bssid_result = re.search(bssid + '.*',
+                                     scan_output,
+                                     flags=re.IGNORECASE)
+            if bssid_result:
+                bssid_result = bssid_result.group(0).split()
+                print(bssid_result)
+                scan_rssi[bssid]['data'].append(int(bssid_result[2]))
+            else:
+                scan_rssi[bssid]['data'].append(RSSI_ERROR_VAL)
+    # Compute mean RSSIs. Only average valid readings.
+    # Output RSSI_ERROR_VAL if no readings found.
+    for key, val in scan_rssi.items():
+        filtered_rssi_values = [x for x in val['data'] if not math.isnan(x)]
+        if filtered_rssi_values:
+            scan_rssi[key]['mean'] = statistics.mean(filtered_rssi_values)
+            if len(filtered_rssi_values) > 1:
+                scan_rssi[key]['stdev'] = statistics.stdev(
+                    filtered_rssi_values)
+            else:
+                scan_rssi[key]['stdev'] = 0
+        else:
+            scan_rssi[key]['mean'] = RSSI_ERROR_VAL
+            scan_rssi[key]['stdev'] = RSSI_ERROR_VAL
+    return scan_rssi
+
+
+@detect_wifi_decorator
 def get_sw_signature(dut):
     """Function that checks the signature for wifi firmware and config files.
 
@@ -1127,6 +1301,10 @@ def get_sw_signature(dut):
         bdf_signature: signature consisting of last three digits of bdf cksums
         fw_signature: floating point firmware version, i.e., major.minor
     """
+    pass
+
+
+def get_sw_signature_qcom(dut):
     bdf_output = dut.adb.shell('cksum /vendor/firmware/bdwlan*')
     logging.debug('BDF Checksum output: {}'.format(bdf_output))
     bdf_signature = sum(
@@ -1139,13 +1317,34 @@ def get_sw_signature(dut):
     fw_signature = float('.'.join(fw_signature))
     serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(), 16) % 1000
     return {
-        'bdf_signature': bdf_signature,
+        'config_signature': bdf_signature,
         'fw_signature': fw_signature,
         'serial_hash': serial_hash
     }
 
 
-def push_bdf(dut, bdf_file):
+def get_sw_signature_brcm(dut):
+    bdf_output = dut.adb.shell('cksum /vendor/etc/wifi/bcmdhd*')
+    logging.debug('BDF Checksum output: {}'.format(bdf_output))
+    bdf_signature = sum(
+        [int(line.split(' ')[0]) for line in bdf_output.splitlines()]) % 1000
+
+    fw_output = dut.adb.shell('getprop vendor.wlan.firmware.version')
+    logging.debug('Firmware version output: {}'.format(fw_output))
+    fw_version = fw_output.split('.')[-1]
+    driver_output = dut.adb.shell('getprop vendor.wlan.driver.version')
+    driver_version = driver_output.split('.')[-1]
+    fw_signature = float('{}.{}'.format(fw_version, driver_version))
+    serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(), 16) % 1000
+    return {
+        'config_signature': bdf_signature,
+        'fw_signature': fw_signature,
+        'serial_hash': serial_hash
+    }
+
+
+@detect_wifi_decorator
+def push_config(dut, config_file):
     """Function to push Wifi BDF files
 
     This function checks for existing wifi bdf files and over writes them all,
@@ -1154,24 +1353,36 @@ def push_bdf(dut, bdf_file):
 
     Args:
         dut: dut to push bdf file to
-        bdf_file: path to bdf_file to push
+        config_file: path to bdf_file to push
     """
-    bdf_files_list = dut.adb.shell('ls /vendor/firmware/bdwlan*').splitlines()
-    for dst_file in bdf_files_list:
-        dut.push_system_file(bdf_file, dst_file)
+    pass
+
+
+def push_config_qcom(dut, config_file):
+    config_files_list = dut.adb.shell(
+        'ls /vendor/firmware/bdwlan*').splitlines()
+    for dst_file in config_files_list:
+        dut.push_system_file(config_file, dst_file)
     dut.reboot()
 
 
-def push_firmware(dut, wlanmdsp_file, datamsc_file):
+def push_config_brcm(dut, config_file):
+    config_files_list = dut.adb.shell('ls /vendor/etc/*.cal').splitlines()
+    for dst_file in config_files_list:
+        dut.push_system_file(config_file, dst_file)
+    dut.reboot()
+
+
+def push_firmware(dut, firmware_files):
     """Function to push Wifi firmware files
 
     Args:
         dut: dut to push bdf file to
-        wlanmdsp_file: path to wlanmdsp.mbn file
+        firmware_files: path to wlanmdsp.mbn file
         datamsc_file: path to Data.msc file
     """
-    dut.push_system_file(wlanmdsp_file, '/vendor/firmware/wlanmdsp.mbn')
-    dut.push_system_file(datamsc_file, '/vendor/firmware/Data.msc')
+    for file in firmware_files:
+        dut.push_system_file(file, '/vendor/firmware/')
     dut.reboot()
 
 
@@ -1249,6 +1460,14 @@ def set_ini_tx_mode(dut, mode):
 
 # Link layer stats utilities
 class LinkLayerStats():
+    def __new__(self, dut, llstats_enabled=True):
+        if detect_wifi_platform(dut) == 'qcom':
+            return LinkLayerStatsQcom(dut, llstats_enabled=True)
+        else:
+            return LinkLayerStatsBrcm(dut, llstats_enabled=True)
+
+
+class LinkLayerStatsQcom():
 
     LLSTATS_CMD = 'cat /d/wlan0/ll_stats'
     PEER_REGEX = 'LL_STATS_PEER_ALL'
@@ -1378,3 +1597,38 @@ class LinkLayerStats():
             self.llstats_incremental)
         self.llstats_cumulative['summary'] = self._generate_stats_summary(
             self.llstats_cumulative)
+
+
+class LinkLayerStatsBrcm():
+    def __init__(self, dut, llstats_enabled=True):
+        self.dut = dut
+        self.llstats_enabled = llstats_enabled
+        self.llstats_incremental = self._empty_llstats()
+        self.llstats_cumulative = self.llstats_incremental
+
+    def _empty_llstats(self):
+        return collections.OrderedDict(mcs_stats=collections.OrderedDict(),
+                                       summary=collections.OrderedDict())
+
+    def update_stats(self):
+        self.llstats_incremental = self._empty_llstats()
+        self.llstats_incremental['summary'] = collections.OrderedDict(
+            common_tx_mcs=None,
+            common_tx_mcs_count=1,
+            common_tx_mcs_freq=1,
+            common_rx_mcs=None,
+            common_rx_mcs_count=1,
+            common_rx_mcs_freq=1)
+        if self.llstats_enabled:
+            try:
+                rate_info = self.dut.adb.shell('wl rate_info', timeout=0.1)
+                self.llstats_incremental['summary'][
+                    'common_tx_mcs'] = "{} Mbps".format(
+                        re.findall('\[Tx\]:'
+                                   ' (\d+[.]*\d* Mbps)', rate_info))
+                self.llstats_incremental['summary'][
+                    'common_rx_mcs'] = "{} Mbps".format(
+                        re.findall('\[Rx\]:'
+                                   ' (\d+[.]*\d* Mbps)', rate_info))
+            except:
+                pass
