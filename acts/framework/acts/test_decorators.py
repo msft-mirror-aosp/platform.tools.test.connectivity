@@ -51,7 +51,7 @@ def test_info(predicate=None, **keyed_info):
     return test_info_decorator
 
 
-def __select_last(test_signals):
+def __select_last(test_signals, _):
     return test_signals[-1]
 
 
@@ -120,7 +120,7 @@ def repeated_test(num_passes, acceptable_failures=0,
                     self.teardown_test()
                     self.setup_test()
 
-            raise result_selector(test_signals_received)
+            raise result_selector(test_signals_received, self)
 
         return test_wrapper
 
