@@ -298,7 +298,7 @@ oslo_gating = DeviceSetprop('pixel.oslo.gating',
 
 # Miscellaneous
 
-hidden_api_exemption = GenericCommand('settings put global hidden_api_blacklist_exemptions *',
+hidden_api_exemption = GenericCommand('settings put global hidden_api_blacklist_exemptions \\*',
                                       desc='Allows all private apis for testing')
 
 test_harness = DeviceBinaryCommandSeries(
