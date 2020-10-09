@@ -19,29 +19,30 @@ from acts.test_utils.instrumentation.device.apps.app_installer import \
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
     import InstrumentationCommandBuilder
 
-PERMISSION_RUNNER = '.PermissionInstrumentation'
+ACTIVITY = '.FinskyInstrumentation'
 
 
-class PermissionsUtil(object):
-    """Utility for granting all revoked runtime permissions."""
+class GoogleAppsTestUtils(object):
+    """Utility for managing operations regarding the GoogleAppsTestUtils.apk."""
     def __init__(self, dut, util_apk):
         self._dut = dut
-        self._permissions_apk = AppInstaller(dut, util_apk)
-        self._permissions_apk.install()
+        self._google_apps_test_utils_apk = AppInstaller(dut, util_apk)
 
-    def grant_all(self):
-        """Grant all runtime permissions with PermissionUtils."""
-        if not self._permissions_apk.is_installed():
-            self._permissions_apk.install('-g')
-        self._dut.log.info('Granting all revoked runtime permissions.')
+    def prevent_playstore_auto_updates(self):
+        """Prevents the playstore from auto updating."""
+        self._dut.log.info('Preventing playstore from auto updating.')
+        if not self._google_apps_test_utils_apk.is_installed():
+            self._google_apps_test_utils_apk.install('-g')
+
         cmd_builder = InstrumentationCommandBuilder()
-        cmd_builder.set_manifest_package(self._permissions_apk.pkg_name)
-        cmd_builder.set_runner(PERMISSION_RUNNER)
+        cmd_builder.set_manifest_package(self._google_apps_test_utils_apk.pkg_name)
+        cmd_builder.set_runner(ACTIVITY)
         cmd_builder.add_flag('-w')
         cmd_builder.add_flag('-r')
-        cmd_builder.add_key_value_param('command', 'grant-all')
+        cmd_builder.add_key_value_param('command', 'auto_update')
+        cmd_builder.add_key_value_param('value', 'false')
         self._dut.adb.shell(cmd_builder.build())
 
     def close(self):
-        """Clean up util by uninstalling the permissions APK."""
-        self._permissions_apk.uninstall()
+        """Clean up util by uninstalling the APK."""
+        self._google_apps_test_utils_apk.uninstall()
