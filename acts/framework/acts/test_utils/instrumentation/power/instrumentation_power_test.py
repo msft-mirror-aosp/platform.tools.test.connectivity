@@ -443,7 +443,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             context.get_current_context().get_full_output_path(),
             'monsoon.txt' if count is None else 'monsoon_%s.txt' % count)
 
-        if attempt_number != None:
+        if attempt_number is not None:
             power_data_path = os.path.join(
                 context.get_current_context().get_full_output_path(),
                 'monsoon_attempt_%s.txt' %
