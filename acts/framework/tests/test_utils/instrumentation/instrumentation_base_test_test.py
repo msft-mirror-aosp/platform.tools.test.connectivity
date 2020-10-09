@@ -27,7 +27,7 @@ from acts.test_utils.instrumentation.device.command.adb_command_types import \
 from acts.test_utils.instrumentation.instrumentation_base_test import \
     InstrumentationBaseTest
 
-MOCK_INSTRUMENTATION_CONFIG = {
+MOCK_TEST_OPTIONS = {
     'MockController': {
         'param1': 1,
         'param2': 4
@@ -53,8 +53,8 @@ class MockInstrumentationBaseTest(InstrumentationBaseTest):
         self.current_test_name = None
         self.ad_dut = mock.Mock()
         self.log = mock.Mock()
-        self._instrumentation_config = ConfigWrapper(MOCK_INSTRUMENTATION_CONFIG)
-        self._class_config = self._instrumentation_config.get_config(
+        self._test_options = ConfigWrapper(MOCK_TEST_OPTIONS)
+        self._class_config = self._test_options.get_config(
             self.__class__.__name__)
 
 
@@ -83,7 +83,7 @@ class InstrumentationBaseTestTest(unittest.TestCase):
         self.assertIn('ls /other', result.keys())
 
     def test_bugreport_on_fail_by_default(self):
-        self.instrumentation_test._instrumentation_config = ConfigWrapper({})
+        self.instrumentation_test._test_options = ConfigWrapper({})
         self.instrumentation_test._take_bug_report = MagicMock()
 
         self.instrumentation_test.on_exception('test', 0)
@@ -97,7 +97,7 @@ class InstrumentationBaseTestTest(unittest.TestCase):
                          self.instrumentation_test._take_bug_report.call_count)
 
     def test_bugreport_on_end_events_can_be_disabled(self):
-        self.instrumentation_test._instrumentation_config = ConfigWrapper({
+        self.instrumentation_test._test_options = ConfigWrapper({
                 'bugreport_on_pass': False,
                 'bugreport_on_exception': False,
                 'bugreport_on_fail': False
