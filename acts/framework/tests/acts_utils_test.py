@@ -505,7 +505,7 @@ class IpAddressUtilTest(unittest.TestCase):
             utils.get_interface_ip_addresses(SshConnection('mock_settings'),
                                              'wlan1'), CORRECT_EMPTY_IP_LIST)
 
-    @mock.patch('acts.controllers.adb.AdbProxy.shell')
+    @mock.patch('acts.controllers.adb.AdbProxy')
     def test_android_get_interface_ip_addresses_full(self, adb_mock):
         adb_mock().shell.side_effect = [
             MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
@@ -514,11 +514,13 @@ class IpAddressUtilTest(unittest.TestCase):
             utils.get_interface_ip_addresses(AndroidDevice(), 'eno1'),
            CORRECT_FULL_IP_LIST)
 
-    @mock.patch('acts.controllers.adb.AdbProxy.shell')
+    @mock.patch('acts.controllers.adb.AdbProxy')
     def test_android_get_interface_ip_addresses_empty(self, adb_mock):
-        adb_mock.side_effect = [MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT]
-        self.assertTrue(
-            utils.get_interface_ip_addresses(AndroidDevice(), 'wlan1') ==
+        adb_mock().shell.side_effect = [
+            MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
+        ]
+        self.assertEqual(
+            utils.get_interface_ip_addresses(AndroidDevice(), 'wlan1'),
             CORRECT_EMPTY_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)
