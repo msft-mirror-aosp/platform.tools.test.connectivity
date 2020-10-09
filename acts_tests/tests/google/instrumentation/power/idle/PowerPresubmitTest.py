@@ -36,8 +36,7 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
                         'frequency': 100,
                         'delay': 0}
         }
-        self._instrumentation_config = config_wrapper.merge(
-            self._instrumentation_config, overrides)
+        self._test_options = config_wrapper.merge(self._test_options, overrides)
 
         metrics = self.run_and_measure(
             'com.google.android.platform.powertests.IdleTestCase',

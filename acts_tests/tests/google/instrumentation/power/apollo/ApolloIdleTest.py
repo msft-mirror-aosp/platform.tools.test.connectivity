@@ -43,10 +43,9 @@ class ApolloIdleTest(ApolloBaseTest):
 
         # If specific scanning frequencies and times were passed in, used those
         # Otherwise, just use the default API behavior
-        self._scan_interval_seconds = self._instrumentation_config.get(
+        self._scan_interval_seconds = self._test_options.get(
             'scan_interval_seconds')
-        self._scan_time_seconds = self._instrumentation_config.get(
-            'scan_time_seconds')
+        self._scan_time_seconds = self._test_options.get('scan_time_seconds')
 
         self._sideload_apollo()
         self._start_scanning()
