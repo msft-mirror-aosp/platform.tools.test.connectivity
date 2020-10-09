@@ -21,20 +21,25 @@ import re
 import shlex
 import shutil
 
+from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.adb_lib.error import AdbError
 from acts.libs.proc import job
 from acts.metrics.loggers import usage_metadata_logger
 
 DEFAULT_ADB_TIMEOUT = 60
 DEFAULT_ADB_PULL_TIMEOUT = 180
+
+ADB_REGEX = re.compile('adb:')
 # Uses a regex to be backwards compatible with previous versions of ADB
 # (N and above add the serial to the error msg).
-DEVICE_NOT_FOUND_REGEX = re.compile('^error: device (?:\'.*?\' )?not found')
-DEVICE_OFFLINE_REGEX = re.compile('^error: device offline')
+DEVICE_NOT_FOUND_REGEX = re.compile('error: device (?:\'.*?\' )?not found')
+DEVICE_OFFLINE_REGEX = re.compile('error: device offline')
 # Raised when adb forward commands fail to forward a port.
-CANNOT_BIND_LISTENER_REGEX = re.compile('^error: cannot bind listener:')
+CANNOT_BIND_LISTENER_REGEX = re.compile('error: cannot bind listener:')
 # Expected output is "Android Debug Bridge version 1.0.XX
 ADB_VERSION_REGEX = re.compile('Android Debug Bridge version 1.0.(\d+)')
+GREP_REGEX = re.compile('grep(\s+)')
+
 ROOT_USER_ID = '0'
 SHELL_USER_ID = '2000'
 
@@ -51,7 +56,6 @@ def parsing_parcel_output(output):
     """
     output = ''.join(re.findall(r"'(.*)'", output))
     return re.sub(r'[.\s]', '', output)
-
 
 
 class AdbProxy(object):
@@ -145,30 +149,31 @@ class AdbProxy(object):
         This is specific to executing adb commands.
 
         Args:
-            cmd: A string that is the adb command to execute.
+            cmd: A string or list that is the adb command to execute.
 
         Returns:
             The stdout of the adb command.
 
         Raises:
-            AdbError is raised if adb cannot find the device.
+            AdbError for errors in ADB operations.
+            AdbCommandError for errors from commands executed through ADB.
         """
+        if isinstance(cmd, list):
+            cmd = ' '.join(cmd)
         result = job.run(cmd, ignore_status=True, timeout=timeout)
         ret, out, err = result.exit_status, result.stdout, result.stderr
 
-        if DEVICE_OFFLINE_REGEX.match(err):
+        if any(pattern.match(err) for pattern in
+               [ADB_REGEX, DEVICE_OFFLINE_REGEX, DEVICE_NOT_FOUND_REGEX,
+                CANNOT_BIND_LISTENER_REGEX]):
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         if "Result: Parcel" in out:
             return parsing_parcel_output(out)
-        if ignore_status:
+        if ignore_status or (ret == 1 and GREP_REGEX.search(cmd)):
             return out or err
-        if ret == 1 and (DEVICE_NOT_FOUND_REGEX.match(err)
-                         or CANNOT_BIND_LISTENER_REGEX.match(err)):
-            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
-        if ret == 2:
-            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
-        else:
-            return out
+        if ret != 0:
+            raise AdbCommandError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
+        return out
 
     def _exec_adb_cmd(self, name, arg_str, **kwargs):
         return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),

@@ -36,3 +36,4 @@ class ActsErrorCode:
 
     FastbootError = 9000
     AdbError = 9001
+    AdbCommandError = 9002
