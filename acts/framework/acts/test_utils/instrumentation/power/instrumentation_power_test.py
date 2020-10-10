@@ -32,6 +32,7 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
 from acts.test_utils.instrumentation.device.apps.app_installer import AppInstaller
+from acts.test_utils.instrumentation.device.apps.google_apps_test_utils import GoogleAppsTestUtils
 from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
@@ -124,15 +125,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.ad_dut,
             self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
+        self._google_apps_test_utils = GoogleAppsTestUtils(
+            self.ad_dut,
+            self.get_file_from_config('google_apps_test_utils_apk'))
+        self._google_apps_test_utils.prevent_playstore_auto_updates()
         self._install_test_apk()
-        self._install_google_apps_test_utils_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
         if self._test_apk:
             self._test_apk.uninstall()
-        if self._google_utils_apk:
-            self._google_utils_apk.uninstall()
+        if self._google_apps_test_utils:
+            self._google_apps_test_utils.close()
         self._permissions_util.close()
         self._pull_test_files()
         self._cleanup_test_files()
@@ -225,7 +229,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.disable_volta)
         self.adb_run(common.crashed_activities)
 
-        self.adb_run(goog.finsky_instrumentation)
         try:
             self.ad_dut.reboot(timeout=180)
         except (AndroidDeviceError, TimeoutError):
@@ -314,16 +317,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():
             raise InstrumentationTestError('Failed to install test APK.')
-
-    def _install_google_apps_test_utils_apk(self):
-        """Installs GoogleAppsTestUtils apk on the device."""
-        google_utils_apk = self.get_file_from_config(
-            'google_apps_test_utils_apk')
-        self._google_utils_apk = AppInstaller(self.ad_dut, google_utils_apk)
-        self._google_utils_apk.install('-g')
-        if not self._google_utils_apk.is_installed():
-            raise InstrumentationTestError(
-                'Failed to install google utils APK.')
 
     def _pull_test_files(self):
         """Pull test-generated files from the device onto the log directory."""
@@ -443,7 +436,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             context.get_current_context().get_full_output_path(),
             'monsoon.txt' if count is None else 'monsoon_%s.txt' % count)
 
-        if attempt_number != None:
+        if attempt_number is not None:
             power_data_path = os.path.join(
                 context.get_current_context().get_full_output_path(),
                 'monsoon_attempt_%s.txt' %
