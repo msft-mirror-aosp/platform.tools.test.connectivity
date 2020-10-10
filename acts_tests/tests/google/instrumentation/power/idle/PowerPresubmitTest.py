@@ -31,11 +31,11 @@ class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
         only 20 seconds worth of measurement and 10 of on device test."""
         # TODO: max_current and voltage should also be hardcoded somehow.
         self._instr_cmd_builder.set_output_as_text()
-        overrides = self.context_specific_config({
+        overrides = {
             'Monsoon': {'duration': 35,
                         'frequency': 100,
                         'delay': 0}
-        })
+        }
         self._instrumentation_config = config_wrapper.merge(
             self._instrumentation_config, overrides)
 

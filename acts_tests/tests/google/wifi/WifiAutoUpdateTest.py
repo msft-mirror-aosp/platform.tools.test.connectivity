@@ -98,12 +98,12 @@ class WifiAutoUpdateTest(WifiBaseTest):
                 "Failed up apply OTA update. Aborting tests: %s" % e)
 
     def setup_test(self):
-        super().setup_test(self)
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
-        super().setup_teardown_test()
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
 

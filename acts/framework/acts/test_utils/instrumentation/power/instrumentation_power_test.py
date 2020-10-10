@@ -18,13 +18,16 @@ import os
 import shutil
 import tempfile
 import time
+import json
 
 from acts import asserts
 from acts import context
+from acts import signals
 from acts.controllers import monsoon as monsoon_controller
 from acts.controllers import power_monitor as power_monitor_lib
-from acts.controllers.power_metrics import AbsoluteThresholds
 from acts.controllers.android_device import SL4A_APK_NAME
+from acts.controllers.android_lib.errors import AndroidDeviceError
+from acts.controllers.power_metrics import AbsoluteThresholds
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
@@ -38,7 +41,6 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.data_graph import power_audio_chart
-import tzlocal
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 DEFAULT_DEVICE_STABILIZATION_TIME = 300
@@ -259,7 +261,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.adb_run('chmod 644 /data/local.prop')
             self.adb_run(common.disable_dialing.toggle(True))
 
-
     def set_screen_brightness_level(self):
         """set screen brightness level"""
         brightness_level = None
@@ -274,7 +275,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _setup_power_monitor(self, **kwargs):
         """Set up the Monsoon controller for this testclass/testcase."""
-        monsoon_config = self._get_merged_config('Monsoon')
+        monsoon_config = self._instrumentation_config.get_config('Monsoon')
         self.power_monitor.setup(monsoon_config=monsoon_config)
 
     def _uninstall_sl4a(self):
@@ -317,11 +318,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _install_google_apps_test_utils_apk(self):
         """Installs GoogleAppsTestUtils apk on the device."""
-        google_utils_apk = self.get_file_from_config('google_apps_test_utils_apk')
+        google_utils_apk = self.get_file_from_config(
+            'google_apps_test_utils_apk')
         self._google_utils_apk = AppInstaller(self.ad_dut, google_utils_apk)
         self._google_utils_apk.install('-g')
         if not self._google_utils_apk.is_installed():
-            raise InstrumentationTestError('Failed to install google utils APK.')
+            raise InstrumentationTestError(
+                'Failed to install google utils APK.')
 
     def _pull_test_files(self):
         """Pull test-generated files from the device onto the log directory."""
@@ -347,7 +350,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return self.adb_run(cmd)
 
     def push_to_external_storage(self, file_path, dest=None,
-        timeout=DEFAULT_PUSH_FILE_TIMEOUT):
+                                 timeout=DEFAULT_PUSH_FILE_TIMEOUT):
         """Pushes a file to {$EXTERNAL_STORAGE} and returns its final location.
 
         Args:
@@ -415,7 +418,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         Returns:
             A list of power_metrics.Metric.
         """
-        monsoon_config = self._get_merged_config('Monsoon')
+        monsoon_config = self._instrumentation_config.get_config('Monsoon')
         disconnect_usb_timeout = monsoon_config.get_numeric(
             'usb_disconnection_timeout', 240)
         measurement_args = dict(
@@ -478,7 +481,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return power_metrics
 
     def run_and_measure(self, instr_class, instr_method=None, req_params=None,
-        extra_params=None, count=None, attempt_number=None):
+                        extra_params=None, count=None, attempt_number=None):
         """Convenience method for setting up the instrumentation test command,
         running it on the device, and starting the Monsoon measurement.
 
@@ -500,7 +503,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         else:
             self._instr_cmd_builder.add_test_class(instr_class)
         params = {}
-        instr_call_config = self._get_merged_config('instrumentation_call')
+        instr_call_config = self._instrumentation_config.get_config('instrumentation_call')
         # Add required parameters
         for param_name in req_params or []:
             params[param_name] = instr_call_config.get(
@@ -530,7 +533,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return self.measure_power(count=count, attempt_number=attempt_number)
 
     def get_absolute_thresholds_for_metric(self, instr_test_name, metric_name):
-        all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._instrumentation_config.get_config(ACCEPTANCE_THRESHOLD)
         test_thresholds = all_thresholds.get_config(instr_test_name)
         if metric_name not in test_thresholds:
             return None
@@ -585,7 +588,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """
         summaries = {}
         failure = False
-        all_thresholds = self._get_merged_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._instrumentation_config.get_config(ACCEPTANCE_THRESHOLD)
 
         if not instr_test_names:
             instr_test_names = all_thresholds.keys()
@@ -600,6 +603,16 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     'Check instrumentation call results in '
                     'instrumentation_proto.txt.'
                     % instr_test_name)
+
+            metric_list = []
+            for metric in power_metrics[instr_test_name]:
+                metric_dic = {
+                    'name' : metric.name,
+                    'value' : metric.value,
+                    'unit': metric.unit,
+                    '_unit_type' : metric._unit_type
+                }
+                metric_list.append(metric_dic)
 
             summaries[instr_test_name] = {}
             test_thresholds_configs = all_thresholds.get_config(instr_test_name)
@@ -622,10 +635,13 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                     self.log.error('Error detail: %s', str(e))
                     continue
 
+                power_metrics_json_string = json.dumps(metric_list)
+
                 summary_entry = {
                     'expected': '[%s, %s]' % (
                         thresholds.lower, thresholds.upper),
-                    'actual': str(actual_result.to_unit(thresholds.unit))
+                    'actual': str(actual_result.to_unit(thresholds.unit)),
+                    'power_metric': power_metrics_json_string
                 }
                 summaries[instr_test_name][metric_name] = summary_entry
                 if not thresholds.lower <= actual_result <= thresholds.upper:
