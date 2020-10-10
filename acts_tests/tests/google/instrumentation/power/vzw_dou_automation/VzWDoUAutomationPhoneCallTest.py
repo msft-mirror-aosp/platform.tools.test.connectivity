@@ -179,6 +179,8 @@ class VzWDoUAutomationPhoneCallTest(
   def test_mobile_hotspot(self, attempt_number):
     """Measures power for companion connect to the dut mobile hotspot."""
 
+    self.connect_companion_to_wifi()
+    self.log_in_companion_gmail_account()
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
         'The companion phone number is {}'.format(companion_phone_number))

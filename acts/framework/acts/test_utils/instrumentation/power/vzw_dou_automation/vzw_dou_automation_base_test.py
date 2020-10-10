@@ -123,7 +123,7 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(goog.disable_playstore)
     self.adb_run(goog.disable_volta)
     self.adb_run(common.test_harness.toggle(True))
-    self.adb_run('am force-stop com.google.android.apps.nexuslauncher')
+    self.adb_run(goog.force_stop_nexuslauncher)
     self.adb_run('input keyevent 26')
     self.adb_run(common.screen_timeout_ms.set_value(180000))
 
@@ -177,7 +177,7 @@ class VzWDoUAutomationBaseTest(
           'Failed to install google account util APK.')
 
   def _cut_band(self):
-    additional_setting = self._get_merged_config('additional_setting')
+    additional_setting = self._instrumentation_config.get_config('additional_setting')
     band_to_cut = None
     if additional_setting:
       band_to_cut = additional_setting.get('band_to_cut')
@@ -216,7 +216,7 @@ class VzWDoUAutomationBaseTest(
     # Log in to gmail account
     self._install_google_account_util_apk()
     time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
-    additional_setting = self._get_merged_config('additional_setting')
+    additional_setting = self._instrumentation_config.get_config('additional_setting')
     gmail_phrase = additional_setting.get('gmail_phrase')
     log_in_cmd = (
         'am instrument -w -e account {} -e '

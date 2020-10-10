@@ -32,6 +32,7 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
 from acts.test_utils.instrumentation.device.apps.app_installer import AppInstaller
+from acts.test_utils.instrumentation.device.apps.google_apps_test_utils import GoogleAppsTestUtils
 from acts.test_utils.instrumentation.device.apps.permissions import PermissionsUtil
 from acts.test_utils.instrumentation.device.command.adb_commands import common
 from acts.test_utils.instrumentation.device.command.adb_commands import goog
@@ -124,15 +125,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self.ad_dut,
             self.get_file_from_config('permissions_apk'))
         self._permissions_util.grant_all()
+        self._google_apps_test_utils = GoogleAppsTestUtils(
+            self.ad_dut,
+            self.get_file_from_config('google_apps_test_utils_apk'))
+        self._google_apps_test_utils.prevent_playstore_auto_updates()
         self._install_test_apk()
-        self._install_google_apps_test_utils_apk()
 
     def _cleanup_device(self):
         """Clean up device after power testing."""
         if self._test_apk:
             self._test_apk.uninstall()
-        if self._google_utils_apk:
-            self._google_utils_apk.uninstall()
+        if self._google_apps_test_utils:
+            self._google_apps_test_utils.close()
         self._permissions_util.close()
         self._pull_test_files()
         self._cleanup_test_files()
@@ -204,8 +208,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.compact_location_log.toggle(True))
         self.adb_run(goog.cast_broadcast.toggle(False))
         self.adb_run(goog.ocr.toggle(False))
-        if self._instrumentation_config.get('set_gms_phenotype_flag',
-                                            default=True):
+        if self._test_options.get('set_gms_phenotype_flag', default=True):
             self.adb_run(goog.phenotype.toggle(True))
         self.adb_run(goog.icing.toggle(False))
 
@@ -226,7 +229,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.adb_run(goog.disable_volta)
         self.adb_run(common.crashed_activities)
 
-        self.adb_run(goog.finsky_instrumentation)
         try:
             self.ad_dut.reboot(timeout=180)
         except (AndroidDeviceError, TimeoutError):
@@ -264,8 +266,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
     def set_screen_brightness_level(self):
         """set screen brightness level"""
         brightness_level = None
-        if 'brightness_level' in self._instrumentation_config:
-            brightness_level = self._instrumentation_config['brightness_level']
+        if 'brightness_level' in self._test_options:
+            brightness_level = self._test_options['brightness_level']
 
         if brightness_level is None:
             raise ValueError('no brightness level defined (or left as None) '
@@ -275,7 +277,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
 
     def _setup_power_monitor(self, **kwargs):
         """Set up the Monsoon controller for this testclass/testcase."""
-        monsoon_config = self._instrumentation_config.get_config('Monsoon')
+        monsoon_config = self._test_options.get_config('Monsoon')
         self.power_monitor.setup(monsoon_config=monsoon_config)
 
     def _uninstall_sl4a(self):
@@ -315,16 +317,6 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._test_apk.install('-g')
         if not self._test_apk.is_installed():
             raise InstrumentationTestError('Failed to install test APK.')
-
-    def _install_google_apps_test_utils_apk(self):
-        """Installs GoogleAppsTestUtils apk on the device."""
-        google_utils_apk = self.get_file_from_config(
-            'google_apps_test_utils_apk')
-        self._google_utils_apk = AppInstaller(self.ad_dut, google_utils_apk)
-        self._google_utils_apk.install('-g')
-        if not self._google_utils_apk.is_installed():
-            raise InstrumentationTestError(
-                'Failed to install google utils APK.')
 
     def _pull_test_files(self):
         """Pull test-generated files from the device onto the log directory."""
@@ -418,7 +410,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         Returns:
             A list of power_metrics.Metric.
         """
-        monsoon_config = self._instrumentation_config.get_config('Monsoon')
+        monsoon_config = self._test_options.get_config('Monsoon')
         disconnect_usb_timeout = monsoon_config.get_numeric(
             'usb_disconnection_timeout', 240)
         measurement_args = dict(
@@ -444,7 +436,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             context.get_current_context().get_full_output_path(),
             'monsoon.txt' if count is None else 'monsoon_%s.txt' % count)
 
-        if attempt_number != None:
+        if attempt_number is not None:
             power_data_path = os.path.join(
                 context.get_current_context().get_full_output_path(),
                 'monsoon_attempt_%s.txt' %
@@ -503,7 +495,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         else:
             self._instr_cmd_builder.add_test_class(instr_class)
         params = {}
-        instr_call_config = self._instrumentation_config.get_config('instrumentation_call')
+        instr_call_config = self._test_options.get_config('instrumentation_call')
         # Add required parameters
         for param_name in req_params or []:
             params[param_name] = instr_call_config.get(
@@ -522,7 +514,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._uninstall_sl4a()
 
         # Allow device to stabilize
-        stabilization_time = self._instrumentation_config.get_int(
+        stabilization_time = self._test_options.get_int(
             'device_stabilization_time', DEFAULT_DEVICE_STABILIZATION_TIME)
         self.ad_dut.log.debug('Waiting %s seconds for device to stabilize',
                               stabilization_time)
@@ -533,7 +525,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         return self.measure_power(count=count, attempt_number=attempt_number)
 
     def get_absolute_thresholds_for_metric(self, instr_test_name, metric_name):
-        all_thresholds = self._instrumentation_config.get_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._test_options.get_config(ACCEPTANCE_THRESHOLD)
         test_thresholds = all_thresholds.get_config(instr_test_name)
         if metric_name not in test_thresholds:
             return None
@@ -588,7 +580,7 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         """
         summaries = {}
         failure = False
-        all_thresholds = self._instrumentation_config.get_config(ACCEPTANCE_THRESHOLD)
+        all_thresholds = self._test_options.get_config(ACCEPTANCE_THRESHOLD)
 
         if not instr_test_names:
             instr_test_names = all_thresholds.keys()

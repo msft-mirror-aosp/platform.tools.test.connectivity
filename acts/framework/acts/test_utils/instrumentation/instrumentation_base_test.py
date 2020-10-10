@@ -31,7 +31,7 @@ from acts.test_utils.instrumentation.device.command.instrumentation_command_buil
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
-DEFAULT_INSTRUMENTATION_CONFIG_FILE = 'instrumentation_config.yaml'
+DEFAULT_TEST_OPTIONS_FILE = 'test_options.yaml'
 
 
 class InstrumentationTestError(error.ActsError):
@@ -48,43 +48,42 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             configs: Dict representing the test configuration
         """
         super().__init__(configs)
-        if 'instrumentation_config' in self.user_params:
-            instrumentation_config_path = (
-                self.user_params['instrumentation_config'][0])
+        if 'test_options' in self.user_params:
+            test_options_path = self.user_params['test_options'][0]
+        elif 'instrumentation_config' in self.user_params:
+            test_options_path = self.user_params['instrumentation_config'][0]
         else:
             raise InstrumentationTestError(
-                'Instrumentation config file not specified. Please add a valid '
-                '"instrumentation_config" path to the ACTS config.')
-        self._instrumentation_config = ContextualConfigWrapper()
-        if os.path.exists(instrumentation_config_path):
-            self._instrumentation_config = self._load_instrumentation_config(
-                instrumentation_config_path)
+                'Test options file not specified. Please add a valid '
+                '"test_options" path to the ACTS config.')
+        self._test_options = ContextualConfigWrapper()
+        if os.path.exists(test_options_path):
+            self._test_options = self._load_test_options(test_options_path)
         else:
             raise InstrumentationTestError(
-                'Instrumentation config file %s does not exist'
-                % instrumentation_config_path)
+                'Test options file %s does not exist'
+                % test_options_path)
+        self._instrumentation_config = self._test_options
 
-    def _load_instrumentation_config(self, path):
-        """Load the instrumentation config file into an
-        ContextualConfigWrapper object.
+    def _load_test_options(self, path):
+        """Load the test options file into a ContextualConfigWrapper object.
 
         Args:
-            path: Path to the instrumentation config file.
+            path: Path to the test options file.
 
-        Returns: The loaded instrumentation config as an
-        ContextualConfigWrapper
+        Returns: The loaded test options as a ContextualConfigWrapper
         """
         try:
             with open(path, mode='r', encoding='utf-8') as f:
                 config_dict = yaml.safe_load(f)
         except Exception as e:
             raise InstrumentationTestError(
-                'Cannot open or parse instrumentation config file %s. Error: %s'
+                'Cannot open or parse test options file %s. Error: %s'
                 % (path, e))
 
-        # Write out a copy of the instrumentation config
+        # Write out a copy of the test options
         with open(os.path.join(
-                self.log_path, DEFAULT_INSTRUMENTATION_CONFIG_FILE),
+                self.log_path, DEFAULT_TEST_OPTIONS_FILE),
                 mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
@@ -100,20 +99,17 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def on_exception(self, test_name, begin_time):
         """Called upon unhandled test exception."""
-        if self._instrumentation_config.get('bugreport_on_exception',
-                                            default=True):
+        if self._test_options.get('bugreport_on_exception', default=True):
             self._take_bug_report(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
         """Called upon test pass."""
-        if self._instrumentation_config.get('bugreport_on_pass',
-                                            default=True):
+        if self._test_options.get('bugreport_on_pass', default=True):
             self._take_bug_report(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         """Called upon test failure."""
-        if self._instrumentation_config.get('bugreport_on_fail',
-                                            default=True):
+        if self._test_options.get('bugreport_on_fail', default=True):
             self._take_bug_report(test_name, begin_time)
 
     def _prepare_device(self):
