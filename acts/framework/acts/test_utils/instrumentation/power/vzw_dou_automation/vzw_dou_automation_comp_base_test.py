@@ -77,6 +77,28 @@ class VzWDoUAutomationCompBaseTest(
       raise InstrumentationTestError(
           'Failed to install test APK on companion device.')
 
+  def _install_companion_wifi_util_apk(self):
+    """Installs google account util apk on the device."""
+    _wifi_util_file = self.get_file_from_config(
+        'wifi_util_apk')
+    self._companion_wifi_util = AppInstaller(self.ad_cp,
+                                     _wifi_util_file)
+    self._companion_wifi_util.install('-g')
+    if not self._companion_wifi_util.is_installed():
+      raise InstrumentationTestError(
+          'Failed to install wif util APK on companion.')
+
+  def _install_companion_google_account_util_apk(self):
+    """Installs google account util apk on the device."""
+    _google_account_util_file = self.get_file_from_config(
+        'google_account_util_apk')
+    self._companion_google_account_util = AppInstaller(self.ad_cp,
+                                             _google_account_util_file)
+    self._companion_google_account_util.install('-g')
+    if not self._companion_google_account_util.is_installed():
+      raise InstrumentationTestError(
+          'Failed to install google account util APK on companion.')
+
   def _pull_companion_test_files(self):
     """Pull test-generated files from the companion device onto the log directory."""
     dest = self.ad_cp.device_log_path
@@ -123,6 +145,7 @@ class VzWDoUAutomationCompBaseTest(
     self.adb_run(goog.disable_playstore, ad=self.ad_cp)
     self.adb_run(goog.disable_chrome, ad=self.ad_cp)
     self.adb_run(common.power_stayon, ad=self.ad_cp)
+    self.adb_run(common.wifi_state.toggle(True), ad=self.ad_cp)
     self.adb_run(common.mobile_data.toggle(True), ad=self.ad_cp)
     self.adb_run('input keyevent 82', ad=self.ad_cp)
     self.adb_run('input keyevent 3', ad=self.ad_cp)
@@ -158,7 +181,7 @@ class VzWDoUAutomationCompBaseTest(
     else:
       self._companion_instr_cmd_builder.add_test_class(instr_class)
     params = {}
-    companion_instr_call_config = self._get_merged_config(
+    companion_instr_call_config = self._instrumentation_config.get_config(
         'companion_instrumentation_call')
     # Add required parameters
     for param_name in req_params or []:
@@ -202,4 +225,37 @@ class VzWDoUAutomationCompBaseTest(
                          bt_config_file + ' %s' % bt_conf_path_dut)
     self.ad_dut.reboot()
     self.ad_dut.wait_for_boot_completion()
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
+
+  def log_in_companion_gmail_account(self, sync='false', wait_for_checkin='false'):
+    # Log in to gmail account
+    self._install_companion_google_account_util_apk()
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
+    additional_setting = self._instrumentation_config.get_config('additional_setting')
+    gmail_phrase = additional_setting.get('gmail_phrase')
+    log_in_cmd = (
+        'am instrument -w -e account {} -e '
+        'password {} -e sync {} -e wait-for-checkin {} '
+        'com.google.android.tradefed.account/.AddAccount'
+    ).format(vzw_dou_automation_base_test.GMAIL_ACCOUNT,
+             gmail_phrase, sync, wait_for_checkin)
+    self.log.info('gmail log in commands %s' % log_in_cmd)
+    self.adb_run(log_in_cmd, timeout=300, ad=self.ad_cp)
+    self.ad_cp.reboot()
+    self.ad_cp.wait_for_boot_completion()
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
+
+  def connect_companion_to_wifi(self):
+    # Log in to gmail account
+    self._install_companion_wifi_util_apk()
+    additional_setting = self._instrumentation_config.get_config('additional_setting')
+    wifi_phrase = additional_setting.get('wifi_phrase')
+    wifi_connection_cmd = (
+        'am instrument -e method "connectToNetwork" -e ssid {} -e '
+        'psk "Google123" -w com.android.tradefed.utils.wifi/.WifiUtil'
+    ).format(vzw_dou_automation_base_test.WIFI_SSID, wifi_phrase)
+    self.log.info('wifi_connection_cmd %s' % wifi_connection_cmd)
+    self.adb_run(wifi_connection_cmd, timeout=300, ad=self.ad_cp)
+    self.ad_cp.reboot()
+    self.ad_cp.wait_for_boot_completion()
     time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)

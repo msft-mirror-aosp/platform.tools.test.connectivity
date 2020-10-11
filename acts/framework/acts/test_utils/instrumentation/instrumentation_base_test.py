@@ -25,13 +25,13 @@ from acts.controllers.adb import DEFAULT_ADB_TIMEOUT
 
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
 from acts.test_utils.instrumentation import instrumentation_text_output_parser
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.config_wrapper import ContextualConfigWrapper
 from acts.test_utils.instrumentation.device.command.adb_command_types import GenericCommand
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
-DEFAULT_INSTRUMENTATION_CONFIG_FILE = 'instrumentation_config.yaml'
+DEFAULT_TEST_OPTIONS_FILE = 'test_options.yaml'
 
 
 class InstrumentationTestError(error.ActsError):
@@ -48,47 +48,46 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             configs: Dict representing the test configuration
         """
         super().__init__(configs)
-        if 'instrumentation_config' in self.user_params:
-            instrumentation_config_path = (
-                self.user_params['instrumentation_config'][0])
+        if 'test_options' in self.user_params:
+            test_options_path = self.user_params['test_options'][0]
+        elif 'instrumentation_config' in self.user_params:
+            test_options_path = self.user_params['instrumentation_config'][0]
         else:
             raise InstrumentationTestError(
-                'Instrumentation config file not specified. Please add a valid '
-                '"instrumentation_config" path to the ACTS config.')
-        self._instrumentation_config = ConfigWrapper()
-        if os.path.exists(instrumentation_config_path):
-            self._instrumentation_config = self._load_instrumentation_config(
-                instrumentation_config_path)
+                'Test options file not specified. Please add a valid '
+                '"test_options" path to the ACTS config.')
+        self._test_options = ContextualConfigWrapper()
+        if os.path.exists(test_options_path):
+            self._test_options = self._load_test_options(test_options_path)
         else:
             raise InstrumentationTestError(
-                'Instrumentation config file %s does not exist'
-                % instrumentation_config_path)
+                'Test options file %s does not exist'
+                % test_options_path)
+        self._instrumentation_config = self._test_options
 
-    def _load_instrumentation_config(self, path):
-        """Load the instrumentation config file into an
-        InstrumentationConfigWrapper object.
+    def _load_test_options(self, path):
+        """Load the test options file into a ContextualConfigWrapper object.
 
         Args:
-            path: Path to the instrumentation config file.
+            path: Path to the test options file.
 
-        Returns: The loaded instrumentation config as an
-        InstrumentationConfigWrapper
+        Returns: The loaded test options as a ContextualConfigWrapper
         """
         try:
             with open(path, mode='r', encoding='utf-8') as f:
                 config_dict = yaml.safe_load(f)
         except Exception as e:
             raise InstrumentationTestError(
-                'Cannot open or parse instrumentation config file %s. Error: %s'
+                'Cannot open or parse test options file %s. Error: %s'
                 % (path, e))
 
-        # Write out a copy of the instrumentation config
+        # Write out a copy of the test options
         with open(os.path.join(
-                self.log_path, DEFAULT_INSTRUMENTATION_CONFIG_FILE),
+                self.log_path, DEFAULT_TEST_OPTIONS_FILE),
                 mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
-        return ConfigWrapper(config_dict)
+        return ContextualConfigWrapper(config_dict)
 
     def setup_class(self):
         """Class setup"""
@@ -100,20 +99,17 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
 
     def on_exception(self, test_name, begin_time):
         """Called upon unhandled test exception."""
-        if self._instrumentation_config.get('bugreport_on_exception',
-                                            default=True):
+        if self._test_options.get('bugreport_on_exception', default=True):
             self._take_bug_report(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
         """Called upon test pass."""
-        if self._instrumentation_config.get('bugreport_on_pass',
-                                            default=True):
+        if self._test_options.get('bugreport_on_pass', default=True):
             self._take_bug_report(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         """Called upon test failure."""
-        if self._instrumentation_config.get('bugreport_on_fail',
-                                            default=True):
+        if self._test_options.get('bugreport_on_fail', default=True):
             self._take_bug_report(test_name, begin_time)
 
     def _prepare_device(self):
@@ -123,86 +119,6 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
     def _cleanup_device(self):
         """Clean up device after test completion."""
         pass
-
-    def _get_merged_config(self, config_name):
-        """Takes the configs with config_name from the base, testclass, and
-        testcase levels and merges them together. When the same parameter is
-        defined in different contexts, the value from the most specific context
-        is taken.
-
-        Example:
-            self._instrumentation_config = {
-                'sample_config': {
-                    'val_a': 5,
-                    'val_b': 7
-                },
-                'ActsTestClass': {
-                    'sample_config': {
-                        'val_b': 3,
-                        'val_c': 6
-                    },
-                    'acts_test_case': {
-                        'sample_config': {
-                            'val_c': 10,
-                            'val_d': 2
-                        }
-                    }
-                }
-            }
-
-            self._get_merged_config('sample_config') returns
-            {
-                'val_a': 5,
-                'val_b': 3,
-                'val_c': 10,
-                'val_d': 2
-            }
-
-        Args:
-            config_name: Name of the config to fetch
-        Returns: The merged config, as a ConfigWrapper
-        """
-        class_config = self._instrumentation_config.get_config(
-            self.__class__.__name__)
-
-        merged_config = self._instrumentation_config.get_config(config_name)
-        merged_config.update(class_config.get_config(config_name))
-        if self.current_test_name:
-            case_config = class_config.get_config(self.current_test_name)
-            merged_config.update(case_config.get_config(config_name))
-        return merged_config
-
-    def context_specific_config(self, config):
-        """Constructs a config for the current most specific context.
-
-        If invoked at class level, it will wrap the passed config within the
-        test class context. If invoked at test level, it will wrap the passed
-        config within the test context.
-
-        Examples:
-            If invoked at ActsTestClass level,
-            context_specific_config({'hello':'world'}) returns
-            {
-                'ActsTestClass': {'hello':'world'}
-            }
-
-            If invoked at ActsTestClass.test_case level,
-            context_specific_config({'hello':'world'}) returns
-            {
-                'ActsTestClass': {
-                    'test_case' : {'hello':'world'}
-                 }
-            }
-
-        Args:
-            config: The config to wrap within the context.
-        Returns:
-            A ConfigWrapper.
-        """
-        if not self.current_test_name:
-            return ConfigWrapper({self.__class__.__name__: config})
-        return ConfigWrapper(
-            {self.__class__.__name__: {self.current_test_name: config}})
 
     def get_files_from_config(self, config_key):
         """Get a list of file paths on host from self.user_params with the

@@ -107,7 +107,7 @@ class VzwDoUBaseTest(
         self.get_file_from_config('google_account_util_apk'))
     # TODO: Use google account util
 
-    band_to_cut = self._instrumentation_config.get('band_to_cut')
+    band_to_cut = self._test_options.get('band_to_cut')
     if band_to_cut:
       self.log.info('Cutting band: {}'.format(band_to_cut))
       self._modem_diag_util = ModemDiagUtil(

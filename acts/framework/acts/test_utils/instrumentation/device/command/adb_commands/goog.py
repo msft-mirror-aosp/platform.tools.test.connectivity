@@ -176,12 +176,6 @@ edge_sensor_alerts = DeviceSetting(
          'depends on the settings assist_gesture_enabled and '
          'assist_gesture_wake_enabled to be previously set.')
 
-finsky_instrumentation = GenericCommand(
-    'am instrument -w -r -e command auto_update -e value false com.google'
-    '.android.apps.platformutils/.FinskyInstrumentation',
-    desc = 'Prevents playstore auto updates'
-)
-
 activity_recognition = GenericCommand('am instrument -e interval_ms 180000'
                                       ' -e class com.google.android.gms.testapps.location.activity.power.'
                                       'ActivityPowerUtil#testRegisterAR -w '

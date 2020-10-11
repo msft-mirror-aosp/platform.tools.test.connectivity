@@ -116,32 +116,28 @@ def _for_current_context(config_wrapper):
     return result
 
 
-class ContextualConfigWrapper(object):
+class ContextualConfigWrapper(ConfigWrapper):
     """An object ala ConfigWrapper that automatically restricts to the context
     relevant portion of the original configuration.
     """
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         """Instantiates a ContextualConfigWrapper.
 
         Args:
             config: A dict or collections.UserDict.
         """
         self.original_config = ConfigWrapper(config)
-        self._context_config = _for_current_context(self.original_config)
 
-        def updater():
-            self._context_config = _for_current_context(self.original_config)
+        def updater(_):
+            self.data = dict(_for_current_context(self.original_config))
 
         self._registration_for_context_change = event_bus.register(
             context.NewContextEvent, updater)
+        super().__init__(dict(_for_current_context(self.original_config)))
 
     def __del__(self):
         event_bus.unregister(self._registration_for_context_change)
-
-    def __getattr__(self, name):
-        """Delegate all calls to _context_config."""
-        return getattr(self._context_config, name)
 
 
 def merge(config_a, config_b):
