@@ -264,7 +264,7 @@ class TelephonyBaseTest(BaseTestClass):
             if qxdm_log_mask_cfg:
                 qxdm_mask_path = self.user_params.get("qxdm_log_path",
                                                       DEFAULT_QXDM_LOG_PATH)
-                ad.adb.shell("mkdir %s" % qxdm_mask_path)
+                ad.adb.shell("mkdir %s" % qxdm_mask_path, ignore_status=True)
                 ad.log.info("Push %s to %s", qxdm_log_mask_cfg, qxdm_mask_path)
                 ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_mask_path))
                 mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
