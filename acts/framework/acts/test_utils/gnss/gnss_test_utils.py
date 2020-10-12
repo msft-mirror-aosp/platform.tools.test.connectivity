@@ -314,7 +314,9 @@ def clear_logd_gnss_qxdm_log(ad):
     remount_device(ad)
     ad.log.info("Clear Logd, GNSS and QXDM Log from previous test item.")
     ad.adb.shell("rm -rf /data/misc/logd", ignore_status=True)
-    ad.adb.shell('find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH)
+    ad.adb.shell(
+        'find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH,
+        ignore_status=True)
     output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
     ad.adb.shell("rm -rf %s" % output_path, ignore_status=True)
     reboot(ad)
