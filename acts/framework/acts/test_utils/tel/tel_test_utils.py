@@ -7987,7 +7987,8 @@ def set_qxdm_logger_command(ad, mask=None):
                             "ls %s" % conf_path, ignore_status=True):
                         conf_path = "%s/diag.conf" % conf_path
                         ad.adb.shell('echo "%s" > %s' %
-                                     (ad.qxdm_logger_command, conf_path))
+                                     (ad.qxdm_logger_command, conf_path),
+                                     ignore_status=True)
                         break
                 ad.adb.shell("setprop %s true" % prop, ignore_status=True)
                 break
