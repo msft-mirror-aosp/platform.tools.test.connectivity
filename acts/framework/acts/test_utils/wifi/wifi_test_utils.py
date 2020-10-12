@@ -2323,7 +2323,8 @@ def get_ssrdumps(ad):
         log_path = os.path.join(ad.device_log_path, "SSRDUMPS_%s" % ad.serial)
         os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
-    ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
+    ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete",
+            ignore_status=True)
 
 def start_pcap(pcap, wifi_band, test_name):
     """Start packet capture in monitor mode.
@@ -2422,7 +2423,8 @@ def start_cnss_diag(ad, cnss_diag_file, pixel_models):
                                 (CNSS_DIAG_CONFIG_PATH,
                                  CNSS_DIAG_CONFIG_FILE))):
             ad.adb.push("%s %s" % (cnss_diag_file, CNSS_DIAG_CONFIG_PATH))
-        ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete")
+        ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete",
+                ignore_status=True)
         ad.adb.shell("setprop %s true" % prop, ignore_status=True)
 
 
