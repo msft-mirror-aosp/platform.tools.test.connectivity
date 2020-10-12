@@ -1497,7 +1497,8 @@ class AndroidDevice:
             self.adb.shell(
                 "am start -a com.android.setupwizard.EXIT", ignore_status=True)
             self.adb.shell(
-                "pm disable %s" % self.get_setupwizard_package_name())
+                "pm disable %s" % self.get_setupwizard_package_name(),
+                ignore_status=True)
         # Wait up to 5 seconds for user_setup_complete to be updated
         end_time = time.time() + 5
         while time.time() < end_time:
