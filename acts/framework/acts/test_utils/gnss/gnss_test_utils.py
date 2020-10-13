@@ -216,7 +216,7 @@ def kill_xtra_daemon(ad):
     """
     ad.root_adb()
     ad.log.info("Disable XTRA-daemon until next reboot.")
-    ad.adb.shell("killall xtra-daemon")
+    ad.adb.shell("killall xtra-daemon", ignore_status=True)
 
 
 def disable_private_dns_mode(ad):
