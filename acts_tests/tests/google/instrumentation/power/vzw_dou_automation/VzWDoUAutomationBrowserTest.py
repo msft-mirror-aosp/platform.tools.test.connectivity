@@ -33,7 +33,6 @@ class VzWDoUAutomationBrowserTest(
     """Measures power when the device is browsing."""
 
     self.adb_run(goog.remove_gmail_account)
-    self.adb_run(common.test_harness.toggle(True))
     self.adb_run(goog.force_stop_nexuslauncher)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
@@ -50,7 +49,6 @@ class VzWDoUAutomationBrowserTest(
     """Measures power when the device is browsing with wifi connected."""
 
     self.adb_run(goog.remove_gmail_account)
-    self.adb_run(common.test_harness.toggle(True))
     self.adb_run(goog.force_stop_nexuslauncher)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.BrowserTests',
@@ -142,7 +140,6 @@ class VzWDoUAutomationBrowserTest(
     additional_setting = self._instrumentation_config.get_config('additional_setting')
     exchange_phrase = additional_setting.get('exchange_phrase')
     self.log_in_gmail_account(sync='true', wait_for_checkin='true')
-    self.adb_run(common.test_harness.toggle(True))
     self.adb_run(goog.force_stop_nexuslauncher)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.TouchScreenTests',
