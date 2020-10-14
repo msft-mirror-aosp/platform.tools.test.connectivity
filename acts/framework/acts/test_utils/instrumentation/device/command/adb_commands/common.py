@@ -342,3 +342,6 @@ modem_diag = DeviceBinaryCommandSeries(
 
 reboot_power = GenericCommand('svc power reboot null',
                               desc='Reboots device')
+
+enable_ramdumps = DeviceSetprop('persist.vendor.sys.ssr.enable_ramdumps',
+                                desc='Modifies whether to enable ramdumps.')

@@ -862,7 +862,7 @@ def get_dut_temperature(dut):
                 dut.adb.shell(
                     'cat /sys/class/thermal/tz-by-name/{}/temp'.format(zone)))
             break
-        except ValueError:
+        except:
             temperature = 0
     if temperature == 0:
         logging.debug('Could not check DUT temperature.')
