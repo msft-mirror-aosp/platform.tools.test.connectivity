@@ -63,3 +63,37 @@ class LocalYoutubeMusicPlaybackTest(
         )
         self.record_metrics(metrics)
         self.validate_metrics(metrics)
+
+    def _actual_usb_c_youtube_music_playback(self):
+        """Measures power when the device is playing music with usb headset."""
+        self.adb_run(common.disable_doze)
+        self.use_tigertail_if_available = True
+        tigertail_params ={}
+        tigertail_params['tigertool'] = self.get_file_from_config('tigertool')
+        self.tigertail.setup(tigertail_params)
+        music_params = [
+            ('album_name', 'Internal Illusions, External Delusions'),
+            ('song_name', 'Oceanic Dawn')
+        ]
+        metrics = self.run_and_measure(
+            'com.google.android.platform.powertests.YoutubeMusicTests',
+            'testLocalPlaybackBackground',
+            extra_params=music_params
+        )
+        self.record_metrics(metrics)
+        self.validate_metrics(metrics)
+
+    def test_usb_c_local_youtube_music_playback_blackbird(self):
+        """Measures power when the device is playing music with blackbird usb
+        headset. The dimension of usb_headset = 'blackbird' is required."""
+        self._actual_usb_c_youtube_music_playback()
+
+    def test_usb_c_local_youtube_music_playback_condor(self):
+        """Measures power when the device is playing music with condor usb
+        headset. The dimension of usb_headset = 'condor' is required."""
+        self._actual_usb_c_youtube_music_playback()
+
+    def test_usb_c_local_youtube_music_playback_mir(self):
+        """Measures power when the device is playing music with mir usb
+        headset. The dimension of usb_headset = 'mir' is required."""
+        self._actual_usb_c_youtube_music_playback()

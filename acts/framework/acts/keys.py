@@ -59,6 +59,7 @@ class Config(enum.Enum):
     key_packet_capture = 'PacketCapture'
     key_pdu = 'PduDevice'
     key_openwrt_ap = 'OpenWrtAP'
+    key_tigertail = 'Tigertail'
     # Internal keys, used internally, not exposed to user's config files.
     ikey_user_param = 'user_params'
     ikey_testbed_name = 'testbed_name'
@@ -85,6 +86,7 @@ class Config(enum.Enum):
     m_key_packet_capture = 'packet_capture'
     m_key_pdu = 'pdu'
     m_key_openwrt_ap = 'openwrt_ap'
+    m_key_tigertail = 'tigertail'
 
     # A list of keys whose values in configs should not be passed to test
     # classes without unpacking first.
@@ -111,6 +113,7 @@ class Config(enum.Enum):
         key_packet_capture,
         key_pdu,
         key_openwrt_ap,
+        key_tigertail,
     ]
 
     # Keys that are file or folder paths.

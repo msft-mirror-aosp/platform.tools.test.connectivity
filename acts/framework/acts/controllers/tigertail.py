@@ -8,7 +8,7 @@ from enum import Enum
 
 from acts.libs.proc import job
 
-MOBLY_CONTROLLER_CONFIG_NAME = "Tigertails"
+MOBLY_CONTROLLER_CONFIG_NAME = "Tigertail"
 ACTS_CONTROLLER_REFERENCE_NAME = "tigertails"
 
 TIGERTAIL_SLEEP_TIME = 5
@@ -102,7 +102,6 @@ class Tigertail(object):
             B  : enable port B
             Off: turn off both ports
         """
-
         result = job.run([self.tigertool_bin,
             '--serialno',
             str(self.serial_number),
