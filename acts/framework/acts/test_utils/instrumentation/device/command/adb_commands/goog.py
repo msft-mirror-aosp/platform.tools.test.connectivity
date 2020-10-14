@@ -100,6 +100,12 @@ duo_grant_contacts = GenericCommand(
 disable_volta = GenericCommand('pm disable-user com.google.android.volta',
                                desc='Disables the volta app.')
 
+# Betterbug
+
+disable_betterbug = GenericCommand(
+    'pm disable-user --user 0 com.google.android.apps.internal.betterbug',
+    desc='Disables the betterbug app.')
+
 # CHRE
 
 disable_chre = GenericCommand('setprop ctl.stop vendor.chre',
