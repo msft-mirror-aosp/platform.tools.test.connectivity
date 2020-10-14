@@ -122,8 +122,8 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(common.enable_full_batterystats_history)
     self.adb_run(goog.disable_playstore)
     self.adb_run(goog.disable_volta)
-    self.adb_run(common.test_harness.toggle(True))
     self.adb_run(goog.force_stop_nexuslauncher)
+    self.adb_run(common.enable_ramdumps.toggle(False))
     self.adb_run('input keyevent 26')
     self.adb_run(common.screen_timeout_ms.set_value(180000))
 
@@ -184,7 +184,6 @@ class VzWDoUAutomationBaseTest(
     if band_to_cut:
       self.log.info('Cutting band: {}'.format(band_to_cut))
       self.ad_dut.adb.ensure_root()
-      self.adb_run('setprop ro.test_harness 1')
       lock_band_cmd = ('am instrument -w -r -e lock_band {} -e '
                        'skip_pre_test_conditions TRUE -e '
                        'skip_post_test_conditions TRUE -e class '

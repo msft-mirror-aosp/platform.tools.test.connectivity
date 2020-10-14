@@ -8222,7 +8222,7 @@ def start_adb_tcpdump(ad,
         test_name: tcpdump file name will have this
 
     """
-    out = ad.adb.shell("ls -l /data/local/tmp/tcpdump/")
+    out = ad.adb.shell("ls -l /data/local/tmp/tcpdump/", ignore_status=True)
     if "No such file" in out or not out:
         ad.adb.shell("mkdir /data/local/tmp/tcpdump")
     else:
