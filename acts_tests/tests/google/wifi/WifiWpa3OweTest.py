@@ -32,13 +32,10 @@ class WifiWpa3OweTest(WifiBaseTest):
         super().setup_class()
 
         self.dut = self.android_devices[0]
-        self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
-        wutils.wifi_test_device_init(self.dut_client)
         req_params = ["owe_networks", "sae_networks"]
         self.unpack_userparams(req_param_names=req_params,)
         wutils.wifi_toggle_state(self.dut, True)
-        wutils.wifi_toggle_state(self.dut_client, True)
         if "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(owe_network=True,
                                                 sae_network=True)
@@ -60,7 +57,6 @@ class WifiWpa3OweTest(WifiBaseTest):
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        wutils.reset_wifi(self.dut_client)
 
     ### Test cases ###
 
