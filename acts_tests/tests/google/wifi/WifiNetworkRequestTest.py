@@ -79,7 +79,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.remove_approvals()
-        self.clear_deleted_ephemeral_networks()
+        self.clear_user_disabled_networks()
         wutils.wifi_toggle_state(self.dut, True)
         self.dut.ed.clear_all_events()
 
@@ -125,10 +125,10 @@ class WifiNetworkRequestTest(WifiBaseTest):
             "cmd wifi network-requests-remove-user-approved-access-points"
             + " " + SL4A_APK_NAME)
 
-    def clear_deleted_ephemeral_networks(self):
-        self.dut.log.debug("Clearing deleted ephemeral networks")
+    def clear_user_disabled_networks(self):
+        self.dut.log.debug("Clearing user disabled networks")
         self.dut.adb.shell(
-            "cmd wifi clear-deleted-ephemeral-networks")
+            "cmd wifi clear-user-disabled-networks")
 
     @test_tracker_info(uuid="d70c8380-61ba-48a3-b76c-a0b55ce4eabf")
     def test_connect_to_wpa_psk_2g_with_ssid(self):
