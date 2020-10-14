@@ -40,16 +40,16 @@ GMAIL_ACCOUNT = 'vdou001@gmail.com'
 
 def get_median_current(test_results, test_instance):
   """Returns the median current, or a failure if the test failed."""
-  # If the last run was not a pass signal, the test exceeded
-  # acceptable_failures.
-  if not isinstance(test_results[-1], signals.TestPass):
-    return test_results[-1]
 
   # Only look at results within the good range (i.e., passing results).
   valid_results = list(filter(lambda result: isinstance(result, signals.TestPass),
                          test_results))
+  # If all the results are not valid return the last result
+  if not valid_results:
+    return test_results[-1]
+
   # Gather the current measurements and return the median.
-  median_current = statistics.median(
+  median_current = statistics.median_low(
       [x.extras[list(x.extras.keys())[0]]['avg_current']['actual'] for x in valid_results])
 
   # Get the median metrics for test results recording.
