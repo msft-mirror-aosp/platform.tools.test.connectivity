@@ -324,7 +324,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.log.info('Pulling test generated files to %s.' % dest)
         for file_name in [DEFAULT_INSTRUMENTATION_LOG_OUTPUT, SCREENSHOTS_DIR]:
             src = os.path.join(self.ad_dut.external_storage_path, file_name)
-            self.ad_dut.pull_files(src, dest)
+            if self.ad_dut.adb.shell('ls %s || true' % src):
+                self.ad_dut.pull_files(src, dest)
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
@@ -333,7 +334,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                           DEFAULT_INSTRUMENTATION_LOG_OUTPUT, AUTOTESTER_LOG,
                           SCREENSHOTS_DIR]:
             src = os.path.join(self.ad_dut.external_storage_path, file_name)
-            self.adb_run('rm -rf %s' % src)
+            if self.ad_dut.adb.shell('ls %s || true' % src):
+                self.adb_run('rm -rf %s' % src)
 
     def trigger_scan_on_external_storage(self):
         cmd = 'am broadcast -a android.intent.action.MEDIA_MOUNTED '
