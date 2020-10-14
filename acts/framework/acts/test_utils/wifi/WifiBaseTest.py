@@ -476,13 +476,13 @@ class WifiBaseTest(BaseTestClass):
             self.bssid_map.append(
                 self.access_points[i].get_bssids_for_wifi_networks())
             if mirror_ap:
-              self.access_points[i+1].configure_ap(network_list,
-                                                   channel_2g,
-                                                   channel_5g)
-              self.access_points[i+1].start_ap()
-              self.bssid_map.append(
-                  self.access_points[i+1].get_bssids_for_wifi_networks())
-              break
+                self.access_points[i+1].configure_ap(network_list,
+                                                     channel_2g,
+                                                     channel_5g)
+                self.access_points[i+1].start_ap()
+                self.bssid_map.append(
+                    self.access_points[i+1].get_bssids_for_wifi_networks())
+                break
 
     def legacy_configure_ap_and_start(
             self,
