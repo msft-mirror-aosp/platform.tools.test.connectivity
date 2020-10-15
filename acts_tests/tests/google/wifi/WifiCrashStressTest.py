@@ -40,8 +40,6 @@ class WifiCrashStressTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        if not self.dut.is_apk_installed("com.google.mdstest"):
-            raise signals.TestAbortClass("mdstest is not installed")
         req_params = ["dbs_supported_models", "stress_count"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
@@ -85,15 +83,8 @@ class WifiCrashStressTest(WifiBaseTest):
     """Helper Functions"""
     def trigger_wifi_firmware_crash(self, ad, timeout=15):
         pre_timestamp = ad.adb.getprop("vendor.debug.ssrdump.timestamp")
-        ad.adb.shell(
-            "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
-        # Legacy pixels use persist.sys.modem.diag.mdlog.
-        ad.adb.shell(
-            "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
         disable_qxdm_logger(ad)
-        cmd = ('am instrument -w -e request "4b 25 03 b0 00" '
-               '"com.google.mdstest/com.google.mdstest.instrument.'
-               'ModemCommandInstrumentation"')
+        cmd = ('wlanSSR')
         ad.log.info("Crash wifi firmware by %s", cmd)
         ad.adb.shell(cmd, ignore_status=True)
         time.sleep(timeout)  # sleep time for firmware restart
