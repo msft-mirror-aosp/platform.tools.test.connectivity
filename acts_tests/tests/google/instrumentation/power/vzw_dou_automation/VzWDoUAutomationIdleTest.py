@@ -18,6 +18,7 @@ from acts.test_decorators import repeated_test
 from acts.test_utils.instrumentation.power.vzw_dou_automation import \
     vzw_dou_automation_base_test
 from acts.test_utils.instrumentation.device.command.adb_commands import common
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
 
 
 class VzWDoUAutomationIdleTest(
@@ -45,6 +46,7 @@ class VzWDoUAutomationIdleTest(
   def test_idle(self, attempt_number):
     """Measures power when the device is in idle mode."""
 
+    self.adb_run(goog.disable_betterbug)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
         'testIdleStandbyMode', attempt_number=attempt_number)
