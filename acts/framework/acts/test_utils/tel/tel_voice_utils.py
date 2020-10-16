@@ -1886,3 +1886,80 @@ def get_cep_conference_call_id(ad):
         if len(ad.droid.telecomCallGetCallChildren(call)) != 0:
             return call
     return None
+
+def phone_setup_on_rat(
+    log,
+    ad,
+    rat='volte',
+    sub_id=None,
+    is_airplane_mode=False,
+    wfc_mode=None,
+    wifi_ssid=None,
+    wifi_pwd=None,
+    only_return_fn=None):
+
+    if not sub_id:
+        sub_id = get_outgoing_voice_sub_id(ad)
+
+    if rat.lower() == 'volte':
+        if only_return_fn:
+            return phone_setup_volte_for_subscription
+        else:
+            return phone_setup_volte_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == 'csfb':
+        if only_return_fn:
+            return phone_setup_csfb_for_subscription
+        else:
+            return phone_setup_csfb_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == '3g':
+        if only_return_fn:
+            return phone_setup_voice_3g_for_subscription
+        else:
+            return phone_setup_voice_3g_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == 'wfc':
+        if only_return_fn:
+            return phone_setup_iwlan_for_subscription
+        else:
+            return phone_setup_iwlan_for_subscription(
+                log,
+                ad,
+                sub_id,
+                is_airplane_mode,
+                wfc_mode,
+                wifi_ssid,
+                wifi_pwd)
+    else:
+        if only_return_fn:
+            return phone_setup_voice_general_for_subscription
+        else:
+            return phone_setup_voice_general_for_subscription(log, ad, sub_id)
+
+def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
+    if rat.lower() == 'volte':
+        if only_return_fn:
+            return is_phone_in_call_volte
+        else:
+            return is_phone_in_call_volte(log, ad)
+
+    elif rat.lower() == 'csfb':
+        if only_return_fn:
+            return is_phone_in_call_csfb
+        else:
+            return is_phone_in_call_csfb(log, ad)
+
+    elif rat.lower() == '3g':
+        if only_return_fn:
+            return is_phone_in_call_3g
+        else:
+            return is_phone_in_call_3g(log, ad)
+
+    elif rat.lower() == 'wfc':
+        if only_return_fn:
+            return is_phone_in_call_iwlan
+        else:
+            return is_phone_in_call_iwlan(log, ad)
+    else:
+        return None

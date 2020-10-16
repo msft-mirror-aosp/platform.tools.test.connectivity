@@ -48,6 +48,7 @@ DEFAULT_DEVICE_STABILIZATION_TIME = 300
 DEFAULT_PUSH_FILE_TIMEOUT = 180
 DEFAULT_WAIT_FOR_DEVICE_TIMEOUT = 180
 POLLING_INTERVAL = 0.5
+RESET_SLEEP_TIME = 0.5
 
 AUTOTESTER_LOG = 'autotester.log'
 DISCONNECT_USB_FILE = 'disconnectusb.log'
@@ -78,12 +79,18 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self._instr_cmd_builder = None
         self.prefer_bits_over_monsoon = False
         self.generate_chart = False
+        self.tigertail = None
+
+        # When using tigertail, sets this value to True in the test or test_setup
+        self.use_tigertail_if_available = False
 
     def setup_class(self):
         super().setup_class()
         power_monitor_lib.update_registry(self.user_params)
         self.power_monitors = self.pick_power_monitor()
         self.power_monitor = self.power_monitors[0]
+        if hasattr(self, 'tigertails'):
+            self.tigertail = self.tigertails[0]
 
     def pick_power_monitor(self):
         there_are_monsoons = hasattr(self, 'monsoons')
@@ -324,7 +331,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.ad_dut.log.info('Pulling test generated files to %s.' % dest)
         for file_name in [DEFAULT_INSTRUMENTATION_LOG_OUTPUT, SCREENSHOTS_DIR]:
             src = os.path.join(self.ad_dut.external_storage_path, file_name)
-            self.ad_dut.pull_files(src, dest)
+            if self.ad_dut.adb.shell('ls %s || true' % src):
+                self.ad_dut.pull_files(src, dest)
 
     def _cleanup_test_files(self):
         """Remove test-generated files from the device."""
@@ -333,7 +341,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                           DEFAULT_INSTRUMENTATION_LOG_OUTPUT, AUTOTESTER_LOG,
                           SCREENSHOTS_DIR]:
             src = os.path.join(self.ad_dut.external_storage_path, file_name)
-            self.adb_run('rm -rf %s' % src)
+            if self.ad_dut.adb.shell('ls %s || true' % src):
+                self.adb_run('rm -rf %s' % src)
 
     def trigger_scan_on_external_storage(self):
         cmd = 'am broadcast -a android.intent.action.MEDIA_MOUNTED '
@@ -402,6 +411,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             time.sleep(POLLING_INTERVAL)
         raise InstrumentationTestError('Timeout while waiting for USB '
                                        'disconnect signal.')
+    def _connect_tigertail(self):
+        """Usb live connection is on mux A and the additional periferal is on mux B"""
+        self.tigertail.turn_off()
+        time.sleep(RESET_SLEEP_TIME)
+        self.tigertail.turn_on_mux_A()
+
+    def _disconnect_tigertail(self):
+        """Usb live connection is on mux A and the additional periferal is on mux B"""
+        self.tigertail.turn_off()
+        time.sleep(RESET_SLEEP_TIME)
+        self.tigertail.turn_on_mux_B()
 
     def measure_power(self, count=None, attempt_number=None):
         """Measures power consumption with a power_monitor. See power_monitor's
@@ -452,10 +472,17 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
                        host_time)
         device_to_host_offset = float(device_time) - host_time
 
+        if self.use_tigertail_if_available and self.tigertail:
+            self._disconnect_tigertail()
+
         self.power_monitor.disconnect_usb()
         self.power_monitor.measure(
             measurement_args=measurement_args, output_path=power_data_path,
             start_time=device_to_host_offset)
+
+        if self.use_tigertail_if_available and self.tigertail:
+            self._connect_tigertail()
+
         self.power_monitor.connect_usb()
         self._reinstall_sl4a()
         # Gather relevant metrics from measurements
