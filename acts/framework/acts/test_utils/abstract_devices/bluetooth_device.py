@@ -148,7 +148,7 @@ class BluetoothDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_write_characteristic_without_response_by_handle(
-        self, peer_identifier, handle, value):
+            self, peer_identifier, handle, value):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -188,7 +188,7 @@ class BluetoothDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_enable_notifiy_characteristic_by_handle(
-        self, peer_identifier, handle):
+            self, peer_identifier, handle):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -196,7 +196,7 @@ class BluetoothDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_disable_notifiy_characteristic_by_handle(
-        self, peer_identifier, handle):
+            self, peer_identifier, handle):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -432,7 +432,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
         self.device.droid.bluetoothStartPairingHelper(True)
 
     def gatt_client_write_characteristic_without_response_by_handle(
-        self, peer_identifier, handle, value):
+            self, peer_identifier, handle, value):
         """ Perform a GATT Client write Characteristic without response to
         remote peer GATT server database.
 
@@ -552,7 +552,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
         return event['data']['CharacteristicValue']
 
     def gatt_client_enable_notifiy_characteristic_by_handle(
-        self, peer_identifier, handle):
+            self, peer_identifier, handle):
         """ Perform a GATT Client enable Characteristic notification to remote
         peer GATT server database.
 
@@ -566,7 +566,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_disable_notifiy_characteristic_by_handle(
-        self, peer_identifier, handle):
+            self, peer_identifier, handle):
         """ Perform a GATT Client disable Characteristic notification to remote
         peer GATT server database.
 
@@ -851,7 +851,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         self.device.control_daemon("bt-a2dp-sink.cmx", "stop")
 
     def start_pairing_helper(self):
-        self.device.btc_lib.acceptPairing()
+        self.device.bts_lib.acceptPairing()
 
     def bluetooth_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
@@ -863,12 +863,12 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         Args:
             is_discoverable: True if discoverable, false if not discoverable
         """
-        self.device.btc_lib.setDiscoverable(is_discoverable)
+        self.device.bts_lib.setDiscoverable(is_discoverable)
 
     def get_pairing_pin(self):
         """ Get the pairing pin from the active pairing delegate.
         """
-        return self.device.btc_lib.getPairingPin()['result']
+        return self.device.bts_lib.getPairingPin()['result']
 
     def input_pairing_pin(self, pin):
         """ Input pairing pin to active pairing delegate.
@@ -876,27 +876,27 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         Args:
             pin: The pin to input.
         """
-        self.device.btc_lib.inputPairingPin(pin)
+        self.device.bts_lib.inputPairingPin(pin)
 
     def initialize_bluetooth_controller(self):
         """ Initialize Bluetooth controller for first time use.
         """
-        self.device.btc_lib.initBluetoothControl()
+        self.device.bts_lib.initBluetoothSys()
 
     def get_local_bluetooth_address(self):
         """ Returns the Bluetooth local address.
         """
-        return self.device.btc_lib.getActiveAdapterAddress().get("result")
+        return self.device.bts_lib.getActiveAdapterAddress().get("result")
 
     def set_bluetooth_local_name(self, name):
         """ Sets the Bluetooth controller's local name
         Args:
             name: The name to set.
         """
-        self.device.btc_lib.setName(name)
+        self.device.bts_lib.setName(name)
 
     def gatt_client_write_characteristic_without_response_by_handle(
-        self, peer_identifier, handle, value):
+            self, peer_identifier, handle, value):
         """ Perform a GATT Client write Characteristic without response to
         remote peer GATT server database.
 
@@ -946,7 +946,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         return True
 
     def gatt_client_write_long_characteristic_by_handle(
-        self, peer_identifier, handle, offset, value, reliable_mode=False):
+            self, peer_identifier, handle, offset, value, reliable_mode=False):
         """ Perform a GATT Client write long Characteristic to remote peer GATT
         server database.
 
@@ -1072,7 +1072,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         return result.get("result")
 
     def gatt_client_enable_notifiy_characteristic_by_handle(
-        self, peer_identifier, handle):
+            self, peer_identifier, handle):
         """ Perform a GATT Client enable Characteristic notification to remote
         peer GATT server database.
 
@@ -1095,7 +1095,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         return result.get("result")
 
     def gatt_client_disable_notifiy_characteristic_by_handle(
-        self, peer_identifier, handle):
+            self, peer_identifier, handle):
         """ Perform a GATT Client disable Characteristic notification to remote
         peer GATT server database.
 
@@ -1317,11 +1317,11 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """ Unbond all known remote devices.
         """
         try:
-            device_list = self.device.btc_lib.getKnownRemoteDevices()['result']
+            device_list = self.device.bts_lib.getKnownRemoteDevices()['result']
             for device_info in device_list:
                 device = device_list[device_info]
                 if device['bonded']:
-                    self.device.btc_lib.forgetDevice(device['id'])
+                    self.device.bts_lib.forgetDevice(device['id'])
         except Exception as err:
             self.log.err("Unable to unbond all devices: {}".format(err))
 
@@ -1332,10 +1332,10 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
             peer_identifier: The peer identifier for the peer to unbond.
 
         """
-        self.device.btc_lib.forgetDevice(peer_identifier)
+        self.device.bts_lib.forgetDevice(peer_identifier)
 
     def _find_service_id_and_connect_to_service_for_handle(
-        self, peer_identifier, handle, uuid=False):
+            self, peer_identifier, handle, uuid=False):
         fail_err = "Failed to find handle {} in Peer database."
         if uuid:
             handle = handle.lower()
@@ -1462,7 +1462,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
             True if successful, False if failed.
         """
         try:
-            self.device.btc_lib.pair(peer_identifier, security_level,
+            self.device.bts_lib.pair(peer_identifier, security_level,
                                      non_bondable, transport)
             return True
         except Exception as err:
