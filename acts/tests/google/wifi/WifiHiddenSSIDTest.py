@@ -14,17 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
-import pprint
-import queue
-import time
-
-import acts.base_test
 import acts.signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
-import acts.utils
 
-from acts import asserts
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
@@ -43,22 +35,16 @@ class WifiHiddenSSIDTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = []
-        opt_param = [
-            "open_network", "reference_networks"]
-        self.unpack_userparams(
-            req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(hidden=True)
         elif "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(open_network=True,
                                                 wpa_network=True,
+                                                owe_network=True,
+                                                sae_network=True,
                                                 hidden=True)
 
-        asserts.assert_true(
-            len(self.reference_networks) > 0,
-            "Need at least one reference network with psk.")
         self.open_hidden_2g = self.open_network[0]["2g"]
         self.open_hidden_5g = self.open_network[0]["5g"]
         self.wpa_hidden_2g = self.reference_networks[0]["2g"]
@@ -162,3 +148,23 @@ class WifiHiddenSSIDTest(WifiBaseTest):
 
         """
         self.add_hiddenSSID_and_connect(self.open_hidden_5g)
+
+    @test_tracker_info(uuid="62b664df-6397-4360-97bf-a8095c23a878")
+    def test_connect_to_wpa3_owe_hidden_2g(self):
+        """Connect to WPA3 OWE 2G hidden wifi network."""
+        self.add_hiddenSSID_and_connect(self.owe_networks[0]["2g"])
+
+    @test_tracker_info(uuid="dd7b029d-c008-4288-a91c-0820b0b3f29d")
+    def test_connect_to_wpa3_owe_hidden_5g(self):
+        """Connect to WPA3 OWE 5G hidden wifi network."""
+        self.add_hiddenSSID_and_connect(self.owe_networks[0]["5g"])
+
+    @test_tracker_info(uuid="1a9f3ee8-3db0-4f07-a604-66c14a897f94")
+    def test_connect_to_wpa3_sae_hidden_2g(self):
+        """Connect to WPA3 SAE 2G hidden wifi network."""
+        self.add_hiddenSSID_and_connect(self.sae_networks[0]["2g"])
+
+    @test_tracker_info(uuid="6c75618b-9c9b-4eb6-a922-ef1719704a9c")
+    def test_connect_to_wpa3_sae_hidden_5g(self):
+        """Connect to WPA3 SAE 5G hidden wifi network."""
+        self.add_hiddenSSID_and_connect(self.sae_networks[0]["5g"])
