@@ -576,19 +576,31 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     """
     ping_count = int(ping_duration / ping_interval)
     ping_deadline = int(ping_count * ping_interval) + 1
-    ping_cmd = 'ping -c {} -w {} -i {} -s {} -D'.format(
+    ping_cmd_linux = 'ping -c {} -w {} -i {} -s {} -D'.format(
         ping_count,
         ping_deadline,
         ping_interval,
         ping_size,
     )
+
+    ping_cmd_macos = 'ping -c {} -t {} -i {} -s {}'.format(
+        ping_count,
+        ping_deadline,
+        ping_interval,
+        ping_size,
+    )
+
     if isinstance(src_device, AndroidDevice):
-        ping_cmd = '{} {}'.format(ping_cmd, dest_address)
+        ping_cmd = '{} {}'.format(ping_cmd_linux, dest_address)
         ping_output = src_device.adb.shell(ping_cmd,
                                            timeout=ping_deadline + SHORT_SLEEP,
                                            ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
-        ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
+        platform = src_device.run('uname').stdout
+        if 'linux' in platform.lower():
+            ping_cmd = 'sudo {} {}'.format(ping_cmd_linux, dest_address)
+        elif 'darwin' in platform.lower():
+            ping_cmd = "sudo {} {}| while IFS= read -r line; do printf '[%s] %s\n' \"$(gdate '+%s.%N')\" \"$line\"; done".format(ping_cmd_macos, dest_address)
         ping_output = src_device.run(ping_cmd,
                                      timeout=ping_deadline + SHORT_SLEEP,
                                      ignore_status=True).stdout
@@ -1169,8 +1181,10 @@ def get_connected_rssi_brcm(dut,
             connected_rssi['signal_poll_avg_rssi']['data'].append(
                 RSSI_ERROR_VAL)
 
-        per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
-
+        try:
+            per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
+        except:
+            per_chain_rssi = DISCONNECTION_MESSAGE_BRCM
         if DISCONNECTION_MESSAGE_BRCM not in per_chain_rssi:
             per_chain_rssi = per_chain_rssi.split(' ')
             connected_rssi['chain_0_rssi']['data'].append(
