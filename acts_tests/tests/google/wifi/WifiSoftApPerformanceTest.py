@@ -182,6 +182,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
         # Compile meta data
         #self.access_point = AccessPointTuple(sap_config)
         sap_info = self.get_sap_connection_info()
+        print("SAP Info: {}".format(sap_info))
         testcase_params['channel'] = sap_info['channel']
         testcase_params['mode'] = sap_info['mode']
         testcase_params['iperf_server_address'] = sap_info['ap_ip_address']
@@ -203,6 +204,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
         self.setup_sap_connection(testcase_params)
         # Set DUT to monitor RSSI and LLStats on
         self.monitored_dut = self.sta_dut
+        self.monitored_interface = None
 
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
@@ -237,10 +239,14 @@ class WifiSoftApRvrTest(WifiRvrTest):
         if testcase_params['dut_connected'][0]:
             band = testcase_params['dut_connected'][0].split('_')[0]
             ap_networks.append({
-                'ap_id': 0,
-                'interface_id': band if band == '2G' else band + '_1',
-                'band': band,
-                'channel': 1 if band == '2G' else 36,
+                'ap_id':
+                0,
+                'interface_id':
+                band if band == '2G' else band + '_1',
+                'band':
+                band,
+                'channel':
+                1 if band == '2G' else 36,
                 'connected_dut': [0]
             })
 
@@ -257,10 +263,14 @@ class WifiSoftApRvrTest(WifiRvrTest):
                 else:
                     ap_id = 1
                 ap_networks.append({
-                    'ap_id': ap_id,
-                    'interface_id': band if band == '2G' else band + '_1',
-                    'band': band,
-                    'channel': 11 if band == '2G' else 149,
+                    'ap_id':
+                    ap_id,
+                    'interface_id':
+                    band if band == '2G' else band + '_1',
+                    'band':
+                    band,
+                    'channel':
+                    11 if band == '2G' else 149,
                     'connected_dut': [1]
                 })
         testcase_params['ap_networks'] = ap_networks
