@@ -45,7 +45,8 @@ def create(configs):
         ("Netgear", "R7800"): "NetgearR7800AP",
         ("Netgear", "R8000"): "NetgearR8000AP",
         ("Netgear", "R8500"): "NetgearR8500AP",
-        ("Netgear", "RAX"): "NetgearRAXAP",
+        ("Netgear", "RAX80"): "NetgearRAX80AP",
+        ("Netgear", "RAX120"): "NetgearRAX120AP",
         ("Google", "Wifi"): "GoogleWifiAP"
     }
     objs = []
@@ -787,6 +788,16 @@ class NetgearR7500AP(WifiRetailAP):
             "8": "VHT40",
             "9": "VHT80"
         }
+        self.security_mode_values = {
+            '2G': {
+                'Disable': 'security_disable',
+                'WPA2-PSK': 'security_wpa2'
+            },
+            '5G_1': {
+                'Disable': 'security_an_disable',
+                'WPA2-PSK': 'security_an_wpa2'
+            }
+        }
 
     def read_ap_settings(self):
         """Function to read ap wireless settings."""
@@ -897,9 +908,13 @@ class NetgearR7500AP(WifiRetailAP):
                 # (Must be done after security type is selected)
                 for key, value in self.config_page_fields.items():
                     if "security_type" in key:
-                        iframe.choose(
-                            value,
-                            self.ap_settings["{}_{}".format(key[1], key[0])])
+                        security_option = browser.driver.find_element_by_id(
+                            self.security_mode_values[key[0]][self.ap_settings[
+                                "{}_{}".format(key[1], key[0])]])
+                        action = selenium.webdriver.common.action_chains.ActionChains(
+                            browser.driver)
+                        action.move_to_element(
+                            security_option).click().perform()
                         if self.ap_settings["{}_{}".format(
                                 key[1], key[0])] == "WPA2-PSK":
                             config_item = iframe.find_by_name(
@@ -1132,7 +1147,7 @@ class NetgearR8500AP(NetgearR7000AP):
             self.update_ap_settings(ap_settings)
 
 
-class NetgearRAXAP(NetgearR7000AP):
+class NetgearRAX80AP(NetgearR7000AP):
     """Class that implements Netgear RAX AP.
 
     Since most of the class' implementation is shared with the R7000, this
@@ -1185,6 +1200,118 @@ class NetgearRAXAP(NetgearR7000AP):
             "VHT40": "Up to 1200 Mbps",
             "VHT80": "Up to 2400 Mbps",
             "VHT160": "Up to 4800 Mbps"
+        }
+
+
+class NetgearRAX120AP(NetgearR7500AP):
+    """Class that implements Netgear RAX120 AP.
+
+    Since most of the class' implementation is shared with the R7500, this
+    class inherits from NetgearR7500AP and simply redefines config parameters
+    """
+    def __init__(self, ap_settings):
+        super().__init__(ap_settings)
+        self.init_gui_data()
+        # Read and update AP settings
+        self.read_ap_settings()
+        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
+            self.update_ap_settings(ap_settings)
+
+    def init_gui_data(self):
+        """Function to initialize data used while interacting with web GUI"""
+        self.config_page = ("{protocol}://{username}:{password}@"
+                            "{ip_address}:{port}/index.htm").format(
+                                protocol=self.ap_settings["protocol"],
+                                username=self.ap_settings["admin_username"],
+                                password=self.ap_settings["admin_password"],
+                                ip_address=self.ap_settings["ip_address"],
+                                port=self.ap_settings["port"])
+        self.config_page_advanced = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/adv_index.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.networks = ["2G", "5G_1"]
+        self.channel_band_map = {
+            "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            "5G_1": [
+                36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120,
+                124, 128, 132, 136, 140, 149, 153, 157, 161, 165
+            ]
+        }
+        self.config_page_fields = {
+            "region": "WRegion",
+            ("2G", "status"): "enable_ap",
+            ("5G_1", "status"): "enable_ap_an",
+            ("2G", "ssid"): "ssid",
+            ("5G_1", "ssid"): "ssid_an",
+            ("2G", "channel"): "w_channel",
+            ("5G_1", "channel"): "w_channel_an",
+            ("2G", "bandwidth"): "opmode",
+            ("5G_1", "bandwidth"): "opmode_an",
+            ("2G", "security_type"): "security_type",
+            ("5G_1", "security_type"): "security_type_an",
+            ("2G", "password"): "passphrase",
+            ("5G_1", "password"): "passphrase_an"
+        }
+        self.region_map = {
+            "Africa": "Africa",
+            "Asia": "Asia",
+            "Australia": "Australia",
+            "Canada": "Canada",
+            "Europe": "Europe",
+            "Israel": "Israel",
+            "Japan": "Japan",
+            "Korea": "Korea",
+            "Mexico": "Mexico",
+            "South America": "South America",
+            "United States": "United States",
+            "China": "China",
+            "India": "India",
+            "Malaysia": "Malaysia",
+            "Algeria": "Middle East(Algeria/Syria/Yemen)",
+            "Iran": "Middle East(Iran/Labanon/Qatar)",
+            "Egypt": "Middle East(Egypt/Tunisia/Kuwait)",
+            "Turkey": "Middle East(Turkey)",
+            "Saudi": "Middle East(Saudi Arabia/United Arab Emirates)",
+            "Russia": "Russia",
+            "Singapore": "Singapore",
+            "Taiwan": "Taiwan",
+            "Hong Kong": "Hong Kong",
+            "Vietnam": "Vietnam",
+        }
+        self.bw_mode_text_2g = {
+            "11g": "Up to 54 Mbps (11g)",
+            "VHT20": "Up to 573.5 Mbps (11ax, HT20, 1024-QAM)",
+            "VHT40": "Up to 1147 Mbps (11ax, HT40, 1024-QAM)"
+        }
+        self.bw_mode_text_5g = {
+            "VHT20": "Up to 1147 Mbps (11ax, HT20, 1024-QAM)",
+            "VHT40": "Up to 2294 Mbps (11ax, HT40, 1024-QAM)",
+            "VHT80": "Up to 4803 Mbps (80MHz) (11ax, HT80, 1024-QAM)",
+            "VHT160": "Up to 4803 Mbps (160MHz) (11ax, HT160, 1024-QAM)"
+        }
+        self.bw_mode_values = {
+            "54": "11g",
+            "573.5": "VHT20",
+            "1146": "VHT40",
+            "1147": "VHT20",
+            "2294": "VHT40",
+            "4803-HT80": "VHT80",
+            "4803-HT160": "VHT160",
+        }
+        self.security_mode_values = {
+            '2G': {
+                'Disable': 'security_disable',
+                'WPA2-PSK': 'security_wpa2'
+            },
+            '5G_1': {
+                'Disable': 'security_an_disable',
+                'WPA2-PSK': 'security_an_wpa2'
+            }
         }
 
 
