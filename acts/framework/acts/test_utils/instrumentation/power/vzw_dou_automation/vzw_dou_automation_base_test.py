@@ -224,9 +224,7 @@ class VzWDoUAutomationBaseTest(
     ).format(GMAIL_ACCOUNT, gmail_phrase, sync, wait_for_checkin)
     self.log.info('gmail log in commands %s' % log_in_cmd)
     self.adb_run(log_in_cmd, timeout=300)
-    self.ad_dut.reboot()
-    self.ad_dut.wait_for_boot_completion()
-    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
 
   def push_music_to_dut(self):
     # Push the music folder to Android device
