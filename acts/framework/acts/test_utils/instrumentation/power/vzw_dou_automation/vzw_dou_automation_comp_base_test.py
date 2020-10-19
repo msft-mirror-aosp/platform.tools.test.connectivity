@@ -46,6 +46,8 @@ class VzWDoUAutomationCompBaseTest(
   def __init__(self, configs):
     super().__init__(configs)
     self._companion_test_apk = None
+    self._companion_wifi_util = None
+    self._companion_google_account_util = None
     self._companion_instr_cmd_builder = None
 
   def setup_class(self):
@@ -122,7 +124,10 @@ class VzWDoUAutomationCompBaseTest(
     """Clean up device after power testing."""
     if self._companion_test_apk:
       self._companion_test_apk.uninstall()
-    self._companion_permissions_util.close()
+    if self._companion_wifi_util:
+      self._companion_wifi_util.uninstall()
+    if self._companion_google_account_util:
+      self._companion_google_account_util.uninstall()
     self._pull_companion_test_files()
     self._cleanup_companion_test_files()
 
@@ -229,6 +234,7 @@ class VzWDoUAutomationCompBaseTest(
     # Log in to gmail account
     self._install_companion_google_account_util_apk()
     time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
+    self.adb_run(goog.remove_gmail_account, ad=self.ad_cp)
     additional_setting = self._instrumentation_config.get_config('additional_setting')
     gmail_phrase = additional_setting.get('gmail_phrase')
     log_in_cmd = (
@@ -239,9 +245,7 @@ class VzWDoUAutomationCompBaseTest(
              gmail_phrase, sync, wait_for_checkin)
     self.log.info('gmail log in commands %s' % log_in_cmd)
     self.adb_run(log_in_cmd, timeout=300, ad=self.ad_cp)
-    self.ad_cp.reboot()
-    self.ad_cp.wait_for_boot_completion()
-    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
 
   def connect_companion_to_wifi(self):
     # Log in to gmail account
@@ -254,6 +258,4 @@ class VzWDoUAutomationCompBaseTest(
     ).format(vzw_dou_automation_base_test.WIFI_SSID, wifi_phrase)
     self.log.info('wifi_connection_cmd %s' % wifi_connection_cmd)
     self.adb_run(wifi_connection_cmd, timeout=300, ad=self.ad_cp)
-    self.ad_cp.reboot()
-    self.ad_cp.wait_for_boot_completion()
-    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
