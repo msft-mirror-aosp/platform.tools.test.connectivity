@@ -10676,6 +10676,324 @@ def datetime_handle(ad, action, set_datetime_value='', get_year=False):
 
     return get_value
 
+def wait_for_sending_sms(ad_tx, max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+    try:
+        events = ad_tx.messaging_ed.pop_events(
+            "(%s|%s|%s|%s)" %
+            (EventSmsSentSuccess, EventSmsSentFailure,
+                EventSmsDeliverSuccess,
+                EventSmsDeliverFailure), max_wait_time)
+        for event in events:
+            ad_tx.log.info("Got event %s", event["name"])
+            if event["name"] == EventSmsSentFailure or \
+                event["name"] == EventSmsDeliverFailure:
+                if event.get("data") and event["data"].get("Reason"):
+                    ad_tx.log.error("%s with reason: %s",
+                                    event["name"],
+                                    event["data"]["Reason"])
+                return False
+            elif event["name"] == EventSmsSentSuccess or \
+                event["name"] == EventSmsDeliverSuccess:
+                return True
+    except Empty:
+        ad_tx.log.error("No %s or %s event for SMS.",
+                        EventSmsSentSuccess, EventSmsSentFailure)
+        return False
+
+def wait_for_call_end(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_hangup,
+        verify_caller_func,
+        verify_callee_func,
+        check_interval=5,
+        tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
+        wait_time_in_call=WAIT_TIME_IN_CALL):
+    elapsed_time = 0
+    while (elapsed_time < wait_time_in_call):
+        check_interval = min(check_interval, wait_time_in_call - elapsed_time)
+        time.sleep(check_interval)
+        elapsed_time += check_interval
+        time_message = "at <%s>/<%s> second." % (elapsed_time, wait_time_in_call)
+        for ad, call_func in [(ad_caller, verify_caller_func),
+                              (ad_callee, verify_callee_func)]:
+            if not call_func(log, ad):
+                ad.log.error(
+                    "NOT in correct %s state at %s, voice in RAT %s",
+                    call_func.__name__,
+                    time_message,
+                    ad.droid.telephonyGetCurrentVoiceNetworkType())
+                tel_result_wrapper.result_value = CallResult(
+                    'CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED')
+            else:
+                ad.log.info("In correct %s state at %s",
+                    call_func.__name__, time_message)
+            if not ad.droid.telecomCallGetAudioState():
+                ad.log.error("Audio is not in call state at %s", time_message)
+                tel_result_wrapper.result_value = CallResult(
+                        'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
+        if not tel_result_wrapper:
+            return tel_result_wrapper
+
+    if ad_hangup:
+        if not hangup_call(log, ad_hangup):
+            ad_hangup.log.info("Failed to hang up the call")
+            tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+
+    if not tel_result_wrapper:
+        for ad in (ad_caller, ad_callee):
+            last_call_drop_reason(ad, begin_time)
+            try:
+                if ad.droid.telecomIsInCall():
+                    ad.log.info("In call. End now.")
+                    ad.droid.telecomEndCall()
+            except Exception as e:
+                log.error(str(e))
+    if ad_hangup or not tel_result_wrapper:
+        for ad in (ad_caller, ad_callee):
+            if not wait_for_call_id_clearing(ad, getattr(ad, "caller_ids", [])):
+                tel_result_wrapper.result_value = CallResult(
+                    'CALL_ID_CLEANUP_FAIL')
+
+    return tel_result_wrapper
+
+def voice_call_in_collision_with_mt_sms_msim(
+        log,
+        ad_primary,
+        ad_sms,
+        ad_voice,
+        sms_subid_ad_primary,
+        sms_subid_ad_sms,
+        voice_subid_ad_primary,
+        voice_subid_ad_voice,
+        array_message,
+        ad_hangup=None,
+        verify_caller_func=None,
+        verify_callee_func=None,
+        call_direction="mo",
+        wait_time_in_call=WAIT_TIME_IN_CALL,
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+        dialing_number_length=None,
+        video_state=None):
+
+    ad_tx = ad_sms
+    ad_rx = ad_primary
+    subid_tx = sms_subid_ad_sms
+    subid_rx = sms_subid_ad_primary
+
+    if call_direction == "mo":
+        ad_caller = ad_primary
+        ad_callee = ad_voice
+        subid_caller = voice_subid_ad_primary
+        subid_callee = voice_subid_ad_voice
+    elif call_direction == "mt":
+        ad_callee = ad_primary
+        ad_caller = ad_voice
+        subid_callee = voice_subid_ad_primary
+        subid_caller = voice_subid_ad_voice
+
+
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+
+    tel_result_wrapper = TelResultWrapper(CallResult('SUCCESS'))
+
+    for ad in (ad_tx, ad_rx):
+        ad.send_keycode("BACK")
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
+        else:
+            try:
+                if not ad.messaging_droid.is_live:
+                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                    ad.messaging_ed.start()
+                else:
+                    ad.messaging_ed.clear_all_events()
+            except Exception:
+                ad.log.info("Create new sl4a session for messaging")
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
+
+    begin_time = get_current_epoch_time()
+    if not verify_caller_func:
+        verify_caller_func = is_phone_in_call
+    if not verify_callee_func:
+        verify_callee_func = is_phone_in_call
+
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
+    if dialing_number_length:
+        skip_test = False
+        trunc_position = 0 - int(dialing_number_length)
+        try:
+            caller_area_code = caller_number[:trunc_position]
+            callee_area_code = callee_number[:trunc_position]
+            callee_dial_number = callee_number[trunc_position:]
+        except:
+            skip_test = True
+        if caller_area_code != callee_area_code:
+            skip_test = True
+        if skip_test:
+            msg = "Cannot make call from %s to %s by %s digits" % (
+                caller_number, callee_number, dialing_number_length)
+            ad_caller.log.info(msg)
+            raise signals.TestSkip(msg)
+        else:
+            callee_number = callee_dial_number
+
+    msg = "Call from %s to %s" % (caller_number, callee_number)
+    if video_state:
+        msg = "Video %s" % msg
+        video = True
+    else:
+        video = False
+    if ad_hangup:
+        msg = "%s for duration of %s seconds" % (msg, wait_time_in_call)
+    ad_caller.log.info(msg)
+
+    for ad in (ad_caller, ad_callee):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        setattr(ad, "call_ids", call_ids)
+        if call_ids:
+            ad.log.info("Pre-exist CallId %s before making call", call_ids)
+
+    ad_caller.ed.clear_events(EventCallStateChanged)
+    begin_time = get_device_epoch_time(ad)
+    ad_caller.droid.telephonyStartTrackingCallStateForSubscription(subid_caller)
+
+    for text in array_message:
+        length = len(text)
+        ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
+                       phonenumber_tx, phonenumber_rx, length, text)
+        try:
+            ad_rx.messaging_ed.clear_events(EventSmsReceived)
+            ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
+            ad_tx.messaging_ed.clear_events(EventSmsSentFailure)
+            ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
+            time.sleep(1)  #sleep 100ms after starting event tracking
+            ad_tx.messaging_droid.logI("Sending SMS of length %s" % length)
+            ad_rx.messaging_droid.logI("Expecting SMS of length %s" % length)
+            ad_caller.log.info("Make a phone call to %s", callee_number)
+
+            tasks = [
+                (ad_tx.messaging_droid.smsSendTextMessage,
+                (phonenumber_rx, text, True)),
+                (ad_caller.droid.telecomCallNumber,
+                (callee_number, video))]
+
+            run_multithread_func(log, tasks)
+
+            try:
+                # Verify OFFHOOK state
+                if not wait_for_call_offhook_for_subscription(
+                        log,
+                        ad_caller,
+                        subid_caller,
+                        event_tracking_started=True):
+                    ad_caller.log.info(
+                        "sub_id %s not in call offhook state", subid_caller)
+                    last_call_drop_reason(ad_caller, begin_time=begin_time)
+
+                    ad_caller.log.error("Initiate call failed.")
+                    tel_result_wrapper.result_value = CallResult(
+                                                        'INITIATE_FAILED')
+                    return tel_result_wrapper
+                else:
+                    ad_caller.log.info("Caller initate call successfully")
+            finally:
+                ad_caller.droid.telephonyStopTrackingCallStateChangeForSubscription(
+                    subid_caller)
+                if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
+                    ad_caller.droid.telecomShowInCallScreen()
+                elif incall_ui_display == INCALL_UI_DISPLAY_BACKGROUND:
+                    ad_caller.droid.showHomeScreen()
+
+            if not wait_and_answer_call_for_subscription(
+                    log,
+                    ad_callee,
+                    subid_callee,
+                    incoming_number=caller_number,
+                    caller=ad_caller,
+                    incall_ui_display=incall_ui_display,
+                    video_state=video_state):
+                ad_callee.log.error("Answer call fail.")
+                tel_result_wrapper.result_value = CallResult(
+                    'NO_RING_EVENT_OR_ANSWER_FAILED')
+                return tel_result_wrapper
+            else:
+                ad_callee.log.info("Callee answered the call successfully")
+
+            for ad, call_func in zip([ad_caller, ad_callee],
+                                     [verify_caller_func, verify_callee_func]):
+                call_ids = ad.droid.telecomCallGetCallIds()
+                new_call_ids = set(call_ids) - set(ad.call_ids)
+                if not new_call_ids:
+                    ad.log.error(
+                        "No new call ids are found after call establishment")
+                    ad.log.error("telecomCallGetCallIds returns %s",
+                                 ad.droid.telecomCallGetCallIds())
+                    tel_result_wrapper.result_value = CallResult(
+                                                        'NO_CALL_ID_FOUND')
+                for new_call_id in new_call_ids:
+                    if not wait_for_in_call_active(ad, call_id=new_call_id):
+                        tel_result_wrapper.result_value = CallResult(
+                            'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
+                    else:
+                        ad.log.info(
+                            "callProperties = %s",
+                            ad.droid.telecomCallGetProperties(new_call_id))
+
+                if not ad.droid.telecomCallGetAudioState():
+                    ad.log.error("Audio is not in call state")
+                    tel_result_wrapper.result_value = CallResult(
+                        'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
+
+                if call_func(log, ad):
+                    ad.log.info("Call is in %s state", call_func.__name__)
+                else:
+                    ad.log.error("Call is not in %s state, voice in RAT %s",
+                                 call_func.__name__,
+                                 ad.droid.telephonyGetCurrentVoiceNetworkType())
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
+            if not tel_result_wrapper:
+                return tel_result_wrapper
+
+            if not wait_for_sending_sms(
+                ad_tx,
+                max_wait_time=MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION):
+                return False
+
+            tasks = [
+                (wait_for_matching_sms,
+                (log, ad_rx, phonenumber_tx, text,
+                MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION, True)),
+                (wait_for_call_end,
+                (log, ad_caller, ad_callee, ad_hangup, verify_caller_func,
+                    verify_callee_func, 5, tel_result_wrapper,
+                    WAIT_TIME_IN_CALL))]
+
+            results = run_multithread_func(log, tasks)
+
+            if not results[0]:
+                ad_rx.log.error("No matching received SMS of length %s.",
+                                length)
+                return False
+
+            tel_result_wrapper = results[1]
+
+        except Exception as e:
+            log.error("Exception error %s", e)
+            raise
+        finally:
+            ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
+
+    return tel_result_wrapper
+
 def change_voice_subid_temporarily(ad, sub_id, state_check_func):
     result = False
     voice_sub_id_changed = False
