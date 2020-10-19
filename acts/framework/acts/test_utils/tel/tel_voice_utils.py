@@ -51,6 +51,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
@@ -1896,10 +1897,14 @@ def phone_setup_on_rat(
     wfc_mode=None,
     wifi_ssid=None,
     wifi_pwd=None,
-    only_return_fn=None):
+    only_return_fn=None,
+    sub_id_type='voice'):
 
     if not sub_id:
-        sub_id = get_outgoing_voice_sub_id(ad)
+        if sub_id_type == 'sms':
+            sub_id = get_outgoing_message_sub_id(ad)
+        else:
+            sub_id = get_outgoing_voice_sub_id(ad)
 
     if rat.lower() == 'volte':
         if only_return_fn:
