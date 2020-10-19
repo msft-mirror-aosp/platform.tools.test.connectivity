@@ -67,6 +67,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_data_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan_cellular_preferred
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
