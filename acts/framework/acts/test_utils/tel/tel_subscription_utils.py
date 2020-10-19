@@ -251,6 +251,22 @@ def set_subid_for_message(ad, sub_id):
     if hasattr(ad, "outgoing_message_sub_id"):
         ad.outgoing_message_sub_id = sub_id
 
+def set_message_subid(ad, sub_id):
+    """Set subId for both outgoing and incoming messages
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
+    if hasattr(ad, "outgoing_message_sub_id"):
+        ad.outgoing_message_sub_id = sub_id
+    if hasattr(ad, "incoming_message_sub_id"):
+        ad.incoming_message_sub_id = sub_id
+
 
 def set_subid_for_outgoing_call(ad, sub_id):
     """Set subId for outgoing voice call
@@ -296,6 +312,23 @@ def set_voice_sub_id(ad, sub_id):
         ad.incoming_voice_sub_id = sub_id
     if hasattr(ad, "outgoing_voice_sub_id"):
         ad.outgoing_voice_sub_id = sub_id
+
+def set_voice_sub_id(ad, sub_id):
+    """Set default subId for both incoming and outgoing voice calls
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
+    if hasattr(ad, "incoming_voice_sub_id"):
+        ad.incoming_voice_sub_id = sub_id
+    if hasattr(ad, "outgoing_voice_sub_id"):
+        ad.outgoing_voice_sub_id = sub_id
+
 
 def set_default_sub_for_all_services(ad, slot_id=0):
     """Set subId for all services
