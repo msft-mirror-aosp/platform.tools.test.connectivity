@@ -149,6 +149,8 @@ class VzWDoUAutomationPhoneCallTest(
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_voice_call(self, attempt_number):
     """Measures power when the device is on call."""
+    self.connect_companion_to_wifi()
+    self.log_in_companion_gmail_account()
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
         'The companion phone number is {}'.format(companion_phone_number))
