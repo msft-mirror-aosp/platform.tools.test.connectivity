@@ -59,6 +59,7 @@ class WifiCrashStressTest(WifiBaseTest):
             self.ap_iface = 'wlan1'
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         wutils.wifi_toggle_state(self.dut, True)
@@ -67,6 +68,7 @@ class WifiCrashStressTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut_client, True)
 
     def teardown_test(self):
+        super().teardown_test()
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
         self.dut.droid.wakeLockRelease()
@@ -75,12 +77,6 @@ class WifiCrashStressTest(WifiBaseTest):
         self.dut_client.droid.wakeLockRelease()
         self.dut_client.droid.goToSleepNow()
         wutils.reset_wifi(self.dut_client)
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
-        self.dut_client.take_bug_report(test_name, begin_time)
-        self.dut_client.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:

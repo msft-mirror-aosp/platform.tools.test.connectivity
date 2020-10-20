@@ -19,9 +19,9 @@ import pprint
 import queue
 import time
 
-import acts.base_test
 from acts.test_utils.net import ui_utils as uutils
 import acts.test_utils.wifi.wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 from acts import asserts
@@ -54,7 +54,7 @@ PASSWORD_TEXT = "Password"
 PASSPOINT_BUTTON = "Get Passpoint"
 BOINGO_UI_TEXT = "Online Sign Up"
 
-class WifiPasspointTest(acts.base_test.BaseTestClass):
+class WifiPasspointTest(WifiBaseTest):
     """Tests for APIs in Android's WifiManager class.
 
     Test Bed Requirement:
@@ -64,6 +64,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     """
 
     def setup_class(self):
+        super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = ["passpoint_networks",
@@ -78,23 +79,20 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
 
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.dut.unlock_screen()
 
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         passpoint_configs = self.dut.droid.getPasspointConfigs()
         for config in passpoint_configs:
             wutils.delete_passpoint(self.dut, config)
         wutils.reset_wifi(self.dut)
-
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-
 
     """Helper Functions"""
 
@@ -338,7 +336,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         # Install both Passpoint profiles on the device.
         passpoint_ssid = list()
         for passpoint_config in self.passpoint_networks[:2]:
-            passpoint_ssid.append(passpoint_config[WifiEnums.SSID_KEY])
+            passpoint_ssid.extend(passpoint_config[WifiEnums.SSID_KEY])
             self.install_passpoint_profile(passpoint_config)
             time.sleep(DEFAULT_TIMEOUT)
 
@@ -351,12 +349,12 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                                      "configured Passpoint networks.")
 
         expected_ssid =  self.passpoint_networks[0][WifiEnums.SSID_KEY]
-        if current_ssid == expected_ssid:
+        if current_ssid in expected_ssid:
             expected_ssid = self.passpoint_networks[1][WifiEnums.SSID_KEY]
 
         # Remove the current Passpoint profile.
         for network in self.passpoint_networks[:2]:
-            if network[WifiEnums.SSID_KEY] == current_ssid:
+            if current_ssid in network[WifiEnums.SSID_KEY]:
                 if not wutils.delete_passpoint(self.dut, network["fqdn"]):
                     raise signals.TestFailure("Failed to delete Passpoint"
                                               " configuration with FQDN = %s" %
@@ -365,7 +363,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         time.sleep(DEFAULT_TIMEOUT)
 
         current_passpoint = self.dut.droid.wifiGetConnectionInfo()
-        if current_passpoint[WifiEnums.SSID_KEY] != expected_ssid:
+        if current_passpoint[WifiEnums.SSID_KEY] not in expected_ssid:
             raise signals.TestFailure("Device did not failover to the %s"
                                       " passpoint network" % expected_ssid)
 
