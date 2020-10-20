@@ -132,6 +132,7 @@ class WifiEnums():
 
     class CountryCode():
         CHINA = "CN"
+        GERMANY = "DE"
         JAPAN = "JP"
         UK = "GB"
         US = "US"
