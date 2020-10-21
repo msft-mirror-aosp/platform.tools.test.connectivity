@@ -190,30 +190,6 @@ class TestRunner(object):
                             test_classes[member_name] = test_class
         return test_classes
 
-    def set_test_util_logs(self, module=None):
-        """Sets the log object to each test util module.
-
-        This recursively include all modules under acts.test_utils and sets the
-        main test logger to each module.
-
-        Args:
-            module: A module under acts.test_utils.
-        """
-        # Initial condition of recursion.
-        if not module:
-            module = importlib.import_module('acts.test_utils')
-        # Somehow pkgutil.walk_packages is not working for me.
-        # Using iter_modules for now.
-        pkg_iter = pkgutil.iter_modules(module.__path__, module.__name__ + '.')
-        for _, module_name, ispkg in pkg_iter:
-            m = importlib.import_module(module_name)
-            if ispkg:
-                self.set_test_util_logs(module=m)
-            else:
-                self.log.debug('Setting logger to test util module %s',
-                               module_name)
-                setattr(m, 'log', self.log)
-
     def run_test_class(self, test_cls_name, test_cases=None):
         """Instantiates and executes a test class.
 
