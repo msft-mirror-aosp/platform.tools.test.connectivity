@@ -19,6 +19,7 @@
 
 import copy
 import itertools
+import os
 import time
 
 import acts.controllers.access_point as ap
@@ -34,6 +35,9 @@ from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
+from acts.keys import Config
+from acts_contrib.test_utils.net import net_test_utils as nutils
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 AP_1 = 0
 AP_2 = 1
@@ -41,10 +45,78 @@ MAX_AP_COUNT = 2
 
 
 class WifiBaseTest(BaseTestClass):
+
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = False
+        self.packet_log_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
+        self.packet_log_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
+
     def setup_class(self):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
+        opt_param = ["pixel_models", "cnss_diag_file"]
+        self.unpack_userparams(opt_param_names=opt_param)
+        if hasattr(self, "cnss_diag_file"):
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
+        if self.enable_packet_log and hasattr(self, "packet_capture"):
+            self.packet_logger = self.packet_capture[0]
+            self.packet_logger.configure_monitor_mode("2G", self.packet_log_2g)
+            self.packet_logger.configure_monitor_mode("5G", self.packet_log_5g)
+
+    def setup_test(self):
+        if (hasattr(self, "android_devices") and
+                hasattr(self, "cnss_diag_file") and
+                hasattr(self, "pixel_models")):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
+        self.tcpdump_proc = []
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                proc = nutils.start_tcpdump(ad, self.test_name)
+                self.tcpdump_proc.append((ad, proc))
+        if hasattr(self, "packet_logger"):
+            self.packet_log_pid = wutils.start_pcap(
+                    self.packet_logger, 'dual', self.test_name)
+
+    def teardown_test(self):
+        if (hasattr(self, "android_devices") and
+                hasattr(self, "cnss_diag_file") and
+                hasattr(self, "pixel_models")):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+        for proc in self.tcpdump_proc:
+            nutils.stop_tcpdump(
+                    proc[0], proc[1], self.test_name, pull_dump=False)
+        self.tcpdump_proc = []
+        if hasattr(self, "packet_logger") and self.packet_log_pid:
+            wutils.stop_pcap(
+                    self.packet_logger, self.packet_log_pid, test_status=True)
+            self.packet_log_pid = {}
+
+    def on_fail(self, test_name, begin_time):
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                ad.take_bug_report(test_name, begin_time)
+                ad.cat_adb_log(test_name, begin_time)
+                wutils.get_ssrdumps(ad)
+            if (hasattr(self, "cnss_diag_file") and
+                    hasattr(self, "pixel_models")):
+                wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+                for ad in self.android_devices:
+                    wutils.get_cnss_diag_log(ad)
+        for proc in self.tcpdump_proc:
+            nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
+        self.tcpdump_proc = []
+        if hasattr(self, "packet_logger") and self.packet_log_pid:
+            wutils.stop_pcap(
+                    self.packet_logger, self.packet_log_pid, test_status=False)
+            self.packet_log_pid = {}
 
     def get_psk_network(
             self,
@@ -439,13 +511,13 @@ class WifiBaseTest(BaseTestClass):
             self.bssid_map.append(
                 self.access_points[i].get_bssids_for_wifi_networks())
             if mirror_ap:
-              self.access_points[i+1].configure_ap(network_list,
-                                                   channel_2g,
-                                                   channel_5g)
-              self.access_points[i+1].start_ap()
-              self.bssid_map.append(
-                  self.access_points[i+1].get_bssids_for_wifi_networks())
-              break
+                self.access_points[i+1].configure_ap(network_list,
+                                                     channel_2g,
+                                                     channel_5g)
+                self.access_points[i+1].start_ap()
+                self.bssid_map.append(
+                    self.access_points[i+1].get_bssids_for_wifi_networks())
+                break
 
     def legacy_configure_ap_and_start(
             self,
