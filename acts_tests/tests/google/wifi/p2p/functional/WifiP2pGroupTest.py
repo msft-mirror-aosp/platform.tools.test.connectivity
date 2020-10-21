@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 import time
 
@@ -22,9 +22,9 @@ from acts import asserts
 from acts import utils
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
-from acts.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
-from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
+from acts_contrib.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
+from acts_contrib.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
+from acts_contrib.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 
 WPS_PBC = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
 WPS_DISPLAY = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY

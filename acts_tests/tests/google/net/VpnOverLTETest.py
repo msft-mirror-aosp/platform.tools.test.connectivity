@@ -15,10 +15,10 @@
 
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import connectivity_const
-from acts.test_utils.net import net_test_utils as nutils
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.net import connectivity_const
+from acts_contrib.test_utils.net import net_test_utils as nutils
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 VPN_CONST = connectivity_const.VpnProfile
 VPN_TYPE = connectivity_const.VpnProfileType

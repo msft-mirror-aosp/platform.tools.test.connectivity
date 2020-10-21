@@ -18,12 +18,12 @@ import time
 import random
 import re
 import logging
-import acts.test_utils.wifi.wifi_test_utils as wutils
-import acts.test_utils.tel.tel_test_utils as tel_utils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.tel.tel_test_utils as tel_utils
 import acts.utils as utils
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts import signals
 from acts.controllers import packet_capture
 from acts.controllers.ap_lib.hostapd_constants import BAND_2G

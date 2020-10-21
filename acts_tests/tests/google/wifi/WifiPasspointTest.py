@@ -20,7 +20,7 @@ import queue
 import time
 
 import acts.base_test
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 
 from acts import asserts
@@ -28,8 +28,8 @@ from acts import signals
 from acts.libs.uicd.uicd_cli import UicdCli
 from acts.libs.uicd.uicd_cli import UicdError
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums

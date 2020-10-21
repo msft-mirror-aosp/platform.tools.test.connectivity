@@ -16,18 +16,18 @@
 
 import time
 
-from acts.test_utils.bt import BtEnum
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
-from acts.test_utils.coex.coex_test_utils import connect_dev_to_headset
-from acts.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
-from acts.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
-from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
-from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_BLUETOOTH
-from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
+from acts_contrib.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts_contrib.test_utils.coex.coex_test_utils import connect_dev_to_headset
+from acts_contrib.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
+from acts_contrib.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
+from acts_contrib.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts_contrib.test_utils.tel.tel_defines import AUDIO_ROUTE_BLUETOOTH
+from acts_contrib.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
 
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_voice_utils import set_audio_route
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import set_audio_route
 
 
 class CoexHfpStressTest(CoexBaseTest):

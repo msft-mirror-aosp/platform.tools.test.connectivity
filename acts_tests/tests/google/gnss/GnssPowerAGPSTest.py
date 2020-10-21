@@ -15,9 +15,9 @@
 #   limitations under the License.
 
 from acts import utils
-from acts.test_utils.power.PowerGTWGnssBaseTest import PowerGTWGnssBaseTest
-from acts.test_utils.gnss import gnss_test_utils as gutils
-from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.power.PowerGTWGnssBaseTest import PowerGTWGnssBaseTest
+from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
 class GnssPowerAGPSTest(PowerGTWGnssBaseTest):

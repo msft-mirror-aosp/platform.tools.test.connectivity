@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts.test_utils.power.cellular.cellular_volte_power_test as cvltept
+import acts_contrib.test_utils.power.cellular.cellular_volte_power_test as cvltept
 
 
 class PowerTelVoiceCall_LTE_Test(cvltept.PowerTelVoLTECallTest):

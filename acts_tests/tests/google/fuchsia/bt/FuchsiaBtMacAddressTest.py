@@ -26,7 +26,7 @@ import time
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.bt_test_utils import generate_id_by_size
+from acts_contrib.test_utils.bt.bt_test_utils import generate_id_by_size
 
 
 class FuchsiaBtMacAddressTest(BaseTestClass):

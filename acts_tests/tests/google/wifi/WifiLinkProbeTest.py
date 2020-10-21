@@ -18,8 +18,8 @@ import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-import acts.test_utils.wifi.wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
 NUM_LINK_PROBES = 8
