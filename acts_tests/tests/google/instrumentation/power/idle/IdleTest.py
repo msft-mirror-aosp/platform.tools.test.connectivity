@@ -19,9 +19,9 @@ import time
 from acts import signals
 from acts.libs.proc.job import TimeoutError
 from acts.controllers.android_lib.errors import AndroidDeviceError
-from acts.test_utils.instrumentation.power import instrumentation_power_test
-from acts.test_utils.instrumentation.device.command.adb_commands import common
-from acts.test_utils.instrumentation.device.command.adb_commands import goog
+from acts_contrib.test_utils.instrumentation.power import instrumentation_power_test
+from acts_contrib.test_utils.instrumentation.device.command.adb_commands import common
+from acts_contrib.test_utils.instrumentation.device.command.adb_commands import goog
 
 
 class IdleTest(instrumentation_power_test.InstrumentationPowerTest):

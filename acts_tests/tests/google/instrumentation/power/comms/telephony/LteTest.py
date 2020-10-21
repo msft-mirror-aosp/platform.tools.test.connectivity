@@ -15,9 +15,9 @@
 #   limitations under the License.
 import time
 
-from acts.test_utils.instrumentation.power.instrumentation_power_test \
+from acts_contrib.test_utils.instrumentation.power.instrumentation_power_test \
     import InstrumentationPowerTest
-from acts.test_utils.instrumentation.device.command.adb_commands import common
+from acts_contrib.test_utils.instrumentation.device.command.adb_commands import common
 
 from acts import signals
 from acts.libs.proc.job import TimeoutError

@@ -25,16 +25,16 @@ from functools import partial
 
 import acts.base_test
 import acts.controllers.rohdeschwarz_lib.cmw500 as cmw500
-from acts.test_utils.coex.hotspot_utils import band_channel_map
-from acts.test_utils.coex.hotspot_utils import supported_lte_bands
-from acts.test_utils.coex.hotspot_utils import tdd_band_list
-from acts.test_utils.coex.hotspot_utils import wifi_channel_map
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.wifi.wifi_test_utils import reset_wifi
-from acts.test_utils.wifi.wifi_test_utils import start_wifi_tethering
-from acts.test_utils.wifi.wifi_test_utils import stop_wifi_tethering
-from acts.test_utils.wifi.wifi_test_utils import wifi_connect
-from acts.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts_contrib.test_utils.coex.hotspot_utils import band_channel_map
+from acts_contrib.test_utils.coex.hotspot_utils import supported_lte_bands
+from acts_contrib.test_utils.coex.hotspot_utils import tdd_band_list
+from acts_contrib.test_utils.coex.hotspot_utils import wifi_channel_map
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.wifi.wifi_test_utils import reset_wifi
+from acts_contrib.test_utils.wifi.wifi_test_utils import start_wifi_tethering
+from acts_contrib.test_utils.wifi.wifi_test_utils import stop_wifi_tethering
+from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_connect
+from acts_contrib.test_utils.wifi.wifi_test_utils import WifiEnums
 
 BANDWIDTH_2G = 20
 CNSS_LOG_PATH = '/data/vendor/wifi/wlan_logs'

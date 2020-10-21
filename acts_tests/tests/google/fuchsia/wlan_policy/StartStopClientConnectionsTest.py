@@ -17,9 +17,9 @@
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_state, save_network, start_connections, stop_connections
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_state, save_network, start_connections, stop_connections
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 
 DISCONNECTED = "Disconnected"

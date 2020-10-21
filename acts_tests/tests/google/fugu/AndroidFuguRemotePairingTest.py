@@ -19,7 +19,7 @@ Test script to test pairing of an Android Device to a Fugu Remote
 import time
 
 from acts.controllers.relay_lib.relay import SynchronizeRelays
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 class AndroidFuguRemotePairingTest(BluetoothBaseTest):
     def setup_class(self):
