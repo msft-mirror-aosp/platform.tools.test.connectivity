@@ -838,6 +838,36 @@ class WifiSoftApTest(WifiBaseTest):
 
         # Unregister callback
         self.dut.droid.unregisterSoftApCallback(callbackId)
+
+    @test_tracker_info(uuid="")
+    def test_softap_5g_preferred_country_code_de(self):
+        """Verify softap works when set to 5G preferred band
+           with country code 'DE'.
+
+        Steps:
+            1. Set country code to Germany
+            2. Save a softap configuration set to 5G preferred band.
+            3. Start softap and verify it works
+            4. Verify a client device can connect to it.
+        """
+        wutils.set_wifi_country_code(
+            self.dut, wutils.WifiEnums.CountryCode.GERMANY)
+        sap_config = self.create_softap_config()
+        wifi_network = sap_config.copy()
+        sap_config[
+            WifiEnums.AP_BAND_KEY] = WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G
+        sap_config[WifiEnums.SECURITY] = WifiEnums.SoftApSecurityType.WPA2
+        asserts.assert_true(
+            self.dut.droid.wifiSetWifiApConfiguration(sap_config),
+            "Failed to set WifiAp Configuration")
+        wutils.start_wifi_tethering_saved_config(self.dut)
+        softap_conf = self.dut.droid.wifiGetApConfiguration()
+        self.log.info("softap conf: %s" % softap_conf)
+        sap_band = softap_conf[WifiEnums.AP_BAND_KEY]
+        asserts.assert_true(
+            sap_band == WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G,
+            "Soft AP didn't start in 5G preferred band")
+        wutils.connect_to_wifi_network(self.dut_client, wifi_network)
     """ Tests End """
 
 
