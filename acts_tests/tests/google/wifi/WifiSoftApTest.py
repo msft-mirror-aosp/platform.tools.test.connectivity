@@ -107,6 +107,7 @@ class WifiSoftApTest(WifiBaseTest):
                             "Can not turn off airplane mode: %s" % self.dut.serial)
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
+        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
 
     """ Helper Functions """
     def create_softap_config(self):
