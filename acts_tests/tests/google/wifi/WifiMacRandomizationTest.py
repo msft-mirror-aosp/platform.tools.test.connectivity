@@ -607,7 +607,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7714d31f-bb08-4f29-b246-0ce1398a3c03")
     def test_mac_randomization_for_network_suggestion(self):
         """Add network suggestion and verify MAC randomization.
 
@@ -618,7 +618,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         network_suggestion = self.reference_networks[0]["5g"]
         self._add_suggestion_and_verify_mac_randomization(network_suggestion)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="144ad0b4-b79d-4b1d-a8a9-3c612a76c32c")
     def test_enhanced_mac_randomization_for_network_suggestion(self):
         """Test enhanced MAC randomization.
 
