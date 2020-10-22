@@ -36,6 +36,7 @@ from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.keys import Config
+from acts.test_utils.net import net_test_utils as nutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 AP_1 = 0
@@ -64,12 +65,21 @@ class WifiBaseTest(BaseTestClass):
                 hasattr(self, "pixel_models")):
             wutils.start_cnss_diags(
                 self.android_devices, self.cnss_diag_file, self.pixel_models)
+        self.tcpdump_proc = []
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                proc = nutils.start_tcpdump(ad, self.test_name)
+                self.tcpdump_proc.append((ad, proc))
 
     def teardown_test(self):
         if (hasattr(self, "android_devices") and
                 hasattr(self, "cnss_diag_file") and
                 hasattr(self, "pixel_models")):
             wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+        for proc in self.tcpdump_proc:
+            nutils.stop_tcpdump(
+                    proc[0], proc[1], self.test_name, pull_dump=False)
+        self.tcpdump_proc = []
 
     def on_fail(self, test_name, begin_time):
         if hasattr(self, "android_devices"):
@@ -82,6 +92,9 @@ class WifiBaseTest(BaseTestClass):
                 wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
                 for ad in self.android_devices:
                     wutils.get_cnss_diag_log(ad)
+        for proc in self.tcpdump_proc:
+            nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
+        self.tcpdump_proc = []
 
     def get_psk_network(
             self,
