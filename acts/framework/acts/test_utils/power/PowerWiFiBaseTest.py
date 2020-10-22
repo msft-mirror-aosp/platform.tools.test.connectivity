@@ -59,23 +59,51 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
         """
         super().teardown_test()
         if hasattr(self, 'pkt_sender'):
-            self.pkt_sender.stop_sending(ignore_status=True)
+            self._safe_teardown('pkt_sender stop sending',
+                                self.pkt_sender.stop_sending,
+                                ignore_status=True)
         if hasattr(self, 'brconfigs'):
-            self.access_point.bridge.teardown(self.brconfigs)
+            self._safe_teardown('brconfigs', self.access_point.bridge.teardown,
+                                self.brconfigs)
             delattr(self, 'brconfigs')
         if hasattr(self, 'brconfigs_main'):
-            self.access_point_main.bridge.teardown(self.brconfigs_main)
+            self._safe_teardown('brconfigs_main',
+                                self.access_point_main.bridge.teardown,
+                                self.brconfigs_main)
             delattr(self, 'brconfigs_main')
         if hasattr(self, 'brconfigs_aux'):
-            self.access_point_aux.bridge.teardown(self.brconfigs_aux)
+            self._safe_teardown('brconfigs_aux',
+                                self.access_point_aux.bridge.teardown,
+                                self.brconfigs_aux)
             delattr(self, 'brconfigs_aux')
         if hasattr(self, 'access_points'):
             for ap in self.access_points:
-                ap.close()
+                self._safe_teardown('access point {}'.format(ap.identifier),
+                                    ap.close)
         if hasattr(self, 'pkt_sender'):
-            wputils.reset_host_interface(self.pkt_sender.interface)
+            self._safe_teardown('pkt_sender reset host interface',
+                                wputils.reset_host_interface,
+                                self.pkt_sender.interface)
         if hasattr(self, 'iperf_server'):
-            self.iperf_server.stop()
+            self._safe_teardown('iperf_server', self.iperf_server.stop);
+
+    def _safe_teardown(self, attr, teardown_method, *arg, **kwargs):
+        """Teardown the object with try block.
+
+        Adds a try block for each teardown step to make sure that each
+        teardown step is executed.
+
+        Args:
+            attr: the teardown attribute description for logging
+            teardown_method: the method for teardown
+            *arg: positional arguments for teardown_method
+            **kwargs: keyword arguments for teardown_method
+        """
+        try:
+            self.log.info('teardown %s with %s', attr, teardown_method.__name__)
+            teardown_method(*arg, **kwargs)
+        except Exception as e:
+            self.log.warning('teardown of %s fails with %s', attr, e)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
