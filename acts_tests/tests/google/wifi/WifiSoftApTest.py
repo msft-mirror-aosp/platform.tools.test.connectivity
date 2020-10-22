@@ -840,7 +840,7 @@ class WifiSoftApTest(WifiBaseTest):
         # Unregister callback
         self.dut.droid.unregisterSoftApCallback(callbackId)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="07b4e5b3-48ce-49b9-a83e-3e288bb88e91")
     def test_softap_5g_preferred_country_code_de(self):
         """Verify softap works when set to 5G preferred band
            with country code 'DE'.
