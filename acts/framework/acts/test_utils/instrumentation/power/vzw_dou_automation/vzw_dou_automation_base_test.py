@@ -38,52 +38,39 @@ DEFAULT_WAIT_FOR_REBOOT = 120
 WIFI_SSID = 'TP-Link-VZW-DoU'
 GMAIL_ACCOUNT = 'vdou001@gmail.com'
 
+
 def get_median_current(test_results, test_instance):
   """Returns the median current, or a failure if the test failed."""
 
-  # Only look at results within the good range (i.e., passing results).
+  # Look at results within the good range (i.e., passing results).
   valid_results = list(filter(lambda result: isinstance(result, signals.TestPass),
                          test_results))
-  # If all the results are not valid return the last result
+
+  # If there is no passing test results check failed test results.
   if not valid_results:
-    return test_results[-1]
+    out_range_results = list(
+        filter(lambda result: isinstance(result, signals.TestFailure),
+               test_results))
+    if not out_range_results:
+      return test_results[-1]
 
-  # Gather the current measurements and return the median.
-  median_current = statistics.median_low(
-      [x.extras[list(x.extras.keys())[0]]['avg_current']['actual'] for x in valid_results])
+    median_current = test_instance.get_median_metric(out_range_results)
+    return signals.TestFailure(
+        'Failed msg! Current: %s out of range' % median_current,
+        extras={'average_current': median_current})
+  else:
+    median_current = test_instance.get_median_metric(valid_results)
+    return signals.TestPass(
+        'Pass msg! Current: %s' % median_current,
+        extras={'average_current': median_current})
 
-  # Get the median metrics for test results recording.
-  final_metrics = {}
-  result_dict_list = []
-  key = ''
-  for x in valid_results:
-    if str(x.extras[list(x.extras.keys())[0]]['avg_current']['actual']) == str(median_current):
-      median_metric = x.extras[list(x.extras.keys())[0]]['avg_current']['power_metric']
-      result_dict_list = json.loads(median_metric)
-      test_instance.log.debug('Median metrics result dict list is %s' % result_dict_list)
-      key = list(x.extras.keys())[0]
-      test_instance.log.debug('The key of the median result dict is %s' % key)
-      break
-
-  test_instance.log.debug('The key of the final_metrics is %s' % key)
-  test_instance.log.debug('The result dict list of the final_metrics %s' % result_dict_list)
-
-  result_object_list = test_instance.convert_power_metric_dict_to_object(result_dict_list)
-  test_instance.log.debug('The result object list of the final_metrics %s' % result_object_list)
-
-  final_metrics[key] = result_object_list
-
-  # Record median metrics
-  test_instance.record_metrics(final_metrics)
-
-  return signals.TestPass('Pass msg! Current: %s' % median_current,
-                          extras={'average_current': median_current})
 
 class TestCase(Enum):
     TC25 = 'TC25'
     TC28 = 'TC28'
     TC29 = 'TC29'
     TC34 = 'TC34'
+
 
 class VzWDoUAutomationBaseTest(
     instrumentation_power_test.InstrumentationPowerTest):
@@ -124,6 +111,7 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(goog.disable_volta)
     self.adb_run(goog.force_stop_nexuslauncher)
     self.adb_run(common.enable_ramdumps.toggle(False))
+    self.adb_run(goog.disable_betterbug)
     self.adb_run('input keyevent 26')
     self.adb_run(common.screen_timeout_ms.set_value(180000))
 
@@ -263,3 +251,42 @@ class VzWDoUAutomationBaseTest(
                                            metric['unit'], name=metric['name'])
       metric_object_list.append(metric_object)
     return metric_object_list
+
+  def get_median_metric(self, test_results):
+    # Get the median current and median metric from the given test results.
+    median_current = statistics.median_low([
+        x.extras[list(x.extras.keys())[0]]['avg_current']['actual']
+        for x in test_results
+    ])
+    self.log.debug('The median_current is %s' % median_current)
+
+    # Get the median metrics for test results recording.
+    final_metrics = {}
+    result_dict_list = []
+    key = ''
+    for x in test_results:
+      key = list(x.extras.keys())[0]
+      if str(x.extras[list(
+          x.extras.keys())[0]]['avg_current']['actual']) == str(median_current):
+        median_metric = x.extras[list(
+            x.extras.keys())[0]]['avg_current']['power_metric']
+        result_dict_list = json.loads(median_metric)
+        self.log.debug('Median metrics result dict list is %s' %
+                       result_dict_list)
+        key = list(x.extras.keys())[0]
+        self.log.debug('The key of the median result dict is %s' % key)
+        break
+
+    # Get the median metrics for test results recording.
+    self.log.debug('The key of the final_metrics is %s' % key)
+    self.log.debug('The result dict list of the final_metrics %s' %
+                   result_dict_list)
+    result_object_list = self.convert_power_metric_dict_to_object(
+        result_dict_list)
+    self.log.debug('The result object list of the final_metrics %s' %
+                   result_object_list)
+    final_metrics[key] = result_object_list
+
+    # Record median metrics.
+    self.record_metrics(final_metrics)
+    return median_current
