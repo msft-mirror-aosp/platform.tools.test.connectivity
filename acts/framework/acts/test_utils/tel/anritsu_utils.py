@@ -40,6 +40,7 @@ from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_REMOTE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_LONG
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_defines import EventCmasReceived
 from acts.test_utils.tel.tel_defines import EventEtwsReceived
@@ -1356,7 +1357,7 @@ def call_mo_setup_teardown(
         callee_number,
         teardown_side=CALL_TEARDOWN_PHONE,
         is_emergency=False,
-        wait_time_in_call=WAIT_TIME_IN_CALL,
+        wait_time_in_call=WAIT_TIME_IN_CALL_LONG,
         is_ims_call=False,
         ims_virtual_network_id=DEFAULT_IMS_VIRTUAL_NETWORK_ID):
     """ Makes a MO call and tear down the call
