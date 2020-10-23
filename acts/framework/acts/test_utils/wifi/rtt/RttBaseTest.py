@@ -20,6 +20,7 @@ from acts import asserts
 from acts import utils
 from acts.base_test import BaseTestClass
 from acts.keys import Config
+from acts.test_utils.net import net_test_utils as nutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
@@ -56,6 +57,12 @@ class RttBaseTest(BaseTestClass):
         if hasattr(self, "cnss_diag_file") and hasattr(self, "pixel_models"):
             wutils.start_cnss_diags(
                 self.android_devices, self.cnss_diag_file, self.pixel_models)
+        self.tcpdump_proc = []
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                proc = nutils.start_tcpdump(ad, self.test_name)
+                self.tcpdump_proc.append((ad, proc))
+
         for ad in self.android_devices:
             utils.set_location_service(ad, True)
             ad.droid.wifiEnableVerboseLogging(1)
@@ -75,6 +82,10 @@ class RttBaseTest(BaseTestClass):
     def teardown_test(self):
         if hasattr(self, "cnss_diag_file") and hasattr(self, "pixel_models"):
             wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+        for proc in self.tcpdump_proc:
+            nutils.stop_tcpdump(
+                    proc[0], proc[1], self.test_name, pull_dump=False)
+        self.tcpdump_proc = []
         for ad in self.android_devices:
             if not ad.droid.doesDeviceSupportWifiRttFeature():
                 return
@@ -91,3 +102,6 @@ class RttBaseTest(BaseTestClass):
             wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
             for ad in self.android_devices:
                 wutils.get_cnss_diag_log(ad)
+        for proc in self.tcpdump_proc:
+            nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
+        self.tcpdump_proc = []
