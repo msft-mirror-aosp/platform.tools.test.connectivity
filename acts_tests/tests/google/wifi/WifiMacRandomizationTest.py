@@ -118,6 +118,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
+        self.dut.droid.wifiRemoveNetworkSuggestions([])
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
 
@@ -268,6 +269,51 @@ class WifiMacRandomizationTest(WifiBaseTest):
             return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
         else:
             return self.get_sta_mac_address()
+
+    def _add_suggestion_and_verify_mac_randomization(self, network_suggestion):
+        """Add wifi network suggestion and verify MAC randomization.
+
+        Args:
+            network_suggestion: network suggestion to add.
+
+        Returns:
+            Randomized MAC address.
+        """
+        self.log.info("Adding network suggestion")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([network_suggestion]),
+            "Failed to add suggestions")
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, network_suggestion[WifiEnums.SSID_KEY])
+        wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY])
+        default_mac = self.get_sta_mac_address()
+        randomized_mac = self.dut.droid.wifiGetConnectionInfo()["mac_address"]
+        self.log.info("Factory MAC = %s\nRandomized MAC = %s\nDefault MAC = %s" %
+                      (self.sta_factory_mac, randomized_mac, default_mac))
+        asserts.assert_true(
+            default_mac == randomized_mac,
+            "Connection is not using randomized MAC as the default MAC.")
+        return randomized_mac
+
+    def _remove_suggestion_and_verify_disconnect(self, network_suggestion):
+        """Remove wifi network suggestion and verify device disconnects.
+
+        Args:
+            network_suggestion: network suggestion to remove.
+        """
+        self.dut.log.info("Removing network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiRemoveNetworkSuggestions([network_suggestion]),
+            "Failed to remove suggestions")
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+        asserts.assert_false(
+            wutils.wait_for_connect(
+                self.dut,
+                network_suggestion[WifiEnums.SSID_KEY],
+                assert_on_fail=False),
+            "Device should not connect back")
+
     """Tests"""
 
 
@@ -560,3 +606,44 @@ class WifiMacRandomizationTest(WifiBaseTest):
              hostapd_constants.BAND_2G.upper())
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
+
+    @test_tracker_info(uuid="7714d31f-bb08-4f29-b246-0ce1398a3c03")
+    def test_mac_randomization_for_network_suggestion(self):
+        """Add network suggestion and verify MAC randomization.
+
+        Steps:
+            1. Add a network suggestion and verify device connects to it.
+            2. Verify the device uses randomized MAC address for this network.
+        """
+        network_suggestion = self.reference_networks[0]["5g"]
+        self._add_suggestion_and_verify_mac_randomization(network_suggestion)
+
+    @test_tracker_info(uuid="144ad0b4-b79d-4b1d-a8a9-3c612a76c32c")
+    def test_enhanced_mac_randomization_for_network_suggestion(self):
+        """Test enhanced MAC randomization.
+
+        Steps:
+            1. Add a network suggestion with enhanced mac randomization enabled.
+            2. Connect to the network and verify the MAC address is random.
+            3. Remove the suggestion network and add it back.
+            4. Connect to the network. Verify the MAC address is random and
+               different from the randomized MAC observed in step 2.
+        """
+        network_suggestion = self.reference_networks[0]["5g"]
+        network_suggestion["enhancedMacRandomizationEnabled"] = True
+
+        # add network suggestion with enhanced mac randomization
+        randomized_mac1 = self._add_suggestion_and_verify_mac_randomization(
+            network_suggestion)
+
+        # remove network suggestion and verify no connection
+        self._remove_suggestion_and_verify_disconnect(network_suggestion)
+
+        # add network suggestion and verify device connects back
+        randomized_mac2 = self._add_suggestion_and_verify_mac_randomization(
+            network_suggestion)
+
+        # verify both randomized mac addrs are different
+        asserts.assert_true(randomized_mac1 != randomized_mac2,
+                            "Randomized MAC addresses are same.")
+
