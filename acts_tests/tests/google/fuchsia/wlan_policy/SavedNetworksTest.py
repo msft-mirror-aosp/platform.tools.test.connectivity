@@ -24,6 +24,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import reboot_device, restore_saved_networks, save_network, setup_policy_tests
 from acts.utils import rand_ascii_str, rand_hex_str, timeout
 import requests
 import time
@@ -62,15 +63,10 @@ class SavedNetworksTest(WifiBaseTest):
             raise EnvironmentError("No Fuchsia devices found.")
         # Save the existing saved networks before we remove them for tests
         # And remember whether client connections have started
-        self.preexisting_saved_networks = {}
+        self.preexisting_saved_networks = setup_policy_tests(
+            self.fuchsia_devices)
         self.preexisting_client_connections_state = {}
         for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanCreateClientController()
-            result_get = fd.wlan_policy_lib.wlanGetSavedNetworks()
-            if result_get.get("result") != None:
-                self.preexisting_saved_networks[fd] = result_get["result"]
-                fd.wlan_policy_lib.wlanRemoveAllNetworks()
-
             fd.wlan_policy_lib.wlanSetNewListener()
             result_update = fd.wlan_policy_lib.wlanGetUpdate()
             if result_update.get("result") != None and result_update.get(
@@ -118,11 +114,9 @@ class SavedNetworksTest(WifiBaseTest):
                         starting_state)
             # Remove any networks remaining from tests
             fd.wlan_policy_lib.wlanRemoveAllNetworks()
-            # Put back the networks that were saved before tests began.
-            for network in self.preexisting_saved_networks[fd]:
-                self.save_network(fd, network["ssid"],
-                                  network["security_type"],
-                                  network["credential_value"])
+        # Put back the networks that were saved before tests began.
+        restore_saved_networks(self.fuchsia_devices,
+                               self.preexisting_saved_networks)
         self.access_points[0].stop_all_aps()
 
     def get_saved_networks(self, fd):
@@ -136,23 +130,6 @@ class SavedNetworksTest(WifiBaseTest):
                           result_get["error"])
             raise signals.TestFailure('Failed to get saved networks')
         return result_get["result"]
-
-    def save_network(self, fd, ssid, security_type, password=""):
-        """ Saves a network as specified on the given device and verify that the operation succeeded.
-        Args:
-            fd: The Fuchsia device to save the network on
-            ssid: The SSID or name of the network to save.
-            security_type: The security type to save the network as, ie "none",
-                        "wep", "wpa", "wpa2", or "wpa3"
-            password: The password to save for the network. Empty string represents
-                    no password, and PSK should be provided as 64 character hex string.
-        """
-        result_save = fd.wlan_policy_lib.wlanSaveNetwork(
-            ssid, security_type, password)
-        if result_save.get("error") != None:
-            self.log.info("Failed to save network %s with error: %s" % ssid,
-                          result_save["error"])
-            raise signals.TestFailure("Failed to save network")
 
     def save_bad_network(self, fd, ssid, security_type, password=""):
         """ Saves a network as specified on the given device and verify that we
@@ -275,7 +252,8 @@ class SavedNetworksTest(WifiBaseTest):
                     hexadecimal characters and none should be an empty string.
         """
         for fd in self.fuchsia_devices:
-            self.save_network(fd, ssid, security_type, password)
+            if not save_network(fd, ssid, security_type, password):
+                raise signals.TestFailure("Failed to save network")
             self.check_get_saved_network(fd, ssid, security_type,
                                          self.credentialType(password),
                                          password)
@@ -309,15 +287,6 @@ class SavedNetworksTest(WifiBaseTest):
             self.log.error(
                 "No access point available for test, please check config")
             raise EnvironmentError("Failed to set up AP for test")
-
-    def reboot_device(self, fd):
-        """ Reboot the device and reinitialize the device after.
-        Args:
-            fd: The device to reboot.
-        """
-        fd.reboot()
-        fd.wlan_policy_lib.wlanCreateClientController()
-        fd.wlan_policy_lib.wlanStartClientConnections()
 
     def credentialType(self, credentialValue):
         """ Returns the type of the credential to compare against values reported """
@@ -413,10 +382,11 @@ class SavedNetworksTest(WifiBaseTest):
         security = WPA2
         password = rand_ascii_str(10)
         for fd in self.fuchsia_devices:
-            self.save_network(fd, ssid, security, password)
+            if not save_network(fd, ssid, security, password):
+                raise signals.TestFailure("Failed to save network")
             # Reboot the device. The network should be persistently saved
             # before the command is completed.
-            self.reboot_device(fd)
+            reboot_device(fd)
             self.check_get_saved_network(fd, ssid, security, PASSWORD,
                                          password)
 
@@ -425,14 +395,16 @@ class SavedNetworksTest(WifiBaseTest):
             saved_networks = self.get_saved_networks(fd)
             ssid = rand_ascii_str(19)
             password = rand_ascii_str(12)
-            self.save_network(fd, ssid, WPA2, password)
+            if not save_network(fd, ssid, WPA2, password):
+                raise signals.TestFailure("Failed to save network")
             saved_networks.append({
                 "ssid": ssid,
                 "security_type": WPA2,
                 "credential_type": PASSWORD,
                 "credential_value": password
             })
-            self.save_network(fd, ssid, SECURITY_NONE)
+            if not save_network(fd, ssid, SECURITY_NONE):
+                raise signals.TestFailure("Failed to save network")
             saved_networks.append({
                 "ssid": ssid,
                 "security_type": SECURITY_NONE,
