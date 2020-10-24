@@ -108,7 +108,8 @@ class VzWDoUAutomationCompBaseTest(
         'Pulling test generated files from companion device to %s.' % dest)
     for file_name in [DEFAULT_INSTRUMENTATION_LOG_OUTPUT, SCREENSHOTS_DIR]:
       src = os.path.join(self.ad_cp.external_storage_path, file_name)
-      self.ad_cp.pull_files(src, dest)
+      if self.ad_cp.adb.shell('ls %s || true' % src):
+        self.ad_cp.pull_files(src, dest)
 
   def _cleanup_companion_test_files(self):
     """Remove test-generated files from the companion device."""
@@ -118,7 +119,8 @@ class VzWDoUAutomationCompBaseTest(
         AUTOTESTER_LOG, SCREENSHOTS_DIR
     ]:
       src = os.path.join(self.ad_cp.external_storage_path, file_name)
-      self.adb_run('rm -rf %s' % src, self.ad_cp)
+      if self.ad_cp.adb.shell('ls %s || true' % src):
+        self.adb_run('rm -rf %s' % src, self.ad_cp)
 
   def _cleanup_companion_device(self):
     """Clean up device after power testing."""

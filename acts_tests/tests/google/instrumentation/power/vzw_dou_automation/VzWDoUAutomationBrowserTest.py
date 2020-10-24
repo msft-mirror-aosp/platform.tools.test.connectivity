@@ -73,14 +73,19 @@ class VzWDoUAutomationBrowserTest(
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
-  def test_streaming_video_wifi(self):
+  @repeated_test(
+      num_passes=3,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_streaming_video_wifi(self, attempt_number):
     """Measures power when the device is streaming video with wifi connected."""
 
     self.adb_run(goog.remove_gmail_account)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.YouTubeV15Tests',
         'testStreamingVideo',
-        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)])
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)],
+        attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
 
