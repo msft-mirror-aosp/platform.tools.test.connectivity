@@ -27,7 +27,6 @@ from acts.controllers import monsoon as monsoon_controller
 from acts.controllers import power_monitor as power_monitor_lib
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.controllers.android_lib.errors import AndroidDeviceError
-from acts.controllers.power_metrics import AbsoluteThresholds
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.metrics.loggers.bounded_metrics import BoundedMetricsLogger
 from acts.test_utils.instrumentation import instrumentation_proto_parser as proto_parser
@@ -42,6 +41,7 @@ from acts.test_utils.instrumentation.instrumentation_base_test import Instrument
 from acts.test_utils.instrumentation.instrumentation_base_test import InstrumentationTestError
 from acts.test_utils.instrumentation.instrumentation_proto_parser import DEFAULT_INST_LOG_DIR
 from acts.test_utils.instrumentation.power.data_graph import power_audio_chart
+from acts.test_utils.instrumentation.power.thresholds import AbsoluteThresholds
 
 ACCEPTANCE_THRESHOLD = 'acceptance_threshold'
 DEFAULT_DEVICE_STABILIZATION_TIME = 300

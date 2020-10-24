@@ -99,14 +99,16 @@ class WlanDevice(object):
                   target_ssid,
                   target_pwd=None,
                   check_connectivity=True,
-                  hidden=False):
+                  hidden=False,
+                  association_mechanism=None,
+                  target_security=None):
         """Base generic WLAN interface.  Only called if not overriden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def disconnect(self):
+    def disconnect(self, association_mechanism=None):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
@@ -205,7 +207,9 @@ class AndroidWlanDevice(WlanDevice):
                   target_pwd=None,
                   key_mgmt=None,
                   check_connectivity=True,
-                  hidden=False):
+                  hidden=False,
+                  association_mechanism=None,
+                  target_security=None):
         """Function to associate an Android WLAN device.
 
         Args:
@@ -234,7 +238,7 @@ class AndroidWlanDevice(WlanDevice):
             self.device.log.info('Failed to associated (%s)' % e)
             return False
 
-    def disconnect(self):
+    def disconnect(self, association_mechanism=None):
         awutils.turn_location_off_and_scan_toggle_off(self.device)
 
     def get_wlan_interface_id_list(self):
@@ -318,7 +322,9 @@ class FuchsiaWlanDevice(WlanDevice):
                   target_pwd=None,
                   key_mgmt=None,
                   check_connectivity=True,
-                  hidden=False):
+                  hidden=False,
+                  association_mechanism=None,
+                  target_security=None):
         """Function to associate a Fuchsia WLAN device.
 
         Args:
@@ -330,19 +336,39 @@ class FuchsiaWlanDevice(WlanDevice):
         Returns:
             True if successfully connected to WLAN, False if not.
         """
-        connection_response = self.device.wlan_lib.wlanConnectToNetwork(
-            target_ssid, target_pwd=target_pwd)
+        if association_mechanism == 'policy':
+            return self.device.policy_save_and_connect(target_ssid,
+                                                       target_security,
+                                                       password=target_pwd)
+        elif not association_mechanism or association_mechanism == 'drivers':
+            connection_response = self.device.wlan_lib.wlanConnectToNetwork(
+                target_ssid, target_pwd=target_pwd)
+            return self.device.check_connect_response(connection_response)
+        else:
+            self.log.error(
+                "Association mechanism %s is not recognized. Acceptable values are 'drivers' and 'policy'"
+                % association_mechanism)
+            return False
 
-        return self.device.check_connect_response(connection_response)
-
-    def disconnect(self):
+    def disconnect(self, association_mechanism=None):
         """Function to disconnect from a Fuchsia WLAN device.
            Asserts if disconnect was not successful.
         """
-        disconnect_response = self.device.wlan_lib.wlanDisconnect()
-        asserts.assert_true(
-            self.device.check_disconnect_response(disconnect_response),
-            'Failed to disconnect.')
+        if association_mechanism == 'policy':
+            asserts.assert_true(self.device.remove_all_and_disconnect(),
+                                'Failed to disconnect')
+        elif not association_mechanism or association_mechanism == 'drivers':
+            disconnect_response = self.device.wlan_lib.wlanDisconnect()
+            asserts.assert_true(
+                self.device.check_disconnect_response(disconnect_response),
+                'Failed to disconnect.')
+        else:
+            self.log.error(
+                "Association mechanism %s is not recognized. Acceptable values are 'drivers' and 'policy'"
+                % association_mechanism)
+            raise ValueError(
+                'Invalid association_mechanism "%s". Valid options are "policy" or "drivers".'
+                % association_mechanism)
 
     def status(self):
         return self.device.wlan_lib.wlanStatus()
