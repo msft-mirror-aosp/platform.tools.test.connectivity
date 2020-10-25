@@ -8286,7 +8286,7 @@ def stop_adb_tcpdump(ad, interface="any"):
     """
     if interface == "any":
         try:
-            ad.adb.shell("killall -9 tcpdump")
+            ad.adb.shell("killall -9 tcpdump", ignore_status=True)
         except Exception as e:
             ad.log.error("Killing tcpdump with exception %s", e)
     else:
