@@ -182,7 +182,9 @@ def p2p_connect(ad1,
             p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
             p2pconsts.DEFAULT_TIMEOUT)
         ad1.log.debug(ad1_peerConfig['data'])
-        maxPollingCount = 5
+        # auto-join tries 10 times to find groups, and
+        # one round takes 2 - 3 seconds.
+        maxPollingCount = 31
         while maxPollingCount > 0:
             ad2.droid.requestP2pPeerConfigure()
             ad2_peerConfig = ad2.ed.pop_event(

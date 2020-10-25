@@ -127,6 +127,7 @@ class ContextualConfigWrapper(ConfigWrapper):
         Args:
             config: A dict or collections.UserDict.
         """
+        self._registration_for_context_change = None
         self.original_config = ConfigWrapper(config)
 
         def updater(_):
@@ -137,7 +138,8 @@ class ContextualConfigWrapper(ConfigWrapper):
         super().__init__(dict(_for_current_context(self.original_config)))
 
     def __del__(self):
-        event_bus.unregister(self._registration_for_context_change)
+        if self._registration_for_context_change is not None:
+            event_bus.unregister(self._registration_for_context_change)
 
 
 def merge(config_a, config_b):

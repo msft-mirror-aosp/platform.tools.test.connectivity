@@ -1,10 +1,13 @@
 """Class to configure wireless settings."""
 
 import time
+
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.openwrt_lib.network_settings import SERVICE_DNSMASQ
+from acts.controllers.openwrt_lib.network_settings import ServiceManager
+
 
 LEASE_FILE = "/tmp/dhcp.leases"
-DNSMASQ_RESTART = "/etc/init.d/dnsmasq restart"
 OPEN_SECURITY = "none"
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
@@ -21,6 +24,7 @@ class WirelessSettingsApplier(object):
 
   Attributes:
     ssh: ssh object for the AP.
+    service_manager: Object manage service configuration
     wireless_configs: a list of
       acts.controllers.openwrt_lib.wireless_config.WirelessConfig.
     channel_2g: channel for 2G band.
@@ -38,6 +42,7 @@ class WirelessSettingsApplier(object):
       channel_5g: channel for 5G band.
     """
     self.ssh = ssh
+    self.service_manager = ServiceManager(ssh)
     self.wireless_configs = configs
     self.channel_2g = channel_2g
     self.channel_5g = channel_5g
@@ -131,6 +136,5 @@ class WirelessSettingsApplier(object):
     if self.channel_5g == 132:
       self.ssh.run("iw reg set US")
     self.ssh.run("cp %s.tmp %s" % (LEASE_FILE, LEASE_FILE))
-    self.ssh.run(DNSMASQ_RESTART)
+    self.service_manager.restart(SERVICE_DNSMASQ)
     time.sleep(9)
-

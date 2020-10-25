@@ -1,14 +1,15 @@
 """Controller for Open WRT access point."""
 
 import time
-import yaml
 
 from acts import logger
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.openwrt_lib import network_settings
 from acts.controllers.openwrt_lib import wireless_config
 from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+import yaml
 
 MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
@@ -87,10 +88,11 @@ class OpenWrtAP(object):
   """An AccessPoint controller.
 
   Attributes:
-    log: Logging object for AccessPoint.
     ssh: The ssh connection to the AP.
     ssh_settings: The ssh settings being used by the ssh connection.
+    log: Logging object for AccessPoint.
     wireless_setting: object holding wireless configuration.
+    network_setting: Object for network configuration
   """
 
   def __init__(self, config):
@@ -100,6 +102,8 @@ class OpenWrtAP(object):
     self.log = logger.create_logger(
         lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
+    self.network_setting = network_settings.NetworkSettings(
+        self.ssh, config["ssh_config"]["host"], self.log)
 
   def configure_ap(self, wifi_configs, channel_2g, channel_5g):
     """Configure AP with the required settings.
@@ -332,12 +336,39 @@ class OpenWrtAP(object):
 
     return wireless_configs
 
+  def get_wifi_network(self, security=None, band=None):
+    """Return first match wifi interface's config.
+
+    Args:
+      security: psk2 or none
+      band: '2g' or '5g'
+
+    Returns:
+      A dict contains match wifi interface's config.
+    """
+
+    for wifi_iface in self.wireless_setting.wireless_configs:
+      match_list = []
+      wifi_network = wifi_iface.__dict__
+      if security:
+        match_list.append(security == wifi_network["security"])
+      if band:
+        match_list.append(band == wifi_network["band"])
+
+      if all(match_list):
+        wifi_network["SSID"] = wifi_network["ssid"]
+        if not wifi_network["password"]:
+          del wifi_network["password"]
+        return wifi_network
+    return None
+
   def close(self):
-    """Reset wireless settings to default and stop AP."""
+    """Reset wireless and network settings to default and stop AP."""
+    if self.network_setting.config:
+      self.network_setting.cleanup_network_settings()
     if self.wireless_setting:
       self.wireless_setting.cleanup_wireless_settings()
 
   def close_ssh(self):
     """Close SSH connection to AP."""
     self.ssh.close()
-
