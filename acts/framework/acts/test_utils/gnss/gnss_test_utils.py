@@ -630,12 +630,15 @@ def start_gnss_by_gtw_gpstool(ad,
         options = ("--es type {} --ei freq {} --ez BG {} --ez meas {} --ez "
                    "lowpower {}").format(type, freq, bgdisplay, meas, lowpower)
         cmd = cmd + " " + options
-
     ad.adb.shell(cmd)
     time.sleep(3)
 
 
-def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
+def process_gnss_by_gtw_gpstool(ad,
+                                criteria,
+                                type="gnss",
+                                clear_data=True,
+                                meas_flag=False):
     """Launch GTW GPSTool and Clear all GNSS aiding data
        Start GNSS tracking on GTW_GPSTool.
 
@@ -643,8 +646,10 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
         ad: An AndroidDevice object.
         criteria: Criteria for current test item.
         type: Different API for location fix. Use gnss/flp/nmea
-        clear_data: True to clear GNSS aiding data. False is not to. Defalt
+        clear_data: True to clear GNSS aiding data. False is not to. Default
         set to True.
+        meas_flag: True to enable GnssMeasurement. False is not to. Default
+        set to False.
 
     Returns:
         True: First fix TTFF are within criteria.
@@ -662,7 +667,7 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
             clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start %s on GTW_GPSTool - attempt %d" % (type.upper(),
                                                               i+1))
-        start_gnss_by_gtw_gpstool(ad, True, type)
+        start_gnss_by_gtw_gpstool(ad, state=True, type=type, meas=meas_flag)
         for _ in range(10 + criteria):
             logcat_results = ad.search_logcat("First fixed", begin_time)
             if logcat_results:
@@ -672,13 +677,13 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
                             (type.upper(), first_fixed/1000))
                 if (first_fixed/1000) <= criteria:
                     return True
-                start_gnss_by_gtw_gpstool(ad, False, type)
+                start_gnss_by_gtw_gpstool(ad, state=False, type=type)
                 raise signals.TestFailure("Fail to get %s location fixed "
                                           "within %d seconds criteria."
                                           % (type.upper(), criteria))
             time.sleep(1)
         check_currrent_focus_app(ad)
-        start_gnss_by_gtw_gpstool(ad, False, type)
+        start_gnss_by_gtw_gpstool(ad, state=False, type=type)
     raise signals.TestFailure("Fail to get %s location fixed within %d "
                               "attempts." % (type.upper(), retries))
 
@@ -711,7 +716,11 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
         raise signals.TestError("Fail to send TTFF start_test_action.")
 
 
-def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
+def gnss_tracking_via_gtw_gpstool(ad,
+                                  criteria,
+                                  type="gnss",
+                                  testtime=60,
+                                  meas_flag=False):
     """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
 
     Args:
@@ -719,8 +728,11 @@ def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
         criteria: Criteria for current TTFF.
         type: Different API for location fix. Use gnss/flp/nmea
         testtime: Tracking test time for minutes. Default set to 60 minutes.
+        meas_flag: True to enable GnssMeasurement. False is not to. Default
+        set to False.
     """
-    process_gnss_by_gtw_gpstool(ad, criteria, type)
+    process_gnss_by_gtw_gpstool(
+        ad, criteria=criteria, type=type, meas_flag=meas_flag)
     ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
                                                            testtime))
     begin_time = get_current_epoch_time()
@@ -733,7 +745,7 @@ def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
         if crash_result:
             raise signals.TestError("GPSTool crashed. Abort test.")
     ad.log.info("Successfully tested for %d minutes" % testtime)
-    start_gnss_by_gtw_gpstool(ad, False, type)
+    start_gnss_by_gtw_gpstool(ad, state=False, type=type)
 
 
 def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
