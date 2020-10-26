@@ -354,6 +354,45 @@ class GnssFunctionTest(BaseTestClass):
                                       type="gnss", testtime=60)
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
 
+    @test_tracker_info(uuid="623628ab-fdab-449d-9025-ebf4e9a404c2")
+    def test_dpo_function(self):
+        """Verify DPO Functionality.
+
+        Steps:
+            1. Launch GTW_GPSTool.
+            2. Enable GnssMeasurement.
+            3. GNSS tracking for 5 minutes.
+            4. Calculate the count diff of "HardwareClockDiscontinuityCount"
+
+        Expected Results:
+            DPO should be engaged in 5 minutes GNSS tracking.
+        """
+        tracking_minutes = 5
+        self.start_qxdm_and_tcpdump_log()
+        dpo_begin_time = get_current_epoch_time()
+        gnss_tracking_via_gtw_gpstool(self.ad,
+                                      self.standalone_cs_criteria,
+                                      type="gnss",
+                                      testtime=tracking_minutes,
+                                      meas_flag=True)
+        dpo_results = self.ad.search_logcat("HardwareClockDiscontinuityCount",
+                                            dpo_begin_time)
+        if not dpo_results:
+            raise signals.TestError(
+                "No \"HardwareClockDiscontinuityCount\" is found in logs.")
+        self.ad.log.info(dpo_results[0]["log_message"])
+        self.ad.log.info(dpo_results[-1]["log_message"])
+        first_dpo_count = int(dpo_results[0]["log_message"].split()[-1])
+        final_dpo_count = int(dpo_results[-1]["log_message"].split()[-1])
+        if final_dpo_count - first_dpo_count == 0:
+            raise signals.TestFailure(
+                "DPO can't be engaged in %d minutes test." % tracking_minutes)
+        dpo_engage_rate = "{percent:.2%}".format(
+            percent=(final_dpo_count - first_dpo_count)/(tracking_minutes*60))
+        self.ad.log.info("DPO is ON for %d seconds during %d minutes test." % (
+            final_dpo_count - first_dpo_count, tracking_minutes))
+        self.ad.log.info("TestResult DPO_Engage_Rate "+dpo_engage_rate)
+
     @test_tracker_info(uuid="499d2091-640a-4735-9c58-de67370e4421")
     def test_gnss_init_error(self):
         """Check if there is any GNSS initialization error after reboot.
