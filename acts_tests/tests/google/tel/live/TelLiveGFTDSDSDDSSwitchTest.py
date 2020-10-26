@@ -36,9 +36,9 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_data_utils import reboot_test
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
+from acts.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -63,19 +63,10 @@ from acts.test_utils.tel.tel_test_utils import is_volte_enabled
 from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan_for_subscription
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_csfb_for_subscription
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_voice_3g_for_subscription
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_voice_general_for_subscription
 from acts.test_utils.tel.tel_voice_utils import \
     phone_setup_volte_for_subscription
+from acts.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
 from acts.utils import rand_ascii_str
 
@@ -205,71 +196,41 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
         ad.log.info(
             "Step 0: Set up phone in desired RAT (slot 0: %s, slot 1: %s)",
             slot_0_nw_gen, slot_1_nw_gen)
-        if slot_0_nw_gen == "volte":
-            slot0_phone_setup_func = phone_setup_volte_for_subscription
-            is_slot0_in_call = is_phone_in_call_volte
-        elif slot_0_nw_gen == "csfb":
-            slot0_phone_setup_func = phone_setup_csfb_for_subscription
-            is_slot0_in_call = is_phone_in_call_csfb
-        elif slot_0_nw_gen == "3g":
-            slot0_phone_setup_func = phone_setup_voice_3g_for_subscription
-            is_slot0_in_call = is_phone_in_call_3g
-        elif slot_0_nw_gen == "wfc":
-            slot0_phone_setup_func = phone_setup_iwlan_for_subscription
-            is_slot0_in_call = is_phone_in_call_iwlan
-        else:
-            slot0_phone_setup_func = phone_setup_voice_general_for_subscription
-            is_slot0_in_call = None
 
-        if slot_0_nw_gen == "wfc":
-            tasks = [(slot0_phone_setup_func,(
-                self.log,
-                ad,
-                slot_0_subid,
-                is_airplane_mode,
-                wfc_mode[0],
-                self.wifi_network_ssid,
-                self.wifi_network_pass))]
-        else:
-            tasks = [(slot0_phone_setup_func, (self.log, ad, slot_0_subid))]
-        if not multithread_func(self.log, tasks):
+        if not phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_0_nw_gen,
+            slot_0_subid,
+            is_airplane_mode,
+            wfc_mode[0],
+            self.wifi_network_ssid,
+            self.wifi_network_pass):
+
             self.log.error("Phone Failed to Set Up Properly.")
             self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        if slot_1_nw_gen == "volte":
-            slot1_phone_setup_func = phone_setup_volte_for_subscription
-            is_slot1_in_call = is_phone_in_call_volte
-        elif slot_1_nw_gen == "csfb":
-            slot1_phone_setup_func = phone_setup_csfb_for_subscription
-            is_slot1_in_call = is_phone_in_call_csfb
-        elif slot_1_nw_gen == "3g":
-            slot1_phone_setup_func = phone_setup_voice_3g_for_subscription
-            is_slot1_in_call = is_phone_in_call_3g
-        elif slot_1_nw_gen == "wfc":
-            slot1_phone_setup_func = phone_setup_iwlan_for_subscription
-            is_slot1_in_call = is_phone_in_call_iwlan
-        else:
-            slot1_phone_setup_func = phone_setup_voice_general_for_subscription
-            is_slot1_in_call = None
+        if not phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_1_nw_gen,
+            slot_1_subid,
+            is_airplane_mode,
+            wfc_mode[1],
+            self.wifi_network_ssid,
+            self.wifi_network_pass):
 
-        if slot_1_nw_gen == "wfc":
-            tasks = [(slot1_phone_setup_func, (
-                self.log,
-                ad,
-                slot_1_subid,
-                is_airplane_mode,
-                wfc_mode[1],
-                self.wifi_network_ssid,
-                self.wifi_network_pass))]
-        else:
-            tasks = [(slot1_phone_setup_func, (self.log, ad, slot_1_subid))]
-        if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        is_slot0_in_call = is_phone_in_call_on_rat(
+            self.log, ad, slot_0_nw_gen, True)
+        is_slot1_in_call = is_phone_in_call_on_rat(
+            self.log, ad, slot_1_nw_gen, True)
 
         for attempt in range(3):
             if attempt != 0:
@@ -305,7 +266,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                     ad_mt = self.android_devices[1]
                     mo_sub_id = get_subid_from_slot_index(self.log, ad, call_slot)
                     if call_or_sms_or_mms == "call":
-                        set_incoming_voice_sub_id(ad_mo, mo_sub_id)
+                        set_voice_sub_id(ad_mo, mo_sub_id)
                         _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
                             self.android_devices)
 
@@ -316,10 +277,10 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                         is_mt_in_call = None
 
                     elif call_or_sms_or_mms == "sms":
-                        set_subid_for_message(ad_mo, mo_sub_id)
+                        set_message_subid(ad_mo, mo_sub_id)
                         _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
                             self.android_devices, type="sms")
-                        set_subid_for_message(ad_mt, mt_sub_id)
+                        set_message_subid(ad_mt, mt_sub_id)
 
                     elif call_or_sms_or_mms == "mms":
                         current_data_sub_id = get_default_data_sub_id(ad_mo)
@@ -329,10 +290,10 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                                 " message sub ID (%s). MMS should NOT be sent.",
                                 current_data_sub_id, mo_sub_id)
                             expected_result = False
-                        set_subid_for_message(ad_mo, mo_sub_id)
+                        set_message_subid(ad_mo, mo_sub_id)
                         _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
                             self.android_devices, type="sms")
-                        set_subid_for_message(ad_mt, mt_sub_id)
+                        set_message_subid(ad_mt, mt_sub_id)
                         set_subid_for_data(ad_mt, mt_sub_id)
                         ad_mt.droid.telephonyToggleDataConnection(True)
 
@@ -341,7 +302,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                     ad_mt = self.android_devices[0]
                     mt_sub_id = get_subid_from_slot_index(self.log, ad, call_slot)
                     if call_or_sms_or_mms == "call":
-                        set_incoming_voice_sub_id(ad_mt, mt_sub_id)
+                        set_voice_sub_id(ad_mt, mt_sub_id)
                         _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
                             self.android_devices)
 
@@ -352,10 +313,10 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                         is_mo_in_call = None
 
                     elif call_or_sms_or_mms == "sms":
-                        set_subid_for_message(ad_mt, mt_sub_id)
+                        set_message_subid(ad_mt, mt_sub_id)
                         _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
                             self.android_devices, type="sms")
-                        set_subid_for_message(ad_mo, mo_sub_id)
+                        set_message_subid(ad_mo, mo_sub_id)
 
                     elif call_or_sms_or_mms == "mms":
                         current_data_sub_id = get_default_data_sub_id(ad_mt)
@@ -365,10 +326,10 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                                 " message sub ID (%s). MMS should NOT be"
                                 " received.", current_data_sub_id, mt_sub_id)
                             expected_result = False
-                        set_subid_for_message(ad_mt, mt_sub_id)
+                        set_message_subid(ad_mt, mt_sub_id)
                         _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
                             self.android_devices, type="sms")
-                        set_subid_for_message(ad_mo, mo_sub_id)
+                        set_message_subid(ad_mo, mo_sub_id)
                         set_subid_for_data(ad_mo, mo_sub_id)
                         ad_mo.droid.telephonyToggleDataConnection(True)
 
@@ -486,59 +447,40 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             "Step 0: Set up phone in desired RAT (slot 0: %s, slot 1: %s)",
             slot_0_nw_gen, slot_1_nw_gen)
 
-        if slot_0_nw_gen == "volte":
-            slot0_phone_setup_func = phone_setup_volte_for_subscription
-            is_slot0_in_call = is_phone_in_call_volte
-        elif slot_0_nw_gen == "wfc":
-            slot0_phone_setup_func = phone_setup_iwlan_for_subscription
-            is_slot0_in_call = is_phone_in_call_iwlan
-        else:
-            slot0_phone_setup_func = phone_setup_voice_general_for_subscription
-            is_slot0_in_call = None
+        if not phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_0_nw_gen,
+            slot_0_subid,
+            is_airplane_mode,
+            wfc_mode[0],
+            self.wifi_network_ssid,
+            self.wifi_network_pass):
 
-        if slot_0_nw_gen == "wfc":
-            tasks = [(slot0_phone_setup_func, (
-                self.log,
-                ad,
-                slot_0_subid,
-                is_airplane_mode,
-                wfc_mode[0],
-                self.wifi_network_ssid,
-                self.wifi_network_pass))]
-        else:
-            tasks = [(slot0_phone_setup_func, (self.log, ad, slot_0_subid))]
-        if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        if slot_1_nw_gen == "volte":
-            slot1_phone_setup_func = phone_setup_volte_for_subscription
-            is_slot1_in_call = is_phone_in_call_volte
-        elif slot_1_nw_gen == "wfc":
-            slot1_phone_setup_func = phone_setup_iwlan_for_subscription
-            is_slot1_in_call = is_phone_in_call_iwlan
-        else:
-            slot1_phone_setup_func = phone_setup_voice_general_for_subscription
-            is_slot1_in_call = None
+        if not phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_1_nw_gen,
+            slot_1_subid,
+            is_airplane_mode,
+            wfc_mode[1],
+            self.wifi_network_ssid,
+            self.wifi_network_pass):
 
-        if slot_1_nw_gen == "wfc":
-            tasks = [(slot1_phone_setup_func, (
-                self.log,
-                ad,
-                slot_1_subid,
-                is_airplane_mode,
-                wfc_mode[1],
-                self.wifi_network_ssid,
-                self.wifi_network_pass))]
-        else:
-            tasks = [(slot1_phone_setup_func, (self.log, ad, slot_1_subid))]
-        if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        is_slot0_in_call = is_phone_in_call_on_rat(
+            self.log, ad, slot_0_nw_gen, True)
+        is_slot1_in_call = is_phone_in_call_on_rat(
+            self.log, ad, slot_1_nw_gen, True)
 
         if is_wifi_connected:
             if not ensure_wifi_connected(
@@ -690,13 +632,12 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
             if not call_direction:
                 return True
             else:
-                expected_result = True
                 if call_direction == "mo":
                     ad_mo = self.android_devices[0]
                     ad_mt = self.android_devices[1]
                     mo_sub_id = get_subid_from_slot_index(self.log, ad, call_slot)
 
-                    set_incoming_voice_sub_id(ad_mo, mo_sub_id)
+                    set_voice_sub_id(ad_mo, mo_sub_id)
                     _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
                         self.android_devices)
 
@@ -711,7 +652,7 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                     ad_mt = self.android_devices[0]
                     mt_sub_id = get_subid_from_slot_index(self.log, ad, call_slot)
 
-                    set_incoming_voice_sub_id(ad_mt, mt_sub_id)
+                    set_voice_sub_id(ad_mt, mt_sub_id)
                     _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
                         self.android_devices)
 
