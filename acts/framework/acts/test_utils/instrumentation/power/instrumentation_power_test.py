@@ -80,6 +80,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         self.prefer_bits_over_monsoon = False
         self.generate_chart = False
         self.tigertail = None
+        self._google_apps_test_utils = None
+        self._permissions_util = None
 
         # When using tigertail, sets this value to True in the test or test_setup
         self.use_tigertail_if_available = False
@@ -144,7 +146,8 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
             self._test_apk.uninstall()
         if self._google_apps_test_utils:
             self._google_apps_test_utils.close()
-        self._permissions_util.close()
+        if self._permissions_util:
+            self._permissions_util.close()
         self._pull_test_files()
         self._cleanup_test_files()
 
