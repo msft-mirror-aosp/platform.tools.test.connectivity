@@ -34,7 +34,7 @@ from enum import Enum
 
 DEFAULT_WAIT_TO_FASTBOOT_MODE = 60
 DEFAULT_DEVICE_COOL_DOWN_TIME = 80
-DEFAULT_WAIT_FOR_REBOOT = 120
+DEFAULT_WAIT_FOR_REBOOT = 180
 WIFI_SSID = 'TP-Link-VZW-DoU'
 GMAIL_ACCOUNT = 'vdou001@gmail.com'
 
@@ -188,7 +188,7 @@ class VzWDoUAutomationBaseTest(
       self.adb_run(lock_band_cmd, timeout=480)
       self.ad_dut.reboot()
       self.ad_dut.wait_for_boot_completion()
-      time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
+      time.sleep(DEFAULT_WAIT_FOR_REBOOT)
 
   def generate_random_ssid(self):
     # Generate random permutations as ssid
