@@ -20,12 +20,11 @@ import os
 import re
 import time
 
+import acts.controllers.power_monitor as power_monitor_lib
 import acts.controllers.iperf_server as ipf
 from acts import asserts
 from acts import base_test
 from acts import utils
-from acts.controllers.monsoon_lib.api.common import MonsoonError
-from acts.controllers.monsoon_lib.api.common import PassthroughStates
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
 from acts.test_utils.power import plot_utils
@@ -38,17 +37,13 @@ GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE_DEFAULT = 4.2
 MONSOON_MAX_CURRENT = 8.0
-MONSOON_RETRY_INTERVAL = 300
 DEFAULT_MONSOON_FREQUENCY = 500
-MEASUREMENT_RETRY_COUNT = 3
-RECOVER_MONSOON_RETRY_COUNT = 3
-MIN_PERCENT_SAMPLE = 95
 ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
 TEMP_FILE = '/sdcard/Download/tmp.log'
 
 
-class ObjNew():
+class ObjNew(object):
     """Create a random obj with unknown attributes and value.
 
     """
@@ -141,7 +136,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon = self.monsoons[0]
         self.mon.set_max_current(8.0)
         self.mon.set_voltage(self.mon_voltage)
-        self.mon.attach_device(self.dut)
 
         # Unpack the thresholds file or fail class setup if it can't be found
         for file in self.custom_files:
@@ -392,31 +386,6 @@ class PowerBaseTest(base_test.BaseTestClass):
                           data_path=self.mon_data_path)
         return mon_info
 
-    def monsoon_recover(self):
-        """Test loop to wait for monsoon recover from unexpected error.
-
-        Wait for a certain time duration, then quit.0
-        Args:
-            mon: monsoon object
-        Returns:
-            True/False
-        """
-        try:
-            self.mon.reconnect_monsoon()
-            time.sleep(2)
-            self.mon.usb('on')
-            logging.info('Monsoon recovered from unexpected error')
-            time.sleep(2)
-            return True
-        except MonsoonError:
-            try:
-                self.log.info(self.mon_info.dut._mon.ser.in_waiting)
-            except AttributeError:
-                # This attribute does not exist for HVPMs.
-                pass
-            logging.warning('Unable to recover monsoon from unexpected error')
-            return False
-
     def monsoon_data_collect_save(self):
         """Current measurement and save the log file.
 
@@ -427,6 +396,9 @@ class PowerBaseTest(base_test.BaseTestClass):
             A MonsoonResult object containing information about the gathered
             data.
         """
+
+        self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
+            self.monsoons[0])
 
         tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
                                 self.dut.build_info['build_id'])
@@ -446,50 +418,52 @@ class PowerBaseTest(base_test.BaseTestClass):
             data_path = os.path.join(self.mon_info.data_path,
                                      '%s_%s.txt' % (tag, highest_value + 1))
 
-        total_expected_samples = self.mon_info.freq * self.mon_info.duration
-        min_required_samples = (total_expected_samples * MIN_PERCENT_SAMPLE /
-                                100)
-        for retry_measure in range(1, MEASUREMENT_RETRY_COUNT + 1):
-            # Resets the battery status right before the test starts.
-            self.dut.adb.shell(RESET_BATTERY_STATS)
-            self.log.info('Starting power measurement. Duration: {}s. Offset: '
-                          '{}s. Voltage: {} V. attempt #{}.'.format(
-                              self.mon_info.duration, self.mon_info.offset,
-                              self.mon_voltage, retry_measure))
-            # Start the power measurement using monsoon.
-            self.mon_info.dut.usb(PassthroughStates.AUTO)
-            result = self.mon_info.dut.measure_power(
-                self.mon_info.duration,
-                measure_after_seconds=self.mon_info.offset,
-                hz=self.mon_info.freq,
-                output_path=data_path)
-            self.mon_info.dut.usb(PassthroughStates.ON)
+        # Resets the battery status right before the test starts.
+        self.dut.adb.shell(RESET_BATTERY_STATS)
+        self.log.info('Starting power measurement. Duration: {}s. Offset: '
+                      '{}s. Voltage: {} V.'.format(self.mon_info.duration,
+                                                   self.mon_info.offset,
+                                                   self.mon_voltage))
 
-            self.log.debug(result)
-            self.log.debug('Samples Gathered: %s. Max Samples: %s '
-                           'Min Samples Required: %s.' %
-                           (result.num_samples, total_expected_samples,
-                            min_required_samples))
+        # TODO(b/155426729): Create an accurate host-to-device time difference
+        # measurement.
+        device_time_cmd = 'echo $EPOCHREALTIME'
+        device_time = self.dut.adb.shell(device_time_cmd)
+        host_time = time.time()
+        self.log.debug('device start time %s, host start time %s', device_time,
+                       host_time)
+        device_to_host_offset = float(device_time) - host_time
 
-            if result.num_samples <= min_required_samples:
-                retry_measure += 1
-                self.log.warning(
-                    'More than {} percent of samples are missing due to '
-                    'dropped packets. Need to remeasure.'.format(
-                        100 - MIN_PERCENT_SAMPLE))
-                continue
+        # Start the power measurement using monsoon.
+        self.dut.stop_services()
+        time.sleep(1)
+        self.power_monitor.disconnect_usb()
+        measurement_args = dict(duration=self.mon_info.duration,
+                                measure_after_seconds=self.mon_info.offset,
+                                hz=self.mon_info.freq)
+        self.power_monitor.measure(measurement_args,
+                                   start_time=device_to_host_offset,
+                                   output_path=data_path)
+        self.power_monitor.connect_usb()
+        self.dut.wait_for_boot_completion()
+        time.sleep(10)
+        self.dut.start_services()
 
-            self.log.info('Measurement successful after {} attempt(s).'.format(
-                retry_measure))
-            return result
-        else:
-            try:
-                self.log.info(self.mon_info.dut._mon.ser.in_waiting)
-            except AttributeError:
-                # This attribute does not exist for HVPMs.
-                pass
-            self.log.error(
-                'Unable to gather enough samples to run validation.')
+        sample_set = []
+        with open(data_path, 'r') as f:
+            for line in f:
+                timestamp, sample = line.split()
+                sample_set.append(
+                    ObjNew(time=float(timestamp[:-1]), current=float(sample)))
+
+        average_current = sum([sample.current
+                               for sample in sample_set]) / len(sample_set)
+
+        return ObjNew(average_current=average_current,
+                      voltage=self.mon_voltage,
+                      data_points=sample_set,
+                      num_samples=len(sample_set),
+                      tag=data_path)
 
     def process_iperf_results(self):
         """Get the iperf results and process.

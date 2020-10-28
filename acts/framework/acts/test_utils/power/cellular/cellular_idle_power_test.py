@@ -65,7 +65,7 @@ class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):
         # Obtain a list of samples from the monsoon result object
         samples = [
             data_point.current * 1000
-            for data_point in monsoon_result.get_data_points()
+            for data_point in monsoon_result.data_points
         ]
 
         filtered_slot_averages = []
