@@ -75,7 +75,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.img_name = ''
         self.dut = None
         self.power_logger = PowerMetricLogger.for_test_case()
-        self.avg_current = 0
 
     @property
     def final_test(self):
@@ -137,6 +136,10 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.set_max_current(8.0)
         self.mon.set_voltage(self.mon_voltage)
 
+        # Initialize the power monitor object that will be used to measure
+        self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
+            self.monsoons[0])
+
         # Unpack the thresholds file or fail class setup if it can't be found
         for file in self.custom_files:
             if 'pass_fail_threshold_' + self.dut.model in file:
@@ -184,8 +187,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         """Set up test specific parameters or configs.
 
         """
-        # Reset the power consumption to 0 before each tests
+        # Reset result variables
+        self.avg_current = 0
+        self.samples = []
         self.power_result.metric_value = 0
+
         # Set the device into rockbottom state
         self.dut_rockbottom()
         wutils.reset_wifi(self.dut)
@@ -324,8 +330,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         """The actual test flow and result processing and validate.
 
         """
-        result = self.collect_power_data()
-        self.pass_fail_check(result.average_current)
+        self.collect_power_data()
+        self.pass_fail_check(self.avg_current)
 
     def collect_power_data(self):
         """Measure power, plot and take log if needed.
@@ -334,14 +340,20 @@ class PowerBaseTest(base_test.BaseTestClass):
             A MonsoonResult object.
         """
         # Collecting current measurement data and plot
-        result = self.monsoon_data_collect_save()
-        self.power_result.metric_value = (result.average_current *
-                                          self.mon_voltage)
-        self.avg_current = result.average_current
+        samples = self.power_monitor_data_collect_save()
 
-        plot_utils.monsoon_data_plot(self.mon_info, result)
+        current = [sample[1] for sample in samples]
+        average_current = sum(current) * 1000 / len(current)
 
-        return result
+        self.power_result.metric_value = (average_current * self.mon_voltage)
+        self.avg_current = average_current
+
+        plot_title = '{}_{}_{}'.format(self.test_name, self.dut.model,
+                                       self.dut.build_info['build_id'])
+        plot_utils.current_waveform_plot(samples, self.mon_voltage,
+                                         self.mon_info.data_path, plot_title)
+
+        return samples
 
     def pass_fail_check(self, average_current=None):
         """Check the test result and decide if it passed or failed.
@@ -386,19 +398,16 @@ class PowerBaseTest(base_test.BaseTestClass):
                           data_path=self.mon_data_path)
         return mon_info
 
-    def monsoon_data_collect_save(self):
+    def power_monitor_data_collect_save(self):
         """Current measurement and save the log file.
 
         Collect current data using Monsoon box and return the path of the
         log file. Take bug report if requested.
 
         Returns:
-            A MonsoonResult object containing information about the gathered
-            data.
+            A list of tuples in which the first element is a timestamp and the
+            second element is the sampled current in Amperes at that time.
         """
-
-        self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
-            self.monsoons[0])
 
         tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
                                 self.dut.build_info['build_id'])
@@ -441,7 +450,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         measurement_args = dict(duration=self.mon_info.duration,
                                 measure_after_seconds=self.mon_info.offset,
                                 hz=self.mon_info.freq)
-        self.power_monitor.measure(measurement_args,
+        self.power_monitor.measure(measurement_args=measurement_args,
                                    start_time=device_to_host_offset,
                                    output_path=data_path)
         self.power_monitor.connect_usb()
@@ -449,21 +458,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         time.sleep(10)
         self.dut.start_services()
 
-        sample_set = []
-        with open(data_path, 'r') as f:
-            for line in f:
-                timestamp, sample = line.split()
-                sample_set.append(
-                    ObjNew(time=float(timestamp[:-1]), current=float(sample)))
-
-        average_current = sum([sample.current
-                               for sample in sample_set]) / len(sample_set)
-
-        return ObjNew(average_current=average_current,
-                      voltage=self.mon_voltage,
-                      data_points=sample_set,
-                      num_samples=len(sample_set),
-                      tag=data_path)
+        return self.power_monitor.get_battery_waveform(
+            monsoon_file_path=data_path)
 
     def process_iperf_results(self):
         """Get the iperf results and process.

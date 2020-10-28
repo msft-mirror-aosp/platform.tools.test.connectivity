@@ -144,6 +144,21 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
     def disconnect_usb(self, **__):
         self.monsoon.usb('off')
 
+    def get_battery_waveform(self, monsoon_file_path=None):
+        """Parses a monsoon_file_path to obtain all current (in amps) samples.
+
+        Args:
+            monsoon_file_path: Path to a monsoon file.
+
+        Returns:
+            A list of tuples in which the first element is a timestamp and the
+            second element is the sampled current at that time.
+        """
+        if monsoon_file_path is None:
+            raise MonsoonError('monsoon_file_path can not be None')
+
+        return list(power_metrics.import_raw_data(monsoon_file_path))
+
     def get_metrics(self, start_time=None, voltage=None, monsoon_file_path=None,
                     timestamps=None, **__):
         """Parses a monsoon_file_path to compute the consumed power and other
