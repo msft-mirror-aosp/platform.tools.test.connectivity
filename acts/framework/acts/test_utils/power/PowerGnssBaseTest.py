@@ -49,60 +49,46 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
 
     def collect_power_data(self):
         """Measure power and plot."""
-        result = super().collect_power_data()
-        self.monsoon_data_plot_power(self.mon_info, result, tag='_Power')
-        return result
+        samples = super().collect_power_data()
+        plot_title = '{}_{}_{}_Power'.format(self.test_name, self.dut.model,
+                                             self.dut.build_info['build_id'])
+        self.monsoon_data_plot_power(samples, self.mon_voltage,
+                                     self.mon_info.data_path, plot_title)
+        return samples
 
-    def monsoon_data_plot_power(self, mon_info, monsoon_results, tag=''):
+    def monsoon_data_plot_power(self, samples, voltage, dest_path, plot_title):
         """Plot the monsoon power data using bokeh interactive plotting tool.
 
         Args:
-            mon_info: Dictionary with the monsoon packet config.
-            monsoon_results: a MonsoonResult or list of MonsoonResult objects to
-                             to plot.
-            tag: an extra tag to append to the resulting filename.
+            samples: a list of tuples in which the first element is a timestamp
+            and the second element is the sampled current at that time
+            voltage: the voltage that was used during the measurement
+            dest_path: destination path
+            plot_title: a filename and title for the plot.
 
         """
 
-        if not isinstance(monsoon_results, list):
-            monsoon_results = [monsoon_results]
         logging.info('Plotting the power measurement data.')
 
-        voltage = monsoon_results[0].voltage
+        time_relative = [sample[0] for sample in samples]
+        duration = time_relative[-1] - time_relative[0]
+        current_data = [sample[1] * 1000 for sample in samples]
+        avg_current = sum(current_data) / len(current_data)
 
-        total_current = 0
-        total_samples = 0
-        for result in monsoon_results:
-            total_current += result.average_current * result.num_samples
-            total_samples += result.num_samples
-        avg_current = total_current / total_samples
+        power_data = [current * voltage for current in current_data]
 
-        time_relative = [
-            data_point.relative_time
-            for monsoon_result in monsoon_results
-            for data_point in monsoon_result.data_points
-        ]
-
-        power_data = [
-            data_point.current * voltage
-            for monsoon_result in monsoon_results
-            for data_point in monsoon_result.data_points
-        ]
-
-        total_data_points = sum(
-            result.num_samples for result in monsoon_results)
-        color = ['navy'] * total_data_points
+        color = ['navy'] * len(samples)
 
         # Preparing the data and source link for bokehn java callback
         source = ColumnDataSource(
             data=dict(x0=time_relative, y0=power_data, color=color))
         s2 = ColumnDataSource(
             data=dict(
-                z0=[mon_info.duration],
+                z0=[duration],
                 y0=[round(avg_current, 2)],
                 x0=[round(avg_current * voltage, 2)],
-                z1=[round(avg_current * voltage * mon_info.duration, 2)],
-                z2=[round(avg_current * mon_info.duration, 2)]))
+                z1=[round(avg_current * voltage * duration, 2)],
+                z2=[round(avg_current * duration, 2)]))
         # Setting up data table for the output
         columns = [
             TableColumn(field='z0', title='Total Duration (s)'),
@@ -114,10 +100,7 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         dt = DataTable(
             source=s2, columns=columns, width=1300, height=60, editable=True)
 
-        plot_title = (os.path.basename(
-            os.path.splitext(monsoon_results[0].tag)[0])
-                      + tag)
-        output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+        output_file(os.path.join(dest_path, plot_title + '.html'))
         tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
         # Create a new plot with the datatable above
         plot = figure(
