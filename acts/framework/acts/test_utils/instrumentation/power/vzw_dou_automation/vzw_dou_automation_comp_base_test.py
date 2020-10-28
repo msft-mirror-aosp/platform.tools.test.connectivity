@@ -49,6 +49,7 @@ class VzWDoUAutomationCompBaseTest(
     self._companion_wifi_util = None
     self._companion_google_account_util = None
     self._companion_instr_cmd_builder = None
+    self._companion_permissions_util = None
 
   def setup_class(self):
     """Class setup"""
@@ -130,6 +131,8 @@ class VzWDoUAutomationCompBaseTest(
       self._companion_wifi_util.uninstall()
     if self._companion_google_account_util:
       self._companion_google_account_util.uninstall()
+    if self._companion_permissions_util:
+      self._companion_permissions_util.close()
     self._pull_companion_test_files()
     self._cleanup_companion_test_files()
 
