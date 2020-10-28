@@ -30,7 +30,7 @@ class PowerTelPDCCHTest(base_test.PowerCellularLabBaseTest):
         inactivity timer is not enabled. """
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         # Check if power measurement is within the required values
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check(self.avg_current)
