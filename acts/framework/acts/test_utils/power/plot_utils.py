@@ -63,12 +63,12 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
 
     time_relative = [
         data_point.relative_time for monsoon_result in monsoon_results
-        for data_point in monsoon_result.get_data_points()
+        for data_point in monsoon_result.data_points
     ]
 
     current_data = [
         data_point.current * 1000 for monsoon_result in monsoon_results
-        for data_point in monsoon_result.get_data_points()
+        for data_point in monsoon_result.data_points
     ]
 
     total_data_points = sum(result.num_samples for result in monsoon_results)
@@ -169,8 +169,7 @@ def monsoon_histogram_plot(mon_info, monsoon_result):
         bin edges.
     """
     current_data = [
-        data_point.current * 1000
-        for data_point in monsoon_result.get_data_points()
+        data_point.current * 1000 for data_point in monsoon_result.data_points
     ]
     hist, edges = numpy.histogram(current_data,
                                   bins=math.ceil(max(current_data)),
