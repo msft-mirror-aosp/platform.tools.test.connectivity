@@ -28,6 +28,7 @@ from acts.controllers.cellular_lib import UmtsSimulation
 from acts.controllers.cellular_lib import LteCaSimulation
 from acts.controllers.cellular_lib import LteImsSimulation
 from acts.test_utils.tel import tel_test_utils as telutils
+from acts.test_utils.power import plot_utils
 
 
 class PowerCellularLabBaseTest(PBT.PowerBaseTest):
@@ -243,9 +244,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         """ Collect power data using base class method and plot result
         histogram. """
 
-        result = super().collect_power_data()
-        plot_utils.monsoon_histogram_plot(self.mon_info, result)
-        return result
+        samples = super().collect_power_data()
+        plot_title = '{}_{}_{}_histogram'.format(
+            self.test_name, self.dut.model, self.dut.build_info['build_id'])
+        plot_utils.monsoon_histogram_plot(samples, self.mon_info.data_path,
+                                          plot_title)
+        return samples
 
     def teardown_test(self):
         """ Executed after every test case, even if it failed or an exception

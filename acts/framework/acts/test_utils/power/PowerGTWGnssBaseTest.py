@@ -54,8 +54,8 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
     def baseline_test(self):
         """Baseline power measurement"""
         self.ad.droid.goToSleepNow()
-        result = self.collect_power_data()
-        self.ad.log.info('TestResult AVG_Current %.2f' % result.average_current)
+        self.collect_power_data()
+        self.ad.log.info('TestResult AVG_Current %.2f' % self.avg_current)
 
     def start_gnss_tracking_with_power_data(self,
                                             mode='default',
@@ -84,28 +84,26 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
                          (sv_collecting_time, mode))
         time.sleep(sv_collecting_time)
 
-        result = self.collect_power_data()
-        self.ad.log.info('TestResult AVG_Current %.2f' % result.average_current)
-        self.calibrate_avg_current(result)
+        samples = self.collect_power_data()
+        self.ad.log.info('TestResult AVG_Current %.2f' % self.avg_current)
+        self.calibrate_avg_current(samples)
         self.ad.send_keycode('WAKEUP')
         gutils.start_gnss_by_gtw_gpstool(self.ad, False, 'gnss')
         if is_signal:
             gutils.parse_gtw_gpstool_log(
                 self.ad, self.test_location, type='gnss')
 
-    def calibrate_avg_current(self, monsoon_results):
+    def calibrate_avg_current(self, samples):
         """Calibrate average current by filtering AP wake up current with target
            value.
 
         Args:
-            monsoon_result: a MonsoonResult obj.
+            samples: a list of tuples where the first element is a timestamp
+            and the second element is a current sample.
         """
-        monsoon_results = [monsoon_results]
         calibrate_results = [
-            data_point.current * 1000
-            for monsoon_result in monsoon_results
-            for data_point in monsoon_result.data_points
-            if data_point.current * 1000 < self.calibrate_target
+            sample[1] * 1000 for sample in samples
+            if sample[1] * 1000 < self.calibrate_target
         ]
         avg_current = sum(calibrate_results) / len(calibrate_results)
         self.ad.log.info('TestResult Calibrate_AVG_Current %.2f' % avg_current)
