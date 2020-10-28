@@ -29,6 +29,7 @@ from bokeh.models import tools as bokeh_tools
 from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 from acts.controllers.monsoon_lib.api.common import PassthroughStates
+from acts.controllers.monsoon_lib.api.common import MonsoonError
 
 LOGTIME_RETRY_COUNT = 3
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
@@ -79,13 +80,13 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         time_relative = [
             data_point.relative_time
             for monsoon_result in monsoon_results
-            for data_point in monsoon_result.get_data_points()
+            for data_point in monsoon_result.data_points
         ]
 
         power_data = [
             data_point.current * voltage
             for monsoon_result in monsoon_results
-            for data_point in monsoon_result.get_data_points()
+            for data_point in monsoon_result.data_points
         ]
 
         total_data_points = sum(
@@ -168,3 +169,28 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
                     time.sleep(MONSOON_RETRY_INTERVAL)
             else:
                 self.log.error('Failed to recover monsoon')
+
+    def monsoon_recover(self):
+        """Test loop to wait for monsoon recover from unexpected error.
+
+        Wait for a certain time duration, then quit.0
+        Args:
+            mon: monsoon object
+        Returns:
+            True/False
+        """
+        try:
+            self.mon.reconnect_monsoon()
+            time.sleep(2)
+            self.mon.usb('on')
+            logging.info('Monsoon recovered from unexpected error')
+            time.sleep(2)
+            return True
+        except MonsoonError:
+            try:
+                self.log.info(self.mon_info.dut._mon.ser.in_waiting)
+            except AttributeError:
+                # This attribute does not exist for HVPMs.
+                pass
+            logging.warning('Unable to recover monsoon from unexpected error')
+            return False
