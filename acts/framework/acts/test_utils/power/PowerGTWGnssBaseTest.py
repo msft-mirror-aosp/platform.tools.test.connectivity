@@ -104,7 +104,7 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
         calibrate_results = [
             data_point.current * 1000
             for monsoon_result in monsoon_results
-            for data_point in monsoon_result.get_data_points()
+            for data_point in monsoon_result.data_points
             if data_point.current * 1000 < self.calibrate_target
         ]
         avg_current = sum(calibrate_results) / len(calibrate_results)
