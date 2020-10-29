@@ -42,38 +42,37 @@ class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):
         self.cellular_simulator.wait_until_idle_state(idle_wait_time)
 
         # Measure power
-        monsoon_result = self.collect_power_data()
+        samples = self.collect_power_data()
 
         # If necessary, replace the test result with the filtered metric
         if filter_results:
-            self.avg_current = self.filter_for_idle_state(monsoon_result)
+            self.avg_current = self.filter_for_idle_state(samples)
             self.power_result.metric_value = self.avg_current * self.mon_voltage
 
         # Check if power measurement is below the required value
         self.pass_fail_check(self.avg_current)
 
-    def filter_for_idle_state(self, monsoon_result):
+    def filter_for_idle_state(self, samples):
         """ Process results and only take an average of time slots that are
         below a certain threshold.
 
         Args:
-            monsoon_result: a result object from a power measurement.
+            samples: a list of tuples in which the first element is a timestamp
+            and the second element is the sampled current in micro amps at that
+            time.
         """
         # Calculate the time slot duration in number of samples
         slot_length = round(self.mon_freq * self.TIME_SLOT_WINDOW_SECONDS)
 
-        # Obtain a list of samples from the monsoon result object
-        samples = [
-            data_point.current * 1000
-            for data_point in monsoon_result.get_data_points()
-        ]
+        # Transform the currents from samples into milli_amps.
+        milli_amps = [sample[1] * 1000 for sample in samples]
 
         filtered_slot_averages = []
-        for slot in range(int(monsoon_result.num_samples / slot_length)):
+        for slot in range(int(len(milli_amps) / slot_length)):
             # Calculate the average in this time slot
             slot_start = slot_length * slot
             slot_end = slot_start + slot_length
-            slot_average = sum(samples[slot_start:slot_end]) / slot_length
+            slot_average = sum(milli_amps[slot_start:slot_end]) / slot_length
             # Only use time slots in which the average was below the threshold
             if slot_average <= self.FILTER_CURRENT_THRESHOLD:
                 filtered_slot_averages.append(slot_average)
