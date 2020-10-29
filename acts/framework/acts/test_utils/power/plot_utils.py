@@ -26,8 +26,8 @@ from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 
 
-def monsoon_data_plot(mon_info, monsoon_results, tag=''):
-    """Plot the monsoon current data using bokeh interactive plotting tool.
+def current_waveform_plot(samples, voltage, dest_path, plot_title):
+    """Plot the current data using bokeh interactive plotting tool.
 
     Plotting power measurement data with bokeh to generate interactive plots.
     You can do interactive data analysis on the plot after generating with the
@@ -36,53 +36,35 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
     https://drive.google.com/open?id=0Bwp8Cq841VnpT2dGUUxLYWZvVjA
 
     Args:
-        mon_info: obj with information of monsoon measurement, including
-            monsoon device object, measurement frequency, duration, etc.
-        monsoon_results: a MonsoonResult or list of MonsoonResult objects to
-                         to plot.
-        tag: an extra tag to append to the resulting filename.
-
+        samples: a list of tuples in which the first element is a timestamp and
+          the second element is the sampled current in milli amps at that time.
+        voltage: the voltage that was used during the measurement.
+        dest_path: destination path.
+        plot_title: a filename and title for the plot.
     Returns:
         plot: the plotting object of bokeh, optional, will be needed if multiple
            plots will be combined to one html file.
         dt: the datatable object of bokeh, optional, will be needed if multiple
            datatables will be combined to one html file.
     """
-    if not isinstance(monsoon_results, list):
-        monsoon_results = [monsoon_results]
     logging.info('Plotting the power measurement data.')
 
-    voltage = monsoon_results[0].voltage
+    time_relative = [sample[0] for sample in samples]
+    duration = time_relative[-1] - time_relative[0]
+    current_data = [sample[1] * 1000 for sample in samples]
+    avg_current = sum(current_data) / len(current_data)
 
-    total_current = 0
-    total_samples = 0
-    for result in monsoon_results:
-        total_current += result.average_current * result.num_samples
-        total_samples += result.num_samples
-    avg_current = total_current / total_samples
-
-    time_relative = [
-        data_point.relative_time for monsoon_result in monsoon_results
-        for data_point in monsoon_result.get_data_points()
-    ]
-
-    current_data = [
-        data_point.current * 1000 for monsoon_result in monsoon_results
-        for data_point in monsoon_result.get_data_points()
-    ]
-
-    total_data_points = sum(result.num_samples for result in monsoon_results)
-    color = ['navy'] * total_data_points
+    color = ['navy'] * len(samples)
 
     # Preparing the data and source link for bokehn java callback
     source = ColumnDataSource(
         data=dict(x=time_relative, y=current_data, color=color))
     s2 = ColumnDataSource(
-        data=dict(a=[mon_info.duration],
+        data=dict(a=[duration],
                   b=[round(avg_current, 2)],
                   c=[round(avg_current * voltage, 2)],
-                  d=[round(avg_current * voltage * mon_info.duration, 2)],
-                  e=[round(avg_current * mon_info.duration, 2)]))
+                  d=[round(avg_current * voltage * duration, 2)],
+                  e=[round(avg_current * duration, 2)]))
     # Setting up data table for the output
     columns = [
         TableColumn(field='a', title='Total Duration (s)'),
@@ -97,9 +79,7 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
                    height=60,
                    editable=True)
 
-    plot_title = (
-        os.path.basename(os.path.splitext(monsoon_results[0].tag)[0]) + tag)
-    output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+    output_file(os.path.join(dest_path, plot_title + '.html'))
     tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
     # Create a new plot with the datatable above
     plot = figure(plot_width=1300,
@@ -156,30 +136,24 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
     return plot, dt
 
 
-def monsoon_histogram_plot(mon_info, monsoon_result):
+def monsoon_histogram_plot(samples, dest_path, plot_title):
     """ Creates a histogram from a monsoon result object.
 
     Args:
-        mon_info: obj with information of monsoon measurement, including
-            monsoon device object, measurement frequency, duration, etc.
-        monsoon_result: a MonsoonResult object from which to obtain the
-            current histogram.
+        samples: a list of tuples in which the first element is a timestamp and
+          the second element is the sampled current in milli amps at that time.
+        dest_path: destination path
+        plot_title: a filename and title for the plot.
     Returns:
         a tuple of arrays containing the values of the histogram and the
         bin edges.
     """
-    current_data = [
-        data_point.current * 1000
-        for data_point in monsoon_result.get_data_points()
-    ]
-    hist, edges = numpy.histogram(current_data,
-                                  bins=math.ceil(max(current_data)),
-                                  range=(0, max(current_data)))
+    milli_amps = [sample[1] * 1000 for sample in samples]
+    hist, edges = numpy.histogram(milli_amps,
+                                  bins=math.ceil(max(milli_amps)),
+                                  range=(0, max(milli_amps)))
 
-    plot_title = (os.path.basename(os.path.splitext(monsoon_result.tag)[0]) +
-                  '_histogram')
-
-    output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+    output_file(os.path.join(dest_path, plot_title + '.html'))
 
     plot = figure(title=plot_title,
                   y_axis_type='log',
@@ -200,17 +174,18 @@ def monsoon_histogram_plot(mon_info, monsoon_result):
 
     return hist, edges
 
-def monsoon_tx_power_sweep_plot(mon_info, tag, currents, txs):
+
+def monsoon_tx_power_sweep_plot(dest_path, plot_title, currents, txs):
     """ Creates average current vs tx power plot
 
     Args:
+        dest_path: destination path
+        plot_title: a filename and title for the plot.
         currents: List of average currents measured during power sweep
         txs: List of uplink input power levels specified for each measurement
     """
 
-    plot_title = tag + '_tx_power_sweep'
-
-    output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+    output_file(os.path.join(dest_path, plot_title + '.html'))
 
     plot = figure(title=plot_title,
                   y_axis_label='Average Current [mA]',

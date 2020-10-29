@@ -278,6 +278,10 @@ class TelephonyBaseTest(BaseTestClass):
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
 
+        # If device is setup already, skip the following setup procedures
+        if getattr(ad, "telephony_test_setup", None):
+            return True
+
         # eSIM enablement
         if hasattr(ad, "fi_esim"):
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
@@ -331,9 +335,6 @@ class TelephonyBaseTest(BaseTestClass):
         # Sub ID setup
         initial_set_up_for_subid_infomation(self.log, ad)
 
-        # If device is setup already, skip the following setup procedures
-        if getattr(ad, "telephony_test_setup", None):
-            return True
 
         try:
             ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
