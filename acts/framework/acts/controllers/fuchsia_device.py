@@ -922,8 +922,8 @@ class FuchsiaDevice:
                 ) or network["status"].upper() != status.upper():
                     self.log.info(
                         "Connection failed: a network failure occurred that is unrelated"
-                        "to remove network or incorrect status update. \nExpected state: " (
-                            state, status, network))
+                        "to remove network or incorrect status update. \nExpected state: "
+                        % (state, status, network))
                     return False
                 else:
                     return True
