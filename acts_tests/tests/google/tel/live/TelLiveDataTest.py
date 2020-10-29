@@ -311,6 +311,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         wifi_toggle_state(ad.log, ad, False)
+        set_preferred_mode_for_5g(ad)
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             # APM toggle
@@ -349,6 +350,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         wifi_toggle_state(ad.log, ad, False)
         toggle_airplane_mode(ad.log, ad, False)
+        set_preferred_mode_for_5g(ad)
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             # Reboot phone
@@ -395,8 +397,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                             NETWORK_MODE_WCDMA_ONLY)
             time.sleep(15)
             # Set mode pref to 5G
-            set_preferred_network_mode_pref(ad.log, ad, sub_id,
-                                            NETWORK_MODE_NR_LTE_GSM_WCDMA)
+            set_preferred_mode_for_5g(ad)
             # LTE attach
             if not wait_for_network_generation(
                     ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
