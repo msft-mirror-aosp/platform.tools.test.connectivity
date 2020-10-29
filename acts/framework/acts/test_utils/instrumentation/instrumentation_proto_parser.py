@@ -18,6 +18,7 @@ import collections
 import os
 import tempfile
 
+from acts.error import ActsError
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
 DEFAULT_INST_LOG_DIR = 'instrument-logs'
@@ -26,7 +27,7 @@ START_TIMESTAMP = 'start'
 END_TIMESTAMP = 'end'
 
 
-class ProtoParserError(Exception):
+class ProtoParserError(ActsError):
     """Class for exceptions raised by the proto parser."""
 
 
