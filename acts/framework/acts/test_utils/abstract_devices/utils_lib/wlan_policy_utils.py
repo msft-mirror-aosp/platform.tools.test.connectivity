@@ -1,31 +1,88 @@
+#!/usr/bin/env python3
+#
+#   Copyright 2020 - The Android Open Source Project
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+SAVED_NETWORKS = "saved_networks"
+CLIENT_STATE = "client_connections_state"
+CONNECTIONS_ENABLED = "ConnectionsEnabled"
+CONNECTIONS_DISABLED = "ConnectionsDisabled"
+
+
 def setup_policy_tests(fuchsia_devices):
-    """ Preserve networks already saved on devices before removing them to
-        setup up for a clean test environment. Initialize the client controller
-        and enable connections.
+    """ Preserves networks already saved on devices before removing them to
+        setup up for a clean test environment. Records the state of client
+        connections before tests. Initializes the client controller
+        and enables connections.
     Args:
-        fuchsia_device: the devices under test
+        fuchsia_devices: the devices under test
     Returns:
-        A dict of the networks that were saved on the device, indexed by the device
+        A dict of the data to restore after tests indexed by device. The data
+        for each device is a dict of the saved data, ie saved networks and
+        state of client connections.
     """
-    preserved_saved_networks = {}
+    preserved_data_by_device = {}
     for fd in fuchsia_devices:
+        data = {}
+        # Collect and delete networks saved on the device.
         fd.wlan_policy_lib.wlanCreateClientController()
         result_get = fd.wlan_policy_lib.wlanGetSavedNetworks()
-        preserved_saved_networks[fd] = result_get['result']
+        if result_get.get("result") != None:
+            data[SAVED_NETWORKS] = result_get['result']
         fd.wlan_policy_lib.wlanRemoveAllNetworks()
-    return preserved_saved_networks
+
+        # Get the currect client connection state (connections enabled or disabled)
+        # and enable connections by default.
+        fd.wlan_policy_lib.wlanSetNewListener()
+        result_update = fd.wlan_policy_lib.wlanGetUpdate()
+        if result_update.get("result") != None and result_update.get(
+                "result").get("state") != None:
+            data[CLIENT_STATE] = result_update.get("result").get("state")
+        else:
+            fd.log.warn("Failed to get update; test will not start or "
+                        "stop client connections at the end of the test.")
+        fd.wlan_policy_lib.wlanStartClientConnections()
+
+        preserved_data_by_device[fd] = data
+    return preserved_data_by_device
 
 
-def restore_saved_networks(fuchsia_devices, preserved_networks):
+def restore_state(fuchsia_devices, preserved_data):
+    """ Restore the state of the test device to what it was before tests began.
+        Remove any remaining saved networks, and restore the saved networks and
+        client connections state recorded by setup_policy_tests
+    Args:
+        fuchsia_devices: The fuchsia devices under test
+        preserved data: Dict of data indexed by fuchsia device, as returned
+                        by setup_policy_tests
+    """
     for fd in fuchsia_devices:
-        for network in preserved_networks[fd]:
+        data = preserved_data[fd]
+        fd.wlan_policy_lib.wlanRemoveAllNetworks()
+        for network in data[SAVED_NETWORKS]:
             save_network(fd, network["ssid"], network["security_type"],
                          network["credential_value"])
+        for starting_state in data[CLIENT_STATE]:
+            if starting_state == CONNECTIONS_ENABLED:
+                fd.wlan_policy_lib.wlanStartClientConnections()
+            elif starting_state == CONNECTIONS_DISABLED:
+                fd.wlan_policy_lib.wlanStopClientConnections()
 
 
 def save_network(fd, ssid, security_type, password=""):
     """ Saves a network as specified on the given device and verify that the operation succeeded.
-        Returns true if there was an error, false otherwise
+        Returns true if there was no error, and false otherwise
     Args:
         fd: The Fuchsia device to save the network on
         ssid: The SSID or name of the network to save.
@@ -36,9 +93,9 @@ def save_network(fd, ssid, security_type, password=""):
     """
     result_save = fd.wlan_policy_lib.wlanSaveNetwork(ssid, security_type,
                                                      password)
-    if result_save["error"] != None:
-        self.log.info("Failed to save network %s with error: %s" % ssid,
-                      result_save["error"])
+    if result_save.get("error") != None:
+        fd.log.info("Failed to save network %s with error: %s" %
+                    (ssid, result_save["error"]))
         return False
     else:
         return True
@@ -52,3 +109,4 @@ def reboot_device(fd):
     fd.reboot()
     fd.wlan_policy_lib.wlanCreateClientController()
     fd.wlan_policy_lib.wlanStartClientConnections()
+    fd.wlan_policy_lib.wlanSetNewListener()

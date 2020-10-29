@@ -24,7 +24,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import reboot_device, restore_saved_networks, save_network, setup_policy_tests
+from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import reboot_device, restore_state, save_network, setup_policy_tests
 from acts.utils import rand_ascii_str, rand_hex_str, timeout
 import requests
 import time
@@ -63,8 +63,7 @@ class SavedNetworksTest(WifiBaseTest):
             raise EnvironmentError("No Fuchsia devices found.")
         # Save the existing saved networks before we remove them for tests
         # And remember whether client connections have started
-        self.preexisting_saved_networks = setup_policy_tests(
-            self.fuchsia_devices)
+        self.preserved_state = setup_policy_tests(self.fuchsia_devices)
         self.preexisting_client_connections_state = {}
         for fd in self.fuchsia_devices:
             fd.wlan_policy_lib.wlanSetNewListener()
@@ -115,8 +114,7 @@ class SavedNetworksTest(WifiBaseTest):
             # Remove any networks remaining from tests
             fd.wlan_policy_lib.wlanRemoveAllNetworks()
         # Put back the networks that were saved before tests began.
-        restore_saved_networks(self.fuchsia_devices,
-                               self.preexisting_saved_networks)
+        restore_state(self.fuchsia_devices, self.preserved_state)
         self.access_points[0].stop_all_aps()
 
     def get_saved_networks(self, fd):
@@ -258,7 +256,7 @@ class SavedNetworksTest(WifiBaseTest):
                                          self.credentialType(password),
                                          password)
 
-    def start_ap(self, ssid, security_type, password=None):
+    def start_ap(self, ssid, security_type, password=None, hidden=False):
         """ Starts an access point.
         Args:
             ssid: the SSID of the network to broadcast

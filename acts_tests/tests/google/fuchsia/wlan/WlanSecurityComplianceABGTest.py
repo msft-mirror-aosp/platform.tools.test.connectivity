@@ -22,7 +22,7 @@ from acts.controllers.ap_lib.hostapd_security import Security
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
-from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_saved_networks
+from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_state
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 from acts.utils import rand_hex_str
@@ -184,8 +184,8 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         if 'association_mechanism' in self.user_params:
             if self.user_params['association_mechanism'] == 'policy':
                 self.association_mechanism = 'policy'
-                # Preserve networks already saved on device before removing
-                self.preserved_saved_networks = setup_policy_tests(
+                # Preserve state of device before tests and set up device.
+                self.preexisting_state = setup_policy_tests(
                     self.fuchsia_devices)
         self.access_point.stop_all_aps()
 
@@ -208,8 +208,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
 
     def teardown_class(self):
         if self.association_mechanism == 'policy':
-            restore_saved_networks(self.fuchsia_devices,
-                                   self.preserved_saved_networks)
+            restore_state(self.fuchsia_devices, self.preexisting_state)
 
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
