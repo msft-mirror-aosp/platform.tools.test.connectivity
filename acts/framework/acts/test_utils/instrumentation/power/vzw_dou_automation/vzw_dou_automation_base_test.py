@@ -109,6 +109,15 @@ class VzWDoUAutomationBaseTest(
     self.adb_run(common.enable_full_batterystats_history)
     self.adb_run(goog.disable_playstore)
     self.adb_run(goog.disable_volta)
+    # Test harness flag
+    harness_prop = 'getprop ro.test_harness'
+    # command would fail if properties were previously set, therefore it
+    # needs to be verified first
+    if self.adb_run(harness_prop)[harness_prop] != '1':
+      self.log.info('Enable test harness.')
+      self.adb_run('echo ro.test_harness=1 >> /data/local.prop')
+      self.adb_run('chmod 644 /data/local.prop')
+      self.adb_run(common.test_harness.toggle(True))
     self.adb_run(goog.force_stop_nexuslauncher)
     self.adb_run(common.enable_ramdumps.toggle(False))
     self.adb_run(goog.disable_betterbug)
@@ -119,9 +128,10 @@ class VzWDoUAutomationBaseTest(
     """Prepares the device for power testing."""
     self._factory_reset()
     super()._prepare_device()
-    self.base_device_configuration()
     self.log_in_gmail_account()
     self._cut_band()
+    self.base_device_configuration()
+    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
 
   def _cleanup_device(self):
     super()._cleanup_device()
@@ -207,6 +217,7 @@ class VzWDoUAutomationBaseTest(
 
   def log_in_gmail_account(self, sync='false', wait_for_checkin='false'):
     # Log in to gmail account
+    self.ad_dut.adb.ensure_root()
     self._install_google_account_util_apk()
     time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
     additional_setting = self._instrumentation_config.get_config('additional_setting')
