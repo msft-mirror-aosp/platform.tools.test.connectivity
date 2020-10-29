@@ -1070,7 +1070,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         ad.log.error("Failed to set to 4G data.")
         return False
 
-    toggle_volte(log, ad, False)
+    toggle_volte_for_subscription(log, ad, sub_id, False)
 
     if not ensure_network_generation_for_subscription(
             log, ad, sub_id, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
