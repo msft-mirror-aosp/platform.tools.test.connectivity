@@ -82,6 +82,9 @@ def setup_ap_and_associate(access_point,
              check_connectivity, n_capabilities, ac_capabilities,
              vht_bandwidth, setup_bridge)
 
+    if not security:
+        target_security = "none"
+
     if security and security.wpa3:
         return associate(client,
                          ssid,
@@ -188,6 +191,7 @@ def associate(client,
                             hidden=hidden,
                             association_mechanism=association_mechanism,
                             target_security=target_security)
+
 
 def status(client):
     """Requests the state of WLAN network.
