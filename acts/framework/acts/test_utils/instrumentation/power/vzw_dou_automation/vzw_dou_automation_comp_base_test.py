@@ -150,6 +150,15 @@ class VzWDoUAutomationCompBaseTest(
     self.ad_cp.wait_for_boot_completion()
     time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
     self.ad_cp.adb.ensure_root()
+    # Test harness flag
+    harness_prop = 'getprop ro.test_harness'
+    # command would fail if properties were previously set, therefore it
+    # needs to be verified first
+    if self.adb_run(harness_prop, ad=self.ad_cp)[harness_prop] != '1':
+      self.log.info('Enable test harness at companion.')
+      self.adb_run('echo ro.test_harness=1 >> /data/local.prop', ad=self.ad_cp)
+      self.adb_run('chmod 644 /data/local.prop', ad=self.ad_cp)
+      self.adb_run(common.test_harness.toggle(True), ad=self.ad_cp)
     self.adb_run(goog.force_stop_nexuslauncher, ad=self.ad_cp)
     self.adb_run(goog.disable_playstore, ad=self.ad_cp)
     self.adb_run(goog.disable_chrome, ad=self.ad_cp)
