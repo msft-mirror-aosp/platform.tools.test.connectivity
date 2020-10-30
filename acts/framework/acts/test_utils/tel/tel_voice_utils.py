@@ -1900,7 +1900,7 @@ def phone_setup_on_rat(
     only_return_fn=None,
     sub_id_type='voice'):
 
-    if not sub_id:
+    if sub_id is None:
         if sub_id_type == 'sms':
             sub_id = get_outgoing_message_sub_id(ad)
         else:
