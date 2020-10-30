@@ -27,7 +27,7 @@ import time
 # hidden networks. Multiple scans are necessary to verify a very low chance of
 # random failure.
 TIME_WAIT_FOR_CONNECT = 45
-TIME_ATTEMPT_SCANS = 45
+TIME_ATTEMPT_SCANS = 60
 
 CONNECTIONS_ENABLED = "ConnectionsEnabled"
 CONNECTIONS_DISABLED = "ConnectionsDisabled"
@@ -105,8 +105,17 @@ class HiddenNetworksTest(WifiBaseTest):
         # results at least once. Even if hidden networks are scanned
         # probabilistically, we should see it after a few tries.
         for fd in self.fuchsia_devices:
+            # A hidden network must be saved to be found in scan results.
+            # Stop client connections to not trigger a connect when saving,
+            # which would interfere with requested scans.
+            fd.wlan_policy_lib.wlanStopClientConnections()
+            if not save_network(fd, self.hidden_ssid, self.hidden_security,
+                                self.hidden_password):
+                raise EnvironmentError("Failed to save network")
+            fd.wlan_policy_lib.wlanStartClientConnections()
             start_time = time.time()
             num_performed_scans = 0
+
             while time.time() < start_time + TIME_ATTEMPT_SCANS:
                 num_performed_scans = num_performed_scans + 1
                 scan_result = fd.wlan_policy_lib.wlanScanForNetworks()
@@ -122,6 +131,8 @@ class HiddenNetworksTest(WifiBaseTest):
                         "SSID of hidden network seen after %d scans" %
                         num_performed_scans)
                     return
+                # Don't overload SL4F with scan requests
+                time.sleep(1)
 
             self.log.error("Failed to see SSID after %d scans" %
                            num_performed_scans)
