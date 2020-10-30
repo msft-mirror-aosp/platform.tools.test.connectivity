@@ -26,6 +26,10 @@ MAX_ATTN = 95
 
 class WifiPnoTest(WifiBaseTest):
 
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
+
     def setup_class(self):
         super().setup_class()
 
