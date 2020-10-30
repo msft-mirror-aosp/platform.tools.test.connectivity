@@ -837,7 +837,7 @@ class FuchsiaDevice:
                 if not net_id["ssid"] == ssid or not net_id["type_"].upper(
                 ) == security_type.upper():
                     continue
-                if not 'state' in network:
+                if 'state' not in network:
                     self.log.info(
                         "Client state summary's network is missing field 'state'"
                     )
@@ -904,7 +904,7 @@ class FuchsiaDevice:
                 if not net_id["ssid"] == ssid or not net_id["type_"].upper(
                 ) == security_type.upper():
                     continue
-                if not 'state' in network or not "status" in network:
+                if 'state' not in network or "status" not in network:
                     self.log.info(
                         "Client state summary's network is missing fields")
                     return False
