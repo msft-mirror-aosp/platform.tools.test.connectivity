@@ -34,6 +34,8 @@ class VzWDoUAutomationPhoneCallTest(
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_voice_call_over_lte(self, attempt_number):
     """Measures power when the device is on call with mute on and off."""
+    self.ad_dut.adb.ensure_root()
+    self.adb_run(goog.disable_playstore)
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
         'The companion phone number is {}'.format(companion_phone_number))
