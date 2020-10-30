@@ -174,20 +174,24 @@ class WifiPnoTest(WifiBaseTest):
         """Test PNO triggered autoconnect to a network when there are more
         than 16 networks saved in the device.
 
-        16 is the max list size of PNO watch list for most devices. The device
-        should automatically pick the 16 latest added networks in the list.
-        So add 16 test networks and then add 2 valid networks.
+        16 is the max list size of PNO watch list for most devices. The device should automatically
+        pick the 16 most recently connected networks. For networks that were never connected, the
+        networks seen in the previous scan result would have higher priority.
 
         Steps:
         1. Save 16 test network configurations in the device.
-        2. Run the simple pno test.
+        2. Add 2 connectable networks and do a normal scan.
+        3. Trigger PNO scan
         """
         self.add_and_enable_test_networks(16)
         self.add_network_and_enable(self.pno_network_a)
         self.add_network_and_enable(self.pno_network_b)
         # Force single scan so that both networks become preferred before PNO.
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
+        self.dut.droid.goToSleepNow()
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.wifi_toggle_state(self.dut, True)
         time.sleep(10)
-        self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
+        self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
 
     """ Tests End """
