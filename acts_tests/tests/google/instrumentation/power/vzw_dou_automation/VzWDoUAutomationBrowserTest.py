@@ -145,6 +145,20 @@ class VzWDoUAutomationBrowserTest(
     additional_setting = self._instrumentation_config.get_config('additional_setting')
     exchange_phrase = additional_setting.get('exchange_phrase')
     self.log_in_gmail_account(sync='true', wait_for_checkin='true')
+
+    # Test harness flag
+    harness_prop = 'getprop ro.test_harness'
+    test_flag = self.adb_run(harness_prop)[harness_prop]
+    self.log.info('The test harness flag is set to %s.' % test_flag)
+    if test_flag != '1':
+      self.log.info('Enable test harness.')
+      self.ad_dut.adb.ensure_root()
+      self.adb_run('echo ro.test_harness=1 >> /data/local.prop')
+      self.adb_run('chmod 644 /data/local.prop')
+      self.adb_run(common.test_harness.toggle(True))
+      test_flag = self.adb_run(harness_prop)[harness_prop]
+      self.log.info('The test harness flag is set to %s.' % test_flag)
+
     self.adb_run(goog.force_stop_nexuslauncher)
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.TouchScreenTests',
