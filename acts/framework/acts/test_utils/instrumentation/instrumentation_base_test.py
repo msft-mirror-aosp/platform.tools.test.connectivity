@@ -35,7 +35,7 @@ DEFAULT_TEST_OPTIONS_FILE = 'test_options.yaml'
 
 
 class InstrumentationTestError(error.ActsError):
-    pass
+    """Raised for general instrumentation test errors."""
 
 
 class InstrumentationBaseTest(base_test.BaseTestClass):
