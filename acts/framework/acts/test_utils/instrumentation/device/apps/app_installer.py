@@ -17,15 +17,15 @@
 import os
 import re
 
+from acts.error import ActsError
 from acts.libs.proc import job
 
 PKG_NAME_PATTERN = r"^package:\s+name='(?P<pkg_name>.*?)'"
 PM_PATH_PATTERN = r"^package:(?P<apk_path>.*)"
 
 
-class AppInstallerError(Exception):
+class AppInstallerError(ActsError):
     """Exception class for AppInstaller's errors."""
-    pass
 
 
 class AppInstaller(object):

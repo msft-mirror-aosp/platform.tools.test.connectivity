@@ -18,11 +18,12 @@ import collections
 import copy
 
 from acts import context
+from acts.error import ActsError
 from acts.event import event_bus
 
 
-class InvalidParamError(Exception):
-    pass
+class InvalidParamError(ActsError):
+    """Raised when the desired parameter has an invalid value."""
 
 
 def _is_dict(o):

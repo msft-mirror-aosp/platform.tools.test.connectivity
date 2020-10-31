@@ -17,11 +17,12 @@
 import os
 import re
 
+from acts.error import ActsError
 from acts.test_utils.instrumentation.device.command.instrumentation_command_builder import DEFAULT_INSTRUMENTATION_LOG_OUTPUT
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
 
-class InstrumentationOutputError(Exception):
+class InstrumentationOutputError(ActsError):
     """Class for exceptions raised by instrumentation_test_output_parser"""
 
 
