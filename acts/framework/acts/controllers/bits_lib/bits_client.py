@@ -123,7 +123,7 @@ class BitsClient(object):
                    '--name',
                    self._active_collection.name,
                    '--log_ts',
-                   str(ts),
+                   str(int(ts)),
                    '--log',
                    marker]
             job.run(cmd, timeout=10)
