@@ -105,6 +105,9 @@ FUCHSIA_GET_VERSION_CMD = 'cat /config/build-info/version'
 FUCHSIA_REBOOT_TYPE_SOFT = 'soft'
 FUCHSIA_REBOOT_TYPE_HARD = 'hard'
 
+FUCHSIA_DEFAULT_CONNECT_TIMEOUT = 30
+FUCHSIA_DEFAULT_COMMAND_TIMEOUT = 3600
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -320,6 +323,16 @@ class FuchsiaDevice:
         # Init server
         self.init_server_connection()
 
+        self.setup_commands = fd_conf_data.get('setup_commands', [])
+        self.teardown_commands = fd_conf_data.get('teardown_commands', [])
+
+        try:
+            self.run_commands_from_config(self.setup_commands)
+        except FuchsiaDeviceError:
+            # Prevent a threading error, since controller isn't fully up yet.
+            self.clean_up()
+            raise FuchsiaDeviceError('Failed to run setup commands.')
+
     @backoff.on_exception(
         backoff.constant,
         (ConnectionRefusedError, requests.exceptions.ConnectionError),
@@ -327,7 +340,7 @@ class FuchsiaDevice:
         max_tries=4)
     def init_server_connection(self):
         """Initializes HTTP connection with SL4F server."""
-        self.log.debug("Initialziing server connection")
+        self.log.debug("Initializing server connection")
         init_data = json.dumps({
             "jsonrpc": "2.0",
             "id": self.build_id(self.test_counter),
@@ -340,6 +353,42 @@ class FuchsiaDevice:
         requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
 
+    def run_commands_from_config(self, cmd_dicts):
+        """Runs commands on the Fuchsia device from the config file. Useful for
+        device and/or Fuchsia specific configuration.
+
+        Args:
+            cmd_dicts: list of dictionaries containing the following
+                'cmd': string, command to run on device
+                'timeout': int, seconds to wait for command to run (optional)
+                'skip_status_code_check': bool, disregard errors if true
+        """
+        for cmd_dict in cmd_dicts:
+            try:
+                cmd = cmd_dict['cmd']
+            except KeyError:
+                raise FuchsiaDeviceError(
+                    'To run a command via config, you must provide key "cmd" '
+                    'containing the command string.')
+
+            timeout = cmd_dict.get('timeout', FUCHSIA_DEFAULT_COMMAND_TIMEOUT)
+            # Catch both boolean and string values from JSON
+            skip_status_code_check = 'true' == str(
+                cmd_dict.get('skip_status_code_check', False)).lower()
+
+            self.log.info(
+                'Running command "%s".%s' %
+                (cmd, ' Ignoring result.' if skip_status_code_check else ''))
+            result = self.send_command_ssh(
+                cmd,
+                timeout=timeout,
+                skip_status_code_check=skip_status_code_check)
+
+            if not skip_status_code_check and result.stderr:
+                raise FuchsiaDeviceError(
+                    'Error when running command "%s": %s' %
+                    (cmd, result.stderr))
+
     def build_id(self, test_id):
         """Concatenates client_id and test_id to form a command_id
 
@@ -350,9 +399,9 @@ class FuchsiaDevice:
 
     def reboot(self,
                use_ssh=False,
-               unreachable_timeout=30,
-               ping_timeout=30,
-               ssh_timeout=30,
+               unreachable_timeout=FUCHSIA_DEFAULT_CONNECT_TIMEOUT,
+               ping_timeout=FUCHSIA_DEFAULT_CONNECT_TIMEOUT,
+               ssh_timeout=FUCHSIA_DEFAULT_CONNECT_TIMEOUT,
                reboot_type=FUCHSIA_REBOOT_TYPE_SOFT,
                testbed_pdus=None):
         """Reboot a FuchsiaDevice.
@@ -477,13 +526,23 @@ class FuchsiaDevice:
         except Exception as err:
             raise ConnectionError(
                 'Failed to connect and run command via SL4F. Err: %s' % err)
+
+        try:
+            self.run_commands_from_config(self.setup_commands)
+
+        except FuchsiaDeviceError:
+            # Prevent a threading error, since controller isn't fully up yet.
+            self.clean_up()
+            raise FuchsiaDeviceError(
+                'Failed to run setup commands after reboot.')
+
         self.log.info(
             'Device has rebooted, SL4F is reconnected and functional.')
 
     def send_command_ssh(self,
                          test_cmd,
-                         connect_timeout=30,
-                         timeout=3600,
+                         connect_timeout=FUCHSIA_DEFAULT_CONNECT_TIMEOUT,
+                         timeout=FUCHSIA_DEFAULT_COMMAND_TIMEOUT,
                          skip_status_code_check=False):
         """Sends an SSH command to a Fuchsia device
 
@@ -621,6 +680,11 @@ class FuchsiaDevice:
         """Cleans up the FuchsiaDevice object and releases any resources it
         claimed.
         """
+        try:
+            self.run_commands_from_config(self.teardown_commands)
+        except FuchsiaDeviceError:
+            self.log.warning('Failed to run teardown_commands.')
+
         cleanup_id = self.build_id(self.test_counter)
         cleanup_args = {}
         cleanup_method = "sl4f.sl4f_cleanup"
@@ -922,8 +986,8 @@ class FuchsiaDevice:
                 ) or network["status"].upper() != status.upper():
                     self.log.info(
                         "Connection failed: a network failure occurred that is unrelated"
-                        "to remove network or incorrect status update. \nExpected state: " (
-                            state, status, network))
+                        "to remove network or incorrect status update. \nExpected state: "
+                        % (state, status, network))
                     return False
                 else:
                     return True

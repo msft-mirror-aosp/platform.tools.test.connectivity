@@ -36,7 +36,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_subscription_utils import \
     get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -56,38 +56,21 @@ from acts.test_utils.tel.tel_test_utils import \
 from acts.test_utils.tel.tel_test_utils import erase_call_forwarding_by_mmi
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_csfb_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_voice_3g_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_voice_general_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_volte_for_subscription
 from acts.test_utils.tel.tel_voice_utils import \
     three_phone_call_forwarding_short_seq
 from acts.test_utils.tel.tel_voice_utils import \
     three_phone_call_waiting_short_seq
 from acts.test_utils.tel.tel_voice_utils import swap_calls
+from acts.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
-        self.message_lengths = (50, 160, 180)
-        self.tel_logger = TelephonyMetricLogger.for_test_case()
-
-
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        self.message_lengths = (50, 160, 180)
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
         self.erase_call_forwarding(self.log, self.android_devices[0])
         if not get_capability_for_subscription(
             self.android_devices[0],
@@ -101,6 +84,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         self.erase_call_forwarding(self.log, self.android_devices[0])
+        set_call_waiting(self.log, self.android_devices[0], enable=1)
 
     def _hangup_call(self, ad, device_description='Device'):
         if not hangup_call(self.log, ad):
@@ -113,10 +97,10 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         slot1_sub_id = get_subid_from_slot_index(log, ad, 1)
         current_voice_sub_id = get_incoming_voice_sub_id(ad)
         for sub_id in (slot0_sub_id, slot1_sub_id):
-            set_incoming_voice_sub_id(ad, sub_id)
+            set_voice_sub_id(ad, sub_id)
             get_operator_name(log, ad, sub_id)
             erase_call_forwarding_by_mmi(log, ad)
-        set_incoming_voice_sub_id(ad, current_voice_sub_id)
+        set_voice_sub_id(ad, current_voice_sub_id)
 
     def _three_phone_call_mo_add_mt(
         self,
@@ -150,7 +134,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             tasks = []
             for ad, setup_func in zip(ads, phone_setups):
                 if setup_func is not None:
-                    tasks.append((setup_func, (self.log, ad)))
+                    tasks.append((setup_func, (self.log, ad, get_incoming_voice_sub_id(ad))))
             if tasks != [] and not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 raise _CallException("Setup failed.")
@@ -471,7 +455,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                 return False
             callee_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_callee, 1-callee_slot)
-            set_incoming_voice_sub_id(ad_callee, callee_sub_id)
+            set_voice_sub_id(ad_callee, callee_sub_id)
         else:
             callee_sub_id, _, _ = get_subid_on_same_network_of_host_ad(ads)
             if callee_sub_id == INVALID_SUB_ID:
@@ -479,7 +463,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                     "Failed to get sub ID at slot %s.", callee_slot)
                 return False
             callee_slot = "auto"
-            set_incoming_voice_sub_id(ad_callee, callee_sub_id)
+            set_voice_sub_id(ad_callee, callee_sub_id)
         ad_callee.log.info(
             "Sub ID for incoming call at slot %s: %s",
             callee_slot, get_incoming_voice_sub_id(ad_callee))
@@ -493,7 +477,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                 return False
             caller_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_caller, 1-caller_slot)
-            set_incoming_voice_sub_id(ad_caller, caller_sub_id)
+            set_voice_sub_id(ad_caller, caller_sub_id)
         else:
             _, caller_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
             if caller_sub_id == INVALID_SUB_ID:
@@ -501,7 +485,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                     "Failed to get sub ID at slot %s.", caller_slot)
                 return False
             caller_slot = "auto"
-            set_incoming_voice_sub_id(ad_caller, caller_sub_id)
+            set_voice_sub_id(ad_caller, caller_sub_id)
         ad_caller.log.info(
             "Sub ID for outgoing call at slot %s: %s",
             caller_slot, get_outgoing_voice_sub_id(ad_caller))
@@ -515,7 +499,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                 return False
             forwarded_callee_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_forwarded_callee, 1-forwarded_callee_slot)
-            set_incoming_voice_sub_id(
+            set_voice_sub_id(
                 ad_forwarded_callee, forwarded_callee_sub_id)
         else:
             _, _, forwarded_callee_sub_id = \
@@ -525,7 +509,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                     "Failed to get sub ID at slot %s.", forwarded_callee_slot)
                 return False
             forwarded_callee_slot = "auto"
-            set_incoming_voice_sub_id(
+            set_voice_sub_id(
                 ad_forwarded_callee, forwarded_callee_sub_id)
         ad_forwarded_callee.log.info(
             "Sub ID for incoming call at slot %s: %s",
@@ -557,196 +541,99 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         else:
             self.log.info("Verify http connection successfully.")
 
-        if caller_rat[0] == "volte":
-            caller_slot0_phone_setup_func = phone_setup_volte
-        elif caller_rat[0] == "csfb":
-            caller_slot0_phone_setup_func = phone_setup_csfb
-        elif caller_rat[0] == "3g":
-            caller_slot0_phone_setup_func = phone_setup_voice_3g
-        elif not caller_rat[0] or caller_rat[0] == "general":
-            caller_slot0_phone_setup_func = phone_setup_voice_general
-
-        if caller_rat[1] == "volte":
-            caller_slot1_phone_setup_func = phone_setup_volte
-        elif caller_rat[1] == "csfb":
-            caller_slot1_phone_setup_func = phone_setup_csfb
-        elif caller_rat[1] == "3g":
-            caller_slot1_phone_setup_func = phone_setup_voice_3g
-        elif not caller_rat[1] or caller_rat[1] == "general":
-            caller_slot1_phone_setup_func = phone_setup_voice_general
-
-        if callee_rat[0] == "volte":
-            callee_slot0_phone_setup_func = phone_setup_volte
-            is_callee_slot0_in_call = is_phone_in_call_volte
-        elif callee_rat[0] == "csfb":
-            callee_slot0_phone_setup_func = phone_setup_csfb
-            is_callee_slot0_in_call = is_phone_in_call_csfb
-        elif callee_rat[0] == "3g":
-            callee_slot0_phone_setup_func = phone_setup_voice_3g
-            is_callee_slot0_in_call = is_phone_in_call_3g
-        elif not callee_rat[0] or callee_rat[0] == "general":
-            callee_slot0_phone_setup_func = phone_setup_voice_general
-            is_callee_slot0_in_call = None
-
-        if callee_rat[1] == "volte":
-            callee_slot1_phone_setup_func = phone_setup_volte
-            is_callee_slot1_in_call = is_phone_in_call_volte
-        elif callee_rat[1] == "csfb":
-            callee_slot1_phone_setup_func = phone_setup_csfb
-            is_callee_slot1_in_call = is_phone_in_call_csfb
-        elif callee_rat[1] == "3g":
-            callee_slot1_phone_setup_func = phone_setup_voice_3g
-            is_callee_slot1_in_call = is_phone_in_call_3g
-        elif not callee_rat[1] or callee_rat[1] == "general":
-            callee_slot1_phone_setup_func = phone_setup_voice_general
-            is_callee_slot1_in_call = None
-
-        if forwarded_callee_rat[0] == "volte":
-            forwarded_callee_slot0_phone_setup_func = phone_setup_volte
-        elif forwarded_callee_rat[0] == "csfb":
-            forwarded_callee_slot0_phone_setup_func = phone_setup_csfb
-        elif forwarded_callee_rat[0] == "3g":
-            forwarded_callee_slot0_phone_setup_func = phone_setup_voice_3g
-        elif not forwarded_callee_rat[0] or forwarded_callee_rat[0] == \
-            "general":
-            forwarded_callee_slot0_phone_setup_func = phone_setup_voice_general
-
-        if forwarded_callee_rat[1] == "volte":
-            forwarded_callee_slot1_phone_setup_func = phone_setup_volte
-        elif forwarded_callee_rat[1] == "csfb":
-            forwarded_callee_slot1_phone_setup_func = phone_setup_csfb
-        elif forwarded_callee_rat[1] == "3g":
-            forwarded_callee_slot1_phone_setup_func = phone_setup_voice_3g
-        elif not forwarded_callee_rat[1] or forwarded_callee_rat[1] == \
-            "general":
-            forwarded_callee_slot1_phone_setup_func = phone_setup_voice_general
-
         if caller_slot == 1:
-            caller_phone_setup_func = caller_slot1_phone_setup_func
-            if caller_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
-            elif caller_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
-            elif caller_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
-            elif not caller_rat[0] or caller_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
+            phone_setup_on_rat(
+                self.log,
+                ad_caller,
+                caller_rat[0],
+                caller_other_sub_id)
+
         elif caller_slot == 0:
-            caller_phone_setup_func = caller_slot0_phone_setup_func
-            if caller_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
-            elif caller_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
-            elif caller_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
-            elif not caller_rat[1] or caller_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_caller, caller_other_sub_id)
+            phone_setup_on_rat(
+                self.log,
+                ad_caller,
+                caller_rat[1],
+                caller_other_sub_id)
         else:
-            caller_phone_setup_func = phone_setup_voice_general
+            phone_setup_on_rat(
+                self.log,
+                ad_caller,
+                'general')
 
         if callee_slot == 1:
-            callee_phone_setup_func = callee_slot1_phone_setup_func
-            is_callee_in_call = is_callee_slot1_in_call
-            if callee_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
-            elif callee_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
-            elif callee_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
-            elif not callee_rat[0] or callee_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
+            phone_setup_on_rat(
+                self.log,
+                ad_callee,
+                callee_rat[0],
+                callee_other_sub_id)
+
         elif callee_slot == 0:
-            callee_phone_setup_func = callee_slot0_phone_setup_func
-            is_callee_in_call = is_callee_slot0_in_call
-            if callee_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
-            elif callee_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
-            elif callee_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
-            elif not callee_rat[1] or callee_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_callee, callee_other_sub_id)
+            phone_setup_on_rat(
+                self.log,
+                ad_callee,
+                callee_rat[1],
+                callee_other_sub_id)
         else:
-            callee_phone_setup_func = phone_setup_voice_general
-            is_callee_in_call = None
+            phone_setup_on_rat(
+                self.log,
+                ad_callee,
+                'general')
 
         if forwarded_callee_slot == 1:
-            forwarded_callee_phone_setup_func = \
-                forwarded_callee_slot1_phone_setup_func
-            if forwarded_callee_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
-            elif forwarded_callee_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
-            elif forwarded_callee_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
-            elif not forwarded_callee_rat[0] or forwarded_callee_rat[0] == \
-                "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
+            phone_setup_on_rat(
+                self.log,
+                ad_forwarded_callee,
+                forwarded_callee_rat[0],
+                forwarded_callee_other_sub_id)
+
         elif forwarded_callee_slot == 0:
-            forwarded_callee_phone_setup_func = \
-                forwarded_callee_slot0_phone_setup_func
-            if forwarded_callee_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
-            elif forwarded_callee_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
-            elif forwarded_callee_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
-            elif not forwarded_callee_rat[1] or forwarded_callee_rat[1] == \
-                 "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log,
-                    ad_forwarded_callee,
-                    forwarded_callee_other_sub_id)
+            phone_setup_on_rat(
+                self.log,
+                ad_forwarded_callee,
+                forwarded_callee_rat[1],
+                forwarded_callee_other_sub_id)
         else:
-            forwarded_callee_phone_setup_func = phone_setup_voice_general
+            phone_setup_on_rat(
+                self.log,
+                ad_forwarded_callee,
+                'general')
+
+        if caller_slot == 0 or caller_slot == 1:
+            caller_phone_setup_func = phone_setup_on_rat(
+                self.log, ad_caller, caller_rat[caller_slot], only_return_fn=True)
+        else:
+            caller_phone_setup_func = phone_setup_on_rat(
+                self.log, ad_caller, 'general', only_return_fn=True)
+
+        callee_phone_setup_func = phone_setup_on_rat(
+            self.log, ad_callee, callee_rat[callee_slot], only_return_fn=True)
+
+        if forwarded_callee_slot == 0 or forwarded_callee_slot == 1:
+            forwarded_callee_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad_forwarded_callee,
+                forwarded_callee_rat[forwarded_callee_slot],
+                only_return_fn=True)
+        else:
+            forwarded_callee_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad_forwarded_callee,
+                'general',
+                only_return_fn=True)
 
         self.log.info("Step 3: Set up phones in desired RAT.")
-        tasks = [(caller_phone_setup_func, (self.log, ad_caller)),
-                 (callee_phone_setup_func, (self.log, ad_callee)),
+        tasks = [(caller_phone_setup_func, (self.log, ad_caller, caller_sub_id)),
+                 (callee_phone_setup_func, (self.log, ad_callee, callee_sub_id)),
                  (forwarded_callee_phone_setup_func,
-                 (self.log, ad_forwarded_callee))]
+                 (self.log, ad_forwarded_callee, forwarded_callee_sub_id))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        is_callee_in_call = is_phone_in_call_on_rat(
+            self.log, ad_callee, callee_rat[callee_slot], only_return_fn=True)
 
         is_call_waiting = re.search(
             "call_waiting (True (\d)|False)", call_forwarding_type, re.I)
@@ -850,14 +737,14 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
                 return False
             host_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_host, 1-host_slot)
-            set_incoming_voice_sub_id(ad_host, host_sub_id)
+            set_voice_sub_id(ad_host, host_sub_id)
         else:
             host_sub_id, _, _ = get_subid_on_same_network_of_host_ad(ads)
             if host_sub_id == INVALID_SUB_ID:
                 ad_host.log.warning("Failed to get sub ID at slot.", host_slot)
                 return False
             host_slot = "auto"
-            set_incoming_voice_sub_id(ad_host, host_sub_id)
+            set_voice_sub_id(ad_host, host_sub_id)
 
         ad_host.log.info("Sub ID for outgoing call at slot %s: %s",
             host_slot, get_outgoing_voice_sub_id(ad_host))
@@ -867,14 +754,14 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             if p1_sub_id == INVALID_SUB_ID:
                 ad_p1.log.warning("Failed to get sub ID at slot %s.", p1_slot)
                 return False
-            set_incoming_voice_sub_id(ad_p1, p1_sub_id)
+            set_voice_sub_id(ad_p1, p1_sub_id)
         else:
             _, p1_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
             if p1_sub_id == INVALID_SUB_ID:
                 ad_p1.log.warning("Failed to get sub ID at slot %s.", p1_slot)
                 return False
             p1_slot = "auto"
-            set_incoming_voice_sub_id(ad_p1, p1_sub_id)
+            set_voice_sub_id(ad_p1, p1_sub_id)
         ad_p1.log.info("Sub ID for incoming call at slot %s: %s",
             p1_slot, get_incoming_voice_sub_id(ad_p1))
 
@@ -883,14 +770,14 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             if p2_sub_id == INVALID_SUB_ID:
                 ad_p2.log.warning("Failed to get sub ID at slot %s.", p2_slot)
                 return False
-            set_incoming_voice_sub_id(ad_p2, p2_sub_id)
+            set_voice_sub_id(ad_p2, p2_sub_id)
         else:
             _, _, p2_sub_id = get_subid_on_same_network_of_host_ad(ads)
             if p2_sub_id == INVALID_SUB_ID:
                 ad_p2.log.warning("Failed to get sub ID at slot %s.", p2_slot)
                 return False
             p2_slot = "auto"
-            set_incoming_voice_sub_id(ad_p2, p2_sub_id)
+            set_voice_sub_id(ad_p2, p2_sub_id)
         ad_p2.log.info("Sub ID for incoming call at slot %s: %s",
             p2_slot, get_incoming_voice_sub_id(ad_p2))
 
@@ -919,94 +806,54 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         else:
             self.log.info("Verify http connection successfully.")
 
-        if host_rat[0] == "volte":
-            host_slot0_phone_setup_func = phone_setup_volte
-            is_host_slot0_in_call = is_phone_in_call_volte
-        elif host_rat[0] == "csfb":
-            host_slot0_phone_setup_func = phone_setup_csfb
-            is_host_slot0_in_call = is_phone_in_call_csfb
-        elif host_rat[0] == "3g":
-            host_slot0_phone_setup_func = phone_setup_voice_3g
-            is_host_slot0_in_call = is_phone_in_call_3g
-        elif not host_rat[0] or host_rat[0] == "general":
-            host_slot0_phone_setup_func = phone_setup_voice_general
-            is_host_slot0_in_call = None
-
-        if host_rat[1] == "volte":
-            host_slot1_phone_setup_func = phone_setup_volte
-            is_host_slot1_in_call = is_phone_in_call_volte
-        elif host_rat[1] == "csfb":
-            host_slot1_phone_setup_func = phone_setup_csfb
-            is_host_slot1_in_call = is_phone_in_call_csfb
-        elif host_rat[1] == "3g":
-            host_slot1_phone_setup_func = phone_setup_voice_3g
-            is_host_slot1_in_call = is_phone_in_call_3g
-        elif not host_rat[1] or host_rat[1] == "general":
-            host_slot1_phone_setup_func = phone_setup_voice_general
-            is_host_slot1_in_call = None
-
-        if p1_rat == "volte":
-            p1_phone_setup_func = phone_setup_volte
-            is_p1_in_call = is_phone_in_call_volte
-        elif p1_rat == "csfb":
-            p1_phone_setup_func = phone_setup_csfb
-            is_p1_in_call = is_phone_in_call_csfb
-        elif p1_rat == "3g":
-            p1_phone_setup_func = phone_setup_voice_3g
-            is_p1_in_call = is_phone_in_call_3g
-        elif not p1_rat or p1_rat == "general":
-            p1_phone_setup_func = phone_setup_voice_general
-            is_p1_in_call = None
-
-        if p2_rat == "volte":
-            p2_phone_setup_func = phone_setup_volte
-            is_p2_in_call = is_phone_in_call_volte
-        elif p2_rat == "csfb":
-            p2_phone_setup_func = phone_setup_csfb
-            is_p2_in_call = is_phone_in_call_csfb
-        elif p2_rat == "3g":
-            p2_phone_setup_func = phone_setup_voice_3g
-            is_p2_in_call = is_phone_in_call_3g
-        elif not p2_rat or p2_rat == "general":
-            p2_phone_setup_func = phone_setup_voice_general
-            is_p2_in_call = None
-
         if disable_cw:
             if not set_call_waiting(self.log, ad_host, enable=0):
                 return False
+        else:
+            if not set_call_waiting(self.log, ad_host, enable=1):
+                return False
 
         if host_slot == 1:
-            host_phone_setup_func = host_slot1_phone_setup_func
-            is_host_in_call = is_host_slot1_in_call
+            phone_setup_on_rat(
+                self.log,
+                ad_host,
+                host_rat[0],
+                host_other_sub_id)
 
-            if host_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
-            elif host_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
-            elif host_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
-            elif not host_rat[0] or host_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
         elif host_slot == 0:
-            host_phone_setup_func = host_slot0_phone_setup_func
-            is_host_in_call = is_host_slot0_in_call
+            phone_setup_on_rat(
+                self.log,
+                ad_host,
+                host_rat[1],
+                host_other_sub_id)
 
-            if host_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
-            elif host_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
-            elif host_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
-            elif not host_rat[1] or host_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_host, host_other_sub_id)
+        host_phone_setup_func = phone_setup_on_rat(
+            self.log, ad_host, host_rat[host_slot], only_return_fn=True)
+
+        is_host_in_call = is_phone_in_call_on_rat(
+            self.log, ad_host, host_rat[host_slot], only_return_fn=True)
+
+        if p1_rat:
+            p1_phone_setup_func = phone_setup_on_rat(
+                self.log, ad_p1, p1_rat, only_return_fn=True)
+            is_p1_in_call = is_phone_in_call_on_rat(
+                self.log, ad_p1, p1_rat, only_return_fn=True)
+        else:
+            p1_phone_setup_func = phone_setup_on_rat(
+                self.log, ad_p1, 'general', only_return_fn=True)
+            is_p1_in_call = is_phone_in_call_on_rat(
+                self.log, ad_p1, 'general', only_return_fn=True)
+
+        if p2_rat:
+            p2_phone_setup_func = phone_setup_on_rat(
+                self.log, ad_p2, p2_rat, only_return_fn=True)
+            is_p2_in_call = is_phone_in_call_on_rat(
+                self.log, ad_p2, p2_rat, only_return_fn=True)
+        else:
+            p2_phone_setup_func = phone_setup_on_rat(
+                self.log, ad_p2, 'general', only_return_fn=True)
+            is_p2_in_call = is_phone_in_call_on_rat(
+                self.log, ad_p2, 'general', only_return_fn=True)
 
         self.log.info("Step 3: Set up phone in desired RAT and make 3-way"
             " voice call.")
@@ -1030,7 +877,6 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             return False
         else:
             if disable_cw:
-                set_call_waiting(self.log, ad_host, enable=0)
                 return False
 
         calls = ads[0].droid.telecomCallGetCallIds()
