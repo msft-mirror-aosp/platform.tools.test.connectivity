@@ -32,6 +32,8 @@ class VzWDoUAutomationIdleTest(
   def test_flight_mode_idle(self, attempt_number):
     """Measures power when the device is in airplane mode."""
 
+    self.adb_run(goog.disable_playstore)
+    self.adb_run(goog.remove_gmail_account)
     self.adb_run(common.airplane_mode.toggle(True))
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
@@ -65,6 +67,38 @@ class VzWDoUAutomationIdleTest(
         'com.google.android.platform.dou.IdleStandbyModeTests',
         'testIdleStandbyMode',
         extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)],
+        attempt_number=attempt_number)
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  @repeated_test(
+      num_passes=1,
+      acceptable_failures=2,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_idle_background_traffics(self, attempt_number):
+    """Measures power when the device is in idle mode with background traffics."""
+
+    self.install_facebook_apk()
+    self.install_twitter_apk()
+    exchange_email = self.generate_random_exchange_email_account(
+        vzw_dou_automation_base_test.TestCase.TC34)
+    additional_setting = self._instrumentation_config.get_config(
+        'additional_setting')
+    exchange_phrase = additional_setting.get('exchange_phrase')
+    gmail_phrase = additional_setting.get('gmail_phrase')
+    self.log_in_gmail_account(sync='true', wait_for_checkin='true')
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.IdleBackgroundTrafficsTests',
+        'testIdleBackgroundTraffics',
+        extra_params=[
+            ('email_account', exchange_email),
+            ('email_password', exchange_phrase),
+            ('facebook_account', vzw_dou_automation_base_test.GMAIL_ACCOUNT),
+            ('facebook_password', gmail_phrase),
+            ('twitter_account', vzw_dou_automation_base_test.TWITTER_ACCOUNT),
+            ('twitter_password', gmail_phrase),
+            ('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID)
+        ],
         attempt_number=attempt_number)
     self.record_metrics(metrics)
     self.validate_metrics(metrics)
