@@ -48,17 +48,21 @@ TTFF_REPORT = namedtuple(
                    "ttff_base_cn")
 TRACK_REPORT = namedtuple(
     "TRACK_REPORT", "l5flag pe ant_top4cn ant_cn base_top4cn base_cn")
-LOCAL_PROP_FILE_CONTENTS =  """\
+LOCAL_PROP_FILE_CONTENTS = """\
 log.tag.LocationManagerService=VERBOSE
 log.tag.GnssLocationProvider=VERBOSE
 log.tag.GnssMeasurementsProvider=VERBOSE
 log.tag.GpsNetInitiatedHandler=VERBOSE
+log.tag.GnssNetInitiatedHandler=VERBOSE
 log.tag.GnssNetworkConnectivityHandler=VERBOSE
 log.tag.ConnectivityService=VERBOSE
 log.tag.ConnectivityManager=VERBOSE
 log.tag.GnssVisibilityControl=VERBOSE
 log.tag.NtpTimeHelper=VERBOSE
-log.tag.NtpTrustedTime=VERBOSE"""
+log.tag.NtpTrustedTime=VERBOSE
+log.tag.GnssPsdsDownloader=VERBOSE
+log.tag.Gnss=VERBOSE
+log.tag.GnssConfiguration=VERBOSE"""
 TEST_PACKAGE_NAME = "com.google.android.apps.maps"
 LOCATION_PERMISSIONS = [
     "android.permission.ACCESS_FINE_LOCATION",
@@ -91,7 +95,7 @@ def remount_device(ad):
     for retries in range(5):
         ad.root_adb()
         if ad.adb.getprop("ro.boot.veritymode") == "enforcing":
-            disable_verity_result = ad.adb.disable_verity()
+            ad.adb.disable_verity()
             reboot(ad)
         remount_result = ad.adb.remount()
         ad.log.info("Attempt %d - %s" % (retries + 1, remount_result))
@@ -481,6 +485,7 @@ def pull_package_apk(ad, package_name):
     Returns:
         The temp path of pulled apk.
     """
+    apk_path = None
     out = ad.adb.shell("pm path %s" % package_name)
     result = re.search(r"package:(.*)", out)
     if not result:
@@ -619,7 +624,7 @@ def start_gnss_by_gtw_gpstool(ad,
         bgdisplay: true to run GTW when Display off. false to not run GTW when
           Display off.
         freq: An integer to set location update frequency.
-        meas: A Boolean to set GNSS measurement registeration.
+        meas: A Boolean to set GNSS measurement registration.
         lowpower: A boolean to set GNSS LowPowerMode.
     """
     cmd = "am start -S -n com.android.gpstool/.GPSTool --es mode gps"
@@ -682,7 +687,7 @@ def process_gnss_by_gtw_gpstool(ad,
                                           "within %d seconds criteria."
                                           % (type.upper(), criteria))
             time.sleep(1)
-        check_currrent_focus_app(ad)
+        check_current_focus_app(ad)
         start_gnss_by_gtw_gpstool(ad, state=False, type=type)
     raise signals.TestFailure("Fail to get %s location fixed within %d "
                               "attempts." % (type.upper(), retries))
@@ -712,7 +717,7 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
             ad.log.info("Send TTFF start_test_action successfully.")
             break
     else:
-        check_currrent_focus_app(ad)
+        check_current_focus_app(ad)
         raise signals.TestError("Fail to send TTFF start_test_action.")
 
 
@@ -736,7 +741,7 @@ def gnss_tracking_via_gtw_gpstool(ad,
     ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
                                                            testtime))
     begin_time = get_current_epoch_time()
-    while get_current_epoch_time() - begin_time < testtime * 60 * 1000 :
+    while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
         crash_result = ad.search_logcat("Force finishing activity "
@@ -765,13 +770,15 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
     ant_cn = 0
     base_top4_cn = 0
     base_cn = 0
+    track_lat = 0
+    track_long = 0
     l5flag = "false"
     file_count = int(ad.adb.shell("find %s -type f -iname *.txt | wc -l"
                                   % GNSSSTATUS_LOG_PATH))
     if file_count != 1:
         ad.log.error("%d API logs exist." % file_count)
-    dir = ad.adb.shell("ls %s" % GNSSSTATUS_LOG_PATH).split()
-    for path_key in dir:
+    dir_file = ad.adb.shell("ls %s" % GNSSSTATUS_LOG_PATH).split()
+    for path_key in dir_file:
         if fnmatch.fnmatch(path_key, "*.txt"):
             logpath = posixpath.join(GNSSSTATUS_LOG_PATH, path_key)
             out = ad.adb.shell("wc -c %s" % logpath)
@@ -803,8 +810,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
             track_utc = line.split("Time:")[-1].strip()
             if track_utc in track_data.keys():
                 continue
-            pe = calculate_position_error(ad, track_lat, track_long,
-                                          true_position)
+            pe = calculate_position_error(track_lat, track_long, true_position)
             track_data[track_utc] = TRACK_REPORT(l5flag=l5flag,
                                                  pe=pe,
                                                  ant_top4cn=ant_top4_cn,
@@ -846,6 +852,9 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
     Returns:
         ttff_data: A dict of all TTFF data.
     """
+    ttff_lat = 0
+    ttff_lon = 0
+    utc_time = epoch_to_human_time(get_current_epoch_time())
     ttff_data = {}
     ttff_loop_time = get_current_epoch_time()
     while True:
@@ -896,8 +905,8 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
             ad.log.debug("TTFF Loop %d - (Lat, Lon) = (%s, %s)" % (ttff_loop,
                                                                    ttff_lat,
                                                                    ttff_lon))
-            ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
-                                               true_position)
+            ttff_pe = calculate_position_error(
+                ttff_lat, ttff_lon, true_position)
             ttff_data[ttff_loop] = TTFF_REPORT(utc_time=utc_time,
                                                ttff_loop=ttff_loop,
                                                ttff_sec=ttff_sec,
@@ -976,7 +985,7 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     ant_cn_list = [float(ttff_data[key].ttff_ant_cn) for key in
                    ttff_data.keys()]
     base_cn_list = [float(ttff_data[key].ttff_base_cn) for key in
-                   ttff_data.keys()]
+                    ttff_data.keys()]
     timeoutcount = sec_list.count(0.0)
     if len(sec_list) == timeoutcount:
         avgttff = 9527
@@ -999,12 +1008,11 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     ad.log.info(prop_basename+"Base_AvgSignal %.1f" % base_avgcn)
 
 
-def calculate_position_error(ad, latitude, longitude, true_position):
+def calculate_position_error(latitude, longitude, true_position):
     """Use haversine formula to calculate position error base on true location
     coordinate.
 
     Args:
-        ad: An AndroidDevice object.
         latitude: latitude of location fixed in the present.
         longitude: longitude of location fixed in the present.
         true_position: [latitude, longitude] of true location coordinate.
@@ -1039,10 +1047,10 @@ def launch_google_map(ad):
     except Exception as e:
         ad.log.error(e)
         raise signals.TestError("Failed to launch google map.")
-    check_currrent_focus_app(ad)
+    check_current_focus_app(ad)
 
 
-def check_currrent_focus_app(ad):
+def check_current_focus_app(ad):
     """Check to see current focused window and app.
 
     Args:
@@ -1133,7 +1141,7 @@ def set_attenuator_gnss_signal(ad, attenuator, atten_value):
 
 
 def set_battery_saver_mode(ad, state):
-    """Enable or diable battery saver mode via adb.
+    """Enable or disable battery saver mode via adb.
 
     Args:
         ad: An AndroidDevice object.
@@ -1194,7 +1202,7 @@ def start_youtube_video(ad, url=None, retries=0):
             return True
         ad.log.info("Force-Stop youtube and reopen youtube again.")
         ad.force_stop_apk("com.google.android.youtube")
-    check_currrent_focus_app(ad)
+    check_current_focus_app(ad)
     raise signals.TestError("Started a video in youtube, "
                             "but audio is not in MUSIC state")
 
@@ -1204,6 +1212,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
 
     Args:
         ad: An AndroidDevice object.
+        extra_msg: Extra message before or after the change.
     """
     try:
         build_version = ad.adb.getprop("ro.build.id")
@@ -1245,7 +1254,7 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
                 ad.log.info("Send ToggleGPS start_test_action successfully.")
                 break
         else:
-            check_currrent_focus_app(ad)
+            check_current_focus_app(ad)
             raise signals.TestError("Fail to send ToggleGPS "
                                     "start_test_action within 3 attempts.")
         time.sleep(2)
@@ -1384,32 +1393,32 @@ def verify_modemconfig(ad, nvitem_dict, modemparfile):
                 "could not find {!r} in {!r}".format(value, result))
 
 
-def check_ttff_pe(ad, ttff_data, ttff_mode, pecriteria):
+def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
     """Verify all TTFF results from ttff_data.
 
     Args:
         ad: An AndroidDevice object.
         ttff_data: TTFF data of secs, position error and signal strength.
         ttff_mode: TTFF Test mode for current test item.
-        criteria: Criteria for current test item.
+        pe_criteria: Criteria for current test item.
 
     """
     ad.log.info("%d iterations of TTFF %s tests finished.",
                 (len(ttff_data.keys()), ttff_mode))
-    ad.log.info("%s PASS criteria is %f meters", (ttff_mode, pecriteria))
+    ad.log.info("%s PASS criteria is %f meters", (ttff_mode, pe_criteria))
     ad.log.debug("%s TTFF data: %s", (ttff_mode, ttff_data))
 
     if len(ttff_data.keys()) == 0:
         ad.log.error("GTW_GPSTool didn't process TTFF properly.")
         raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
 
-    elif any(float(ttff_data[key].ttff_pe) >= pecriteria for key in
+    elif any(float(ttff_data[key].ttff_pe) >= pe_criteria for key in
              ttff_data.keys()):
         ad.log.error("One or more TTFF %s are over test criteria %f meters",
-                     (ttff_mode, pecriteria))
+                     (ttff_mode, pe_criteria))
         raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
     ad.log.info("All TTFF %s are within test criteria %f meters.",
-                (ttff_mode, pecriteria))
+                (ttff_mode, pe_criteria))
 
 
 def check_adblog_functionality(ad):
@@ -1444,7 +1453,7 @@ def build_instrumentation_call(package,
         package: A string to identify test package.
         runner: A string to identify test runner.
         test_methods: A dictionary contains {class_name, test_method}.
-        options: A dictionary constaion {key, value} param for test.
+        options: A dictionary constant {key, value} param for test.
 
     Returns:
         An instrumentation call command.
@@ -1454,18 +1463,13 @@ def build_instrumentation_call(package,
         cmd_builder = InstrumentationCommandBuilder()
     else:
         cmd_builder = InstrumentationTestCommandBuilder()
-
     if options is None:
         options = {}
-
     cmd_builder.set_manifest_package(package)
     cmd_builder.set_runner(runner)
     cmd_builder.add_flag("-w")
-
     for class_name, test_method in test_methods.items():
         cmd_builder.add_test_method(class_name, test_method)
-
     for option_key, option_value in options.items():
         cmd_builder.add_key_value_param(option_key, option_value)
-
     return cmd_builder.build()
