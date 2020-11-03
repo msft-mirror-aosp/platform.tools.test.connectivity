@@ -42,6 +42,9 @@ class WifiCrashTest(WifiBaseTest):
     * One Android device
     * One Wi-Fi network visible to the device.
     """
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
 
     def setup_class(self):
         super().setup_class()
