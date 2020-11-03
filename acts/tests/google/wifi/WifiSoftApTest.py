@@ -15,14 +15,15 @@
 #   limitations under the License.
 
 import logging
+import os
 import queue
 import random
 import time
 
 from acts import asserts
 from acts import utils
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.net import socket_test_utils as sutils
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel import tel_test_utils as tel_utils
@@ -46,12 +47,14 @@ class WifiSoftApTest(WifiBaseTest):
         """
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        req_params = ["dbs_supported_models"]
+        req_params = ["dbs_supported_models", "pixel_models"]
         opt_param = ["open_network"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True)
         self.open_network = self.open_network[0]["2g"]
         # Do a simple version of init - mainly just sync the time and enable
         # verbose logging.  This test will fail if the DUT has a sim and cell
@@ -83,6 +86,14 @@ class WifiSoftApTest(WifiBaseTest):
             asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
                 "Failed to enable WiFi verbose logging on the client dut.")
             self.dut_client_2 = self.android_devices[2]
+        if "cnss_diag_file" in self.user_params:
+            self.cnss_diag_file = self.user_params.get("cnss_diag_file")
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
 
     def teardown_class(self):
         if self.dut.droid.wifiIsApEnabled():
@@ -96,8 +107,13 @@ class WifiSoftApTest(WifiBaseTest):
     def setup_test(self):
         for ad in self.android_devices:
             wutils.wifi_toggle_state(ad, True)
+        if hasattr(self, "cnss_diag_file"):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
 
     def teardown_test(self):
+        if hasattr(self, "cnss_diag_file"):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
         self.dut.log.debug("Toggling Airplane mode OFF.")
         asserts.assert_true(utils.force_airplane_mode(self.dut, False),
                             "Can not turn off airplane mode: %s" % self.dut.serial)
@@ -105,8 +121,10 @@ class WifiSoftApTest(WifiBaseTest):
             wutils.stop_wifi_tethering(self.dut)
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut_client.take_bug_report(test_name, begin_time)
+        for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
+            ad.cat_adb_log(test_name, begin_time)
+            wutils.get_cnss_diag_log(ad, test_name)
 
     """ Helper Functions """
     def create_softap_config(self):
@@ -135,31 +153,6 @@ class WifiSoftApTest(WifiBaseTest):
         """
         wutils.start_wifi_connection_scan_and_ensure_network_not_found(
             self.dut_client, ap_ssid);
-
-    def validate_traffic_between_softap_clients(self, config):
-        """Send traffic between softAp clients.
-
-        Connect SoftAp clients to the wifi hotspot; one android
-        device and the other arduino wifi controller. Send UDP traffic
-        between the clients and verify that expected messages are received.
-
-        Args:
-            config: wifi network config with SSID, password
-        """
-        ad = self.dut_client
-        wd = self.arduino_wifi_dongles[0]
-        wutils.wifi_connect(ad, config, check_connectivity=False)
-        dutils.connect_wifi(wd, config)
-        local_ip = ad.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        remote_ip = wd.ip_address()
-        port = random.randint(8000, 9000)
-        self.log.info("IP addr on android device: %s" % local_ip)
-        self.log.info("IP addr on arduino device: %s" % remote_ip)
-
-        socket = sutils.open_datagram_socket(ad, local_ip, port)
-        sutils.send_recv_data_datagram_sockets(
-            ad, ad, socket, socket, remote_ip, port)
-        sutils.close_datagram_socket(ad, socket)
 
     def check_cell_data_and_enable(self):
         """Make sure that cell data is enabled if there is a sim present.
@@ -210,8 +203,6 @@ class WifiSoftApTest(WifiBaseTest):
         if test_ping:
             self.validate_ping_between_softap_and_client(config)
         if test_clients:
-            if hasattr(self, 'arduino_wifi_dongles'):
-                self.validate_traffic_between_softap_clients(config)
             if len(self.android_devices) > 2:
                 self.validate_ping_between_two_clients(config)
         wutils.stop_wifi_tethering(self.dut)
@@ -426,24 +417,6 @@ class WifiSoftApTest(WifiBaseTest):
                             "Can not turn on airplane mode: %s" % self.dut.serial)
         wutils.wifi_toggle_state(self.dut, True)
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G)
-
-    @test_tracker_info(uuid="05c6f929-7754-477f-a9cd-f77e850b818b")
-    def test_full_tether_startup_2G_multiple_clients(self):
-        """Test full startup of wifi tethering in 2G band, connect clients
-        to softAp and send traffic between them.
-
-        1. Report current state.
-        2. Switch to AP mode.
-        3. verify SoftAP active.
-        4. Connect clients to softAp.
-        5. Send and recv UDP traffic between them.
-        6. Shutdown wifi tethering.
-        7. verify back to previous mode.
-        """
-        asserts.skip_if(not hasattr(self, 'arduino_wifi_dongles'),
-                        "No wifi dongles connected. Skipping test")
-        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G,
-                                          test_clients=True)
 
     @test_tracker_info(uuid="883dd5b1-50c6-4958-a50f-bb4bea77ccaf")
     def test_full_tether_startup_2G_one_client_ping_softap(self):
