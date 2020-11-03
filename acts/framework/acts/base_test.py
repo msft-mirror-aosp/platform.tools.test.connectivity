@@ -57,7 +57,7 @@ def _logcat_log_test_begin(event):
             if not ad.is_adb_logcat_on:
                 ad.start_adb_logcat()
             # Write test start token to adb log if android device is attached.
-            if not ad.skip_sl4a:
+            if not ad.skip_sl4a and ad.droid:
                 ad.droid.logV("%s BEGIN %s" %
                               (TEST_CASE_TOKEN, event.test_case_name))
 
@@ -79,7 +79,7 @@ def _logcat_log_test_end(event):
     try:
         # Write test end token to adb log if android device is attached.
         for ad in getattr(test_instance, 'android_devices', []):
-            if not ad.skip_sl4a:
+            if not ad.skip_sl4a and ad.droid:
                 ad.droid.logV("%s END %s" %
                               (TEST_CASE_TOKEN, event.test_case_name))
 
