@@ -1221,7 +1221,8 @@ class AndroidDevice:
             'Device %s booting process timed out.' % self.serial,
             serial=self.serial)
 
-    def reboot(self, stop_at_lock_screen=False, timeout=180):
+    def reboot(self, stop_at_lock_screen=False, timeout=180,
+               wait_after_reboot_complete=1):
         """Reboots the device.
 
         Terminate all sl4a sessions, reboot the device, wait for device to
@@ -1233,6 +1234,8 @@ class AndroidDevice:
                 phase. Sl4a checking need the device unlocked after rebooting.
             timeout: time in seconds to wait for the device to complete
                 rebooting.
+            wait_after_reboot_complete: time in seconds to wait after the boot
+                completion.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
@@ -1257,6 +1260,9 @@ class AndroidDevice:
                 break
         self.wait_for_boot_completion(
             timeout=(timeout - time.time() + timeout_start))
+
+        self.log.debug('Wait for a while after boot completion.')
+        time.sleep(wait_after_reboot_complete)
         self.root_adb()
         skip_sl4a = self.skip_sl4a
         self.skip_sl4a = self.skip_sl4a or stop_at_lock_screen
