@@ -319,14 +319,15 @@ class TelephonyBaseTest(BaseTestClass):
             ensure_phone_default_state(self.log, ad)
             setup_droid_properties(self.log, ad, sim_conf_file)
 
-        default_slot = getattr(ad, "default_slot", 0)
-        if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
-            ad.log.info("Slot %s is the default slot.", default_slot)
-            set_default_sub_for_all_services(ad, default_slot)
-        else:
-            ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
-                default_slot, 1-default_slot)
-            set_default_sub_for_all_services(ad, 1-default_slot)
+        if hasattr(ad, "dsds"):
+            default_slot = getattr(ad, "default_slot", 0)
+            if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
+                ad.log.info("Slot %s is the default slot.", default_slot)
+                set_default_sub_for_all_services(ad, default_slot)
+            else:
+                ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
+                    default_slot, 1-default_slot)
+                set_default_sub_for_all_services(ad, 1-default_slot)
 
         # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
         # b/122327716
@@ -336,10 +337,10 @@ class TelephonyBaseTest(BaseTestClass):
         initial_set_up_for_subid_infomation(self.log, ad)
 
 
-        try:
-            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
-        except Exception:
-            pass
+        #try:
+        #    ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+        #except Exception:
+        #    pass
 
         # Disable Emergency alerts
         # Set chrome browser start with no-first-run verification and
