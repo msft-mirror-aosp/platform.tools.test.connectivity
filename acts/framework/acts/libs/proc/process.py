@@ -271,6 +271,8 @@ class Process(object):
                               command)
                 retry_value = self._on_terminate_callback(self._process)
                 if retry_value:
+                    if isinstance(retry_value, str):
+                        retry_value = shlex.split(retry_value)
                     command = retry_value
                 else:
                     break
