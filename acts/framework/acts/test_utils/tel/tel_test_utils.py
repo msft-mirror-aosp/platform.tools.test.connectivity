@@ -7228,7 +7228,7 @@ def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
             retry -= 1
         if not wait_for_droid_not_in_call(log, ad):
             ad.log.error("Failed to end call")
-        ad.droid.telephonyFactoryReset()
+        #ad.droid.telephonyFactoryReset()
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
