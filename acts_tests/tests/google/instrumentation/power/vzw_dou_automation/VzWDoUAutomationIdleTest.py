@@ -26,7 +26,7 @@ class VzWDoUAutomationIdleTest(
   """Class for running VZW DoU idle test cases"""
 
   @repeated_test(
-      num_passes=3,
+      num_passes=1,
       acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_flight_mode_idle(self, attempt_number):
