@@ -65,7 +65,7 @@ def _logcat_log_test_begin(event):
         test_instance.results.error.append(
             ExceptionRecord(e, 'Logcat for test begin: %s' %
                             event.test_case_name))
-        test_instance.log.error('BaseTest setup_test error: %s' % e.message)
+        test_instance.log.error('BaseTest setup_test error: %s' % e.details)
     except Exception as e:
         test_instance.log.warning(
             'Unable to send BEGIN log command to all devices.')
@@ -87,7 +87,7 @@ def _logcat_log_test_end(event):
         test_instance.results.error.append(
             ExceptionRecord(e,
                             'Logcat for test end: %s' % event.test_case_name))
-        test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
+        test_instance.log.error('BaseTest teardown_test error: %s' % e.details)
     except Exception as e:
         test_instance.log.warning(
             'Unable to send END log command to all devices.')
