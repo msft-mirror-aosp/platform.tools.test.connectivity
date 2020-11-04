@@ -150,9 +150,7 @@ class VzWDoUAutomationBaseTest(
     self.ad_dut.adb.ensure_root()
     self._install_google_account_util_apk()
     self.adb_run(goog.remove_gmail_account)
-    self.ad_dut.reboot()
-    self.ad_dut.wait_for_boot_completion()
-    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    self.ad_dut.reboot(wait_after_reboot_complete=DEFAULT_WAIT_FOR_REBOOT)
     self.ad_dut.adb.ensure_root()
     self.ad_dut.log.debug('Reboot to bootloader')
     self.ad_dut.stop_services()
@@ -195,9 +193,7 @@ class VzWDoUAutomationBaseTest(
                        'com.google.android.platform.dou/androidx.test.runner.AndroidJUnitRunner').format(
           band_to_cut)
       self.adb_run(lock_band_cmd, timeout=480)
-      self.ad_dut.reboot()
-      self.ad_dut.wait_for_boot_completion()
-      time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+      self.ad_dut.reboot(wait_after_reboot_complete=DEFAULT_WAIT_FOR_REBOOT)
 
   def generate_random_ssid(self):
     # Generate random permutations as ssid
@@ -210,9 +206,7 @@ class VzWDoUAutomationBaseTest(
     sdcard_movies_path = self.user_params['sdcard_movies_path'][0]
     self.log.info('sdcard_movies_path is %s' % sdcard_movies_path)
     self.ad_dut.adb.push(sdcard_movies_path + '/*', sdcard_movies_path_dut)
-    self.ad_dut.reboot()
-    self.ad_dut.wait_for_boot_completion()
-    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    self.ad_dut.reboot(wait_after_reboot_complete=DEFAULT_WAIT_FOR_REBOOT)
 
   def log_in_gmail_account(self, sync='false', wait_for_checkin='false'):
     # Log in to gmail account
@@ -235,9 +229,7 @@ class VzWDoUAutomationBaseTest(
     sdcard_music_path = self.user_params['sdcard_music_path'][0]
     self.log.info('sdcard_music_path is %s' % sdcard_music_path)
     self.ad_dut.adb.push(sdcard_music_path + '/*', sdcard_music_path_dut)
-    self.ad_dut.reboot()
-    self.ad_dut.wait_for_boot_completion()
-    time.sleep(DEFAULT_DEVICE_COOL_DOWN_TIME)
+    self.ad_dut.reboot(wait_after_reboot_complete=DEFAULT_WAIT_FOR_REBOOT)
 
   def generate_random_exchange_email_account(self, test_name: TestCase):
     # Generate random exchange email account based on test case
