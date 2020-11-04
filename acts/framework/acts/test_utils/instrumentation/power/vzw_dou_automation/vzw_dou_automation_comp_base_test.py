@@ -146,9 +146,8 @@ class VzWDoUAutomationCompBaseTest(
 
     self.log.info('Running base adb setup commands on companion.')
     self.ad_cp.adb.ensure_root()
-    self.ad_cp.reboot()
-    self.ad_cp.wait_for_boot_completion()
-    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
+    self.ad_cp.reboot(wait_after_reboot_complete=vzw_dou_automation_base_test
+                      .DEFAULT_WAIT_FOR_REBOOT)
     self.ad_cp.adb.ensure_root()
     # Test harness flag
     harness_prop = 'getprop ro.test_harness'
@@ -240,9 +239,8 @@ class VzWDoUAutomationCompBaseTest(
     self.log.info('Base bt config path %s' % bt_config_path)
     self.ad_dut.adb.push(bt_config_path + '/' + self.ad_dut.serial + '/' +
                          bt_config_file + ' %s' % bt_conf_path_dut)
-    self.ad_dut.reboot()
-    self.ad_dut.wait_for_boot_completion()
-    time.sleep(vzw_dou_automation_base_test.DEFAULT_WAIT_FOR_REBOOT)
+    self.ad_dut.reboot(wait_after_reboot_complete=vzw_dou_automation_base_test
+                       .DEFAULT_WAIT_FOR_REBOOT)
 
   def log_in_companion_gmail_account(self, sync='false', wait_for_checkin='false'):
     # Log in to gmail account
