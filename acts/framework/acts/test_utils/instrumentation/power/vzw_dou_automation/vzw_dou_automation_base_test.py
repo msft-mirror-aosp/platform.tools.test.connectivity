@@ -37,6 +37,7 @@ DEFAULT_DEVICE_COOL_DOWN_TIME = 80
 DEFAULT_WAIT_FOR_REBOOT = 180
 WIFI_SSID = 'TP-Link-VZW-DoU'
 GMAIL_ACCOUNT = 'vdou001@gmail.com'
+TWITTER_ACCOUNT = 'vdou002@gmail.com'
 
 
 def get_median_current(test_results, test_instance):
@@ -77,6 +78,12 @@ class VzWDoUAutomationBaseTest(
   """Base class that implements common functionality of
   days of use test cases
   """
+
+  def __init__(self, configs):
+    super().__init__(configs)
+    self._google_account_util = None
+    self._facebook_apk = None
+    self._twitter_apk = None
 
   def base_device_configuration(self):
     """Runs the adb commands for days of use power testing."""
@@ -133,6 +140,12 @@ class VzWDoUAutomationBaseTest(
     self._cut_band()
 
   def _cleanup_device(self):
+    if self._google_account_util:
+      self._google_account_util.uninstall()
+    if self._facebook_apk:
+      self._facebook_apk.uninstall()
+    if self._twitter_apk:
+      self._twitter_apk.uninstall()
     super()._cleanup_device()
     self.adb_run('input keyevent 26')
 
@@ -176,6 +189,22 @@ class VzWDoUAutomationBaseTest(
     if not self._google_account_util.is_installed():
       raise InstrumentationTestError(
           'Failed to install google account util APK.')
+
+  def install_facebook_apk(self):
+    """Installs facebook apk on the device."""
+    _facebook_apk_file = self.get_file_from_config('facebook_apk')
+    self._facebook_apk = AppInstaller(self.ad_dut, _facebook_apk_file)
+    self._facebook_apk.install('-g')
+    if not self._facebook_apk.is_installed():
+      raise InstrumentationTestError('Failed to install facebook APK.')
+
+  def install_twitter_apk(self):
+    """Installs twitter apk on the device."""
+    _twitter_apk_file = self.get_file_from_config('twitter_apk')
+    self._twitter_apk = AppInstaller(self.ad_dut, _twitter_apk_file)
+    self._twitter_apk.install('-g')
+    if not self._twitter_apk.is_installed():
+      raise InstrumentationTestError('Failed to install twitter APK.')
 
   def _cut_band(self):
     additional_setting = self._instrumentation_config.get_config('additional_setting')
