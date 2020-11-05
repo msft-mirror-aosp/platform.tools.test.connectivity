@@ -306,7 +306,8 @@ class WifiP2pRvrTest(WifiRvrTest):
         self.setup_p2p_connection(testcase_params)
         # Set DUT to monitor RSSI and LLStats on
         self.monitored_dut = self.gc_dut
-        self.monitored_interface = 'p2p-p2p0-0'
+        self.monitored_interface = wp2putils.p2p_get_current_group(
+            self.gc_dut)['Interface']
 
     def cleanup_p2p_rvr_test(self, testcase_params):
         # clean-up
