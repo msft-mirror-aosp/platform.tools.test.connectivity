@@ -62,6 +62,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
@@ -3328,7 +3329,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
@@ -3366,7 +3367,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
@@ -3404,7 +3405,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
@@ -3442,7 +3443,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
