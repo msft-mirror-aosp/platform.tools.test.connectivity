@@ -44,8 +44,9 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
                                          test_cmd,
                                          test_args,
                                          response_timeout=timeout)
-        except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected, base_lib.DeviceOffline):
+        except (ConnectionResetError, base_lib.DeviceOffline,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout):
             return
         return response
 
