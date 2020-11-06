@@ -137,6 +137,7 @@ class VzWDoUAutomationBaseTest(
     super()._prepare_device()
     self._cut_band()
     self.log_in_gmail_account()
+    self._update_apps()
     self.base_device_configuration()
 
   def _cleanup_device(self):
@@ -222,6 +223,28 @@ class VzWDoUAutomationBaseTest(
                        'com.google.android.platform.dou/androidx.test.runner.AndroidJUnitRunner').format(
           band_to_cut)
       self.adb_run(lock_band_cmd, timeout=480)
+      self.ad_dut.reboot(wait_after_reboot_complete=DEFAULT_WAIT_FOR_REBOOT)
+
+  def _update_apps(self):
+    apps_to_update = self._instrumentation_config.get_config(
+        'additional_setting').get('apps_to_update')
+    if apps_to_update:
+      self.log.info('Update apps: {}'.format(apps_to_update))
+      self.ad_dut.adb.ensure_root()
+      update_apps_cmd = (
+          'am instrument -w -r -e update_package_name '
+          'com.google.android.apps.photos -e profile_iterations 1 '
+          '-e dou_mode RADIO -e precondition_music_volume 50 -e '
+          'bluetooth_device_mac_addr E4:22:A5:B5:A8:00 -e '
+          'precondition_wifi CONNECTED -e wifi_ssid {} -e '
+          'wifi_passphrase Google123 -e precondition_radio CONNECTED '
+          '-e precondition_mobile_data ON -e '
+          'precondition_bluetooth ON -e class '
+          'com.google.android.platform.dou.PlayStoreUpdateAppTests#testUpdateApp'
+          ' '
+          'com.google.android.platform.dou/androidx.test.runner.AndroidJUnitRunner'
+      ).format(WIFI_SSID)
+      self.adb_run(update_apps_cmd, timeout=480)
       self.ad_dut.reboot(wait_after_reboot_complete=DEFAULT_WAIT_FOR_REBOOT)
 
   def generate_random_ssid(self):
