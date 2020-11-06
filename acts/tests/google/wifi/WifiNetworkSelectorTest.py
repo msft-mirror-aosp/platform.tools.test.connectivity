@@ -31,10 +31,6 @@ WifiEnums = wutils.WifiEnums
 
 AP_1 = 0
 AP_2 = 1
-AP_1_2G_ATTENUATOR = 0
-AP_1_5G_ATTENUATOR = 1
-AP_2_2G_ATTENUATOR = 2
-AP_2_5G_ATTENUATOR = 3
 # WifiNetworkSelector imposes a 10 seconds gap between two selections
 NETWORK_SELECTION_TIME_GAP = 12
 LVL1_ATTN = 15
@@ -54,7 +50,18 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        self.legacy_configure_ap_and_start(ap_count=2, mirror_ap=False)
+        self.ap1_2g_attn = 0
+        self.ap1_5g_attn = 1
+        self.ap2_2g_attn = 2
+        self.ap2_5g_attn = 3
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start(mirror_ap=False,
+                                               ap_count=2)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                ap_count=2)
+            self.ap1_5g_attn, self.ap2_2g_attn, self.ap2_5g_attn, = 0, 1, 1
         self.configure_packet_capture()
 
     def setup_test(self):
@@ -125,7 +132,8 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.log.info("Actual network: %s", actual_network)
         asserts.assert_true(
             actual_network and WifiEnums.BSSID_KEY in actual_network and \
-                expected_bssid == actual_network[WifiEnums.BSSID_KEY],
+                expected_bssid.lower() == actual_network[
+                    WifiEnums.BSSID_KEY].lower(),
             "Expected BSSID: %s, Actual BSSID: %s" %
             (expected_bssid, actual_network[WifiEnums.BSSID_KEY]))
         self.log.info("DUT connected to valid network: %s" % expected_bssid)
@@ -144,12 +152,14 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.add_networks(self.dut, networks)
 
         # move the DUT in range
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(MIN_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(MIN_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # verify DUT is connected to AP_1 5g network
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        network = self.reference_networks[AP_1]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="3ea818f2-10d7-4aad-bfab-7d8fb25aae78")
     def test_network_selector_basic_connection_prefer_5g(self):
@@ -164,13 +174,15 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.add_networks(self.dut, networks)
 
         # Move DUT in range
-        self.attenuators[AP_1_2G_ATTENUATOR].set_atten(MIN_ATTN)
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(MIN_ATTN)
+        self.attenuators[self.ap1_2g_attn].set_atten(MIN_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(MIN_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # verify DUT is connected to 5G network
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        network = self.reference_networks[AP_1]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="bebb29ca-4486-4cde-b390-c5f8f2e1580c")
     def test_network_selector_prefer_stronger_rssi(self):
@@ -186,13 +198,15 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.add_networks(self.dut, networks)
 
         # move the DUT in range
-        self.attenuators[AP_1_2G_ATTENUATOR].set_atten(LVL1_ATTN)
-        self.attenuators[AP_2_2G_ATTENUATOR].set_atten(LVL2_ATTN)
+        self.attenuators[self.ap1_2g_attn].set_atten(LVL1_ATTN)
+        self.attenuators[self.ap2_2g_attn].set_atten(LVL2_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # verify DUT is connected AP_1
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['2g'])
+        network = self.reference_networks[AP_1]['2g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['2g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="f9f72dc5-034f-4fe2-a27d-df1b6cae76cd")
     def test_network_selector_prefer_secure_over_open_network(self):
@@ -208,12 +222,14 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.add_networks(self.dut, networks)
 
         # Move DUT in range
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(MIN_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(MIN_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # verify DUT connects to secure network
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        network = self.reference_networks[AP_1]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="ab2c527c-0f9c-4f09-a13f-e3f461b7da52")
     def test_network_selector_blacklist_by_connection_failure(self):
@@ -231,8 +247,8 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.add_networks(self.dut, networks)
 
         # make AP_1 5G has stronger RSSI than AP_2 5G
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(MIN_ATTN)
-        self.attenuators[AP_2_5G_ATTENUATOR].set_atten(LVL1_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(MIN_ATTN)
+        self.attenuators[self.ap2_5g_attn].set_atten(LVL1_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # start 3 scans to get AP_1 5G blacklisted because of the incorrect
@@ -242,8 +258,10 @@ class WifiNetworkSelectorTest(WifiBaseTest):
             time.sleep(NETWORK_SELECTION_TIME_GAP)
 
         # verify DUT is connect AP_2 5G
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_2]['5g'])
+        network = self.reference_networks[AP_2]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_2]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="71d88fcf-c7b8-4fd2-a7cb-84ac4a130ecf")
     def network_selector_2g_to_5g_prefer_same_SSID(self):
@@ -351,23 +369,24 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
         # make both AP_1 5G and AP_2 5G in range, and AP_1 5G
         # has stronger RSSI than AP_2 5G
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(LVL1_ATTN)
-        self.attenuators[AP_2_5G_ATTENUATOR].set_atten(LVL2_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(LVL1_ATTN)
+        self.attenuators[self.ap2_5g_attn].set_atten(LVL2_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # verify DUT is connected to AP_1
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        network = self.reference_networks[AP_1]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
         # bump up AP_2 5G RSSI over AP_1 5G RSSI
-        self.attenuators[AP_2_5G_ATTENUATOR].set_atten(MIN_ATTN)
+        self.attenuators[self.ap2_5g_attn].set_atten(MIN_ATTN)
 
         # ensure the time gap between two network selections
         time.sleep(NETWORK_SELECTION_TIME_GAP)
 
         # verify DUT is still connected to AP_1
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="5470010f-8b62-4b1c-8b83-1f91422eced0")
     def test_network_selector_stay_on_user_selected_network(self):
@@ -378,8 +397,8 @@ class WifiNetworkSelectorTest(WifiBaseTest):
             4. Verify DUT stays on SSID_A.
         """
         # set max attenuation on AP_2 and make AP_1 5G in range with low RSSI
-        self.attenuators[AP_2_5G_ATTENUATOR].set_atten(MIN_ATTN)
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(LVL1_ATTN)
+        self.attenuators[self.ap2_5g_attn].set_atten(MIN_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(LVL1_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # connect to AP_1 via user selection and add, save AP_2
@@ -392,8 +411,10 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         time.sleep(NETWORK_SELECTION_TIME_GAP)
 
         # verify we are still connected to AP_1 5G
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        network = self.reference_networks[AP_1]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
     @test_tracker_info(uuid="f08d8f73-8c94-42af-bba9-4c49bbf16420")
     def test_network_selector_reselect_after_forget_network(self):
@@ -411,18 +432,22 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
         # make both AP_1 5G and AP_2 5G in range. AP_1 5G has stronger
         # RSSI than AP_2 5G
-        self.attenuators[AP_1_5G_ATTENUATOR].set_atten(MIN_ATTN)
-        self.attenuators[AP_2_5G_ATTENUATOR].set_atten(LVL1_ATTN)
+        self.attenuators[self.ap1_5g_attn].set_atten(MIN_ATTN)
+        self.attenuators[self.ap2_5g_attn].set_atten(LVL1_ATTN)
         time.sleep(ATTN_SLEEP)
 
         # verify DUT connected to AP1
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_1]['5g'])
+        network = self.reference_networks[AP_1]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_1]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)
 
         # forget AP_1
         wutils.wifi_forget_network(
             self.dut, self.reference_networks[AP_1]['5g']['SSID'])
 
         # verify DUT connected to AP2
-        self.connect_and_verify_connected_bssid(
-            self.reference_networks[AP_2]['5g'])
+        network = self.reference_networks[AP_2]['5g'].copy()
+        if "OpenWrtAP" in self.user_params:
+            network['bssid'] = self.bssid_map[AP_2]['5g'][network["SSID"]]
+        self.connect_and_verify_connected_bssid(network)

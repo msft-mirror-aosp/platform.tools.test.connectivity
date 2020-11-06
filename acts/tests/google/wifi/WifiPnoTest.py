@@ -38,9 +38,13 @@ class WifiPnoTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
-
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2)
         self.pno_network_a = self.reference_networks[0]['2g']
         self.pno_network_b = self.reference_networks[0]['5g']
+        if "OpenWrtAP" in self.user_params:
+            self.pno_network_b = self.reference_networks[1]['5g']
         self.attn_a = self.attenuators[0]
         self.attn_b = self.attenuators[1]
         # Disable second AP's networks, so that it does not interfere during PNO
