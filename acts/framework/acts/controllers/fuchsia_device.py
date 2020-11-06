@@ -113,6 +113,10 @@ FUCHSIA_COUNTRY_CODE_TIMEOUT = 15
 FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 
 MDNS_LOOKUP_RETRY_MAX = 3
+SAVED_NETWORKS = "saved_networks"
+CLIENT_STATE = "client_connections_state"
+CONNECTIONS_ENABLED = "ConnectionsEnabled"
+CONNECTIONS_DISABLED = "ConnectionsDisabled"
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -205,6 +209,14 @@ class FuchsiaDevice:
         self.config_country_code = fd_conf_data.get(
             'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US)
         self._persistent_ssh_conn = None
+
+        # Whether to use 'policy' (default) or 'drivers' for connect/disconnect
+        # calls
+        self.association_mechanism = fd_conf_data.get("association_mechanism",
+                                                      None)
+
+        self.log = acts_logger.create_tagged_trace_logger(
+            "FuchsiaDevice | %s" % self.ip)
 
         if utils.is_valid_ipv4_address(self.ip):
             self.address = "http://{}:{}".format(self.ip, self.port)
@@ -354,6 +366,19 @@ class FuchsiaDevice:
             self.clean_up()
             raise FuchsiaDeviceError('Failed to run setup commands.')
 
+        # Ensure it's an actual device, not a mock unit test
+        if self.ssh_config:
+            # Allow tests to control the WLAN policy layer
+            self.wlan_policy_lib.wlanCreateClientController()
+            self.preserved_networks_and_client_state = self.remove_and_preserve_networks_and_client_state(
+            )
+            client_conn_response = self.wlan_policy_lib.wlanStartClientConnections(
+            )
+            if client_conn_response.get('error'):
+                raise FuchsiaDeviceError(
+                    'Failed to start wlan client connections: %s' %
+                    client_conn_response['error'])
+
     @backoff.on_exception(
         backoff.constant,
         (ConnectionRefusedError, requests.exceptions.ConnectionError),
@@ -450,7 +475,7 @@ class FuchsiaDevice:
             if use_ssh:
                 self.log.info('Sending reboot command via SSH.')
                 with utils.SuppressLogOutput():
-                    self.clean_up()
+                    self.clean_up_services()
                     self.send_command_ssh(
                         'dm reboot',
                         timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
@@ -556,6 +581,10 @@ class FuchsiaDevice:
             self.clean_up()
             raise FuchsiaDeviceError(
                 'Failed to run setup commands after reboot.')
+
+        self.wlan_policy_lib.wlanCreateClientController()
+        self.wlan_policy_lib.wlanStartClientConnections()
+        self.wlan_policy_lib.wlanSetNewListener()
 
         self.log.info(
             'Device has rebooted, SL4F is reconnected and functional.')
@@ -701,11 +730,16 @@ class FuchsiaDevice:
         """Cleans up the FuchsiaDevice object and releases any resources it
         claimed.
         """
+        self.restore_preserved_networks_and_client_state(
+            self.preserved_networks_and_client_state)
         try:
             self.run_commands_from_config(self.teardown_commands)
         except FuchsiaDeviceError:
             self.log.warning('Failed to run teardown_commands.')
 
+        self.clean_up_services()
+
+    def clean_up_services(self):
         cleanup_id = self.build_id(self.test_counter)
         cleanup_args = {}
         cleanup_method = "sl4f.sl4f_cleanup"
@@ -895,6 +929,7 @@ class FuchsiaDevice:
         Returns:
             True if we see a connect to the network, False otherwise.
         """
+        security_type = str(security_type)
         # Wait until we've connected.
         end_time = time.time() + timeout
         while time.time() < end_time:
@@ -1161,6 +1196,108 @@ class FuchsiaDevice:
         self.start_services()
         self.init_server_connection()
         self.configure_regulatory_domain(self.config_country_code)
+
+    def save_network(self, ssid, security_type, password=None):
+        """Saves a network via the polcu layer.
+
+        Args:
+            ssid: string, network to save
+            security_type: string, security type of network
+                (see wlan_policy_lib)
+            password: string, password of network, if any
+
+        Returns:
+            True, if save successful, False otherwise
+        """
+        save_response = self.wlan_policy_lib.wlanSaveNetwork(
+            ssid, security_type, password)
+        if save_response.get('error'):
+            self.log.warn('Failed to save network %s with error' %
+                          save_response['error'])
+            return False
+        return True
+
+    def remove_and_preserve_networks_and_client_state(self):
+        """ Preserves networks already saved on devices before removing them to
+            setup up for a clean test environment. Records the state of client
+            connections before tests. Initializes the client controller
+            and enables connections.
+        Args:
+            fuchsia_devices: the devices under test
+        Returns:
+            A dict of the data to restore after tests indexed by device. The
+            data for each device is a dict of the saved data, ie saved networks
+            and state of client connections.
+        """
+        # Save preexisting saved networks
+        preserved_networks_and_state = {}
+        saved_networks_response = self.wlan_policy_lib.wlanGetSavedNetworks()
+        if saved_networks_response.get('error'):
+            raise FuchsiaDeviceError(
+                'Failed to get preexisting saved networks: %s' %
+                saved_networks_response['error'])
+        if saved_networks_response.get('result') != None:
+            preserved_networks_and_state[
+                SAVED_NETWORKS] = saved_networks_response['result']
+
+        # Remove preexisting saved networks
+        remove_networks_response = self.wlan_policy_lib.wlanRemoveAllNetworks()
+        if remove_networks_response.get('error'):
+            raise FuchsiaDeviceError(
+                'Failed to remove preexisting saved networks: %s' %
+                remove_networks_response['error'])
+
+        # Get the currect client connection state (connections enabled or
+        # disabled and enable connections by default.
+        set_listener_response = self.wlan_policy_lib.wlanSetNewListener()
+        if set_listener_response.get('err'):
+            raise FuchsiaDeviceError('Failed to set new policy listener: %s' %
+                                     set_listener_response['error'])
+        update_response = self.wlan_policy_lib.wlanGetUpdate()
+        update_result = update_response.get('result', {})
+        if update_result.get('state'):
+            preserved_networks_and_state[CLIENT_STATE] = update_result['state']
+        else:
+            self.log.warn('Failed to get update; test will not start or '
+                          'stop client connections at the end of the test.')
+
+        return preserved_networks_and_state
+
+    def restore_preserved_networks_and_client_state(self, preserved_data):
+        """ Restores initial saved networks and client state on device.
+
+        Args:
+            preserved_data: dict, containing
+                - 'saved_networks': list, saved network configs
+                - 'client_connections_state': string, client connections
+                    state of device
+                    ('ConnectiondsEnabled' or 'ConnectionsDisabled')
+
+        Returns:
+            True, if restore is successful, else False
+        """
+        remove_response = self.wlan_policy_lib.wlanRemoveAllNetworks()
+        if remove_response.get('error'):
+            self.log.warn(
+                'Failed to remove saved networks before restore: %s' %
+                remove_response['error'])
+        restore_success = True
+        for network in preserved_data[SAVED_NETWORKS]:
+            if not self.save_network(network["ssid"], network["security_type"],
+                                     network["credential_value"]):
+                restore_success = False
+        starting_state = preserved_data[CLIENT_STATE]
+        if starting_state == CONNECTIONS_ENABLED:
+            response = self.wlan_policy_lib.wlanStartClientConnections()
+        elif starting_state == CONNECTIONS_DISABLED:
+            response = self.wlan_policy_lib.wlanStopClientConnections()
+        else:
+            raise AttributeError('Invalid client state: %s' % starting_state)
+        if response.get('error'):
+            self.log.warn('Failed to restore client connections: %s' %
+                          response['error'])
+            restore_success = False
+        return restore_success
 
     def load_config(self, config):
         pass
