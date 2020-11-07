@@ -33,7 +33,8 @@ class VzWDoUAutomationIdleTest(
     """Measures power when the device is in airplane mode."""
 
     self.adb_run(goog.disable_playstore)
-    self.adb_run(goog.remove_gmail_account)
+    self.adb_run(common.wifi_global.toggle(False))
+    self.adb_run(common.wifi_state.toggle(False))
     self.adb_run(common.airplane_mode.toggle(True))
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
