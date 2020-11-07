@@ -135,9 +135,9 @@ class VzWDoUAutomationBaseTest(
     """Prepares the device for power testing."""
     self._factory_reset()
     super()._prepare_device()
-    self.base_device_configuration()
-    self.log_in_gmail_account()
     self._cut_band()
+    self.log_in_gmail_account()
+    self.base_device_configuration()
 
   def _cleanup_device(self):
     if self._google_account_util:
