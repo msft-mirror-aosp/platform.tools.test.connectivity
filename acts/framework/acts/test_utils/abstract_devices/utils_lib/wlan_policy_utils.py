@@ -101,6 +101,37 @@ def save_network(fd, ssid, security_type, password=""):
         return True
 
 
+def start_connections(fd):
+    """ Starts client connections on the specified device and verifies that it
+        succeeds, and raises a test failure if not.
+    Returns:
+        True if there are no errors, False if there are errors.
+    """
+    resultStart = fd.wlan_policy_lib.wlanStartClientConnections()
+    if resultStart.get("error") != None:
+        fd.log.error(
+            "Error occurred when starting client connections in test setup: %s"
+            % resultStart.get("error"))
+        return False
+    else:
+        return True
+
+
+def stop_connections(fd):
+    """ Stops client connections on the device and verify that there are no
+        errors are returned, and raises a test failure if there are.
+    Returns:
+        True if there are noe errors, False otherwise.
+    """
+    result_stop = fd.wlan_policy_lib.wlanStopClientConnections()
+    if result_stop.get("error") != None:
+        fd.log.error("Error occurred stopping client connections: %s" %
+                     result_stop.get("error"))
+        return False
+    else:
+        return True
+
+
 def reboot_device(fd):
     """ Reboot the device and reinitialize the device after.
     Args:
