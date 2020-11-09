@@ -80,6 +80,10 @@ class WifiScannerScanTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(ap_count=2, mirror_ap=False)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                ap_count=2)
 
         self.leeway = 10
         self.stime_channel = SCAN_TIME_PASSIVE

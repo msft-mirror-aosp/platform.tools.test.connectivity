@@ -600,7 +600,8 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
         if 'linux' in platform.lower():
             ping_cmd = 'sudo {} {}'.format(ping_cmd_linux, dest_address)
         elif 'darwin' in platform.lower():
-            ping_cmd = "sudo {} {}| while IFS= read -r line; do printf '[%s] %s\n' \"$(gdate '+%s.%N')\" \"$line\"; done".format(ping_cmd_macos, dest_address)
+            ping_cmd = "sudo {} {}| while IFS= read -r line; do printf '[%s] %s\n' \"$(gdate '+%s.%N')\" \"$line\"; done".format(
+                ping_cmd_macos, dest_address)
         ping_output = src_device.run(ping_cmd,
                                      timeout=ping_deadline + SHORT_SLEEP,
                                      ignore_status=True).stdout
@@ -1172,28 +1173,28 @@ def get_connected_rssi_brcm(dut,
         else:
             connected_rssi['frequency'].append(RSSI_ERROR_VAL)
 
-        temp_rssi = int(dut.adb.shell('wl rssi'))
-        if temp_rssi:
-            connected_rssi['signal_poll_rssi']['data'].append(temp_rssi)
-            connected_rssi['signal_poll_avg_rssi']['data'].append(temp_rssi)
-        else:
-            connected_rssi['signal_poll_rssi']['data'].append(RSSI_ERROR_VAL)
-            connected_rssi['signal_poll_avg_rssi']['data'].append(
-                RSSI_ERROR_VAL)
-
         try:
             per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
         except:
             per_chain_rssi = DISCONNECTION_MESSAGE_BRCM
         if DISCONNECTION_MESSAGE_BRCM not in per_chain_rssi:
             per_chain_rssi = per_chain_rssi.split(' ')
-            connected_rssi['chain_0_rssi']['data'].append(
-                int(per_chain_rssi[1]))
-            connected_rssi['chain_1_rssi']['data'].append(
-                int(per_chain_rssi[4]))
+            chain_0_rssi = int(per_chain_rssi[1])
+            chain_1_rssi = int(per_chain_rssi[4])
+            connected_rssi['chain_0_rssi']['data'].append(chain_0_rssi)
+            connected_rssi['chain_1_rssi']['data'].append(chain_1_rssi)
+            combined_rssi = math.pow(10, chain_0_rssi / 10) + math.pow(
+                10, chain_1_rssi / 10)
+            combined_rssi = 10 * math.log10(combined_rssi)
+            connected_rssi['signal_poll_rssi']['data'].append(combined_rssi)
+            connected_rssi['signal_poll_avg_rssi']['data'].append(
+                combined_rssi)
         else:
             connected_rssi['chain_0_rssi']['data'].append(RSSI_ERROR_VAL)
             connected_rssi['chain_1_rssi']['data'].append(RSSI_ERROR_VAL)
+            connected_rssi['signal_poll_rssi']['data'].append(RSSI_ERROR_VAL)
+            connected_rssi['signal_poll_avg_rssi']['data'].append(
+                RSSI_ERROR_VAL)
         measurement_elapsed_time = time.time() - measurement_start_time
         time.sleep(max(0, polling_frequency - measurement_elapsed_time))
 
