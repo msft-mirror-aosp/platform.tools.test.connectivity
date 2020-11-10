@@ -228,8 +228,9 @@ class WifiScannerMultiScanTest(WifiBaseTest):
         wifi_chs: WiFi channels according to the device model.
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
         self.tests = (
             'test_wifi_two_scans_at_same_interval',
             'test_wifi_two_scans_at_different_interval',

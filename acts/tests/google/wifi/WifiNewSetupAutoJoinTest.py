@@ -29,6 +29,11 @@ NETWORK_ERROR = "Device is not connected to reference network"
 
 
 class WifiNewSetupAutoJoinTest(WifiBaseTest):
+
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
+
     def add_network_and_enable(self, network):
         """Add a network and enable it.
 
