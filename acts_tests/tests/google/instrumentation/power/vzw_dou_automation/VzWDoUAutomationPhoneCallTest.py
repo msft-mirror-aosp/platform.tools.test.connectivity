@@ -41,6 +41,7 @@ class VzWDoUAutomationPhoneCallTest(
         'The companion phone number is {}'.format(companion_phone_number))
     dut_phone_number = self.get_phone_number(self.ad_dut)
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
     # In this test case three calls are made
     PHONE_CALL_COUNT = 3
     metrics_list = []
@@ -81,6 +82,7 @@ class VzWDoUAutomationPhoneCallTest(
         'The companion phone number is {}'.format(companion_phone_number))
     dut_phone_number = self.get_phone_number(self.ad_dut)
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
     # In this test case three calls are made
     PHONE_CALL_COUNT = 3
     metrics_list = []
@@ -128,6 +130,7 @@ class VzWDoUAutomationPhoneCallTest(
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
     bt_device_address = self.user_params['bt_device_address']
     self.log.info('The bt device address is {}'.format(bt_device_address))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
 
     self.run_instrumentation_on_companion(
         'com.google.android.platform.dou.CompanionSimulateVoiceTests',
@@ -197,6 +200,7 @@ class VzWDoUAutomationPhoneCallTest(
         'The companion phone number is {}'.format(companion_phone_number))
     dut_phone_number = self.get_phone_number(self.ad_dut)
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
 
     self.run_instrumentation_on_companion(
         'com.google.android.platform.dou.CompanionSimulateVoiceTests',
