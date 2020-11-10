@@ -134,10 +134,10 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         self.dut.adb.shell(RESET_BATTERY_STATS)
         time.sleep(1)
         for _ in range(LOGTIME_RETRY_COUNT):
-            self.mon_info.dut.usb(PassthroughStates.OFF)
+            self.monsoons[0].usb(PassthroughStates.OFF)
             if not ad.is_connected():
                 time.sleep(sleeptime)
-                self.mon_info.dut.usb(PassthroughStates.ON)
+                self.monsoons[0].usb(PassthroughStates.ON)
                 break
         else:
             self.log.error('Test failed after maximum retry')
@@ -162,15 +162,13 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
             True/False
         """
         try:
-            self.mon.reconnect_monsoon()
-            time.sleep(2)
-            self.mon.usb('on')
+            self.power_monitor.connect_usb()
             logging.info('Monsoon recovered from unexpected error')
             time.sleep(2)
             return True
         except MonsoonError:
             try:
-                self.log.info(self.mon_info.dut._mon.ser.in_waiting)
+                self.log.info(self.monsoons[0]._mon.ser.in_waiting)
             except AttributeError:
                 # This attribute does not exist for HVPMs.
                 pass

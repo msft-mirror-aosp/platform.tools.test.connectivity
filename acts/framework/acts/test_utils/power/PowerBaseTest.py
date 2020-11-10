@@ -75,6 +75,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.img_name = ''
         self.dut = None
         self.power_logger = PowerMetricLogger.for_test_case()
+        self.power_monitor = None
 
     @property
     def final_test(self):
@@ -99,6 +100,19 @@ class PowerBaseTest(base_test.BaseTestClass):
     @display_name_test_case.setter
     def display_name_test_case(self, name):
         self._display_name_test_case = name
+
+    def initialize_power_monitor(self):
+        """ Initializes the power monitor object.
+
+        Raises an exception if there are no controllers available.
+        """
+        if hasattr(self, 'monsoons'):
+            self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
+                self.monsoons[0])
+            self.monsoons[0].set_max_current(8.0)
+            self.monsoons[0].set_voltage(self.mon_voltage)
+        else:
+            raise RuntimeError('No power monitors available.')
 
     def setup_class(self):
 
@@ -132,13 +146,9 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut = self.android_devices[0]
         self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
         os.makedirs(self.mon_data_path, exist_ok=True)
-        self.mon = self.monsoons[0]
-        self.mon.set_max_current(8.0)
-        self.mon.set_voltage(self.mon_voltage)
 
         # Initialize the power monitor object that will be used to measure
-        self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
-            self.monsoons[0])
+        self.initialize_power_monitor()
 
         # Unpack the thresholds file or fail class setup if it can't be found
         for file in self.custom_files:
@@ -206,7 +216,7 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         """
         self.log.info('Tearing down the test case')
-        self.mon.usb('on')
+        self.power_monitor.connect_usb()
         self.power_logger.set_avg_power(self.power_result.metric_value)
         self.power_logger.set_avg_current(self.avg_current)
         self.power_logger.set_voltage(self.mon_voltage)
@@ -251,8 +261,8 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         """
         self.log.info('Tearing down the test class')
-        if hasattr(self, 'monsoons'):
-            self.monsoons[0].usb('on')
+        if self.power_monitor:
+            self.power_monitor.connect_usb()
 
     def on_fail(self, test_name, begin_time):
         self.power_logger.set_pass_fail_status('FAIL')
@@ -391,8 +401,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         Returns:
             mon_info: Dictionary with the monsoon packet config
         """
-        mon_info = ObjNew(dut=self.mon,
-                          freq=self.mon_freq,
+        mon_info = ObjNew(freq=self.mon_freq,
                           duration=self.mon_duration,
                           offset=self.mon_offset,
                           data_path=self.mon_data_path)
