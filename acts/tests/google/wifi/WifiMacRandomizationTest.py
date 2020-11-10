@@ -79,7 +79,14 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.configure_packet_capture()
 
         if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start(wep_network=True, ap_count=2)
+            self.legacy_configure_ap_and_start(wep_network=True,
+                                               ap_count=2)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                wep_network=True,
+                                                mirror_ap=True,
+                                                ap_count=2)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -405,7 +412,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
             raise signals.TestFailure(msg %(self.open_5g, mac_list[1], mac_open))
 
     @test_tracker_info(uuid="edb5a0e5-7f3b-4147-b1d3-48ad7ad9799e")
-    def test_mac_randomization_differnet_APs(self):
+    def test_mac_randomization_different_APs(self):
         """Verify randomization using two different APs.
 
         Steps:
@@ -490,6 +497,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
+        if "OpenWrtAP" in self.user_params:
+            AP1_network["bssid"] = self.bssid_map[0]["5g"][AP1_network["SSID"]]
+            AP2_network["bssid"] = self.bssid_map[1]["5g"][AP2_network["SSID"]]
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
         mac_before_roam = self.connect_to_network_and_verify_mac_randomization(
                 AP1_network)
