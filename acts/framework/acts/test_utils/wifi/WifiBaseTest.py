@@ -45,6 +45,13 @@ MAX_AP_COUNT = 2
 
 
 class WifiBaseTest(BaseTestClass):
+
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = False
+        self.packet_log_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
+        self.packet_log_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
+
     def setup_class(self):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
@@ -58,6 +65,10 @@ class WifiBaseTest(BaseTestClass):
                 self.cnss_diag_file = os.path.join(
                     self.user_params[Config.key_config_path.value],
                     self.cnss_diag_file)
+        if self.enable_packet_log and hasattr(self, "packet_capture"):
+            self.packet_logger = self.packet_capture[0]
+            self.packet_logger.configure_monitor_mode("2G", self.packet_log_2g)
+            self.packet_logger.configure_monitor_mode("5G", self.packet_log_5g)
 
     def setup_test(self):
         if (hasattr(self, "android_devices") and
@@ -70,6 +81,9 @@ class WifiBaseTest(BaseTestClass):
             for ad in self.android_devices:
                 proc = nutils.start_tcpdump(ad, self.test_name)
                 self.tcpdump_proc.append((ad, proc))
+        if hasattr(self, "packet_logger"):
+            self.packet_log_pid = wutils.start_pcap(
+                    self.packet_logger, 'dual', self.test_name)
 
     def teardown_test(self):
         if (hasattr(self, "android_devices") and
@@ -80,6 +94,10 @@ class WifiBaseTest(BaseTestClass):
             nutils.stop_tcpdump(
                     proc[0], proc[1], self.test_name, pull_dump=False)
         self.tcpdump_proc = []
+        if hasattr(self, "packet_logger") and self.packet_log_pid:
+            wutils.stop_pcap(
+                    self.packet_logger, self.packet_log_pid, test_status=True)
+            self.packet_log_pid = {}
 
     def on_fail(self, test_name, begin_time):
         if hasattr(self, "android_devices"):
@@ -95,6 +113,10 @@ class WifiBaseTest(BaseTestClass):
         for proc in self.tcpdump_proc:
             nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
         self.tcpdump_proc = []
+        if hasattr(self, "packet_logger") and self.packet_log_pid:
+            wutils.stop_pcap(
+                    self.packet_logger, self.packet_log_pid, test_status=False)
+            self.packet_log_pid = {}
 
     def get_psk_network(
             self,

@@ -59,6 +59,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network.
     """
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
 
     def setup_class(self):
         super().setup_class()
