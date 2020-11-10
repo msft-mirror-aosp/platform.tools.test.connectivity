@@ -1922,7 +1922,8 @@ def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=15,
     """
     # wait_time to allow for DHCP to complete.
     for i in range(wait_time):
-        if ad.droid.connectivityNetworkIsConnected():
+        if ad.droid.connectivityNetworkIsConnected(
+                ) and ad.droid.connectivityGetIPv4DefaultGateway():
             break
         time.sleep(1)
     ping = False
