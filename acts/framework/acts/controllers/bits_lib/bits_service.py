@@ -26,8 +26,8 @@ import time
 from enum import Enum
 
 from acts import context
-from acts.libs.proc import process
 from acts.libs.proc import job
+from acts.libs.proc import process
 
 
 class BitsServiceError(Exception):
@@ -195,8 +195,8 @@ class BitsService(object):
         self._log.info('starting bits_service %s', self.name)
         self._trigger_background_process(self._binary)
 
-        # wait 10 seconds for the service to be ready.
-        max_startup_wait = time.time() + 10
+        # wait 40 seconds for the service to be ready.
+        max_startup_wait = time.time() + 40
         while time.time() < max_startup_wait:
             if self.service_state is BitsServiceStates.STARTED:
                 self._log.info('bits_service %s started on port %s', self.name,
@@ -204,6 +204,8 @@ class BitsService(object):
                 return
             time.sleep(0.1)
 
+        self._log.error('bits_service %s did not start on time, starting '
+                        'service teardown and raising a BitsServiceError.')
         self._cleanup()
         raise BitsServiceError(
             'bits_service %s did not start successfully' % self.name)
