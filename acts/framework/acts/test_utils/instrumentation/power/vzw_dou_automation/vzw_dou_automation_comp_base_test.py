@@ -235,7 +235,7 @@ class VzWDoUAutomationCompBaseTest(
     # so it can pair and connect automatically.
     bt_conf_path_dut = '/data/misc/bluedroid/bt_config.conf'
     bt_config_file = 'bt_config.conf'
-    bt_config_path = self.user_params['bt_configs']
+    bt_config_path = self.user_params['bt_configs'][0]
     self.log.info('Base bt config path %s' % bt_config_path)
     self.ad_dut.adb.push(bt_config_path + '/' + self.ad_dut.serial + '/' +
                          bt_config_file + ' %s' % bt_conf_path_dut)
