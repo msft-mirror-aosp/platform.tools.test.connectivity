@@ -48,7 +48,8 @@ install_requires = [
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
-    'dlipower'
+    'dlipower',
+    'zeroconf'
 ]
 
 if sys.version_info < (3, ):
@@ -59,9 +60,7 @@ if sys.version_info < (3, ):
     install_requires.append('py2-ipaddress')
     install_requires.append('subprocess32')
 
-DEV_PACKAGES = [
-    'shiv'
-]
+DEV_PACKAGES = ['shiv']
 
 framework_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -76,7 +75,8 @@ class PyTest(test.test):
         self.test_suite = True
 
     def run_tests(self):
-        test_path = os.path.join(framework_dir, '../tests/meta/ActsUnitTest.py')
+        test_path = os.path.join(framework_dir,
+                                 '../tests/meta/ActsUnitTest.py')
         result = subprocess.Popen('python3 %s' % test_path,
                                   stdout=sys.stdout,
                                   stderr=sys.stderr,

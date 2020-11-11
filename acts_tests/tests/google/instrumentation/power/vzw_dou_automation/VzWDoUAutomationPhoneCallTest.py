@@ -41,6 +41,7 @@ class VzWDoUAutomationPhoneCallTest(
         'The companion phone number is {}'.format(companion_phone_number))
     dut_phone_number = self.get_phone_number(self.ad_dut)
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
     # In this test case three calls are made
     PHONE_CALL_COUNT = 3
     metrics_list = []
@@ -81,6 +82,7 @@ class VzWDoUAutomationPhoneCallTest(
         'The companion phone number is {}'.format(companion_phone_number))
     dut_phone_number = self.get_phone_number(self.ad_dut)
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
     # In this test case three calls are made
     PHONE_CALL_COUNT = 3
     metrics_list = []
@@ -128,6 +130,7 @@ class VzWDoUAutomationPhoneCallTest(
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
     bt_device_address = self.user_params['bt_device_address']
     self.log.info('The bt device address is {}'.format(bt_device_address))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
 
     self.run_instrumentation_on_companion(
         'com.google.android.platform.dou.CompanionSimulateVoiceTests',
@@ -148,6 +151,43 @@ class VzWDoUAutomationPhoneCallTest(
     self.validate_metrics(metrics)
 
   @repeated_test(
+      num_passes=1,
+      acceptable_failures=0,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_voice_call_and_browser(self, attempt_number):
+    """Measures power when the device is on call with bluetooth paired."""
+
+    self.pair_dut_bluetooth()
+    self.connect_companion_to_wifi()
+    self.log_in_companion_gmail_account()
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+    dut_phone_number = self.get_phone_number(self.ad_dut)
+    self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    bt_device_address = self.user_params['bt_device_address']
+    self.log.info('The bt device address is {}'.format(bt_device_address))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
+
+    self.run_instrumentation_on_companion(
+        'com.google.android.platform.dou.CompanionSimulateVoiceTests',
+        'testPlayYoutube',
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                      ('recipient_number', dut_phone_number)])
+
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.PhoneVoiceCallAndBrowserTests',
+        'testVoiceCallAndBrowser',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number),
+                      ('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                      ('bluetooth_device_mac_addr', bt_device_address)],
+        attempt_number=attempt_number)
+
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  @repeated_test(
       num_passes=3,
       acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
@@ -160,6 +200,7 @@ class VzWDoUAutomationPhoneCallTest(
         'The companion phone number is {}'.format(companion_phone_number))
     dut_phone_number = self.get_phone_number(self.ad_dut)
     self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
 
     self.run_instrumentation_on_companion(
         'com.google.android.platform.dou.CompanionSimulateVoiceTests',
