@@ -62,6 +62,7 @@ from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 from acts.libs.proc import job
+from acts.utils import get_fuchsia_mdns_ipv6_address
 
 MOBLY_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -198,15 +199,19 @@ class FuchsiaDevice:
         self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self._persistent_ssh_conn = None
 
-        self.log = acts_logger.create_tagged_trace_logger(
-            "FuchsiaDevice | %s" % self.ip)
-
         if utils.is_valid_ipv4_address(self.ip):
             self.address = "http://{}:{}".format(self.ip, self.port)
         elif utils.is_valid_ipv6_address(self.ip):
             self.address = "http://[{}]:{}".format(self.ip, self.port)
+        elif utils.is_valid_ipv6_address(get_fuchsia_mdns_ipv6_address(
+                self.ip)):
+            self.ip = get_fuchsia_mdns_ipv6_address(self.ip)
+            self.address = "http://[{}]:{}".format(self.ip, self.port)
         else:
             raise ValueError('Invalid IP: %s' % self.ip)
+
+        self.log = acts_logger.create_tagged_trace_logger(
+            "FuchsiaDevice | %s" % self.ip)
 
         self.init_address = self.address + "/init"
         self.cleanup_address = self.address + "/cleanup"
