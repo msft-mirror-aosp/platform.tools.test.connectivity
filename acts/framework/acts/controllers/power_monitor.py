@@ -119,6 +119,24 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
             self.monsoon.set_max_current(
                 monsoon_config.get_numeric('max_current'))
 
+    def power_cycle(self, monsoon_config=None, **__):
+        """Power cycle the Monsoon controller for this testclass/testcase."""
+
+        if monsoon_config is None:
+            raise MonsoonError('monsoon_config can not be None')
+
+        self._log.info('Setting up Monsoon %s' % self.monsoon.serial)
+        voltage = monsoon_config.get_numeric('voltage', 4.2)
+        self._log.info('Setting up Monsoon voltage %s' % voltage)
+        self.monsoon.set_voltage_safe(0)
+        if 'max_current' in monsoon_config:
+            self.monsoon.set_max_current(
+                monsoon_config.get_numeric('max_current'))
+            self.monsoon.set_max_initial_current(
+                monsoon_config.get_numeric('max_current'))
+        self.connect_usb()
+        self.monsoon.set_voltage_safe(voltage)
+
     def connect_usb(self, **__):
         self.monsoon.usb('on')
 
