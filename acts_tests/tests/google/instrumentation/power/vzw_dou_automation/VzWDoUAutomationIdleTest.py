@@ -43,7 +43,7 @@ class VzWDoUAutomationIdleTest(
     self.validate_metrics(metrics)
 
   @repeated_test(
-      num_passes=3,
+      num_passes=1,
       acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_idle(self, attempt_number):
@@ -57,7 +57,7 @@ class VzWDoUAutomationIdleTest(
     self.validate_metrics(metrics)
 
   @repeated_test(
-      num_passes=3,
+      num_passes=1,
       acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_idle_wifi(self, attempt_number):
