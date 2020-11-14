@@ -1772,6 +1772,8 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
                     device_ip_address = ipaddress.ip_address(device_ip_address)
                     if (device_ip_address.version == 6
                             and device_ip_address.is_link_local):
+                        zeroconf.close()
+                        del zeroconf
                         return ('%s%%%s' % (str(device_ip_address), interface))
             zeroconf.close()
             del zeroconf

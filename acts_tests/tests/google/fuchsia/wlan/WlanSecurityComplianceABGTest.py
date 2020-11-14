@@ -19,11 +19,11 @@ from functools import wraps
 
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
-from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_state
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_state
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 from acts.utils import rand_hex_str
 

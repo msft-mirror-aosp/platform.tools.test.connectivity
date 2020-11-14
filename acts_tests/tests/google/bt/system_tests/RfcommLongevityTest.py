@@ -23,10 +23,10 @@ from random import randint
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
-from acts.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
+from acts_contrib.test_utils.bt.bt_test_utils import write_read_verify_data
 
 
 class RfcommLongevityTest(BluetoothBaseTest):

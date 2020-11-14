@@ -20,14 +20,14 @@ import os
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.base_test import BaseTestClass
-from acts.test_utils.bt import bt_contacts_utils
-from acts.test_utils.bt import bt_test_utils
-from acts.test_utils.car import car_bt_utils
+from acts_contrib.test_utils.bt import bt_contacts_utils
+from acts_contrib.test_utils.bt import bt_test_utils
+from acts_contrib.test_utils.car import car_bt_utils
 from acts.utils import exe_cmd
-import acts.test_utils.bt.BtEnum as BtEnum
+import acts_contrib.test_utils.bt.BtEnum as BtEnum
 
 # Offset call logs by 1 minute
 CALL_LOG_TIME_OFFSET_IN_MSEC = 60000

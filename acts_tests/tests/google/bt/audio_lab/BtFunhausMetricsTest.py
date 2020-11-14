@@ -15,7 +15,7 @@ import time
 
 from acts.test_decorators import test_tracker_info
 from acts import asserts
-from acts.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
+from acts_contrib.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
 
 
 class BtFunhausMetricsTest(BtFunhausBaseTest):
