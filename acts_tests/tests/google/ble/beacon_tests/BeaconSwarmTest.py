@@ -22,17 +22,17 @@ Shield box one: Android Device as DUT. 7x Sprout devices acting as 192 beacons
 
 import threading
 
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
-from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
-from acts.test_utils.bt.bt_test_utils import adv_succ
-from acts.test_utils.bt.bt_test_utils import batch_scan_result
-from acts.test_utils.bt.bt_test_utils import scan_result
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
+from acts_contrib.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts_contrib.test_utils.bt.bt_test_utils import adv_succ
+from acts_contrib.test_utils.bt.bt_test_utils import batch_scan_result
+from acts_contrib.test_utils.bt.bt_test_utils import scan_result
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class BeaconSwarmTest(BluetoothBaseTest):
