@@ -26,18 +26,18 @@ from queue import Empty
 from acts.asserts import assert_equal
 from acts.asserts import assert_true
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import advertising_set_started
-from acts.test_utils.bt.bt_constants import advertising_set_stopped
-from acts.test_utils.bt.bt_constants import advertising_set_enabled
-from acts.test_utils.bt.bt_constants import advertising_set_data_set
-from acts.test_utils.bt.bt_constants import advertising_set_scan_response_set
-from acts.test_utils.bt.bt_constants import advertising_set_parameters_update
-from acts.test_utils.bt.bt_constants import advertising_set_periodic_parameters_updated
-from acts.test_utils.bt.bt_constants import advertising_set_periodic_data_set
-from acts.test_utils.bt.bt_constants import advertising_set_periodic_enable
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_started
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_stopped
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_enabled
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_data_set
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_scan_response_set
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_parameters_update
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_periodic_parameters_updated
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_periodic_data_set
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_periodic_enable
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts import signals
 
 

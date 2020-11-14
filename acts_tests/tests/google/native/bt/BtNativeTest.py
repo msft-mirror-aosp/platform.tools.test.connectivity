@@ -1,7 +1,7 @@
 from acts.base_test import BaseTestClass
 from acts.controllers import native_android_device
-from acts.test_utils.bt.native_bt_test_utils import setup_native_bluetooth
-from acts.test_utils.bt.bt_test_utils import generate_id_by_size
+from acts_contrib.test_utils.bt.native_bt_test_utils import setup_native_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import generate_id_by_size
 
 
 class BtNativeTest(BaseTestClass):

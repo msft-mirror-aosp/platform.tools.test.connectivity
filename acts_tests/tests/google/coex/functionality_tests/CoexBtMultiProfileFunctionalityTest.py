@@ -21,15 +21,15 @@ Test Setup:
 Two Android device.
 One A2DP and HFP Headset connected to Relay.
 """
-from acts.test_utils.bt import BtEnum
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
-from acts.test_utils.coex.coex_test_utils import connect_ble
-from acts.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
-from acts.test_utils.coex.coex_test_utils import multithread_func
-from acts.test_utils.coex.coex_test_utils import music_play_and_check_via_app
-from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
-from acts.test_utils.coex.coex_test_utils import setup_tel_config
+from acts_contrib.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts_contrib.test_utils.coex.coex_test_utils import connect_ble
+from acts_contrib.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
+from acts_contrib.test_utils.coex.coex_test_utils import multithread_func
+from acts_contrib.test_utils.coex.coex_test_utils import music_play_and_check_via_app
+from acts_contrib.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts_contrib.test_utils.coex.coex_test_utils import setup_tel_config
 
 
 class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):

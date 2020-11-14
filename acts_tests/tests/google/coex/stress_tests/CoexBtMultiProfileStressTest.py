@@ -22,11 +22,11 @@ One Android device.
 """
 import time
 
-from acts.test_utils.bt import BtEnum
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
-from acts.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
-from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts_contrib.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts_contrib.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
+from acts_contrib.test_utils.coex.coex_test_utils import pair_and_connect_headset
 
 
 class CoexBtMultiProfileStressTest(CoexBaseTest):

@@ -19,7 +19,7 @@ Test script to automate the Bluetooth Audio Funhaus.
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
+from acts_contrib.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
 
 
 class BtFunhausTest(BtFunhausBaseTest):

@@ -15,8 +15,8 @@
 #   limitations under the License.
 
 
-from acts.test_utils.instrumentation.power import instrumentation_power_test
-from acts.test_utils.instrumentation.device.apps.app_installer import \
+from acts_contrib.test_utils.instrumentation.power import instrumentation_power_test
+from acts_contrib.test_utils.instrumentation.device.apps.app_installer import \
   AppInstaller
 
 
