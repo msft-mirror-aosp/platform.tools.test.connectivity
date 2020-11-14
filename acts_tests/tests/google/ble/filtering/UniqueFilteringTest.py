@@ -25,14 +25,14 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.bt.bt_constants import adv_succ
-from acts.test_utils.bt.bt_constants import batch_scan_result
-from acts.test_utils.bt.bt_constants import scan_result
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts_contrib.test_utils.bt.bt_constants import adv_succ
+from acts_contrib.test_utils.bt.bt_constants import batch_scan_result
+from acts_contrib.test_utils.bt.bt_constants import scan_result
 
 
 class UniqueFilteringTest(BluetoothBaseTest):

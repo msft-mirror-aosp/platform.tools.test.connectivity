@@ -22,14 +22,14 @@ import time
 
 import acts.base_test
 import acts.signals as signals
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from scapy.all import *
 from acts.controllers.ap_lib import hostapd_constants
 

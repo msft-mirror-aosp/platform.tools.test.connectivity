@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts.test_utils.power.cellular.cellular_voice_call_power_test as cvcpt
+import acts_contrib.test_utils.power.cellular.cellular_voice_call_power_test as cvcpt
 
 
 class PowerTelVoiceCall_UMTS_Test(cvcpt.PowerTelVoiceCallTest):

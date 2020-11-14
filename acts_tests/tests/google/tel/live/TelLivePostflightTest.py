@@ -20,7 +20,7 @@ import os
 from acts.asserts import fail
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 
 class TelLivePostflightTest(TelephonyBaseTest):

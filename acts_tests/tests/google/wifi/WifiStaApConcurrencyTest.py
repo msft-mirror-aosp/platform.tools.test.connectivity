@@ -23,12 +23,12 @@ from acts import base_test
 from acts.controllers.ap_lib import hostapd_constants
 import acts.signals as signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-import acts.test_utils.wifi.wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.utils as utils
-import acts.test_utils.tel.tel_test_utils as tel_utils
+import acts_contrib.test_utils.tel.tel_test_utils as tel_utils
 
 
 WifiEnums = wutils.WifiEnums
