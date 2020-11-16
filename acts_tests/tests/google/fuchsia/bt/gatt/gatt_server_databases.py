@@ -18,12 +18,12 @@
 GATT server dictionaries which will be setup in various tests.
 """
 
-from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
-from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
-from acts_contrib.test_utils.bt.bt_constants import gatt_service_types
-from acts_contrib.test_utils.bt.bt_constants import gatt_char_types
-from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic_value_format
-from acts_contrib.test_utils.bt.bt_constants import gatt_char_desc_uuids
+from acts.test_utils.bt.bt_constants import gatt_characteristic
+from acts.test_utils.bt.bt_constants import gatt_descriptor
+from acts.test_utils.bt.bt_constants import gatt_service_types
+from acts.test_utils.bt.bt_constants import gatt_char_types
+from acts.test_utils.bt.bt_constants import gatt_characteristic_value_format
+from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
 
 
 SINGLE_PRIMARY_SERVICE = {

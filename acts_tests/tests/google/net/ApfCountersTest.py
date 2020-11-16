@@ -15,17 +15,17 @@
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.net.net_test_utils import start_tcpdump
-from acts_contrib.test_utils.net.net_test_utils import stop_tcpdump
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.net.net_test_utils import start_tcpdump
+from acts.test_utils.net.net_test_utils import stop_tcpdump
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 from scapy.all import ICMPv6ND_RA
 from scapy.all import rdpcap
 from scapy.all import Scapy_Exception
 
 import acts.base_test
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
 
 import copy
 import os

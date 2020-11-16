@@ -21,10 +21,10 @@ import threading
 import time
 
 from acts import asserts
-from acts_contrib.test_utils.net import connectivity_const as cconsts
-from acts_contrib.test_utils.wifi.aware import aware_const as aconsts
-from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
-from acts_contrib.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts.test_utils.net import connectivity_const as cconsts
+from acts.test_utils.wifi.aware import aware_const as aconsts
+from acts.test_utils.wifi.aware import aware_test_utils as autils
+from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
 
 
 class ThroughputTest(AwareBaseTest):

@@ -30,9 +30,9 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.radvd import Radvd
 from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
-from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.utils_lib import wlan_utils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 # Constants, for readibility
 AP = 'ap'

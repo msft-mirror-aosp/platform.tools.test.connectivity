@@ -14,8 +14,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import *
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import *
 
 import time
 import pprint

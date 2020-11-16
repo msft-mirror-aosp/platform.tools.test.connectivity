@@ -17,8 +17,8 @@
 from acts import signals
 
 from acts.base_test import BaseTestClass
-from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 
 class WlanInterfaceTest(AbstractDeviceWlanDeviceBaseTest):

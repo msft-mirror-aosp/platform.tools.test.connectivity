@@ -30,12 +30,12 @@ from acts.asserts import assert_false
 from acts.asserts import assert_true
 from acts.keys import Config
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_enabled_check
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 
 

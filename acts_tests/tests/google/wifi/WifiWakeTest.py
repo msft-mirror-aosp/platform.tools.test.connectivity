@@ -20,8 +20,8 @@ import queue
 from acts import asserts
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 WifiEnums = wutils.WifiEnums

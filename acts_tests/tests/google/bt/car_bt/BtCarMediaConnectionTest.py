@@ -20,11 +20,11 @@ Automated tests for the testing Connectivity of Avrcp/A2dp profile.
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt import bt_test_utils
-from acts_contrib.test_utils.car import car_bt_utils
-from acts_contrib.test_utils.bt import BtEnum
-from acts_contrib.test_utils.bt.bt_test_utils import is_a2dp_connected
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.car import car_bt_utils
+from acts.test_utils.bt import BtEnum
+from acts.test_utils.bt.bt_test_utils import is_a2dp_connected
 
 
 class BtCarMediaConnectionTest(BluetoothBaseTest):

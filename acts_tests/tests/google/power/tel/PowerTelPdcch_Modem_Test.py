@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
+import acts.test_utils.power.cellular.cellular_pdcch_power_test as cppt
 
 
 class PowerTelPdcch_Modem_Test(cppt.PowerTelPDCCHTest):

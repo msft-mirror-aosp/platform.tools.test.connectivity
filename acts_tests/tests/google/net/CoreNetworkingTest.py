@@ -17,8 +17,8 @@ from acts import asserts
 from acts import base_test
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.net import net_test_utils as nutils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.net import net_test_utils as nutils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 dum_class = "com.android.tests.connectivity.uid.ConnectivityTestActivity"
 

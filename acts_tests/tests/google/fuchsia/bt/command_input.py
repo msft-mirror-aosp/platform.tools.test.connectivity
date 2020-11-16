@@ -43,13 +43,13 @@ This is all to say this documentation pattern is expected.
 
 """
 
-from acts_contrib.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
-from acts_contrib.test_utils.bt.bt_constants import bt_attribute_values
-from acts_contrib.test_utils.bt.bt_constants import sig_appearance_constants
-from acts_contrib.test_utils.bt.bt_constants import sig_uuid_constants
-from acts_contrib.test_utils.fuchsia.sdp_records import sdp_pts_record_list
+from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
+from acts.test_utils.bt.bt_constants import bt_attribute_values
+from acts.test_utils.bt.bt_constants import sig_appearance_constants
+from acts.test_utils.bt.bt_constants import sig_uuid_constants
+from acts.test_utils.fuchsia.sdp_records import sdp_pts_record_list
 
-import acts_contrib.test_utils.bt.gatt_test_database as gatt_test_database
+import acts.test_utils.bt.gatt_test_database as gatt_test_database
 
 import cmd
 import pprint
@@ -1391,7 +1391,7 @@ class CommandInput(cmd.Cmd):
             Supports Tab Autocomplete.
         Input(s):
             descriptor_db_name: The descriptor db name that matches one in
-                acts_contrib.test_utils.bt.gatt_test_database
+                acts.test_utils.bt.gatt_test_database
         Usage:
           Examples:
             gatts_setup_database LARGE_DB_1

@@ -15,8 +15,8 @@
 #   limitations under the License.
 
 import time
-import acts_contrib.test_utils.power.PowerBTBaseTest as PBtBT
-import acts_contrib.test_utils.bt.bt_test_utils as btutils
+import acts.test_utils.power.PowerBTBaseTest as PBtBT
+import acts.test_utils.bt.bt_test_utils as btutils
 
 SCREEN_OFF_WAIT_TIME = 2
 

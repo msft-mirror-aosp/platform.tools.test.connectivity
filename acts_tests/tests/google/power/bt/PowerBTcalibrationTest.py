@@ -17,8 +17,8 @@
 import csv
 import os
 import time
-import acts_contrib.test_utils.bt.bt_test_utils as btutils
-import acts_contrib.test_utils.power.PowerBTBaseTest as PBtBT
+import acts.test_utils.bt.bt_test_utils as btutils
+import acts.test_utils.power.PowerBTBaseTest as PBtBT
 
 EXTRA_PLAY_TIME = 30
 

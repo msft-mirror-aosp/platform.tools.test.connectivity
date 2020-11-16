@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts_contrib.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.power import instrumentation_power_test
 
 
 class ApolloNoSetupTest(instrumentation_power_test.InstrumentationPowerTest):

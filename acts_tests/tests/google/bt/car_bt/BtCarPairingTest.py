@@ -20,11 +20,11 @@ Test script to test the pairing scenarios and setting priorities.
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.base_test import BaseTestClass
-from acts_contrib.test_utils.bt import bt_test_utils
-from acts_contrib.test_utils.car import car_bt_utils
-from acts_contrib.test_utils.bt import BtEnum
+from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.car import car_bt_utils
+from acts.test_utils.bt import BtEnum
 
 # Timed wait between Bonding happens and Android actually gets the list of
 # supported services (and subsequently updates the priorities)

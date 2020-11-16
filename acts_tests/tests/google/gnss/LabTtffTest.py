@@ -26,8 +26,8 @@ from acts import base_test
 from pandas import DataFrame
 from collections import namedtuple
 from acts.controllers.spectracom_lib import gsg6
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
-from acts_contrib.test_utils.gnss import gnss_testlog_utils as glogutils
+from acts.test_utils.gnss import gnss_test_utils as gutils
+from acts.test_utils.gnss import gnss_testlog_utils as glogutils
 
 DEVICE_GPSLOG_FOLDER = '/sdcard/Android/data/com.android.gpstool/files/'
 GPS_PKG_NAME = 'com.android.gpstool'

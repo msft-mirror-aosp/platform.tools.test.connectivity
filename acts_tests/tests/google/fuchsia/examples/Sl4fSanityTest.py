@@ -24,7 +24,7 @@ import os
 import uuid
 
 from acts import signals
-from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 
 
 class Sl4fSanityTest(BaseTestClass):

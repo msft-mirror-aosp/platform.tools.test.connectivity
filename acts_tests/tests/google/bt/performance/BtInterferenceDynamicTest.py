@@ -19,9 +19,9 @@ attenuations."""
 import random
 import time
 from acts.signals import TestFailure
-from acts_contrib.test_utils.bt.BtInterferenceBaseTest import BtInterferenceBaseTest
-from acts_contrib.test_utils.bt.BtInterferenceBaseTest import get_iperf_results
-from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
+from acts.test_utils.bt.BtInterferenceBaseTest import BtInterferenceBaseTest
+from acts.test_utils.bt.BtInterferenceBaseTest import get_iperf_results
+from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
 from multiprocessing import Process, Queue
 
 DEFAULT_THDN_THRESHOLD = 0.9

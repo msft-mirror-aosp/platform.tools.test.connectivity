@@ -15,10 +15,10 @@
 #   limitations under the License.
 
 import acts.signals
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 class WifiHiddenSSIDTest(WifiBaseTest):

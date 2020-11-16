@@ -22,14 +22,14 @@ import random
 import time
 
 from acts.controllers import android_device
-from acts_contrib.test_utils.fuchsia.bt_test_utils import le_scan_for_device_by_name
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import adv_succ
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import scan_result
-from acts_contrib.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.fuchsia.bt_test_utils import le_scan_for_device_by_name
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import adv_succ
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 
 
 class BleFuchsiaAndroidTest(BluetoothBaseTest):

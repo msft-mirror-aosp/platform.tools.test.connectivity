@@ -20,16 +20,16 @@ import threading
 import time
 
 import acts.base_test
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
-import acts_contrib.test_utils.tel.tel_test_utils as tutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts.test_utils.tel.tel_test_utils as tutils
 
 from acts import asserts
 from acts import signals
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 WifiEnums = wutils.WifiEnums
 
 WAIT_FOR_AUTO_CONNECT = 40

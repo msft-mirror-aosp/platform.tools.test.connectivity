@@ -22,12 +22,12 @@ adding search records.
 """
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts_contrib.test_utils.abstract_devices.bluetooth_device import AndroidBluetoothDevice
-from acts_contrib.test_utils.abstract_devices.bluetooth_device import FuchsiaBluetoothDevice
-from acts_contrib.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
-from acts_contrib.test_utils.bt.bt_constants import bt_attribute_values
-from acts_contrib.test_utils.bt.bt_constants import sig_uuid_constants
-from acts_contrib.test_utils.fuchsia.sdp_records import sdp_pts_record_list
+from acts.test_utils.abstract_devices.bluetooth_device import AndroidBluetoothDevice
+from acts.test_utils.abstract_devices.bluetooth_device import FuchsiaBluetoothDevice
+from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
+from acts.test_utils.bt.bt_constants import bt_attribute_values
+from acts.test_utils.bt.bt_constants import sig_uuid_constants
+from acts.test_utils.fuchsia.sdp_records import sdp_pts_record_list
 
 
 class SdpSetupTest(BaseTestClass):

@@ -23,11 +23,11 @@ from acts import base_test
 from acts.libs.proc import job
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.tel import tel_test_utils as tutils
-from acts_contrib.test_utils.tel import tel_defines
-from acts_contrib.test_utils.tel.anritsu_utils import wait_for_sms_sent_success
-from acts_contrib.test_utils.tel.tel_defines import EventMmsSentSuccess
+from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.tel import tel_test_utils as tutils
+from acts.test_utils.tel import tel_defines
+from acts.test_utils.tel.anritsu_utils import wait_for_sms_sent_success
+from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
 
 # Time it takes for the usb tethering IP to
 # show up in ifconfig and function waiting.

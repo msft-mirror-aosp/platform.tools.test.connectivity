@@ -22,9 +22,9 @@ from acts import signals
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_policy_utils import reboot_device, restore_state, save_network, setup_policy_tests
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import reboot_device, restore_state, save_network, setup_policy_tests
 from acts.utils import rand_ascii_str, rand_hex_str, timeout
 import requests
 import time

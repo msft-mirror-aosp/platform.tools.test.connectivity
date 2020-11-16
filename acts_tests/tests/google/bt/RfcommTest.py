@@ -23,18 +23,18 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import bt_rfcomm_uuids
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts_contrib.test_utils.bt.bt_test_utils import kill_bluetooth_process
-from acts_contrib.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
-from acts_contrib.test_utils.bt.bt_test_utils import write_read_verify_data
-from acts_contrib.test_utils.bt.bt_test_utils import verify_server_and_client_connected
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
+from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 
-from acts_contrib.test_utils.bt.BtEnum import RfcommUuid
+from acts.test_utils.bt.BtEnum import RfcommUuid
 
 
 class RfcommTest(BluetoothBaseTest):

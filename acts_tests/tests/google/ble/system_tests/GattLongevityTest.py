@@ -18,16 +18,16 @@ This test script for GATT longevity tests.
 """
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
-from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
-from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
-from acts_contrib.test_utils.bt.bt_constants import gatt_event
-from acts_contrib.test_utils.bt.bt_constants import gatt_cb_strings
-from acts_contrib.test_utils.bt.bt_constants import gatt_connection_priority
-from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic_attr_length
-from acts_contrib.test_utils.bt.GattEnum import MtuSize
-from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
+from acts.test_utils.bt.bt_constants import gatt_characteristic
+from acts.test_utils.bt.bt_constants import gatt_descriptor
+from acts.test_utils.bt.bt_constants import gatt_event
+from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts.test_utils.bt.bt_constants import gatt_connection_priority
+from acts.test_utils.bt.bt_constants import gatt_characteristic_attr_length
+from acts.test_utils.bt.GattEnum import MtuSize
+from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
 
 
 class GattLongevityTest(GattConnectedBaseTest):

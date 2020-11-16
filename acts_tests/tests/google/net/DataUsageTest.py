@@ -23,15 +23,15 @@ from acts.controllers import adb
 from acts.controllers.adb_lib.error import AdbError
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.net import connectivity_const as cconst
-from acts_contrib.test_utils.net import connectivity_test_utils as cutils
-from acts_contrib.test_utils.net import net_test_utils as nutils
-from acts_contrib.test_utils.net.net_test_utils import start_tcpdump
-from acts_contrib.test_utils.net.net_test_utils import stop_tcpdump
-from acts_contrib.test_utils.tel import tel_test_utils as ttutils
-from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
-from acts_contrib.test_utils.tel.tel_test_utils import http_file_download_by_chrome
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.net import connectivity_const as cconst
+from acts.test_utils.net import connectivity_test_utils as cutils
+from acts.test_utils.net import net_test_utils as nutils
+from acts.test_utils.net.net_test_utils import start_tcpdump
+from acts.test_utils.net.net_test_utils import stop_tcpdump
+from acts.test_utils.tel import tel_test_utils as ttutils
+from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import http_file_download_by_chrome
+from acts.test_utils.wifi import wifi_test_utils as wutils
 import queue
 from queue import Empty
 
