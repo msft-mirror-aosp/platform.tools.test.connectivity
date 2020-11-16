@@ -39,7 +39,7 @@ install_requires = [
     'numpy',
     'pyserial',
     'pyyaml>=5.1',
-    'protobuf>=3.11.3',
+    'protobuf>=3.14.0',
     'requests',
     'scapy',
     'xlsxwriter',
