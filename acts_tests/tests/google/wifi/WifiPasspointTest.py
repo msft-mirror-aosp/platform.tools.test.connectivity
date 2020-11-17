@@ -19,15 +19,15 @@ import pprint
 import queue
 import time
 
-from acts_contrib.test_utils.net import ui_utils as uutils
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.net import ui_utils as uutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 import WifiManagerTest
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums

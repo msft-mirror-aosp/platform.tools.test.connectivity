@@ -16,11 +16,11 @@
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.wifi.rtt import rtt_const as rconsts
-from acts_contrib.test_utils.wifi.rtt import rtt_test_utils as rutils
-from acts_contrib.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.rtt import rtt_const as rconsts
+from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
+from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
 class RangeSoftApTest(RttBaseTest):

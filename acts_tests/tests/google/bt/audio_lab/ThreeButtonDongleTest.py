@@ -19,8 +19,8 @@ Test script to test various ThreeButtonDongle devices
 import time
 
 from acts.controllers.relay_lib.relay import SynchronizeRelays
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 
 
 class ThreeButtonDongleTest(BluetoothBaseTest):

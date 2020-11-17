@@ -16,14 +16,14 @@
 
 import time
 
-from acts_contrib.test_utils.bt import BtEnum
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts_contrib.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
-from acts_contrib.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
-from acts_contrib.test_utils.coex.coex_test_utils import pair_and_connect_headset
-from acts_contrib.test_utils.coex.coex_test_utils import setup_tel_config
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.bt import BtEnum
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
+from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts.test_utils.coex.coex_test_utils import setup_tel_config
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import initiate_call
 
 
 class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):

@@ -22,15 +22,15 @@ import queue
 
 import acts
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
-from acts_contrib.test_utils.bt import bt_test_utils
-from acts_contrib.test_utils.bt import BtEnum
-from acts_contrib.test_utils.tel.tel_defines import EventSmsReceived
-from acts_contrib.test_utils.tel.tel_defines import EventSmsSentSuccess
-from acts_contrib.test_utils.tel.tel_defines import EventSmsDeliverSuccess
-from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
+from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.bt import BtEnum
+from acts.test_utils.tel.tel_defines import EventSmsReceived
+from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
+from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
+from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 
 EVENT_MAP_MESSAGE_RECEIVED = "MapMessageReceived"
 TIMEOUT = 2000

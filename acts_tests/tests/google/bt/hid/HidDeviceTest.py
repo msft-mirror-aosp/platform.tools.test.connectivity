@@ -19,14 +19,14 @@ Bluetooth HID Device Test.
 
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts_contrib.test_utils.bt.bt_test_utils import hid_keyboard_report
-from acts_contrib.test_utils.bt.bt_test_utils import hid_device_send_key_data_report
-from acts_contrib.test_utils.bt.bt_constants import hid_connection_timeout
-from acts_contrib.test_utils.bt import bt_constants
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
+from acts.test_utils.bt.bt_test_utils import hid_keyboard_report
+from acts.test_utils.bt.bt_test_utils import hid_device_send_key_data_report
+from acts.test_utils.bt.bt_constants import hid_connection_timeout
+from acts.test_utils.bt import bt_constants
 import time
 
 

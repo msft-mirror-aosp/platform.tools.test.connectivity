@@ -4,16 +4,16 @@ import queue
 import time
 
 import acts.base_test
-import acts_contrib.test_utils.wifi.wifi_test_utils as wifi_utils
-import acts_contrib.test_utils.tel.tel_test_utils as tele_utils
+import acts.test_utils.wifi.wifi_test_utils as wifi_utils
+import acts.test_utils.tel.tel_test_utils as tele_utils
 import acts.utils
 
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 
 WifiEnums = wifi_utils.WifiEnums
 

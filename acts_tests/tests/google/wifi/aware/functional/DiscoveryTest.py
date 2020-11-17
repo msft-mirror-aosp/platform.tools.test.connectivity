@@ -19,10 +19,10 @@ import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.wifi.aware import aware_const as aconsts
-from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
-from acts_contrib.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.wifi.aware import aware_const as aconsts
+from acts.test_utils.wifi.aware import aware_test_utils as autils
+from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 class DiscoveryTest(AwareBaseTest):

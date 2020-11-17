@@ -16,8 +16,8 @@
 
 from acts import asserts
 from acts.base_test import BaseTestClass
-from acts_contrib.test_utils.wifi.rtt import rtt_test_utils as rutils
-from acts_contrib.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
+from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
+from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
 class StressRangeApTest(RttBaseTest):

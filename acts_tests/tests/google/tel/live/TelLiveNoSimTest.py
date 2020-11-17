@@ -19,19 +19,19 @@
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
-from acts_contrib.test_utils.tel.tel_defines import GEN_2G
-from acts_contrib.test_utils.tel.tel_defines import GEN_3G
-from acts_contrib.test_utils.tel.tel_defines import GEN_4G
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_ABSENT
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
-from acts_contrib.test_utils.tel.tel_test_utils import fastboot_wipe
-from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
-from acts_contrib.test_utils.tel.tel_lookup_tables import \
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
+from acts.test_utils.tel.tel_defines import GEN_2G
+from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
+from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
+from acts.test_utils.tel.tel_test_utils import fastboot_wipe
+from acts.test_utils.tel.tel_test_utils import get_sim_state
+from acts.test_utils.tel.tel_lookup_tables import \
     network_preference_for_generation
-from acts_contrib.test_utils.tel.tel_test_utils import reset_device_password
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts.test_utils.tel.tel_test_utils import reset_device_password
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from TelLiveEmergencyBase import TelLiveEmergencyBase
 
 

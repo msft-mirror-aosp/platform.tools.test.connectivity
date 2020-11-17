@@ -21,7 +21,7 @@ if it is killed.
 import re
 import time
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 
 class BtKillProcessTest(BluetoothBaseTest):

@@ -20,18 +20,18 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
-from acts_contrib.test_utils.bt.bt_constants import java_integer
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import small_timeout
-from acts_contrib.test_utils.bt.bt_constants import adv_fail
-from acts_contrib.test_utils.bt.bt_constants import adv_succ
-from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts_contrib.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
+from acts.test_utils.bt.bt_constants import java_integer
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import small_timeout
+from acts.test_utils.bt.bt_constants import adv_fail
+from acts.test_utils.bt.bt_constants import adv_succ
+from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.bt_constants import scan_result
 
 
 class FilteringTest(BluetoothBaseTest):

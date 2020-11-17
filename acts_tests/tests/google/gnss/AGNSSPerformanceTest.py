@@ -19,7 +19,7 @@ import time
 from acts import base_test
 from acts import asserts
 from acts.controllers.rohdeschwarz_lib import contest
-from acts_contrib.test_utils.tel import tel_test_utils
+from acts.test_utils.tel import tel_test_utils
 from acts.metrics.loggers import blackbox
 
 import json

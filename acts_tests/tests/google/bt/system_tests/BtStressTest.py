@@ -20,13 +20,13 @@ Basic Bluetooth Classic stress tests.
 import time
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import bluetooth_off
-from acts_contrib.test_utils.bt.bt_constants import bluetooth_on
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import bluetooth_off
+from acts.test_utils.bt.bt_constants import bluetooth_on
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
 class BtStressTest(BluetoothBaseTest):

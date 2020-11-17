@@ -17,8 +17,8 @@
 Test script to test BluetoothAdapter's resetFactory method.
 """
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 
 
 class BtFactoryResetTest(BluetoothBaseTest):

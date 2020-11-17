@@ -16,8 +16,8 @@
 
 import time
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.power import PowerWiFiBaseTest as PWBT
-from acts_contrib.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.power import PowerWiFiBaseTest as PWBT
+from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 TEMP_FILE = '/sdcard/Download/tmp.log'
 

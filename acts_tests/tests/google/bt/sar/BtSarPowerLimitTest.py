@@ -16,10 +16,10 @@
 
 import os
 import time
-import acts_contrib.test_utils.bt.bt_test_utils as bt_utils
-from acts_contrib.test_utils.bt.BtSarBaseTest import BtSarBaseTest
-from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
-import acts_contrib.test_utils.wifi.wifi_performance_test_utils as wifi_utils
+import acts.test_utils.bt.bt_test_utils as bt_utils
+from acts.test_utils.bt.BtSarBaseTest import BtSarBaseTest
+from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
+import acts.test_utils.wifi.wifi_performance_test_utils as wifi_utils
 
 SLEEP_DURATION = 2
 

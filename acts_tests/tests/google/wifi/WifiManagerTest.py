@@ -21,14 +21,14 @@ import time
 
 import acts.base_test
 import acts.signals as signals
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 # Default timeout used for reboot, toggle WiFi and Airplane mode,

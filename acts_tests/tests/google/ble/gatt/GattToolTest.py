@@ -27,19 +27,19 @@ import pprint
 from queue import Empty
 import time
 
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import gatt_cb_err
-from acts_contrib.test_utils.bt.bt_constants import gatt_cb_strings
-from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
-from acts_contrib.test_utils.bt.bt_constants import gatt_transport
-from acts_contrib.test_utils.bt.bt_constants import scan_result
-from acts_contrib.test_utils.bt.bt_gatt_utils import GattTestUtilsError
-from acts_contrib.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
-from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_connection
-from acts_contrib.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import gatt_cb_err
+from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts.test_utils.bt.bt_constants import gatt_descriptor
+from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
+from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
+from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 
 
 class GattToolTest(BluetoothBaseTest):

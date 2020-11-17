@@ -22,12 +22,12 @@ then other test suites utilising Ble Advertisements will also fail.
 
 from acts.controllers.sl4a_lib import rpc_client
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import adv_fail
-from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
-from acts_contrib.test_utils.bt.bt_constants import java_integer
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import adv_fail
+from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
+from acts.test_utils.bt.bt_constants import java_integer
 
 
 class BleAdvertiseVerificationError(Exception):

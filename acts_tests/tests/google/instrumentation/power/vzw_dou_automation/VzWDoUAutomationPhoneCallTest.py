@@ -17,12 +17,12 @@ import copy
 import time
 
 from acts.test_decorators import repeated_test
-from acts_contrib.test_utils.instrumentation.device.command.adb_commands import goog
-from acts_contrib.test_utils.instrumentation.power.vzw_dou_automation import \
+from acts.test_utils.instrumentation.device.command.adb_commands import goog
+from acts.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_comp_base_test
-from acts_contrib.test_utils.instrumentation.power.vzw_dou_automation import \
+from acts.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_base_test
-from acts_contrib.test_utils.instrumentation.device.command.adb_commands import common
+from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 class VzWDoUAutomationPhoneCallTest(
     vzw_dou_automation_comp_base_test.VzWDoUAutomationCompBaseTest):

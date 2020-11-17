@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 import math
-import acts_contrib.test_utils.power.PowerCoexBaseTest as PCoBT
+import acts.test_utils.power.PowerCoexBaseTest as PCoBT
 from acts.test_decorators import test_tracker_info
 
 

@@ -18,8 +18,8 @@ This test is used to test basic functionality of bluetooth adapter by turning it
 """
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt import bt_test_utils
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt import bt_test_utils
 
 import random
 import time
