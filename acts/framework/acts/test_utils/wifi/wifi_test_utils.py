@@ -794,7 +794,7 @@ def wifi_test_device_init(ad):
     # We don't verify the following settings since they are not critical.
     # Set wpa_supplicant log level to EXCESSIVE.
     output = ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
-                          "wlan0 log_level EXCESSIVE")
+                          "wlan0 log_level EXCESSIVE", ignore_status=True)
     ad.log.info("wpa_supplicant log change status: %s", output)
     utils.sync_device_time(ad)
     ad.droid.telephonyToggleDataConnection(False)
