@@ -22,15 +22,15 @@ import time
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import socket_test_utils as sutils
-from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel import tel_test_utils as tel_utils
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
-from acts.test_utils.wifi import wifi_constants
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.net import socket_test_utils as sutils
+from acts_contrib.test_utils.tel import tel_defines
+from acts_contrib.test_utils.tel import tel_test_utils as tel_utils
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
+from acts_contrib.test_utils.wifi import wifi_constants
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 

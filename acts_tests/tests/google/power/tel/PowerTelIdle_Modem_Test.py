@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts.test_utils.power.cellular.cellular_idle_power_test as cipt
+import acts_contrib.test_utils.power.cellular.cellular_idle_power_test as cipt
 
 
 class PowerTelIdle_Modem_Test(cipt.PowerTelIdleTest):

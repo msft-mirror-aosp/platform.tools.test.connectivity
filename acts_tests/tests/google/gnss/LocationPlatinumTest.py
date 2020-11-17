@@ -20,9 +20,9 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.base_test import BaseTestClass
-from acts.test_utils.gnss import gnss_test_utils as gutils
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.tel import tel_test_utils as tutils
+from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.tel import tel_test_utils as tutils
 
 BACKGROUND_LOCATION_PERMISSION = 'android.permission.ACCESS_BACKGROUND_LOCATION'
 APP_CLEAN_UP_TIME = 60

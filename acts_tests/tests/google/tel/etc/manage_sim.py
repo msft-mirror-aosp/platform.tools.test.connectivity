@@ -23,9 +23,9 @@
 import argparse
 import json
 import acts.controllers.android_device as android_device
-import acts.test_utils.tel.tel_defines as tel_defines
-import acts.test_utils.tel.tel_lookup_tables as tel_lookup_tables
-import acts.test_utils.tel.tel_test_utils as tel_test_utils
+import acts_contrib.test_utils.tel.tel_defines as tel_defines
+import acts_contrib.test_utils.tel.tel_lookup_tables as tel_lookup_tables
+import acts_contrib.test_utils.tel.tel_test_utils as tel_test_utils
 
 
 def get_active_sim_list(verbose_warnings=False):
