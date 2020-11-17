@@ -33,9 +33,9 @@ from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.iperf_server import IPerfResult
-from acts_contrib.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts.test_utils.abstract_devices.utils_lib import wlan_utils
+from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 N_CAPABILITIES_DEFAULT = [
     hostapd_constants.N_CAPABILITY_LDPC, hostapd_constants.N_CAPABILITY_SGI20,

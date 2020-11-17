@@ -20,11 +20,11 @@ This test script exercises set PHY and read PHY procedures.
 from queue import Empty
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
-from acts_contrib.test_utils.bt.bt_constants import gatt_connection_priority
-from acts_contrib.test_utils.bt.bt_constants import gatt_event
-from acts_contrib.test_utils.bt.bt_constants import gatt_phy
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
+from acts.test_utils.bt.bt_constants import gatt_connection_priority
+from acts.test_utils.bt.bt_constants import gatt_event
+from acts.test_utils.bt.bt_constants import gatt_phy
 from acts import signals
 
 CONNECTION_PRIORITY_HIGH = gatt_connection_priority['high']

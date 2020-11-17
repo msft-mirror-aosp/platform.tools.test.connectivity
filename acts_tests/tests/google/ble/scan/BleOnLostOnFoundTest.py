@@ -20,18 +20,18 @@ This test script exercises different onLost/onFound scenarios.
 from queue import Empty
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_callback_types
-from acts_contrib.test_utils.bt.BleEnum import ScanSettingsMatchMode
-from acts_contrib.test_utils.bt.BleEnum import ScanSettingsMatchNum
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_match_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_match_nums
-from acts_contrib.test_utils.bt.bt_constants import adv_succ
-from acts_contrib.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
-from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts_contrib.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts.test_utils.bt.BleEnum import ScanSettingsMatchMode
+from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_match_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_match_nums
+from acts.test_utils.bt.bt_constants import adv_succ
+from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.bt_constants import scan_result
 
 
 class BleOnLostOnFoundTest(BluetoothBaseTest):

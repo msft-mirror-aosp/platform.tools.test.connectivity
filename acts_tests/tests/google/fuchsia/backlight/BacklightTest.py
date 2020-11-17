@@ -21,7 +21,7 @@ import uuid
 from acts import asserts, signals
 from acts.base_test import BaseTestClass
 from acts.libs.proc.job import Error
-from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 
 BRIGHTNESS_CHANGE_SLEEP_TIME_SECONDS = 2
 

@@ -23,11 +23,11 @@ from acts import asserts
 from acts.controllers import adb
 from acts.controllers import monsoon
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.tel import tel_data_utils as tel_utils
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.tel.tel_test_utils import http_file_download_by_chrome
+from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.tel import tel_data_utils as tel_utils
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts.test_utils.tel.tel_test_utils import http_file_download_by_chrome
 from acts.utils import force_airplane_mode
 from acts.utils import set_adaptive_brightness
 from acts.utils import set_ambient_display

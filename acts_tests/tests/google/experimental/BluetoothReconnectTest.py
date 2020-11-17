@@ -25,10 +25,10 @@ from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
 from acts.signals import TestFailure
 from acts.signals import TestPass
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts_contrib.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 from acts.utils import set_location_service
 
 # The number of reconnections to be attempted during the test

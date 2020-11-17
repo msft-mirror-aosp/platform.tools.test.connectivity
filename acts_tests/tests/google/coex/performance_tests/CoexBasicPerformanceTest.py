@@ -16,9 +16,9 @@
 
 import itertools
 
-from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts_contrib.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
-from acts_contrib.test_utils.coex.coex_test_utils import perform_classic_discovery
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 
 
 class CoexBasicPerformanceTest(CoexPerformanceBaseTest):

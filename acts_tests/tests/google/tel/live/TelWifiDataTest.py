@@ -17,24 +17,24 @@
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_atten_utils import set_rssi
-from acts_contrib.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
-from acts_contrib.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts_contrib.test_utils.tel.tel_defines import GEN_4G
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_signal_strength
-from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_atten_utils import set_rssi
+from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
+from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
+from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.utils import adb_shell_ping
 
 # Attenuator name

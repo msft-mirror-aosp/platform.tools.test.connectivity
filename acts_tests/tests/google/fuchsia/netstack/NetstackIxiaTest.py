@@ -20,7 +20,7 @@ from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 
-from acts_contrib.test_utils.net.NetstackBaseTest import NetstackBaseTest
+from acts.test_utils.net.NetstackBaseTest import NetstackBaseTest
 
 from acts.utils import rand_ascii_str
 

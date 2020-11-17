@@ -17,12 +17,12 @@
 import itertools
 import time
 
-from acts_contrib.test_utils.bt.bt_gatt_utils import close_gatt_client
-from acts_contrib.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
-from acts_contrib.test_utils.bt.bt_gatt_utils import GattTestUtilsError
-from acts_contrib.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
-from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts_contrib.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts.test_utils.bt.bt_gatt_utils import close_gatt_client
+from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
+from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
+from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
 
 
 class WlanWithBlePerformanceTest(CoexPerformanceBaseTest):

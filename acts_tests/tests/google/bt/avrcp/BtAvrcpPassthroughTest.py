@@ -17,8 +17,8 @@
 import time
 
 from acts.asserts import assert_equal
-from acts_contrib.test_utils.bt.AvrcpBaseTest import AvrcpBaseTest
-from acts_contrib.test_utils.car.car_media_utils import PlaybackState
+from acts.test_utils.bt.AvrcpBaseTest import AvrcpBaseTest
+from acts.test_utils.car.car_media_utils import PlaybackState
 
 
 DEFAULT_TIMEOUT = 0.5

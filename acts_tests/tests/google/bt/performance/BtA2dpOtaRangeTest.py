@@ -9,13 +9,13 @@ Created on Thu Jul 16 22:58:03 2020
 import os
 import pyvisa
 import time
-import acts_contrib.test_utils.coex.audio_test_utils as atu
-import acts_contrib.test_utils.bt.bt_test_utils as btutils
+import acts.test_utils.coex.audio_test_utils as atu
+import acts.test_utils.bt.bt_test_utils as btutils
 import pandas as pd
 from acts import asserts
-from acts_contrib.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bt_factory
-from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
-from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
+from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bt_factory
+from acts.test_utils.bt.A2dpBaseTest import A2dpBaseTest
+from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
 
 PHONE_MUSIC_FILE_DIRECTORY = '/sdcard/Music'
 

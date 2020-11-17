@@ -25,10 +25,10 @@ import uuid
 
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
-from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts_contrib.test_utils.fuchsia import utils
+from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
+from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts.test_utils.fuchsia import utils
 from acts.utils import rand_ascii_str
 
 

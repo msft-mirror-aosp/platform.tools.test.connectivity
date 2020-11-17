@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 
-from acts_contrib.test_utils.instrumentation.power import instrumentation_power_test
+from acts.test_utils.instrumentation.power import instrumentation_power_test
 
 class LauncherTest(instrumentation_power_test.InstrumentationPowerTest):
   """Test class for running app launcher test cases."""

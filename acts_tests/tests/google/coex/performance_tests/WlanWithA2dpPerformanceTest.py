@@ -16,15 +16,15 @@
 
 import itertools
 
-from acts_contrib.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bf
-from acts_contrib.test_utils.bt import BtEnum
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts_contrib.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
-from acts_contrib.test_utils.coex.coex_test_utils import avrcp_actions
-from acts_contrib.test_utils.coex.coex_test_utils import music_play_and_check
-from acts_contrib.test_utils.coex.coex_test_utils import pair_and_connect_headset
-from acts_contrib.test_utils.coex.coex_test_utils import perform_classic_discovery
-from acts_contrib.test_utils.coex.coex_test_utils import push_music_to_android_device
+from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bf
+from acts.test_utils.bt import BtEnum
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts.test_utils.coex.coex_test_utils import avrcp_actions
+from acts.test_utils.coex.coex_test_utils import music_play_and_check
+from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
+from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 
 
 class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):

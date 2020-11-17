@@ -27,16 +27,16 @@ import subprocess
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.audio_analysis_lib.check_quality import quality_analysis
-from acts_contrib.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
-from acts_contrib.test_utils.bt.bt_constants import audio_bits_per_sample_32
-from acts_contrib.test_utils.bt.bt_constants import audio_channel_mode_8
-from acts_contrib.test_utils.bt.bt_constants import audio_sample_rate_48000
-from acts_contrib.test_utils.bt.bt_constants import delay_after_binding_seconds
-from acts_contrib.test_utils.bt.bt_constants import delay_before_record_seconds
-from acts_contrib.test_utils.bt.bt_constants import fpga_linein_bus_endpoint
-from acts_contrib.test_utils.bt.bt_constants import headphone_bus_endpoint
-from acts_contrib.test_utils.bt.bt_constants import silence_wait_seconds
+from acts.test_utils.audio_analysis_lib.check_quality import quality_analysis
+from acts.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
+from acts.test_utils.bt.bt_constants import audio_bits_per_sample_32
+from acts.test_utils.bt.bt_constants import audio_channel_mode_8
+from acts.test_utils.bt.bt_constants import audio_sample_rate_48000
+from acts.test_utils.bt.bt_constants import delay_after_binding_seconds
+from acts.test_utils.bt.bt_constants import delay_before_record_seconds
+from acts.test_utils.bt.bt_constants import fpga_linein_bus_endpoint
+from acts.test_utils.bt.bt_constants import headphone_bus_endpoint
+from acts.test_utils.bt.bt_constants import silence_wait_seconds
 
 
 class BtChameleonTest(BtFunhausBaseTest):

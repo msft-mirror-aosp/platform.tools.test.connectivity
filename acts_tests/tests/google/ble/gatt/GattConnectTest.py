@@ -22,31 +22,31 @@ from queue import Empty
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_match_nums
-from acts_contrib.test_utils.bt.bt_constants import bt_profile_constants
-from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
-from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
-from acts_contrib.test_utils.bt.bt_constants import gatt_service_types
-from acts_contrib.test_utils.bt.bt_constants import gatt_cb_err
-from acts_contrib.test_utils.bt.bt_constants import gatt_cb_strings
-from acts_contrib.test_utils.bt.bt_constants import gatt_connection_state
-from acts_contrib.test_utils.bt.bt_constants import gatt_mtu_size
-from acts_contrib.test_utils.bt.bt_constants import gatt_phy_mask
-from acts_contrib.test_utils.bt.bt_constants import gatt_transport
-from acts_contrib.test_utils.bt.bt_constants import scan_result
-from acts_contrib.test_utils.bt.bt_gatt_utils import GattTestUtilsError
-from acts_contrib.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
-from acts_contrib.test_utils.bt.bt_gatt_utils import wait_for_gatt_disconnect_event
-from acts_contrib.test_utils.bt.bt_gatt_utils import close_gatt_client
-from acts_contrib.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
-from acts_contrib.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
-from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_connection
-from acts_contrib.test_utils.bt.bt_gatt_utils import setup_multiple_services
-from acts_contrib.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
-from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_match_nums
+from acts.test_utils.bt.bt_constants import bt_profile_constants
+from acts.test_utils.bt.bt_constants import gatt_characteristic
+from acts.test_utils.bt.bt_constants import gatt_descriptor
+from acts.test_utils.bt.bt_constants import gatt_service_types
+from acts.test_utils.bt.bt_constants import gatt_cb_err
+from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts.test_utils.bt.bt_constants import gatt_connection_state
+from acts.test_utils.bt.bt_constants import gatt_mtu_size
+from acts.test_utils.bt.bt_constants import gatt_phy_mask
+from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
+from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import wait_for_gatt_disconnect_event
+from acts.test_utils.bt.bt_gatt_utils import close_gatt_client
+from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
+from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import setup_multiple_services
+from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 
 PHYSICAL_DISCONNECT_TIMEOUT = 5
 

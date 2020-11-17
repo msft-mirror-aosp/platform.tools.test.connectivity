@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts_contrib.test_utils.power.cellular.cellular_traffic_power_test as ctpt
+import acts.test_utils.power.cellular.cellular_traffic_power_test as ctpt
 
 
 class PowerTelTraffic_LTE_Test(ctpt.PowerTelTrafficTest):

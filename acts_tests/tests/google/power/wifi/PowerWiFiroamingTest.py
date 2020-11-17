@@ -19,10 +19,10 @@ import time
 from acts import utils
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.power import PowerWiFiBaseTest as PWBT
-from acts_contrib.test_utils.wifi import wifi_constants as wc
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.power import plot_utils
+from acts.test_utils.power import PowerWiFiBaseTest as PWBT
+from acts.test_utils.wifi import wifi_constants as wc
+from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.power import plot_utils
 
 PHONE_BATTERY_VOLTAGE = 4.2
 

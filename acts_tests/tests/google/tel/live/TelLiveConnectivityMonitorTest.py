@@ -18,8 +18,8 @@
 """
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_VOLTE
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from TelLiveConnectivityMonitorBaseTest import TelLiveConnectivityMonitorBaseTest
 from TelLiveConnectivityMonitorBaseTest import ACTIONS
 from TelLiveConnectivityMonitorBaseTest import TROUBLES

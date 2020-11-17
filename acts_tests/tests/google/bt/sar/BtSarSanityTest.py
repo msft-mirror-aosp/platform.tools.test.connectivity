@@ -19,8 +19,8 @@ import re
 import time
 
 from acts import asserts
-import acts_contrib.test_utils.bt.bt_test_utils as bt_utils
-from acts_contrib.test_utils.bt.BtSarBaseTest import BtSarBaseTest
+import acts.test_utils.bt.bt_test_utils as bt_utils
+from acts.test_utils.bt.BtSarBaseTest import BtSarBaseTest
 
 
 class BtSarSanityTest(BtSarBaseTest):

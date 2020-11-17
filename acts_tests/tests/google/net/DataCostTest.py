@@ -27,14 +27,14 @@ from acts import signals
 from acts import test_runner
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.net import net_test_utils as nutils
-from acts_contrib.test_utils.tel.tel_test_utils import _check_file_existance
-from acts_contrib.test_utils.tel.tel_test_utils import _generate_file_directory_and_file_name
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_NONE as NONE
-from acts_contrib.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_HANDOVER as HANDOVER
-from acts_contrib.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_RELIABILITY as RELIABILITY
-from acts_contrib.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_PERFORMANCE as PERFORMANCE
+from acts.test_utils.net import net_test_utils as nutils
+from acts.test_utils.tel.tel_test_utils import _check_file_existance
+from acts.test_utils.tel.tel_test_utils import _generate_file_directory_and_file_name
+from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_NONE as NONE
+from acts.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_HANDOVER as HANDOVER
+from acts.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_RELIABILITY as RELIABILITY
+from acts.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_PERFORMANCE as PERFORMANCE
 
 DOWNLOAD_PATH = "/sdcard/Download/"
 RELIABLE = RELIABILITY | HANDOVER
