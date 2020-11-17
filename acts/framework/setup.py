@@ -36,7 +36,7 @@ install_requires = [
     'pyserial',
     'pyyaml>=5.1',
     'tzlocal',
-    'protobuf>=3.11.3',
+    'protobuf>=3.14.0',
     'retry',
     'requests',
     'scapy',
