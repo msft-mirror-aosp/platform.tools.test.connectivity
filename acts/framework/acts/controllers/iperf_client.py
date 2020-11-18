@@ -21,6 +21,7 @@ import socket
 import threading
 
 from acts import context
+from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.iperf_server import _AndroidDeviceBridge
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
@@ -315,8 +316,8 @@ class IPerfClientOverAdb(IPerfClientBase):
             clean_out = out.split('\n')
             if 'error' in clean_out[0].lower():
                 raise IPerfError(clean_out)
-        except job.TimeoutError:
-            logging.warning('TimeoutError: Iperf measurement timed out.')
+        except (job.TimeoutError, AdbCommandError) :
+            logging.warning('TimeoutError: Iperf measurement failed.')
 
         full_out_path = self._get_full_file_path(tag)
         with open(full_out_path, 'w') as out_file:
