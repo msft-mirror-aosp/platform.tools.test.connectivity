@@ -26,9 +26,9 @@ from acts.controllers import iperf_server
 from acts.controllers import iperf_client
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts_contrib.test_utils.abstract_devices.utils_lib import wlan_utils
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 
 ANDROID_DEFAULT_WLAN_INTERFACE = 'wlan0'
 CONNECTIVITY_MODE_LOCAL = 'local_only'

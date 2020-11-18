@@ -18,11 +18,11 @@ import time
 from acts import asserts
 from acts import base_test
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import connectivity_const as cconst
-from acts.test_utils.net import connectivity_test_utils as cutils
-from acts.test_utils.net import ui_utils as uutils
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.net import connectivity_const as cconst
+from acts_contrib.test_utils.net import connectivity_test_utils as cutils
+from acts_contrib.test_utils.net import ui_utils as uutils
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 IFACE = "InterfaceName"

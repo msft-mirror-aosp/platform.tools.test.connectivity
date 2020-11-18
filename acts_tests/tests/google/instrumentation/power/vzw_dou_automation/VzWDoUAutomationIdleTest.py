@@ -15,10 +15,10 @@
 #   limitations under the License.
 
 from acts.test_decorators import repeated_test
-from acts.test_utils.instrumentation.power.vzw_dou_automation import \
+from acts_contrib.test_utils.instrumentation.power.vzw_dou_automation import \
     vzw_dou_automation_base_test
-from acts.test_utils.instrumentation.device.command.adb_commands import common
-from acts.test_utils.instrumentation.device.command.adb_commands import goog
+from acts_contrib.test_utils.instrumentation.device.command.adb_commands import common
+from acts_contrib.test_utils.instrumentation.device.command.adb_commands import goog
 
 
 class VzWDoUAutomationIdleTest(

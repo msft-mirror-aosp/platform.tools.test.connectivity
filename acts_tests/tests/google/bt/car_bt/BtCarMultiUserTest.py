@@ -18,9 +18,9 @@ Automates test for testing bluetooth integrity with multi-user accounts
 
 """
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt import bt_test_utils
-from acts.test_utils.users import users
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt import bt_test_utils
+from acts_contrib.test_utils.users import users
 import time
 import random
 import re

@@ -1,4 +1,4 @@
-from acts.test_utils.instrumentation.power.apollo.ApolloBaseTest import ApolloBaseTest
+from acts_contrib.test_utils.instrumentation.power.apollo.ApolloBaseTest import ApolloBaseTest
 
 
 class ApolloIdleTest(ApolloBaseTest):

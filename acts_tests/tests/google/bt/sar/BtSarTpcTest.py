@@ -17,13 +17,13 @@
 import os
 import time
 import numpy as np
-import acts.test_utils.bt.bt_test_utils as bt_utils
+import acts_contrib.test_utils.bt.bt_test_utils as bt_utils
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
-import acts.test_utils.wifi.wifi_performance_test_utils as wifi_utils
+import acts_contrib.test_utils.wifi.wifi_performance_test_utils as wifi_utils
 
 from acts import asserts
 from functools import partial
-from acts.test_utils.bt.BtSarBaseTest import BtSarBaseTest
+from acts_contrib.test_utils.bt.BtSarBaseTest import BtSarBaseTest
 
 
 class BtSarTpcTest(BtSarBaseTest):

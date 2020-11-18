@@ -24,11 +24,11 @@ from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.attenuator import get_attenuators_for_device
 from acts.controllers.iperf_server import IPerfResult
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import associate
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 
 from bokeh.plotting import ColumnDataSource

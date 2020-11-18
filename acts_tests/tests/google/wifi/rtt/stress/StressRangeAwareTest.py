@@ -18,12 +18,12 @@ import queue
 import time
 
 from acts import asserts
-from acts.test_utils.wifi.aware import aware_const as aconsts
-from acts.test_utils.wifi.aware import aware_test_utils as autils
-from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
-from acts.test_utils.wifi.rtt import rtt_const as rconsts
-from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
-from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
+from acts_contrib.test_utils.wifi.aware import aware_const as aconsts
+from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
+from acts_contrib.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts_contrib.test_utils.wifi.rtt import rtt_const as rconsts
+from acts_contrib.test_utils.wifi.rtt import rtt_test_utils as rutils
+from acts_contrib.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
 class StressRangeAwareTest(AwareBaseTest, RttBaseTest):

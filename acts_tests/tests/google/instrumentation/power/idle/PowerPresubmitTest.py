@@ -14,8 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation import config_wrapper
-from acts.test_utils.instrumentation.power import instrumentation_power_test
+from acts_contrib.test_utils.instrumentation import config_wrapper
+from acts_contrib.test_utils.instrumentation.power import instrumentation_power_test
 
 
 class PowerPresubmitTest(instrumentation_power_test.InstrumentationPowerTest):
