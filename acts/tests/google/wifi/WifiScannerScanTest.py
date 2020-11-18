@@ -44,8 +44,9 @@ class WifiScannerScanError(Exception):
 
 
 class WifiScannerScanTest(WifiBaseTest):
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
         # TODO(angli): Remove this list.
         # There are order dependencies among these tests so we'll have to leave
         # it here for now. :(
