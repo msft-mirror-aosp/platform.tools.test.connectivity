@@ -59,8 +59,6 @@ DENYLIST_DIRECTORIES = [
     'acts/controllers/buds_lib'
 ]
 
-BANNED_IMPORTS = ['mobly.controllers']
-
 
 class ActsImportUnitTest(unittest.TestCase):
     """Test that all acts framework imports work."""
@@ -71,8 +69,7 @@ class ActsImportUnitTest(unittest.TestCase):
         self.assertIsNotNone(acts)
 
     def test_import_framework_successful(self):
-        """Dynamically test all imports from the framework.
-        Ensure that no imports of banned packages/modules took place."""
+        """Dynamically test all imports from the framework."""
         acts = import_acts()
         if hasattr(acts, '__path__') and len(acts.__path__) > 0:
             acts_path = acts.__path__[0]
@@ -94,15 +91,6 @@ class ActsImportUnitTest(unittest.TestCase):
                         fake_module_name = str(uuid.uuid4())
                         module = import_module(fake_module_name, path)
                         self.assertIsNotNone(module)
-
-        # Suppress verbose output on assertion failure.
-        self.longMessage = False
-
-        for banned_import in BANNED_IMPORTS:
-            self.assertNotIn(
-                banned_import, sys.modules,
-                'Attempted to import the banned package/module '
-                '%s.' % banned_import)
 
 
 if __name__ == '__main__':
