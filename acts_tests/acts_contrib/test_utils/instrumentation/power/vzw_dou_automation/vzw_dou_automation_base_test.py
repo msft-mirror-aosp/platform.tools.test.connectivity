@@ -156,6 +156,13 @@ class VzWDoUAutomationBaseTest(
     self.power_monitor.connect_usb()
     super().teardown_test()
 
+  def _teardown_class(self):
+    """Class teardown"""
+    self.log.info('Teardown class at vzw dou automation base.')
+    self._power_cycle_power_monitor()
+    time.sleep(DEFAULT_WAIT_FOR_REBOOT)
+    super()._teardown_class()
+
   def _factory_reset(self):
     """Factory reset device before testing."""
     self.log.info('Running factory reset.')
