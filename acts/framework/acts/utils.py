@@ -1757,11 +1757,14 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
     Returns:
         string, ipv6 link local address
     """
+    if not device_mdns_name:
+        return None
     mdns_type = '_fuchsia._udp.local.'
     interface_list = psutil.net_if_addrs()
     for interface in interface_list:
         interface_ipv6_link_local = \
             get_interface_ip_addresses(job, interface)['ipv6_link_local']
+
         if interface_ipv6_link_local:
             zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
                                 interfaces=interface_ipv6_link_local)
@@ -1772,9 +1775,15 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
                     device_ip_address = ipaddress.ip_address(device_ip_address)
                     if (device_ip_address.version == 6
                             and device_ip_address.is_link_local):
-                        zeroconf.close()
-                        del zeroconf
-                        return ('%s%%%s' % (str(device_ip_address), interface))
+                        if ping(job,
+                                dest_ip='%s%%%s' %
+                                (str(device_ip_address),
+                                 interface))['exit_status'] == 0:
+                            zeroconf.close()
+                            del zeroconf
+                            return ('%s%%%s' %
+                                    (str(device_ip_address), interface))
             zeroconf.close()
             del zeroconf
+    logging.error('Unable to get ip address for %s' % device_mdns_name)
     return None
