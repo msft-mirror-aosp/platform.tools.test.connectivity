@@ -61,7 +61,17 @@ class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
     def setup_class(self):
         super().setup_class()
         self.ssid = rand_ascii_str(10)
-        self.wlan_device = create_wlan_device(self.fuchsia_devices[0])
+        if 'dut' in self.user_params:
+            if self.user_params['dut'] == 'fuchsia_devices':
+                self.dut = create_wlan_device(self.fuchsia_devices[0])
+            elif self.user_params['dut'] == 'android_devices':
+                self.dut = create_wlan_device(self.android_devices[0])
+            else:
+                raise ValueError('Invalid DUT specified in config. (%s)' %
+                                 self.user_params['dut'])
+        else:
+            # Default is an android device, just like the other tests
+            self.dut = create_wlan_device(self.android_devices[0])
         self.ap = self.access_points[0]
         self.num_of_iterations = int(
             self.user_params.get("beacon_loss_test_iterations",
@@ -69,15 +79,15 @@ class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
         self.in_use_interface = None
 
     def teardown_test(self):
-        disconnect(self.wlan_device)
-        self.wlan_device.reset_wifi()
+        self.dut.disconnect()
+        self.dut.reset_wifi()
         # ensure radio is on, in case the test failed while the radio was off
         self.ap.iwconfig.ap_iwconfig(self.in_use_interface, "txpower on")
         self.ap.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
-        self.access_point.stop_all_aps()
+        self.ap.stop_all_aps()
 
     def beacon_loss(self, channel):
         setup_ap(access_point=self.ap,
@@ -93,10 +103,9 @@ class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
         # TODO(b/144505723): [ACTS] update BeaconLossTest.py to handle client
         # roaming, saved networks, etc.
         self.log.info("sending associate command for ssid %s", self.ssid)
-        associate(client=self.wlan_device, ssid=self.ssid)
+        self.dut.associate(target_ssid=self.ssid)
 
-        asserts.assert_true(self.wlan_device.is_connected(),
-                            'Failed to connect.')
+        asserts.assert_true(self.dut.is_connected(), 'Failed to connect.')
 
         time.sleep(self.wait_client_connection_setup_s)
 
@@ -107,7 +116,7 @@ class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
             time.sleep(self.wait_after_ap_txoff_s)
 
             # Did we disconnect from AP?
-            asserts.assert_false(self.wlan_device.is_connected(),
+            asserts.assert_false(self.dut.is_connected(),
                                  'Failed to disconnect.')
 
             # Turn on AP radio
@@ -117,11 +126,11 @@ class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
 
             # Tell the client to connect
             self.log.info("sending associate command for ssid %s" % self.ssid)
-            associate(client=self.wlan_device, ssid=self.ssid)
+            self.dut.associate(target_ssid=self.ssid)
             time.sleep(self.wait_client_connection_setup_s)
 
             # Did we connect back to WiFi?
-            asserts.assert_true(self.wlan_device.is_connected(),
+            asserts.assert_true(self.dut.is_connected(),
                                 'Failed to connect back.')
 
         return True
