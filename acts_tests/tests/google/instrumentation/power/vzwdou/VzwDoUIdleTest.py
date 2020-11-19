@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.power.vzwdou import vzw_dou_base_test
+from acts_contrib.test_utils.instrumentation.power.vzwdou import vzw_dou_base_test
 
 class VzwDoUIdleTest(vzw_dou_base_test.VzwDoUBaseTest):
   """Class for running VZW DoU idle test cases"""

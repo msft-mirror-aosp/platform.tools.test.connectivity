@@ -14,9 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.power.instrumentation_power_test \
+from acts_contrib.test_utils.instrumentation.power.instrumentation_power_test \
     import InstrumentationPowerTest
-from acts.test_utils.instrumentation.device.command.adb_commands import common
+from acts_contrib.test_utils.instrumentation.device.command.adb_commands import common
 
 
 class ThreeGVoiceCallTest(InstrumentationPowerTest):
