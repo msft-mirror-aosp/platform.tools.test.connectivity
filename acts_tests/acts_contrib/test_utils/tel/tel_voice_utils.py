@@ -22,6 +22,7 @@ from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC
+from acts_contrib.test_utils.tel.tel_defines import CARRIER_TMO
 from acts_contrib.test_utils.tel.tel_defines import GEN_2G
 from acts_contrib.test_utils.tel.tel_defines import GEN_3G
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
@@ -71,6 +72,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_network_gen_for_subsc
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
@@ -1119,10 +1121,14 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
     if not phone_setup_4g_for_subscription(log, ad, sub_id):
         ad.log.error("Failed to set to 4G data.")
         return False
-    if not wait_for_enhanced_4g_lte_setting(log, ad, sub_id):
-        ad.log.error("Enhanced 4G LTE setting is not available")
-        return False
-    toggle_volte_for_subscription(log, ad, sub_id, True)
+    operator_name = get_operator_name(log, ad, sub_id)
+    if operator_name == CARRIER_TMO:
+        pass
+    else:
+        if not wait_for_enhanced_4g_lte_setting(log, ad, sub_id):
+            ad.log.error("Enhanced 4G LTE setting is not available")
+            return False
+        toggle_volte_for_subscription(log, ad, sub_id, True)
     return phone_idle_volte_for_subscription(log, ad, sub_id)
 
 
