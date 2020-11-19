@@ -120,7 +120,7 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
                 monsoon_config.get_numeric('max_current'))
 
     def power_cycle(self, monsoon_config=None, **__):
-        """Power cycle the Monsoon controller for this testclass/testcase."""
+        """Power cycles the delegated monsoon controller."""
 
         if monsoon_config is None:
             raise MonsoonError('monsoon_config can not be None')
