@@ -7232,7 +7232,7 @@ def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
-        remove_mobile_data_usage_limit(ad)
+        #remove_mobile_data_usage_limit(ad)
         if not wait_for_not_network_rat(
                 log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
             ad.log.error("%s still in %s", NETWORK_SERVICE_DATA,
