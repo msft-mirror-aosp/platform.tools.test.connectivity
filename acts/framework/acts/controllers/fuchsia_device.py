@@ -112,6 +112,8 @@ FUCHSIA_DEFAULT_COMMAND_TIMEOUT = 3600
 FUCHSIA_COUNTRY_CODE_TIMEOUT = 15
 FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 
+MDNS_LOOKUP_RETRY_MAX = 3
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -209,8 +211,14 @@ class FuchsiaDevice:
         elif utils.is_valid_ipv6_address(self.ip):
             self.address = "http://[{}]:{}".format(self.ip, self.port)
         else:
-            mdns_ip = get_fuchsia_mdns_ipv6_address(self.ip)
-            if utils.is_valid_ipv6_address(mdns_ip):
+            mdns_ip = None
+            for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
+                mdns_ip = get_fuchsia_mdns_ipv6_address(self.ip)
+                if mdns_ip:
+                    break
+                else:
+                    time.sleep(1)
+            if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
                 self.ip = mdns_ip
                 self.address = "http://[{}]:{}".format(self.ip, self.port)
             else:
