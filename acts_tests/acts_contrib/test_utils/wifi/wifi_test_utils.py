@@ -813,7 +813,7 @@ def set_wifi_country_code(ad, country_code):
     """
     try:
         ad.adb.shell("cmd wifi force-country-code enabled %s" % country_code)
-    except ad.adb.AdbError as e:
+    except Exception as e:
         ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
 
 
