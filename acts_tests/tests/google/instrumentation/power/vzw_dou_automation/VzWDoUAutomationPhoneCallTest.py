@@ -36,6 +36,7 @@ class VzWDoUAutomationPhoneCallTest(
     """Measures power when the device is on call with mute on and off."""
     self.ad_dut.adb.ensure_root()
     self.adb_run(goog.disable_playstore)
+    self._google_apps_test_utils.prevent_playstore_auto_updates()
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
         'The companion phone number is {}'.format(companion_phone_number))
@@ -77,6 +78,7 @@ class VzWDoUAutomationPhoneCallTest(
     self.ad_dut.adb.ensure_root()
     self.adb_run(goog.disable_playstore)
     self.adb_run(common.wifi_state.toggle(True))
+    self._google_apps_test_utils.prevent_playstore_auto_updates()
     companion_phone_number = self.get_phone_number(self.ad_cp)
     self.log.debug(
         'The companion phone number is {}'.format(companion_phone_number))

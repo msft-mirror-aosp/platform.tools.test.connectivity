@@ -88,14 +88,10 @@ ethernet = DeviceState(
     desc='Modifies whether to enable ethernet.')
 
 bluetooth = DeviceState(
-    'service call bluetooth_manager',
-    on_val='6',
-    off_val='8',
-    desc='Modifies whether bluetooth is enabled (6 means enabled, 8 disabled).'
-         'TODO: add the source for these magic numbers. BluetoothAdapter '
-         'http://shortn/_FTBWhfJJs7 makes reference to these enums '
-         'http://shortn/_w9rcHX8jm4, but that doesn\'t seem to be the right '
-         'source.')
+    'svc bluetooth',
+    on_val='enable',
+    off_val='disable',
+    desc='Modifies whether to enable bluetooth.')
 
 nfc = DeviceState(
     'svc nfc',

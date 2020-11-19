@@ -21,6 +21,7 @@ import socket
 import threading
 
 from acts import context
+from acts import utils
 from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.iperf_server import _AndroidDeviceBridge
@@ -174,6 +175,12 @@ class IPerfClientOverSsh(IPerfClientBase):
     """Class that handles iperf3 client operations on remote machines."""
     def __init__(self, ssh_config, use_paramiko=False, test_interface=None):
         self._ssh_settings = settings.from_config(ssh_config)
+        if not (utils.is_valid_ipv4_address(self._ssh_settings.hostname)
+                or utils.is_valid_ipv6_address(self._ssh_settings.hostname)):
+            mdns_ip = utils.get_fuchsia_mdns_ipv6_address(
+                self._ssh_settings.hostname)
+            if mdns_ip:
+                self._ssh_settings.hostname = mdns_ip
         # use_paramiko may be passed in as a string (from JSON), so this line
         # guarantees it is a converted to a bool.
         self._use_paramiko = str(use_paramiko).lower() == 'true'
@@ -316,7 +323,7 @@ class IPerfClientOverAdb(IPerfClientBase):
             clean_out = out.split('\n')
             if 'error' in clean_out[0].lower():
                 raise IPerfError(clean_out)
-        except (job.TimeoutError, AdbCommandError) :
+        except (job.TimeoutError, AdbCommandError):
             logging.warning('TimeoutError: Iperf measurement failed.')
 
         full_out_path = self._get_full_file_path(tag)

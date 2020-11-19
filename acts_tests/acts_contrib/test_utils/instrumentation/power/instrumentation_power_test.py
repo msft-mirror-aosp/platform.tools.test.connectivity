@@ -290,6 +290,11 @@ class InstrumentationPowerTest(InstrumentationBaseTest):
         monsoon_config = self._test_options.get_config('Monsoon')
         self.power_monitor.setup(monsoon_config=monsoon_config)
 
+    def _power_cycle_power_monitor(self, **kwargs):
+        """Power cycle the Monsoon controller for this testclass/testcase."""
+        monsoon_config = self._test_options.get_config('Monsoon')
+        self.power_monitor.power_cycle(monsoon_config=monsoon_config)
+
     def _uninstall_sl4a(self):
         """Stops and uninstalls SL4A if it is available on the DUT"""
         self.ad_dut.log.info('Stopping and uninstalling SL4A if available.')
