@@ -112,6 +112,8 @@ FUCHSIA_DEFAULT_COMMAND_TIMEOUT = 3600
 FUCHSIA_COUNTRY_CODE_TIMEOUT = 15
 FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 
+MDNS_LOOKUP_RETRY_MAX = 3
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -208,12 +210,19 @@ class FuchsiaDevice:
             self.address = "http://{}:{}".format(self.ip, self.port)
         elif utils.is_valid_ipv6_address(self.ip):
             self.address = "http://[{}]:{}".format(self.ip, self.port)
-        elif utils.is_valid_ipv6_address(get_fuchsia_mdns_ipv6_address(
-                self.ip)):
-            self.ip = get_fuchsia_mdns_ipv6_address(self.ip)
-            self.address = "http://[{}]:{}".format(self.ip, self.port)
         else:
-            raise ValueError('Invalid IP: %s' % self.ip)
+            mdns_ip = None
+            for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
+                mdns_ip = get_fuchsia_mdns_ipv6_address(self.ip)
+                if mdns_ip:
+                    break
+                else:
+                    time.sleep(1)
+            if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
+                self.ip = mdns_ip
+                self.address = "http://[{}]:{}".format(self.ip, self.port)
+            else:
+                raise ValueError('Invalid IP: %s' % self.ip)
 
         self.log = acts_logger.create_tagged_trace_logger(
             "FuchsiaDevice | %s" % self.ip)
@@ -1067,27 +1076,28 @@ class FuchsiaDevice:
         Usage:
             In FuchsiaDevice config, add "country_code": "<CC>"
         """
-        # Country code can be None, from ACTS config.
-        if desired_country_code:
-            response = self.regulatory_region_lib.setRegion(
-                desired_country_code)
-            if response.get('error'):
-                raise FuchsiaDeviceError(
-                    'Failed to set regulatory domain. Err: %s' %
-                    response['error'])
-            end_time = time.time() + FUCHSIA_COUNTRY_CODE_TIMEOUT
-            while time.time() < end_time:
-                ascii_cc = self.wlan_lib.wlanGetCountry(0).get('result')
-                str_cc = ''.join(chr(c) for c in ascii_cc)
-                if str_cc == desired_country_code:
-                    self.log.debug('Country code successfully set to %s.' %
-                                   desired_country_code)
-                    return
-                self.log.debug('Country code is still set to %s. Retrying.' %
-                               str_cc)
-                time.sleep(1)
-            raise FuchsiaDeviceError('Country code never updated to %s' %
-                                     desired_country_code)
+        if self.ssh_config:
+            # Country code can be None, from ACTS config.
+            if desired_country_code:
+                response = self.regulatory_region_lib.setRegion(
+                    desired_country_code)
+                if response.get('error'):
+                    raise FuchsiaDeviceError(
+                        'Failed to set regulatory domain. Err: %s' %
+                        response['error'])
+                end_time = time.time() + FUCHSIA_COUNTRY_CODE_TIMEOUT
+                while time.time() < end_time:
+                    ascii_cc = self.wlan_lib.wlanGetCountry(0).get('result')
+                    str_cc = ''.join(chr(c) for c in ascii_cc)
+                    if str_cc == desired_country_code:
+                        self.log.debug('Country code successfully set to %s.' %
+                                       desired_country_code)
+                        return
+                    self.log.debug(
+                        'Country code is still set to %s. Retrying.' % str_cc)
+                    time.sleep(1)
+                raise FuchsiaDeviceError('Country code never updated to %s' %
+                                         desired_country_code)
 
     @backoff.on_exception(backoff.constant,
                           (FuchsiaSyslogError, socket.timeout),
