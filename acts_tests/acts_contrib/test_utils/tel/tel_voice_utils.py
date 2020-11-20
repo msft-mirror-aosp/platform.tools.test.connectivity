@@ -1123,7 +1123,7 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
         return False
     operator_name = get_operator_name(log, ad, sub_id)
     if operator_name == CARRIER_TMO:
-        pass
+        return True
     else:
         if not wait_for_enhanced_4g_lte_setting(log, ad, sub_id):
             ad.log.error("Enhanced 4G LTE setting is not available")
