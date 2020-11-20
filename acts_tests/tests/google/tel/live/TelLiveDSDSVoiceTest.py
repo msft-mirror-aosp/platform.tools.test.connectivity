@@ -763,12 +763,12 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 0, self._phone_setup_volte,
-            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, self._is_phone_in_call_volte, None,
             None, None, True)
 
         mo_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 1, self._phone_setup_volte,
-            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, self._is_phone_in_call_volte, None,
             None, None, True)
 
         self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
@@ -792,12 +792,12 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mt_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 0, self._phone_setup_volte,
-            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, self._is_phone_in_call_volte, None,
             None, None, True)
 
         mt_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 1, self._phone_setup_volte,
-            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, self._is_phone_in_call_volte, None,
             None, None, True)
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
