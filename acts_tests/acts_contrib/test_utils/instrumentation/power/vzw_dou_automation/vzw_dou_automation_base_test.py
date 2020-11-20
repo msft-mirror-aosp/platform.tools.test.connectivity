@@ -84,6 +84,7 @@ class VzWDoUAutomationBaseTest(
     self._google_account_util = None
     self._facebook_apk = None
     self._twitter_apk = None
+    self._duo_apk = None
 
   def base_device_configuration(self):
     """Runs the adb commands for days of use power testing."""
@@ -147,6 +148,8 @@ class VzWDoUAutomationBaseTest(
       self._facebook_apk.uninstall()
     if self._twitter_apk:
       self._twitter_apk.uninstall()
+    if self._duo_apk:
+      self._duo_apk.uninstall()
     super()._cleanup_device()
     self.adb_run('input keyevent 26')
 
@@ -213,6 +216,14 @@ class VzWDoUAutomationBaseTest(
     self._twitter_apk.install('-g')
     if not self._twitter_apk.is_installed():
       raise InstrumentationTestError('Failed to install twitter APK.')
+
+  def install_duo_apk(self):
+    """Installs duo apk on the device."""
+    _duo_apk_file = self.get_file_from_config('duo_apk')
+    self._duo_apk = AppInstaller(self.ad_dut, _duo_apk_file)
+    self._duo_apk.install('-g')
+    if not self._duo_apk.is_installed():
+      raise InstrumentationTestError('Failed to install duo APK.')
 
   def _cut_band(self):
     additional_setting = self._instrumentation_config.get_config('additional_setting')
