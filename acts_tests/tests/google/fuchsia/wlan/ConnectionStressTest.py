@@ -61,7 +61,7 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
 
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
-        self.access_point.stop_all_aps()
+        self.ap.stop_all_aps()
 
     def start_ap(self, profile, channel, security=None):
         """Starts an Access Point
