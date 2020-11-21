@@ -50,6 +50,7 @@ class VzWDoUAutomationCompBaseTest(
     self._companion_google_account_util = None
     self._companion_instr_cmd_builder = None
     self._companion_permissions_util = None
+    self._companion_duo_apk = None
 
   def setup_class(self):
     """Class setup"""
@@ -79,6 +80,15 @@ class VzWDoUAutomationCompBaseTest(
     if not self._companion_test_apk.is_installed():
       raise InstrumentationTestError(
           'Failed to install test APK on companion device.')
+
+  def _install_companion_duo_apk(self):
+    """Installs duo apk on the companion device."""
+    duo_apk_file = self.get_file_from_config('duo_apk')
+    self._companion_duo_apk = AppInstaller(self.ad_cp, duo_apk_file)
+    self._companion_duo_apk.install('-g')
+    if not self._companion_duo_apk.is_installed():
+      raise InstrumentationTestError(
+          'Failed to install duo APK on companion device.')
 
   def _install_companion_wifi_util_apk(self):
     """Installs google account util apk on the device."""
@@ -127,6 +137,8 @@ class VzWDoUAutomationCompBaseTest(
     """Clean up device after power testing."""
     if self._companion_test_apk:
       self._companion_test_apk.uninstall()
+    if self._companion_duo_apk:
+      self._companion_duo_apk.uninstall()
     if self._companion_wifi_util:
       self._companion_wifi_util.uninstall()
     if self._companion_google_account_util:

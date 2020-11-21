@@ -115,7 +115,7 @@ class VzWDoUAutomationPhoneCallTest(
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=0,
+      acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_voice_call_bluetooth(self, attempt_number):
     """Measures power when the device is on call with bluetooth paired."""
@@ -244,6 +244,75 @@ class VzWDoUAutomationPhoneCallTest(
         'com.google.android.platform.dou.MobileHotspotTests',
         'testMobileHotspot',
         extra_params=[('recipient_number', dut_mhs_ssid),
+                      ('recipient_number_companion', companion_phone_number)],
+        attempt_number=attempt_number)
+
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  @repeated_test(
+      num_passes=1,
+      acceptable_failures=0,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_make_video_call(self, attempt_number):
+    """Measures power when the device is on video call."""
+    self.ad_dut.adb.ensure_root()
+    self.adb_run(goog.remove_gmail_account)
+    self.install_duo_apk()
+    self._install_companion_duo_apk()
+    self._companion_permissions_util.grant_all()
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+    dut_phone_number = self.get_phone_number(self.ad_dut)
+    self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
+
+    self.run_instrumentation_on_companion(
+        'com.google.android.platform.dou.CompanionDuoVideoCallTests',
+        'testReceiveVideoCall',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number)])
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.DuoVideoCallTests',
+        'testMakeVideoCall',
+        extra_params=[('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number)],
+        attempt_number=attempt_number)
+
+    self.record_metrics(metrics)
+    self.validate_metrics(metrics)
+
+  @repeated_test(
+      num_passes=1,
+      acceptable_failures=0,
+      result_selector=vzw_dou_automation_base_test.get_median_current)
+  def test_make_video_call_wifi(self, attempt_number):
+    """Measures power when the device is on video call with wifi connected."""
+    self.ad_dut.adb.ensure_root()
+    self.adb_run(goog.remove_gmail_account)
+    self.install_duo_apk()
+    self._install_companion_duo_apk()
+    self._companion_permissions_util.grant_all()
+    self.adb_run(common.wifi_state.toggle(True))
+    companion_phone_number = self.get_phone_number(self.ad_cp)
+    self.log.debug(
+        'The companion phone number is {}'.format(companion_phone_number))
+    dut_phone_number = self.get_phone_number(self.ad_dut)
+    self.log.debug('The dut phone number is {}'.format(dut_phone_number))
+    time.sleep(vzw_dou_automation_base_test.DEFAULT_DEVICE_COOL_DOWN_TIME)
+
+    self.run_instrumentation_on_companion(
+        'com.google.android.platform.dou.CompanionDuoVideoCallTests',
+        'testReceiveVideoCall',
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                      ('recipient_number', dut_phone_number),
+                      ('recipient_number_companion', companion_phone_number)])
+    metrics = self.run_and_measure(
+        'com.google.android.platform.dou.DuoVideoCallTests',
+        'testMakeVideoCall',
+        extra_params=[('wifi_ssid', vzw_dou_automation_base_test.WIFI_SSID),
+                      ('recipient_number', dut_phone_number),
                       ('recipient_number_companion', companion_phone_number)],
         attempt_number=attempt_number)
 
