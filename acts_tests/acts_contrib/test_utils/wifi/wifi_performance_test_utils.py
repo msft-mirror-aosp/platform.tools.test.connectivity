@@ -1028,11 +1028,14 @@ def get_connected_rssi_qcom(dut,
         measurement_start_time = time.time()
         connected_rssi['time_stamp'].append(measurement_start_time - t0)
         # Get signal poll RSSI
-        if interface is None:
-            status_output = dut.adb.shell(WPA_CLI_STATUS)
-        else:
-            status_output = dut.adb.shell(
-                'wpa_cli -i {} status'.format(interface))
+        try:
+            if interface is None:
+                status_output = dut.adb.shell(WPA_CLI_STATUS)
+            else:
+                status_output = dut.adb.shell(
+                    'wpa_cli -i {} status'.format(interface))
+        except:
+            status_output = ''
         match = re.search('bssid=.*', status_output)
         if match:
             current_bssid = match.group(0).split('=')[1]
@@ -1049,11 +1052,14 @@ def get_connected_rssi_qcom(dut,
             connected_rssi['ssid'].append(ssid)
         else:
             connected_rssi['ssid'].append('disconnected')
-        if interface is None:
-            signal_poll_output = dut.adb.shell(SIGNAL_POLL)
-        else:
-            signal_poll_output = dut.adb.shell(
-                'wpa_cli -i {} signal_poll'.format(interface))
+        try:
+            if interface is None:
+                signal_poll_output = dut.adb.shell(SIGNAL_POLL)
+            else:
+                signal_poll_output = dut.adb.shell(
+                    'wpa_cli -i {} signal_poll'.format(interface))
+        except:
+            signal_poll_output = ''
         match = re.search('FREQUENCY=.*', signal_poll_output)
         if match:
             frequency = int(match.group(0).split('=')[1])
@@ -1079,9 +1085,12 @@ def get_connected_rssi_qcom(dut,
                 RSSI_ERROR_VAL)
 
         # Get per chain RSSI
-        if interface is None:
-            per_chain_rssi = dut.adb.shell(STATION_DUMP)
-        else:
+        try:
+            if interface is None:
+                per_chain_rssi = dut.adb.shell(STATION_DUMP)
+            else:
+                per_chain_rssi = ''
+        except:
             per_chain_rssi = ''
         match = re.search('.*signal avg:.*', per_chain_rssi)
         if match:
