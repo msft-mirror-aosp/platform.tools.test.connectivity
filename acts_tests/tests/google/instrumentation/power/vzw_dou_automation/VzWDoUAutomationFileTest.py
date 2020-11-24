@@ -25,7 +25,7 @@ class VzWDoUAutomationFileTest(
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=0,
+      acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_download_file(self, attempt_number):
     """Measures power for device download file."""

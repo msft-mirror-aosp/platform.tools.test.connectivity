@@ -151,7 +151,7 @@ class VzWDoUAutomationPhoneCallTest(
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=0,
+      acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_voice_call_and_browser(self, attempt_number):
     """Measures power when the device is on call with bluetooth paired."""
@@ -252,7 +252,7 @@ class VzWDoUAutomationPhoneCallTest(
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=0,
+      acceptable_failures=1,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_make_video_call(self, attempt_number):
     """Measures power when the device is on video call."""
@@ -285,7 +285,7 @@ class VzWDoUAutomationPhoneCallTest(
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=0,
+      acceptable_failures=1,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_make_video_call_wifi(self, attempt_number):
     """Measures power when the device is on video call with wifi connected."""
