@@ -514,12 +514,14 @@ class WifiRvrTest(base_test.BaseTestClass):
                     chan=testcase_params['channel'],
                     bw=testcase_params['mode'][3:],
                     duration=180)
-            wutils.wifi_connect(self.sta_dut,
-                                testcase_params['test_network'],
-                                num_of_tries=5,
-                                check_connectivity=True)
-            if self.testbed_params['sniffer_enable']:
-                self.sniffer.stop_capture(tag='connection_setup')
+            try:
+                wutils.wifi_connect(self.sta_dut,
+                                    testcase_params['test_network'],
+                                    num_of_tries=5,
+                                    check_connectivity=True)
+            finally:
+                if self.testbed_params['sniffer_enable']:
+                    self.sniffer.stop_capture(tag='connection_setup')
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -629,7 +631,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                 116, 132, 140, 149, 153, 157, 161
             ],
             'VHT40': [36, 44, 100, 149, 157],
-            'VHT80': [36, 100, 149]
+            'VHT80': [36, 100, 149],
+            'VHT160': [36]
         }
 
         for channel, mode, traffic_type, traffic_direction in itertools.product(
@@ -726,6 +729,15 @@ class WifiRvr_TCP_Uplink_Test(WifiRvrTest):
             modes=['VHT20', 'VHT40', 'VHT80'],
             traffic_types=['TCP'],
             traffic_directions=['UL'])
+
+
+class WifiRvr_160MHz_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(channels=[36],
+                                              modes=['VHT160'],
+                                              traffic_types=['TCP'],
+                                              traffic_directions=['DL', 'UL'])
 
 
 # Over-the air version of RVR tests
