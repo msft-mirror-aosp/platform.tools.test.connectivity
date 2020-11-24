@@ -35,7 +35,6 @@ install_requires = [
     'scipy==1.4.1',
     'pyserial',
     'pyyaml>=5.1',
-    'tzlocal',
     'protobuf>=3.14.0',
     'retry',
     'requests',
