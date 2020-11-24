@@ -34,13 +34,9 @@ Ent = WifiEnums.Enterprise
 
 
 class WifiEnterpriseTest(WifiBaseTest):
-
-    def __init__(self, configs):
-        super().__init__(configs)
-        self.enable_packet_log = True
-
     def setup_class(self):
         super().setup_class()
+        self.enable_packet_log = True
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
@@ -67,14 +63,16 @@ class WifiEnterpriseTest(WifiBaseTest):
                 radius_conf_2g=self.radius_conf_2g,
                 radius_conf_5g=self.radius_conf_5g,
                 ent_network_pwd=True,
-                radius_conf_pwd=self.radius_conf_pwd,)
+                radius_conf_pwd=self.radius_conf_pwd,
+            )
         elif "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(
                 ent_network=True,
                 radius_conf_2g=self.radius_conf_2g,
                 radius_conf_5g=self.radius_conf_5g,
                 ent_network_pwd=True,
-                radius_conf_pwd=self.radius_conf_pwd,)
+                radius_conf_pwd=self.radius_conf_pwd,
+            )
         self.ent_network_2g = self.ent_networks[0]["2g"]
         self.ent_network_5g = self.ent_networks[0]["5g"]
         self.ent_network_pwd = self.ent_networks_pwd[0]["2g"]
@@ -207,8 +205,9 @@ class WifiEnterpriseTest(WifiBaseTest):
             field.
         """
         negative_config = dict(config)
-        if negative_config in [self.config_sim, self.config_aka,
-                               self.config_aka_prime]:
+        if negative_config in [
+                self.config_sim, self.config_aka, self.config_aka_prime
+        ]:
             negative_config[WifiEnums.SSID_KEY] = 'wrong_hostapd_ssid'
         for k, v in neg_params.items():
             # Skip negative test for TLS's identity field since it's not
@@ -266,9 +265,7 @@ class WifiEnterpriseTest(WifiBaseTest):
         }
         return self.gen_negative_configs(config, neg_params)
 
-    def eap_connect_toggle_wifi(self,
-                                config,
-                                *args):
+    def eap_connect_toggle_wifi(self, config, *args):
         """Connects to an enterprise network, toggles wifi state and ensures
         that the device reconnects.
 
@@ -283,7 +280,9 @@ class WifiEnterpriseTest(WifiBaseTest):
         """
         ad = args[0]
         wutils.wifi_connect(ad, config)
-        wutils.toggle_wifi_and_wait_for_reconnection(ad, config, num_of_tries=5)
+        wutils.toggle_wifi_and_wait_for_reconnection(ad,
+                                                     config,
+                                                     num_of_tries=5)
 
     """ Tests """
 
@@ -305,6 +304,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Successful connection and Internet access through the enterprise
             networks.
     """
+
     @test_tracker_info(uuid="4e720cac-ea17-4de7-a540-8dc7c49f9713")
     def test_eap_connect_with_config_tls(self):
         wutils.wifi_connect(self.dut, self.config_tls)
@@ -346,7 +346,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="fdb286c7-8069-481d-baf0-c5dd7a31ff03")
     def test_eap_connect_with_config_ttls_mschapv2(self):
         config = dict(self.config_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="d9315962-7987-4ee7-905d-6972c78ce8a1")
@@ -358,7 +359,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="90a67bd3-30da-4daf-8ab0-d964d7ad19be")
     def test_eap_connect_with_config_peap0_mschapv2(self):
         config = dict(self.config_peap0)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="3c451ba4-0c83-4eef-bc95-db4c21893008")
@@ -370,7 +372,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="6b45157d-0325-417a-af18-11af5d240d79")
     def test_eap_connect_with_config_peap1_mschapv2(self):
         config = dict(self.config_peap1)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="1663decc-71ae-4f95-a027-8a6dbf9c337f")
@@ -389,6 +392,7 @@ class WifiEnterpriseTest(WifiBaseTest):
         Expect:
             Fail to establish connection.
     """
+
     @test_tracker_info(uuid="b2a91f1f-ccd7-4bd1-ab81-19aab3d8ee38")
     def test_eap_connect_negative_with_config_tls(self):
         config = self.gen_negative_eap_configs(self.config_tls)
@@ -438,7 +442,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="625e7aa5-e3e6-4bbe-98c0-5aad8ca1555b")
     def test_eap_connect_negative_with_config_ttls_mschapv2(self):
         config = dict(self.config_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         config = self.gen_negative_eap_configs(config)
         self.eap_negative_connect_logic(config, self.dut)
 
@@ -452,7 +457,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="b7c1f0f8-6338-4501-8e1d-c9b136aaba88")
     def test_eap_connect_negative_with_config_peap0_mschapv2(self):
         config = dict(self.config_peap0)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         config = self.gen_negative_eap_configs(config)
         self.eap_negative_connect_logic(config, self.dut)
 
@@ -466,7 +472,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="89bb2b6b-d073-402a-bdc1-68ac5f8752a3")
     def test_eap_connect_negative_with_config_peap1_mschapv2(self):
         config = dict(self.config_peap1)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         config = self.gen_negative_eap_configs(config)
         self.eap_negative_connect_logic(config, self.dut)
 
@@ -497,6 +504,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Successful connection and Internet access through the enterprise
             networks.
     """
+
     @test_tracker_info(uuid="2a933b7f-27d7-4201-a34f-25b9d8072a8c")
     def test_eap_connect_config_store_with_config_tls(self):
         self.eap_connect_toggle_wifi(self.config_tls, self.dut)
@@ -538,7 +546,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="f0243684-fae0-46f3-afbd-bf525fc712e2")
     def test_eap_connect_config_store_with_config_ttls_mschapv2(self):
         config = dict(self.config_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="49ec7202-3b00-49c3-970a-201360888c74")
@@ -550,7 +559,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="1c6abfa3-f344-4e28-b891-5481ab79efcf")
     def test_eap_connect_config_store_with_config_peap0_mschapv2(self):
         config = dict(self.config_peap0)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="2815bc76-49fa-43a5-a4b6-84788f9809d5")
@@ -562,7 +572,8 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="e93f7472-6895-4e36-bff2-9b2dcfd07ad0")
     def test_eap_connect_config_store_with_config_peap1_mschapv2(self):
         config = dict(self.config_peap1)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="6da72fa0-b858-4475-9559-46fe052d0d64")
@@ -591,6 +602,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Successful connection and Internet access through the enterprise
             networks with passpoint support.
     """
+
     @test_tracker_info(uuid="0b942524-bde9-4fc6-ac6a-fef1c247cb8e")
     def passpoint_connect_with_config_passpoint_tls(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
@@ -626,7 +638,8 @@ class WifiEnterpriseTest(WifiBaseTest):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="357e5162-5081-4149-bedd-ef2c0f88b97e")
@@ -647,6 +660,7 @@ class WifiEnterpriseTest(WifiBaseTest):
         Expect:
             Fail to establish connection.
     """
+
     @test_tracker_info(uuid="7b6b44a0-ff70-49b4-94ca-a98bedc18f92")
     def passpoint_connect_negative_with_config_passpoint_tls(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
@@ -686,7 +700,8 @@ class WifiEnterpriseTest(WifiBaseTest):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         config = self.gen_negative_passpoint_configs(config)
         self.eap_negative_connect_logic(config, self.dut)
 
@@ -718,6 +733,7 @@ class WifiEnterpriseTest(WifiBaseTest):
             Successful connection and Internet access through the enterprise
             networks with passpoint support.
     """
+
     @test_tracker_info(uuid="5d5e6bb0-faea-4a6e-a6bc-c87de997a4fd")
     def passpoint_connect_config_store_with_config_passpoint_tls(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
@@ -749,11 +765,13 @@ class WifiEnterpriseTest(WifiBaseTest):
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="2abd348c-9c66-456b-88ad-55f971717620")
-    def passpoint_connect_config_store_with_config_passpoint_ttls_mschapv2(self):
+    def passpoint_connect_config_store_with_config_passpoint_ttls_mschapv2(
+            self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        config[
+            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="043e8cdd-db95-4f03-b308-3c8cecf874b1")
