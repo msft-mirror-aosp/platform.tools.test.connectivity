@@ -45,7 +45,6 @@ MAX_AP_COUNT = 2
 
 
 class WifiBaseTest(BaseTestClass):
-
     def __init__(self, configs):
         super().__init__(configs)
         self.enable_packet_log = False
@@ -71,32 +70,35 @@ class WifiBaseTest(BaseTestClass):
             self.packet_logger.configure_monitor_mode("5G", self.packet_log_5g)
 
     def setup_test(self):
-        if (hasattr(self, "android_devices") and
-                hasattr(self, "cnss_diag_file") and
-                hasattr(self, "pixel_models")):
-            wutils.start_cnss_diags(
-                self.android_devices, self.cnss_diag_file, self.pixel_models)
+        if (hasattr(self, "android_devices")
+                and hasattr(self, "cnss_diag_file")
+                and hasattr(self, "pixel_models")):
+            wutils.start_cnss_diags(self.android_devices, self.cnss_diag_file,
+                                    self.pixel_models)
         self.tcpdump_proc = []
         if hasattr(self, "android_devices"):
             for ad in self.android_devices:
                 proc = nutils.start_tcpdump(ad, self.test_name)
                 self.tcpdump_proc.append((ad, proc))
         if hasattr(self, "packet_logger"):
-            self.packet_log_pid = wutils.start_pcap(
-                    self.packet_logger, 'dual', self.test_name)
+            self.packet_log_pid = wutils.start_pcap(self.packet_logger, 'dual',
+                                                    self.test_name)
 
     def teardown_test(self):
-        if (hasattr(self, "android_devices") and
-                hasattr(self, "cnss_diag_file") and
-                hasattr(self, "pixel_models")):
+        if (hasattr(self, "android_devices")
+                and hasattr(self, "cnss_diag_file")
+                and hasattr(self, "pixel_models")):
             wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
-        for proc in self.tcpdump_proc:
-            nutils.stop_tcpdump(
-                    proc[0], proc[1], self.test_name, pull_dump=False)
-        self.tcpdump_proc = []
+            for proc in self.tcpdump_proc:
+                nutils.stop_tcpdump(proc[0],
+                                    proc[1],
+                                    self.test_name,
+                                    pull_dump=False)
+            self.tcpdump_proc = []
         if hasattr(self, "packet_logger") and self.packet_log_pid:
-            wutils.stop_pcap(
-                    self.packet_logger, self.packet_log_pid, test_status=True)
+            wutils.stop_pcap(self.packet_logger,
+                             self.packet_log_pid,
+                             test_status=True)
             self.packet_log_pid = {}
 
     def on_fail(self, test_name, begin_time):
@@ -105,17 +107,18 @@ class WifiBaseTest(BaseTestClass):
                 ad.take_bug_report(test_name, begin_time)
                 ad.cat_adb_log(test_name, begin_time)
                 wutils.get_ssrdumps(ad)
-            if (hasattr(self, "cnss_diag_file") and
-                    hasattr(self, "pixel_models")):
+            if (hasattr(self, "cnss_diag_file")
+                    and hasattr(self, "pixel_models")):
                 wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
                 for ad in self.android_devices:
                     wutils.get_cnss_diag_log(ad)
-        for proc in self.tcpdump_proc:
-            nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
-        self.tcpdump_proc = []
+            for proc in self.tcpdump_proc:
+                nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
+            self.tcpdump_proc = []
         if hasattr(self, "packet_logger") and self.packet_log_pid:
-            wutils.stop_pcap(
-                    self.packet_logger, self.packet_log_pid, test_status=False)
+            wutils.stop_pcap(self.packet_logger,
+                             self.packet_log_pid,
+                             test_status=False)
             self.packet_log_pid = {}
 
     def get_psk_network(
@@ -361,13 +364,13 @@ class WifiBaseTest(BaseTestClass):
             if 'channel' in network:
                 continue
             self.update_bssid(ap_instance, ap, network,
-                hostapd_constants.BAND_5G)
+                              hostapd_constants.BAND_5G)
 
         for network in networks_2g:
             if 'channel' in network:
                 continue
             self.update_bssid(ap_instance, ap, network,
-                hostapd_constants.BAND_2G)
+                              hostapd_constants.BAND_2G)
 
     def configure_openwrt_ap_and_start(
             self,
@@ -414,7 +417,7 @@ class WifiBaseTest(BaseTestClass):
             ap_count: APs to configure.
         """
         if mirror_ap and ap_count == 1:
-             raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
+            raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
 
         self.reference_networks = []
         self.wpa_networks = []
@@ -430,10 +433,8 @@ class WifiBaseTest(BaseTestClass):
             if wpa_network:
                 wpa_dict = self.get_psk_network(mirror_ap,
                                                 self.reference_networks,
-                                                hidden,
-                                                same_ssid,
-                                                ssid_length_2g,
-                                                ssid_length_5g,
+                                                hidden, same_ssid,
+                                                ssid_length_2g, ssid_length_5g,
                                                 passphrase_length_2g,
                                                 passphrase_length_5g)
                 wpa_dict[hostapd_constants.BAND_2G]["security"] = "psk2"
@@ -441,18 +442,13 @@ class WifiBaseTest(BaseTestClass):
                 self.wpa_networks.append(wpa_dict)
                 network_list.append(wpa_dict)
             if wep_network:
-                wep_dict = self.get_wep_network(mirror_ap,
-                                                self.wep_networks,
-                                                hidden,
-                                                same_ssid,
-                                                ssid_length_2g,
-                                                ssid_length_5g)
+                wep_dict = self.get_wep_network(mirror_ap, self.wep_networks,
+                                                hidden, same_ssid,
+                                                ssid_length_2g, ssid_length_5g)
                 network_list.append(wep_dict)
             if ent_network:
-                ent_dict = self.get_open_network(mirror_ap,
-                                                 self.ent_networks,
-                                                 hidden,
-                                                 same_ssid,
+                ent_dict = self.get_open_network(mirror_ap, self.ent_networks,
+                                                 hidden, same_ssid,
                                                  ssid_length_2g,
                                                  ssid_length_5g)
                 ent_dict["2g"]["security"] = "wpa2"
@@ -463,8 +459,7 @@ class WifiBaseTest(BaseTestClass):
             if ent_network_pwd:
                 ent_pwd_dict = self.get_open_network(mirror_ap,
                                                      self.ent_networks_pwd,
-                                                     hidden,
-                                                     same_ssid,
+                                                     hidden, same_ssid,
                                                      ssid_length_2g,
                                                      ssid_length_5g)
                 ent_pwd_dict["2g"]["security"] = "wpa2"
@@ -473,50 +468,38 @@ class WifiBaseTest(BaseTestClass):
                 ent_pwd_dict["5g"].update(radius_conf_pwd)
                 network_list.append(ent_pwd_dict)
             if open_network:
-                open_dict = self.get_open_network(mirror_ap,
-                                                  self.open_network,
-                                                  hidden,
-                                                  same_ssid,
+                open_dict = self.get_open_network(mirror_ap, self.open_network,
+                                                  hidden, same_ssid,
                                                   ssid_length_2g,
                                                   ssid_length_5g)
                 network_list.append(open_dict)
             if owe_network:
-                owe_dict = self.get_open_network(mirror_ap,
-                                                 self.owe_networks,
-                                                 hidden,
-                                                 same_ssid,
+                owe_dict = self.get_open_network(mirror_ap, self.owe_networks,
+                                                 hidden, same_ssid,
                                                  ssid_length_2g,
-                                                 ssid_length_5g,
-                                                 "OWE")
+                                                 ssid_length_5g, "OWE")
                 owe_dict[hostapd_constants.BAND_2G]["security"] = "owe"
                 owe_dict[hostapd_constants.BAND_5G]["security"] = "owe"
                 network_list.append(owe_dict)
             if sae_network:
-                sae_dict = self.get_psk_network(mirror_ap,
-                                                self.sae_networks,
-                                                hidden,
-                                                same_ssid,
-                                                hostapd_constants.WPA3_KEY_MGMT,
-                                                ssid_length_2g,
-                                                ssid_length_5g,
-                                                passphrase_length_2g,
-                                                passphrase_length_5g)
+                sae_dict = self.get_psk_network(
+                    mirror_ap, self.sae_networks, hidden, same_ssid,
+                    hostapd_constants.WPA3_KEY_MGMT, ssid_length_2g,
+                    ssid_length_5g, passphrase_length_2g, passphrase_length_5g)
                 sae_dict[hostapd_constants.BAND_2G]["security"] = "sae"
                 sae_dict[hostapd_constants.BAND_5G]["security"] = "sae"
                 network_list.append(sae_dict)
-            self.access_points[i].configure_ap(network_list,
-                                               channel_2g,
+            self.access_points[i].configure_ap(network_list, channel_2g,
                                                channel_5g)
             self.access_points[i].start_ap()
             self.bssid_map.append(
                 self.access_points[i].get_bssids_for_wifi_networks())
             if mirror_ap:
-                self.access_points[i+1].configure_ap(network_list,
-                                                     channel_2g,
-                                                     channel_5g)
-                self.access_points[i+1].start_ap()
+                self.access_points[i + 1].configure_ap(network_list,
+                                                       channel_2g, channel_5g)
+                self.access_points[i + 1].start_ap()
                 self.bssid_map.append(
-                    self.access_points[i+1].get_bssids_for_wifi_networks())
+                    self.access_points[i + 1].get_bssids_for_wifi_networks())
                 break
 
     def legacy_configure_ap_and_start(
@@ -547,7 +530,7 @@ class WifiBaseTest(BaseTestClass):
         # For example, the NetworkSelector tests use 2 APs and require that
         # both APs are not mirrored.
         if not mirror_ap and ap_count == 1:
-             raise ValueError("ap_count cannot be 1 if mirror_ap is False.")
+            raise ValueError("ap_count cannot be 1 if mirror_ap is False.")
 
         if not mirror_ap:
             config_count = ap_count
@@ -580,10 +563,10 @@ class WifiBaseTest(BaseTestClass):
             network_list_5g.append({"channel": channel_5g})
 
             networks_dict = self.get_psk_network(
-                                mirror_ap,
-                                self.user_params["reference_networks"],
-                                hidden=hidden,
-                                same_ssid=same_ssid)
+                mirror_ap,
+                self.user_params["reference_networks"],
+                hidden=hidden,
+                same_ssid=same_ssid)
             self.reference_networks = self.user_params["reference_networks"]
 
             network_list_2g.append(networks_dict["2g"])
@@ -596,10 +579,10 @@ class WifiBaseTest(BaseTestClass):
             # instead of defaulting to WPA.
             if not same_ssid:
                 networks_dict = self.get_open_network(
-                                    mirror_ap,
-                                    self.user_params["open_network"],
-                                    hidden=hidden,
-                                    same_ssid=same_ssid)
+                    mirror_ap,
+                    self.user_params["open_network"],
+                    hidden=hidden,
+                    same_ssid=same_ssid)
                 self.open_network = self.user_params["open_network"]
 
                 network_list_2g.append(networks_dict["2g"])
@@ -607,11 +590,11 @@ class WifiBaseTest(BaseTestClass):
 
                 if wpa_network:
                     networks_dict = self.get_psk_network(
-                                        mirror_ap,
-                                        self.user_params["wpa_networks"],
-                                        hidden=hidden,
-                                        same_ssid=same_ssid,
-                                        security_mode=hostapd_constants.WPA_STRING)
+                        mirror_ap,
+                        self.user_params["wpa_networks"],
+                        hidden=hidden,
+                        same_ssid=same_ssid,
+                        security_mode=hostapd_constants.WPA_STRING)
                     self.wpa_networks = self.user_params["wpa_networks"]
 
                     network_list_2g.append(networks_dict["2g"])
@@ -619,10 +602,10 @@ class WifiBaseTest(BaseTestClass):
 
                 if wep_network:
                     networks_dict = self.get_wep_network(
-                                        mirror_ap,
-                                        self.user_params["wep_networks"],
-                                        hidden=hidden,
-                                        same_ssid=same_ssid)
+                        mirror_ap,
+                        self.user_params["wep_networks"],
+                        hidden=hidden,
+                        same_ssid=same_ssid)
                     self.wep_networks = self.user_params["wep_networks"]
 
                     network_list_2g.append(networks_dict["2g"])
@@ -630,13 +613,15 @@ class WifiBaseTest(BaseTestClass):
 
                 if ent_network:
                     networks_dict = self.get_open_network(
-                                        mirror_ap,
-                                        self.user_params["ent_networks"],
-                                        hidden=hidden,
-                                        same_ssid=same_ssid)
-                    networks_dict["2g"]["security"] = hostapd_constants.ENT_STRING
+                        mirror_ap,
+                        self.user_params["ent_networks"],
+                        hidden=hidden,
+                        same_ssid=same_ssid)
+                    networks_dict["2g"][
+                        "security"] = hostapd_constants.ENT_STRING
                     networks_dict["2g"].update(radius_conf_2g)
-                    networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["5g"][
+                        "security"] = hostapd_constants.ENT_STRING
                     networks_dict["5g"].update(radius_conf_5g)
                     self.ent_networks = self.user_params["ent_networks"]
 
@@ -645,15 +630,18 @@ class WifiBaseTest(BaseTestClass):
 
                 if ent_network_pwd:
                     networks_dict = self.get_open_network(
-                                        mirror_ap,
-                                        self.user_params["ent_networks_pwd"],
-                                        hidden=hidden,
-                                        same_ssid=same_ssid)
-                    networks_dict["2g"]["security"] = hostapd_constants.ENT_STRING
+                        mirror_ap,
+                        self.user_params["ent_networks_pwd"],
+                        hidden=hidden,
+                        same_ssid=same_ssid)
+                    networks_dict["2g"][
+                        "security"] = hostapd_constants.ENT_STRING
                     networks_dict["2g"].update(radius_conf_pwd)
-                    networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["5g"][
+                        "security"] = hostapd_constants.ENT_STRING
                     networks_dict["5g"].update(radius_conf_pwd)
-                    self.ent_networks_pwd = self.user_params["ent_networks_pwd"]
+                    self.ent_networks_pwd = self.user_params[
+                        "ent_networks_pwd"]
 
                     network_list_2g.append(networks_dict["2g"])
                     network_list_5g.append(networks_dict["5g"])
@@ -662,21 +650,23 @@ class WifiBaseTest(BaseTestClass):
             orig_network_list_2g = copy.copy(network_list_2g)
 
             if len(network_list_5g) > 1:
-                self.config_5g = self._generate_legacy_ap_config(network_list_5g)
+                self.config_5g = self._generate_legacy_ap_config(
+                    network_list_5g)
             if len(network_list_2g) > 1:
-                self.config_2g = self._generate_legacy_ap_config(network_list_2g)
+                self.config_2g = self._generate_legacy_ap_config(
+                    network_list_2g)
 
             self.access_points[count].start_ap(self.config_2g)
             self.access_points[count].start_ap(self.config_5g)
-            self.populate_bssid(count, self.access_points[count], orig_network_list_5g,
-                                orig_network_list_2g)
+            self.populate_bssid(count, self.access_points[count],
+                                orig_network_list_5g, orig_network_list_2g)
 
         # Repeat configuration on the second router.
         if mirror_ap and ap_count == 2:
             self.access_points[AP_2].start_ap(self.config_2g)
             self.access_points[AP_2].start_ap(self.config_5g)
             self.populate_bssid(AP_2, self.access_points[AP_2],
-                orig_network_list_5g, orig_network_list_2g)
+                                orig_network_list_5g, orig_network_list_2g)
 
     def _kill_processes(self, ap, daemon):
         """ Kill hostapd and dhcpd daemons
@@ -726,7 +716,7 @@ class WifiBaseTest(BaseTestClass):
         self.log.debug("Cleanup AP")
         if not self._kill_processes(ap, 'hostapd') or \
             not self._kill_processes(ap, 'dhcpd'):
-              raise("Failed to cleanup AP")
+            raise ("Failed to cleanup AP")
 
         ap.__init__(self.user_params['AccessPoint'][count])
 
@@ -769,7 +759,8 @@ class WifiBaseTest(BaseTestClass):
                             security_mode=network["security"],
                             radius_server_ip=network["radius_server_ip"],
                             radius_server_port=network["radius_server_port"],
-                            radius_server_secret=network["radius_server_secret"])))
+                            radius_server_secret=network[
+                                "radius_server_secret"])))
             else:
                 bss_settings.append(
                     hostapd_bss_settings.BssSettings(
@@ -842,7 +833,8 @@ class WifiBaseTest(BaseTestClass):
             for i in range(tries + 1):
                 result = True
                 if i > 0:
-                    log_string = "[Test Case] RETRY:%s %s" % (i, self.test_name)
+                    log_string = "[Test Case] RETRY:%s %s" % (i,
+                                                              self.test_name)
                     self.log.info(log_string)
                     self._teardown_test(self.test_name)
                     self._setup_test(self.test_name)
