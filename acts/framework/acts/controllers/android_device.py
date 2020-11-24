@@ -61,6 +61,8 @@ DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
+ADB_ROOT_RETRY_COUNT = 2
+ADB_ROOT_RETRY_INTERVAL = 10
 IPERF_TIMEOUT = 60
 SL4A_APK_NAME = "com.googlecode.android_scripting"
 WAIT_FOR_DEVICE_TIMEOUT = 180
@@ -610,7 +612,17 @@ class AndroidDevice:
         If executed on a production build, adb will not be switched to root
         mode per security restrictions.
         """
-        self.adb.root()
+        if self.is_adb_root:
+            return
+
+        for attempt in range(ADB_ROOT_RETRY_COUNT):
+            try:
+                self.log.debug('Enabling ADB root mode: attempt %d.' % attempt)
+                self.adb.root()
+            except AdbError:
+                if attempt == ADB_ROOT_RETRY_COUNT:
+                    raise
+                time.sleep(ADB_ROOT_RETRY_INTERVAL)
         self.adb.wait_for_device()
 
     def get_droid(self, handle_event=True):
