@@ -1261,3 +1261,84 @@ class DiscoveryTest(AwareBaseTest):
         self.run_multiple_concurrent_services_same_name_diff_ssi(
             type_x=[aconsts.PUBLISH_TYPE_SOLICITED, aconsts.SUBSCRIBE_TYPE_ACTIVE],
             type_y=[aconsts.PUBLISH_TYPE_SOLICITED, aconsts.SUBSCRIBE_TYPE_ACTIVE])
+
+    def run_service_discovery_on_service_lost(self, p_type, s_type):
+        """
+        Validate service lost callback will be receive on subscriber, when publisher stopped publish
+    - p_dut running Publish
+    - s_dut running subscribe
+    - s_dut discover p_dut
+    - p_dut stop publish
+    - s_dut receive service lost callback
+
+    Args:
+      p_type: Publish discovery type
+      s_type: Subscribe discovery type
+    """
+        p_dut = self.android_devices[0]
+        p_dut.pretty_name = "Publisher"
+        s_dut = self.android_devices[1]
+        s_dut.pretty_name = "Subscriber"
+
+        # Publisher+Subscriber: attach and wait for confirmation
+        p_id = p_dut.droid.wifiAwareAttach(False)
+        autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+        time.sleep(self.device_startup_offset)
+        s_id = s_dut.droid.wifiAwareAttach(False)
+        autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+        # Publisher: start publish and wait for confirmation
+        p_config = self.create_publish_config(
+            p_dut.aware_capabilities,
+            p_type,
+            self.PAYLOAD_SIZE_TYPICAL,
+            ttl=0,
+            term_ind_on=False,
+            null_match=False)
+        p_disc_id = p_dut.droid.wifiAwarePublish(p_id, p_config)
+        autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+        # Subscriber: start subscribe and wait for confirmation
+        s_config = self.create_subscribe_config(
+            s_dut.aware_capabilities,
+            s_type,
+            self.PAYLOAD_SIZE_TYPICAL,
+            ttl=0,
+            term_ind_on=False,
+            null_match=True)
+        s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, s_config)
+        autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+
+        # Subscriber: wait for service discovery
+        discovery_event = autils.wait_for_event(
+            s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+        peer_id_on_sub = discovery_event["data"][
+            aconsts.SESSION_CB_KEY_PEER_ID]
+
+        # Publisher+Subscriber: Terminate sessions
+        p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
+        time.sleep(10)
+        service_lost_event = autils.wait_for_event(
+            s_dut, aconsts.SESSION_CB_ON_SERVICE_LOST)
+        asserts.assert_equal(peer_id_on_sub,
+                             service_lost_event["data"][aconsts.SESSION_CB_KEY_PEER_ID])
+        asserts.assert_equal(aconsts.REASON_PEER_NOT_VISIBLE,
+                             service_lost_event["data"][aconsts.SESSION_CB_KEY_LOST_REASON])
+
+        s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
+
+    @test_tracker_info(uuid="")
+    def test_service_discovery_on_service_lost_unsolicited_passive(self):
+        """
+        Test service discovery lost with unsolicited publish and passive subscribe
+        """
+        self.run_service_discovery_on_service_lost(aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                                   aconsts.SUBSCRIBE_TYPE_PASSIVE)
+
+    @test_tracker_info(uuid="")
+    def test_service_discovery_on_service_lost_solicited_active(self):
+        """
+        Test service discovery lost with solicited publish and active subscribe
+        """
+        self.run_service_discovery_on_service_lost(aconsts.PUBLISH_TYPE_SOLICITED,
+                                                   aconsts.SUBSCRIBE_TYPE_ACTIVE)
