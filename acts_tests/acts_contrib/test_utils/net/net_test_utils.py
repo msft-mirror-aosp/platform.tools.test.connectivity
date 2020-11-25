@@ -290,8 +290,8 @@ def start_tcpdump(ad, test_name):
 
     file_name = "%s/tcpdump_%s_%s.pcap" % (TCPDUMP_PATH, ad.serial, test_name)
     ad.log.info("tcpdump file is %s", file_name)
-    cmd = "adb -s {} shell tcpdump -i any -s0 -w {}".format(ad.serial,
-                                                            file_name)
+    cmd = "adb -s {} shell tcpdump -i any -W 100 -C 50 -s0 -w {}".format(
+            ad.serial, file_name)
     try:
         return start_standing_subprocess(cmd, 5)
     except Exception:

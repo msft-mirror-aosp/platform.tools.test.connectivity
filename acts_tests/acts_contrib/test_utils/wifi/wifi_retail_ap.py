@@ -1295,6 +1295,12 @@ class NetgearRAX120AP(NetgearR7500AP):
             "VHT160": "Up to 4803 Mbps (160MHz) (11ax, HT160, 1024-QAM)"
         }
         self.bw_mode_values = {
+            "1": "11g",
+            "2": "VHT20",
+            "3": "VHT40",
+            "7": "VHT20",
+            "8": "VHT40",
+            "9": "VHT80",
             "54": "11g",
             "573.5": "VHT20",
             "1146": "VHT40",

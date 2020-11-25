@@ -90,7 +90,8 @@ class OtaSnifferBase(object):
         """Returns name of the sniffer dump file."""
         remote_file_name = 'sniffer_dump.{}'.format(
             self.sniffer_output_file_type)
-        remote_dump_path = posixpath.join(posixpath.sep, 'tmp', remote_file_name)
+        remote_dump_path = posixpath.join(posixpath.sep, 'tmp',
+                                          remote_file_name)
         return remote_dump_path
 
     def _get_full_file_path(self, tag=None):
@@ -356,7 +357,7 @@ class TsharkSnifferBase(OtaSnifferBase):
         try:
             self.log.debug('Killing sniffer with SIGKILL.')
             self._sniffer_server.run('sudo kill -9 {}'.format(
-                    str(self.sniffer_proc_pid)))
+                str(self.sniffer_proc_pid)))
         except:
             self.log.debug('Sniffer process may have stopped succesfully.')
 
@@ -532,6 +533,9 @@ class TsharkSnifferOnLinux(TsharkSnifferBase):
                 (140, 142, 144): 142,
                 (149, 151, 153): 151,
                 (157, 159, 161): 159
+            },
+            160: {
+                (36, 38, 40): 50
             }
         }
 

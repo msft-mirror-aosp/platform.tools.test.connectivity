@@ -97,6 +97,7 @@ SESSION_CB_ON_SERVICE_DISCOVERED = "WifiAwareSessionOnServiceDiscovered"
 SESSION_CB_ON_MESSAGE_SENT = "WifiAwareSessionOnMessageSent"
 SESSION_CB_ON_MESSAGE_SEND_FAILED = "WifiAwareSessionOnMessageSendFailed"
 SESSION_CB_ON_MESSAGE_RECEIVED = "WifiAwareSessionOnMessageReceived"
+SESSION_CB_ON_SERVICE_LOST = "WifiAwareSessionOnServiceLost"
 
 # WifiAwareDiscoverySessionCallback events keys
 SESSION_CB_KEY_CB_ID = "callbackId"
@@ -112,6 +113,10 @@ SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 SESSION_CB_KEY_LATENCY_MS = "latencyMs"
 SESSION_CB_KEY_TIMESTAMP_MS = "timestampMs"
 SESSION_CB_KEY_DISTANCE_MM = "distanceMm"
+SESSION_CB_KEY_LOST_REASON = "lostReason"
+
+# WifiAwareDiscoverySessionCallback onServiceLost reason code
+REASON_PEER_NOT_VISIBLE = 1
 
 ######################################################
 # WifiAwareRangingListener events (RttManager.RttListener)
