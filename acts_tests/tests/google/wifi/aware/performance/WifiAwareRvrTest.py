@@ -23,6 +23,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers import iperf_client as ipc
+from acts.controllers.adb_lib.error import AdbCommandError
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -184,7 +185,10 @@ class WifiAwareRvrTest(WifiRvrTest):
             autils.reset_device_statistics(ad)
             autils.set_power_mode_parameters(ad, testcase_params['power_mode'])
             wutils.set_wifi_country_code(ad, wutils.WifiEnums.CountryCode.US)
-            autils.configure_ndp_allow_any_override(ad, True)
+            try:
+                autils.configure_ndp_allow_any_override(ad, True)
+            except AdbCommandError as e:
+                self.log.warning('AdbCommandError: {}'.format(e))
             # set randomization interval to 0 (disable) to reduce likelihood of
             # interference in tests
             autils.configure_mac_random_interval(ad, 0)
