@@ -217,7 +217,7 @@ class EventDispatcher:
         except queue.Empty:
             msg = 'Timeout after {}s waiting for event: {}'.format(
                 timeout, event_name)
-            self.log.error(msg)
+            self.log.info(msg)
             raise queue.Empty(msg)
 
     def wait_for_event(self,
@@ -277,7 +277,7 @@ class EventDispatcher:
                     self.get_event_q(event_name).put(ignored_event)
                 msg = 'Timeout after {}s waiting for event: {}'.format(
                     timeout, event_name)
-                self.log.error(msg)
+                self.log.info(msg)
                 raise queue.Empty(msg)
 
     def pop_events(self, regex_pattern, timeout, freq=1):
