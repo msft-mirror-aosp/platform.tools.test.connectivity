@@ -44,6 +44,8 @@ install_requires = [
     'scapy',
     'xlsxwriter',
     'mobly>=1.10.0',
+    # Used by the power framework. Remove after migration to acts_power
+    'tzlocal'
 ]
 
 if sys.version_info < (3, ):
