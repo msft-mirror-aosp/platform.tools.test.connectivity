@@ -46,12 +46,14 @@ class WifiDppTest(WifiBaseTest):
   DPP_TEST_EVENT_CONFIGURATOR_SUCCESS = "onConfiguratorSuccess"
   DPP_TEST_EVENT_PROGRESS = "onProgress"
   DPP_TEST_EVENT_FAILURE = "onFailure"
+  DPP_TEST_EVENT_URI_GENERATED = "onBootstrapUriGenerated"
   DPP_TEST_MESSAGE_TYPE = "Type"
   DPP_TEST_MESSAGE_STATUS = "Status"
   DPP_TEST_MESSAGE_NETWORK_ID = "NetworkId"
   DPP_TEST_MESSAGE_FAILURE_SSID = "onFailureSsid"
   DPP_TEST_MESSAGE_FAILURE_CHANNEL_LIST = "onFailureChannelList"
   DPP_TEST_MESSAGE_FAILURE_BAND_LIST = "onFailureBandList"
+  DPP_TEST_MESSAGE_GENERATED_URI = "generatedUri"
 
   DPP_TEST_NETWORK_ROLE_STA = "sta"
   DPP_TEST_NETWORK_ROLE_AP = "ap"
@@ -61,6 +63,13 @@ class WifiDppTest(WifiBaseTest):
 
   WPA_SUPPLICANT_SECURITY_SAE = "sae"
   WPA_SUPPLICANT_SECURITY_PSK = "psk"
+
+  DPP_TEST_CRYPTOGRAPHY_CURVE_PRIME256V1 = "prime256v1"
+  DPP_TEST_CRYPTOGRAPHY_CURVE_SECP384R1 = "secp384r1"
+  DPP_TEST_CRYPTOGRAPHY_CURVE_SECP521R1 = "secp521r1"
+  DPP_TEST_CRYPTOGRAPHY_CURVE_BRAINPOOLP256R1 = "brainpoolP256r1"
+  DPP_TEST_CRYPTOGRAPHY_CURVE_BRAINPOOLP384R1 = "brainpoolp384r1"
+  DPP_TEST_CRYPTOGRAPHY_CURVE_BRAINPOOLP512R1 = "brainpoolP512r1"
 
   DPP_EVENT_PROGRESS_AUTHENTICATION_SUCCESS = 0
   DPP_EVENT_PROGRESS_RESPONSE_PENDING = 1
@@ -731,6 +740,192 @@ class WifiDppTest(WifiBaseTest):
           self.forget_network(network_id),
           "Test network not deleted from configured networks.")
 
+  def stop_initiator(self, device, flush=False):
+    """Stop initiator on helper device
+
+       Args:
+           device: Device object
+    """
+    result = device.adb.shell("wpa_cli DPP_STOP_LISTEN")
+    if "FAIL" in result:
+      asserts.fail("stop_initiator: Failed to stop initiator")
+    if flush:
+      device.adb.shell("wpa_cli flush")
+    device.log.info("Stopped initiator")
+
+  def start_initiator_configurator(self,
+                                   device,
+                                   uri,
+                                   security=DPP_TEST_SECURITY_SAE):
+    """Start a responder on helper device
+
+        Args:
+            device: Device object
+            uri: peer uri
+            security: Security type: SAE or PSK
+
+        Returns:
+            ssid: SSID name of the network to be configured
+            uri_id: bootstrap id
+    """
+
+    self.log.info("Starting Initiator in Configurator mode")
+
+    use_psk = False
+
+    conf = " role=configurator"
+    conf += " conf=sta-"
+
+    if security == self.DPP_TEST_SECURITY_SAE:
+      if not self.dut.droid.wifiIsWpa3SaeSupported():
+        self.log.warning("SAE not supported on device! reverting to PSK")
+        security = self.DPP_TEST_SECURITY_PSK_PASSPHRASE
+
+    ssid = self.DPP_TEST_SSID_PREFIX + utils.rand_ascii_str(8)
+    password = utils.rand_ascii_str(8)
+
+    if security == self.DPP_TEST_SECURITY_SAE:
+      conf += self.WPA_SUPPLICANT_SECURITY_SAE
+      if not self.sae_network_ssid is None:
+        ssid = self.sae_network_ssid
+        password = self.sae_network_password
+    elif security == self.DPP_TEST_SECURITY_PSK_PASSPHRASE:
+      conf += self.WPA_SUPPLICANT_SECURITY_PSK
+      if not self.psk_network_ssid is None:
+        ssid = self.psk_network_ssid
+        password = self.psk_network_password
+    else:
+      conf += self.WPA_SUPPLICANT_SECURITY_PSK
+      use_psk = True
+
+    self.log.debug("SSID = %s" % ssid)
+
+    ssid_encoded = binascii.hexlify(ssid.encode()).decode()
+
+    if use_psk:
+      psk = utils.rand_ascii_str(16)
+      psk_encoded = binascii.b2a_hex(psk.encode()).decode()
+      self.log.debug("PSK = %s" % psk)
+    else:
+      password_encoded = binascii.b2a_hex(password.encode()).decode()
+      self.log.debug("Password = %s" % password)
+
+    conf += " ssid=%s" % ssid_encoded
+
+    if password:  # SAE password or PSK passphrase
+      conf += " pass=%s" % password_encoded
+    else:  # PSK
+      conf += " psk=%s" % psk_encoded
+
+    cmd = "wpa_cli DPP_QR_CODE '%s'" % (uri)
+    self.log.info ("Command used: %s" % cmd)
+    result = self.helper_dev.adb.shell(cmd)
+    if "FAIL" in result:
+      asserts.fail(
+          "start_initiator_configurator: Failure. Command used: %s" % cmd)
+
+    result = result[result.index("\n") + 1:]
+    uri_id = result
+    device.log.info("peer id = %s" % result)
+
+    cmd = "wpa_cli DPP_AUTH_INIT peer=%s %s " % (result, conf)
+    self.log.info("Command used: %s" % cmd)
+    result = self.helper_dev.adb.shell(cmd)
+    if "FAIL" in result:
+      asserts.fail(
+          "start_responder_configurator: Failure. Command used: %s" % cmd)
+
+    device.log.info("Started initiator in configurator mode")
+    return ssid, uri_id
+
+  def start_dpp_as_responder_enrollee(self,
+                                      security,
+                                      curve):
+    """ Test Easy Connect (DPP) as responder enrollee.
+
+                1. Enable wifi, if needed
+                2. Start DPP as Responder - Enrollee on DUT
+                3. Receive the generated URI from DUT
+                3. Start DPP as Initiator - Configurator on helper device by passing the URI
+                4. Check if configuration received successfully on DUT
+                5. Remove the configuration.
+
+        Args:
+            security: Security type, a string "SAE" or "PSK"
+            curve: cryptography curve type, a string DPP_TEST_CRYPTOGRAPHY_CURVE_XXX
+    """
+    if not self.dut.droid.wifiIsEasyConnectSupported():
+      self.log.warning("Easy Connect is not supported on device!")
+      return
+
+    wutils.wifi_toggle_state(self.dut, True)
+
+    self.log.info("Starting DPP in Enrollee-Responder mode, curve: %s" % curve)
+
+    # Start DPP as Enrollee-Responder on DUT
+    self.dut.droid.startEasyConnectAsEnrolleeResponder("DPP_RESPONDER_TESTER", curve)
+
+    network_id = 0
+
+    start_time = time.time()
+    while time.time() < start_time + self.DPP_TEST_TIMEOUT:
+      dut_event = self.dut.ed.pop_event(self.DPP_TEST_EVENT_DPP_CALLBACK,
+                                        self.DPP_TEST_TIMEOUT)
+      if dut_event[self.DPP_TEST_EVENT_DATA][
+          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_ENROLLEE_SUCCESS:
+          self.dut.log.info("DPP Configuration received success")
+          network_id = dut_event[self.DPP_TEST_EVENT_DATA][
+              self.DPP_TEST_MESSAGE_NETWORK_ID]
+          self.dut.log.info("NetworkID: %d" % network_id)
+          break
+      if dut_event[self.DPP_TEST_EVENT_DATA][
+          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_URI_GENERATED:
+          self.dut.log.info(
+              "Generated URI %s" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_GENERATED_URI])
+          uri = dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_GENERATED_URI]
+
+          # Start DPP as an configurator-initiator for STA on helper device
+          result = self.start_initiator_configurator(self.helper_dev, uri, security=security)
+          continue
+      if dut_event[self.DPP_TEST_EVENT_DATA][
+          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_PROGRESS:
+        self.dut.log.info("DPP progress event")
+        val = dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS]
+        if val == 0:
+          self.dut.log.info("DPP Authentication success")
+        elif val == 1:
+          self.dut.log.info("DPP Response pending")
+        continue
+      if dut_event[self.DPP_TEST_EVENT_DATA][
+          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_FAILURE:
+        asserts.fail(
+            "DPP failure, status code: %s" %
+            dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        break
+      asserts.fail("Unknown message received")
+
+    # Clear all pending events.
+    self.dut.ed.clear_all_events()
+
+    # Stop initiator
+    self.stop_initiator(self.helper_dev, flush=True)
+
+    # Delete URI
+    if not result is None:
+      self.log.info("SSID: %s URI_ID: %s" % (result[0], result[1]))
+      self.del_uri(self.helper_dev, result[1])
+
+      # Check that the saved network is what we expect
+      asserts.assert_true(
+          self.check_network_config_saved(result[0], security, network_id),
+          "Could not find the expected network: %s" % result[0])
+      asserts.assert_true(
+          self.forget_network(network_id),
+          "Test network not deleted from configured networks.")
+    else:
+      asserts.fail("Failed to configure initiator")
+
   """ Tests Begin """
 
   @test_tracker_info(uuid="30893d51-2069-4e1c-8917-c8a840f91b59")
@@ -914,5 +1109,41 @@ class WifiDppTest(WifiBaseTest):
                     "DPP R1 test, skipping this test for DPP R2 only")
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, use_mac=True, r2_auth_error=True)
+
+  @WifiBaseTest.wifi_test_wrap
+  def test_dpp_as_responder_enrollee_with_psk_passphrase_curve_prime256v1(self):
+    self.start_dpp_as_responder_enrollee(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_PRIME256V1)
+
+  @WifiBaseTest.wifi_test_wrap
+  def test_dpp_as_responder_enrollee_with_sae_curve_prime256v1(self):
+    self.start_dpp_as_responder_enrollee(
+        security=self.DPP_TEST_SECURITY_SAE,
+        curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_PRIME256V1)
+
+  @WifiBaseTest.wifi_test_wrap
+  def test_dpp_as_responder_enrollee_with_psk_passphrase_curve_secp384r1(self):
+    self.start_dpp_as_responder_enrollee(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP384R1)
+
+  @WifiBaseTest.wifi_test_wrap
+  def test_dpp_as_responder_enrollee_with_sae_curve_secp384r1(self):
+    self.start_dpp_as_responder_enrollee(
+        security=self.DPP_TEST_SECURITY_SAE,
+        curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP384R1)
+
+  @WifiBaseTest.wifi_test_wrap
+  def test_dpp_as_responder_enrollee_with_psk_passphrase_curve_secp521r1(self):
+    self.start_dpp_as_responder_enrollee(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP521R1)
+
+  @WifiBaseTest.wifi_test_wrap
+  def test_dpp_as_responder_enrollee_with_sae_curve_secp521r1(self):
+    self.start_dpp_as_responder_enrollee(
+        security=self.DPP_TEST_SECURITY_SAE,
+        curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP521R1)
 
 """ Tests End """
