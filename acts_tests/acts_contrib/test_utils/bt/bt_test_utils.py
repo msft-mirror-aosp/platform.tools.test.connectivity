@@ -888,7 +888,7 @@ def get_device_selector_dictionary(android_device_list):
         # then try to add them to the appropriate profiles / features.
 
         # Android TV.
-        if "feature:com.google.android.tv.installed" in ad.features:
+        if "feature:android.hardware.type.television" in ad.features:
             ad.log.info("Android TV device found.")
             supported_profiles = ['AudioSink']
             _add_android_device_to_dictionary(ad, supported_profiles,
