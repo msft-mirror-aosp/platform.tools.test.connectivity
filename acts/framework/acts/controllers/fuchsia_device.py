@@ -548,6 +548,8 @@ class FuchsiaDevice:
             raise ConnectionError(
                 'Failed to connect and run command via SL4F. Err: %s' % err)
 
+        # Reconfigure country code, as it does not persist after reboots
+        self.configure_regulatory_domain(self.config_country_code)
         try:
             self.run_commands_from_config(self.setup_commands)
 
@@ -1154,13 +1156,6 @@ class FuchsiaDevice:
             if self.log_process:
                 if ENABLE_LOG_LISTENER:
                     self.log_process.stop()
-
-    def reinitialize_services(self):
-        """Reinitialize long running services and establish connection to
-        SL4F."""
-        self.start_services()
-        self.init_server_connection()
-        self.configure_regulatory_domain(self.config_country_code)
 
     def load_config(self, config):
         pass
