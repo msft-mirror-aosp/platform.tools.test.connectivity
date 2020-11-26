@@ -142,6 +142,8 @@ US_CHANNELS_5G = [
     132, 136, 140, 144, 149, 153, 157, 161, 165
 ]
 
+LOWEST_5G_CHANNEL = 36
+
 MODE_11A = 'a'
 MODE_11B = 'b'
 MODE_11G = 'g'
@@ -406,6 +408,82 @@ WMM_NON_DEFAULT_PARAMS = {
     'wmm_ac_vo_cwmin': 6,
     'wmm_ac_vo_cwmax': 10,
     'wmm_ac_vo_txop_limit': 94
+}
+
+WMM_DEGRADED_VO_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 2,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 2,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 2,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 10,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
+}
+
+WMM_DEGRADED_VI_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 2,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 2,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 10,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 2,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
+}
+
+WMM_IMPROVE_BE_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 10,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 2,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 10,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 10,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
+}
+
+WMM_IMPROVE_BK_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 2,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 10,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 10,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 10,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
 }
 
 WMM_ACM_BK = {'wmm_ac_bk_acm': 1}

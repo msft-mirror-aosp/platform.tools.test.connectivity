@@ -286,8 +286,6 @@ def validate_forbidden_callbacks(ad, limited_cb=None):
 
     if limited_cb is None:
         limited_cb = {}
-    # add callbacks which should never be called
-    limited_cb[aconsts.CB_EV_MATCH_EXPIRED] = 0
 
     fail = False
     for cb_event in limited_cb.keys():
