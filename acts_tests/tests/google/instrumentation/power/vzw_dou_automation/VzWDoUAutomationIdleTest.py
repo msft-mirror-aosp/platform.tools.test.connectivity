@@ -50,6 +50,8 @@ class VzWDoUAutomationIdleTest(
     """Measures power when the device is in idle mode."""
 
     self.adb_run(goog.disable_betterbug)
+    self.adb_run(goog.disable_playstore)
+    self._google_apps_test_utils.prevent_playstore_auto_updates()
     metrics = self.run_and_measure(
         'com.google.android.platform.dou.IdleStandbyModeTests',
         'testIdleStandbyMode', attempt_number=attempt_number)

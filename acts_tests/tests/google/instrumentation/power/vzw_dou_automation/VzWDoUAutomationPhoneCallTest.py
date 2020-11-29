@@ -24,6 +24,8 @@ from acts_contrib.test_utils.instrumentation.power.vzw_dou_automation import \
   vzw_dou_automation_base_test
 from acts_contrib.test_utils.instrumentation.device.command.adb_commands import common
 
+VIDEO_CALL_WEIGHT = 0.75
+
 class VzWDoUAutomationPhoneCallTest(
     vzw_dou_automation_comp_base_test.VzWDoUAutomationCompBaseTest):
   """Class for running VZW DoU phone call test cases"""
@@ -252,7 +254,7 @@ class VzWDoUAutomationPhoneCallTest(
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=1,
+      acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_make_video_call(self, attempt_number):
     """Measures power when the device is on video call."""
@@ -280,12 +282,13 @@ class VzWDoUAutomationPhoneCallTest(
                       ('recipient_number_companion', companion_phone_number)],
         attempt_number=attempt_number)
 
-    self.record_metrics(metrics)
-    self.validate_metrics(metrics)
+    final_metrics = self._generate_weighted_result(metrics, VIDEO_CALL_WEIGHT)
+    self.record_metrics(final_metrics)
+    self.validate_metrics(final_metrics)
 
   @repeated_test(
       num_passes=1,
-      acceptable_failures=1,
+      acceptable_failures=2,
       result_selector=vzw_dou_automation_base_test.get_median_current)
   def test_make_video_call_wifi(self, attempt_number):
     """Measures power when the device is on video call with wifi connected."""
@@ -316,8 +319,9 @@ class VzWDoUAutomationPhoneCallTest(
                       ('recipient_number_companion', companion_phone_number)],
         attempt_number=attempt_number)
 
-    self.record_metrics(metrics)
-    self.validate_metrics(metrics)
+    final_metrics = self._generate_weighted_result(metrics, VIDEO_CALL_WEIGHT)
+    self.record_metrics(final_metrics)
+    self.validate_metrics(final_metrics)
 
   def _generate_final_metrics(self, metrics_list):
     """General a final metrics by combine each weighted value in the original metrics.
@@ -355,6 +359,32 @@ class VzWDoUAutomationPhoneCallTest(
             final_list[i].value += result_metrics.value * 0.4
         if combined_seg_name == '':
           combined_seg_name = key
+
+    final_metrics[combined_seg_name] = final_list
+    return final_metrics
+
+  def _generate_weighted_result(self, metrics, weight):
+    """Generate a weighted metrics by combine discount with the original metrics.
+
+        Args:
+            metrics: The power_metrics.Metric
+            weight: The percentage is used to get the weighted metric
+
+        Returns:
+            A weighted metric
+        """
+    final_list = []
+    final_metrics = {}
+    combined_seg_name = ''
+
+    for key, result_list in metrics.items():
+      for result_metrics in result_list:
+        self.log.info('The result metrix value is %s', result_metrics.value)
+        result_metrics_copy = copy.deepcopy(result_metrics)
+        result_metrics_copy.value = result_metrics.value * weight
+        final_list.append(result_metrics_copy)
+      if combined_seg_name == '':
+        combined_seg_name = key
 
     final_metrics[combined_seg_name] = final_list
     return final_metrics
