@@ -314,6 +314,8 @@ class WifiRetailAP(object):
             network: string containing network identifier (2G, 5G_1, 5G_2)
             bandwidth: string containing mode, e.g. 11g, VHT20, VHT40, VHT80.
         """
+        if 'BW' in bandwidth:
+            bandwidth.replace('BW', self.ap_settings['default_mode'])
         setting_to_update = {"bandwidth_{}".format(network): str(bandwidth)}
         self.update_ap_settings(setting_to_update)
 
@@ -1283,30 +1285,30 @@ class NetgearRAX120AP(NetgearR7500AP):
         }
         self.bw_mode_text_2g = {
             "11g": "Up to 54 Mbps (11g)",
-            "VHT20": "Up to 573.5 Mbps (11ax, HT20, 1024-QAM)",
-            "VHT40": "Up to 1147 Mbps (11ax, HT40, 1024-QAM)"
+            "HE20": "Up to 573.5 Mbps (11ax, HT20, 1024-QAM)",
+            "HE40": "Up to 1147 Mbps (11ax, HT40, 1024-QAM)"
         }
         self.bw_mode_text_5g = {
-            "VHT20": "Up to 1147 Mbps (11ax, HT20, 1024-QAM)",
-            "VHT40": "Up to 2294 Mbps (11ax, HT40, 1024-QAM)",
-            "VHT80": "Up to 4803 Mbps (80MHz) (11ax, HT80, 1024-QAM)",
-            "VHT160": "Up to 4803 Mbps (160MHz) (11ax, HT160, 1024-QAM)"
+            "HE20": "Up to 1147 Mbps (11ax, HT20, 1024-QAM)",
+            "HE40": "Up to 2294 Mbps (11ax, HT40, 1024-QAM)",
+            "HE80": "Up to 4803 Mbps (80MHz) (11ax, HT80, 1024-QAM)",
+            "HE160": "Up to 4803 Mbps (160MHz) (11ax, HT160, 1024-QAM)"
         }
         self.bw_mode_values = {
             "1": "11g",
-            "2": "VHT20",
-            "3": "VHT40",
-            "7": "VHT20",
-            "8": "VHT40",
-            "9": "VHT80",
-            "10": "VHT160",
+            "2": "HE20",
+            "3": "HE40",
+            "7": "HE20",
+            "8": "HE40",
+            "9": "HE80",
+            "10": "HE160",
             "54": "11g",
-            "573.5": "VHT20",
-            "1146": "VHT40",
-            "1147": "VHT20",
-            "2294": "VHT40",
-            "4803-HT80": "VHT80",
-            "4803-HT160": "VHT160",
+            "573.5": "HE20",
+            "1146": "HE40",
+            "1147": "HE20",
+            "2294": "HE40",
+            "4803-HT80": "HE80",
+            "4803-HT160": "HE160",
         }
         self.security_mode_values = {
             '2G': {

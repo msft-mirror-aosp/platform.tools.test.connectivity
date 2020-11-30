@@ -626,18 +626,19 @@ class WifiRvrTest(base_test.BaseTestClass):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
         allowed_configs = {
-            'VHT20': [
+            20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
                 116, 132, 140, 149, 153, 157, 161
             ],
-            'VHT40': [36, 44, 100, 149, 157],
-            'VHT80': [36, 100, 149],
-            'VHT160': [36]
+            40: [36, 44, 100, 149, 157],
+            80: [36, 100, 149],
+            160: [36]
         }
 
         for channel, mode, traffic_type, traffic_direction in itertools.product(
                 channels, modes, traffic_types, traffic_directions):
-            if channel not in allowed_configs[mode]:
+            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
+            if channel not in allowed_configs[bandwidth]:
                 continue
             test_name = 'test_rvr_{}_{}_ch{}_{}'.format(
                 traffic_type, traffic_direction, channel, mode)
@@ -701,7 +702,7 @@ class WifiRvr_SampleUDP_Test(WifiRvrTest):
             traffic_directions=['DL', 'UL'])
 
 
-class WifiRvr_TCP_All_Test(WifiRvrTest):
+class WifiRvr_TCP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
@@ -711,33 +712,24 @@ class WifiRvr_TCP_All_Test(WifiRvrTest):
             traffic_directions=['DL', 'UL'])
 
 
-class WifiRvr_TCP_Downlink_Test(WifiRvrTest):
+class WifiRvr_VHT_TCP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
             modes=['VHT20', 'VHT40', 'VHT80'],
             traffic_types=['TCP'],
-            traffic_directions=['DL'])
+            traffic_directions=['DL', 'UL'])
 
 
-class WifiRvr_TCP_Uplink_Test(WifiRvrTest):
+class WifiRvr_HE_TCP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['VHT20', 'VHT40', 'VHT80'],
+            modes=['HE20', 'HE40', 'HE80', 'HE160'],
             traffic_types=['TCP'],
-            traffic_directions=['UL'])
-
-
-class WifiRvr_160MHz_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.tests = self.generate_test_cases(channels=[36],
-                                              modes=['VHT160'],
-                                              traffic_types=['TCP'],
-                                              traffic_directions=['DL', 'UL'])
+            traffic_directions=['DL', 'UL'])
 
 
 # Over-the air version of RVR tests
