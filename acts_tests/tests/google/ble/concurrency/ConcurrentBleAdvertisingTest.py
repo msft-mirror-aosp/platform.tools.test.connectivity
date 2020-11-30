@@ -24,36 +24,37 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import BtTestUtilsError
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import adv_succ
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import scan_and_verify_n_advertisements
-from acts.test_utils.bt.bt_constants import scan_result
-from acts.test_utils.bt.bt_test_utils import setup_n_advertisements
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
-from acts.test_utils.bt.bt_test_utils import teardown_n_advertisements
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import BtTestUtilsError
+from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import adv_succ
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts_contrib.test_utils.bt.bt_test_utils import get_advanced_droid_list
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import scan_and_verify_n_advertisements
+from acts_contrib.test_utils.bt.bt_constants import scan_result
+from acts_contrib.test_utils.bt.bt_test_utils import setup_n_advertisements
+from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts_contrib.test_utils.bt.bt_test_utils import teardown_n_advertisements
 
 
 class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
     default_timeout = 10
+    droid_list = []
     max_advertisements = -1
 
     def setup_class(self):
         super().setup_class()
-        self.droid_list = get_advanced_droid_list(self.android_devices)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
         self.max_advertisements = self.droid_list[1]['max_advertisements']
 
     def setup_test(self):
-        super(BluetoothBaseTest, self).setup_test()
+        super().setup_test()
         return reset_bluetooth(self.android_devices)
 
     def _verify_n_advertisements(self, num_advertisements):

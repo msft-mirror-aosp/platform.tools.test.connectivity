@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import os
 import shutil
 import subprocess
@@ -23,9 +22,11 @@ from distutils import cmd
 from distutils import log
 
 import setuptools
+from setuptools.command.develop import develop
 from setuptools.command.install import install
 
 FRAMEWORK_DIR = 'acts_framework'
+LOCAL_FRAMEWORK_DIR = '../acts/framework'
 
 acts_tests_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -38,7 +39,7 @@ install_requires = [
     'numpy',
     'pyserial',
     'pyyaml>=5.1',
-    'protobuf>=3.11.3',
+    'protobuf>=3.14.0',
     'requests',
     'scapy',
     'xlsxwriter',
@@ -53,29 +54,56 @@ if sys.version_info < (3, ):
     install_requires.append('subprocess32')
 
 
+def _setup_acts_framework(option, *args):
+    """Locates and runs setup.py for the ACTS framework.
+
+    Args:
+        option: the option to use with setup.py, e.g. install, develop
+        args: additional args for the command
+    """
+    acts_framework_dir = os.path.join(acts_tests_dir, FRAMEWORK_DIR)
+    if not os.path.isdir(acts_framework_dir):
+        log.info('Directory "%s" not found. Attempting to locate ACTS '
+                 'framework through local repository.' % acts_framework_dir)
+        acts_framework_dir = os.path.join(acts_tests_dir, LOCAL_FRAMEWORK_DIR)
+        if not os.path.isdir(acts_framework_dir):
+            log.error('Cannot install ACTS framework. Framework dir "%s" not '
+                      'found.' % acts_framework_dir)
+            exit(1)
+    acts_setup_bin = os.path.join(acts_framework_dir, 'setup.py')
+    if not os.path.isfile(acts_setup_bin):
+        log.error('Cannot install ACTS framework. Setup script not found.')
+        exit(1)
+    command = [sys.executable, acts_setup_bin, option, *args]
+    subprocess.check_call(command, cwd=acts_framework_dir)
+
+
 class ActsContribInstall(install):
     """Custom installation of the acts_contrib package.
 
-    First installs the required ACTS framework via its own setup.py script,
-    before proceeding with the rest of the installation.
+    Also installs the required ACTS framework via its own setup.py script.
 
     The installation requires the ACTS framework to exist under the
-    "acts_framework" directory.
+    "acts_framework" directory, at the same level of this setup script.
+    Otherwise, it will attempt to locate the ACTS framework from the local
+    repository.
     """
     def run(self):
-        acts_framework_dir = os.path.join(acts_tests_dir, FRAMEWORK_DIR)
-        if not os.path.isdir(acts_framework_dir):
-            logging.error('Cannot install ACTS framework. Framework dir '
-                          '"%s" not found' % acts_framework_dir)
-            exit(1)
-        acts_setup_bin = os.path.join(acts_framework_dir, 'setup.py')
-        if not os.path.isfile(acts_setup_bin):
-            logging.error('Cannot install ACTS framework. Setup script not '
-                          'found.')
-            exit(1)
-        command = [sys.executable, acts_setup_bin, 'install']
-        subprocess.check_call(command, cwd=acts_framework_dir)
         super().run()
+        _setup_acts_framework('install')
+
+
+class ActsContribDevelop(develop):
+    """Custom installation of the acts_contrib package (in develop mode).
+
+    See ActsContribInstall for more details.
+    """
+    def run(self):
+        super().run()
+        if self.uninstall:
+            _setup_acts_framework('develop', '-u')
+        else:
+            _setup_acts_framework('develop')
 
 
 class ActsContribInstallDependencies(cmd.Command):
@@ -166,6 +194,9 @@ class ActsContribUninstall(cmd.Command):
 
         self.announce('Finished uninstalling acts_contrib.')
 
+        # Uninstall the ACTS framework
+        _setup_acts_framework('uninstall')
+
 
 def main():
     os.chdir(acts_tests_dir)
@@ -179,6 +210,7 @@ def main():
                      install_requires=install_requires,
                      cmdclass={
                          'install': ActsContribInstall,
+                         'develop': ActsContribDevelop,
                          'install_deps': ActsContribInstallDependencies,
                          'uninstall': ActsContribUninstall
                      },

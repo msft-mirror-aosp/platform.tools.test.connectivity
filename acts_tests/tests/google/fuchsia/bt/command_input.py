@@ -43,13 +43,13 @@ This is all to say this documentation pattern is expected.
 
 """
 
-from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
-from acts.test_utils.bt.bt_constants import bt_attribute_values
-from acts.test_utils.bt.bt_constants import sig_appearance_constants
-from acts.test_utils.bt.bt_constants import sig_uuid_constants
-from acts.test_utils.fuchsia.sdp_records import sdp_pts_record_list
+from acts_contrib.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
+from acts_contrib.test_utils.bt.bt_constants import bt_attribute_values
+from acts_contrib.test_utils.bt.bt_constants import sig_appearance_constants
+from acts_contrib.test_utils.bt.bt_constants import sig_uuid_constants
+from acts_contrib.test_utils.fuchsia.sdp_records import sdp_pts_record_list
 
-import acts.test_utils.bt.gatt_test_database as gatt_test_database
+import acts_contrib.test_utils.bt.gatt_test_database as gatt_test_database
 
 import cmd
 import pprint
@@ -131,13 +131,13 @@ class CommandInput(cmd.Cmd):
     def _find_unique_id_over_bt_control(self):
         self.unique_mac_addr_id = None
         self.bt_control_devices = []
-        self.pri_dut.btc_lib.requestDiscovery(True)
+        self.pri_dut.bts_lib.requestDiscovery(True)
         tries = 10
         for i in range(tries):
             if self.unique_mac_addr_id:
                 break
             time.sleep(self.bt_scan_poll_timer)
-            device_list = self.pri_dut.btc_lib.getKnownRemoteDevices(
+            device_list = self.pri_dut.bts_lib.getKnownRemoteDevices(
             )['result']
             for id_dict in device_list:
                 device = device_list[id_dict]
@@ -156,7 +156,7 @@ class CommandInput(cmd.Cmd):
                             "Successfully found device: name, id, address: {}, {}, {}"
                             .format(name, did, address))
                         break
-        self.pri_dut.btc_lib.requestDiscovery(False)
+        self.pri_dut.bts_lib.requestDiscovery(False)
 
     def do_tool_take_bt_snoop_log(self, custom_name):
         """
@@ -1391,7 +1391,7 @@ class CommandInput(cmd.Cmd):
             Supports Tab Autocomplete.
         Input(s):
             descriptor_db_name: The descriptor db name that matches one in
-                acts.test_utils.bt.gatt_test_database
+                acts_contrib.test_utils.bt.gatt_test_database
         Usage:
           Examples:
             gatts_setup_database LARGE_DB_1
@@ -1414,7 +1414,7 @@ class CommandInput(cmd.Cmd):
         """
         arg_completion = len(line.split(" ")) - 1
         pairing_security_level_options = ['ENCRYPTED', 'AUTHENTICATED', 'NONE']
-        non_bondable_options = ['BONDABLE', 'NON_BONDABLE', 'NONE']
+        bondable_options = ['BONDABLE', 'NON_BONDABLE', 'NONE']
         transport_options = ['BREDR', 'LE']
         if arg_completion == 1:
             if not text:
@@ -1427,10 +1427,10 @@ class CommandInput(cmd.Cmd):
             return completions
         if arg_completion == 2:
             if not text:
-                completions = non_bondable_options
+                completions = bondable_options
             else:
                 completions = [
-                    s for s in non_bondable_options if s.startswith(text)
+                    s for s in bondable_options if s.startswith(text)
                 ]
             return completions
         if arg_completion == 3:
@@ -1448,7 +1448,7 @@ class CommandInput(cmd.Cmd):
 
         Input(s):
             pairing security level: ENCRYPTED, AUTHENTICATED, or NONE
-            non_bondable: BONDABLE, NON_BONDABLE, or NONE
+            bondable: BONDABLE, NON_BONDABLE, or NONE
             transport: BREDR or LE
 
         Usage:
@@ -1465,9 +1465,9 @@ class CommandInput(cmd.Cmd):
             "NONE": None,
         }
 
-        non_bondable_mapping = {
-            "BONDABLE": False,  # Note: Reversed on purpose
-            "NON_BONDABLE": True,  # Note: Reversed on purpose
+        bondable_mapping = {
+            "BONDABLE": True,
+            "NON_BONDABLE": False,
             "NONE": None,
         }
 
@@ -1481,14 +1481,14 @@ class CommandInput(cmd.Cmd):
             result = self.test_dut.init_pair(
                 self.unique_mac_addr_id,
                 pairing_security_level_mapping.get(options[0]),
-                non_bondable_mapping.get(options[1]),
+                bondable_mapping.get(options[1]),
                 transport_mapping.get(options[2]),
             )
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
-    def complete_btc_set_io_capabilities(self, text, line, begidx, endidx):
+    def complete_btc_accept_pairing(self, text, line, begidx, endidx):
         """ Provides auto-complete for btc_set_io_capabilities cmd.
 
         See Cmd module for full description.
@@ -1509,9 +1509,9 @@ class CommandInput(cmd.Cmd):
                 completions = [s for s in output_options if s.startswith(text)]
             return completions
 
-    def do_btc_set_io_capabilities(self, line):
+    def do_btc_accept_pairing(self, line):
         """
-        Description: Sets the IO capabilities during pairing
+        Description: Accept all incoming pairing requests.
 
         Input(s):
             input: String - The input I/O capabilities to use
@@ -1526,31 +1526,21 @@ class CommandInput(cmd.Cmd):
 
         Usage:
           Examples:
-            btc_set_io_capabilities NONE DISPLAY
-            btc_set_io_capabilities NONE NONE
-            btc_set_io_capabilities KEYBOARD DISPLAY
-        """
-        cmd = "Send an outgoing pairing request."
-
-        try:
-            options = line.split(" ")
-            result = self.pri_dut.btc_lib.setIOCapabilities(
-                options[0], options[1])
-            self.log.info(result)
-        except Exception as err:
-            self.log.error(FAILURE.format(cmd, err))
-
-    def do_btc_accept_pairing(self, line):
-        """
-        Description: Accept all incoming pairing requests.
-
-        Usage:
-          Examples:
             btc_accept_pairing
+            btc_accept_pairing NONE DISPLAY
+            btc_accept_pairing NONE NONE
+            btc_accept_pairing KEYBOARD DISPLAY
         """
         cmd = "Accept incoming pairing requests"
         try:
-            result = self.pri_dut.btc_lib.acceptPairing()
+            input_capabilities = "NONE"
+            output_capabilities = "NONE"
+            options = line.split(" ")
+            if len(options) > 1:
+                input_capabilities = options[0]
+                output_capabilities = options[1]
+            result = self.pri_dut.bts_lib.acceptPairing(
+                input_capabilities, output_capabilities)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1570,7 +1560,7 @@ class CommandInput(cmd.Cmd):
         try:
             self.log.info("Forgetting device id: {}".format(
                 self.unique_mac_addr_id))
-            result = self.pri_dut.btc_lib.forgetDevice(self.unique_mac_addr_id)
+            result = self.pri_dut.bts_lib.forgetDevice(self.unique_mac_addr_id)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1625,7 +1615,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Change whether the Bluetooth Controller is in active."
         try:
-            result = self.pri_dut.btc_lib.requestDiscovery(
+            result = self.pri_dut.bts_lib.requestDiscovery(
                 self.str_to_bool(discover))
             self.log.info(result)
         except Exception as err:
@@ -1642,7 +1632,7 @@ class CommandInput(cmd.Cmd):
         cmd = "Get a list of known devices."
         self.bt_control_devices = []
         try:
-            device_list = self.pri_dut.btc_lib.getKnownRemoteDevices(
+            device_list = self.pri_dut.bts_lib.getKnownRemoteDevices(
             )['result']
             for id_dict in device_list:
                 device = device_list[id_dict]
@@ -1662,14 +1652,14 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Forget all known devices."
         try:
-            device_list = self.pri_dut.btc_lib.getKnownRemoteDevices(
+            device_list = self.pri_dut.bts_lib.getKnownRemoteDevices(
             )['result']
             for device in device_list:
                 d = device_list[device]
                 if d['bonded'] or d['connected']:
                     self.log.info("Unbonding deivce: {}".format(d))
                     self.log.info(
-                        self.pri_dut.btc_lib.forgetDevice(d['id'])['result'])
+                        self.pri_dut.bts_lib.forgetDevice(d['id'])['result'])
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -1687,7 +1677,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Connect to device under test."
         try:
-            result = self.pri_dut.btc_lib.connectDevice(
+            result = self.pri_dut.bts_lib.connectDevice(
                 self.unique_mac_addr_id)
             self.log.info(result)
         except Exception as err:
@@ -1715,7 +1705,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Connect to device id based on pre-defined inputs."
         try:
-            result = self.pri_dut.btc_lib.connectDevice(device_id)
+            result = self.pri_dut.bts_lib.connectDevice(device_id)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1745,7 +1735,7 @@ class CommandInput(cmd.Cmd):
             for device in self.bt_control_devices:
                 if device_name is device['name']:
 
-                    result = self.pri_dut.btc_lib.connectDevice(device['id'])
+                    result = self.pri_dut.bts_lib.connectDevice(device['id'])
                     self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1764,7 +1754,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Disconnect to device under test."
         try:
-            result = self.pri_dut.btc_lib.disconnectDevice(
+            result = self.pri_dut.bts_lib.disconnectDevice(
                 self.unique_mac_addr_id)
             self.log.info(result)
         except Exception as err:
@@ -1811,7 +1801,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Input pairing pin to the Fuchsia device."
         try:
-            result = self.pri_dut.btc_lib.inputPairingPin(line)['result']
+            result = self.pri_dut.bts_lib.inputPairingPin(line)['result']
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1827,7 +1817,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Get the pairing pin from the Fuchsia device."
         try:
-            result = self.pri_dut.btc_lib.getPairingPin()['result']
+            result = self.pri_dut.bts_lib.getPairingPin()['result']
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))

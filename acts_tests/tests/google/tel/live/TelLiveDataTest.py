@@ -25,115 +25,117 @@ from queue import Empty
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
-from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
-from acts.test_utils.bt.bt_test_utils import disable_bluetooth
-from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
-from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
-from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
-from acts.test_utils.tel.tel_defines import FAKE_DATE_TIME
-from acts.test_utils.tel.tel_defines import FAKE_YEAR
-from acts.test_utils.tel.tel_defines import EventNetworkCallback
-from acts.test_utils.tel.tel_defines import NetworkCallbackCapabilitiesChanged
-from acts.test_utils.tel.tel_defines import NetworkCallbackLost
-from acts.test_utils.tel.tel_defines import GEN_2G
-from acts.test_utils.tel.tel_defines import GEN_3G
-from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts.test_utils.tel.tel_defines import RAT_2G
-from acts.test_utils.tel.tel_defines import RAT_3G
-from acts.test_utils.tel.tel_defines import RAT_4G
-from acts.test_utils.tel.tel_defines import RAT_5G
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
-from acts.test_utils.tel.tel_defines import SIM1_SLOT_INDEX
-from acts.test_utils.tel.tel_defines import SIM2_SLOT_INDEX
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
-from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
-from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
-from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
-from acts.test_utils.tel.tel_defines import \
+from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
+from acts_contrib.test_utils.tel.tel_defines import FAKE_DATE_TIME
+from acts_contrib.test_utils.tel.tel_defines import FAKE_YEAR
+from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
+from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackCapabilitiesChanged
+from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackLost
+from acts_contrib.test_utils.tel.tel_defines import GEN_2G
+from acts_contrib.test_utils.tel.tel_defines import GEN_3G
+from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts_contrib.test_utils.tel.tel_defines import RAT_2G
+from acts_contrib.test_utils.tel.tel_defines import RAT_3G
+from acts_contrib.test_utils.tel.tel_defines import RAT_4G
+from acts_contrib.test_utils.tel.tel_defines import RAT_5G
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
+from acts_contrib.test_utils.tel.tel_defines import SIM1_SLOT_INDEX
+from acts_contrib.test_utils.tel.tel_defines import SIM2_SLOT_INDEX
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
+from acts_contrib.test_utils.tel.tel_defines import \
     WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
-from acts.test_utils.tel.tel_data_utils import airplane_mode_test
-from acts.test_utils.tel.tel_data_utils import browsing_test
-from acts.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
-from acts.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
-from acts.test_utils.tel.tel_data_utils import tethering_check_internet_connection
-from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
-from acts.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
-from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
-from acts.test_utils.tel.tel_test_utils import active_file_download_test
-from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
-from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
+from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
+from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
+from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
+from acts_contrib.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
+from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
+from acts_contrib.test_utils.tel.tel_data_utils import tethering_check_internet_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
+from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
-from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
-from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import reboot_device
-from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
-from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
-from acts.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
-from acts.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
-from acts.test_utils.tel.tel_test_utils import get_current_override_network_type
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
-from acts.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
-from acts.test_utils.tel.tel_test_utils import verify_incall_state
-from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
-from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
+from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import stop_wifi_tethering
+from acts_contrib.test_utils.tel.tel_test_utils import start_wifi_tethering
+from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
+from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
+from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_rat
+from acts_contrib.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import \
     wait_for_data_attach_for_subscription
-from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts.test_utils.tel.tel_test_utils import wifi_reset
-from acts.test_utils.tel.tel_test_utils import wait_for_state
-from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
-from acts.test_utils.tel.tel_test_utils import check_data_stall_detection
-from acts.test_utils.tel.tel_test_utils import check_network_validation_fail
-from acts.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
-from acts.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
-from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
-from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts.test_utils.tel.tel_test_utils import check_data_stall_recovery
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
+from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_detection
+from acts_contrib.test_utils.tel.tel_test_utils import check_network_validation_fail
+from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
+from acts_contrib.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
+from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
+from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_recovery
+from acts_contrib.test_utils.tel.tel_test_utils import \
     test_data_browsing_success_using_sl4a
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import \
     test_data_browsing_failure_using_sl4a
-from acts.test_utils.tel.tel_test_utils import set_time_sync_from_network
-from acts.test_utils.tel.tel_test_utils import datetime_handle
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_4g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_5g
+from acts_contrib.test_utils.tel.tel_test_utils import set_time_sync_from_network
+from acts_contrib.test_utils.tel.tel_test_utils import datetime_handle
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_4g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_5g
 from acts.utils import disable_doze
 from acts.utils import enable_doze
 from acts.utils import rand_ascii_str
@@ -309,6 +311,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         wifi_toggle_state(ad.log, ad, False)
+        set_preferred_mode_for_5g(ad)
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             # APM toggle
@@ -347,6 +350,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         wifi_toggle_state(ad.log, ad, False)
         toggle_airplane_mode(ad.log, ad, False)
+        set_preferred_mode_for_5g(ad)
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             # Reboot phone
@@ -393,8 +397,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                             NETWORK_MODE_WCDMA_ONLY)
             time.sleep(15)
             # Set mode pref to 5G
-            set_preferred_network_mode_pref(ad.log, ad, sub_id,
-                                            NETWORK_MODE_NR_LTE_GSM_WCDMA)
+            set_preferred_mode_for_5g(ad)
             # LTE attach
             if not wait_for_network_generation(
                     ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
@@ -3908,5 +3911,43 @@ class TelLiveDataTest(TelephonyBaseTest):
         wifi_toggle_state(ad.log, ad, False)
         return self._test_sync_time_from_network(ad, data_on=False)
 
+    @test_tracker_info(uuid="2d739779-3beb-4e6e-8396-84f28e626379")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_4g(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to LTE and verify internet connection.")
+        if not phone_setup_4g(self.log, ad):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return reboot_test(self.log, ad)
+
+    @test_tracker_info(uuid="5ce671f7-c2a4-46aa-a9f2-e5571c144fad")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_3g(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to 3G and verify internet connection.")
+        if not phone_setup_3g(self.log, ad):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return reboot_test(self.log, ad)
+
+    @test_tracker_info(uuid="9e094f0e-7bef-479e-a5fa-a6bfa95289a5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_wifi(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to Wi-Fi and verify internet connection.")
+        if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            return False
+        if not wait_for_wifi_data_connection(self.log, ad, True):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return reboot_test(self.log, ad, wifi_ssid=self.wifi_network_ssid)
 
     """ Tests End """

@@ -29,6 +29,9 @@ COMMAND_REMOVE_ALL_NETWORKS = "wlan_policy.remove_all_networks"
 COMMAND_GET_SAVED_NETWORKS = "wlan_policy.get_saved_networks"
 COMMAND_CONNECT = "wlan_policy.connect"
 COMMAND_CREATE_CLIENT_CONTROLLER = "wlan_policy.create_client_controller"
+COMMAND_SET_NEW_LISTENER = "wlan_policy.set_new_update_listener"
+COMMAND_REMOVE_ALL_NETWORKS = "wlan_policy.remove_all_networks"
+COMMAND_GET_UPDATE = "wlan_policy.get_update"
 
 
 def main(argv):
@@ -135,7 +138,8 @@ class FuchsiaWlanPolicyLib(BaseLib):
         return self.send_command(test_id, test_cmd, {})
 
     def wlanGetSavedNetworks(self):
-        """ Gets networks saved on device
+        """ Gets networks saved on device. Any PSK of a saved network will be
+            lower case regardless of how it was saved.
                 Returns:
                     A list of saved network names and security protocols
         """
@@ -153,7 +157,7 @@ class FuchsiaWlanPolicyLib(BaseLib):
                                  saved in order for a successful connection to happen.
                     security_type: the security protocol of the network
 
-                Returns:
+            Returns:
                     boolean indicating if the connection was successful
         """
 
@@ -176,3 +180,41 @@ class FuchsiaWlanPolicyLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, {})
+
+    def wlanSetNewListener(self):
+        """ Sets the update listener stream of the facade to a new stream so that updates will be
+            reset. Intended to be used between tests so that the behaviour of updates in a test is
+            independent from previous tests.
+        """
+        test_cmd = COMMAND_SET_NEW_LISTENER
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
+
+    def wlanRemoveAllNetworks(self):
+        """ Deletes all saved networks on the device. Relies directly on the get_saved_networks and
+            remove_network commands
+        """
+        test_cmd = COMMAND_REMOVE_ALL_NETWORKS
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
+
+    def wlanGetUpdate(self, timeout=30):
+        """ Gets one client listener update. This call will return with an update immediately the
+            first time the update listener is initialized by setting a new listener or by creating
+            a client controller before setting a new listener. Subsequent calls will hang until
+            there is an update.
+            Returns:
+                An update of connection status. If there is no error, the result is a dict with a
+                structure that matches the FIDL ClientStateSummary struct given for updates.
+        """
+        test_cmd = COMMAND_GET_UPDATE
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id,
+                                 test_cmd, {},
+                                 response_timeout=timeout)

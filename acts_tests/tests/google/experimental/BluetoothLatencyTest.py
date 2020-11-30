@@ -21,13 +21,14 @@ import time
 from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.signals import TestPass
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
-from acts.test_utils.bt.bt_test_utils import write_read_verify_data
-from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
-from acts.test_utils.bt.loggers.protos import bluetooth_metric_pb2 as proto_module
+from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.bt_test_utils import verify_server_and_client_connected
+from acts_contrib.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts_contrib.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
+from acts_contrib.test_utils.bt.loggers.protos import bluetooth_metric_pb2 as proto_module
 from acts.utils import set_location_service
 
 
@@ -112,6 +113,7 @@ class BluetoothLatencyTest(BaseTestClass):
         return (end_time - start_time) * 1000
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='7748295d-204e-4ad0-adf5-7591380b940a')
     def test_bluetooth_latency(self):
         """Tests the latency for a data transfer over RFCOMM"""
 

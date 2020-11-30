@@ -20,75 +20,75 @@
 import time
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_atten_utils import set_rssi
-from acts.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
-from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
-from acts.test_utils.tel.tel_defines import GEN_3G
-from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import INVALID_WIFI_RSSI
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
-from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
-from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
-from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
-from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
-from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
-from acts.test_utils.tel.tel_defines import RAT_LTE
-from acts.test_utils.tel.tel_defines import RAT_IWLAN
-from acts.test_utils.tel.tel_defines import RAT_WCDMA
-from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
-from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED
-from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import EventNetworkCallback
-from acts.test_utils.tel.tel_defines import NetworkCallbackAvailable
-from acts.test_utils.tel.tel_defines import NetworkCallbackLost
-from acts.test_utils.tel.tel_defines import SignalStrengthContainer
-from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
-from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts.test_utils.tel.tel_test_utils import get_network_rat
-from acts.test_utils.tel.tel_test_utils import get_phone_number
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import is_network_call_back_event_match
-from acts.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts.test_utils.tel.tel_test_utils import is_phone_not_in_call
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import toggle_volte
-from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts.test_utils.tel.tel_test_utils import wait_for_droid_not_in_call
-from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
-from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
-from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
-from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
-from acts.test_utils.tel.tel_test_utils import wait_for_state
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_idle_not_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_atten_utils import set_rssi
+from acts_contrib.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
+from acts_contrib.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts_contrib.test_utils.tel.tel_defines import GEN_3G
+from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import INVALID_WIFI_RSSI
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts_contrib.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
+from acts_contrib.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
+from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
+from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
+from acts_contrib.test_utils.tel.tel_defines import RAT_LTE
+from acts_contrib.test_utils.tel.tel_defines import RAT_IWLAN
+from acts_contrib.test_utils.tel.tel_defines import RAT_WCDMA
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
+from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
+from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackAvailable
+from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackLost
+from acts_contrib.test_utils.tel.tel_defines import SignalStrengthContainer
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
+from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_test_utils import is_network_call_back_event_match
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_not_in_call
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
+from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_droid_not_in_call
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
+from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_signal_strength
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_not_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte
 
 # Attenuator name
 ATTEN_NAME_FOR_WIFI_2G = 'wifi0'
@@ -3247,6 +3247,45 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self._wfc_phone_setup_cellular_preferred, self._phone_idle_iwlan,
             self._is_phone_in_call_iwlan,
             self._increase_lte_decrease_wifi_rssi_check_phone_hand_out, True)
+
+    def _decrease_then_increase_cellular_rssi_check_phone_hand_out(self):
+        """Private Test utility for hand_out test.
+        Step1
+        Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE 5db per sec
+        PhoneA should still be in call. PhoneA should hand-out to iWLAN.
+        Step2
+        Increase Cellular RSSI to MAX_RSSI_RESERVED_VALUE
+        PhoneA should still be in call. PhoneA should hand-out to LTE.
+        """
+        self._decrease_cellular_rssi_check_phone_hand_out()
+        self._increase_lte_decrease_wifi_rssi_check_phone_hand_out()
+
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lte_iwlan_lte_handoff_cellular_preferred(self):
+        """VoLET to VoWiFi then back to VoLTE In Call Handover Test
+        Step1
+        VoLTE to VoWiFi in call handover
+        PhoneA on LTE, VoLTE enabled, WFC WiFi preferred, WiFi associated.
+        Cellular strong, WiFi signal strong.
+        Call from PhoneA to PhoneB, PhoneA should be on LTE.
+        Attenuate LTE
+        PhoneA should still be in call. PhoneA should handover to iWLAN.
+
+        Step2
+        PhoneA on LTE, VoLTE enabled, WFC Cellular preferred, WiFi associated.
+        Cellular absent, WiFi signal strong.
+        Call from PhoneA to PhoneB, PhoneA should be on iwlan.
+        Attenuate WiFi and Bring up LTE
+        PhoneA should still be in call. PhoneA should handover to LTE.
+        """
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_cellular_preferred, self._phone_idle_volte,
+            self._is_phone_in_call_volte,
+            self._decrease_then_increase_cellular_rssi_check_phone_hand_out, True)
 
     def _decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in(self):
         if not self._decrease_wifi_rssi_check_phone_hand_out():

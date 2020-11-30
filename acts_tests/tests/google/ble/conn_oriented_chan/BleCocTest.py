@@ -24,19 +24,19 @@ import time
 from acts import utils
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
-from acts.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
-from acts.test_utils.bt.bt_constants import default_le_data_length
-from acts.test_utils.bt.bt_constants import l2cap_coc_header_size
-from acts.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
-from acts.test_utils.bt.bt_test_utils import write_read_verify_data
-from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
+from acts_contrib.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
+from acts_contrib.test_utils.bt.bt_constants import default_le_data_length
+from acts_contrib.test_utils.bt.bt_constants import l2cap_coc_header_size
+from acts_contrib.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.bt.bt_test_utils import kill_bluetooth_process
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts_contrib.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts_contrib.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 
 
 class BleCocTest(BluetoothBaseTest):
@@ -49,14 +49,14 @@ class BleCocTest(BluetoothBaseTest):
     def setup_class(self):
         super().setup_class()
         self.client_ad = self.android_devices[0]
-        # The client which is scanning will need location to be enabled in order to
-        # start scan and get scan results.
-        utils.set_location_service(self.client_ad, True)
         self.server_ad = self.android_devices[1]
         # Note that some tests required a third device.
         if len(self.android_devices) > 2:
             self.server2_ad = self.android_devices[2]
 
+        # The client which is scanning will need location to be enabled in order to
+        # start scan and get scan results.
+        utils.set_location_service(self.client_ad, True)
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def teardown_test(self):

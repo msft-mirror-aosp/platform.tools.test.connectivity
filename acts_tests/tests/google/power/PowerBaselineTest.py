@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.power.PowerBaseTest import PowerBaseTest
+from acts_contrib.test_utils.power.PowerBaseTest import PowerBaseTest
 
 
 class PowerBaselineTest(PowerBaseTest):
@@ -37,7 +37,7 @@ class PowerBaselineTest(PowerBaseTest):
         self.dut.droid.goToSleepNow()
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         # Check if power measurement is below the required value
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check(self.avg_current)

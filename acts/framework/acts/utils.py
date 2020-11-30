@@ -24,6 +24,7 @@ import json
 import logging
 import os
 import platform
+import psutil
 import random
 import re
 import signal
@@ -35,6 +36,7 @@ import threading
 import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from zeroconf import IPVersion, Zeroconf
 
 from acts import signals
 from acts.controllers.adb_lib.error import AdbError
@@ -1744,3 +1746,44 @@ def mac_address_list_to_str(mac_addr_list):
             hex_list.append(hex_octet)
 
     return ':'.join(hex_list)
+
+
+def get_fuchsia_mdns_ipv6_address(device_mdns_name):
+    """Gets the ipv6 link local address from a fuchsia device over mdns
+
+    Args:
+        device_mdns_name: name of fuchsia device, ie gig-clone-sugar-slash
+
+    Returns:
+        string, ipv6 link local address
+    """
+    if not device_mdns_name:
+        return None
+    mdns_type = '_fuchsia._udp.local.'
+    interface_list = psutil.net_if_addrs()
+    for interface in interface_list:
+        interface_ipv6_link_local = \
+            get_interface_ip_addresses(job, interface)['ipv6_link_local']
+
+        if interface_ipv6_link_local:
+            zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
+                                interfaces=interface_ipv6_link_local)
+            device_records = (zeroconf.get_service_info(
+                mdns_type, device_mdns_name + '.' + mdns_type))
+            if device_records:
+                for device_ip_address in device_records.parsed_addresses():
+                    device_ip_address = ipaddress.ip_address(device_ip_address)
+                    if (device_ip_address.version == 6
+                            and device_ip_address.is_link_local):
+                        if ping(job,
+                                dest_ip='%s%%%s' %
+                                (str(device_ip_address),
+                                 interface))['exit_status'] == 0:
+                            zeroconf.close()
+                            del zeroconf
+                            return ('%s%%%s' %
+                                    (str(device_ip_address), interface))
+            zeroconf.close()
+            del zeroconf
+    logging.error('Unable to get ip address for %s' % device_mdns_name)
+    return None

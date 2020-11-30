@@ -22,16 +22,16 @@ import time
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import arduino_test_utils as dutils
-from acts.test_utils.net import socket_test_utils as sutils
-from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel import tel_test_utils as tel_utils
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
-from acts.test_utils.wifi import wifi_constants
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.net import arduino_test_utils as dutils
+from acts_contrib.test_utils.net import socket_test_utils as sutils
+from acts_contrib.test_utils.tel import tel_defines
+from acts_contrib.test_utils.tel import tel_test_utils as tel_utils
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
+from acts_contrib.test_utils.wifi import wifi_constants
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 
@@ -52,6 +52,8 @@ class WifiSoftApTest(WifiBaseTest):
             req_param_names=req_params, opt_param_names=opt_param)
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True)
         self.open_network = self.open_network[0]["2g"]
         # Do a simple version of init - mainly just sync the time and enable
         # verbose logging.  This test will fail if the DUT has a sim and cell

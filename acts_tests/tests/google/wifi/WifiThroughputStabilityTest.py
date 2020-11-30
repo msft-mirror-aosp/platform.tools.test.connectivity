@@ -28,10 +28,10 @@ from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
-from acts.test_utils.wifi import ota_chamber
-from acts.test_utils.wifi import wifi_performance_test_utils as wputils
-from acts.test_utils.wifi import wifi_retail_ap as retail_ap
-from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi import ota_chamber
+from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from functools import partial
 
 TEST_TIMEOUT = 10

@@ -21,10 +21,10 @@ import time
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi import wifi_constants
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.test_utils.wifi.aware import aware_test_utils as autils
+from acts_contrib.test_utils.wifi import wifi_constants
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
 
 class WifiDppTest(WifiBaseTest):
   """This class tests the DPP API surface.
@@ -261,9 +261,10 @@ class WifiDppTest(WifiBaseTest):
     if "FAIL" in result:
       asserts.fail("gen_uri: Failed to generate a URI. Command used: %s" % cmd)
 
-    if not result.index("\n"):
-      asserts.fail("gen_uri: Helper device not responding correctly, may need to restart it."
-                   " Command used: %s" % cmd)
+    if "\n" not in result:
+      asserts.fail(
+          "gen_uri: Helper device not responding correctly, "
+          "may need to restart it. Command used: %s" % cmd)
 
     result = result[result.index("\n") + 1:]
     device.log.info("Generated URI, id = %s" % result)

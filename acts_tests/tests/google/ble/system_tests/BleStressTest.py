@@ -23,20 +23,21 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import BtTestUtilsError
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
-from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_constants import scan_result
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import BtTestUtilsError
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts_contrib.test_utils.bt.bt_test_utils import get_advanced_droid_list
+from acts_contrib.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_constants import scan_result
 
 
 class BleStressTest(BluetoothBaseTest):
     default_timeout = 10
     PAIRING_TIMEOUT = 20
+    droid_list = []
 
     def setup_class(self):
         super().setup_class()
@@ -45,7 +46,7 @@ class BleStressTest(BluetoothBaseTest):
         self.adv_ad = self.android_devices[1]
 
     def teardown_test(self):
-        super(BluetoothBaseTest, self).teardown_test()
+        super().teardown_test()
         self.log_stats()
 
     def bleadvertise_verify_onsuccess_handler(self, event):

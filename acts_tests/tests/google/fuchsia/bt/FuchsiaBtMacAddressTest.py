@@ -26,7 +26,7 @@ import time
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.bt_test_utils import generate_id_by_size
+from acts_contrib.test_utils.bt.bt_test_utils import generate_id_by_size
 
 
 class FuchsiaBtMacAddressTest(BaseTestClass):
@@ -38,7 +38,7 @@ class FuchsiaBtMacAddressTest(BaseTestClass):
         if len(self.fuchsia_devices) < 2:
             raise signals.TestAbortAll("Need at least two Fuchsia devices")
         for device in self.fuchsia_devices:
-            device.btc_lib.initBluetoothControl()
+            device.bts_lib.initBluetoothSys()
 
     # TODO: add @test_tracker_info(uuid='')
     def test_verify_different_mac_addresses(self):
@@ -60,7 +60,7 @@ class FuchsiaBtMacAddressTest(BaseTestClass):
         mac_addr_list = []
         for device in self.fuchsia_devices:
             mac_addr_list.append(
-                device.btc_lib.getActiveAdapterAddress().get("result"))
+                device.bts_lib.getActiveAdapterAddress().get("result"))
         if len(mac_addr_list) != len(set(mac_addr_list)):
             raise signals.TestFailure(
                 "Found duplicate mac addresses {}.".format(mac_addr_list))

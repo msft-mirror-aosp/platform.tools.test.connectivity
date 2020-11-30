@@ -26,13 +26,13 @@ import time
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.fuchsia import utils
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import associate
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.fuchsia import utils
+from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.utils import rand_ascii_str
 
 
@@ -61,7 +61,7 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
 
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
-        self.access_point.stop_all_aps()
+        self.ap.stop_all_aps()
 
     def start_ap(self, profile, channel, security=None):
         """Starts an Access Point

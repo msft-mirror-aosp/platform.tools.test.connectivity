@@ -26,9 +26,9 @@ from acts.controllers import iperf_server
 from acts.controllers import iperf_client
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts_contrib.test_utils.abstract_devices.utils_lib import wlan_utils
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 
 ANDROID_DEFAULT_WLAN_INTERFACE = 'wlan0'
 CONNECTIVITY_MODE_LOCAL = 'local_only'
@@ -658,9 +658,14 @@ class SoftApTest(BaseTestClass):
             return self.client_is_connected_to_soft_ap(client)
         else:
             with utils.SuppressLogOutput():
-                return not self.client_is_connected_to_soft_ap(
+                try:
+                    return not self.client_is_connected_to_soft_ap(
                     client,
                     wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
+                # Allow a failed to find ap interface error
+                except LookupError as err:
+                    self.log.debug('Hit expected LookupError: %s' % err)
+                    return True
 
     def verify_client_mode_connectivity_from_state(self, state, channel):
         """Verifies client mode state based on DUT-AP connection.
@@ -673,9 +678,14 @@ class SoftApTest(BaseTestClass):
             return self.dut_is_connected_as_client(channel)
         else:
             with utils.SuppressLogOutput():
-                return not self.dut_is_connected_as_client(
+                try:
+                    return not self.dut_is_connected_as_client(
                     channel,
                     wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
+                # Allow a failed to find client interface error
+                except LookupError as err:
+                    self.log.debug('Hit expected LookupError: %s' % err)
+                    return True
 
 # Test Types
 

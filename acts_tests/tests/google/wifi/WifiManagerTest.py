@@ -21,14 +21,14 @@ import time
 
 import acts.base_test
 import acts.signals as signals
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts.test_utils.bt.bt_test_utils import disable_bluetooth
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
@@ -70,6 +70,10 @@ class WifiManagerTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(wpa_network=True, wep_network=True)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                wep_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,

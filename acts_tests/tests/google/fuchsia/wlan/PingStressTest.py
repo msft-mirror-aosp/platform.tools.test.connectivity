@@ -25,10 +25,10 @@ import uuid
 
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts.test_utils.fuchsia import utils
+from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts_contrib.test_utils.fuchsia import utils
 from acts.utils import rand_ascii_str
 
 
@@ -68,6 +68,7 @@ class PingStressTest(BaseTestClass):
                   interval=1000,
                   timeout=1000,
                   size=25):
+        self.log.info('Attempting to ping %s...' % dest_ip)
         ping_result = self.wlan_device.can_ping(dest_ip, count, interval,
                                                 timeout, size)
         if ping_result:
@@ -81,6 +82,7 @@ class PingStressTest(BaseTestClass):
         return True
 
     def ping_thread(self, dest_ip):
+        self.log.info('Attempting to ping %s...' % dest_ip)
         ping_result = self.wlan_device.can_ping(dest_ip, count=10, size=50)
         if ping_result:
             self.log.info('Success pinging: %s' % dest_ip)

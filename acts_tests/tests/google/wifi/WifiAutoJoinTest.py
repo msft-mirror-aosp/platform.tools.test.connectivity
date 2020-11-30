@@ -18,8 +18,8 @@ import time
 
 from acts import asserts
 from acts import base_test
-from acts.test_utils.wifi import wifi_constants
-from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi import wifi_constants
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
 NETWORK_ID_ERROR = "Network don't have ID"

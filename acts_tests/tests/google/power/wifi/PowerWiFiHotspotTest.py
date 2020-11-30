@@ -16,12 +16,12 @@
 
 import time
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.power import PowerWiFiBaseTest as PWBT
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
-from acts.test_utils.power.IperfHelper import IperfHelper
+from acts_contrib.test_utils.power import PowerWiFiBaseTest as PWBT
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi import wifi_power_test_utils as wputils
+from acts_contrib.test_utils.power.IperfHelper import IperfHelper
 
 
 class PowerWiFiHotspotTest(PWBT.PowerWiFiBaseTest):
@@ -158,7 +158,7 @@ class PowerWiFiHotspotTest(PWBT.PowerWiFiBaseTest):
         time.sleep(2)
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         if traffic:
             # Wait for iperf to finish
@@ -168,7 +168,7 @@ class PowerWiFiHotspotTest(PWBT.PowerWiFiBaseTest):
             self.client_iperf_helper.process_iperf_results(
                 self.dut, self.log, self.iperf_servers, self.test_name)
 
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check(self.avg_current)
 
     def power_idle_tethering_test(self):
         """ Start power test when Hotspot is idle

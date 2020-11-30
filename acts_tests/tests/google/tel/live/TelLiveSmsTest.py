@@ -20,57 +20,59 @@
 import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import GEN_3G
-from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
-from acts.test_utils.tel.tel_defines import RAT_3G
-from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
-from acts.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
-from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
-from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import setup_sim
-from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import GEN_3G
+from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
+from acts_contrib.test_utils.tel.tel_defines import RAT_3G
+from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
+from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import setup_sim
+from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import \
     sms_in_collision_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import \
     sms_rx_power_off_multiple_send_receive_verify
-from acts.test_utils.tel.tel_video_utils import phone_setup_video
-from acts.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
-from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_setup_data_general
-from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_video_utils import phone_setup_video
+from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
+from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_data_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan_cellular_preferred
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.utils import rand_ascii_str
 
 SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
@@ -2765,6 +2767,142 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
+    @test_tracker_info(uuid="68366dd1-d544-43ff-9023-c300b8a19bdd")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_mt_iwlan_apm_off_5g_nsa(self):
+        """ Test MO SMS, Phone in APM off, WiFi connected, WFC WiFi Preferred mode.
+
+        Turn off APM always
+        Set PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B APM off, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA/B report iwlan as data rat.
+        Make sure PhoneA/B is able to make/receive call/sms.
+        Send SMS on PhoneA.
+        Make sure PhoneA/B are operated at 5G NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        # Turn off airplane mode
+        self.log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                 (toggle_airplane_mode, (self.log, ads[1], False))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to turn off airplane mode")
+            return False
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before sending SMS.")
+            return False
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not self._sms_test_mo(ads):
+            self.log.error("Failed to send receive SMS over 5G NSA.")
+            return False
+
+        self.log.info("PASS - iwlan SMS test over 5G NSA validated")
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after sending SMS.")
+            return False
+
+        return True
+
+    @test_tracker_info(uuid="ab393c17-f1b0-47db-84c3-69a0ebdc9fba")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_mt_iwlan_apm_off_5g_nsa(self):
+        """ Test MO MMS, Phone in APM off, WiFi connected, WFC WiFi Preferred mode.
+
+        Turn off APM always
+        Set PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B APM off, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA/B report iwlan as data rat.
+        Make sure PhoneA/B is able to make/receive call/mms.
+        Send MMS on PhoneA.
+        Make sure PhoneA/B are operated at 5G NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        # Turn off airplane mode
+        self.log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                 (toggle_airplane_mode, (self.log, ads[1], False))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to turn off airplane mode")
+            return False
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before sending MMS.")
+            return False
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not self._mms_test_mo(ads):
+            self.log.error("Failed to send receive MMS over 5G NSA.")
+            return False
+
+        self.log.info("PASS - iwlan MMS test over 5G NSA validated")
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA after sending MMS.")
+            return False
+
+        return True
+
     @test_tracker_info(uuid="075933a2-df7f-4374-a405-92f96bcc7770")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_apm_wifi_wfc_off(self):
@@ -2876,6 +3014,136 @@ class TelLiveSmsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
+
+    @test_tracker_info(uuid="27db81bc-10bc-4c75-ad9e-60f746ee148b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_mt_in_call_iwlan_5g_nsa(self):
+        """ Test MO SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+
+        Turn off APM always
+        Set PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B APM, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA/B report iwlan as data rat.
+        Make sure PhoneA/B is able to make/receive call/sms.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Send SMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        # Turn off airplane mode
+        self.log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                 (toggle_airplane_mode, (self.log, ads[1], False))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to turn off airplane mode")
+            return False
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before sending SMS.")
+            return False
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call SMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
+            return False
+
+        return self._sms_test_mo(ads)
+
+    @test_tracker_info(uuid="36ce7bd8-f7b7-4c8e-a1a1-bcf8346a1b8e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_mt_in_call_iwlan_5g_nsa(self):
+        """ Test MO MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+
+        Turn off APM always
+        Set PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B are operated at 5G NSA
+        Make sure PhoneA/B APM, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA/B report iwlan as data rat.
+        Make sure PhoneA/B is able to make/receive call/sms.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Send MMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        # Turn off airplane mode
+        self.log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                 (toggle_airplane_mode, (self.log, ads[1], False))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to turn off airplane mode")
+            return False
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not attached on 5G NSA before sending MMS.")
+            return False
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call MMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
+            return False
+
+        return self._sms_test_mo(ads)
 
     @test_tracker_info(uuid="e5a31b94-1cb6-4770-a2bc-5a0ddba51502")
     @TelephonyBaseTest.tel_test_wrap
@@ -3061,7 +3329,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
@@ -3099,7 +3367,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
@@ -3137,7 +3405,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 
@@ -3175,7 +3443,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
+                verify_caller_func=is_phone_in_call_not_iwlan,
                 verify_callee_func=None):
             return False
 

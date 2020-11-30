@@ -20,9 +20,9 @@ from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.ota import ota_updater
 import acts.signals as signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-import acts.test_utils.wifi.wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.utils as utils
 
 WifiEnums = wutils.WifiEnums
@@ -268,12 +268,14 @@ class WifiAutoUpdateTest(WifiBaseTest):
     ### Tests
 
     @test_tracker_info(uuid="9ff1f01e-e5ff-408b-9a95-29e87a2df2d8")
+    @WifiBaseTest.wifi_test_wrap
     def test_check_wifi_state_after_au(self):
         """Check if the state of WiFi is enabled after Auto-update."""
         if not self.dut.droid.wifiCheckState():
             raise signals.TestFailure("WiFi is disabled after Auto-update!!!")
 
     @test_tracker_info(uuid="e3ebdbba-71dd-4281-aef8-5b3d42b88770")
+    @WifiBaseTest.wifi_test_wrap
     def test_verify_networks_after_au(self):
         """Check if the previously added networks are intact.
 
@@ -284,6 +286,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
         self.check_networks_after_autoupdate(self.wifi_config_list)
 
     @test_tracker_info(uuid="799e83c2-305d-4510-921e-dac3c0dbb6c5")
+    @WifiBaseTest.wifi_test_wrap
     def test_configstore_after_au(self):
         """Verify DUT automatically connects to wifi networks after ota.
 
@@ -317,6 +320,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
             wutils.wifi_forget_network(self.dut, network[SSID])
 
     @test_tracker_info(uuid="e26d0ed9-9457-4a95-a962-4d43b0032bac")
+    @WifiBaseTest.wifi_test_wrap
     def test_mac_randomization_after_au(self):
         """Verify randomized MAC addrs are persistent after ota.
 
@@ -331,6 +335,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
                 (ssid, mac, self.pre_random_mac[ssid]))
 
     @test_tracker_info(uuid="f68a65e6-97b7-4746-bad8-4c206551d87e")
+    @WifiBaseTest.wifi_test_wrap
     def test_wifi_hotspot_5g_psk_after_au(self):
         """Verify hotspot after ota upgrade.
 
@@ -341,6 +346,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
         self.verify_wifi_hotspot()
 
     @test_tracker_info(uuid="21f91372-88a6-44b9-a4e8-d4664823dffb")
+    @WifiBaseTest.wifi_test_wrap
     def test_connect_to_network_suggestion_after_au(self):
         """Verify connection to network suggestion after ota.
 
@@ -350,12 +356,14 @@ class WifiAutoUpdateTest(WifiBaseTest):
                3. Remove the suggestions and ensure the device does not
                   connect back.
         """
+        wutils.reset_wifi(self.dut)
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
         wutils.wait_for_connect(self.dut, self.network_suggestions[0][SSID])
         self.remove_suggestions_and_ensure_no_connection(
             self.network_suggestions, self.network_suggestions[0][SSID])
 
     @test_tracker_info(uuid="b8e47a4f-62fe-4a0e-b999-27ae1ebf4d19")
+    @WifiBaseTest.wifi_test_wrap
     def test_connection_to_new_networks(self):
         """Check if we can connect to new networks after Auto-update.
 
@@ -371,6 +379,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
             wutils.wifi_forget_network(self.dut, network[SSID])
 
     @test_tracker_info(uuid="1d8309e4-d5a2-4f48-ba3b-895a58c9bf3a")
+    @WifiBaseTest.wifi_test_wrap
     def test_all_networks_connectable_after_au(self):
         """Check if previously added networks are connectable.
 
@@ -388,6 +397,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
         wutils.wifi_forget_network(self.dut, network[SSID])
 
     @test_tracker_info(uuid="05671859-38b1-4dbf-930c-18048971d075")
+    @WifiBaseTest.wifi_test_wrap
     def test_check_wifi_toggling_after_au(self):
         """Check if WiFi can be toggled ON/OFF after auto-update."""
         self.log.debug("Going from on to off.")
@@ -396,6 +406,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, True)
 
     @test_tracker_info(uuid="440edf32-4b00-42b0-9811-9f2bc4a83efb")
+    @WifiBaseTest.wifi_test_wrap
     def test_reset_wifi_after_au(self):
         """"Check if WiFi can be reset after auto-update."""
         wutils.reset_wifi(self.dut)

@@ -18,8 +18,8 @@ import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-import acts.test_utils.wifi.wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
 NUM_LINK_PROBES = 8
@@ -47,7 +47,8 @@ class WifiLinkProbeTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
-        self.configure_packet_capture()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True)
 
         asserts.assert_true(len(self.reference_networks) > 0,
                             "Need at least one reference network with psk.")

@@ -19,10 +19,10 @@ import time
 from acts import utils
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.power import PowerWiFiBaseTest as PWBT
-from acts.test_utils.wifi import wifi_constants as wc
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.power import plot_utils
+from acts_contrib.test_utils.power import PowerWiFiBaseTest as PWBT
+from acts_contrib.test_utils.wifi import wifi_constants as wc
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.power import plot_utils
 
 PHONE_BATTERY_VOLTAGE = 4.2
 
@@ -89,21 +89,27 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
-            results.append(self.monsoon_data_collect_save())
+            results.append(self.power_monitor_data_collect_save())
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
-            results.append(self.monsoon_data_collect_save())
-        plot_utils.monsoon_data_plot(self.mon_info, results)
+            results.append(self.power_monitor_data_collect_save())
 
-        total_current = 0
-        total_samples = 0
+        # Join all results in a single list
+        joint_result = []
         for result in results:
-            total_current += result.average_current * result.num_samples
-            total_samples += result.num_samples
-        average_current = total_current / total_samples
+            joint_result.extend(result)
+
+        plot_title = '{}_{}_{}'.format(self.test_name, self.dut.model,
+                                       self.dut.build_info['build_id'])
+        plot_utils.current_waveform_plot(joint_result, self.mon_voltage,
+                                         self.mon_info.data_path, plot_title)
+
+        average_current = sum([sample[1] * 1000
+                               for sample in joint_result]) / len(joint_result)
 
         self.power_result.metric_value = [
-            result.total_power for result in results
+            sum([sample[1] for sample in result]) / len(result)
+            for result in results
         ]
         # Take Bugreport
         if self.bug_report:
@@ -136,21 +142,26 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
-            results.append(self.monsoon_data_collect_save())
+            results.append(self.power_monitor_data_collect_save())
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
-            results.append(self.monsoon_data_collect_save())
-        plot_utils.monsoon_data_plot(self.mon_info, results)
-
-        total_current = 0
-        total_samples = 0
+            results.append(self.power_monitor_data_collect_save())
+        # Join all results in a single list
+        joint_result = []
         for result in results:
-            total_current += result.average_current * result.num_samples
-            total_samples += result.num_samples
-        average_current = total_current / total_samples
+            joint_result.extend(result)
+
+        plot_title = '{}_{}_{}'.format(self.test_name, self.dut.model,
+                                       self.dut.build_info['build_id'])
+        plot_utils.current_waveform_plot(joint_result, self.mon_voltage,
+                                         self.mon_info.data_path, plot_title)
+
+        average_current = sum([sample[1] * 1000
+                               for sample in joint_result]) / len(joint_result)
 
         self.power_result.metric_value = [
-            result.total_power for result in results
+            sum([sample[1] for sample in result]) / len(result)
+            for result in results
         ]
         # Take Bugreport
         if self.bug_report:
