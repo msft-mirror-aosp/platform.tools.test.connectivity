@@ -57,7 +57,7 @@ class PingStressTest(BaseTestClass):
                                ssid=self.ssid,
                                setup_bridge=True)
 
-    def teardown_test(self):
+    def teardown_class(self):
         self.wlan_device.disconnect()
         self.wlan_device.reset_wifi()
         self.ap.stop_all_aps()
