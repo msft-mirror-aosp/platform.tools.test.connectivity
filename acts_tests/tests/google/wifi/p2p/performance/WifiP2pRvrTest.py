@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import itertools
 import logging
 import os
 import re
@@ -31,6 +32,7 @@ from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 from acts_contrib.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
+from functools import partial
 from WifiRvrTest import WifiRvrTest
 
 AccessPointTuple = collections.namedtuple(('AccessPointTuple'),
@@ -109,8 +111,7 @@ class WifiP2pRvrTest(WifiRvrTest):
         wutils.reset_wifi(ad)
         utils.sync_device_time(ad)
         ad.droid.telephonyToggleDataConnection(False)
-        country_code = self.testclass_params.get('country_code', 'US')
-        wutils.set_wifi_country_code(ad, country_code)
+        wutils.set_wifi_country_code(ad, self.country_code)
         ad.droid.wifiP2pInitialize()
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         asserts.assert_true(
@@ -168,6 +169,7 @@ class WifiP2pRvrTest(WifiRvrTest):
                 asserts.skip('Overheating or Battery low. Skipping test.')
             ad.go_to_sleep()
             wutils.reset_wifi(ad)
+            wutils.set_wifi_country_code(ad, self.country_code)
         # Turn BT on or off
         bt_status = self.testclass_params.get('bluetooth_enabled', 1)
         self.log.info('Setting Bluetooth status to {}.'.format(bt_status))
@@ -354,8 +356,8 @@ class WifiP2pRvrTest(WifiRvrTest):
 
         # Compile AP and infrastructure connection parameters
         ap_networks = []
-        if testcase_params['dut_connected'][0]:
-            band = testcase_params['dut_connected'][0].split('_')[0]
+        if testcase_params['concurrency_state'][0]:
+            band = testcase_params['concurrency_state'][0].split('_')[0]
             ap_networks.append({
                 'ap_id':
                 0,
@@ -368,14 +370,14 @@ class WifiP2pRvrTest(WifiRvrTest):
                 'connected_dut': [0]
             })
 
-        if testcase_params['dut_connected'][1]:
-            if testcase_params['dut_connected'][0] == testcase_params[
-                    'dut_connected'][1]:
+        if testcase_params['concurrency_state'][1]:
+            if testcase_params['concurrency_state'][0] == testcase_params[
+                    'concurrency_state'][1]:
                 # if connected to same network, add it to the above
                 ap_networks[0]['connected_dut'].append(1)
             else:
-                band = testcase_params['dut_connected'][1].split('_')[0]
-                if not testcase_params['dut_connected'][0]:
+                band = testcase_params['concurrency_state'][1].split('_')[0]
+                if not testcase_params['concurrency_state'][0]:
                     # if it is the only dut connected, assign it to ap 0
                     ap_id = 0
                 elif band == ap_networks[0]['band']:
@@ -418,360 +420,82 @@ class WifiP2pRvrTest(WifiRvrTest):
         self.process_test_results(rvr_result)
         self.pass_fail_check(rvr_result)
 
+    def generate_test_cases(self, concurrency_list, traffic_type,
+                            traffic_directions):
+        """Function that auto-generates test cases for a test class."""
+        test_cases = []
 
-class WifiP2pRvr_TCP_Test(WifiP2pRvrTest):
-    #Test cases
-    def test_p2p_rvr_TCP_DL_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
+        for concurrency_state, traffic_direction in itertools.product(
+                concurrency_list, traffic_directions):
+            connection_string = '_'.join([str(x) for x in concurrency_state
+                                          ]).replace('False', 'disconnected')
+            test_name = 'test_p2p_rvr_{}_{}_{}'.format(traffic_type,
+                                                       traffic_direction,
+                                                       connection_string)
+            test_params = collections.OrderedDict(
+                traffic_type=traffic_type,
+                traffic_direction=traffic_direction,
+                concurrency_state=concurrency_state)
+            setattr(self, test_name, partial(self._test_p2p_rvr, test_params))
+            test_cases.append(test_name)
+        return test_cases
+
+
+class WifiP2pRvr_FCC_TCP_Test(WifiP2pRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            [False, '2G_1'], [False, '5G_1'], ['2G_1', '2G_1'],
+                            ['5G_1', '5G_1'], ['2G_1',
+                                               '5G_1'], ['5G_1', '2G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'US'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
             traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=[False, False],
-        )
-        self._test_p2p_rvr(testcase_params)
+            traffic_directions=['DL', 'UL'])
 
-    def test_p2p_rvr_TCP_DL_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
+
+class WifiP2pRvr_FCC_UDP_Test(WifiP2pRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            [False, '2G_1'], [False, '5G_1'], ['2G_1', '2G_1'],
+                            ['5G_1', '5G_1'], ['2G_1',
+                                               '5G_1'], ['5G_1', '2G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'US'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
+            traffic_type='UDP',
+            traffic_directions=['DL', 'UL'])
+
+
+class WifiP2pRvr_ETSI_TCP_Test(WifiP2pRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            [False, '2G_1'], [False, '5G_1'], ['2G_1', '2G_1'],
+                            ['5G_1', '5G_1'], ['2G_1',
+                                               '5G_1'], ['5G_1', '2G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'GB'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
             traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_disconnected_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=[False, '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_disconnected_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=[False, '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_5G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', '2G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_DL_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', '5G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=[False, False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_disconnected_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=[False, '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_disconnected_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=[False, '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_5G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', '2G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_TCP_UL_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', '5G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
+            traffic_directions=['DL', 'UL'])
 
 
-class WifiP2pRvr_UDP_Test(WifiP2pRvrTest):
-    #Test cases
-    def test_p2p_rvr_UDP_DL_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
+class WifiP2pRvr_ETSI_UDP_Test(WifiP2pRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            [False, '2G_1'], [False, '5G_1'], ['2G_1', '2G_1'],
+                            ['5G_1', '5G_1'], ['2G_1',
+                                               '5G_1'], ['5G_1', '2G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'GB'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
             traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=[False, False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_disconnected_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=[False, '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_disconnected_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=[False, '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_5G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['2G_1', '2G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_DL_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            dut_connected=['5G_1', '5G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=[False, False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', False],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_disconnected_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=[False, '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_disconnected_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=[False, '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', '5G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_5G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', '2G_1'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['2G_1', '2G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
-
-    def test_p2p_rvr_UDP_UL_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            dut_connected=['5G_1', '5G_2'],
-        )
-        self._test_p2p_rvr(testcase_params)
+            traffic_directions=['DL', 'UL'])
