@@ -819,10 +819,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.result_info["Internet Connection Check Success"] += 1
 
         self.result_info["File Download Total"] += 1
+        self.result_info["Data Download Total"] += int(file_name[:2])
         if not active_file_download_test(
                 self.log, self.dut, file_name,
                 method=self.file_download_method):
             self.result_info["File Download Failure"] += 1
+            self.result_info["Data Failure Total"] += int(file_name[:2])
             if self.result_info["File Download Failure"] == 1:
                 try:
                     self._ad_take_extra_logs(
@@ -836,6 +838,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             return False
         else:
             self.result_info["File Download Success"] += 1
+            self.result_info["Data Success Total"] += int(file_name[:2])
             return True
 
     def data_test(self):
