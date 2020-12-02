@@ -294,8 +294,8 @@ class WifiAwareRvrTest(WifiRvrTest):
 
         # Compile AP and infrastructure connection parameters
         ap_networks = []
-        if testcase_params['dut_connected'][0]:
-            band = testcase_params['dut_connected'][0].split('_')[0]
+        if testcase_params['concurrency_state'][0]:
+            band = testcase_params['concurrency_state'][0].split('_')[0]
             ap_networks.append({
                 'ap_id':
                 0,
@@ -308,14 +308,14 @@ class WifiAwareRvrTest(WifiRvrTest):
                 'connected_dut': [0]
             })
 
-        if testcase_params['dut_connected'][1]:
-            if testcase_params['dut_connected'][0] == testcase_params[
-                    'dut_connected'][1]:
+        if testcase_params['concurrency_state'][1]:
+            if testcase_params['concurrency_state'][0] == testcase_params[
+                    'concurrency_state'][1]:
                 # if connected to same network, add it to the above
                 ap_networks[0]['connected_dut'].append(1)
             else:
-                band = testcase_params['dut_connected'][1].split('_')[0]
-                if not testcase_params['dut_connected'][0]:
+                band = testcase_params['concurrency_state'][1].split('_')[0]
+                if not testcase_params['concurrency_state'][0]:
                     # if it is the only dut connected, assign it to ap 0
                     ap_id = 0
                 elif band == ap_networks[0]['band']:
