@@ -239,13 +239,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             ad.log.error("Failed to set network mode to NSA")
             return False
         ad.log.info("Set network mode to NSA successfully")
-        ad.log.info("Waiting for 5g NSA attach for 60 secs")
+        ad.log.info("Waiting for nsa5g NSA attach for 60 secs")
         if is_current_network_5g_nsa(ad, timeout=60):
-            ad.log.info("Success! attached on 5g NSA")
+            ad.log.info("Success! attached on nsa5g NSA")
         else:
             ad.log.error("Failure - expected NR_NSA, current %s",
                          get_current_override_network_type(ad))
-            # Can't attach 5g NSA, exit test!
+            # Can't attach nsa5g NSA, exit test!
             return False
         for iteration in range(3):
             connectivity = False
@@ -293,125 +293,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ad.log.info("Data Browsing test FAIL for all 3 iterations")
         wifi_toggle_state(ad.log, ad, False)
-        return False
-
-
-    @test_tracker_info(uuid="769efc9b-d9a3-4b96-b830-351435895b62")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_activation_from_apm(self):
-        """ Verifies 5G NSA activation from Airplane Mode
-
-        Toggle Airplane mode on and off
-        Ensure phone attach, data on, LTE attach
-        Wait for 120 secs for ENDC attach
-        Verify is data network type is NR_NSA
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ad = self.android_devices[0]
-        wifi_toggle_state(ad.log, ad, False)
-        set_preferred_mode_for_5g(ad)
-        for iteration in range(3):
-            ad.log.info("Attempt %d", iteration + 1)
-            # APM toggle
-            toggle_airplane_mode(ad.log, ad, True)
-            toggle_airplane_mode(ad.log, ad, False)
-            # LTE attach
-            if not wait_for_network_generation(
-                    ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
-                ad.log.error("Fail to ensure initial data in 4G")
-            # 5G attach
-            ad.log.info("Waiting for 5g NSA attach for 60 secs")
-            if is_current_network_5g_nsa(ad, timeout=60):
-                ad.log.info("Success! attached on 5g NSA")
-                return True
-            else:
-                ad.log.error("Failure - expected NR_NSA, current %s",
-                             get_current_override_network_type(ad))
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ad.log.info("5g attach test FAIL for all 3 iterations")
-        return False
-
-
-    @test_tracker_info(uuid="0c2a407a-6d8f-4c94-9a9d-b16e5f884b0b")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_activation_from_reboot(self):
-        """ Verifies 5G NSA activation from Reboot
-
-        Reboot device
-        Ensure phone attach, data on, LTE attach
-        Wait for 120 secs for ENDC attach
-        Verify is data network type is NR_NSA
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ad = self.android_devices[0]
-        wifi_toggle_state(ad.log, ad, False)
-        toggle_airplane_mode(ad.log, ad, False)
-        set_preferred_mode_for_5g(ad)
-        for iteration in range(3):
-            ad.log.info("Attempt %d", iteration + 1)
-            # Reboot phone
-            reboot_device(ad)
-            # LTE attach
-            if not wait_for_network_generation(
-                    ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
-                ad.log.error("Fail to ensure initial data in 4G")
-            # 5G attach
-            ad.log.info("Waiting for 5g NSA attach for 60 secs")
-            if is_current_network_5g_nsa(ad, timeout=60):
-                ad.log.info("Success! attached on 5g NSA")
-                return True
-            else:
-                ad.log.error("Failure - expected NR_NSA, current %s",
-                             get_current_override_network_type(ad))
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ad.log.info("5g reboot test FAIL for all 3 iterations")
-        return False
-
-
-    @test_tracker_info(uuid="09893a9f-72eb-4718-aaf0-772155b7b104")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_activation_from_3g_mode(self):
-        """ Verifies 5G NSA activation from 3G Mode Pref
-
-        Change Mode to 3G and wait for 15 secs
-        Change Mode back to 5G
-        Ensure phone attach, data on, LTE attach
-        Wait for 120 secs for ENDC attach
-        Verify is data network type is NR_NSA
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ad = self.android_devices[0]
-        sub_id = ad.droid.subscriptionGetDefaultSubId()
-        wifi_toggle_state(ad.log, ad, False)
-        toggle_airplane_mode(ad.log, ad, False)
-        for iteration in range(3):
-            ad.log.info("Attempt %d", iteration + 1)
-            # Set mode pref to 3G
-            set_preferred_network_mode_pref(ad.log, ad, sub_id,
-                                            NETWORK_MODE_WCDMA_ONLY)
-            time.sleep(15)
-            # Set mode pref to 5G
-            set_preferred_mode_for_5g(ad)
-            # LTE attach
-            if not wait_for_network_generation(
-                    ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
-                ad.log.error("Fail to ensure initial data in 4G")
-            # 5G attach
-            ad.log.info("Waiting for 5g NSA attach for 60 secs")
-            if is_current_network_5g_nsa(ad, timeout=60):
-                ad.log.info("Success! attached on 5g NSA")
-                return True
-            else:
-                ad.log.error("Failure - expected NR_NSA, current %s",
-                             get_current_override_network_type(ad))
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ad.log.info("5g mode pref from 3G test FAIL for all 3 iterations")
         return False
 
 
@@ -1182,7 +1063,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ensure_phones_idle(self.log, self.android_devices)
         wifi_toggle_state(self.log, self.provider, False)
         if network_generation == RAT_5G:
-            # Attach 5g
+            # Attach nsa5g
             set_preferred_mode_for_5g(self.provider)
             if not is_current_network_5g_nsa(self.provider):
                 self.provider.log.error("Provider not attached on 5G NSA")
