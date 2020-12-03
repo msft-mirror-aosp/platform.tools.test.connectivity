@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import itertools
 import json
 import logging
 import os
@@ -31,6 +32,7 @@ from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi.aware import aware_const as aconsts
 from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
+from functools import partial
 from WifiRvrTest import WifiRvrTest
 
 AccessPointTuple = collections.namedtuple(('AccessPointTuple'),
@@ -66,10 +68,7 @@ class WifiAwareRvrTest(WifiRvrTest):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
-        req_params = [
-            'aware_rvr_test_params', 'testbed_params',
-            'aware_default_power_mode', 'dbs_supported_models'
-        ]
+        req_params = ['aware_rvr_test_params', 'testbed_params']
         opt_params = ['RetailAccessPoints', 'ap_networks', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         if hasattr(self, 'RetailAccessPoints'):
@@ -183,8 +182,8 @@ class WifiAwareRvrTest(WifiRvrTest):
             ad.aware_capabilities = autils.get_aware_capabilities(ad)
             autils.reset_device_parameters(ad)
             autils.reset_device_statistics(ad)
-            autils.set_power_mode_parameters(ad, testcase_params['power_mode'])
-            wutils.set_wifi_country_code(ad, wutils.WifiEnums.CountryCode.US)
+            autils.set_power_mode_parameters(ad, 'INTERACTIVE')
+            wutils.set_wifi_country_code(ad, self.country_code)
             try:
                 autils.configure_ndp_allow_any_override(ad, True)
             except AdbCommandError as e:
@@ -295,8 +294,8 @@ class WifiAwareRvrTest(WifiRvrTest):
 
         # Compile AP and infrastructure connection parameters
         ap_networks = []
-        if testcase_params['dut_connected'][0]:
-            band = testcase_params['dut_connected'][0].split('_')[0]
+        if testcase_params['concurrency_state'][0]:
+            band = testcase_params['concurrency_state'][0].split('_')[0]
             ap_networks.append({
                 'ap_id':
                 0,
@@ -309,14 +308,14 @@ class WifiAwareRvrTest(WifiRvrTest):
                 'connected_dut': [0]
             })
 
-        if testcase_params['dut_connected'][1]:
-            if testcase_params['dut_connected'][0] == testcase_params[
-                    'dut_connected'][1]:
+        if testcase_params['concurrency_state'][1]:
+            if testcase_params['concurrency_state'][0] == testcase_params[
+                    'concurrency_state'][1]:
                 # if connected to same network, add it to the above
                 ap_networks[0]['connected_dut'].append(1)
             else:
-                band = testcase_params['dut_connected'][1].split('_')[0]
-                if not testcase_params['dut_connected'][0]:
+                band = testcase_params['concurrency_state'][1].split('_')[0]
+                if not testcase_params['concurrency_state'][0]:
                     # if it is the only dut connected, assign it to ap 0
                     ap_id = 0
                 elif band == ap_networks[0]['band']:
@@ -359,268 +358,78 @@ class WifiAwareRvrTest(WifiRvrTest):
         self.process_test_results(rvr_result)
         self.pass_fail_check(rvr_result)
 
+    def generate_test_cases(self, concurrency_list, traffic_type,
+                            traffic_directions):
+        """Function that auto-generates test cases for a test class."""
+        test_cases = []
 
-class WifiAwareRvr_TCP_Test(WifiAwareRvrTest):
-    #Test cases
-    def test_aware_rvr_TCP_DL_ib_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
+        for concurrency_state, traffic_direction in itertools.product(
+                concurrency_list, traffic_directions):
+            connection_string = '_'.join([str(x) for x in concurrency_state
+                                          ]).replace('False', 'disconnected')
+            test_name = 'test_aware_rvr_{}_{}_{}'.format(
+                traffic_type, traffic_direction, connection_string)
+            test_params = collections.OrderedDict(
+                traffic_type=traffic_type,
+                traffic_direction=traffic_direction,
+                concurrency_state=concurrency_state)
+            setattr(self, test_name, partial(self._test_aware_rvr,
+                                             test_params))
+            test_cases.append(test_name)
+        return test_cases
+
+
+class WifiAwareRvr_FCC_TCP_Test(WifiAwareRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            ['2G_1', '2G_1'], ['5G_1',
+                                               '5G_1'], ['2G_1', '5G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'US'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
             traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=[False, False],
-        )
-        self._test_aware_rvr(testcase_params)
+            traffic_directions=['DL', 'UL'])
 
-    def test_aware_rvr_TCP_DL_ib_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
+
+class WifiAwareRvr_FCC_UDP_Test(WifiAwareRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            ['2G_1', '2G_1'], ['5G_1',
+                                               '5G_1'], ['2G_1', '5G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'US'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
+            traffic_type='UDP',
+            traffic_directions=['DL', 'UL'])
+
+
+class WifiAwareRvr_ETSI_TCP_Test(WifiAwareRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            ['2G_1', '2G_1'], ['5G_1',
+                                               '5G_1'], ['2G_1', '5G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'GB'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
             traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_DL_ib_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_DL_ib_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_DL_ib_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_DL_ib_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_DL_ib_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_2'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_DL_ib_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_2'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=[False, False],
-        )
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_2'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_TCP_UL_ib_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='TCP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_2'])
-        self._test_aware_rvr(testcase_params)
+            traffic_directions=['DL', 'UL'])
 
 
-class WifiAwareRvr_UDP_Test(WifiAwareRvrTest):
-    #Test cases
-    def test_aware_rvr_UDP_DL_ib_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
+class WifiAwareRvr_ETSI_UDP_Test(WifiAwareRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        concurrency_list = [[False, False], ['2G_1', False], ['5G_1', False],
+                            ['2G_1', '2G_1'], ['5G_1',
+                                               '5G_1'], ['2G_1', '5G_1'],
+                            ['2G_1', '2G_2'], ['5G_1', '5G_2']]
+        self.country_code = 'GB'
+        self.tests = self.generate_test_cases(
+            concurrency_list=concurrency_list,
             traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=[False, False],
-        )
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_2'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_DL_ib_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='DL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_2'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_disconnected_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=[False, False],
-        )
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_2G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_5G_1_disconnected(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', False])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_2G_1_connected_2G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_5G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_2G_1_connected_5G_1(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '5G_1'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_2G_1_connected_2G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['2G_1', '2G_2'])
-        self._test_aware_rvr(testcase_params)
-
-    def test_aware_rvr_UDP_UL_ib_connected_5G_1_connected_5G_2(self):
-        testcase_params = collections.OrderedDict(
-            traffic_type='UDP',
-            traffic_direction='UL',
-            power_mode='INTERACTIVE',
-            dut_connected=['5G_1', '5G_2'])
-        self._test_aware_rvr(testcase_params)
+            traffic_directions=['DL', 'UL'])
