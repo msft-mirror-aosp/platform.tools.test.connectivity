@@ -39,6 +39,7 @@ class WifiRoamingTest(WifiBaseTest):
                                                 sae_network=True,
                                                 ap_count=2,
                                                 mirror_ap=True)
+            self.log.info("BSSID map: %s" % self.bssid_map)
 
     def teardown_class(self):
         self.dut.ed.clear_all_events()
