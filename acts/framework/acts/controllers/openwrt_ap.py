@@ -23,6 +23,7 @@ ENABLE_RADIO = "0"
 PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
+WAIT_TIME = 20
 
 
 def create(configs):
@@ -149,12 +150,24 @@ class OpenWrtAP(object):
   def start_ap(self):
     """Starts the AP with the settings in /etc/config/wireless."""
     self.ssh.run("wifi up")
-    time.sleep(9)  # wait for sometime for AP to come up
+    curr_time = time.time()
+    while time.time() < curr_time + WAIT_TIME:
+      if self.get_wifi_status():
+        return
+      time.sleep(3)
+    if not self.get_wifi_status():
+      raise ValueError("Failed to turn on WiFi on the AP.")
 
   def stop_ap(self):
     """Stops the AP."""
     self.ssh.run("wifi down")
-    time.sleep(9)  # wait for sometime for AP to go down
+    curr_time = time.time()
+    while time.time() < curr_time + WAIT_TIME:
+      if not self.get_wifi_status():
+        return
+      time.sleep(3)
+    if self.get_wifi_status():
+      raise ValueError("Failed to turn off WiFi on the AP.")
 
   def get_bssids_for_wifi_networks(self):
     """Get BSSIDs for wifi networks configured.
@@ -172,6 +185,21 @@ class OpenWrtAP(object):
         for ssid, ifname in ssid_ifname_map.items():
           bssid_map["2g"][ssid] = self.get_bssid(ifname)
     return bssid_map
+
+  def get_wifi_status(self):
+    """Check if radios are up for both 2G and 5G bands.
+
+    Returns:
+      True if both radios are up. False if not.
+    """
+    radios = ["radio0", "radio1"]
+    status = True
+    for radio in radios:
+      str_output = self.ssh.run("wifi status %s" % radio).stdout
+      wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                              Loader=yaml.FullLoader)
+      status = wifi_status[radio]["up"] and status
+    return status
 
   def get_ifnames_for_ssids(self, radio):
     """Get interfaces for wifi networks.
