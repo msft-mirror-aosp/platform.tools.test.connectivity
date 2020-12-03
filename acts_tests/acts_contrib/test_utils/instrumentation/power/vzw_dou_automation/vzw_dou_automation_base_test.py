@@ -92,7 +92,7 @@ class VzWDoUAutomationBaseTest(
     self.log.info('Running base adb setup commands.')
     self.ad_dut.adb.ensure_root()
     self.adb_run(common.dismiss_keyguard)
-    self.adb_run(goog.location_off_warning_dialog.toggle(False), timeout=120)
+    self.adb_run(goog.location_off_warning_dialog.toggle(False), timeout=180)
     self.adb_run(common.airplane_mode.toggle(False), timeout=120)
     self.adb_run(common.auto_rotate.toggle(False))
     self.set_screen_brightness_level()
