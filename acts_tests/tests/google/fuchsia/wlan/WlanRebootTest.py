@@ -159,6 +159,9 @@ class WlanRebootTest(WifiBaseTest):
 
     def teardown_test(self):
         self.access_point.stop_all_aps()
+        if self.router_adv_daemon:
+            self.router_adv_daemon.stop()
+            self.router_adv_daemon = None
         self.dut.clear_saved_networks()
         for fd in self.fuchsia_devices:
             fd.wlan_policy_lib.wlanStopClientConnections()
