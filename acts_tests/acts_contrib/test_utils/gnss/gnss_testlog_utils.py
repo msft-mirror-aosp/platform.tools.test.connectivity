@@ -120,7 +120,7 @@ CONFIG_GPSTTFFLOG = {
     r'\[Antenna_Avg Top4 : (?P<ant_avg_top4_cn0>\d+.\d+)\]\s'
     r'\[Antenna_Avg : (?P<ant_avg_cn0>\d+.\d+)\]\s'
     r'\[Baseband_Avg Top4 : (?P<bb_avg_top4_cn0>\d+.\d+)\]\s'
-    r'\[Baseband_Avg : (?P<<bb_avg_cn0>\d+.\d+)\]\s+\[(?P<fix_type>\d+\w+ fix)\]\s+'
+    r'\[Baseband_Avg : (?P<bb_avg_cn0>\d+.\d+)\]\s+\[(?P<fix_type>\d+\w+ fix)\]\s+'
     r'\[Satellites used for fix : (?P<satnum_for_fix>\d+)\]'
 }
 LOGPARSE_UTIL_LOGGER = logger.create_logger()
@@ -214,9 +214,11 @@ def parse_gpstool_ttfflog_to_df(filename):
     ttff_df['loop'] = ttff_df['loop'].astype(int)
     ttff_df['start_datetime'] = pds.to_datetime(ttff_df['start_datetime'])
     ttff_df['stop_datetime'] = pds.to_datetime(ttff_df['stop_datetime'])
-    ttff_df['ttff'] = ttff_df['ttff'].astype(float)
-    ttff_df['avg_top4_cn0'] = ttff_df['avg_top4_cn0'].astype(float)
-    ttff_df['avg_cn0'] = ttff_df['avg_cn0'].astype(float)
+    ttff_df['ttff_time'] = ttff_df['ttff'].astype(float)
+    ttff_df['ant_avg_top4_cn0'] = ttff_df['ant_avg_top4_cn0'].astype(float)
+    ttff_df['ant_avg_cn0'] = ttff_df['ant_avg_cn0'].astype(float)
+    ttff_df['bb_avg_top4_cn0'] = ttff_df['bb_avg_top4_cn0'].astype(float)
+    ttff_df['bb_avg_cn0'] = ttff_df['bb_avg_cn0'].astype(float)
     ttff_df['satnum_for_fix'] = ttff_df['satnum_for_fix'].astype(int)
 
     # return ttff dataframe
