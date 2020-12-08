@@ -50,6 +50,9 @@ SPEED_OF_LIGHT = 299792458
 
 DEFAULT_PING_ADDR = "https://www.google.com/robots.txt"
 
+CNSS_DIAG_CONFIG_PATH = "/data/vendor/wifi/cnss_diag/"
+CNSS_DIAG_CONFIG_FILE = "cnss_diag.conf"
+
 ROAMING_ATTN = {
         "AP1_on_AP2_off": [
             0,
@@ -2392,37 +2395,50 @@ def verify_mac_is_found_in_pcap(ad, mac, packets):
     asserts.fail("Did not find MAC = %s in packet sniffer."
                  "for device %s" % (mac, ad.serial))
 
-def start_cnss_diags(ads):
+def start_cnss_diags(ads, cnss_diag_file, pixel_models):
     for ad in ads:
-        start_cnss_diag(ad)
+        start_cnss_diag(ad, cnss_diag_file, pixel_models)
 
 
-def start_cnss_diag(ad):
+def start_cnss_diag(ad, cnss_diag_file, pixel_models):
     """Start cnss_diag to record extra wifi logs
 
     Args:
         ad: android device object.
+        cnss_diag_file: cnss diag config file to push to device.
+        pixel_models: pixel devices.
     """
+    if ad.model not in pixel_models:
+        ad.log.info("Device not supported to collect pixel logger")
+        return
     if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
         prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
     else:
         prop = wifi_constants.CNSS_DIAG_PROP
     if ad.adb.getprop(prop) != 'true':
+        if not int(ad.adb.shell("ls -l %s%s | wc -l" %
+                                (CNSS_DIAG_CONFIG_PATH,
+                                 CNSS_DIAG_CONFIG_FILE))):
+            ad.adb.push("%s %s" % (cnss_diag_file, CNSS_DIAG_CONFIG_PATH))
         ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete")
         ad.adb.shell("setprop %s true" % prop, ignore_status=True)
 
 
-def stop_cnss_diags(ads):
+def stop_cnss_diags(ads, pixel_models):
     for ad in ads:
-        stop_cnss_diag(ad)
+        stop_cnss_diag(ad, pixel_models)
 
 
-def stop_cnss_diag(ad):
+def stop_cnss_diag(ad, pixel_models):
     """Stops cnss_diag
 
     Args:
         ad: android device object.
+        pixel_models: pixel devices.
     """
+    if ad.model not in pixel_models:
+        ad.log.info("Device not supported to collect pixel logger")
+        return
     if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
         prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
     else:
@@ -2580,3 +2596,26 @@ def turn_location_off_and_scan_toggle_off(ad):
     ad.droid.wifiScannerToggleAlwaysAvailable(False)
     msg = "Failed to turn off location service's scan."
     asserts.assert_true(not ad.droid.wifiScannerIsAlwaysAvailable(), msg)
+
+
+def set_softap_channel(dut, ap_iface='wlan1', cs_count=10, channel=2462):
+    """ Set SoftAP mode channel
+
+    Args:
+        dut: android device object
+        ap_iface: interface of SoftAP mode.
+        cs_count: how many beacon frames before switch channel, default = 10
+        channel: a wifi channel.
+    """
+    chan_switch_cmd = 'hostapd_cli -i {} chan_switch {} {}'
+    chan_switch_cmd_show = chan_switch_cmd.format(ap_iface,cs_count,channel)
+    dut.log.info('adb shell {}'.format(chan_switch_cmd_show))
+    chan_switch_result = dut.adb.shell(chan_switch_cmd.format(ap_iface,
+                                                              cs_count,
+                                                              channel))
+    if chan_switch_result == 'OK':
+        dut.log.info('switch hotspot channel to {}'.format(channel))
+        return chan_switch_result
+
+    asserts.fail("Failed to switch hotspot channel")
+

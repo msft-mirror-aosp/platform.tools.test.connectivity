@@ -14,12 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import pprint
 import time
+import re
 
 from acts import asserts
 from acts import base_test
 from acts.controllers.ap_lib import hostapd_constants
+from acts.keys import Config
 import acts.signals as signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
@@ -27,6 +30,8 @@ from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 import acts.test_utils.wifi.wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.utils as utils
+import acts.test_utils.tel.tel_test_utils as tel_utils
+
 
 WifiEnums = wutils.WifiEnums
 WLAN = "wlan0"
@@ -66,20 +71,34 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ad.droid.wifiEnableVerboseLogging(1)
 
         req_params = ["dbs_supported_models",
+                      "pixel_models",
                       "iperf_server_address",
                       "iperf_server_port"]
         self.unpack_userparams(req_param_names=req_params,)
         asserts.abort_class_if(
             self.dut.model not in self.dbs_supported_models,
             "Device %s does not support dual interfaces." % self.dut.model)
+        if "cnss_diag_file" in self.user_params:
+            self.cnss_diag_file = self.user_params.get("cnss_diag_file")
+            if isinstance(self.cnss_diag_file, list):
+                self.cnss_diag_file = self.cnss_diag_file[0]
+            if not os.path.isfile(self.cnss_diag_file):
+                self.cnss_diag_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.cnss_diag_file)
 
     def setup_test(self):
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
         self.turn_location_off_and_scan_toggle_off()
+        if hasattr(self, "cnss_diag_file"):
+            wutils.start_cnss_diags(
+                self.android_devices, self.cnss_diag_file, self.pixel_models)
 
     def teardown_test(self):
+        if hasattr(self, "cnss_diag_file"):
+            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
         # Prevent the stop wifi tethering failure to block ap close
         try:
             wutils.stop_wifi_tethering(self.dut)
@@ -92,13 +111,19 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         wutils.wifi_toggle_state(self.dut, True)
         self.access_points[0].close()
-        del self.user_params["reference_networks"]
-        del self.user_params["open_network"]
+        if "AccessPoint" in self.user_params:
+            try:
+                del self.user_params["reference_networks"]
+                del self.user_params["open_network"]
+            except KeyError as e:
+                self.log.warn("There is no 'reference_network' or "
+                              "'open_network' to delete")
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
+            wutils.get_cnss_diag_log(ad, test_name)
 
     ### Helper Functions ###
 
@@ -114,8 +139,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             channel_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
         if not channel_5g:
             channel_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
-        self.legacy_configure_ap_and_start(channel_2g=channel_2g,
-                                           channel_5g=channel_5g)
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start(channel_2g=channel_2g,
+                                               channel_5g=channel_5g)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                channel_2g=channel_2g,
+                                                channel_5g=channel_5g)
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
 
@@ -262,6 +292,38 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         else:
             asserts.fail("%s ping %s failed" % (ad2.serial, ad1_ip))
 
+    def softap_change_band(self, ad):
+        """
+        Switch DUT SoftAp to 5G band if currently in 2G.
+        Switch DUT SoftAp to 2G band if currently in 5G.
+        """
+        wlan1_freq = int(self.get_wlan1_status(self.dut)['freq'])
+        if wlan1_freq in wutils.WifiEnums.ALL_5G_FREQUENCIES:
+            band = WIFI_CONFIG_APBAND_2G
+        elif wlan1_freq in wutils.WifiEnums.ALL_2G_FREQUENCIES:
+            band = WIFI_CONFIG_APBAND_5G
+        wutils.stop_wifi_tethering(ad)
+        self.start_softap_and_verify(band)
+
+    def get_wlan1_status(self, ad):
+        """ get wlan1 interface status"""
+        get_wlan1 = 'hostapd_cli status'
+        out_wlan1 = ad.adb.shell(get_wlan1)
+        out_wlan1 = dict(re.findall(r'(\S+)=(".*?"|\S+)', out_wlan1))
+        return out_wlan1
+
+    def enable_mobile_data(self, ad):
+        """Make sure that cell data is enabled if there is a sim present."""
+        init_sim_state = tel_utils.is_sim_ready(self.log, ad)
+        if init_sim_state:
+            if not ad.droid.telephonyIsDataEnabled():
+                ad.droid.telephonyToggleDataConnection(True)
+            asserts.assert_true(ad.droid.telephonyIsDataEnabled(),
+                                "Failed to enable Mobile Data")
+        else:
+            raise signals.TestSkip("Please insert sim card with "
+                                   "Mobile Data enabled before test")
+
     ### Tests ###
 
     @test_tracker_info(uuid="c396e7ac-cf22-4736-a623-aa6d3c50193a")
@@ -371,3 +433,43 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, self.open_2g[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="9decb951-4500-4476-8161-f4054760f709")
+    def test_wifi_connection_2G_softap_2G_to_softap_5g(self):
+        """Test connection to 2G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
+
+    @test_tracker_info(uuid="e17e0fb8-2c1d-4f3c-af2a-7374485f210c")
+    def test_wifi_connection_5G_softap_2G_to_softap_5g(self):
+        """Test connection to 5G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
+
+    @test_tracker_info(uuid="96486473-58fb-407b-8912-eee0a33f311b")
+    def test_mobile_data_with_wifi_connection_2G_softap_2G_to_softap_5g(self):
+        """Enable Mobile Data then
+        test connection to 2G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.enable_mobile_data(self.dut)
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
+
+    @test_tracker_info(uuid="34589851-93f9-4cd4-8cff-5286586a23c2")
+    def test_mobile_data_with_wifi_connection_5G_softap_2G_to_softap_5g(self):
+        """Enable Mobile Data then
+        test connection to 2G network followed by SoftAp on 2G,
+        and switch SoftAp to 5G."""
+        self.enable_mobile_data(self.dut)
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g, WIFI_CONFIG_APBAND_2G)
+        self.softap_change_band(self.dut)
