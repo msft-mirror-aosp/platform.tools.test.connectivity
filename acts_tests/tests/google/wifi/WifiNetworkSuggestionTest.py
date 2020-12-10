@@ -76,9 +76,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 wpa_network=True, ent_network=True,
                 radius_conf_2g=self.radius_conf_2g,
                 radius_conf_5g=self.radius_conf_5g,)
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(open_network=True,
-                                                wpa_network=True,)
+
         if hasattr(self, "reference_networks") and \
             isinstance(self.reference_networks, list):
               self.wpa_psk_2g = self.reference_networks[0]["2g"]
@@ -86,6 +84,23 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         if hasattr(self, "open_network") and isinstance(self.open_network,list):
             self.open_2g = self.open_network[0]["2g"]
             self.open_5g = self.open_network[0]["5g"]
+        if hasattr(self, "ent_networks") and isinstance(self.ent_networks,list):
+            self.ent_network_2g = self.ent_networks[0]["2g"]
+            self.ent_network_5g = self.ent_networks[0]["5g"]
+            self.config_aka = {
+                Ent.EAP: int(EAP.AKA),
+                WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+                "carrierId": str(self.dut.droid.telephonyGetSimCarrierId()),
+            }
+            self.config_ttls = {
+                Ent.EAP: int(EAP.TTLS),
+                Ent.CA_CERT: self.ca_cert,
+                Ent.IDENTITY: self.eap_identity,
+                Ent.PASSWORD: self.eap_password,
+                Ent.PHASE2: int(EapPhase2.MSCHAPV2),
+                WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+                Ent.ALTSUBJECT_MATCH: self.altsubject_match,
+            }
         if hasattr(self, "hidden_networks") and \
             isinstance(self.hidden_networks, list):
               self.hidden_network = self.hidden_networks[0]
@@ -105,15 +120,6 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, True)
         self.dut.ed.clear_all_events()
         self.clear_carrier_approved(str(self.dut.droid.telephonyGetSimCarrierId()))
-        if "_ent_" in self.test_name:
-            if "OpenWrtAP" in self.user_params:
-                self.access_points[0].close()
-                self.configure_openwrt_ap_and_start(
-                    ent_network=True,
-                    radius_conf_2g=self.radius_conf_2g,
-                    radius_conf_5g=self.radius_conf_5g,)
-            self.ent_network_2g = self.ent_networks[0]["2g"]
-            self.ent_network_5g = self.ent_networks[0]["5g"]
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
@@ -472,10 +478,6 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         6. Remove suggestions and ensure device doesn't connect back to it.
         7. Reboot the device again, ensure user approval is kept
         """
-        self.config_aka = {
-            Ent.EAP: int(EAP.AKA),
-            WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
-        }
         if "carrierId" in self.config_aka:
             self.set_carrier_approved(self.config_aka["carrierId"], True)
         self._test_connect_to_wifi_network_reboot_config_store(
@@ -498,14 +500,6 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         6. Remove suggestions and ensure device doesn't connect back to it.
         7. Reboot the device again, ensure user approval is kept
         """
-        self.config_ttls = {
-            Ent.EAP: int(EAP.TTLS),
-            Ent.CA_CERT: self.ca_cert,
-            Ent.IDENTITY: self.eap_identity,
-            Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
-            WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
-        }
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
 

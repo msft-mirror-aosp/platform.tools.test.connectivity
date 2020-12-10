@@ -61,10 +61,6 @@ class WifiNetworkRequestTest(WifiBaseTest):
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(wpa_network=True,
                                                wep_network=True)
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(open_network=True,
-                                                wpa_network=True,
-                                                wep_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
