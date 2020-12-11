@@ -130,6 +130,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
         self.attenuators[1].set_atten(attn_value[1])
         self.attenuators[2].set_atten(attn_value[2])
         self.attenuators[3].set_atten(attn_value[3])
+        time.sleep(10) #wait time for attenuation
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         try:
