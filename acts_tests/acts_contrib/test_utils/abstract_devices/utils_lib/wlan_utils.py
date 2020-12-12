@@ -44,6 +44,7 @@ def setup_ap_and_associate(access_point,
                            force_wmm=None,
                            hidden=False,
                            security=None,
+                           pmf_support=None,
                            additional_ap_parameters=None,
                            password=None,
                            check_connectivity=False,
@@ -68,6 +69,7 @@ def setup_ap_and_associate(access_point,
         force_wmm: Enable WMM or not (True or False)
         hidden: Advertise the SSID or not (True or False)
         security: What security to enable.
+        pmf_support: int, whether pmf is not disabled, enabled, or required
         additional_ap_parameters: Additional parameters to send the AP.
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
@@ -78,9 +80,9 @@ def setup_ap_and_associate(access_point,
     """
     setup_ap(access_point, profile_name, channel, ssid, mode, preamble,
              beacon_interval, dtim_period, frag_threshold, rts_threshold,
-             force_wmm, hidden, security, additional_ap_parameters, password,
-             check_connectivity, n_capabilities, ac_capabilities,
-             vht_bandwidth, setup_bridge)
+             force_wmm, hidden, security, pmf_support,
+             additional_ap_parameters, password, check_connectivity,
+             n_capabilities, ac_capabilities, vht_bandwidth, setup_bridge)
 
     if not security:
         target_security = "none"
@@ -117,6 +119,7 @@ def setup_ap(access_point,
              force_wmm=None,
              hidden=False,
              security=None,
+             pmf_support=None,
              additional_ap_parameters=None,
              password=None,
              check_connectivity=False,
@@ -138,6 +141,8 @@ def setup_ap(access_point,
         force_wmm: Enable WMM or not (True or False)
         hidden: Advertise the SSID or not (True or False)
         security: What security to enable.
+        pmf_support: int, whether pmf is not disabled, enabled, or required
+        password: Password to connect to WLAN if necessary.
         additional_ap_parameters: Additional parameters to send the AP.
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
@@ -157,6 +162,7 @@ def setup_ap(access_point,
                                             hidden=hidden,
                                             bss_settings=[],
                                             security=security,
+                                            pmf_support=pmf_support,
                                             n_capabilities=n_capabilities,
                                             ac_capabilities=ac_capabilities,
                                             vht_bandwidth=vht_bandwidth)
