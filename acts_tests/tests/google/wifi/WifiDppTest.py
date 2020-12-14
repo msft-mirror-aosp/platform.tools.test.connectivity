@@ -154,7 +154,8 @@ class WifiDppTest(WifiBaseTest):
                A tuple with the config and networkId for the newly created and
                saved network.
     """
-    if security == self.DPP_TEST_SECURITY_PSK:
+    if security == self.DPP_TEST_SECURITY_PSK or \
+              security == self.DPP_TEST_SECURITY_PSK_PASSPHRASE:
       if self.psk_network_ssid is None or self.psk_network_password is None or \
               random_network is True:
         config_ssid = self.DPP_TEST_SSID_PREFIX + utils.rand_ascii_str(8)
