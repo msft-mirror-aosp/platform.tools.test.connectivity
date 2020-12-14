@@ -23,8 +23,15 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDM
 from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_test_utils import is_event_match
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 
 
 def is_current_network_5g_nsa(ad, timeout=30):
@@ -55,6 +62,96 @@ def is_current_network_5g_nsa(ad, timeout=30):
     finally:
         ad.droid.telephonyStopTrackingDisplayInfoChange()
     return None
+
+
+def provision_both_devices_for_5g(log, ads):
+    # Mode Pref
+    tasks = [(set_preferred_mode_for_5g, [ad]) for ad in ads]
+    if not multithread_func(log, tasks):
+        log.error("failed to set preferred network mode on 5g")
+        return False
+    # Attach
+    tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
+    if not multithread_func(log, tasks):
+        log.error("phone not on 5g nsa")
+        return False
+    return True
+
+
+def provision_both_devices_for_volte(log, ads):
+    # LTE attach and enable VoLTE on both phones
+    tasks = [(phone_setup_volte, (log, ads[0])),
+             (phone_setup_volte, (log, ads[1]))]
+    if not multithread_func(log, tasks):
+        log.error("phone failed to set up in volte")
+        return False
+    return True
+
+
+def verify_5g_attach_for_both_devices(log, ads):
+    # Attach
+    tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
+    if not multithread_func(log, tasks):
+        log.error("phone not on 5g nsa")
+        return False
+    return True
+
+
+def provision_both_devices_for_wfc_cell_pref(log,
+                                             ads,
+                                             wifi_ssid,
+                                             wifi_pass,
+                                             apm_mode=False):
+    tasks = [(phone_setup_iwlan,
+              (log, ads[0], apm_mode, WFC_MODE_CELLULAR_PREFERRED,
+               wifi_ssid, wifi_pass)),
+             (phone_setup_iwlan,
+              (log, ads[1], apm_mode, WFC_MODE_CELLULAR_PREFERRED,
+               wifi_ssid, wifi_pass))]
+    if not multithread_func(log, tasks):
+        log.error("failed to setup in wfc_cell_pref mode")
+        return False
+    return True
+
+
+def provision_both_devices_for_wfc_wifi_pref(log,
+                                             ads,
+                                             wifi_ssid,
+                                             wifi_pass,
+                                             apm_mode=False):
+    tasks = [(phone_setup_iwlan,
+              (log, ads[0], apm_mode, WFC_MODE_WIFI_PREFERRED,
+               wifi_ssid, wifi_pass)),
+             (phone_setup_iwlan,
+              (log, ads[1], apm_mode, WFC_MODE_WIFI_PREFERRED,
+               wifi_ssid, wifi_pass))]
+    if not multithread_func(log, tasks):
+        log.error("failed to setup in wfc_wifi_pref mode")
+        return False
+    return True
+
+
+def disable_apm_mode_both_devices(log, ads):
+    # Turn off airplane mode
+    log.info("Turn off apm mode on both devices")
+    tasks = [(toggle_airplane_mode, (log, ads[0], False)),
+             (toggle_airplane_mode, (log, ads[1], False))]
+    if not multithread_func(log, tasks):
+        log.error("Failed to turn off airplane mode")
+        return False
+    return True
+
+
+def connect_both_devices_to_wifi(log,
+                                 ads,
+                                 wifi_ssid,
+                                 wifi_pass):
+    tasks = [(ensure_wifi_connected, (log, ad, wifi_ssid, wifi_pass))
+             for ad in ads]
+    if not multithread_func(log, tasks):
+        log.error("phone failed to connect to wifi.")
+        return False
+    return True
 
 
 def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):

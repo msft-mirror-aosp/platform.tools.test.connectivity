@@ -35,7 +35,14 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
+from acts_contrib.test_utils.tel.tel_5g_utils import connect_both_devices_to_wifi
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
+from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
+
 from acts.utils import rand_ascii_str
 
 class Nsa5gMmsTest(TelephonyBaseTest):
@@ -50,72 +57,6 @@ class Nsa5gMmsTest(TelephonyBaseTest):
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
 
-    def _provision_both_devices_for_5g(self, ads):
-        # Mode Pref
-        tasks = [(set_preferred_mode_for_5g, [ad]) for ad in ads]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to set preferred network mode.")
-            return False
-        # Attach
-        tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not on 5G NSA before sending SMS.")
-            return False
-
-    def _provision_both_devices_for_volte(self, ads):
-        # LTE attach and enable VoLTE on both phones
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up in VoLTE.")
-            return False
-
-    def _provision_both_devices_for_wfc_cell_pref(self, ads, apm_mode=True):
-        tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], apm_mode, WFC_MODE_CELLULAR_PREFERRED,
-                   self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan,
-                  (self.log, ads[1], apm_mode, WFC_MODE_CELLULAR_PREFERRED,
-                   self.wifi_network_ssid, self.wifi_network_pass))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to setup in wfc_cell_pref mode")
-            return False
-
-    def _provision_both_devices_for_wfc_wifi_pref(self, ads, apm_mode=False):
-        tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], apm_mode, WFC_MODE_WIFI_PREFERRED,
-                   self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan,
-                  (self.log, ads[1], apm_mode, WFC_MODE_WIFI_PREFERRED,
-                   self.wifi_network_ssid, self.wifi_network_pass))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to setup in wfc_wifi_pref mode")
-            return False
-
-    def _verify_5g_attach_for_both_devices(self, ads):
-        # Attach
-        tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not on 5G NSA after sending SMS.")
-            return False
-
-    def _disable_apm_mode_both_devices(self, ads):
-        # Turn off airplane mode
-        self.log.info("Turn off APM mode before starting testing.")
-        tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
-                 (toggle_airplane_mode, (self.log, ads[1], False))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to turn off airplane mode")
-            return False
-
-    def _connect_both_devices_to_wifi(self, ads):
-        tasks = [(ensure_wifi_connected, (self.log, ad,
-                                          self.wifi_network_ssid,
-                                          self.wifi_network_pass))
-                 for ad in ads]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to connect to wifi.")
-            return False
 
     def _mms_test_mo(self, ads, expected_result=True):
         return self._mms_test(
@@ -165,13 +106,13 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
         if not self._mms_test_mo(ads):
             return False
 
-        if not self._verify_5g_attach_for_both_devices(ads):
+        if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
 
         self.log.info("PASS - mms test over 5g nsa validated")
@@ -193,16 +134,16 @@ class Nsa5gMmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        if not self._provision_both_devices_for_volte(ads):
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
         if not self._mms_test_mo(ads):
             return False
 
-        if not self._verify_5g_attach_for_both_devices(ads):
+        if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
 
         self.log.info("PASS - volte mms test over 5g nsa validated")
@@ -223,10 +164,10 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        if not self._provision_both_devices_for_volte(ads):
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
         self.log.info("Begin Incall mms test.")
@@ -242,7 +183,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
         if not self._mms_test_mo(ads):
             return False
 
-        if not self._verify_5g_attach_for_both_devices(ads):
+        if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
         self.log.info("PASS - Incall volte mms test over 5g nsa validated")
         return True
@@ -264,13 +205,17 @@ class Nsa5gMmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        if not self._disable_apm_mode_both_devices(ads):
+        if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_wfc_cell_pref(ads):
+        if not provision_both_devices_for_wfc_cell_pref(self.log,
+                                                        ads,
+                                                        self.wifi_network_ssid,
+                                                        self.wifi_network_pass,
+                                                        apm_mode=True):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
@@ -297,13 +242,17 @@ class Nsa5gMmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        if not self._disable_apm_mode_both_devices(ads):
+        if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_wfc_wifi_pref(ads):
+        if not provision_both_devices_for_wfc_wifi_pref(self.log,
+                                                        ads,
+                                                        self.wifi_network_ssid,
+                                                        self.wifi_network_pass,
+                                                        apm_mode=False):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
@@ -312,7 +261,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             return False
         self.log.info("PASS - iwlan mms test over 5g nsa validated")
 
-        if not self._verify_5g_attach_for_both_devices(ads):
+        if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
         return True
 
@@ -334,14 +283,17 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        if not self._disable_apm_mode_both_devices(ads):
+        if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_wfc_wifi_pref(ads,
-                                                              apm_mode=True):
+        if not provision_both_devices_for_wfc_wifi_pref(self.log,
+                                                        ads,
+                                                        self.wifi_network_ssid,
+                                                        self.wifi_network_pass,
+                                                        apm_mode=True):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
@@ -372,13 +324,16 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        if not self._provision_both_devices_for_volte(ads):
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not self._provision_both_devices_for_5g(ads):
+        if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._connect_both_devices_to_wifi(ads):
+        if not connect_both_devices_to_wifi(self.log,
+                                            ads,
+                                            self.wifi_network_ssid,
+                                            self.wifi_network_pass):
             return False
 
         self.log.info("Begin In Call MMS Test.")
@@ -394,7 +349,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
         if not self._mms_test_mo(ads):
             return False
 
-        if not self._verify_5g_attach_for_both_devices(ads):
+        if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
         return True
 
