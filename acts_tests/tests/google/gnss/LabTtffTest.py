@@ -26,6 +26,7 @@ from acts import base_test
 from pandas import DataFrame
 from collections import namedtuple
 from acts.controllers.spectracom_lib import gsg6
+from acts.test_utils.gnss import dut_log_test_utils as diaglog
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.gnss import gnss_testlog_utils as glogutils
 
@@ -51,6 +52,7 @@ class LabTtffTest(base_test.BaseTestClass):
     WSTTFF_PECRITERIA = 'ws_ttff_pecriteria'
     TTFF_ITERATION = 'ttff_iteration'
     SIMULATOR_LOCATION = 'simulator_location'
+    DIAG_OPTION = 'diag_option'
 
     def __init__(self, controllers):
         """ Initializes class attributes. """
@@ -68,7 +70,7 @@ class LabTtffTest(base_test.BaseTestClass):
             self.SPECTRACOM_FILES_KEY, self.SPECTRACOM_POWER_KEY,
             self.CSTTFF_CRITERIA, self.HSTTFF_CRITERIA,
             self.WSTTFF_CRITERIA, self.TTFF_ITERATION,
-            self.SIMULATOR_LOCATION
+            self.SIMULATOR_LOCATION, self.DIAG_OPTION
         ]
 
         for param in req_params:
@@ -97,6 +99,7 @@ class LabTtffTest(base_test.BaseTestClass):
         self.ttff_iteration = self.user_params.get(self.TTFF_ITERATION, [])
         self.simulator_location = self.user_params.get(
             self.SIMULATOR_LOCATION, [])
+	self.diag_option = self.user_params.get(self.DIAG_OPTION, [])
 
         test_type = namedtuple('Type', ['command', 'criteria'])
         self.test_types = {
@@ -259,33 +262,36 @@ class LabTtffTest(base_test.BaseTestClass):
         """
         self.dut.adb.shell("rm -rf {}".format(DEVICE_GPSLOG_FOLDER))
 
-    def test_gnss_cold_ttff(self):
+    def test_gnss_cold_ttff_ffpe(self):
 
         self.start_and_set_spectracom_power()
-        self.get_and_verify_ttff('cs')
+        if self.diag_option is "QCOM":
+                diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
+        else:
+                #start_tbdlog() yet to add for Broadcom
+                pass
+	self.verify_pe('cs')
+        diaglog.stop_background_diagmdlog(self.dut, self.qxdm_log_path, keep_logs=False)
 
-    def test_gnss_warm_ttff(self):
-
-        self.start_and_set_spectracom_power()
-        self.get_and_verify_ttff('ws')
-
-    def test_gnss_hot_ttff(self):
-
-        self.start_and_set_spectracom_power()
-        self.get_and_verify_ttff('hs')
-
-    def test_gnss_cold_ffpe(self):
+    def test_gnss_warm_ttff_ffpe(self):
 
         self.start_and_set_spectracom_power()
-        self.verify_pe('cs')
-
-    def test_gnss_warm_ffpe(self):
-
-        self.start_and_set_spectracom_power()
+	if self.diag_option is "QCOM":
+	        diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
+	else:
+		#start_tbdlog() yet to add for Broadcom
+		pass
         self.verify_pe('ws')
+        diaglog.stop_background_diagmdlog(self.dut, self.qxdm_log_path, keep_logs=False)
 
-    def test_gnss_hot_ffpe(self):
+    def test_gnss_hot_ttff_ffpe(self):
 
         self.start_and_set_spectracom_power()
+        if self.diag_option is "QCOM":
+                diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
+        else:
+                #start_tbdlog() yet to add for Broadcom
+                pass
         self.verify_pe('hs')
+        diaglog.stop_background_diagmdlog(self.dut, self.qxdm_log_path, keep_logs=False)
 
