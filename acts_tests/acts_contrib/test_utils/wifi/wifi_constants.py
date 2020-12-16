@@ -81,3 +81,10 @@ LEGACY_CNSS_DIAG_PROP = "persist.sys.cnss.diag_txt"
 
 # Delay before registering the match callback.
 NETWORK_REQUEST_CB_REGISTER_DELAY_SEC = 2
+
+# Constants for JSONObject representation of CoexUnsafeChannel
+COEX_BAND = "band"
+COEX_BAND_24_GHZ = "24_GHZ"
+COEX_BAND_5_GHZ = "5_GHZ"
+COEX_CHANNEL = "channel"
+COEX_POWER_CAP_DBM = "powerCapDbm"
