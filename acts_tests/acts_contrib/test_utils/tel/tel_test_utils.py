@@ -7186,7 +7186,7 @@ def ensure_phone_subscription(log, ad):
         ad.log.error("Unable to find valid data or voice sub id")
         return False
     while duration < MAX_WAIT_TIME_NW_SELECTION:
-        data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
         if data_sub_id > INVALID_SUB_ID:
             data_rat = get_network_rat_for_subscription(
                 log, ad, data_sub_id, NETWORK_SERVICE_DATA)
