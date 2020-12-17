@@ -32,8 +32,12 @@ WifiEnums = wutils.WifiEnums
 # Timeout used for crash recovery.
 RECOVERY_TIMEOUT = 15
 WIFICOND_KILL_SHELL_COMMAND = "killall wificond"
-WIFI_VENDOR_HAL_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service vendor.google.wifi_ext@1.0-service-vendor"
 SUPPLICANT_KILL_SHELL_COMMAND = "killall wpa_supplicant"
+WIFI_VENDOR_EXT_HAL_DAEMON = "vendor.google.wifi_ext@1.0-service-vendor"
+WIFI_VENDOR_EXT_HAL_DAEMON_PREFIX = "vendor.google.wifi_ext@"
+WIFI_VENDOR_EXT_HAL_DAEMON_KILL_SHELL_COMMAND = "killall vendor.google.wifi_ext@1.0-service-vendor"
+WIFI_VENDOR_HAL_DAEMON = "android.hardware.wifi@1.0-service"
+WIFI_VENDOR_HAL_DAEMON_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service"
 
 class WifiCrashTest(WifiBaseTest):
     """Crash Tests for wifi stack.
@@ -146,7 +150,14 @@ class WifiCrashTest(WifiBaseTest):
         wutils.wifi_connect(self.dut, self.network, num_of_tries=3)
         # Restart wificond
         self.log.info("Crashing wifi HAL")
-        self.dut.adb.shell(WIFI_VENDOR_HAL_KILL_SHELL_COMMAND)
+        daemon_search_cmd = "ps -ef | grep %s" % WIFI_VENDOR_EXT_HAL_DAEMON_PREFIX
+        result = self.dut.adb.shell(daemon_search_cmd) or ""
+        if WIFI_VENDOR_EXT_HAL_DAEMON in result:
+            self.log.info("Crashing wifi ext HAL")
+            self.dut.adb.shell(WIFI_VENDOR_EXT_HAL_DAEMON_KILL_SHELL_COMMAND)
+        else:
+            self.log.info("Crashing wifi HAL")
+            self.dut.adb.shell(WIFI_VENDOR_HAL_DAEMON_KILL_SHELL_COMMAND)
         wutils.wait_for_disconnect(self.dut)
         time.sleep(RECOVERY_TIMEOUT)
         wifi_info = self.dut.droid.wifiGetConnectionInfo()
