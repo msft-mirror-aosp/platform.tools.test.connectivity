@@ -29,8 +29,7 @@ install_requires = [
     # Latest version of mock (4.0.0b) causes a number of compatibility issues with ACTS unit tests
     # b/148695846, b/148814743
     'mock==3.0.5',
-    # b/157117302: python3.5 is not supported by NumPy 1.19+
-    'numpy<=1.18.1',
+    'numpy',
     'pyserial',
     'pyyaml>=5.1',
     'tzlocal',
@@ -48,6 +47,15 @@ install_requires = [
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
 ]
+
+if sys.version_info < (3, 6):
+    replacements = {
+        'tzlocal': 'tzlocal<=2.1',
+        'numpy': 'numpy<=1.18.1',
+    }
+    install_requires = [replacements[pkg] if pkg in replacements else pkg for pkg in
+                        install_requires]
+    install_requires.append('scipy<=1.4.1')
 
 if sys.version_info < (3, ):
     install_requires.append('enum34')
