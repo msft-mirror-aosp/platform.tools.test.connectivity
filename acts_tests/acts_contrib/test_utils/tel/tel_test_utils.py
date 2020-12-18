@@ -821,20 +821,17 @@ def wait_for_sims_ready_by_adb(log, ad, wait_time=90):
 def get_service_state_by_adb(log, ad):
     output = ad.adb.shell("dumpsys telephony.registry | grep mServiceState")
     if "mVoiceRegState" in output:
-        result = re.search(r"mVoiceRegState=(\S+)\((\S+)\)", output)
+        result = re.findall(r"mVoiceRegState=(\S+)\((\S+)\)", output)
         if result:
-            ad.log.info("mVoiceRegState is %s %s", result.group(1),
-                        result.group(2))
-            return result.group(2)
-        else:
-            if getattr(ad, "sdm_log", False):
-                #look for all occurrence in string
-                result2 = re.findall(r"mVoiceRegState=(\S+)\((\S+)\)", output)
-                for voice_state in result2:
-                    if voice_state[0] == 0:
-                        ad.log.info("mVoiceRegState is 0 %s", voice_state[1])
-                        return voice_state[1]
-                return result2[1][1]
+            if getattr(ad, 'dsds', False):
+                default_slot = getattr(ad, 'default_slot', 0)
+                ad.log.info("mVoiceRegState is %s %s", result[default_slot][0],
+                            result[default_slot][1])
+                return result[default_slot][1]
+            else:
+                ad.log.info("mVoiceRegState is %s %s", result[0][0],
+                            result[0][1])
+                return result[0][1]
     else:
         result = re.search(r"mServiceState=(\S+)", output)
         if result:
@@ -7186,7 +7183,7 @@ def ensure_phone_subscription(log, ad):
         ad.log.error("Unable to find valid data or voice sub id")
         return False
     while duration < MAX_WAIT_TIME_NW_SELECTION:
-        data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
         if data_sub_id > INVALID_SUB_ID:
             data_rat = get_network_rat_for_subscription(
                 log, ad, data_sub_id, NETWORK_SERVICE_DATA)

@@ -184,7 +184,7 @@ class TelephonyBaseTest(BaseTestClass):
                         }
 
         for ad in self.android_devices:
-            if hasattr(ad, "dsds"):
+            if getattr(ad, 'dsds', False):
                 self.sim_config = {
                                     "config":MULTI_SIM_CONFIG,
                                     "number_of_sims":2
@@ -296,7 +296,7 @@ class TelephonyBaseTest(BaseTestClass):
                 if not activate_google_fi_account(ad):
                     ad.log.error("Failed to activate Fi")
                 check_google_fi_activated(ad)
-        if hasattr(ad, "dsds"):
+        if getattr(ad, 'dsds', False):
             sim_mode = ad.droid.telephonyGetPhoneCount()
             if sim_mode == 1:
                 ad.log.info("Phone in Single SIM Mode")
@@ -319,7 +319,7 @@ class TelephonyBaseTest(BaseTestClass):
             ensure_phone_default_state(self.log, ad)
             setup_droid_properties(self.log, ad, sim_conf_file)
 
-        if hasattr(ad, "dsds"):
+        if getattr(ad, 'dsds', False):
             default_slot = getattr(ad, "default_slot", 0)
             if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
                 ad.log.info("Slot %s is the default slot.", default_slot)
