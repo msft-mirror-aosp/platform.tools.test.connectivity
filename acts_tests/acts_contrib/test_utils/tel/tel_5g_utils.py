@@ -33,6 +33,11 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 
 
 def is_current_network_5g_nsa(ad, timeout=30):
@@ -167,3 +172,69 @@ def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
     if mode is None:
         mode = NETWORK_MODE_NR_LTE_GSM_WCDMA
     return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
+
+
+def wifi_cell_switching_for_5g_nsa(log, ad, wifi_network_ssid, wifi_network_pass):
+    """Test data connection network switching under 5G NSA.
+
+    Ensure WiFi can connect to live network,
+    Airplane mode is off, data connection is on, WiFi is on.
+    Turn off WiFi, verify data is on cell and browse to google.com is OK.
+    Turn on WiFi, verify data is on WiFi and browse to google.com is OK.
+    Turn off WiFi, verify data is on cell and browse to google.com is OK.
+
+    Args:
+        log: log object.
+        ad: android object.
+        wifi_network_ssid: ssid for live wifi network.
+        wifi_network_pass: password for live wifi network.
+
+    Returns:
+        True if pass.
+    """
+    try:
+
+        start_youtube_video(ad)
+        # Ensure WiFi can connect to live network
+        ad.log.info("Make sure phone can connect to live network by WIFI")
+        if not ensure_wifi_connected(log, ad, wifi_network_ssid,
+                                     wifi_network_pass):
+            ad.log.error("WiFi connect fail.")
+            return False
+        log.info("Phone connected to WIFI.")
+
+        log.info("Step1 Airplane Off, WiFi On, Data On.")
+        toggle_airplane_mode(log, ad, False)
+        wifi_toggle_state(log, ad, True)
+        ad.droid.telephonyToggleDataConnection(True)
+        if (not wait_for_wifi_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
+            ad.log.error("Data is not on WiFi")
+            return False
+
+        log.info("Step2 WiFi is Off, Data is on Cell.")
+        wifi_toggle_state(log, ad, False)
+        if (not wait_for_cell_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
+            ad.log.error("Data did not return to cell")
+            return False
+
+        log.info("Step3 WiFi is On, Data is on WiFi.")
+        wifi_toggle_state(log, ad, True)
+        if (not wait_for_wifi_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
+            ad.log.error("Data did not return to WiFi")
+            return False
+
+        log.info("Step4 WiFi is Off, Data is on Cell.")
+        wifi_toggle_state(log, ad, False)
+        if (not wait_for_cell_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
+            ad.log.error("Data did not return to cell")
+            return False
+        return True
+
+    finally:
+        ad.force_stop_apk("com.google.android.youtube")
+        wifi_toggle_state(log, ad, False)
+
