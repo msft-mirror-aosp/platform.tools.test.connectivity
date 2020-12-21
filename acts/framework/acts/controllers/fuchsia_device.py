@@ -37,6 +37,7 @@ from acts.controllers.fuchsia_lib.backlight_lib import FuchsiaBacklightLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
 
+from acts.controllers.fuchsia_lib.basemgr_lib import FuchsiaBasemgrLib
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.bts_lib import FuchsiaBtsLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
@@ -257,6 +258,9 @@ class FuchsiaDevice:
                                                  self.test_counter,
                                                  self.client_id)
 
+        # Grab commands from FuchsiaBasemgrLib
+        self.basemgr_lib = FuchsiaBasemgrLib(self.address, self.test_counter,
+                                             self.client_id)
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
                                      self.client_id)
