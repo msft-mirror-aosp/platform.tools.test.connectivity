@@ -813,9 +813,6 @@ def phone_setup_iwlan_for_subscription(log,
     if not get_capability_for_subscription(ad, CAPABILITY_WFC, sub_id):
         ad.log.error("WFC is not supported, abort test.")
         raise signals.TestSkip("WFC is not supported, abort test.")
-    if not set_wfc_mode_with_apm_off(log, ad, wfc_mode, wifi_ssid, wifi_pwd):
-        ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
-        return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
     # check if WFC supported phones
     if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
@@ -838,6 +835,7 @@ def phone_setup_iwlan_for_subscription(log,
         ad.log.error("WFC is not enabled")
         return False
     return True
+
 
 def phone_setup_iwlan_cellular_preferred(log,
                                          ad,
@@ -917,45 +915,6 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
         return False
     return True
 
-def set_wfc_mode_with_apm_off(log, ad,
-                                   wfc_mode,
-                                   wifi_ssid=None,
-                                   wifi_pwd=None):
-    """Phone setup function for epdg call test for subscription id.
-    Set WFC mode according to wfc_mode with airplane mode off.
-    Make sure phone connect to WiFi. (If wifi_ssid is not None.)
-    Wait for phone to be in iwlan data network type.
-    Wait for phone to report wfc enabled flag to be true.
-    Args:
-        log: Log object.
-        ad: Android device object.
-        wfc_mode: WFC mode to set to.
-        wifi_ssid: WiFi network SSID. This is optional.
-            If wifi_ssid is None, then phone_setup_iwlan will not attempt to connect to wifi.
-        wifi_pwd: WiFi network password. This is optional.
-    Returns:
-        True if success. False if fail.
-    """
-    if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
-    ):
-        ad.log.error("WFC is not enabled on this device by checking "
-                     "ImsManager.isWfcEnabledByPlatform")
-        return False
-    if wifi_ssid is not None:
-        if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd, apm=False):
-            ad.log.error("Fail to bring up WiFi connection on %s.", wifi_ssid)
-            return False
-    else:
-        ad.log.info("WiFi network SSID not specified, available user "
-                    "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
-                    "wifi_network_ssid_5g")
-    if not set_wfc_mode(log, ad, wfc_mode):
-        ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
-        return False
-    if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
-        ad.log.error("WFC is not enabled")
-        return False
-    return True
 
 def phone_setup_5g(log, ad):
     """Setup Phone default data sub_id data to 5G.
