@@ -2,18 +2,20 @@
 #
 #   Copyright 2020 - The Android Open Source Project
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
+#   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
+#   distributed under the License is distributed on an 'AS IS' BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import collections.abc
+import copy
 import fcntl
 import importlib
 import os
@@ -36,48 +38,48 @@ def create(configs):
         the following: brand, model, ip_address, username and password
     """
     SUPPORTED_APS = {
-        ("Netgear", "R7000"): {
+        ('Netgear', 'R7000'): {
             'name': 'NetgearR7000AP',
             'package': 'netgear_r7000'
         },
-        ("Netgear", "R7000NA"): {
+        ('Netgear', 'R7000NA'): {
             'name': 'NetgearR7000NAAP',
             'package': 'netgear_r7000'
         },
-        ("Netgear", "R7500"): {
+        ('Netgear', 'R7500'): {
             'name': 'NetgearR7500AP',
             'package': 'netgear_r7500'
         },
-        ("Netgear", "R7800"): {
+        ('Netgear', 'R7800'): {
             'name': 'NetgearR7800AP',
             'package': 'netgear_r7800'
         },
-        ("Netgear", "R8000"): {
+        ('Netgear', 'R8000'): {
             'name': 'NetgearR8000AP',
             'package': 'netgear_r8000'
         },
-        ("Netgear", "R8500"): {
-            'name': 'NetgearR8500AP',
-            'package': 'netgear_r8500'
-        },
-        ("Netgear", "RAX80"): {
+        ('Netgear', 'RAX80'): {
             'name': 'NetgearRAX80AP',
             'package': 'netgear_rax80'
         },
-        ("Netgear", "RAX120"): {
+        ('Netgear', 'RAX200'): {
+            'name': 'NetgearRAX200AP',
+            'package': 'netgear_rax200'
+        },
+        ('Netgear', 'RAX120'): {
             'name': 'NetgearRAX120AP',
             'package': 'netgear_rax120'
         },
-        ("Google", "Wifi"): {
+        ('Google', 'Wifi'): {
             'name': 'GoogleWifiAP',
             'package': 'google_wifi'
         },
     }
     objs = []
     for config in configs:
-        ap_id = (config["brand"], config["model"])
+        ap_id = (config['brand'], config['model'])
         if ap_id not in SUPPORTED_APS:
-            raise KeyError("Invalid retail AP brand and model combination.")
+            raise KeyError('Invalid retail AP brand and model combination.')
         ap_class_dict = SUPPORTED_APS[ap_id]
         ap_package = 'acts_contrib.test_utils.wifi.wifi_retail_ap.{}'.format(
             ap_class_dict['package'])
@@ -108,20 +110,20 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             headless: boolean to control visible/headless browser operation
             timeout: maximum time allowed to launch browser
         """
-        self.log = logger.create_tagged_trace_logger("ChromeDriver")
+        self.log = logger.create_tagged_trace_logger('ChromeDriver')
         self.chrome_options = splinter.driver.webdriver.chrome.Options()
-        self.chrome_options.add_argument("--no-proxy-server")
-        self.chrome_options.add_argument("--no-sandbox")
-        self.chrome_options.add_argument("--allow-running-insecure-content")
-        self.chrome_options.add_argument("--ignore-certificate-errors")
+        self.chrome_options.add_argument('--no-proxy-server')
+        self.chrome_options.add_argument('--no-sandbox')
+        self.chrome_options.add_argument('--allow-running-insecure-content')
+        self.chrome_options.add_argument('--ignore-certificate-errors')
         self.chrome_capabilities = selenium.webdriver.common.desired_capabilities.DesiredCapabilities.CHROME.copy(
         )
-        self.chrome_capabilities["acceptSslCerts"] = True
-        self.chrome_capabilities["acceptInsecureCerts"] = True
+        self.chrome_capabilities['acceptSslCerts'] = True
+        self.chrome_capabilities['acceptInsecureCerts'] = True
         if headless:
-            self.chrome_options.add_argument("--headless")
-            self.chrome_options.add_argument("--disable-gpu")
-        self.lock_file_path = "/usr/local/bin/chromedriver"
+            self.chrome_options.add_argument('--headless')
+            self.chrome_options.add_argument('--disable-gpu')
+        self.lock_file_path = '/usr/local/bin/chromedriver'
         self.timeout = timeout
 
     def __enter__(self):
@@ -132,7 +134,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
         session. If an exception occurs while starting the browser, the lock
         file is released.
         """
-        self.lock_file = open(self.lock_file_path, "r")
+        self.lock_file = open(self.lock_file_path, 'r')
         start_time = time.time()
         while time.time() < start_time + self.timeout:
             try:
@@ -153,9 +155,9 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             except:
                 fcntl.flock(self.lock_file, fcntl.LOCK_UN)
                 self.lock_file.close()
-                raise RuntimeError("Error starting browser. "
-                                   "Releasing lock file.")
-        raise TimeoutError("Could not start chrome browser in time.")
+                raise RuntimeError('Error starting browser. '
+                                   'Releasing lock file.')
+        raise TimeoutError('Could not start chrome browser in time.')
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit context manager for BlockingBrowser.
@@ -167,7 +169,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             super(BlockingBrowser, self).__exit__(exc_type, exc_value,
                                                   traceback)
         except:
-            raise RuntimeError("Failed to quit browser. Releasing lock file.")
+            raise RuntimeError('Failed to quit browser. Releasing lock file.')
         finally:
             fcntl.flock(self.lock_file, fcntl.LOCK_UN)
             self.lock_file.close()
@@ -181,7 +183,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
                          url,
                          page_load_timeout,
                          num_tries,
-                         backup_url="about:blank",
+                         backup_url='about:blank',
                          check_for_element=None):
         """Method to visit webpages and retry upon failure.
 
@@ -204,7 +206,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             except:
                 self.restart()
 
-            page_reached = self.url.split("/")[-1] == url.split("/")[-1]
+            page_reached = self.url.split('/')[-1] == url.split('/')[-1]
             if check_for_element:
                 time.sleep(BROWSER_WAIT_MED)
                 element = self.find_by_id(check_for_element)
@@ -219,9 +221,9 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
                     self.restart()
 
             if idx == num_tries - 1:
-                self.log.error("URL unreachable. Current URL: {}".format(
+                self.log.error('URL unreachable. Current URL: {}'.format(
                     self.url))
-                raise RuntimeError("URL unreachable.")
+                raise RuntimeError('URL unreachable.')
 
 
 class WifiRetailAP(object):
@@ -233,8 +235,17 @@ class WifiRetailAP(object):
     """
     def __init__(self, ap_settings):
         self.ap_settings = ap_settings.copy()
-        self.log = logger.create_tagged_trace_logger("AccessPoint|{}".format(
+        self.log = logger.create_tagged_trace_logger('AccessPoint|{}'.format(
             self._get_control_ip_address()))
+        # Capabilities variable describing AP capabilities
+        self.capabilities = {
+            'interfaces': [],
+            'channels': {},
+            'modes': {},
+            'default_mode': None
+        }
+        for interface in self.capabilities['interfaces']:
+            self.ap_settings.setdefault(interface, {})
         # Lock AP
         if self.ap_settings.get('lock_ap', 0):
             self.lock_timeout = self.ap_settings.get('lock_timeout', 3600)
@@ -272,11 +283,12 @@ class WifiRetailAP(object):
         Raises:
             ValueError: If read AP settings do not match stored settings.
         """
-        assumed_ap_settings = self.ap_settings.copy()
+        assumed_ap_settings = copy.deepcopy(self.ap_settings)
         actual_ap_settings = self.read_ap_settings()
+
         if assumed_ap_settings != actual_ap_settings:
             self.log.warning(
-                "Discrepancy in AP settings. Some settings may have been overwritten."
+                'Discrepancy in AP settings. Some settings may have been overwritten.'
             )
 
     def configure_ap(self, **config_flags):
@@ -300,8 +312,8 @@ class WifiRetailAP(object):
         Args:
             region: string indicating AP region
         """
-        self.log.warning("Updating region may overwrite wireless settings.")
-        setting_to_update = {"region": region}
+        self.log.warning('Updating region may overwrite wireless settings.')
+        setting_to_update = {'region': region}
         self.update_ap_settings(setting_to_update)
 
     def set_radio_on_off(self, network, status):
@@ -311,7 +323,7 @@ class WifiRetailAP(object):
             network: string containing network identifier (2G, 5G_1, 5G_2)
             status: boolean indicating on or off (0: off, 1: on)
         """
-        setting_to_update = {"status_{}".format(network): int(status)}
+        setting_to_update = {network: {'status': int(status)}}
         self.update_ap_settings(setting_to_update)
 
     def set_ssid(self, network, ssid):
@@ -321,7 +333,7 @@ class WifiRetailAP(object):
             network: string containing network identifier (2G, 5G_1, 5G_2)
             ssid: string containing ssid
         """
-        setting_to_update = {"ssid_{}".format(network): str(ssid)}
+        setting_to_update = {network: {'ssid': str(ssid)}}
         self.update_ap_settings(setting_to_update)
 
     def set_channel(self, network, channel):
@@ -331,7 +343,10 @@ class WifiRetailAP(object):
             network: string containing network identifier (2G, 5G_1, 5G_2)
             channel: string or int containing channel
         """
-        setting_to_update = {"channel_{}".format(network): str(channel)}
+        if channel not in self.capabilities['channels'][network]:
+            self.log.error('Ch{} is not supported on {} interface.'.format(
+                channel, network))
+        setting_to_update = {network: {'channel': str(channel)}}
         self.update_ap_settings(setting_to_update)
 
     def set_bandwidth(self, network, bandwidth):
@@ -341,9 +356,13 @@ class WifiRetailAP(object):
             network: string containing network identifier (2G, 5G_1, 5G_2)
             bandwidth: string containing mode, e.g. 11g, VHT20, VHT40, VHT80.
         """
-        if 'BW' in bandwidth:
-            bandwidth = bandwidth.replace('BW', self.default_mode)
-        setting_to_update = {"bandwidth_{}".format(network): str(bandwidth)}
+        if 'bw' in bandwidth:
+            bandwidth = bandwidth.replace('bw',
+                                          self.capabilities['default_mode'])
+        if bandwidth not in self.capabilities['modes'][network]:
+            self.log.error('{} mode is not supported on {} interface.'.format(
+                bandwidth, network))
+        setting_to_update = {network: {'bandwidth': str(bandwidth)}}
         self.update_ap_settings(setting_to_update)
 
     def set_power(self, network, power):
@@ -353,7 +372,10 @@ class WifiRetailAP(object):
             network: string containing network identifier (2G, 5G_1, 5G_2)
             power: string containing power level, e.g., 25%, 100%
         """
-        setting_to_update = {"power_{}".format(network): str(power)}
+        if 'power' not in self.ap_settings[network].keys():
+            self.log.error(
+                'Cannot configure power on {} interface.'.format(network))
+        setting_to_update = {network: {'power': str(power)}}
         self.update_ap_settings(setting_to_update)
 
     def set_security(self, network, security_type, *password):
@@ -366,12 +388,16 @@ class WifiRetailAP(object):
         """
         if (len(password) == 1) and (type(password[0]) == str):
             setting_to_update = {
-                "security_type_{}".format(network): str(security_type),
-                "password_{}".format(network): str(password[0])
+                network: {
+                    'security_type': str(security_type),
+                    'password': str(password[0])
+                }
             }
         else:
             setting_to_update = {
-                "security_type_{}".format(network): str(security_type)
+                network: {
+                    'security_type': str(security_type)
+                }
             }
         self.update_ap_settings(setting_to_update)
 
@@ -382,6 +408,27 @@ class WifiRetailAP(object):
         class raises exception if function not implemented in child class.
         """
         raise NotImplementedError
+
+    def _update_settings_dict(self,
+                              settings,
+                              updates,
+                              updates_requested=False,
+                              status_toggle_flag=False):
+        new_settings = copy.deepcopy(settings)
+        for key, value in updates.items():
+            if key not in new_settings.keys():
+                raise KeyError('{} is an invalid settings key.'.format(key))
+            elif isinstance(value, collections.abc.Mapping):
+                new_settings[
+                    key], updates_requested, status_toggle_flag = self._update_settings_dict(
+                        new_settings.get(key, {}), value, updates_requested,
+                        status_toggle_flag)
+            elif new_settings[key] != value:
+                new_settings[key] = value
+                updates_requested = True
+                if 'status' in key:
+                    status_toggle_flag = True
+        return new_settings, updates_requested, status_toggle_flag
 
     def update_ap_settings(self, dict_settings={}, **named_settings):
         """Function to update settings of existing AP.
@@ -396,24 +443,12 @@ class WifiRetailAP(object):
         """
         settings_to_update = dict(dict_settings, **named_settings)
         if len(settings_to_update) != len(dict_settings) + len(named_settings):
-            raise KeyError("The following keys were passed twice: {}".format(
+            raise KeyError('The following keys were passed twice: {}'.format(
                 (set(dict_settings.keys()).intersection(
                     set(named_settings.keys())))))
-        if not set(settings_to_update.keys()).issubset(
-                set(self.ap_settings.keys())):
-            raise KeyError(
-                "The following settings are invalid for this AP: {}".format(
-                    set(settings_to_update.keys()).difference(
-                        set(self.ap_settings.keys()))))
 
-        updates_requested = False
-        status_toggle_flag = False
-        for setting, value in settings_to_update.items():
-            if self.ap_settings[setting] != value:
-                self.ap_settings[setting] = value
-                if "status" in setting:
-                    status_toggle_flag = True
-                updates_requested = True
+        self.ap_settings, updates_requested, status_toggle_flag = self._update_settings_dict(
+            self.ap_settings, settings_to_update)
 
         if updates_requested:
             self.configure_ap(status_toggled=status_toggle_flag)
@@ -426,27 +461,27 @@ class WifiRetailAP(object):
         Returns:
             band: name of band which this channel belongs to on this ap
         """
-        for key, value in self.channel_band_map.items():
+        for key, value in self.capabilities['channels'].items():
             if channel in value:
                 return key
-        raise ValueError("Invalid channel passed in argument.")
+        raise ValueError('Invalid channel passed in argument.')
 
     def _get_control_ip_address(self):
         """Function to get AP's Control Interface IP address."""
-        if "ssh_config" in self.ap_settings.keys():
-            return self.ap_settings["ssh_config"]["host"]
+        if 'ssh_config' in self.ap_settings.keys():
+            return self.ap_settings['ssh_config']['host']
         else:
-            return self.ap_settings["ip_address"]
+            return self.ap_settings['ip_address']
 
     def _lock_ap(self):
         """Function to lock the ap while tests are running."""
-        self.lock_file_path = "/tmp/{}_{}_{}.lock".format(
+        self.lock_file_path = '/tmp/{}_{}_{}.lock'.format(
             self.ap_settings['brand'], self.ap_settings['model'],
             self._get_control_ip_address())
         if not os.path.exists(self.lock_file_path):
             with open(self.lock_file_path, 'w'):
                 pass
-        self.lock_file = open(self.lock_file_path, "r")
+        self.lock_file = open(self.lock_file_path, 'r')
         start_time = time.time()
         self.log.info('Trying to acquire AP lock.')
         while time.time() < start_time + self.lock_timeout:
@@ -457,11 +492,11 @@ class WifiRetailAP(object):
                 continue
             self.log.info('AP lock acquired.')
             return
-        raise RuntimeError("Could not lock AP in time.")
+        raise RuntimeError('Could not lock AP in time.')
 
     def _unlock_ap(self):
         """Function to unlock the AP when tests are done."""
         self.log.info('Releasing AP lock.')
-        if hasattr(self, "lock_file"):
+        if hasattr(self, 'lock_file'):
             fcntl.flock(self.lock_file, fcntl.LOCK_UN)
             self.lock_file.close()

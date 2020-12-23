@@ -572,5 +572,5 @@ class TsharkSnifferOnLinux(TsharkSnifferBase):
             network: dictionary of network credentials; SSID and password.
         """
 
-        self.log.debug('Connecting to network {}'.format(network['SSID']))
+        self.log.debug('Setting monitor mode on Ch {}, bw {}'.format(chan, bw))
         self.set_monitor_mode(chan, bw)

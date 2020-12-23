@@ -162,7 +162,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         if self.testclass_params.get('airplane_mode', 1):
             self.log.info('Turning on airplane mode.')
             asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                                "Can not turn on airplane mode.")
+                                'Can not turn on airplane mode.')
         wutils.wifi_toggle_state(self.dut, True)
 
         # Configure test retries
@@ -245,7 +245,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             metric_tag = 'ch{}_{}_nss{}_chain{}'.format(
                 metric_tag_dict['channel'], metric_tag_dict['mode'],
                 metric_tag_dict['num_streams'], metric_tag_dict['chain_mask'])
-            metric_key = "{}.avg_sensitivity".format(metric_tag)
+            metric_key = '{}.avg_sensitivity'.format(metric_tag)
             metric_value = numpy.nanmean(metric_data)
             self.testclass_metric_logger.add_metric(metric_key, metric_value)
 
@@ -410,7 +410,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             self.atten_dut_chain_map[testcase_params[
                 'channel']] = wputils.get_current_atten_dut_chain_map(
                     self.attenuators, self.dut, self.ping_server)
-        self.log.info("Current Attenuator-DUT Chain Map: {}".format(
+        self.log.info('Current Attenuator-DUT Chain Map: {}'.format(
             self.atten_dut_chain_map[testcase_params['channel']]))
         for idx, atten in enumerate(self.attenuators):
             if self.atten_dut_chain_map[testcase_params['channel']][
@@ -510,7 +510,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         return testcase_params
 
     def _test_sensitivity(self, testcase_params):
-        """ Function that gets called for each test case
+        """Function that gets called for each test case
 
         The function gets called in each rvr test case. The function customizes
         the rvr test based on the test name of the test that called it
@@ -545,6 +545,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 if mode in self.VALID_TEST_CONFIGS[channel]
             ]
             for mode in requested_modes:
+                bandwidth = int(''.join([x for x in mode if x.isdigit()]))
                 if 'VHT' in mode:
                     rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -559,6 +560,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                     testcase_params = collections.OrderedDict(
                         channel=channel,
                         mode=mode,
+                        bandwidth=bandwidth,
                         rate=rate.mcs,
                         num_streams=rate.streams,
                         short_gi=1,
@@ -765,7 +767,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 metric_value = numpy.nanmean(line_results['sensitivity'])
                 self.testclass_metric_logger.add_metric(
                     metric_name, metric_value)
-                self.log.info(("Average Sensitivity for {}: {:.1f}").format(
+                self.log.info(('Average Sensitivity for {}: {:.1f}').format(
                     metric_tag, metric_value))
             current_context = (
                 context.get_current_context().get_full_output_path())
@@ -825,6 +827,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 if mode in self.VALID_TEST_CONFIGS[channel]
             ]
             for chain, mode in itertools.product(chain_mask, requested_modes):
+                bandwidth = int(''.join([x for x in mode if x.isdigit()]))
                 if 'VHT' in mode:
                     valid_rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -839,6 +842,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     testcase_params = collections.OrderedDict(
                         channel=channel,
                         mode=mode,
+                        bandwidth=bandwidth,
                         rate=rate.mcs,
                         num_streams=rate.streams,
                         short_gi=1,

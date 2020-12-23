@@ -328,6 +328,7 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
                     default_slot, 1-default_slot)
                 set_default_sub_for_all_services(ad, 1-default_slot)
+                setattr(ad, "default_slot", 1-default_slot)
 
         # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
         # b/122327716
