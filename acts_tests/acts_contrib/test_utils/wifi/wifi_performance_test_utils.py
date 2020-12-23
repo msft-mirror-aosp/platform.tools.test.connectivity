@@ -654,7 +654,7 @@ def get_iperf_arg_string(duration,
     if ipv6:
         iperf_args = iperf_args + '-6 '
     if traffic_type.upper() == 'UDP':
-        iperf_args = iperf_args + '-u -b {} -l 1400 -P {} '.format(
+        iperf_args = iperf_args + '-u -b {} -l 1470 -P {} '.format(
             udp_throughput, num_processes)
     elif traffic_type.upper() == 'TCP':
         iperf_args = iperf_args + '-P {} '.format(num_processes)
@@ -715,7 +715,7 @@ def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
     current_rssi = current_rssi['signal_poll_rssi']['mean']
     ping_future.result()
     target_atten = 0
-    logging.debug("RSSI @ {0:.2f}dB attenuation = {1:.2f}".format(
+    logging.debug('RSSI @ {0:.2f}dB attenuation = {1:.2f}'.format(
         target_atten, current_rssi))
     within_range = 0
     for idx in range(20):
@@ -740,7 +740,7 @@ def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
                                           ignore_samples=1)
         current_rssi = current_rssi['signal_poll_rssi']['mean']
         ping_future.result()
-        logging.info("RSSI @ {0:.2f}dB attenuation = {1:.2f}".format(
+        logging.info('RSSI @ {0:.2f}dB attenuation = {1:.2f}'.format(
             target_atten, current_rssi))
         if abs(current_rssi - target_rssi) < 1:
             if within_range:
@@ -845,11 +845,11 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
         for idx, chain in enumerate(rf_map_by_network[net_id]):
             if chain:
                 rf_map_by_atten[idx].append({
-                    "network": net_id,
-                    "dut_chain": chain
+                    'network': net_id,
+                    'dut_chain': chain
                 })
-    logging.debug("RF Map (by Network): {}".format(rf_map_by_network))
-    logging.debug("RF Map (by Atten): {}".format(rf_map_by_atten))
+    logging.debug('RF Map (by Network): {}'.format(rf_map_by_network))
+    logging.debug('RF Map (by Atten): {}'.format(rf_map_by_atten))
 
     return rf_map_by_network, rf_map_by_atten
 
@@ -899,7 +899,7 @@ def wait_for_dut_cooldown(dut, target_temp=50, timeout=300):
             break
         time.sleep(SHORT_SLEEP)
     elapsed_time = time.time() - start_time
-    logging.debug("DUT Final Temperature: {}C. Cooldown duration: {}".format(
+    logging.debug('DUT Final Temperature: {}C. Cooldown duration: {}'.format(
         temperature, elapsed_time))
 
 
@@ -920,22 +920,22 @@ def health_check(dut, batt_thresh=5, temp_threshold=53, cooldown=1):
     health_check = True
     battery_level = utils.get_battery_level(dut)
     if battery_level < batt_thresh:
-        logging.warning("Battery level low ({}%)".format(battery_level))
+        logging.warning('Battery level low ({}%)'.format(battery_level))
         health_check = False
     else:
-        logging.debug("Battery level = {}%".format(battery_level))
+        logging.debug('Battery level = {}%'.format(battery_level))
 
     temperature = get_dut_temperature(dut)
     if temperature > temp_threshold:
         if cooldown:
             logging.warning(
-                "Waiting for DUT to cooldown. ({} C)".format(temperature))
+                'Waiting for DUT to cooldown. ({} C)'.format(temperature))
             wait_for_dut_cooldown(dut, target_temp=temp_threshold - 5)
         else:
-            logging.warning("DUT Overheating ({} C)".format(temperature))
+            logging.warning('DUT Overheating ({} C)'.format(temperature))
             health_check = False
     else:
-        logging.debug("DUT Temperature = {} C".format(temperature))
+        logging.debug('DUT Temperature = {} C'.format(temperature))
     return health_check
 
 
@@ -1418,10 +1418,10 @@ def _set_ini_fields(ini_file_path, ini_field_dict):
             for field_name, field_value in ini_field_dict.items():
                 line_regex = re.compile(template_regex.format(field_name))
                 if re.match(line_regex, line):
-                    ini_lines[idx] = "{}={}".format(field_name, field_value)
+                    ini_lines[idx] = '{}={}'.format(field_name, field_value)
                     print(ini_lines[idx])
     with open(ini_file_path, 'w') as f:
-        f.write("\n".join(ini_lines) + "\n")
+        f.write('\n'.join(ini_lines) + '\n')
 
 
 def _edit_dut_ini(dut, ini_fields):
@@ -1460,16 +1460,16 @@ def set_ini_two_chain_mode(dut):
 
 def set_ini_tx_mode(dut, mode):
     TX_MODE_DICT = {
-        "Auto": 0,
-        "11n": 4,
-        "11ac": 9,
-        "11abg": 1,
-        "11b": 2,
-        "11g": 3,
-        "11g only": 5,
-        "11n only": 6,
-        "11b only": 7,
-        "11ac only": 8
+        'Auto': 0,
+        '11n': 4,
+        '11ac': 9,
+        '11abg': 1,
+        '11b': 2,
+        '11': 3,
+        '11g only': 5,
+        '11n only': 6,
+        '11b only': 7,
+        '11ac only': 8
     }
 
     ini_fields = {
@@ -1647,11 +1647,11 @@ class LinkLayerStatsBrcm():
             try:
                 rate_info = self.dut.adb.shell('wl rate_info', timeout=0.1)
                 self.llstats_incremental['summary'][
-                    'common_tx_mcs'] = "{} Mbps".format(
+                    'common_tx_mcs'] = '{} Mbps'.format(
                         re.findall('\[Tx\]:'
                                    ' (\d+[.]*\d* Mbps)', rate_info))
                 self.llstats_incremental['summary'][
-                    'common_rx_mcs'] = "{} Mbps".format(
+                    'common_rx_mcs'] = '{} Mbps'.format(
                         re.findall('\[Rx\]:'
                                    ' (\d+[.]*\d* Mbps)', rate_info))
             except:

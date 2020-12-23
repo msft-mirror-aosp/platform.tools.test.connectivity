@@ -2,14 +2,14 @@
 #
 #   Copyright 2020 - The Android Open Source Project
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
+#   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
+#   distributed under the License is distributed on an 'AS IS' BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
@@ -27,52 +27,62 @@ class NetgearR8000AP(NetgearR7000AP):
         super().init_gui_data()
         # Overwrite minor differences from R7000 AP
         self.config_page = (
-            "{protocol}://{username}:{password}@"
-            "{ip_address}:{port}/WLG_wireless_dual_band_r8000.htm").format(
-                protocol=self.ap_settings["protocol"],
-                username=self.ap_settings["admin_username"],
-                password=self.ap_settings["admin_password"],
-                ip_address=self.ap_settings["ip_address"],
-                port=self.ap_settings["port"])
+            '{protocol}://{username}:{password}@'
+            '{ip_address}:{port}/WLG_wireless_dual_band_r8000.htm').format(
+                protocol=self.ap_settings['protocol'],
+                username=self.ap_settings['admin_username'],
+                password=self.ap_settings['admin_password'],
+                ip_address=self.ap_settings['ip_address'],
+                port=self.ap_settings['port'])
         self.config_page_nologin = (
-            "{protocol}://{ip_address}:{port}/"
-            "WLG_wireless_dual_band_r8000.htm").format(
-                protocol=self.ap_settings["protocol"],
-                ip_address=self.ap_settings["ip_address"],
-                port=self.ap_settings["port"])
+            '{protocol}://{ip_address}:{port}/'
+            'WLG_wireless_dual_band_r8000.htm').format(
+                protocol=self.ap_settings['protocol'],
+                ip_address=self.ap_settings['ip_address'],
+                port=self.ap_settings['port'])
         self.config_page_advanced = (
-            "{protocol}://{username}:{password}@"
-            "{ip_address}:{port}/WLG_adv_dual_band2_r8000.htm").format(
-                protocol=self.ap_settings["protocol"],
-                username=self.ap_settings["admin_username"],
-                password=self.ap_settings["admin_password"],
-                ip_address=self.ap_settings["ip_address"],
-                port=self.ap_settings["port"])
-        self.networks = ["2G", "5G_1", "5G_2"]
-        self.channel_band_map = {
-            "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-            "5G_1": [36, 40, 44, 48],
-            "5G_2": [149, 153, 157, 161, 165]
+            '{protocol}://{username}:{password}@'
+            '{ip_address}:{port}/WLG_adv_dual_band2_r8000.htm').format(
+                protocol=self.ap_settings['protocol'],
+                username=self.ap_settings['admin_username'],
+                password=self.ap_settings['admin_password'],
+                ip_address=self.ap_settings['ip_address'],
+                port=self.ap_settings['port'])
+        self.capabilities = {
+            'interfaces': ['2G', '5G_1', '5G_2'],
+            'channels': {
+                '2G': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                '5G_1': [36, 40, 44, 48],
+                '5G_2': [149, 153, 157, 161, 165]
+            },
+            'modes': {
+                '2G': ['VHT20', 'VHT40'],
+                '5G_1': ['VHT20', 'VHT40', 'VHT80'],
+                '5G_2': ['VHT20', 'VHT40', 'VHT80']
+            },
+            'default_mode': 'VHT'
         }
+        for interface in self.capabilities['interfaces']:
+            self.ap_settings[interface] = {}
+
         self.config_page_fields = {
-            "region": "WRegion",
-            ("2G", "status"): "enable_ap",
-            ("5G_1", "status"): "enable_ap_an",
-            ("5G_2", "status"): "enable_ap_an_2",
-            ("2G", "ssid"): "ssid",
-            ("5G_1", "ssid"): "ssid_an",
-            ("5G_2", "ssid"): "ssid_an_2",
-            ("2G", "channel"): "w_channel",
-            ("5G_1", "channel"): "w_channel_an",
-            ("5G_2", "channel"): "w_channel_an_2",
-            ("2G", "bandwidth"): "opmode",
-            ("5G_1", "bandwidth"): "opmode_an",
-            ("5G_2", "bandwidth"): "opmode_an_2",
-            ("2G", "security_type"): "security_type",
-            ("5G_1", "security_type"): "security_type_an",
-            ("5G_2", "security_type"): "security_type_an_2",
-            ("2G", "password"): "passphrase",
-            ("5G_1", "password"): "passphrase_an",
-            ("5G_2", "password"): "passphrase_an_2"
+            'region': 'WRegion',
+            ('2G', 'status'): 'enable_ap',
+            ('5G_1', 'status'): 'enable_ap_an',
+            ('5G_2', 'status'): 'enable_ap_an_2',
+            ('2G', 'ssid'): 'ssid',
+            ('5G_1', 'ssid'): 'ssid_an',
+            ('5G_2', 'ssid'): 'ssid_an_2',
+            ('2G', 'channel'): 'w_channel',
+            ('5G_1', 'channel'): 'w_channel_an',
+            ('5G_2', 'channel'): 'w_channel_an_2',
+            ('2G', 'bandwidth'): 'opmode',
+            ('5G_1', 'bandwidth'): 'opmode_an',
+            ('5G_2', 'bandwidth'): 'opmode_an_2',
+            ('2G', 'security_type'): 'security_type',
+            ('5G_1', 'security_type'): 'security_type_an',
+            ('5G_2', 'security_type'): 'security_type_an_2',
+            ('2G', 'password'): 'passphrase',
+            ('5G_1', 'password'): 'passphrase_an',
+            ('5G_2', 'password'): 'passphrase_an_2'
         }
-        self.default_mode = 'VHT'

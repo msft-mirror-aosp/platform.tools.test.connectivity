@@ -58,7 +58,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.publish_testcase_metrics = True
         # Generate test cases
         self.tests = self.generate_test_cases([6, 36, 149],
-                                              ['VHT20', 'VHT40', 'VHT80'],
+                                              ['bw20', 'bw40', 'bw80'],
                                               ['TCP', 'UDP'], ['DL', 'UL'],
                                               ['high', 'low'])
 
@@ -66,13 +66,15 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                             traffic_directions, signal_levels):
         """Function that auto-generates test cases for a test class."""
         allowed_configs = {
-            'VHT20': [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 149, 153,
-                157, 161
+            20: [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
+                116, 132, 140, 149, 153, 157, 161
             ],
-            'VHT40': [36, 44, 149, 157],
-            'VHT80': [36, 149]
+            40: [36, 44, 100, 149, 157],
+            80: [36, 100, 149],
+            160: [36]
         }
+
         test_cases = []
         for channel, mode, signal_level, traffic_type, traffic_direction in itertools.product(
                 channels,
@@ -81,11 +83,13 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 traffic_types,
                 traffic_directions,
         ):
-            if channel not in allowed_configs[mode]:
+            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
+            if channel not in allowed_configs[bandwidth]:
                 continue
             testcase_params = collections.OrderedDict(
                 channel=channel,
                 mode=mode,
+                bandwidth=bandwidth,
                 traffic_type=traffic_type,
                 traffic_direction=traffic_direction,
                 signal_level=signal_level)
@@ -123,7 +127,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         if self.testclass_params.get('airplane_mode', 1):
             self.log.info('Turning on airplane mode.')
             asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                                "Can not turn on airplane mode.")
+                                'Can not turn on airplane mode.')
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
@@ -565,18 +569,21 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
                             traffic_directions, signal_levels, chamber_mode,
                             positions):
         allowed_configs = {
-            'VHT20': [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 149, 153,
-                157, 161
+            20: [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
+                116, 132, 140, 149, 153, 157, 161
             ],
-            'VHT40': [36, 44, 149, 157],
-            'VHT80': [36, 149]
+            40: [36, 44, 100, 149, 157],
+            80: [36, 100, 149],
+            160: [36]
         }
+
         test_cases = []
         for channel, mode, position, traffic_type, signal_level, traffic_direction in itertools.product(
                 channels, modes, positions, traffic_types, signal_levels,
                 traffic_directions):
-            if channel not in allowed_configs[mode]:
+            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
+            if channel not in allowed_configs[bandwidth]:
                 continue
             testcase_params = collections.OrderedDict(
                 channel=channel,
@@ -601,7 +608,7 @@ class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
                                                 ):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
+        self.tests = self.generate_test_cases([6, 36, 149], ['bw20', 'bw80'],
                                               ['TCP'], ['DL', 'UL'],
                                               ['high', 'low'], 'orientation',
                                               list(range(0, 360, 10)))
@@ -610,7 +617,7 @@ class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
 class WifiOtaThroughputStability_45Degree_Test(WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
+        self.tests = self.generate_test_cases([6, 36, 149], ['bw20', 'bw80'],
                                               ['TCP'], ['DL', 'UL'],
                                               ['high', 'low'], 'orientation',
                                               list(range(0, 360, 45)))
@@ -620,7 +627,7 @@ class WifiOtaThroughputStability_SteppedStirrers_Test(
         WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
+        self.tests = self.generate_test_cases([6, 36, 149], ['bw20', 'bw80'],
                                               ['TCP'], ['DL', 'UL'],
                                               ['high', 'low'],
                                               'stepped stirrers',
