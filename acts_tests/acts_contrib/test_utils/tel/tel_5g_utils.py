@@ -18,6 +18,7 @@ import time
 import random
 import re
 
+from queue import Empty
 from acts.utils import rand_ascii_str
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
