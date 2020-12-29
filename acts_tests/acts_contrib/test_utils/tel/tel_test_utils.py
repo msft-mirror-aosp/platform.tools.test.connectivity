@@ -11006,3 +11006,103 @@ def change_voice_subid_temporarily(ad, sub_id, state_check_func):
         set_incoming_voice_sub_id(ad, current_sub_id)
 
     return result
+
+def wait_for_network_service(
+    log,
+    ad,
+    wifi_connected=False,
+    wifi_ssid=None,
+    ims_reg=True,
+    recover=False,
+    retry=3):
+    """ Wait for multiple network services in sequence, including:
+        - service state
+        - network connection
+        - wifi connection
+        - cellular data
+        - internet connection
+        - IMS registration
+
+        The mechanism (cycling airplane mode) to recover network services is
+        also provided if any service is not available.
+
+        Args:
+            log: log object
+            ad: android device
+            wifi_connected: True if wifi should be connected. Otherwise False.
+            ims_reg: True if IMS should be registered. Otherwise False.
+            recover: True if the mechanism (cycling airplane mode) to recover
+            network services should be enabled (by default False).
+            retry: times of retry.
+    """
+    times = 1
+    while times <= retry:
+        while True:
+            if not wait_for_state(
+                    get_service_state_by_adb,
+                    "IN_SERVICE",
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK,
+                    log,
+                    ad):
+                ad.log.error("Current service state is not 'IN_SERVICE'.")
+                break
+
+            if not wait_for_state(
+                    ad.droid.connectivityNetworkIsConnected,
+                    True,
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK):
+                ad.log.error("Network is NOT connected!")
+                break
+
+            if wifi_connected and wifi_ssid:
+                if not wait_for_state(
+                        check_is_wifi_connected,
+                        True,
+                        MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                        WAIT_TIME_BETWEEN_STATE_CHECK,
+                        log,
+                        ad,
+                        wifi_ssid):
+                    ad.log.error("Failed to connect Wi-Fi SSID '%s'.", wifi_ssid)
+                    break
+            else:
+                if not wait_for_cell_data_connection(log, ad, True):
+                    ad.log.error("Failed to enable data connection.")
+                    break
+
+            if not wait_for_state(
+                    verify_internet_connection,
+                    True,
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK,
+                    log,
+                    ad):
+                ad.log.error("Data not available on cell.")
+                break
+
+            if ims_reg:
+                if not wait_for_ims_registered(log, ad):
+                    ad.log.error("IMS is not registered.")
+                    break
+                ad.log.info("IMS is registered.")
+            return True
+
+        if recover:
+            ad.log.warning("Trying to recover by cycling airplane mode...")
+            if not toggle_airplane_mode(log, ad, True):
+                ad.log.error("Failed to enable airplane mode")
+                break
+
+            time.sleep(5)
+
+            if not toggle_airplane_mode(log, ad, False):
+                ad.log.error("Failed to disable airplane mode")
+                break
+
+            times = times + 1
+
+        else:
+            return False
+    return False
