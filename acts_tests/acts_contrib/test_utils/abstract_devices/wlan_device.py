@@ -18,7 +18,6 @@ import inspect
 import logging
 
 import acts_contrib.test_utils.wifi.wifi_test_utils as awutils
-import acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils as fwutils
 from acts.utils import get_interface_ip_addresses
 from acts.utils import adb_shell_ping
 
@@ -100,7 +99,6 @@ class WlanDevice(object):
                   target_pwd=None,
                   check_connectivity=True,
                   hidden=False,
-                  association_mechanism=None,
                   target_security=None):
         """Base generic WLAN interface.  Only called if not overriden by
         another supported device.
@@ -108,7 +106,7 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def disconnect(self, association_mechanism=None):
+    def disconnect(self):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
@@ -208,7 +206,6 @@ class AndroidWlanDevice(WlanDevice):
                   key_mgmt=None,
                   check_connectivity=True,
                   hidden=False,
-                  association_mechanism=None,
                   target_security=None):
         """Function to associate an Android WLAN device.
 
@@ -238,7 +235,7 @@ class AndroidWlanDevice(WlanDevice):
             self.device.log.info('Failed to associated (%s)' % e)
             return False
 
-    def disconnect(self, association_mechanism=None):
+    def disconnect(self):
         awutils.turn_location_off_and_scan_toggle_off(self.device)
 
     def get_wlan_interface_id_list(self):
@@ -296,6 +293,7 @@ class FuchsiaWlanDevice(WlanDevice):
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
         self.identifier = fuchsia_device.ip
+        self.device.configure_wlan()
 
     def wifi_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
@@ -323,7 +321,6 @@ class FuchsiaWlanDevice(WlanDevice):
                   key_mgmt=None,
                   check_connectivity=True,
                   hidden=False,
-                  association_mechanism=None,
                   target_security=None):
         """Function to associate a Fuchsia WLAN device.
 
@@ -333,42 +330,29 @@ class FuchsiaWlanDevice(WlanDevice):
             key_mgmt: the hostapd wpa_key_mgmt, if specified.
             check_connectivity: Whether to check for internet connectivity.
             hidden: Whether the network is hidden.
+            target_security: string, target security for network, used to
+                save the network in policy connects (see wlan_policy_lib)
         Returns:
             True if successfully connected to WLAN, False if not.
         """
-        if association_mechanism == 'policy':
-            return self.device.policy_save_and_connect(target_ssid,
-                                                       target_security,
-                                                       password=target_pwd)
-        elif not association_mechanism or association_mechanism == 'drivers':
+        if self.device.association_mechanism == 'drivers':
             connection_response = self.device.wlan_lib.wlanConnectToNetwork(
                 target_ssid, target_pwd=target_pwd)
             return self.device.check_connect_response(connection_response)
         else:
-            self.log.error(
-                "Association mechanism %s is not recognized. Acceptable values are 'drivers' and 'policy'"
-                % association_mechanism)
-            return False
+            return self.device.wlan_policy_controller.save_and_connect(
+                target_ssid, target_security, password=target_pwd)
 
-    def disconnect(self, association_mechanism=None):
+    def disconnect(self):
         """Function to disconnect from a Fuchsia WLAN device.
            Asserts if disconnect was not successful.
         """
-        if association_mechanism == 'policy':
-            asserts.assert_true(self.device.remove_all_and_disconnect(),
-                                'Failed to disconnect')
-        elif not association_mechanism or association_mechanism == 'drivers':
+        if self.device.association_mechanism == 'drivers':
             disconnect_response = self.device.wlan_lib.wlanDisconnect()
-            asserts.assert_true(
-                self.device.check_disconnect_response(disconnect_response),
-                'Failed to disconnect.')
+            return self.device.check_disconnect_response(disconnect_response)
         else:
-            self.log.error(
-                "Association mechanism %s is not recognized. Acceptable values are 'drivers' and 'policy'"
-                % association_mechanism)
-            raise ValueError(
-                'Invalid association_mechanism "%s". Valid options are "policy" or "drivers".'
-                % association_mechanism)
+            return self.device.wlan_policy_controller.remove_all_networks_and_wait_for_no_connections(
+            )
 
     def status(self):
         return self.device.wlan_lib.wlanStatus()
@@ -467,16 +451,20 @@ class FuchsiaWlanDevice(WlanDevice):
         self.device.reboot(reboot_type='hard', testbed_pdus=pdus)
 
     def save_network(self, target_ssid, security_type=None, target_pwd=None):
+        if self.device.association_mechanism == 'drivers':
+            raise EnvironmentError(
+                'Cannot save network using the drivers. Saved networks are a '
+                'policy layer concept.')
         if security_type and security_type not in FUCHSIA_VALID_SECURITY_TYPES:
             raise TypeError('Invalid security type: %s' % security_type)
-        response = self.device.wlan_policy_lib.wlanSaveNetwork(
-            target_ssid, security_type, target_pwd=target_pwd)
-        if response.get('error'):
-            raise EnvironmentError('Failed to save network %s. Err: %s' %
-                                   (target_ssid, response.get('error')))
+        if not self.device.wlan_policy_controller.save_network(
+                target_ssid, security_type, password=target_pwd):
+            raise EnvironmentError('Failed to save network: %s' % target_ssid)
 
     def clear_saved_networks(self):
-        response = self.device.wlan_policy_lib.wlanRemoveAllNetworks()
-        if response.get('error'):
-            raise EnvironmentError('Failed to clear saved networks: %s' %
-                                   response.get('error'))
+        if self.device.association_mechanism == 'drivers':
+            raise EnvironmentError(
+                'Cannot clear saved network using the drivers. Saved networks '
+                'are a policy layer concept.')
+        if not self.device.wlan_policy_controller.remove_all_networks():
+            raise EnvironmentError('Failed to clear saved networks')

@@ -29,6 +29,7 @@ from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
+from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.utils_lib.commands import ip
@@ -85,6 +86,71 @@ def get_info(aps):
         A list of all aps hostname.
     """
     return [ap.ssh_settings.hostname for ap in aps]
+
+
+def setup_ap(access_point,
+             profile_name,
+             channel,
+             ssid,
+             mode=None,
+             preamble=None,
+             beacon_interval=None,
+             dtim_period=None,
+             frag_threshold=None,
+             rts_threshold=None,
+             force_wmm=None,
+             hidden=False,
+             security=None,
+             pmf_support=None,
+             additional_ap_parameters=None,
+             password=None,
+             n_capabilities=None,
+             ac_capabilities=None,
+             vht_bandwidth=None,
+             setup_bridge=False):
+    """Creates a hostapd profile and runs it on an ap. This is a convenience
+    function that allows us to start an ap with a single function, without first
+    creating a hostapd config.
+
+    Args:
+        access_point: An ACTS access_point controller
+        profile_name: The profile name of one of the hostapd ap presets.
+        channel: What channel to set the AP to.
+        preamble: Whether to set short or long preamble (True or False)
+        beacon_interval: The beacon interval (int)
+        dtim_period: Length of dtim period (int)
+        frag_threshold: Fragmentation threshold (int)
+        rts_threshold: RTS threshold (int)
+        force_wmm: Enable WMM or not (True or False)
+        hidden: Advertise the SSID or not (True or False)
+        security: What security to enable.
+        pmf_support: int, whether pmf is not disabled, enabled, or required
+        additional_ap_parameters: Additional parameters to send the AP.
+        password: Password to connect to WLAN if necessary.
+        check_connectivity: Whether to check for internet connectivity.
+    """
+    ap = hostapd_ap_preset.create_ap_preset(profile_name=profile_name,
+                                            iface_wlan_2g=access_point.wlan_2g,
+                                            iface_wlan_5g=access_point.wlan_5g,
+                                            channel=channel,
+                                            ssid=ssid,
+                                            mode=mode,
+                                            short_preamble=preamble,
+                                            beacon_interval=beacon_interval,
+                                            dtim_period=dtim_period,
+                                            frag_threshold=frag_threshold,
+                                            rts_threshold=rts_threshold,
+                                            force_wmm=force_wmm,
+                                            hidden=hidden,
+                                            bss_settings=[],
+                                            security=security,
+                                            pmf_support=pmf_support,
+                                            n_capabilities=n_capabilities,
+                                            ac_capabilities=ac_capabilities,
+                                            vht_bandwidth=vht_bandwidth)
+    access_point.start_ap(hostapd_config=ap,
+                          setup_bridge=setup_bridge,
+                          additional_parameters=additional_ap_parameters)
 
 
 class Error(Exception):
