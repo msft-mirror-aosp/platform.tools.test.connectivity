@@ -30,12 +30,11 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.base_test import BaseTestClass
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.utils import rand_ascii_str
 
 

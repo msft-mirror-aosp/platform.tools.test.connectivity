@@ -24,15 +24,13 @@ import uuid
 import time
 
 from acts import signals
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.fuchsia import utils
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.fuchsia import utils
+from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.utils import rand_ascii_str
 
 
@@ -99,7 +97,7 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
             if not ssid:
                 ssid = self.ssid
             if negative_test:
-                if not associate(self.dut, ssid=ssid, password=password):
+                if not self.dut.associate(ssid, target_pwd=password):
                     self.log.info(
                         'Attempt %d. Did not associate as expected.' % x)
                 else:
@@ -108,13 +106,13 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
                     failed = True
             else:
                 # Connect
-                if associate(self.dut, ssid=ssid, password=password):
+                if self.dut.associate(ssid, target_pwd=password):
                     self.log.info('Attempt %d. Successfully associated' % x)
                 else:
                     self.log.error('Attempt %d. Failed to associate.' % x)
                     failed = True
                 # Disconnect
-                disconnect(self.dut)
+                self.dut.disconnect()
 
             # Wait a second before trying again
             time.sleep(1)

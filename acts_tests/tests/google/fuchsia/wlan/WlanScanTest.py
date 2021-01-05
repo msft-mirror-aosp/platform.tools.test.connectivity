@@ -47,6 +47,8 @@ class WlanScanTest(WifiBaseTest):
         super().setup_class()
 
         self.start_access_point = False
+        for fd in self.fuchsia_devices:
+            fd.configure_wlan()
         if "AccessPoint" in self.user_params:
             # This section sets up the config that could be sent to the AP if
             # the AP is needed. The reasoning is since ACTS already connects
@@ -171,8 +173,8 @@ class WlanScanTest(WifiBaseTest):
         else:
             # the response indicates an error - log and raise failure
             raise signals.TestFailure("Aborting test - Connect call failed "
-                                      "with error: %s"
-                                      % connection_response.get("error"))
+                                      "with error: %s" %
+                                      connection_response.get("error"))
 
     def scan_while_connected(self, wlan_network_params, fd):
         """ Connects to as specified network and initiates a scan
@@ -188,8 +190,7 @@ class WlanScanTest(WifiBaseTest):
             target_pwd = wlan_network_params['password']
 
         connection_response = fd.wlan_lib.wlanConnectToNetwork(
-            target_ssid,
-            target_pwd)
+            target_ssid, target_pwd)
         self.check_connect_response(connection_response)
         self.basic_scan_request(fd)
 
@@ -210,8 +211,7 @@ class WlanScanTest(WifiBaseTest):
         else:
             # the response indicates an error - log and raise failure
             raise signals.TestFailure("Aborting test - scan failed with "
-                                      "error: %s"
-                                      % scan_response.get("error"))
+                                      "error: %s" % scan_response.get("error"))
 
         self.log.info("scan contained %d results", len(scan_results))
 
@@ -220,13 +220,13 @@ class WlanScanTest(WifiBaseTest):
 
         if len(scan_results) > 0:
             raise signals.TestPass(details="",
-                                   extras={"Scan time":"%d" % total_time_ms})
+                                   extras={"Scan time": "%d" % total_time_ms})
         else:
             raise signals.TestFailure("Scan failed or did not "
                                       "find any networks")
 
-
     """Tests"""
+
     def test_basic_scan_request(self):
         """Verify a general scan trigger returns at least one result"""
         for fd in self.fuchsia_devices:
@@ -247,4 +247,3 @@ class WlanScanTest(WifiBaseTest):
     def test_scan_while_connected_wpa2_network_5g(self):
         for fd in self.fuchsia_devices:
             self.scan_while_connected(self.wpa2_network_5g, fd)
-

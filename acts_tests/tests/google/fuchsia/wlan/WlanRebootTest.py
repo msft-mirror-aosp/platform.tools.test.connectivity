@@ -26,13 +26,13 @@ from acts import utils
 from acts.controllers import iperf_client
 from acts.controllers import iperf_server
 from acts.controllers import pdu
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.radvd import Radvd
 from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 # Constants, for readibility
 AP = 'ap'
@@ -149,10 +149,6 @@ class WlanRebootTest(WifiBaseTest):
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
-        for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanCreateClientController()
-            fd.wlan_policy_lib.wlanStartClientConnections()
-        self.dut.clear_saved_networks()
         self.dut.disconnect()
         self.router_adv_daemon = None
         self.ssid = utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G)
@@ -162,9 +158,6 @@ class WlanRebootTest(WifiBaseTest):
         if self.router_adv_daemon:
             self.router_adv_daemon.stop()
             self.router_adv_daemon = None
-        self.dut.clear_saved_networks()
-        for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanStopClientConnections()
         self.dut.disconnect()
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
@@ -187,15 +180,15 @@ class WlanRebootTest(WifiBaseTest):
         """
         # TODO(fxb/63719): Add varying AP parameters
         if band == BAND_2G:
-            wlan_utils.setup_ap(access_point=self.access_point,
-                                profile_name='whirlwind',
-                                channel=11,
-                                ssid=ssid)
+            setup_ap(access_point=self.access_point,
+                     profile_name='whirlwind',
+                     channel=11,
+                     ssid=ssid)
         elif band == BAND_5G:
-            wlan_utils.setup_ap(access_point=self.access_point,
-                                profile_name='whirlwind',
-                                channel=36,
-                                ssid=ssid)
+            setup_ap(access_point=self.access_point,
+                     profile_name='whirlwind',
+                     channel=36,
+                     ssid=ssid)
 
         if not ipv4:
             self.access_point.stop_dhcp()
@@ -215,37 +208,6 @@ class WlanRebootTest(WifiBaseTest):
             self.router_adv_daemon.start(radvd_config)
 
         self.log.info('Network (SSID: %s) is up.' % ssid)
-
-    def save_and_connect(self, ssid):
-        """Associates the dut with the network running on the AP and saves
-        network to device.
-
-        Args:
-            ssid: string, ssid to connect DUT to
-
-        Raises:
-            EnvironmentError, if saving network fails
-            ConnectionError, if device fails to connect to network
-        """
-        self.dut.save_network(self.ssid)
-        self.dut.associate(self.ssid)
-
-    def setup_save_and_connect_to_network(self,
-                                          ssid,
-                                          band,
-                                          ipv4=True,
-                                          ipv6=False):
-        """Setup ap with passed params, saves network, and connects the dut with
-        the network running on the AP and saves network.
-
-        Args:
-            ssid: string, ssid to setup and connect to
-            band: string ('2g' or '5g') of band to setup.
-            ipv4: True if using ipv4 (dhcp), else False.
-            ipv6: True if using ipv6 (radvd), else False.
-        """
-        self.setup_ap(ssid, band, ipv4, ipv6)
-        self.save_and_connect(ssid)
 
     def wait_until_dut_gets_ipv4_addr(self, interface):
         """Checks if device has an ipv4 private address. Sleeps 1 second between
@@ -444,8 +406,6 @@ class WlanRebootTest(WifiBaseTest):
         self.dut.wifi_toggle_state(True)
         for ad in self.android_devices:
             ad.droid.wakeUpNow()
-        for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanCreateClientController()
 
     def wait_for_dut_network_connection(self, ssid):
         """Checks if device is connected to given network. Sleeps 1 second
@@ -586,11 +546,9 @@ class WlanRebootTest(WifiBaseTest):
         if band != BAND_2G and band != BAND_5G:
             raise ValueError('Invalid band: %s' % band)
 
-        self.setup_save_and_connect_to_network(self.ssid,
-                                               band,
-                                               ipv4=ipv4,
-                                               ipv6=ipv6)
-        self.wait_for_dut_network_connection(self.ssid)
+        self.setup_ap(self.ssid, band, ipv4, ipv6)
+        if not self.dut.associate(self.ssid):
+            raise EnvironmentError('Initial network connection failed.')
 
         dut_test_interface = self.iperf_client_on_dut.test_interface
         if ipv4:

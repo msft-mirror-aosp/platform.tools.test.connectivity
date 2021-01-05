@@ -17,14 +17,15 @@
 import itertools
 import re
 
+from acts import asserts
 from acts import utils
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 
 # AC Capabilities
@@ -171,26 +172,33 @@ class WlanPhyCompliance11ACTest(AbstractDeviceWlanDeviceBaseTest):
                 bandwidth, security, n_capabilities, and ac_capabilities
 
         """
+        ssid = rand_ascii_str(20)
         security = ap_settings['security']
         chbw = ap_settings['chbw']
         password = None
+        target_security = None
         if security:
             password = security.password
+            target_security = security.security_mode
         n_capabilities = ap_settings['n_capabilities']
         ac_capabilities = ap_settings['ac_capabilities']
 
-        validate_setup_ap_and_associate(access_point=self.access_point,
-                                        client=self.dut,
-                                        profile_name='whirlwind',
-                                        mode=hostapd_constants.MODE_11AC_MIXED,
-                                        channel=36,
-                                        n_capabilities=n_capabilities,
-                                        ac_capabilities=ac_capabilities,
-                                        force_wmm=True,
-                                        ssid=utils.rand_ascii_str(20),
-                                        security=security,
-                                        vht_bandwidth=chbw,
-                                        password=password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='whirlwind',
+                 mode=hostapd_constants.MODE_11AC_MIXED,
+                 channel=36,
+                 n_capabilities=n_capabilities,
+                 ac_capabilities=ac_capabilities,
+                 force_wmm=True,
+                 ssid=ssid,
+                 security=security,
+                 vht_bandwidth=chbw,
+                 password=password)
+        asserts.assert_true(
+            self.dut.associate(ssid,
+                               target_pwd=password,
+                               target_security=target_security),
+            'Failed to associate.')
 
     # 864 test cases
     def test_11ac_capabilities_20mhz_open(self):

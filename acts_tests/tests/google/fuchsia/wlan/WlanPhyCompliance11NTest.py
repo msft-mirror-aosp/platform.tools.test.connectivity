@@ -17,14 +17,14 @@
 import itertools
 import re
 
+from acts import asserts
 from acts import utils
-from acts.controllers.ap_lib.hostapd_security import Security
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 
 FREQUENCY_24 = ['2.4GHz']
@@ -133,8 +133,10 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
         Args:
                ap_settings: A dictionary of hostapd constant n_capabilities.
         """
+        ssid = utils.rand_ascii_str(20)
         security_profile = None
         password = None
+        target_security = None
         temp_n_capabilities = list(ap_settings['n_capabilities'])
         n_capabilities = []
         for n_capability in temp_n_capabilities:
@@ -150,7 +152,7 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
                 raise ValueError('Invalid frequence: %s' %
                                  ap_settings['frequency'])
 
-        if ap_settings['chbw'] == 'HT40-':
+        elif ap_settings['chbw'] == 'HT40-':
             if ap_settings['frequency'] == '2.4GHz':
                 channel = 11
             elif ap_settings['frequency'] == '5GHz':
@@ -158,6 +160,10 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
             else:
                 raise ValueError('Invalid frequency: %s' %
                                  ap_settings['frequency'])
+
+        else:
+            raise ValueError('Invalid channel bandwidth: %s' %
+                             ap_settings['chbw'])
 
         if ap_settings['chbw'] == 'HT40-' or ap_settings['chbw'] == 'HT40+':
             if hostapd_config.ht40_plus_allowed(channel):
@@ -174,18 +180,23 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
                                         wpa_cipher='CCMP',
                                         wpa2_cipher='CCMP')
             password = security_profile.password
+            target_security = hostapd_constants.WPA2_STRING
 
-        validate_setup_ap_and_associate(access_point=self.access_point,
-                                        client=self.dut,
-                                        profile_name='whirlwind',
-                                        mode=hostapd_constants.MODE_11N_MIXED,
-                                        channel=channel,
-                                        n_capabilities=n_capabilities,
-                                        ac_capabilities=[],
-                                        force_wmm=True,
-                                        ssid=utils.rand_ascii_str(20),
-                                        security=security_profile,
-                                        password=password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='whirlwind',
+                 mode=hostapd_constants.MODE_11N_MIXED,
+                 channel=channel,
+                 n_capabilities=n_capabilities,
+                 ac_capabilities=[],
+                 force_wmm=True,
+                 ssid=ssid,
+                 security=security_profile,
+                 password=password)
+        asserts.assert_true(
+            self.dut.associate(ssid,
+                               target_pwd=password,
+                               target_security=target_security),
+            'Failed to connect.')
 
     def test_11n_capabilities_24_HT20(self):
         test_list = []

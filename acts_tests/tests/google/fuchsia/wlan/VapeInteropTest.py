@@ -14,14 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import asserts
 from acts import utils
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 class VapeInteropTest(AbstractDeviceWlanDeviceBaseTest):
@@ -80,559 +81,652 @@ class VapeInteropTest(AbstractDeviceWlanDeviceBaseTest):
         self.access_point.stop_all_aps()
 
     def test_associate_actiontec_pk5000_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='actiontec_pk5000',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='actiontec_pk5000',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_actiontec_pk5000_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='actiontec_pk5000',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='actiontec_pk5000',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_actiontec_mi424wr_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='actiontec_mi424wr',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='actiontec_mi424wr',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_actiontec_mi424wr_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='actiontec_mi424wr',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='actiontec_mi424wr',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtac66u_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtac66u_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtac66u_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtac66u_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtac86u_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac86u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac86u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtac86u_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac86u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac86u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtac86u_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac86u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac86u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtac86u_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac86u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac86u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtac5300_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac5300',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac5300',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtac5300_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac5300',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac5300',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtac5300_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac5300',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac5300',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtac5300_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtac5300',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtac5300',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtn56u_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn56u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn56u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtn56u_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn56u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn56u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtn56u_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn56u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn56u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtn56u_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn56u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn56u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtn66u_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtn66u_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_asus_rtn66u_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_asus_rtn66u_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='asus_rtn66u',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='asus_rtn66u',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_belkin_f9k1001v5_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='belkin_f9k1001v5',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='belkin_f9k1001v5',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_belkin_f9k1001v5_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='belkin_f9k1001v5',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='belkin_f9k1001v5',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_linksys_ea4500_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea4500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea4500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_linksys_ea4500_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea4500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea4500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_linksys_ea4500_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea4500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea4500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_linksys_ea4500_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea4500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea4500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_linksys_ea9500_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea9500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea9500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_linksys_ea9500_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea9500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea9500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_linksys_ea9500_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea9500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea9500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_linksys_ea9500_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_ea9500',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_ea9500',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_linksys_wrt1900acv2_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_wrt1900acv2',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_wrt1900acv2',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_linksys_wrt1900acv2_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_wrt1900acv2',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_wrt1900acv2',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_linksys_wrt1900acv2_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_wrt1900acv2',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_wrt1900acv2',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_linksys_wrt1900acv2_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='linksys_wrt1900acv2',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='linksys_wrt1900acv2',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_netgear_r7000_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_r7000',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_r7000',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_netgear_r7000_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_r7000',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_r7000',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_netgear_r7000_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_r7000',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_r7000',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_netgear_r7000_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_r7000',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_r7000',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_netgear_wndr3400_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_wndr3400',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_wndr3400',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_netgear_wndr3400_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_wndr3400',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_wndr3400',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_netgear_wndr3400_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_wndr3400',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_wndr3400',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_netgear_wndr3400_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='netgear_wndr3400',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='netgear_wndr3400',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_securifi_almond_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='securifi_almond',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='securifi_almond',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_securifi_almond_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='securifi_almond',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='securifi_almond',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_archerc5_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc5',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc5',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_archerc5_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc5',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc5',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_archerc5_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc5',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc5',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_archerc5_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc5',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc5',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_archerc7_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc7',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc7',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_archerc7_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc7',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc7',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_archerc7_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc7',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc7',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_archerc7_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_archerc7',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_archerc7',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_c1200_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_c1200',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_c1200',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_c1200_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_c1200',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_c1200',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_c1200_5ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_c1200',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_c1200',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_c1200_5ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_c1200',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_c1200',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')
 
     def test_associate_tplink_tlwr940n_24ghz_open(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_tlwr940n',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_tlwr940n',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        asserts.assert_true(self.dut.associate(self.ssid),
+                            'Failed to connect.')
 
     def test_associate_tplink_tlwr940n_24ghz_wpa2(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='tplink_tlwr940n',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid,
-            security=self.security_profile_wpa2,
-            password=self.password)
+        setup_ap(access_point=self.access_point,
+                 profile_name='tplink_tlwr940n',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 security=self.security_profile_wpa2,
+                 password=self.password)
+        asserts.assert_true(
+            self.dut.associate(self.ssid,
+                               target_pwd=self.password,
+                               target_security=hostapd_constants.WPA2_STRING),
+            'Failed to connect.')

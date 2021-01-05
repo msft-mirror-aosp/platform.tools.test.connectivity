@@ -19,12 +19,11 @@ remove through the ClientController API of WLAN policy.
 """
 
 from acts import signals
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
-from acts.test_utils.abstract_devices.utils_lib.wlan_policy_utils import reboot_device, restore_state, save_network, setup_policy_tests
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str, rand_hex_str, timeout
 import requests
 import time
@@ -61,73 +60,21 @@ class SavedNetworksTest(WifiBaseTest):
         # Keep track of whether we have started an access point in a test
         if len(self.fuchsia_devices) < 1:
             raise EnvironmentError("No Fuchsia devices found.")
-        # Save the existing saved networks before we remove them for tests
-        # And remember whether client connections have started
-        self.preserved_state = setup_policy_tests(self.fuchsia_devices)
-        self.preexisting_client_connections_state = {}
         for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanSetNewListener()
-            result_update = fd.wlan_policy_lib.wlanGetUpdate()
-            if result_update.get("result") != None and result_update.get(
-                    "result").get("state") != None:
-                self.preexisting_client_connections_state[
-                    fd] = result_update.get("result").get("state")
-            else:
-                self.log.warn(
-                    "Failed to get update; test will not start or "
-                    "stop client connections at the end of the test.")
-            fd.wlan_policy_lib.wlanStartClientConnections()
+            fd.configure_wlan(association_mechanism='policy',
+                              preserve_saved_networks=True)
 
     def setup_test(self):
         for fd in self.fuchsia_devices:
-            # Set new update listener so that the next test can always get the
-            # most recent udpdate immediately.
-            new_listener_result = fd.wlan_policy_lib.wlanSetNewListener()
-            if new_listener_result.get("error") != None:
-                self.log.warn(
-                    "Error occurred initializing a new update listener for the facade, may"
-                    "cause errors in updates for tests: %s" %
-                    new_listener_result["error"])
-
-            resultRemove = fd.wlan_policy_lib.wlanRemoveAllNetworks()
-            if resultRemove.get("error") != None:
-                self.log.error(
-                    "Error occurred when deleting all saved networks in test setup: %s"
-                    % resultRemove["error"])
+            if not fd.wlan_policy_controller.remove_all_networks():
                 raise EnvironmentError(
                     "Failed to remove all networks in setup")
         self.access_points[0].stop_all_aps()
 
     def teardown_class(self):
         for fd in self.fuchsia_devices:
-            # Start/stop client connections based on state before tests began.
-            if fd in self.preexisting_client_connections_state:
-                starting_state = self.preexisting_client_connections_state[fd]
-                if starting_state == CONNECTIONS_ENABLED:
-                    fd.wlan_policy_lib.wlanStartClientConnections()
-                elif starting_state == CONNECTIONS_DISABLED:
-                    fd.wlan_policy_lib.wlanStopClientConnections()
-                else:
-                    self.log.info(
-                        "Unrecognized client connections starting state: %s" %
-                        starting_state)
-            # Remove any networks remaining from tests
-            fd.wlan_policy_lib.wlanRemoveAllNetworks()
-        # Put back the networks that were saved before tests began.
-        restore_state(self.fuchsia_devices, self.preserved_state)
+            fd.wlan_policy_controller.remove_all_networks()
         self.access_points[0].stop_all_aps()
-
-    def get_saved_networks(self, fd):
-        """ Get the saved networks or fail the test if there is an error getting the networks
-        Args:
-            fd: the Fuchsia device to get saved networks from
-        """
-        result_get = fd.wlan_policy_lib.wlanGetSavedNetworks()
-        if result_get.get("error") != None:
-            self.log.info("Failed to get saved networks with error: %s" %
-                          result_get["error"])
-            raise signals.TestFailure('Failed to get saved networks')
-        return result_get["result"]
 
     def save_bad_network(self, fd, ssid, security_type, password=""):
         """ Saves a network as specified on the given device and verify that we
@@ -139,9 +86,8 @@ class SavedNetworksTest(WifiBaseTest):
             password: The password to save for the network. Empty string represents
                     no password, and PSK should be provided as 64 character hex string.
         """
-        result_save = fd.wlan_policy_lib.wlanSaveNetwork(
-            ssid, security_type, password)
-        if result_save.get("error") == None:
+        if not fd.wlan_policy_controller.save_network(
+                ssid, security_type, password=password):
             self.log.info(
                 "Attempting to save bad network config %s did not give an error"
                 % ssid)
@@ -181,9 +127,11 @@ class SavedNetworksTest(WifiBaseTest):
                             no duplicates in expected networks.
         """
         actual_networks = list(
-            map(self.lower_case_network, self.get_saved_networks(fd)))
+            map(self.lower_case_network,
+                fd.wlan_policy_controller.get_saved_networks()))
         expected_networks = list(
-            map(self.lower_case_network, self.get_saved_networks(fd)))
+            map(self.lower_case_network,
+                fd.wlan_policy_controller.get_saved_networks()))
 
         if len(actual_networks) != len(expected_networks):
             self.log.info(
@@ -208,37 +156,6 @@ class SavedNetworksTest(WifiBaseTest):
             raise signals.TestFailure("Network is missing credential type")
         {"ssid": network["ssid"], "security_type": network["security_type"]}
 
-    def remove_network(self, fd, ssid, security_type, password=""):
-        """ Remove the given network on the device and check that it was
-            successfully removed.
-        Args:
-            fd: The Fuchsia device to run on.
-            ssid: The name of the network to remove.
-            security_type: The network's security, ie "none", "wep", "wpa", "wpa2",
-                        or "wpa3"
-            password: The password of the network to remove, or "" if none.
-        """
-        # Expected networks are the networks on the device before remove, minus
-        # the removed network.
-        expected_networks = self.get_saved_networks(fd)
-        expected_networks.remove(ssid)
-        expected_networks.sort()
-        result_remove = fd.wlan_policy_lib.wlanRemoveNetwork(
-            ssid, security_type, password)
-        if result_remove.get("error") != None:
-            self.log.info("Failed to remove network with error: %s",
-                          result_remove["error"])
-            raise signals.TestFailure("Failed to remove saved network")
-
-        saved_networks = get_saved_networks(fd)
-        saved_networks.sort()
-        if expected_networks != saved_networks:
-            self.log.info(
-                "Failed to remove network %s. Actual networks: %s, expected"
-                " networks"
-                ": %s" % (ssid, saved_networks, expected_networks))
-            raise signals.TestFailure("Failed to remove network")
-
     def save_and_check_network(self, ssid, security_type, password=""):
         """ Perform a test for saving, getting, and removing a single network on each
             device.
@@ -250,7 +167,8 @@ class SavedNetworksTest(WifiBaseTest):
                     hexadecimal characters and none should be an empty string.
         """
         for fd in self.fuchsia_devices:
-            if not save_network(fd, ssid, security_type, password):
+            if not fd.wlan_policy_controller.save_network(
+                    ssid, security_type, password=password):
                 raise signals.TestFailure("Failed to save network")
             self.check_get_saved_network(fd, ssid, security_type,
                                          self.credentialType(password),
@@ -302,38 +220,6 @@ class SavedNetworksTest(WifiBaseTest):
         return net_id["ssid"] == ssid and net_id["type_"].upper(
         ) == security_type.upper()
 
-    def wait_for_no_connections(self, fd):
-        """ Waits to see that there are no existing connections the device. This is
-            to ensure a good starting point for tests that look for a connection.
-        Args:
-            fd: The fuchsia device to run on.
-        """
-        start_time = time.time()
-        while True:
-            time_left = TIME_WAIT_FOR_DISCONNECT - (time.time() - start_time)
-            if time_left <= 0:
-                raise signals.TestFailure("Time out")
-            try:
-                update = fd.wlan_policy_lib.wlanGetUpdate(timeout=time_left)
-            except requests.exceptions.Timeout:
-                raise signals.TestFailure(
-                    "Timed out getting status update while waiting for all"
-                    " connections to end.")
-            if update.get("error") != None:
-                raise signals.TestFailure("Failed to get status update")
-            # If any network is connected or being connected to, wait for them
-            # to disconnect.
-            has_connection = False
-            for network in update["result"]["networks"]:
-                if network['state'].upper() in [
-                        STATE_CONNECTED.upper(),
-                        STATE_CONNECTING.upper()
-                ]:
-                    has_connection = True
-                    break
-            if not has_connection:
-                break
-
     """Tests"""
 
     def test_open_network_with_password(self):
@@ -380,20 +266,22 @@ class SavedNetworksTest(WifiBaseTest):
         security = WPA2
         password = rand_ascii_str(10)
         for fd in self.fuchsia_devices:
-            if not save_network(fd, ssid, security, password):
+            if not fd.wlan_policy_controller.save_network(
+                    ssid, security, password=password):
                 raise signals.TestFailure("Failed to save network")
             # Reboot the device. The network should be persistently saved
             # before the command is completed.
-            reboot_device(fd)
+            fd.reboot()
             self.check_get_saved_network(fd, ssid, security, PASSWORD,
                                          password)
 
     def test_same_ssid_diff_security(self):
         for fd in self.fuchsia_devices:
-            saved_networks = self.get_saved_networks(fd)
+            saved_networks = fd.wlan_policy_controller.get_saved_networks()
             ssid = rand_ascii_str(19)
             password = rand_ascii_str(12)
-            if not save_network(fd, ssid, WPA2, password):
+            if not fd.wlan_policy_controller.save_network(
+                    ssid, WPA2, password=password):
                 raise signals.TestFailure("Failed to save network")
             saved_networks.append({
                 "ssid": ssid,
@@ -401,7 +289,7 @@ class SavedNetworksTest(WifiBaseTest):
                 "credential_type": PASSWORD,
                 "credential_value": password
             })
-            if not save_network(fd, ssid, SECURITY_NONE):
+            if not fd.wlan_policy_controller.save_network(ssid, SECURITY_NONE):
                 raise signals.TestFailure("Failed to save network")
             saved_networks.append({
                 "ssid": ssid,
@@ -409,10 +297,10 @@ class SavedNetworksTest(WifiBaseTest):
                 "credential_type": CREDENTIAL_TYPE_NONE,
                 "credential_value": CREDENTIAL_VALUE_NONE
             })
-            actual_networks = self.get_saved_networks(fd)
+            actual_networks = fd.wlan_policy_controller.get_saved_networks()
             # Both should be saved and present in network store since the have
             # different security types and therefore different network identifiers.
-            self.check_saved_networks(fd, saved_networks)
+            self.check_saved_networks(fd, actual_networks)
 
     def test_remove_disconnects(self):
         # If we save, connect to, then remove the network while still connected
@@ -425,36 +313,14 @@ class SavedNetworksTest(WifiBaseTest):
         self.start_ap(ssid, security, password)
 
         for fd in self.fuchsia_devices:
-            self.wait_for_no_connections(fd)
+            fd.wlan_policy_controller.wait_for_no_connections()
 
-            result_save = fd.wlan_policy_lib.wlanSaveNetwork(
-                ssid, security, password)
-            if result_save.get("error") != None:
+            if not fd.wlan_policy_controller.save_and_connect:
                 raise signals.TestFailure(
-                    "Error occurred attempting to save network: %s" %
-                    result_save["error"])
-            # If we fail to send connect command, proceed with test anyway
-            # because saving the network should trigger a connect
-            result_connect = fd.wlan_policy_lib.wlanConnect(ssid, security)
-            if result_connect.get("error") != None:
-                self.log.info(
-                    "Error occurred while attempting to send connect call: %s. "
-                    "This test will rely on autoconnect." %
-                    result_connect["error"])
-            if not fd.wait_for_connect(
-                    ssid, security, timeout=TIME_WAIT_FOR_CONNECT):
-                raise signals.TestFailure("Failed to connect to network")
+                    "Failed to saved and connect to network")
 
-            result_remove = fd.wlan_policy_lib.wlanRemoveNetwork(
-                ssid, security, password)
-            if result_remove.get("error") != None:
-                raise signals.TestFailure(
-                    "Error occurred attempting to remove network")
-            if not fd.wait_for_disconnect(ssid,
-                                          security,
-                                          "Disconnected",
-                                          "ConnectionStopped",
-                                          timeout=TIME_WAIT_FOR_DISCONNECT):
+            if not fd.wlan_policy_controller.remove_all_networks_and_wait_for_no_connections(
+            ):
                 raise signals.TestFailure(
                     "Failed to disconnect from removed network")
 
@@ -463,16 +329,15 @@ class SavedNetworksTest(WifiBaseTest):
         ssid = rand_ascii_str(10)
         self.start_ap(ssid, None)
         for fd in self.fuchsia_devices:
-            self.wait_for_no_connections(fd)
+            fd.wlan_policy_controller.wait_for_no_connections()
 
             # Save the network and make sure that we see the device auto connect to it.
             security = SECURITY_NONE
             password = CREDENTIAL_VALUE_NONE
-            result_save = fd.wlan_policy_lib.wlanSaveNetwork(
-                ssid, security, password)
-            if result_save.get("error") != None:
+            if not fd.wlan_policy_controller.save_network(
+                    ssid, security, password=password):
                 raise signals.TestFailure("Failed to save network")
-            if not fd.wait_for_connect(
+            if not fd.wlan_policy_controller.wait_for_connect(
                     ssid, security, timeout=TIME_WAIT_FOR_CONNECT):
                 raise signals.TestFailure("Failed to connect to network")
 
@@ -483,13 +348,12 @@ class SavedNetworksTest(WifiBaseTest):
         password = rand_ascii_str(10)
         self.start_ap(ssid, security, password)
         for fd in self.fuchsia_devices:
-            self.wait_for_no_connections(fd)
+            fd.wlan_policy_controller.wait_for_no_connections()
 
             # Save the network and make sure that we see the device auto connect to it.
-            result_save = fd.wlan_policy_lib.wlanSaveNetwork(
-                ssid, security, password)
-            if result_save.get("error") != None:
+            if not fd.wlan_policy_controller.save_network(
+                    ssid, security, password=password):
                 raise signals.TestFailure("Failed to save network")
-            if not fd.wait_for_connect(
+            if not fd.wlan_policy_controller.wait_for_connect(
                     ssid, security, timeout=TIME_WAIT_FOR_CONNECT):
                 raise signals.TestFailure("Failed to connect to network")

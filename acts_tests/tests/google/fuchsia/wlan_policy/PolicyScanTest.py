@@ -36,8 +36,8 @@ class PolicyScanTest(WifiBaseTest):
         if len(self.fuchsia_devices) < 1:
             raise signals.TestFailure("No fuchsia devices found.")
         for fd in self.fuchsia_devices:
-            # Initialize the Policy client controller for each Fuchsia device
-            fd.wlan_policy_lib.wlanCreateClientController()
+            fd.configure_wlan(association_mechanism='policy',
+                              preserve_saved_networks=True)
         if len(self.access_points) < 1:
             raise signals.TestFailure("No access points found.")
         # Prepare the AP

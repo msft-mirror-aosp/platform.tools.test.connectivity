@@ -29,13 +29,13 @@ from bokeh.plotting import save
 from acts import asserts
 from acts import context
 from acts import utils
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.iperf_server import IPerfResult
-from acts.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 N_CAPABILITIES_DEFAULT = [
     hostapd_constants.N_CAPABILITY_LDPC, hostapd_constants.N_CAPABILITY_SGI20,
@@ -236,16 +236,16 @@ class ChannelSweepTest(WifiBaseTest):
             raise ValueError('Invalid Bandwidth: %s' % channel_bandwidth)
         ssid = utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G)
         try:
-            wlan_utils.setup_ap(access_point=self.access_point,
-                                profile_name='whirlwind',
-                                channel=channel,
-                                security=security_profile,
-                                n_capabilities=n_capabilities,
-                                ac_capabilities=None,
-                                force_wmm=True,
-                                ssid=ssid,
-                                vht_bandwidth=vht_bandwidth,
-                                setup_bridge=True)
+            setup_ap(access_point=self.access_point,
+                     profile_name='whirlwind',
+                     channel=channel,
+                     security=security_profile,
+                     n_capabilities=n_capabilities,
+                     ac_capabilities=None,
+                     force_wmm=True,
+                     ssid=ssid,
+                     vht_bandwidth=vht_bandwidth,
+                     setup_bridge=True)
         except Exception as err:
             raise ConnectionError(
                 'Failed to setup ap on channel: %s, channel bandwidth: %smhz. '
@@ -597,9 +597,7 @@ class ChannelSweepTest(WifiBaseTest):
             password = None
             security_profile = None
         ssid = self.setup_ap(channel, channel_bandwidth, security_profile)
-        associated = wlan_utils.associate(client=self.dut,
-                                          ssid=ssid,
-                                          password=password)
+        associated = self.dut.associate(ssid, target_pwd=password)
         if not associated:
             self.log_to_file_and_throughput_data(channel, channel_bandwidth,
                                                  None, None)
@@ -717,7 +715,7 @@ _
             (ssid, channel, channel_bandwidth, 'Device should associate'
              if should_associate else 'Device should NOT associate.'))
 
-        associated = wlan_utils.associate(client=self.dut, ssid=ssid)
+        associated = self.dut.associate(ssid)
         if associated == should_associate:
             asserts.explicit_pass(
                 'Device complied with %s regulatory requirement for channel %s '

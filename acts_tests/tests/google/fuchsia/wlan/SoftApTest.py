@@ -24,11 +24,10 @@ from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.controllers import iperf_server
 from acts.controllers import iperf_client
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts.test_utils.abstract_devices.utils_lib import wlan_utils
-from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 
 ANDROID_DEFAULT_WLAN_INTERFACE = 'wlan0'
 CONNECTIVITY_MODE_LOCAL = 'local_only'
@@ -292,11 +291,9 @@ class SoftApTest(BaseTestClass):
 
         check_connectivity = settings[
             'connectivity_mode'] == CONNECTIVITY_MODE_UNRESTRICTED
-        associated = wlan_utils.associate(
-            w_device,
-            settings['ssid'],
-            password=settings.get('password'),
-            check_connectivity=check_connectivity)
+        associated = w_device.associate(settings['ssid'],
+                                        target_pwd=settings.get('password'),
+                                        check_connectivity=check_connectivity)
 
         if not associated:
             self.log.error('Failed to connect to SoftAp.')
@@ -660,8 +657,8 @@ class SoftApTest(BaseTestClass):
             with utils.SuppressLogOutput():
                 try:
                     return not self.client_is_connected_to_soft_ap(
-                    client,
-                    wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
+                        client,
+                        wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
                 # Allow a failed to find ap interface error
                 except LookupError as err:
                     self.log.debug('Hit expected LookupError: %s' % err)
@@ -680,8 +677,8 @@ class SoftApTest(BaseTestClass):
             with utils.SuppressLogOutput():
                 try:
                     return not self.dut_is_connected_as_client(
-                    channel,
-                    wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
+                        channel,
+                        wait_for_addr_timeout=DEFAULT_NO_ADDR_EXPECTED_TIMEOUT)
                 # Allow a failed to find client interface error
                 except LookupError as err:
                     self.log.debug('Hit expected LookupError: %s' % err)
