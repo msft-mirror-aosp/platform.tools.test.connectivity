@@ -93,6 +93,7 @@ class GoogleWifiAP(WifiRetailAP):
                 'subnet': '192.168.9.0/24'
             }
         }
+
         for interface in self.capabilities['interfaces']:
             for setting in self.default_settings[interface].keys():
                 if setting not in self.ap_settings[interface]:
