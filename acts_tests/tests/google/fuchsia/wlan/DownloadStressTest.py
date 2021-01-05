@@ -23,8 +23,8 @@ import uuid
 
 from acts.base_test import BaseTestClass
 from acts import signals
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.fuchsia import utils
 from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
@@ -62,12 +62,11 @@ class DownloadStressTest(BaseTestClass):
             self.user_params.get("download_stress_test_iterations",
                                  self.num_of_iterations))
 
-        setup_ap_and_associate(
-            access_point=self.ap,
-            client=self.wlan_device,
-            profile_name='whirlwind',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap(access_point=self.ap,
+                 profile_name='whirlwind',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
+        self.wlan_device.associate(self.ssid)
 
     def teardown_test(self):
         self.download_threads_result.clear()
@@ -135,8 +134,8 @@ class DownloadStressTest(BaseTestClass):
         for index in range(0, len(self.download_threads_result)):
             if not self.download_threads_result[index]:
                 self.log.info("Download failed for %d" % index)
-                raise signals.TestFailure(
-                    'Thread %d failed to download' % index)
+                raise signals.TestFailure('Thread %d failed to download' %
+                                          index)
                 return False
 
         return True
@@ -153,9 +152,8 @@ class DownloadStressTest(BaseTestClass):
 
                 for i in range(self.num_of_small_downloads):
                     # Start small file download
-                    t = threading.Thread(
-                        target=self.download_thread,
-                        args=(self.download_small_url, ))
+                    t = threading.Thread(target=self.download_thread,
+                                         args=(self.download_small_url, ))
                     download_threads.append(t)
                     t.start()
                     # Wait for thread to exit before starting the next iteration
@@ -178,8 +176,8 @@ class DownloadStressTest(BaseTestClass):
             for index in range(0, len(self.download_threads_result)):
                 if not self.download_threads_result[index]:
                     self.log.info("Download failed for %d" % index)
-                    raise signals.TestFailure(
-                        'Thread %d failed to download' % index)
+                    raise signals.TestFailure('Thread %d failed to download' %
+                                              index)
                     return False
 
             # Clear results before looping again
