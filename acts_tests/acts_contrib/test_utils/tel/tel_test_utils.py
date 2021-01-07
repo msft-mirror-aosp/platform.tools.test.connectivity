@@ -7974,21 +7974,6 @@ def set_qxdm_logger_command(ad, mask=None):
         output_path = os.path.join(ad.qxdm_log_path, "logs")
         ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 90 -c" %
                                   (mask_path, output_path))
-        for prop in ("persist.sys.modem.diag.mdlog",
-                     "persist.vendor.sys.modem.diag.mdlog"):
-            if ad.adb.getprop(prop):
-                # Enable qxdm always on if supported
-                for conf_path in ("/data/vendor/radio/diag_logs",
-                                  "/vendor/etc/mdlog"):
-                    if "diag.conf" in ad.adb.shell(
-                            "ls %s" % conf_path, ignore_status=True):
-                        conf_path = "%s/diag.conf" % conf_path
-                        ad.adb.shell('echo "%s" > %s' %
-                                     (ad.qxdm_logger_command, conf_path),
-                                     ignore_status=True)
-                        break
-                ad.adb.shell("setprop %s true" % prop, ignore_status=True)
-                break
         return True
 
 

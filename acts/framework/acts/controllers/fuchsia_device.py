@@ -62,6 +62,7 @@ from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import Fuchs
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
+from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
 from acts.libs.proc import job
 from acts.utils import get_fuchsia_mdns_ipv6_address
 
@@ -114,6 +115,8 @@ FUCHSIA_COUNTRY_CODE_TIMEOUT = 15
 FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 
 MDNS_LOOKUP_RETRY_MAX = 3
+
+VALID_ASSOCIATION_MECHANISMS = {None, 'policy', 'drivers'}
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -206,6 +209,18 @@ class FuchsiaDevice:
         self.config_country_code = fd_conf_data.get(
             'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US)
         self._persistent_ssh_conn = None
+
+        # Whether to use 'policy' or 'drivers' for WLAN connect/disconnect calls
+        # If set to None, wlan is not configured.
+        self.association_mechanism = None
+        # Defaults to policy layer, unless otherwise specified in the config
+        self.default_association_mechanism = fd_conf_data.get(
+            'association_mechanism', 'policy')
+
+        # Whether to clear and preserve existing saved networks and client
+        # connections state, to be restored at device teardown.
+        self.default_preserve_saved_networks = fd_conf_data.get(
+            'preserve_saved_networks', True)
 
         if utils.is_valid_ipv4_address(self.ip):
             self.address = "http://{}:{}".format(self.ip, self.port)
@@ -340,6 +355,9 @@ class FuchsiaDevice:
                                                     self.test_counter,
                                                     self.client_id)
 
+        # Contains WLAN policy functions like save_network, remove_network, etc
+        self.wlan_policy_controller = WlanPolicyController(self)
+
         self.skip_sl4f = False
         # Start sl4f on device
         self.start_services(skip_sl4f=self.skip_sl4f)
@@ -408,7 +426,6 @@ class FuchsiaDevice:
                 cmd,
                 timeout=timeout,
                 skip_status_code_check=skip_status_code_check)
-
             if not skip_status_code_check and result.stderr:
                 raise FuchsiaDeviceError(
                     'Error when running command "%s": %s' %
@@ -421,6 +438,79 @@ class FuchsiaDevice:
             test_id: string, unique identifier of test command
         """
         return self.client_id + "." + str(test_id)
+
+    def configure_wlan(self,
+                       association_mechanism=None,
+                       preserve_saved_networks=None):
+        """
+        Readies device for WLAN functionality. If applicable, connects to the
+        policy layer and clears/saves preexisting saved networks.
+
+        Args:
+            association_mechanism: string, 'policy' or 'drivers'. If None, uses
+                the default value from init (can be set by ACTS config)
+            preserve_saved_networks: bool, whether to clear existing saved
+                networks, and preserve them for restoration later. If None, uses
+                the default value from init (can be set by ACTS config)
+
+        Raises:
+            FuchsiaDeviceError, if configuration fails
+        """
+        # If args aren't provided, use the defaults, which can be set in the
+        # config.
+        if association_mechanism is None:
+            association_mechanism = self.default_association_mechanism
+        if preserve_saved_networks is None:
+            preserve_saved_networks = self.default_preserve_saved_networks
+
+        if association_mechanism not in VALID_ASSOCIATION_MECHANISMS:
+            raise FuchsiaDeviceError(
+                'Invalid FuchsiaDevice association_mechanism: %s' %
+                association_mechanism)
+
+        # Allows for wlan to be set up differently in different tests
+        if self.association_mechanism:
+            self.deconfigure_wlan()
+
+        self.association_mechanism = association_mechanism
+
+        self.log.info('Configuring WLAN w/ association mechanism: %s' %
+                      association_mechanism)
+        if association_mechanism == 'drivers':
+            self.log.warn(
+                'You may encounter unusual device behavior when using the '
+                'drivers directly for WLAN. This should be reserved for '
+                'debugging specific issues. Normal test runs should use the '
+                'policy layer.')
+            if preserve_saved_networks:
+                self.log.warn(
+                    'Unable to preserve saved networks when using drivers '
+                    'association mechanism (requires policy layer control).')
+        else:
+            # This requires SL4F calls, so it can only happen with actual
+            # devices, not with unit tests.
+            self.wlan_policy_controller._configure_wlan(
+                preserve_saved_networks)
+
+    def deconfigure_wlan(self):
+        """
+        Stops WLAN functionality (if it has been started). Used to allow
+        different tests to use WLAN differently (e.g. some tests require using
+        wlan policy, while the abstract wlan_device can be setup to use policy
+        or drivers)
+
+        Raises:
+            FuchsiaDeviveError, if deconfigure fails.
+        """
+        if not self.association_mechanism:
+            self.log.debug(
+                'WLAN not configured before deconfigure was called.')
+            return
+        # If using policy, stop client connections. Otherwise, just clear
+        # variables.
+        if self.association_mechanism != 'drivers':
+            self.wlan_policy_controller._deconfigure_wlan()
+        self.association_mechanism = None
 
     def reboot(self,
                use_ssh=False,
@@ -454,7 +544,7 @@ class FuchsiaDevice:
             if use_ssh:
                 self.log.info('Sending reboot command via SSH.')
                 with utils.SuppressLogOutput():
-                    self.clean_up()
+                    self.clean_up_services()
                     self.send_command_ssh(
                         'dm reboot',
                         timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
@@ -502,7 +592,6 @@ class FuchsiaDevice:
             self.init_server_connection()
             raise ConnectionError('Device never went down.')
         self.log.info('Device is unreachable as expected.')
-
         if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Restoring power to FuchsiaDevice (%s)...' % self.ip)
             device_pdu.on(str(device_pdu_port))
@@ -556,12 +645,21 @@ class FuchsiaDevice:
         self.configure_regulatory_domain(self.config_country_code)
         try:
             self.run_commands_from_config(self.setup_commands)
-
         except FuchsiaDeviceError:
             # Prevent a threading error, since controller isn't fully up yet.
             self.clean_up()
             raise FuchsiaDeviceError(
                 'Failed to run setup commands after reboot.')
+
+        # If wlan was configured before reboot, it must be configured again
+        # after rebooting, as it was before reboot. No preserving should occur.
+        if self.association_mechanism:
+            pre_reboot_association_mechanism = self.association_mechanism
+            # Prevent configure_wlan from thinking it needs to deconfigure first
+            self.association_mechanism = None
+            self.configure_wlan(
+                association_mechanism=pre_reboot_association_mechanism,
+                preserve_saved_networks=False)
 
         self.log.info(
             'Device has rebooted, SL4F is reconnected and functional.')
@@ -704,14 +802,25 @@ class FuchsiaDevice:
         return r
 
     def clean_up(self):
-        """Cleans up the FuchsiaDevice object and releases any resources it
-        claimed.
+        """Cleans up the FuchsiaDevice object, releases any resources it
+        claimed, and restores saved networks is applicable. For reboots, use
+        clean_up_services only.
         """
+        # If and only if wlan is configured using the policy layer
+        if self.association_mechanism == 'policy':
+            self.wlan_policy_controller._clean_up()
         try:
             self.run_commands_from_config(self.teardown_commands)
         except FuchsiaDeviceError:
             self.log.warning('Failed to run teardown_commands.')
 
+        self.clean_up_services()
+
+    def clean_up_services(self):
+        """ Cleans up FuchsiaDevice services (e.g. SL4F). Subset of clean_up,
+        to be used for reboots, when testing is to continue (as opposed to
+        teardown after testing is finished.)
+        """
         cleanup_id = self.build_id(self.test_counter)
         cleanup_args = {}
         cleanup_method = "sl4f.sl4f_cleanup"
@@ -863,216 +972,6 @@ class FuchsiaDevice:
             self.log.debug("Disconnect call failed with error: %s" %
                            disconnect_response.get("error"))
             return False
-
-    def policy_save_and_connect(self, ssid, security, password=None):
-        """ Saves and connects to the network. This is the policy version of
-            connect and check_connect_response because the policy layer
-            requires a saved network and the policy connect does not return
-            success or failure
-        Args:
-            ssid: The network name
-            security: The security of the network as a string
-            password: the credential of the network if it has one
-        """
-        # Save network and check response
-        result_save = self.wlan_policy_lib.wlanSaveNetwork(ssid,
-                                                           security,
-                                                           target_pwd=password)
-        if result_save.get("error") != None:
-            self.log.info("Failed to save network (%s) for connection: %s" %
-                          (ssid, result_save.get("error")))
-            return False
-        # Make connect call and check response
-        result_connect = self.wlan_policy_lib.wlanConnect(ssid, security)
-        if result_connect.get("error") != None:
-            self.log.info("Failed to initiate connect with error: %s" %
-                          result_connect.get("error"))
-            return False
-        return self.wait_for_connect(ssid, security)
-
-    def wait_for_connect(self, ssid, security_type, timeout=30):
-        """ Wait until the device has connected to the specified network, or raise
-            a test failure if we time out
-        Args:
-            ssid: The network name to wait for a connection to.
-            security_type: The security of the network we are trying connect to
-            timeout: The seconds we will wait to see an update indicating a
-                     connect to this network.
-        Returns:
-            True if we see a connect to the network, False otherwise.
-        """
-        # Wait until we've connected.
-        end_time = time.time() + timeout
-        while time.time() < end_time:
-            time_left = end_time - time.time()
-            if time_left <= 0:
-                return False
-
-            # if still connectin loop. If failed to connect, fail test
-            try:
-                update = self.wlan_policy_lib.wlanGetUpdate(timeout=time_left)
-            except requests.exceptions.Timeout:
-                self.log.info("Timed out waiting for response from device "
-                              "while waiting for network with SSID \"%s\" to "
-                              "connect. Device took too long to connect or "
-                              "the request timed out for another reason." %
-                              ssid)
-                return False
-            if update.get("error") != None:
-                self.log.info("Error occurred getting status update: %s" %
-                              update["error"])
-                return False
-
-            for network in update["result"]["networks"]:
-                net_id = network['id']
-                if not net_id["ssid"] == ssid or not net_id["type_"].upper(
-                ) == security_type.upper():
-                    continue
-                if 'state' not in network:
-                    self.log.info(
-                        "Client state summary's network is missing field 'state'"
-                    )
-                    return False
-                elif network["state"].upper() == "Connected".upper():
-                    return True
-            # Wait a bit before requesting another status update
-            time.sleep(1)
-        # Stopped getting updates because out timeout
-        self.log.info("Timed out waiting for network with SSID \"%s\" to "
-                      "connect" % ssid)
-        return False
-
-    def wait_for_disconnect(self,
-                            ssid,
-                            security_type,
-                            state,
-                            status,
-                            timeout=30):
-        """ Wait for a disconnect of the specified network on the given device. This
-            will check that the correct connection state and disconnect status are
-            given in update. If we do not see a disconnect after some time, this will
-            return false.
-        Args:
-            ssid: The name of the network we are connecting to.
-            security_type: The security as a string, ie "none", "wep", "wpa",
-                        "wpa2", or "wpa3"
-            state: The connection state we are expecting, ie "Disconnected" or
-                "Failed"
-            status: The disconnect status we expect, it "ConnectionStopped" or
-                "ConnectionFailed"
-            timeout: The seconds we will watch for a disconnect before giving up
-        Returns: True if we saw a disconnect as specified, or False otherwise.
-        """
-        end_time = time.time() + timeout
-        while time.time() < end_time:
-            # Time out on waiting for update if past the time we allow for
-            # waiting for disconnect
-            time_left = end_time - time.time()
-            if time_left <= 0:
-                return False
-
-            try:
-                update = self.wlan_policy_lib.wlanGetUpdate(timeout=time_left)
-            except requests.exceptions.Timeout:
-                self.log.info("Timed out waiting for response from device "
-                              "while waiting for network with SSID \"%s\" to "
-                              "disconnect. Device took too long to disconnect "
-                              "or the request timed out for another reason." %
-                              ssid)
-                return False
-
-            if update.get("error") != None:
-                self.log.info("Error occurred getting status update: %s" %
-                              update["error"])
-                return False
-            # Update should include network, either connected to or recently disconnected.
-            if len(update["result"]["networks"]) == 0:
-                self.log.info("Status update is missing network")
-                return False
-
-            for network in update["result"]["networks"]:
-                net_id = network['id']
-                if not net_id["ssid"] == ssid or not net_id["type_"].upper(
-                ) == security_type.upper():
-                    continue
-                if 'state' not in network or "status" not in network:
-                    self.log.info(
-                        "Client state summary's network is missing fields")
-                    return False
-                # If still connected, we will wait for another update and check again
-                elif network["state"].upper() == "Connected".upper():
-                    continue
-                elif network["state"].upper() == "Connecting".upper():
-                    self.log.info(
-                        "Update is 'Connecting', but device should already be "
-                        "connected; expected disconnect")
-                    return False
-                # Check that the network state and disconnect status are expected, ie
-                # that it isn't ConnectionFailed when we expect ConnectionStopped
-                elif network["state"].upper() != state.upper(
-                ) or network["status"].upper() != status.upper():
-                    self.log.info(
-                        "Connection failed: a network failure occurred that is unrelated"
-                        "to remove network or incorrect status update. \nExpected state: "
-                        % (state, status, network))
-                    return False
-                else:
-                    return True
-            # Wait a bit before requesting another status update
-            time.sleep(1)
-        # Stopped getting updates because out timeout
-        self.log.info("Timed out waiting for network with SSID \"%s\" to "
-                      "connect" % ssid)
-        return False
-
-    def remove_all_and_disconnect(self):
-        """ The policy level's version of disconnect. It removes all saved
-            networks and watches to see that we are not connected to anything.
-        Returns:
-            True if we successfully remove all networks and disconnect
-            False if there is an error or we timeout on the disconnect
-        """
-        self.wlan_policy_lib.wlanSetNewListener()
-        result_remove = self.wlan_policy_lib.wlanRemoveAllNetworks()
-        if result_remove.get('error') != None:
-            self.log.info("Error occurred removing all networks: %s" %
-                          result_remove.get('error'))
-            return False
-        return self.wait_for_no_connections()
-
-    def wait_for_no_connections(self, timeout=30):
-        """ Waits to see that there are no existing connections the device. This is
-            to ensure a good starting point for tests that look for a connection.
-        Returns:
-            True if we successfully see no connections
-            False if we timeout or get an error
-        """
-        start_time = time.time()
-        while True:
-            time_left = timeout - (time.time() - start_time)
-            if time_left <= 0:
-                self.log.info("Timed out waiting for disconnect")
-                return False
-            try:
-                update = self.wlan_policy_lib.wlanGetUpdate(timeout=time_left)
-            except requests.exceptions.Timeout:
-                self.log.info(
-                    "Timed out getting status update while waiting for all"
-                    " connections to end.")
-            if update["error"] != None:
-                self.log.info("Failed to get status update")
-                return False
-            # If any network is connected or being connected to, wait for them
-            # to disconnect.
-            has_connection = False
-            for network in update["result"]["networks"]:
-                if network['state'].upper() in [
-                        "Connected".upper(), "Connecting".upper()
-                ]:
-                    has_connection = True
-                    break
-            if not has_connection:
-                return True
 
     # TODO(fxb/64657): Determine more stable solution to country code config on
     # device bring up.

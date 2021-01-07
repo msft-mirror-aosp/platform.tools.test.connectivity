@@ -867,13 +867,15 @@ def get_dut_temperature(dut):
         temperature: device temperature. 0 if temperature could not be read
     """
     candidate_zones = [
-        'skin-therm', 'sdm-therm-monitor', 'sdm-therm-adc', 'back_therm'
+        '/sys/devices/virtual/thermal/tz-by-name/skin-therm/temp',
+        '/sys/devices/virtual/thermal/tz-by-name/sdm-therm-monitor/temp',
+        '/sys/devices/virtual/thermal/tz-by-name/sdm-therm-adc/temp',
+        '/sys/devices/virtual/thermal/tz-by-name/back_therm/temp',
+        '/dev/thermal/tz-by-name/quiet_therm/temp'
     ]
     for zone in candidate_zones:
         try:
-            temperature = int(
-                dut.adb.shell(
-                    'cat /sys/class/thermal/tz-by-name/{}/temp'.format(zone)))
+            temperature = int(dut.adb.shell('cat {}'.format(zone)))
             break
         except:
             temperature = 0
