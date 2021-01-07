@@ -98,7 +98,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 self.passpoint_networks[ATT][WifiEnums.SSID_KEY][0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
         self.dut.adb.shell(
-            "pm disable com.google.android.apps.carrier.carrierwifi")
+            "pm disable com.google.android.apps.carrier.carrierwifi", ignore_status=True)
 
     def setup_test(self):
         super().setup_test()
