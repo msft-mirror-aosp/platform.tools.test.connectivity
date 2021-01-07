@@ -15,14 +15,14 @@
 #   limitations under the License.
 import re
 
+from acts import asserts
 from functools import wraps
 
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_policy_utils import setup_policy_tests, restore_state
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 from acts.utils import rand_hex_str
@@ -178,15 +178,6 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         self.security_profile = None
         self.client_password = None
 
-        # These tests will either be performed by connecting through the policy
-        # layer or directly below at a core/driver layer.
-        self.association_mechanism = 'drivers'
-        if 'association_mechanism' in self.user_params:
-            if self.user_params['association_mechanism'] == 'policy':
-                self.association_mechanism = 'policy'
-                # Preserve state of device before tests and set up device.
-                self.preexisting_state = setup_policy_tests(
-                    self.fuchsia_devices)
         self.access_point.stop_all_aps()
 
     def setup_test(self):
@@ -202,13 +193,9 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                 ad.droid.wakeLockRelease()
                 ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
-        self.dut.disconnect(association_mechanism=self.association_mechanism)
+        self.dut.disconnect()
         self.dut.reset_wifi()
         self.access_point.stop_all_aps()
-
-    def teardown_class(self):
-        if self.association_mechanism == 'policy':
-            restore_state(self.fuchsia_devices, self.preexisting_state)
 
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
@@ -216,727 +203,825 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_5_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_13_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_10_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_26_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_5_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_13_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_10_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_26_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            force_wmm=True,
-            additional_ap_parameters=hostapd_constants.
-            WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
@@ -944,346 +1029,395 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_max_length_password_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_frag_430_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_frag_430_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_rts_256_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_rts_256_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_rts_256_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
@@ -1292,331 +1426,380 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             security=self.security_profile,
             pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
             password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_pmf_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
@@ -1624,676 +1807,775 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            force_wmm=True,
-            additional_ap_parameters=hostapd_constants.
-            WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_5_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_13_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_10_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_26_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_5_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_13_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_10_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_26_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False,
+                 additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
@@ -2301,327 +2583,376 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
@@ -2629,348 +2960,397 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_max_length_password_sec_wpa2_psk_ptk_tkip(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_max_length_password_sec_wpa2_psk_ptk_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_frag_430_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_frag_430_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_rts_256_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_rts_256_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_rts_256_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
@@ -2979,562 +3359,645 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             security=self.security_profile,
             pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
             password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_pmf_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            force_wmm=True,
-            additional_ap_parameters=hostapd_constants.
-            WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa3_sae_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            rts_threshold=256,
-            frag_threshold=430,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.HIGH_DTIM,
-            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            dtim_period=hostapd_constants.LOW_DTIM,
-            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
+        setup_ap(
             access_point=self.access_point,
-            client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
@@ -3543,202 +4006,239 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             security=self.security_profile,
             password=self.client_password)
 
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['correct_length_beacon'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['zero_length_beacon_without_data'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa3_sae_ptk_tkip_or_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=hostapd_constants.
-            VENDOR_IE['simliar_to_wpa'],
-            security=self.security_profile,
-            password=self.client_password)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_french_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_german_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_dutch_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_swedish_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_norwegian_password_11bg_sec_wpa2_psk_ptk_ccmp(
             self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_danish_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_japanese_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_spanish_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_italian_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
 
     @create_security_profile
     def test_associate_utf8_korean_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        validate_setup_ap_and_associate(
-            association_mechanism=self.association_mechanism,
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            target_security=self.target_security,
-            password=self.client_password,
-            force_wmm=False)
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')

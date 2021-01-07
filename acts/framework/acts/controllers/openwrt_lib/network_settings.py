@@ -341,6 +341,7 @@ class NetworkSettings(object):
     def restore_pptpd(self):
         """Disable pptpd."""
         self.ssh.run("uci set pptpd.pptpd.enabled=0")
+        self.remove_config_option(r"\S+ pptp-server \S+ \*", PPP_CHAP_SECRET_PATH)
         self.service_manager.need_restart(SERVICE_PPTPD)
 
     def update_firewall_rules_list(self):

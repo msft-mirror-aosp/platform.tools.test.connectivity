@@ -18,6 +18,7 @@ from acts import base_test
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
 class WifiPerformancePreflightTest(base_test.BaseTestClass):
@@ -49,9 +50,13 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
             wputils.push_firmware(self.dut, self.firmware)
 
         for ad in self.android_devices:
+            wutils.wifi_toggle_state(ad, True)
             ad.droid.wifiEnableVerboseLogging(1)
-            ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
-                         "wlan0 log_level EXCESSIVE")
+            try:
+                ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
+                             "wlan0 log_level EXCESSIVE")
+            except:
+                self.log.warning('Could not set log level.')
 
     def test_wifi_sw_signature(self):
         sw_signature = wputils.get_sw_signature(self.dut)
