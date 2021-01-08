@@ -14,9 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import bokeh, bokeh.plotting
+import bokeh, bokeh.plotting, bokeh.io
 import collections
 import hashlib
+import ipaddress
 import itertools
 import json
 import logging
@@ -109,29 +110,31 @@ def validate_network(dut, ssid):
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
     """Get server address on a specific subnet,
 
-    This function retrieves the LAN IP of a remote machine used in testing,
-    i.e., it returns the server's IP belonging to the same LAN as the DUT.
+    This function retrieves the LAN or WAN IP of a remote machine used in
+    testing. If subnet_mask is set to 'public' it returns a machines global ip,
+    else it returns the ip belonging to the dut local network given the dut's
+    ip and subnet mask.
 
     Args:
         ssh_connection: object representing server for which we want an ip
-        dut_ip: string in ip address format, i.e., xxx.xxx.xxx.xxx, specifying
-        the DUT LAN IP we wish to connect to
-        subnet_mask: string representing subnet mask
+        dut_ip: string in ip address format, i.e., xxx.xxx.xxx.xxx
+        subnet_mask: string representing subnet mask (public for global ip)
     """
-    subnet_mask = subnet_mask.split('.')
-    dut_subnet = [
-        int(dut) & int(subnet)
-        for dut, subnet in zip(dut_ip.split('.'), subnet_mask)
-    ]
     ifconfig_out = ssh_connection.run('ifconfig').stdout
     ip_list = re.findall('inet (?:addr:)?(\d+.\d+.\d+.\d+)', ifconfig_out)
-    for current_ip in ip_list:
-        current_subnet = [
-            int(ip) & int(subnet)
-            for ip, subnet in zip(current_ip.split('.'), subnet_mask)
-        ]
-        if current_subnet == dut_subnet:
-            return current_ip
+    ip_list = [ipaddress.ip_address(ip) for ip in ip_list]
+
+    if subnet_mask == 'public':
+        for ip in ip_list:
+            # is_global is not used to allow for CGNAT ips in 100.x.y.z range
+            if not ip.is_private:
+                return str(ip)
+    else:
+        dut_network = ipaddress.ip_network('{}/{}'.format(dut_ip, subnet_mask),
+                                           strict=False)
+        for ip in ip_list:
+            if ip in dut_network:
+                return str(ip)
     logging.error('No IP address found in requested subnet')
 
 
@@ -426,10 +429,10 @@ class BokehFigure():
             output_file: string specifying output file path
             save_json: flag controlling json outputs
         """
-        bokeh.plotting.output_file(output_file)
-        bokeh.plotting.save(self.plot)
         if save_json:
             self._save_figure_json(output_file)
+        bokeh.io.output_file(output_file)
+        bokeh.io.save(self.plot)
 
     @staticmethod
     def save_figures(figure_array, output_file_path, save_json=True):
@@ -756,7 +759,10 @@ def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
     return target_atten
 
 
-def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
+def get_current_atten_dut_chain_map(attenuators,
+                                    dut,
+                                    ping_server,
+                                    ping_from_dut=False):
     """Function to detect mapping between attenuator ports and DUT chains.
 
     This function detects the mapping between attenuator ports and DUT chains
@@ -770,6 +776,7 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
         attenuators: list of attenuator ports
         dut: android device object assumed connected to a wifi network.
         ping_server: ssh connection object to ping server
+        ping_from_dut: boolean controlling whether to ping from or to dut
     Returns:
         chain_map: list of dut chains, one entry per attenuator port
     """
@@ -778,7 +785,11 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
         atten.set_atten(0, strict=False)
     # Start ping traffic
     dut_ip = dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-    ping_future = get_ping_stats_nb(ping_server, dut_ip, 11, 0.02, 64)
+    if ping_from_dut:
+        ping_future = get_ping_stats_nb(dut, ping_server._settings.hostname,
+                                        11, 0.02, 64)
+    else:
+        ping_future = get_ping_stats_nb(ping_server, dut_ip, 11, 0.02, 64)
     # Measure starting RSSI
     base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
     chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
@@ -809,7 +820,11 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
     return chain_map
 
 
-def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
+def get_full_rf_connection_map(attenuators,
+                               dut,
+                               ping_server,
+                               networks,
+                               ping_from_dut=False):
     """Function to detect per-network connections between attenuator and DUT.
 
     This function detects the mapping between attenuator ports and DUT chains
@@ -841,7 +856,7 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
                             assert_on_fail=False,
                             check_connectivity=False)
         rf_map_by_network[net_id] = get_current_atten_dut_chain_map(
-            attenuators, dut, ping_server)
+            attenuators, dut, ping_server, ping_from_dut)
         for idx, chain in enumerate(rf_map_by_network[net_id]):
             if chain:
                 rf_map_by_atten[idx].append({
