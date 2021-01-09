@@ -29,6 +29,8 @@ IFACE = "InterfaceName"
 TIME_OUT = 20
 WLAN = "wlan0"
 ACCEPT_CONTINUE = "Accept and Continue"
+CONNECTED = "Connected"
+SIGN_IN_NOTIFICATION = "Sign in to network"
 
 
 class CaptivePortalTest(base_test.BaseTestClass):
@@ -76,6 +78,19 @@ class CaptivePortalTest(base_test.BaseTestClass):
         uutils.wait_and_click(self.dut, text="Network & internet")
         uutils.wait_and_click(self.dut, text="Not connected")
 
+    def _verify_sign_in_notification(self):
+        """Verify sign in notification shows for captive portal."""
+        curr_time = time.time()
+        while time.time() < curr_time + TIME_OUT:
+            screen_dump = uutils.get_screen_dump_xml(self.dut)
+            nodes = screen_dump.getElementsByTagName('node')
+            for node in nodes:
+                if SIGN_IN_NOTIFICATION in node.getAttribute(
+                    'text') or CONNECTED in node.getAttribute('text'):
+                  return
+            time.sleep(3) # wait for sometime before checking the notification
+        asserts.fail("Failed to get sign in notification")
+
     def _verify_captive_portal(self, network, click_accept=ACCEPT_CONTINUE):
         """Connect to captive portal network using uicd workflow.
 
@@ -93,6 +108,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
             self.dut, network, check_connectivity=False)
 
         # run ui automator
+        self._verify_sign_in_notification()
         uutils.wait_and_click(self.dut, text="%s" % network["SSID"])
         if uutils.has_element(self.dut, text="%s" % click_accept):
             uutils.wait_and_click(self.dut, text="%s" % click_accept)

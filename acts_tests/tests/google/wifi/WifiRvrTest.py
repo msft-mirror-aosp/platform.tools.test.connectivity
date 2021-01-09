@@ -550,9 +550,14 @@ class WifiRvrTest(base_test.BaseTestClass):
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             testcase_params['iperf_server_address'] = sta_dut_ip
         else:
-            testcase_params[
-                'iperf_server_address'] = wputils.get_server_address(
-                    self.remote_server, sta_dut_ip, '255.255.255.0')
+            if self.testbed_params.get('lan_traffic_only', True):
+                testcase_params[
+                    'iperf_server_address'] = wputils.get_server_address(
+                        self.remote_server, sta_dut_ip, '255.255.255.0')
+            else:
+                testcase_params[
+                    'iperf_server_address'] = wputils.get_server_address(
+                        self.remote_server, sta_dut_ip, 'public')
         # Set DUT to monitor RSSI and LLStats on
         self.monitored_dut = self.sta_dut
         self.monitored_interface = None
