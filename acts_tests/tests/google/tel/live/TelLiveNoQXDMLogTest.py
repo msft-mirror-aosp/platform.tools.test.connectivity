@@ -95,7 +95,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         self.skip_reset_between_cases = False
         self.path = self.user_params['account_util'][0]
         self.user_account = "commsteltest1"
-        self.user_password = "tellivetest1"
+        self.user_password = "tellivetest2"
 
     def _get_list_average(self, input_list):
         total_sum = float(sum(input_list))
@@ -639,7 +639,8 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             result_flag = False
             time_var = 1
             ad = self.android_devices[0]
-            if ad.adb.getprop("ro.build.version.release")[0] in ("9", "P"):
+            if ad.adb.getprop("ro.build.version.release") in ("9", "P", "10", "Q",
+                                "11", "R", "12", "S"):
                 CARRIER_ID_VERSION = CARRIER_ID_VERSION_P
                 CARRIER_ID_METADATA_URL = CARRIER_ID_METADATA_URL_P
                 CARRIER_ID_CONTENT_URL = CARRIER_ID_CONTENT_URL_P
