@@ -59,7 +59,7 @@ class WifiDppTest(WifiBaseTest):
   DPP_TEST_NETWORK_ROLE_AP = "ap"
 
   DPP_TEST_PARAM_SSID = "SSID"
-  DPP_TEST_PARAM_PASSWORD = "Password"
+  DPP_TEST_PARAM_PASSWORD = "password"
 
   WPA_SUPPLICANT_SECURITY_SAE = "sae"
   WPA_SUPPLICANT_SECURITY_PSK = "psk"
@@ -102,6 +102,11 @@ class WifiDppTest(WifiBaseTest):
     opt_param = ["wifi_psk_network", "wifi_sae_network"]
     self.unpack_userparams(
       req_param_names=req_params, opt_param_names=opt_param)
+    if "OpenWrtAP" in self.user_params:
+      self.configure_openwrt_ap_and_start(wpa_network=True,
+                                          sae_network=True)
+      self.wifi_psk_network = self.wpa_networks[0]["5g"].copy()
+      self.wifi_sae_network = self.sae_networks[0]["2g"].copy()
 
     self.dut.log.info(
       "Parsed configs: %s %s" % (self.wifi_psk_network, self.wifi_sae_network))
