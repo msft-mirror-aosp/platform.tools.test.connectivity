@@ -27,6 +27,8 @@ WIFI_NETWORK_CB_ON_AVAILABLE = "WifiManagerNetworkCallbackOnAvailable"
 WIFI_NETWORK_CB_ON_UNAVAILABLE = "WifiManagerNetworkCallbackOnUnavailable"
 WIFI_NETWORK_CB_ON_LOST = "WifiManagerNetworkCallbackOnLost"
 WIFI_NETWORK_SUGGESTION_POST_CONNECTION = "WifiNetworkSuggestionPostConnection"
+WIFI_SUBSYSTEM_RESTARTING = "WifiSubsystemRestarting"
+WIFI_SUBSYSTEM_RESTARTED = "WifiSubsystemRestarted"
 
 # These constants will be used by the ACTS wifi tests.
 CONNECT_BY_CONFIG_SUCCESS = 'WifiManagerConnectByConfigOnSuccess'

@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import copy
 import json
 import math
 import os
@@ -71,9 +72,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.remote_server.setup_master_ssh()
         self.iperf_server = self.iperf_servers[0]
         self.iperf_client = self.iperf_clients[0]
-        self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
-        self.log.info('Access Point Configuration: {}'.format(
-            self.access_point.ap_settings))
+        self.access_points = retail_ap.create(self.RetailAccessPoints)
 
         # Get RF connection map
         self.log.info("Getting RF connection map.")
@@ -81,7 +80,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.rf_map_by_network, self.rf_map_by_atten = (
             wputils.get_full_rf_connection_map(self.attenuators, self.dut,
                                                self.remote_server,
-                                               self.main_network))
+                                               self.main_network, True))
         self.log.info("RF Map (by Network): {}".format(self.rf_map_by_network))
         self.log.info("RF Map (by Atten): {}".format(self.rf_map_by_atten))
 
@@ -104,7 +103,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.log.info('Detected {} roam transitions:'.format(
             len(result['roam_transitions'])))
         for event in result['roam_transitions']:
-            self.log.info('Roam: {} -> {})'.format(event[0], event[1]))
+            self.log.info('Roam @ {0:.2f}s: {1} -> {2})'.format(
+                event[0], event[1], event[2]))
         self.log.info('Roam transition statistics: {}'.format(
             result['roam_counts']))
 
@@ -295,15 +295,20 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         roam_transitions = []
         roam_counts = {}
         total_roams = 0
+        roam_candidates = copy.deepcopy(self.main_network)
+        roam_candidates['disconnected'] = {'BSSID': 'disconnected'}
         for event in roam_events:
             from_bssid = next(
-                key for key, value in self.main_network.items()
+                key for key, value in roam_candidates.items()
                 if value['BSSID'] == result['rssi_result']['bssid'][event[0]])
             to_bssid = next(
-                key for key, value in self.main_network.items()
+                key for key, value in roam_candidates.items()
                 if value['BSSID'] == result['rssi_result']['bssid'][event[1]])
+            if from_bssid == to_bssid:
+                continue
             curr_bssid_transition = (from_bssid, to_bssid)
             curr_roam_transition = (
+                result['rssi_result']['time_stamp'][event[0]],
                 (from_bssid,
                  result['rssi_result']['signal_poll_rssi']['data'][event[0]]),
                 (to_bssid,
@@ -391,7 +396,10 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             y_data=result['rssi_result']['signal_poll_rssi']['data'],
             legend='RSSI',
             y_axis='secondary')
-        figure.generate_figure(output_file_path)
+        try:
+            figure.generate_figure(output_file_path)
+        except:
+            pass
 
     def plot_iperf_result(self,
                           testcase_params,
@@ -425,8 +433,10 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
                         result['rssi_result']['signal_poll_rssi']['data'],
                         'RSSI',
                         y_axis='secondary')
-
-        figure.generate_figure(output_file_path)
+        try:
+            figure.generate_figure(output_file_path)
+        except:
+            pass
 
     def setup_ap(self, testcase_params):
         """Sets up the AP and attenuator to the test configuration.
@@ -467,7 +477,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut,
                             network,
                             num_of_tries=5,
-                            check_connectivity=False)
+                            check_connectivity=True)
         self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if testcase_params['screen_on']:
@@ -490,10 +500,22 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             dict containing all test results and meta data
         """
         self.log.info('Starting ping test.')
-        ping_future = wputils.get_ping_stats_nb(
-            self.remote_server, self.dut_ip,
-            testcase_params['atten_waveforms']['length'],
-            testcase_params['ping_interval'], 64)
+        if testcase_params.get('ping_to_dut', False):
+            ping_future = wputils.get_ping_stats_nb(
+                self.remote_server, self.dut_ip,
+                testcase_params['atten_waveforms']['length'],
+                testcase_params['ping_interval'], 64)
+        else:
+            if testcase_params.get('lan_traffic_only', False):
+                ping_address = wputils.get_server_address(
+                    self.remote_server, self.dut_ip, '255.255.255.0')
+            else:
+                ping_address = wputils.get_server_address(
+                    self.remote_server, self.dut_ip, 'public')
+            ping_future = wputils.get_ping_stats_nb(
+                self.dut, ping_address,
+                testcase_params['atten_waveforms']['length'],
+                testcase_params['ping_interval'], 64)
         rssi_future = wputils.get_connected_rssi_nb(
             self.dut,
             int(testcase_params['atten_waveforms']['length'] /
@@ -503,7 +525,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         return {
             'ping_result': ping_future.result().as_dict(),
             'rssi_result': rssi_future.result(),
-            'ap_settings': self.access_point.ap_settings,
+            'ap_settings': [ap.ap_settings for ap in self.access_points],
         }
 
     def run_iperf_test(self, testcase_params):
@@ -521,8 +543,12 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             iperf_server_address = self.dut_ip
         else:
-            iperf_server_address = wputils.get_server_address(
-                self.remote_server, self.dut_ip, '255.255.255.0')
+            if testcase_params.get('lan_traffic_only', False):
+                iperf_server_address = wputils.get_server_address(
+                    self.remote_server, self.dut_ip, '255.255.255.0')
+            else:
+                iperf_server_address = wputils.get_server_address(
+                    self.remote_server, self.dut_ip, 'public')
         iperf_args = '-i {} -t {} -J'.format(
             IPERF_INTERVAL, testcase_params['atten_waveforms']['length'])
         if not isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
@@ -549,7 +575,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         return {
             'throughput': instantaneous_rates,
             'rssi_result': rssi_future.result(),
-            'ap_settings': self.access_point.ap_settings,
+            'ap_settings': [ap.ap_settings for ap in self.access_points],
         }
 
     def run_attenuation_waveform(self, testcase_params, step_duration=1):
@@ -581,14 +607,14 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             waveform_params: list of dicts representing waveforms to generate
         """
         atten_waveforms = {}
-        for network in list(waveform_params[0]):
+        for network in self.main_network:
             atten_waveforms[network] = []
 
         for waveform in waveform_params:
-            for network, network_waveform in waveform.items():
+            for network_name, network in self.main_network.items():
                 waveform_vector = self.gen_single_atten_waveform(
-                    network_waveform)
-                atten_waveforms[network] += waveform_vector
+                    waveform[network['roaming_label']])
+                atten_waveforms[network_name] += waveform_vector
 
         waveform_lengths = {
             len(atten_waveforms[network])
