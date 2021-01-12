@@ -8991,10 +8991,12 @@ def log_messaging_screen_shot(ad, test_name=""):
     ad.send_keycode("HOME")
     ad.adb.shell("am start -n com.google.android.apps.messaging/.ui."
                  "ConversationListActivity")
+    time.sleep(3)
     log_screen_shot(ad, test_name)
     ad.adb.shell("am start -n com.google.android.apps.messaging/com.google."
-                 "android.apps.messaging.ui.conversation.ConversationActivity"
-                 " -e conversation_id 1")
+                 "android.apps.messaging.ui.conversation."
+                 "LaunchConversationShimActivity -e conversation_id 1")
+    time.sleep(3)
     log_screen_shot(ad, test_name)
     ad.send_keycode("HOME")
 
