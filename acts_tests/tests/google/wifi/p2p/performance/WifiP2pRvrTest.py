@@ -132,6 +132,7 @@ class WifiP2pRvrTest(WifiRvrTest):
 
     def setup_test(self):
         for ad in self.android_devices:
+            wputils.start_wifi_logging(ad)
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
             ad.ed.clear_all_events()
@@ -154,6 +155,7 @@ class WifiP2pRvrTest(WifiRvrTest):
             ad.droid.wifiP2pClearLocalServices()
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
+            wputils.stop_wifi_logging(ad)
 
     def compute_test_metrics(self, rvr_result):
         #Set test metrics

@@ -126,6 +126,10 @@ class WifiAwareRvrTest(WifiRvrTest):
         # Teardown AP and release its lockfile
         self.access_point.teardown()
 
+    def setup_test(self):
+        for ad in self.android_devices:
+            wputils.start_wifi_logging(ad)
+
     def teardown_test(self):
         self.iperf_server.stop()
         for ad in self.android_devices:
@@ -136,6 +140,7 @@ class WifiAwareRvrTest(WifiRvrTest):
             autils.reset_device_parameters(ad)
             autils.validate_forbidden_callbacks(ad)
             wutils.reset_wifi(ad)
+            wputils.stop_wifi_logging(ad)
 
     def compute_test_metrics(self, rvr_result):
         #Set test metrics
