@@ -4129,13 +4129,6 @@ def http_file_download_by_curl(ad,
             return False
     except Exception as e:
         ad.log.warning("Download %s failed with exception %s", url, e)
-        for cmd in ("ls -lh /data/local/tmp/tcpdump/",
-                    "ls -lh /sdcard/Download/",
-                    "ls -lh /data/vendor/radio/diag_logs/logs/",
-                    "df -h",
-                    "du -d 4 -h /data"):
-            out = ad.adb.shell(cmd)
-            ad.log.debug("%s", out)
         return False
     finally:
         if remove_file_after_check:
@@ -4293,13 +4286,6 @@ def http_file_download_by_sl4a(ad,
             ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
         except Exception as e:
             ad.log.warning("SL4A file download error: %s", e)
-            for cmd in ("ls -lh /data/local/tmp/tcpdump/",
-                        "ls -lh /sdcard/Download/",
-                        "ls -lh /data/vendor/radio/diag_logs/logs/",
-                        "df -h",
-                        "du -d 4 -h /data"):
-                out = ad.adb.shell(cmd)
-                ad.log.debug("%s", out)
             ad.data_droid.terminate()
             return False
         if _check_file_existance(ad, file_path, expected_file_size):
