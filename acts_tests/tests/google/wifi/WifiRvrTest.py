@@ -234,7 +234,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         }
         return throughput_limits
 
-    def process_test_results(self, rvr_result):
+    def plot_rvr_result(self, rvr_result):
         """Saves plots and JSON formatted results.
 
         Args:
@@ -296,6 +296,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                                         '{}.html'.format(test_name))
         figure.generate_figure(output_file_path)
 
+    def compute_test_metrics(self, rvr_result):
         #Set test metrics
         rvr_result['metrics'] = {}
         rvr_result['metrics']['peak_tput'] = max(
@@ -340,6 +341,10 @@ class WifiRvrTest(base_test.BaseTestClass):
         if self.publish_testcase_metrics:
             self.testcase_metric_logger.add_metric(
                 'low_tput_range', rvr_result['metrics']['low_tput_range'])
+
+    def process_test_results(self, rvr_result):
+        self.plot_rvr_result(rvr_result)
+        self.compute_test_metrics(rvr_result)
 
     def run_rvr_test(self, testcase_params):
         """Test function to run RvR.
