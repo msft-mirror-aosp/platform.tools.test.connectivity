@@ -28,6 +28,7 @@ import statistics
 import time
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
+from acts import asserts
 from acts import utils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from concurrent.futures import ThreadPoolExecutor
@@ -1425,6 +1426,48 @@ def push_firmware(dut, firmware_files):
     for file in firmware_files:
         dut.push_system_file(file, '/vendor/firmware/')
     dut.reboot()
+
+
+@detect_wifi_decorator
+def start_wifi_logging(dut):
+    """Function to start collecting wifi-related logs"""
+    pass
+
+
+def start_wifi_logging_qcom(dut):
+    dut.droid.wifiEnableVerboseLogging(1)
+    msg = "Failed to enable WiFi verbose logging."
+    asserts.assert_equal(dut.droid.wifiGetVerboseLoggingLevel(), 1, msg)
+    logging.info('Starting CNSS logs')
+    dut.adb.shell("find /data/vendor/wifi/wlan_logs/ -type f -delete",
+                  ignore_status=True)
+    dut.adb.shell_nb('cnss_diag -f -s')
+
+
+def start_wifi_logging_brcm(dut):
+    pass
+
+
+@detect_wifi_decorator
+def stop_wifi_logging(dut):
+    """Function to start collecting wifi-related logs"""
+    pass
+
+
+def stop_wifi_logging_qcom(dut):
+    logging.info('Stopping CNSS logs')
+    dut.adb.shell('killall cnss_diag')
+    logs = dut.get_file_names("/data/vendor/wifi/wlan_logs/")
+    if logs:
+        dut.log.info("Pulling cnss_diag logs %s", logs)
+        log_path = os.path.join(dut.device_log_path,
+                                "CNSS_DIAG_%s" % dut.serial)
+        os.makedirs(log_path, exist_ok=True)
+        dut.pull_files(logs, log_path)
+
+
+def stop_wifi_logging_brcm(dut):
+    pass
 
 
 def _set_ini_fields(ini_file_path, ini_field_dict):
