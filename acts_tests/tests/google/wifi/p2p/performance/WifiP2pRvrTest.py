@@ -132,6 +132,7 @@ class WifiP2pRvrTest(WifiRvrTest):
 
     def setup_test(self):
         for ad in self.android_devices:
+            wputils.start_wifi_logging(ad)
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
             ad.ed.clear_all_events()
@@ -154,6 +155,52 @@ class WifiP2pRvrTest(WifiRvrTest):
             ad.droid.wifiP2pClearLocalServices()
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
+            wputils.stop_wifi_logging(ad)
+
+    def compute_test_metrics(self, rvr_result):
+        #Set test metrics
+        rvr_result['metrics'] = {}
+        rvr_result['metrics']['peak_tput'] = max(
+            rvr_result['throughput_receive'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'peak_tput', rvr_result['metrics']['peak_tput'])
+
+        test_mode = rvr_result['testcase_params']['mode']
+        tput_below_limit = [
+            tput <
+            self.testclass_params['tput_metric_targets'][test_mode]['high']
+            for tput in rvr_result['throughput_receive']
+        ]
+        rvr_result['metrics']['high_tput_range'] = -1
+        for idx in range(len(tput_below_limit)):
+            if all(tput_below_limit[idx:]):
+                if idx == 0:
+                    #Throughput was never above limit
+                    rvr_result['metrics']['high_tput_range'] = -1
+                else:
+                    rvr_result['metrics']['high_tput_range'] = rvr_result[
+                        'total_attenuation'][max(idx, 1) - 1]
+                break
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'high_tput_range', rvr_result['metrics']['high_tput_range'])
+
+        tput_below_limit = [
+            tput <
+            self.testclass_params['tput_metric_targets'][test_mode]['low']
+            for tput in rvr_result['throughput_receive']
+        ]
+        for idx in range(len(tput_below_limit)):
+            if all(tput_below_limit[idx:]):
+                rvr_result['metrics']['low_tput_range'] = rvr_result[
+                    'total_attenuation'][max(idx, 1) - 1]
+                break
+        else:
+            rvr_result['metrics']['low_tput_range'] = -1
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'low_tput_range', rvr_result['metrics']['low_tput_range'])
 
     def setup_aps(self, testcase_params):
         for network in testcase_params['ap_networks']:
