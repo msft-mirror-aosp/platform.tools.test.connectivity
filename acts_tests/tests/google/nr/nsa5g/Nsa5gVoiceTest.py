@@ -27,10 +27,9 @@ from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
@@ -41,12 +40,13 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connec
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa, wifi_cell_switching_for_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
@@ -199,7 +199,6 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                 return False
             else:
                 return True
-
 
     """ Tests Begin """
 
@@ -437,6 +436,67 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             return False
         return self._test_call_setup_in_active_data_transfer_5g_nsa(
             DIRECTION_MOBILE_TERMINATED)
+
+
+    @test_tracker_info(uuid="3a607dee-7e92-4567-8ca0-05099590b773")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_volte_in_call_wifi_toggling(self):
+        """ Test data connection network switching during VoLTE call in 5G NSA.
+
+        1. Make Sure PhoneA in VoLTE.
+        2. Make Sure PhoneB in VoLTE.
+        3. Make sure Phones are in 5G NSA
+        4. Call from PhoneA to PhoneB.
+        5. Toggling Wifi connection in call.
+        6. Verify call is active.
+        7. Hung up the call on PhoneA
+        8. Make sure Phones are in 5G NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        result = True
+        if not provision_both_devices_for_volte(self.log, ads):
+            return False
+
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not provision_both_devices_for_5g(self.log, ads):
+            return False
+
+        if not verify_5g_attach_for_both_devices(self.log, ads):
+            self.log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
+                                   5):
+            self.log.error("Call setup failed")
+            return False
+        else:
+            self.log.info("Call setup succeed")
+
+        if not wifi_cell_switching_for_5g_nsa(self.log, ads[0], self.wifi_network_ssid,
+                                              self.wifi_network_pass):
+            ads[0].log.error("Failed to do WIFI and Cell switch in call")
+            result = False
+
+        if not is_phone_in_call_active(ads[0]):
+            return False
+        else:
+            if not ads[0].droid.telecomCallGetAudioState():
+                ads[0].log.error("Audio is not on call")
+                result = False
+            else:
+                ads[0].log.info("Audio is on call")
+            hangup_call(self.log, ads[0])
+
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+            if not verify_5g_attach_for_both_devices(self.log, ads):
+                self.log.error("Phone not attached on 5G NSA after call.")
+                return False
+            return result
 
 
     """ Tests End """
