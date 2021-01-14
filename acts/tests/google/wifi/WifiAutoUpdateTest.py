@@ -98,16 +98,14 @@ class WifiAutoUpdateTest(WifiBaseTest):
                 "Failed up apply OTA update. Aborting tests: %s" % e)
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -126,7 +124,18 @@ class WifiAutoUpdateTest(WifiBaseTest):
         self.wifi_hotspot = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                              "password": "pass_%s" % utils.rand_ascii_str(6)}
         band = WIFI_CONFIG_APBAND_5G
-        if self.dut.build_info["build_id"].startswith("Q"):
+        if self.dut.build_info["build_id"].startswith("R"):
+            band = WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G
+            self.wifi_hotspot[WifiEnums.AP_BAND_KEY] = band
+            asserts.assert_true(
+                self.dut.droid.wifiSetWifiApConfiguration(self.wifi_hotspot),
+                "Failed to set WifiAp Configuration")
+            wifi_ap = self.dut.droid.wifiGetApConfiguration()
+            asserts.assert_true(
+                wifi_ap[WifiEnums.SSID_KEY] == self.wifi_hotspot[WifiEnums.SSID_KEY],
+                "Hotspot SSID doesn't match with expected SSID")
+            return
+        elif self.dut.build_info["build_id"].startswith("Q"):
             band = WifiEnums.WIFI_CONFIG_APBAND_5G_OLD
             self.wifi_hotspot[WifiEnums.AP_BAND_KEY] = band
             asserts.assert_true(
