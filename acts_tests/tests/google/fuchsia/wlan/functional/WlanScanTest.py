@@ -48,7 +48,7 @@ class WlanScanTest(WifiBaseTest):
 
         self.start_access_point = False
         for fd in self.fuchsia_devices:
-            fd.configure_wlan()
+            fd.configure_wlan(association_mechanism='drivers')
         if "AccessPoint" in self.user_params:
             # This section sets up the config that could be sent to the AP if
             # the AP is needed. The reasoning is since ACTS already connects
@@ -189,8 +189,11 @@ class WlanScanTest(WifiBaseTest):
         if 'password' in wlan_network_params:
             target_pwd = wlan_network_params['password']
 
+        bss_scan_response = fd.wlan_lib.wlanScanForBSSInfo().get('result')
         connection_response = fd.wlan_lib.wlanConnectToNetwork(
-            target_ssid, target_pwd)
+            target_ssid,
+            bss_scan_response[target_ssid][0],
+            target_pwd=target_pwd)
         self.check_connect_response(connection_response)
         self.basic_scan_request(fd)
 
