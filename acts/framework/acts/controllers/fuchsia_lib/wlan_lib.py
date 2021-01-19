@@ -17,6 +17,7 @@ from acts import logger
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 COMMAND_SCAN = "wlan.scan"
+COMMAND_SCAN_FOR_BSS_INFO = "wlan.scan_for_bss_info"
 COMMAND_CONNECT = "wlan.connect"
 COMMAND_DISCONNECT = "wlan.disconnect"
 COMMAND_STATUS = "wlan.status"
@@ -46,7 +47,23 @@ class FuchsiaWlanLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, {})
 
-    def wlanConnectToNetwork(self, target_ssid, target_pwd=None):
+    def wlanScanForBSSInfo(self):
+        """ Scans and returns BSS info
+
+        Returns:
+            A dict mapping each seen SSID to a list of BSS Description IE
+            blocks, one for each BSS observed in the network
+        """
+        test_cmd = COMMAND_SCAN_FOR_BSS_INFO
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
+
+    def wlanConnectToNetwork(self,
+                             target_ssid,
+                             target_bss_desc,
+                             target_pwd=None):
         """ Triggers a network connection
         Args:
             target_ssid: the network to attempt a connection to
@@ -56,7 +73,11 @@ class FuchsiaWlanLib(BaseLib):
             boolean indicating if the connection was successful
         """
         test_cmd = COMMAND_CONNECT
-        test_args = {"target_ssid": target_ssid, "target_pwd": target_pwd}
+        test_args = {
+            "target_ssid": target_ssid,
+            "target_pwd": target_pwd,
+            "target_bss_desc": target_bss_desc
+        }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
