@@ -92,7 +92,8 @@ class PolicyScanTest(WifiBaseTest):
     def setup_test(self):
         for fd in self.fuchsia_devices:
             # stub for setting up all the fuchsia devices in the testbed.
-            pass
+            return fd.wlan_policy_controller.remove_all_networks_and_wait_for_no_connections(
+            )
 
     def teardown_test(self):
         for fd in self.fuchsia_devices:
@@ -163,24 +164,14 @@ class PolicyScanTest(WifiBaseTest):
         """
         target_ssid = wlan_network_params["SSID"]
         target_pwd = wlan_network_params.get("password")
+        target_security = wlan_network_params.get("security")
+
         # TODO(mnck): use the Policy version of this call, when it is available.
-        connection_response = fd.wlan_lib.wlanConnectToNetwork(
-            target_ssid, target_pwd)
-        if connection_response.get("error") is None:
-            # the command did not get an error response - go ahead and
-            # check the result
-            connection_result = connection_response.get("result")
-            if connection_result:
-                self.log.info("connection to network successful")
-            else:
-                # ideally, we would have the actual error...  but logging
-                # here to cover that error case
-                raise signals.TestFailure("Connect call failed, aborting test")
-        else:
-            # the response indicates an error - log and raise failure
-            raise signals.TestFailure("Aborting test - Connect call failed "
-                                      "with error: %s" %
-                                      connection_response.get("error"))
+        connection_response = fd.wlan_policy_controller.save_and_connect(
+            target_ssid, target_security, password=target_pwd)
+        if not connection_response:
+            raise signals.TestFailure("Aborting test - Connect call failed")
+        self.log.info("Network connection successful.")
 
     def assert_network_is_in_results(self, scan_results, *, ssid):
         """ Verified scan results contain a specified network
