@@ -22,7 +22,6 @@ import time
 import acts.base_test
 import acts.signals as signals
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
-import acts.utils
 
 from acts import asserts
 from acts.controllers.android_device import SL4A_APK_NAME
@@ -56,7 +55,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_test_device_init(self.dut)
         req_params = []
         opt_param = [
-            "open_network", "reference_networks"
+            "open_network", "reference_networks", "sta_concurrency_supported_models"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -76,6 +75,11 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.wpa_psk_5g = self.reference_networks[0]["5g"]
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
+        if "sta_concurrency_supported_models" in self.user_params:
+            self.sta_concurrency_supported_models = \
+                self.dut.model in self.sta_concurrency_supported_models
+        else:
+            self.sta_concurrency_supported_models = False
 
     def setup_test(self):
         super().setup_test()
@@ -105,22 +109,90 @@ class WifiNetworkRequestTest(WifiBaseTest):
             del self.user_params["open_network"]
 
     """Helper Functions"""
+    def wait_for_network_available(self, expected_ssid):
+        """
+        Wait for network available callback from connectivity service (wifi
+        connect).
+
+        Args:
+            expected_ssid: SSID of the network.
+        """
+        try:
+            self.dut.droid.wifiStartTrackingStateChange()
+            on_available_event = self.dut.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_CB_ON_AVAILABLE, 60)
+            asserts.assert_true(on_available_event,
+                            "Network request on available not received.")
+            connected_network = on_available_event["data"]
+            self.dut.log.info("Connected to network %s", connected_network)
+            asserts.assert_equal(
+                connected_network[WifiEnums.SSID_KEY], expected_ssid,
+                "Connected to the wrong network."
+                "Expected %s, but got %s." % (expected_ssid, connected_network))
+        except queue.Empty:
+            asserts.fail("Failed to connect to %s" % expected_ssid)
+        except Exception as error:
+            self.dut.log.error("Failed to connect to %s with error %s",
+                     (expected_ssid, error))
+            raise signals.TestFailure("Failed to connect to %s network" % expected_ssid)
+        finally:
+            self.dut.droid.wifiStopTrackingStateChange()
+
+    def ensure_no_network_available(self):
+        """
+        Ensure we did not get network available callback from connectivity service (wifi
+        connect).
+        """
+        try:
+            self.dut.droid.wifiStartTrackingStateChange()
+            on_available_event = self.dut.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_CB_ON_AVAILABLE, 60)
+            connected_network = on_available_event["data"]
+            asserts.fail("Connected to network %s", connected_network)
+        except queue.Empty:
+            # expected
+            self.dut.log.debug("Device did not connect to network")
+        except Exception as error:
+            self.dut.log.error("Received network available %s", error)
+            raise signals.TestFailure("Received network available %s" % error)
+        finally:
+            self.dut.droid.wifiStopTrackingStateChange()
+
     def wait_for_network_lost(self):
         """
         Wait for network lost callback from connectivity service (wifi
         disconnect).
-
-        Args:
-            ad: Android device object.
         """
         try:
             self.dut.droid.wifiStartTrackingStateChange()
-            event = self.dut.ed.pop_event(
-                wifi_constants.WIFI_NETWORK_CB_ON_LOST, 10)
-            self.dut.droid.wifiStopTrackingStateChange()
+            on_lost_event = self.dut.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_CB_ON_LOST, 60)
+            asserts.assert_true(on_lost_event,
+                            "Network request on lost not received.")
         except queue.Empty:
             raise signals.TestFailure(
                 "Device did not disconnect from the network")
+        finally:
+            self.dut.droid.wifiStopTrackingStateChange()
+
+    def ensure_no_network_lost(self):
+        """
+        Ensure we did not get network lost callback from connectivity service (wifi
+        disconnect).
+        """
+        try:
+            self.dut.droid.wifiStartTrackingStateChange()
+            on_lost_event = self.dut.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_CB_ON_LOST, 60)
+            asserts.fail("Disconnected", on_lost_event)
+        except queue.Empty:
+            # expected
+            self.dut.log.debug("Device did not disconnect from network")
+        except Exception as error:
+            self.dut.log.error("Received network lost %s", error)
+            raise signals.TestFailure("Received network lost %s" % error)
+        finally:
+            self.dut.droid.wifiStopTrackingStateChange()
 
     def remove_approvals(self):
         self.dut.log.debug("Removing all approvals from sl4a app")
@@ -205,10 +277,10 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_2g,
                                                   self.wpa_psk_2g)
         # Release the request.
+        self.dut.log.info("Released network request %s", self.wpa_psk_2g)
         self.dut.droid.wifiReleaseNetwork(self.wpa_psk_2g)
-        # Ensure we disconnected from the previous network.
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
+        # Ensure we disconnected from the network.
+        time.sleep(10)
         self.dut.ed.clear_all_events()
         # Complete flow for the second request.
         wutils.wifi_connect_using_network_request(self.dut, self.open_5g,
@@ -262,7 +334,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         # Ensure we do not disconnect from the previous network until the user
         # approves the new request.
         self.dut.ed.clear_all_events()
-        wutils.ensure_no_disconnect(self.dut)
+        self.ensure_no_network_lost()
 
         # Now complete the flow and ensure we connected to second request.
         wutils.wait_for_wifi_connect_after_network_request(self.dut,
@@ -290,10 +362,10 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_2g,
                                                   self.wpa_psk_2g)
         # Release the request.
+        self.dut.log.info("Released network request %s", self.wpa_psk_2g)
         self.dut.droid.wifiReleaseNetwork(self.wpa_psk_2g)
         # Ensure we disconnected from the network.
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
+        time.sleep(10)
         self.dut.ed.clear_all_events()
 
         # Find bssid for the WPA-PSK 2G network.
@@ -313,7 +385,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
                           network_specifier_with_bssid)
 
         # Ensure we connected to second request without user approval.
-        wutils.wait_for_connect(self.dut, self.wpa_psk_2g[WifiEnums.SSID_KEY])
+        self.wait_for_network_available(self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="fcf84d94-5f6e-4bd6-9f76-40a0228d4ebe")
     def test_connect_to_wpa_psk_2g_which_is_already_approved_but_then_forgot(self):
@@ -338,14 +410,22 @@ class WifiNetworkRequestTest(WifiBaseTest):
         10.Ensure that the device bypasses user approval now & connects to the
            same network.
         """
+        # If the device supports STA + STA, user cannot trigger disconnect from UI.
+        # Skip the test in that case since the user disconnect causes a disconnect
+        # in the primary STA which will cause the test to fail.
+        if self.sta_concurrency_supported_models:
+            asserts.skip(
+                ("Device %s supports STA + STA, skipping test.")
+                % self.dut.model)
         # Complete flow for the first request.
         wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_2g,
                                                   self.wpa_psk_2g)
 
         # Simulate user forgeting the ephemeral network.
+        self.dut.log.info("Triggered user disconnect from %s", self.wpa_psk_2g)
         self.dut.droid.wifiUserDisconnectNetwork(self.wpa_psk_2g[WifiEnums.SSID_KEY])
         # Ensure we disconnected from the network.
-        wutils.wait_for_disconnect(self.dut)
+        self.wait_for_network_lost()
         self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
         self.dut.ed.clear_all_events()
         # Release the first request.
@@ -368,12 +448,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
                           network_specifier_with_bssid)
 
         # Ensure that we did not connect bypassing user approval.
-        assert_msg = "Device should not connect without user approval"
-        asserts.assert_false(
-            wutils.wait_for_connect(self.dut,
-                                    self.wpa_psk_2g[WifiEnums.SSID_KEY],
-                                    assert_on_fail=False),
-            assert_msg)
+        self.ensure_no_network_available()
 
         # Now complete the flow and ensure we connected to second request.
         wutils.wait_for_wifi_connect_after_network_request(self.dut,
@@ -385,7 +460,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
             network_specifier_with_bssid)
         self.dut.log.info("Sent network request with %r",
                           network_specifier_with_bssid)
-        wutils.wait_for_connect(self.dut, self.wpa_psk_2g[WifiEnums.SSID_KEY])
+        self.wait_for_network_available(self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="2f90a266-f04d-4932-bb5b-d075bedfd56d")
     def test_match_failure_with_invalid_ssid_pattern(self):

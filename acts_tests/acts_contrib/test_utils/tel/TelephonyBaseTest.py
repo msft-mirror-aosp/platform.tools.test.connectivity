@@ -310,6 +310,7 @@ class TelephonyBaseTest(BaseTestClass):
             # eSIM needs activation
             activate_esim_using_suw(ad)
             ensure_phone_idle(self.log, ad)
+            setup_droid_properties(self.log, ad, sim_conf_file)
         elif self.user_params.get("Attenuator"):
             ad.log.info("Device in chamber room")
             ensure_phone_idle(self.log, ad)

@@ -771,12 +771,19 @@ class AndroidDevice:
             matching_string: matching_string to search.
 
         Returns:
-            A list of dictionaries with full log message, time stamp string
-            and time object. For example:
+            A list of dictionaries with full log message, time stamp string,
+            time object and message ID. For example:
             [{"log_message": "05-03 17:39:29.898   968  1001 D"
                               "ActivityManager: Sending BOOT_COMPLETE user #0",
               "time_stamp": "2017-05-03 17:39:29.898",
-              "datetime_obj": datetime object}]
+              "datetime_obj": datetime object,
+              "message_id": None}]
+
+            [{"log_message": "08-12 14:26:42.611043  2360  2510 D RILJ    : "
+                             "[0853]< DEACTIVATE_DATA_CALL  [PHONE0]",
+              "time_stamp": "2020-08-12 14:26:42.611043",
+              "datetime_obj": datetime object},
+              "message_id": "0853"}]
         """
         logcat_path = os.path.join(self.device_log_path,
                                    'adblog_%s_debug.txt' % self.serial)
@@ -800,10 +807,18 @@ class AndroidDevice:
             time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
             if begin_time and time_obj < begin_time:
                 continue
+
+            res = re.findall(r'.*\[(\d+)\]', log[1])
+            try:
+                message_id = res[0]
+            except:
+                message_id = None
+
             result.append({
                 "log_message": "".join(log),
                 "time_stamp": time_stamp,
-                "datetime_obj": time_obj
+                "datetime_obj": time_obj,
+                "message_id": message_id
             })
         return result
 
