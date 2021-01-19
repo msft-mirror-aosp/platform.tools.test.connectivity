@@ -74,16 +74,20 @@ def create_security_profile(test_func):
         ptk_type = security.group(2)
         wpa_cipher = None
         wpa2_cipher = None
-        if '_wpa_' in security_mode and '_wpa2_' in security_mode:
-            security_mode = 'wpa/wpa2'
+        if '_wpa_wpa2_wpa3_' in security_mode:
+            security_mode = hostapd_constants.WPA_WPA2_WPA3_MIXED_STRING
+        elif '_wpa_wpa2_' in security_mode:
+            security_mode = hostapd_constants.WPA_MIXED_STRING
+        elif '_wpa2_wpa3_' in security_mode:
+            security_mode = hostapd_constants.WPA2_WPA3_MIXED_STRING
         elif '_wep_' in security_mode:
-            security_mode = 'wep'
+            security_mode = hostapd_constants.WEP_STRING
         elif '_wpa_' in security_mode:
-            security_mode = 'wpa'
+            security_mode = hostapd_constants.WPA_STRING
         elif '_wpa2_' in security_mode:
-            security_mode = 'wpa2'
+            security_mode = hostapd_constants.WPA2_STRING
         elif '_wpa3_' in security_mode:
-            security_mode = 'wpa3'
+            security_mode = hostapd_constants.WPA3_STRING
         if 'tkip' in ptk_type and 'ccmp' in ptk_type:
             wpa_cipher = 'TKIP CCMP'
             wpa2_cipher = 'TKIP CCMP'
@@ -132,7 +136,9 @@ def create_security_profile(test_func):
                 password = utf8_password_2g
         else:
             password = rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH)
-        if security_mode == 'wpa/wpa2':
+        if security_mode in hostapd_constants.WPA3_MODE_STRINGS:
+            target_security = 'wpa3'
+        elif security_mode == 'wpa/wpa2':
             target_security = 'wpa2'
         else:
             target_security = security_mode
@@ -170,6 +176,8 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             self.dut = create_wlan_device(self.android_devices[0])
 
         self.access_point = self.access_points[0]
+        # TODO(fxb/67582): Remove this function logic, since its only used to
+        # generate random SSIDs, not the network security itself.
         secure_network = self.get_psk_network(False, [],
                                               ssid_length_2g=15,
                                               ssid_length_5g=15)
@@ -2132,6 +2140,1103 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             'Failed to associate.')
 
     @create_security_profile
+    def test_associate_11a_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_frag_430_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_rts_256_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_WMM_with_default_values_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_frag_430_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_rts_256_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_rts_256_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_rts_256_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_high_dtim_low_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_low_dtim_high_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_WMM_with_default_values_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_vendor_ie_in_beacon_correct_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_vendor_ie_in_beacon_zero_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_rts_256_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_WMM_with_default_values_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_rts_256_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_high_dtim_low_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_low_dtim_high_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_WMM_with_default_values_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 force_wmm=True,
+                 additional_ap_parameters=hostapd_constants.
+                 WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11a_pmf_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+                 ssid=self.secure_network_5g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_5g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
     def test_associate_11bg_sec_open_wep_5_chars_ptk_none(self):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
@@ -4058,6 +5163,1103 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_frag_430_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_WMM_with_default_values_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(
+            access_point=self.access_point,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            force_wmm=True,
+            additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
+            security=self.security_profile,
+            password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_max_length_password_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_frag_430_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_rts_256_sec_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_rts_256_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_rts_256_frag_430_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_high_dtim_low_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_low_dtim_high_beacon_int_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_WMM_with_default_values_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(
+            access_point=self.access_point,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            force_wmm=True,
+            additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
+            security=self.security_profile,
+            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+            password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_vendor_ie_in_beacon_correct_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_vendor_ie_in_beacon_zero_length_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_WMM_with_default_values_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(
+            access_point=self.access_point,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            force_wmm=True,
+            additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
+            security=self.security_profile,
+            password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_max_length_password_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_rts_256_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_rts_256_frag_430_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 rts_threshold=256,
+                 frag_threshold=430,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_high_dtim_low_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.HIGH_DTIM,
+                 beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_low_dtim_high_beacon_int_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 dtim_period=hostapd_constants.LOW_DTIM,
+                 beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password,
+                 force_wmm=False)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_WMM_with_default_values_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(
+            access_point=self.access_point,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            force_wmm=True,
+            additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
+            security=self.security_profile,
+            pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+            password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['correct_length_beacon'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['zero_length_beacon_without_data'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
+                 password=self.client_password)
+
+        asserts.assert_true(
+            self.dut.associate(self.secure_network_2g['SSID'],
+                               target_security=self.target_security,
+                               target_pwd=self.client_password),
+            'Failed to associate.')
+
+    @create_security_profile
+    def test_associate_11bg_pmf_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_wpa3_psk_sae_ptk_tkip_or_ccmp(
+            self):
+        setup_ap(access_point=self.access_point,
+                 profile_name=AP_11ABG_PROFILE_NAME,
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.secure_network_2g['SSID'],
+                 additional_ap_parameters=hostapd_constants.
+                 VENDOR_IE['simliar_to_wpa'],
+                 security=self.security_profile,
+                 pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password)
 
         asserts.assert_true(
