@@ -336,8 +336,22 @@ class FuchsiaWlanDevice(WlanDevice):
             True if successfully connected to WLAN, False if not.
         """
         if self.device.association_mechanism == 'drivers':
+            bss_scan_response = self.device.wlan_lib.wlanScanForBSSInfo()
+            if bss_scan_response.get('error'):
+                self.log.error('Scan for BSS info failed. Err: %s' %
+                               bss_scan_response['error'])
+                return False
+
+            bss_descs_for_ssid = bss_scan_response['result'].get(
+                target_ssid, None)
+            if not bss_descs_for_ssid or len(bss_descs_for_ssid) < 1:
+                self.log.error(
+                    'Scan failed to find a BSS description for target_ssid %s'
+                    % target_ssid)
+                return False
+
             connection_response = self.device.wlan_lib.wlanConnectToNetwork(
-                target_ssid, target_pwd=target_pwd)
+                target_ssid, bss_descs_for_ssid[0], target_pwd=target_pwd)
             return self.device.check_connect_response(connection_response)
         else:
             return self.device.wlan_policy_controller.save_and_connect(
