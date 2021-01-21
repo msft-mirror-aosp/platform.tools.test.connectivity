@@ -20,6 +20,7 @@
 import time
 
 from acts.test_decorators import test_tracker_info
+from acts.utils import adb_shell_ping
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
@@ -28,6 +29,7 @@ from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
@@ -41,16 +43,21 @@ from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa, wifi_cell_switching_for_5g_nsa
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_5g_utils import wifi_cell_switching_for_5g_nsa
 
 
 class Nsa5gVoiceTest(TelephonyBaseTest):
@@ -199,6 +206,90 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                 return False
             else:
                 return True
+
+    def _call_epdg_to_epdg_wfc_5g_nsa(self,
+                                      ads,
+                                      apm_mode,
+                                      wfc_mode,
+                                      wifi_ssid,
+                                      wifi_pwd):
+        """ Test epdg<->epdg call functionality on 5G NSA.
+
+        Set PhoneA/PhoneB on 5G NSA
+        Make sure PhoneA/PhoneB on 5G NSA before testing
+        Make Sure PhoneA is set to make epdg call.
+        Make Sure PhoneB is set to make epdg call.
+        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+        Make sure PhoneA/PhoneB on 5G NSA after testing
+
+        Args:
+            ads: list of android objects, this list should have two ad.
+            apm_mode: phones' airplane mode.
+                if True, phones are in airplane mode during test.
+                if False, phones are not in airplane mode during test.
+            wfc_mode: phones' wfc mode.
+                Valid mode includes: WFC_MODE_WIFI_ONLY, WFC_MODE_CELLULAR_PREFERRED,
+                WFC_MODE_WIFI_PREFERRED, WFC_MODE_DISABLED.
+            wifi_ssid: WiFi ssid to connect during test.
+            wifi_pwd: WiFi password.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        DEFAULT_PING_DURATION = 120  # in seconds
+
+        # if apm_mode is true, turn off apm first before setting network
+        # preferred mode to 5G NSA.
+        if apm_mode:
+            # Turn off airplane mode
+            self.log.info("Turn off APM mode before starting testing.")
+            tasks = [(toggle_airplane_mode, (self.log, ads[0], False)),
+                     (toggle_airplane_mode, (self.log, ads[1], False))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Failed to turn off airplane mode")
+                return False
+
+        if not provision_both_devices_for_5g(self.log, ads):
+            return False
+
+        if not verify_5g_attach_for_both_devices(self.log, ads):
+            self.log.error("Phone not attached on 5G NSA before epdg call.")
+            return False
+
+        tasks = [(phone_setup_iwlan, (self.log, ads[0], apm_mode, wfc_mode,
+                                      wifi_ssid, wifi_pwd)),
+                 (phone_setup_iwlan, (self.log, ads[1], apm_mode, wfc_mode,
+                                      wifi_ssid, wifi_pwd))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        ad_ping = ads[0]
+
+        call_task = (two_phone_call_short_seq,
+                     (self.log, ads[0], phone_idle_iwlan,
+                      is_phone_in_call_iwlan, ads[1], phone_idle_iwlan,
+                      is_phone_in_call_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS))
+        ping_task = (adb_shell_ping, (ad_ping, DEFAULT_PING_DURATION))
+
+        results = run_multithread_func(self.log, [ping_task, call_task])
+
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not verify_5g_attach_for_both_devices(self.log, ads):
+            self.log.error("Phone not attached on 5G NSA after epdg call.")
+            return False
+
+        if not results[1]:
+            self.log.error("Call setup failed in active ICMP transfer.")
+        if results[0]:
+            self.log.info("ICMP transfer succeeded with parallel phone call.")
+        else:
+            self.log.error("ICMP transfer failed with parallel phone call.")
+        return all(results)
 
     """ Tests Begin """
 
@@ -498,5 +589,25 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                 return False
             return result
 
+
+    @test_tracker_info(uuid="96b7d8c9-d32a-4abf-8326-6b060d116ac2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_epdg_to_epdg_wfc_wifi_preferred(self):
+        """ WiFi Preferred, WiFi calling to WiFi Calling test on 5G NSA
+
+        1. Setup PhoneA WFC mode: WIFI_PREFERRED, APM off.
+        2. Setup PhoneB WFC mode: WIFI_PREFERRED, APM off .
+        3. Set PhoneA/PhoneB on 5G NSA
+        4. Make sure PhoneA/PhoneB on 5G NSA before testing
+        5. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        6. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+        7. Make sure PhoneA/PhoneB on 5G NSA after testing
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._call_epdg_to_epdg_wfc_5g_nsa(
+            self.android_devices, False, WFC_MODE_WIFI_PREFERRED,
+            self.wifi_network_ssid, self.wifi_network_pass)
 
     """ Tests End """
