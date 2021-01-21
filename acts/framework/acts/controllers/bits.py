@@ -1,15 +1,16 @@
 """Module managing the required definitions for using the bits power monitor"""
 
+from datetime import datetime
 import logging
 import os
 import time
 
 from acts import context
+from acts.controllers import power_metrics
 from acts.controllers import power_monitor
 from acts.controllers.bits_lib import bits_client
 from acts.controllers.bits_lib import bits_service
 from acts.controllers.bits_lib import bits_service_config as bsc
-from acts.controllers import power_metrics
 
 MOBLY_CONTROLLER_CONFIG_NAME = 'Bits'
 ACTS_CONTROLLER_REFERENCE_NAME = 'bitses'
@@ -227,6 +228,16 @@ class Bits(object):
         self._client.connect_usb()
 
     def measure(self, *_, measurement_args=None, **__):
+        """Blocking function that measures power through bits for the specified
+        duration. Results need to be consulted through other methods such as
+        get_metrics or export_to_csv.
+
+        Args:
+            measurement_args: A dictionary with the following structure:
+                {
+                   'duration': <seconds to measure for>
+                }
+        """
         if measurement_args is None:
             raise ValueError('measurement_args can not be left undefined')
 
@@ -244,12 +255,12 @@ class Bits(object):
             timestamps: A dictionary of the shape:
                 {
                     'segment_name': {
-                        'start' : <seconds_since_epoch>
-                        'end': <seconds_since_epoch>
+                        'start' : <milliseconds_since_epoch> or <datetime>
+                        'end': <milliseconds_since_epoch> or <datetime>
                     }
                     'another_segment': {
-                        'start' : <seconds_since_epoch>
-                        'end': <seconds_since_epoch>
+                        'start' : <milliseconds_since_epoch> or <datetime>
+                        'end': <milliseconds_since_epoch> or <datetime>
                     }
                 }
         Returns:
@@ -263,12 +274,24 @@ class Bits(object):
             raise ValueError('timestamps dictionary can not be left undefined')
 
         metrics = {}
+
         for segment_name, times in timestamps.items():
-            start_ns = times['start'] * 1_000_000
-            end_ns = times['end'] * 1_000_000
-            self._client.add_marker(start_ns, 'start - %s' % segment_name)
-            self._client.add_marker(end_ns, 'end - %s' % segment_name)
-            raw_metrics = self._client.get_metrics(start_ns, end_ns)
+            start = times['start']
+            end = times['end']
+
+            # bits accepts nanoseconds only, but since this interface needs to
+            # backwards compatible with monsoon which works with milliseconds we
+            # require to do a conversion from milliseconds to nanoseconds.
+            # The preferred way for new calls to this function should be using
+            # datetime instead which is unambiguous
+            if isinstance(start, (int, float)):
+                start = times['start'] * 1e6
+            if isinstance(end, (int, float)):
+                end = times['end'] * 1e6
+
+            self._client.add_marker(start, 'start - %s' % segment_name)
+            self._client.add_marker(end, 'end - %s' % segment_name)
+            raw_metrics = self._client.get_metrics(start, end)
             metrics[segment_name] = _raw_data_to_metrics(raw_metrics)
         return metrics
 
