@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2016 - The Android Open Source Project
+#   Copyright 2021 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -764,11 +764,16 @@ class AndroidDevice:
                         out.write(line)
         return adb_excerpt_path
 
-    def search_logcat(self, matching_string, begin_time=None):
+    def search_logcat(self, matching_string, begin_time=None, logcat_path=None):
         """Search logcat message with given string.
 
         Args:
             matching_string: matching_string to search.
+            begin_time: only the lines with time stamps later than begin_time
+                will be searched.
+            logcat_path: the path of a specific file in which the search should
+                be performed. If None the path will be the default device log
+                path.
 
         Returns:
             A list of dictionaries with full log message, time stamp string,
@@ -785,8 +790,9 @@ class AndroidDevice:
               "datetime_obj": datetime object},
               "message_id": "0853"}]
         """
-        logcat_path = os.path.join(self.device_log_path,
-                                   'adblog_%s_debug.txt' % self.serial)
+        if not logcat_path:
+            logcat_path = os.path.join(self.device_log_path,
+                                    'adblog_%s_debug.txt' % self.serial)
         if not os.path.exists(logcat_path):
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
