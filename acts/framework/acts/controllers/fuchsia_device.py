@@ -69,6 +69,8 @@ from acts.utils import get_fuchsia_mdns_ipv6_address
 MOBLY_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
 
+CONTROL_PATH_REPLACE_VALUE = " ControlPath /tmp/fuchsia--%r@%h:%p"
+
 FUCHSIA_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 FUCHSIA_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 FUCHSIA_DEVICE_INVALID_CONFIG = ("Fuchsia device config must be either a str "
@@ -201,6 +203,22 @@ class FuchsiaDevice:
         self.ip = fd_conf_data["ip"]
         self.port = fd_conf_data.get("port", 80)
         self.ssh_config = fd_conf_data.get("ssh_config", None)
+
+        # Instead of the input ssh_config, a new config with
+        # proper ControlPath values is set and written to
+        # /tmp/temp_fuchsia_ssh_config.config.
+        ssh_config_copy = ""
+
+        with open(self.ssh_config, 'r') as file:
+            ssh_config_copy = re.sub('(\sControlPath\s.*)',
+                                     CONTROL_PATH_REPLACE_VALUE,
+                                     file.read(),
+                                     flags=re.M)
+        with open("/tmp/temp_fuchsia_ssh_config.config", 'w') as file:
+            file.write(ssh_config_copy)
+
+        self.ssh_config = "/tmp/temp_fuchsia_ssh_config.config"
+
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
         self.hard_reboot_on_fail = fd_conf_data.get("hard_reboot_on_fail",
