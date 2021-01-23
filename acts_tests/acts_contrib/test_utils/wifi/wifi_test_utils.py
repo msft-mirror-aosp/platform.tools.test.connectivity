@@ -1606,42 +1606,7 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
 def wifi_connect_using_network_request(ad,
                                        network,
                                        network_specifier,
-                                       num_of_tries=3,
-                                       assert_on_fail=True):
-    """Connect an Android device to a wifi network using network request.
-
-    Trigger a network request with the provided network specifier,
-    wait for the "onMatch" event, ensure that the scan results in "onMatch"
-    event contain the specified network, then simulate the user granting the
-    request with the specified network selected. Then wait for the "onAvailable"
-    network callback indicating successful connection to network.
-
-    This will directly fail a test if anything goes wrong.
-
-    Args:
-        ad: android_device object to initiate connection on.
-        network_specifier: A dictionary representing the network specifier to
-                           use.
-        network: A dictionary representing the network to connect to. The
-                 dictionary must have the key "SSID".
-        num_of_tries: An integer that is the number of times to try before
-                      delaring failure.
-        assert_on_fail: If True, error checks in this function will raise test
-                        failure signals.
-
-    Returns:
-        Returns a value only if assert_on_fail is false.
-        Returns True if the connection was successful, False otherwise.
-    """
-    _assert_on_fail_handler(_wifi_connect_using_network_request,
-                            assert_on_fail, ad, network, network_specifier,
-                            num_of_tries)
-
-
-def _wifi_connect_using_network_request(ad,
-                                        network,
-                                        network_specifier,
-                                        num_of_tries=3):
+                                       num_of_tries=3):
     """Connect an Android device to a wifi network using network request.
 
     Trigger a network request with the provided network specifier,
