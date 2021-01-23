@@ -42,6 +42,7 @@ NETWORK_CB_KEY_INTERFACE_NAME = "interfaceName"
 NETWORK_CB_KEY_CREATE_TS = "creation_timestamp"
 NETWORK_CB_KEY_CURRENT_TS = "current_timestamp"
 NETWORK_CB_KEY_NETWORK_SPECIFIER = "network_specifier"
+NETWORK_CB_KEY_TRANSPORT_INFO = "transport_info"
 
 # Constants for VPN connection status
 VPN_STATE_DISCONNECTED = 0
