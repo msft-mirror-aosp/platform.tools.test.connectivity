@@ -212,6 +212,72 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             return False
         return True
 
+    def _test_call_setup_in_active_youtube_video_5g_nsa(
+            self,
+            new_gen=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=False):
+        """Test call can be established during active data connection on 5G NSA.
+
+        Setup phoneA on 5G NSA.
+        Make sure phoneA on 5G NSA
+        Starting playing youtube video.
+        Initiate a voice call. Verify call can be established.
+        Make sure phoneA on 5G NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        # Mode Pref
+        set_preferred_mode_for_5g(ads[0])
+
+        # Attach 5g
+        if not is_current_network_5g_nsa(ads[0]):
+            ads[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        if new_gen:
+            ads[0].droid.telephonyToggleDataConnection(True)
+            if not wait_for_cell_data_connection(self.log, ads[0], True):
+                ads[0].log.error("Data connection is not on cell")
+                return False
+
+        if not verify_internet_connection(self.log, ads[0]):
+            ads[0].log.error("Internet connection is not available")
+            return False
+
+        if call_direction == DIRECTION_MOBILE_ORIGINATED:
+            ad_caller = ads[0]
+            ad_callee = ads[1]
+        else:
+            ad_caller = ads[1]
+            ad_callee = ads[0]
+        ad_download = ads[0]
+
+        if not start_youtube_video(ad_download):
+            ad_download.log.warning("Fail to bring up youtube video")
+
+        if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
+                                   None, None, 30):
+            ad_download.log.error("Call setup failed in active youtube video")
+            result = False
+        else:
+            ad_download.log.info("Call setup succeed in active youtube video")
+            result = True
+
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
+        if not is_current_network_5g_nsa(ads[0]):
+            ads[0].log.error("Phone not attached on 5G NSA after call.")
+            result = False
+        return result
+
     def _call_epdg_to_epdg_wfc_5g_nsa(self,
                                       ads,
                                       apm_mode,
@@ -616,5 +682,52 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         return self._call_epdg_to_epdg_wfc_5g_nsa(
             self.android_devices, False, WFC_MODE_WIFI_PREFERRED,
             self.wifi_network_ssid, self.wifi_network_pass)
+
+
+    @test_tracker_info(uuid="29fa7f44-8d6a-4948-8178-33c9a9aab334")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mo_volte_in_active_youtube(self):
+        """Test call can be established during active youtube video on 5G NSA.
+
+        1. Enable VoLTE on PhoneA.
+        2. Set up PhoneA on 5G NSA.
+        3. Make sure phoneA is on 5G NSA.
+        4. Starting an youtube video.
+        5. Initiate a MO voice call. Verify call can be established.
+        6. Make sure phoneA is on 5G NSA.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_in_active_youtube_video_5g_nsa(
+            GEN_5G,
+            DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="4e138477-3536-48bd-ab8a-7fb7c228b3e6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mt_volte_in_active_youtube(self):
+        """Test call can be established during active youtube video on 5G NSA.
+
+        1. Enable VoLTE on PhoneA.
+        2. Set up PhoneA on 5G NSA.
+        3. Make sure phoneA is on 5G NSA.
+        4. Starting an youtube video.
+        5. Initiate a MT voice call. Verify call can be established.
+        6. Make sure phoneA is on 5G NSA.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_in_active_youtube_video_5g_nsa(
+            GEN_5G,
+            DIRECTION_MOBILE_TERMINATED)
 
     """ Tests End """
