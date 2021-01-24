@@ -19,6 +19,7 @@ import os
 import uuid
 import tempfile
 import yaml
+from datetime import datetime
 
 from acts.libs.proc import job
 from acts import context
@@ -30,6 +31,25 @@ class BitsClientError(Exception):
 
 # An arbitrary large number of seconds.
 ONE_YEAR = str(3600 * 24 * 365)
+EPOCH = datetime.utcfromtimestamp(0)
+
+
+def _to_ns(timestamp):
+    """Returns the numerical value of a timestamp in nanoseconds since epoch.
+
+    Args:
+        timestamp: Either a number or a datetime.
+
+    Returns:
+        Rounded timestamp if timestamp is numeric, number of nanoseconds since
+        epoch if timestamp is instance of datetime.datetime.
+    """
+    if isinstance(timestamp, datetime):
+        return int((timestamp - EPOCH).total_seconds() * 1e9)
+    elif isinstance(timestamp, (float, int)):
+        return int(timestamp)
+    raise ValueError('%s can not be converted to a numerical representation of '
+                     'nanoseconds.' % type(timestamp))
 
 
 class _BitsCollection(object):
@@ -39,14 +59,14 @@ class _BitsCollection(object):
         name: The name given to the collection.
         markers_buffer: An array of un-flushed markers, each marker is
         represented by a bi-dimensional tuple with the format
-        (nanoseconds_since_epoch, text).
+        (<nanoseconds_since_epoch or datetime>, <text>).
     """
     def __init__(self, name):
         self.name = name
         self.markers_buffer = []
 
-    def add_marker(self, timestamp_ns, marker_text):
-        self.markers_buffer.append((timestamp_ns, marker_text))
+    def add_marker(self, timestamp, marker_text):
+        self.markers_buffer.append((timestamp, marker_text))
 
     def clear_markers_buffer(self):
         self.markers_buffer.clear()
@@ -123,32 +143,36 @@ class BitsClient(object):
                    '--name',
                    self._active_collection.name,
                    '--log_ts',
-                   str(int(ts)),
+                   str(_to_ns(ts)),
                    '--log',
                    marker]
             job.run(cmd, timeout=10)
         self._active_collection.clear_markers_buffer()
 
-    def add_marker(self, timestamp_ns, marker_text):
+    def add_marker(self, timestamp, marker_text):
         """Buffers a marker for the active collection.
 
         Bits does not allow inserting markers with timestamps out of order.
         The buffer of markers will be flushed when the collection is stopped to
         ensure all the timestamps are input in order.
+
+        Args:
+            timestamp: Numerical nanoseconds since epoch or datetime.
+            marker_text: A string to label this marker with.
         """
         if not self._active_collection:
             raise BitsClientError(
                 'markers can not be added without an active collection')
-        self._active_collection.add_marker(timestamp_ns, marker_text)
+        self._active_collection.add_marker(timestamp, marker_text)
 
-    def get_metrics(self, start_ns, end_ns):
+    def get_metrics(self, start, end):
         """Extracts metrics for a period of time.
 
         Args:
-            start_ns: nano-seconds since epoch until the start of the period of
-            interest.
-            end_ns: nano-second since epoc until the end of the period of
-            interest.
+            start: Numerical nanoseconds since epoch until the start of the
+            period of interest or datetime.
+            end: Numerical nanoseconds since epoch until the end of the
+            period of interest or datetime.
         """
         if not self._active_collection:
             raise BitsClientError(
@@ -162,9 +186,9 @@ class BitsClient(object):
                    self._active_collection.name,
                    '--ignore_gaps',
                    '--abs_start_time',
-                   str(start_ns),
+                   str(_to_ns(start)),
                    '--abs_stop_time',
-                   str(end_ns),
+                   str(_to_ns(end)),
                    '--aggregates_yaml_path',
                    tf.name]
             if self._server_config.has_virtual_metrics_file:
@@ -173,7 +197,7 @@ class BitsClient(object):
             with open(tf.name) as mf:
                 self._log.debug(
                     'bits aggregates for collection %s [%s-%s]: %s' % (
-                        self._active_collection.name, start_ns, end_ns,
+                        self._active_collection.name, start, end,
                         mf.read()))
 
             with open(tf.name) as mf:
@@ -224,8 +248,7 @@ class BitsClient(object):
                ONE_YEAR,
                '--default_sampling_rate',
                '1000',
-               '--disk_space_saver',
-               ]
+               '--disk_space_saver']
         self._log.info('starting collection %s', self._active_collection.name)
         job.run(cmd, timeout=10)
 
@@ -253,8 +276,7 @@ class BitsClient(object):
                self._service.port,
                '--name',
                self._active_collection.name,
-               '--stop'
-               ]
+               '--stop']
         job.run(cmd)
         self._export()
         self._log.info('stopped collection %s', self._active_collection.name)
