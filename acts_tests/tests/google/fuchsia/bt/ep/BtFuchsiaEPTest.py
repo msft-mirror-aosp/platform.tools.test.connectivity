@@ -238,8 +238,8 @@ class BtFuchsiaEPTest(BaseTestClass):
 
         input_capabilities = "NONE"
         output_capabilities = "NONE"
-        self.pri_dut.avdtp_lib.init("source")
-        self.sec_dut.avdtp_lib.init("sink")
+        self.pri_dut.avdtp_lib.init()
+        self.sec_dut.avdtp_lib.init()
 
         self.pri_dut.bts_lib.acceptPairing(input_capabilities,
                                            output_capabilities)
