@@ -44,6 +44,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import iperf_test_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import iperf_udp_test_by_adb
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
 
@@ -51,6 +53,10 @@ from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
 class Nsa5gDataTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
+        self.iperf_server_ip = self.user_params.get("iperf_server", '0.0.0.0')
+        self.iperf_tcp_port = self.user_params.get("iperf_tcp_port", 0)
+        self.iperf_udp_port = self.user_params.get("iperf_udp_port", 0)
+        self.iperf_duration = self.user_params.get("iperf_duration", 60)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -294,5 +300,101 @@ class Nsa5gDataTest(TelephonyBaseTest):
             return False
         finally:
             wifi_toggle_state(ad.log, ad, False)
+
+
+    @test_tracker_info(uuid="be0c110d-52d4-4af8-bf1c-96c4807d1f07")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_udp_throughput(self):
+        """ Verifies UDP DL throughput over 5G
+
+        Set Mode to 5G, Wifi Disconnected
+        Verify device attached to 5G NSA
+        Perform iperf test using UDP and measure throughput
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        try:
+            toggle_airplane_mode(ad.log, ad, False)
+            set_preferred_mode_for_5g(ad)
+            if not is_current_network_5g_nsa(ad):
+                ad.log.error("Phone not attached on 5G NSA")
+                return False
+            wifi_toggle_state(ad.log, ad, False)
+            return iperf_udp_test_by_adb(ad.log,
+                                         ad,
+                                         self.iperf_server_ip,
+                                         self.iperf_udp_port,
+                                         True,
+                                         self.iperf_duration)
+        except Exception as e:
+            ad.log.error(e)
+            return False
+
+
+    @test_tracker_info(uuid="47b87533-dc33-4c27-95ff-0b5316e6a193")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_tcp_throughput(self):
+        """ Verifies TCP DL throughput over 5G
+
+        Set Mode to 5G, Wifi Disconnected
+        Verify device attached to 5G NSA
+        Perform iperf test using TCP and measure throughput
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        try:
+            toggle_airplane_mode(ad.log, ad, False)
+            set_preferred_mode_for_5g(ad)
+            if not is_current_network_5g_nsa(ad):
+                ad.log.error("Phone not attached on 5G NSA")
+                return False
+            wifi_toggle_state(ad.log, ad, False)
+            return iperf_test_by_adb(ad.log,
+                                     ad,
+                                     self.iperf_server_ip,
+                                     self.iperf_tcp_port,
+                                     True,
+                                     self.iperf_duration)
+        except Exception as e:
+            ad.log.error(e)
+            return False
+
+
+    @test_tracker_info(uuid="79393af4-cbc1-4d00-8e02-fe76e8b28367")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_bursty_data(self):
+        """ Verifies Bursty data transfer over 5G
+
+        Set Mode to 5G, Wifi Disconnected
+        Verify device attached to 5G NSA
+        Perform iperf test using burst of data
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        try:
+            toggle_airplane_mode(ad.log, ad, False)
+            set_preferred_mode_for_5g(ad)
+            if not is_current_network_5g_nsa(ad):
+                ad.log.error("Phone not attached on 5G NSA")
+                return False
+            wifi_toggle_state(ad.log, ad, False)
+            return iperf_udp_test_by_adb(ad.log,
+                                         ad,
+                                         self.iperf_server_ip,
+                                         self.iperf_udp_port,
+                                         True,
+                                         self.iperf_duration,
+                                         limit_rate="10M",
+                                         pacing_timer="1000000")
+        except Exception as e:
+            ad.log.error(e)
+            return False
+
 
     """ Tests End """
