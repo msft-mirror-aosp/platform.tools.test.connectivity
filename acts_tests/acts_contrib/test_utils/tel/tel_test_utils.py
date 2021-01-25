@@ -3926,7 +3926,7 @@ def iperf_test_with_options(log,
                             rate_dict=None,
                             blocking=True,
                             log_file_path=None):
-    """Iperf adb run helper.
+    """iperf adb run helper.
 
     Args:
         log: log object
@@ -3938,13 +3938,13 @@ def iperf_test_with_options(log,
         blocking: run iperf in blocking mode if True
         log_file_path: location to save logs
     Returns:
-        True if IPerf runs without throwing an exception
+        True if iperf runs without throwing an exception
     """
     try:
         if log_file_path:
             ad.adb.shell("rm %s" % log_file_path, ignore_status=True)
         ad.log.info("Running adb iperf test with server %s", iperf_server)
-        ad.log.info("IPerf options are %s", iperf_option)
+        ad.log.info("iperf options are %s", iperf_option)
         if not blocking:
             ad.run_iperf_client_nb(
                 iperf_server,
@@ -3954,28 +3954,28 @@ def iperf_test_with_options(log,
             return True
         result, data = ad.run_iperf_client(
             iperf_server, iperf_option, timeout=timeout + 60)
-        ad.log.info("IPerf test result with server %s is %s", iperf_server,
+        ad.log.info("iperf test result with server %s is %s", iperf_server,
                     result)
         if result:
             iperf_str = ''.join(data)
-            iperf_result = ipf.IPerfResult(iperf_str)
+            iperf_result = ipf.IPerfResult(iperf_str, 'None')
             if "-u" in iperf_option:
                 udp_rate = iperf_result.avg_rate
                 if udp_rate is None:
                     ad.log.warning(
                         "UDP rate is none, IPerf server returned error: %s",
                         iperf_result.error)
-                ad.log.info("IPerf3 udp speed is %sbps", udp_rate)
+                ad.log.info("iperf3 UDP DL speed is %.6s Mbps", (udp_rate/1000000))
             else:
                 tx_rate = iperf_result.avg_send_rate
                 rx_rate = iperf_result.avg_receive_rate
                 if (tx_rate or rx_rate) is None:
                     ad.log.warning(
-                        "A TCP rate is none, IPerf server returned error: %s",
+                        "A TCP rate is none, iperf server returned error: %s",
                         iperf_result.error)
                 ad.log.info(
-                    "IPerf3 upload speed is %sbps, download speed is %sbps",
-                    tx_rate, rx_rate)
+                    "iperf3 TCP - UL speed is %.6s Mbps, DL speed is %.6s Mbps",
+                    (tx_rate/1000000), (rx_rate/1000000))
             if rate_dict is not None:
                 rate_dict["Uplink"] = tx_rate
                 rate_dict["Downlink"] = rx_rate
@@ -3992,6 +3992,7 @@ def iperf_udp_test_by_adb(log,
                           reverse=False,
                           timeout=180,
                           limit_rate=None,
+                          pacing_timer=None,
                           omit=10,
                           ipv6=False,
                           rate_dict=None,
@@ -4016,6 +4017,8 @@ def iperf_udp_test_by_adb(log,
     iperf_option = "-u -i 1 -t %s -O %s -J" % (timeout, omit)
     if limit_rate:
         iperf_option += " -b %s" % limit_rate
+    if pacing_timer:
+        iperf_option += " --pacing-timer %s" % pacing_timer
     if port_num:
         iperf_option += " -p %s" % port_num
     if ipv6:
@@ -4129,13 +4132,6 @@ def http_file_download_by_curl(ad,
             return False
     except Exception as e:
         ad.log.warning("Download %s failed with exception %s", url, e)
-        for cmd in ("ls -lh /data/local/tmp/tcpdump/",
-                    "ls -lh /sdcard/Download/",
-                    "ls -lh /data/vendor/radio/diag_logs/logs/",
-                    "df -h",
-                    "du -d 4 -h /data"):
-            out = ad.adb.shell(cmd)
-            ad.log.debug("%s", out)
         return False
     finally:
         if remove_file_after_check:
@@ -4293,13 +4289,6 @@ def http_file_download_by_sl4a(ad,
             ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
         except Exception as e:
             ad.log.warning("SL4A file download error: %s", e)
-            for cmd in ("ls -lh /data/local/tmp/tcpdump/",
-                        "ls -lh /sdcard/Download/",
-                        "ls -lh /data/vendor/radio/diag_logs/logs/",
-                        "df -h",
-                        "du -d 4 -h /data"):
-                out = ad.adb.shell(cmd)
-                ad.log.debug("%s", out)
             ad.data_droid.terminate()
             return False
         if _check_file_existance(ad, file_path, expected_file_size):
@@ -8991,10 +8980,12 @@ def log_messaging_screen_shot(ad, test_name=""):
     ad.send_keycode("HOME")
     ad.adb.shell("am start -n com.google.android.apps.messaging/.ui."
                  "ConversationListActivity")
+    time.sleep(3)
     log_screen_shot(ad, test_name)
     ad.adb.shell("am start -n com.google.android.apps.messaging/com.google."
-                 "android.apps.messaging.ui.conversation.ConversationActivity"
-                 " -e conversation_id 1")
+                 "android.apps.messaging.ui.conversation."
+                 "LaunchConversationShimActivity -e conversation_id 1")
+    time.sleep(3)
     log_screen_shot(ad, test_name)
     ad.send_keycode("HOME")
 
