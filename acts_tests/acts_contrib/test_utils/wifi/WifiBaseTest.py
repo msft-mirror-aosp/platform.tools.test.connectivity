@@ -376,6 +376,8 @@ class WifiBaseTest(BaseTestClass):
             self,
             channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             channel_2g=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            channel_5g_ap2=None,
+            channel_2g_ap2=None,
             ssid_length_2g=hostapd_constants.AP_SSID_LENGTH_2G,
             passphrase_length_2g=hostapd_constants.AP_PASSPHRASE_LENGTH_2G,
             ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G,
@@ -399,6 +401,8 @@ class WifiBaseTest(BaseTestClass):
         Args:
             channel_5g: 5G channel to configure.
             channel_2g: 2G channel to configure.
+            channel_5g_ap2: 5G channel to configure on AP2.
+            channel_2g_ap2: 2G channel to configure on AP2.
             ssid_length_2g: Int, number of characters to use for 2G SSID.
             passphrase_length_2g: Int, length of password for 2G network.
             ssid_length_5g: Int, number of characters to use for 5G SSID.
@@ -418,6 +422,18 @@ class WifiBaseTest(BaseTestClass):
         """
         if mirror_ap and ap_count == 1:
             raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
+        if channel_5g_ap2 or channel_2g_ap2 and ap_count == 1:
+            raise ValueError(
+                "ap_count cannot be 1 if channels of AP2 are provided.")
+        # we are creating a channel list for 2G and 5G bands. The list is of
+        # size 2 and this is based on the assumption that each testbed will have
+        # at most 2 APs.
+        if not channel_5g_ap2:
+            channel_5g_ap2 = channel_5g
+        if not channel_2g_ap2:
+            channel_2g_ap2 = channel_2g
+        channels_2g = [channel_2g, channel_2g_ap2]
+        channels_5g = [channel_5g, channel_5g_ap2]
 
         self.reference_networks = []
         self.wpa_networks = []
@@ -491,14 +507,15 @@ class WifiBaseTest(BaseTestClass):
                 sae_dict[hostapd_constants.BAND_2G]["security"] = "sae"
                 sae_dict[hostapd_constants.BAND_5G]["security"] = "sae"
                 network_list.append(sae_dict)
-            self.access_points[i].configure_ap(network_list, channel_2g,
-                                               channel_5g)
+            self.access_points[i].configure_ap(network_list, channels_2g[i],
+                                               channels_5g[i])
             self.access_points[i].start_ap()
             self.bssid_map.append(
                 self.access_points[i].get_bssids_for_wifi_networks())
             if mirror_ap:
                 self.access_points[i + 1].configure_ap(network_list,
-                                                       channel_2g, channel_5g)
+                                                       channels_2g[i+1],
+                                                       channels_5g[i+1])
                 self.access_points[i + 1].start_ap()
                 self.bssid_map.append(
                     self.access_points[i + 1].get_bssids_for_wifi_networks())
