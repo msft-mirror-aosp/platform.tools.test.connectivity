@@ -382,8 +382,6 @@ class FuchsiaDevice:
         # Init server
         self.init_server_connection()
 
-        self.configure_regulatory_domain(self.config_country_code)
-
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
 
@@ -474,6 +472,11 @@ class FuchsiaDevice:
         Raises:
             FuchsiaDeviceError, if configuration fails
         """
+
+        # Set the country code US by default, or country code provided
+        # in ACTS config
+        self.configure_regulatory_domain(self.config_country_code)
+
         # If args aren't provided, use the defaults, which can be set in the
         # config.
         if association_mechanism is None:
