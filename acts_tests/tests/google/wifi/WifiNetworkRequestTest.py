@@ -14,14 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
-import pprint
 import queue
 import time
-
-import acts.base_test
-import acts.signals as signals
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 from acts import asserts
 from acts.controllers.android_device import SL4A_APK_NAME
@@ -29,6 +23,7 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.net import connectivity_const as cconsts
 from acts_contrib.test_utils.wifi import wifi_constants
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
 
 WifiEnums = wutils.WifiEnums
@@ -98,9 +93,6 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiDisconnect()
         wutils.reset_wifi(self.dut)
-        # Ensure we disconnected from the current network before the next test.
-        if self.dut.droid.wifiGetConnectionInfo()["supplicant_state"] != "disconnected":
-            wutils.wait_for_disconnect(self.dut)
         wutils.wifi_toggle_state(self.dut, False)
         self.dut.ed.clear_all_events()
 

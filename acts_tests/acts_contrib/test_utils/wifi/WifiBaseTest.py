@@ -422,7 +422,7 @@ class WifiBaseTest(BaseTestClass):
         """
         if mirror_ap and ap_count == 1:
             raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
-        if channel_5g_ap2 or channel_2g_ap2 and ap_count == 1:
+        if (channel_5g_ap2 or channel_2g_ap2) and ap_count == 1:
             raise ValueError(
                 "ap_count cannot be 1 if channels of AP2 are provided.")
         # we are creating a channel list for 2G and 5G bands. The list is of
