@@ -99,6 +99,14 @@ class WifiSoftApTest(WifiBaseTest):
         super().setup_test()
         for ad in self.android_devices:
             wutils.wifi_toggle_state(ad, True)
+        if "chan_13" in self.test_name and "OpenWrtAP" in self.user_params:
+            self.access_points[0].close()
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                channel_2g=13)
+            self.open_network = self.open_network[0]["2g"]
+            for ad in self.android_devices:
+                wutils.set_wifi_country_code(
+                        ad, wutils.WifiEnums.CountryCode.AUSTRALIA)
 
     def teardown_test(self):
         super().teardown_test()
@@ -108,6 +116,13 @@ class WifiSoftApTest(WifiBaseTest):
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
         wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
+        if "chan_13" in self.test_name and "OpenWrtAP" in self.user_params:
+            self.access_points[0].close()
+            self.configure_openwrt_ap_and_start(open_network=True)
+            self.open_network = self.open_network[0]["2g"]
+            for ad in self.android_devices:
+                wutils.set_wifi_country_code(
+                        ad, wutils.WifiEnums.CountryCode.US)
 
     """ Helper Functions """
     def create_softap_config(self):
@@ -869,6 +884,36 @@ class WifiSoftApTest(WifiBaseTest):
             sap_band == WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G,
             "Soft AP didn't start in 5G preferred band")
         wutils.connect_to_wifi_network(self.dut_client, wifi_network)
+
+    @test_tracker_info(uuid="")
+    def test_softp_2g_channel_when_connected_to_chan_13(self):
+        """Verify softAp 2G channel when connected to network on channel 13.
+
+        Steps:
+            1. Configure AP in channel 13 on 2G band and connect DUT to it.
+            2. Start softAp on DUT on 2G band.
+            3. Verify softAp is started on channel 13.
+        """
+        asserts.skip_if("OpenWrtAP" not in self.user_params,
+                        "Need openwrt AP to configure channel 13.")
+        wutils.connect_to_wifi_network(self.dut, self.open_network)
+        sap_config = self.create_softap_config()
+        sap_config[WifiEnums.AP_BAND_KEY] = WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G
+        asserts.assert_true(
+            self.dut.droid.wifiSetWifiApConfiguration(sap_config),
+            "Failed to set WifiAp Configuration")
+        wutils.start_wifi_tethering_saved_config(self.dut)
+        softap_conf = self.dut.droid.wifiGetApConfiguration()
+        self.log.info("softap conf: %s" % softap_conf)
+        wutils.connect_to_wifi_network(self.dut_client, sap_config)
+        softap_channel = self.dut_client.droid.wifiGetConnectionInfo(
+                )
+        conn_info = self.dut_client.droid.wifiGetConnectionInfo()
+        self.log.info("Wifi connection info on dut_client: %s" % conn_info)
+        softap_channel = wutils.WifiEnums.freq_to_channel[conn_info["frequency"]]
+        asserts.assert_true(softap_channel == 13,
+                            "Dut client did not connect to softAp on channel 13")
+
     """ Tests End """
 
 
