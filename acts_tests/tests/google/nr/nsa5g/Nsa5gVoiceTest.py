@@ -197,7 +197,6 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             return False
         if results[0]:
             ad_download.log.info("Data transfer succeeded.")
-            return True
         elif not allow_data_transfer_interruption:
             ad_download.log.error(
                 "Data transfer failed with parallel phone call.")
@@ -729,5 +728,63 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         return self._test_call_setup_in_active_youtube_video_5g_nsa(
             GEN_5G,
             DIRECTION_MOBILE_TERMINATED)
+
+
+    @test_tracker_info(uuid="0d477f6f-3464-4b32-a5e5-0fd134f2753d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mo_vowifi_in_active_data_transfer(self):
+        """Test MO voice wifi call can be established during active data connection on 5G NSA.
+
+        1. Turn off airplane mode, turn on wfc and wifi on phoneA.
+        2. Set PhoneA on 5G NSA
+        3. Make sure PhoneA on 5G NSA before testing
+        4. Starting downloading file from Internet.
+        5. Initiate a MO voice call. Verify call can be established.
+        6. Hangup Voice Call, verify file is downloaded successfully.
+        7. Make sure PhoneA on 5G NSA after testing
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM off and WIFI and WFC on")
+            return False
+
+        return self._test_call_setup_in_active_data_transfer_5g_nsa(
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
+
+
+    @test_tracker_info(uuid="4d1d7dd9-b373-4361-8301-8517ef77b57b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mt_vowifi_in_active_data_transfer(self):
+        """Test MT voice wifi call can be established during active data connection on 5G NSA.
+
+        1. Turn off airplane mode, turn on wfc and wifi on phoneA.
+        2. Set PhoneA on 5G NSA
+        3. Make sure PhoneA on 5G NSA before testing
+        4. Starting downloading file from Internet.
+        5. Initiate a MT voice call. Verify call can be established.
+        6. Hangup Voice Call, verify file is downloaded successfully.
+        7. Make sure PhoneA on 5G NSA after testing
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM off and WIFI and WFC on")
+            return False
+
+        return self._test_call_setup_in_active_data_transfer_5g_nsa(
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     """ Tests End """
