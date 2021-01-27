@@ -24,6 +24,7 @@ STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
 FIREWALL_CUSTOM_OPTION_PATH = "/etc/firewall.user"
+PPP_CHAP_SECRET_PATH = "/etc/ppp/chap-secrets"
 
 
 class NetworkSettings(object):
