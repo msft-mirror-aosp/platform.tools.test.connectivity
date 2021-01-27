@@ -207,15 +207,8 @@ class FuchsiaDevice:
         # Instead of the input ssh_config, a new config with
         # proper ControlPath values is set and written to
         # /tmp/temp_fuchsia_ssh_config.config.
-        ssh_config_copy = ""
-
-        with open(self.ssh_config, 'r') as file:
-            ssh_config_copy = re.sub('(\sControlPath\s.*)',
-                                     CONTROL_PATH_REPLACE_VALUE,
-                                     file.read(),
-                                     flags=re.M)
-        with open("/tmp/temp_fuchsia_ssh_config.config", 'w') as file:
-            file.write(ssh_config_copy)
+        self._set_control_path_config(self.ssh_config,
+                                      "/tmp/temp_fuchsia_ssh_config.config")
 
         self.ssh_config = "/tmp/temp_fuchsia_ssh_config.config"
 
@@ -391,6 +384,24 @@ class FuchsiaDevice:
             # Prevent a threading error, since controller isn't fully up yet.
             self.clean_up()
             raise FuchsiaDeviceError('Failed to run setup commands.')
+
+    def _set_control_path_config(self, old_config, new_config):
+        """Given an input ssh_config, write to a new config with
+        proper ControlPath values in place.
+
+        Args:
+            old_config: string, path to the input config
+            new_config: string, path to store the new config
+        """
+        ssh_config_copy = ""
+
+        with open(old_config, 'r') as file:
+            ssh_config_copy = re.sub('(\sControlPath\s.*)',
+                                     CONTROL_PATH_REPLACE_VALUE,
+                                     file.read(),
+                                     flags=re.M)
+        with open(new_config, 'w') as file:
+            file.write(ssh_config_copy)
 
     @backoff.on_exception(
         backoff.constant,
