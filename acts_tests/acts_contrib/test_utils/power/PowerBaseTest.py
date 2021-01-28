@@ -461,7 +461,7 @@ class PowerBaseTest(base_test.BaseTestClass):
                                 hz=self.mon_info.freq)
         self.power_monitor.measure(measurement_args=measurement_args,
                                    start_time=device_to_host_offset,
-                                   output_path=data_path)
+                                   monsoon_output_path=data_path)
         self.power_monitor.connect_usb()
         self.dut.wait_for_boot_completion()
         time.sleep(10)
