@@ -57,10 +57,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
         # Generate test cases
-        self.tests = self.generate_test_cases([6, 36, 149],
-                                              ['bw20', 'bw40', 'bw80'],
-                                              ['TCP', 'UDP'], ['DL', 'UL'],
-                                              ['high', 'low'])
+        self.tests = self.generate_test_cases(
+            [6, 36, 149, '6g5'], ['bw20', 'bw40', 'bw80', 'bw160'],
+            ['TCP', 'UDP'], ['DL', 'UL'], ['high', 'low'])
 
     def generate_test_cases(self, channels, modes, traffic_types,
                             traffic_directions, signal_levels):
@@ -68,11 +67,11 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161
+                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157],
-            80: [36, 100, 149],
-            160: [36]
+            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
+            80: [36, 100, 149, '6g5', '6g117', '6g213'],
+            160: [36, '6g5', '6g117', '6g213']
         }
 
         test_cases = []
@@ -242,12 +241,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         """
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
-        if '2G' in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[
-                testcase_params['channel']]
+        if '6G' in band:
+            frequency = wutils.WifiEnums.channel_6G_to_freq[int(
+                testcase_params['channel'].strip('6g'))]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[
-                testcase_params['channel']]
+            if testcase_params['channel'] < 13:
+                frequency = wutils.WifiEnums.channel_2G_to_freq[
+                    testcase_params['channel']]
+            else:
+                frequency = wutils.WifiEnums.channel_5G_to_freq[
+                    testcase_params['channel']]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
@@ -571,11 +574,11 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161
+                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157],
-            80: [36, 100, 149],
-            160: [36]
+            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
+            80: [36, 100, 149, '6g5', '6g117', '6g213'],
+            160: [36, '6g5', '6g117', '6g213']
         }
 
         test_cases = []
@@ -608,7 +611,8 @@ class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
                                                 ):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['bw20', 'bw80'],
+        self.tests = self.generate_test_cases([6, 36, 149, '6g5'],
+                                              ['bw20', 'bw80', 'bw160'],
                                               ['TCP'], ['DL', 'UL'],
                                               ['high', 'low'], 'orientation',
                                               list(range(0, 360, 10)))
@@ -617,7 +621,8 @@ class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
 class WifiOtaThroughputStability_45Degree_Test(WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['bw20', 'bw80'],
+        self.tests = self.generate_test_cases([6, 36, 149, '6g5'],
+                                              ['bw20', 'bw80', 'bw160'],
                                               ['TCP'], ['DL', 'UL'],
                                               ['high', 'low'], 'orientation',
                                               list(range(0, 360, 45)))
@@ -627,7 +632,8 @@ class WifiOtaThroughputStability_SteppedStirrers_Test(
         WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['bw20', 'bw80'],
+        self.tests = self.generate_test_cases([6, 36, 149, '6g5'],
+                                              ['bw20', 'bw80', 'bw160'],
                                               ['TCP'], ['DL', 'UL'],
                                               ['high', 'low'],
                                               'stepped stirrers',

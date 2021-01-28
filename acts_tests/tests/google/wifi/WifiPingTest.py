@@ -298,7 +298,7 @@ class WifiPingTest(base_test.BaseTestClass):
         if self.testbed_params['sniffer_enable']:
             self.sniffer.start_capture(
                 testcase_params['test_network'],
-                chan=int(testcase_params['channel']),
+                chan=testcase_params['channel'],
                 bw=testcase_params['bandwidth'],
                 duration=testcase_params['ping_duration'] *
                 len(testcase_params['atten_range']) + self.TEST_TIMEOUT)
@@ -361,12 +361,16 @@ class WifiPingTest(base_test.BaseTestClass):
         """
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
-        if '2G' in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[
-                testcase_params['channel']]
+        if '6G' in band:
+            frequency = wutils.WifiEnums.channel_6G_to_freq[int(
+                testcase_params['channel'].strip('6g'))]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[
-                testcase_params['channel']]
+            if testcase_params['channel'] < 13:
+                frequency = wutils.WifiEnums.channel_2G_to_freq[
+                    testcase_params['channel']]
+            else:
+                frequency = wutils.WifiEnums.channel_5G_to_freq[
+                    testcase_params['channel']]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
@@ -516,11 +520,11 @@ class WifiPingTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161
+                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157],
-            80: [36, 100, 149],
-            160: [36]
+            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
+            80: [36, 100, 149, '6g5', '6g117', '6g213'],
+            160: [36, '6g5', '6g117', '6g213']
         }
 
         for channel, mode, chain, test_type in itertools.product(
@@ -545,25 +549,33 @@ class WifiPingTest(base_test.BaseTestClass):
 class WifiPing_TwoChain_Test(WifiPingTest):
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            ap_power='standard',
-            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['bw20', 'bw40', 'bw80'],
-            test_types=[
-                'test_ping_range', 'test_fast_ping_rtt', 'test_slow_ping_rtt'
-            ],
-            chain_mask=['2x2'])
+        self.tests = self.generate_test_cases(ap_power='standard',
+                                              channels=[
+                                                  1, 6, 11, 36, 40, 44, 48,
+                                                  149, 153, 157, 161, '6g5',
+                                                  '6g117', '6g213'
+                                              ],
+                                              modes=['bw20', 'bw40', 'bw80'],
+                                              test_types=[
+                                                  'test_ping_range',
+                                                  'test_fast_ping_rtt',
+                                                  'test_slow_ping_rtt'
+                                              ],
+                                              chain_mask=['2x2'])
 
 
 class WifiPing_PerChainRange_Test(WifiPingTest):
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            ap_power='standard',
-            chain_mask=['0', '1', '2x2'],
-            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['bw20', 'bw40', 'bw80'],
-            test_types=['test_ping_range'])
+        self.tests = self.generate_test_cases(ap_power='standard',
+                                              chain_mask=['0', '1', '2x2'],
+                                              channels=[
+                                                  1, 6, 11, 36, 40, 44, 48,
+                                                  149, 153, 157, 161, '6g5',
+                                                  '6g117', '6g213'
+                                              ],
+                                              modes=['bw20', 'bw40', 'bw80'],
+                                              test_types=['test_ping_range'])
 
 
 class WifiPing_LowPowerAP_Test(WifiPingTest):
@@ -749,23 +761,27 @@ class WifiOtaPingTest(WifiPingTest):
 class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(ap_power='standard',
-                                              channels=[6, 36, 149],
-                                              modes=['bw20'],
-                                              chamber_mode='orientation',
-                                              positions=list(range(0, 360,
-                                                                   10)))
+        self.tests = self.generate_test_cases(
+            ap_power='standard',
+            channels=[6, 36, 149, '6g5', '6g117', '6g213'],
+            modes=['bw20'],
+            chamber_mode='orientation',
+            positions=list(range(0, 360, 10)))
 
 
 class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            ap_power='standard',
-            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['bw20'],
-            chamber_mode='orientation',
-            positions=list(range(0, 360, 45)))
+        self.tests = self.generate_test_cases(ap_power='standard',
+                                              channels=[
+                                                  1, 6, 11, 36, 40, 44, 48,
+                                                  149, 153, 157, 161, '6g5',
+                                                  '6g117', '6g213'
+                                              ],
+                                              modes=['bw20'],
+                                              chamber_mode='orientation',
+                                              positions=list(range(0, 360,
+                                                                   45)))
 
 
 class WifiOtaPing_SteppedStirrers_Test(WifiOtaPingTest):
