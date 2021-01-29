@@ -59,6 +59,14 @@ VPN_TIMEOUT = 30
 TYPE_MOBILE = 0
 TYPE_WIFI = 1
 
+# Network request related constants.
+NETWORK_CAP_TRANSPORT_WIFI = TYPE_WIFI
+NETWORK_CAP_CAPABILITY_INTERNET = 12
+
+# Network request related keys.
+NETWORK_CAP_TRANSPORT_TYPE_KEY = "TransportType"
+NETWORK_CAP_CAPABILITY_KEY = "Capability"
+
 # Multipath preference constants
 MULTIPATH_PREFERENCE_NONE = 0
 MULTIPATH_PREFERENCE_HANDOVER = 1 << 0

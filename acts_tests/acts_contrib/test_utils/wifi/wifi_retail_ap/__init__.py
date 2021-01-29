@@ -70,6 +70,10 @@ def create(configs):
             'name': 'NetgearRAX120AP',
             'package': 'netgear_rax120'
         },
+        ('Brcm', 'Reference'): {
+            'name': 'BrcmRefAP',
+            'package': 'brcm_ref'
+        },
         ('Google', 'Wifi'): {
             'name': 'GoogleWifiAP',
             'package': 'google_wifi'
@@ -359,6 +363,8 @@ class WifiRetailAP(object):
         if 'bw' in bandwidth:
             bandwidth = bandwidth.replace('bw',
                                           self.capabilities['default_mode'])
+        elif isinstance(bandwidth, int):
+            bandwidth = str(bandwidth) + self.capabilities['default_mode']
         if bandwidth not in self.capabilities['modes'][network]:
             self.log.error('{} mode is not supported on {} interface.'.format(
                 bandwidth, network))

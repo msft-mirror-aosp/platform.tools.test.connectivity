@@ -522,12 +522,18 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing test-specific parameters
         """
-        if '2G' in testcase_params['band']:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[
-                testcase_params['channel']]
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params['channel'])
+        if '6G' in band:
+            frequency = wutils.WifiEnums.channel_6G_to_freq[int(
+                testcase_params['channel'].strip('6g'))]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[
-                testcase_params['channel']]
+            if testcase_params['channel'] < 13:
+                frequency = wutils.WifiEnums.channel_2G_to_freq[
+                    testcase_params['channel']]
+            else:
+                frequency = wutils.WifiEnums.channel_5G_to_freq[
+                    testcase_params['channel']]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
@@ -787,11 +793,11 @@ class WifiRssiTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161
+                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157],
-            80: [36, 100, 149],
-            160: [36]
+            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
+            80: [36, 100, 149, '6g5', '6g117', '6g213'],
+            160: [36, '6g5', '6g117', '6g213']
         }
 
         for channel, mode, traffic_mode, test_type in itertools.product(
@@ -835,9 +841,10 @@ class WifiRssi_AllChannels_ActiveTraffic_Test(WifiRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            ['test_rssi_stability', 'test_rssi_vs_atten'],
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            ['bw20', 'bw40', 'bw80'], ['ActiveTraffic'])
+            ['test_rssi_stability', 'test_rssi_vs_atten'], [
+                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g5', '6g117',
+                '6g213'
+            ], ['bw20', 'bw40', 'bw80', 'bw160'], ['ActiveTraffic'])
 
 
 class WifiRssi_SampleChannels_NoTraffic_Test(WifiRssiTest):
@@ -1019,11 +1026,11 @@ class WifiOtaRssiTest(WifiRssiTest):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161
+                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157],
-            80: [36, 100, 149],
-            160: [36]
+            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
+            80: [36, 100, 149, '6g5', '6g117', '6g213'],
+            160: [36, '6g5', '6g117', '6g213']
         }
 
         for (channel, mode, traffic, chamber_mode, orientation,
@@ -1053,7 +1060,7 @@ class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['test_rssi_vs_atten'],
-                                              [6, 36, 149], ['bw20'],
+                                              [6, 36, 149, '6g5'], ['bw20'],
                                               ['ActiveTraffic'],
                                               ['orientation'],
                                               list(range(0, 360, 45)))
@@ -1063,7 +1070,7 @@ class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_variation'],
-                                              [6, 36, 149], ['bw20'],
+                                              [6, 36, 149, '6g5'], ['bw20'],
                                               ['ActiveTraffic'],
                                               ['StirrersOn'], [0])
 
@@ -1072,7 +1079,7 @@ class WifiOtaRssi_TenDegree_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_over_orientation'],
-                                              [6, 36, 149], ['bw20'],
+                                              [6, 36, 149, '6g5'], ['bw20'],
                                               ['ActiveTraffic'],
                                               ['orientation'],
                                               list(range(0, 360, 10)))

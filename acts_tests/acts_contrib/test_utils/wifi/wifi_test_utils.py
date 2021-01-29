@@ -118,6 +118,7 @@ class WifiEnums():
         WPA3_SAE = "WPA3_SAE"
 
     class CountryCode():
+        AUSTRALIA = "AU"
         CHINA = "CN"
         GERMANY = "DE"
         JAPAN = "JP"
@@ -423,6 +424,14 @@ class WifiEnums():
         159: 5795,
         161: 5805,
         165: 5825
+    }
+
+    channel_6G_to_freq = {4 * x + 1: 5955 + 20 * x for x in range(59)}
+
+    channel_to_freq = {
+        '2G': channel_2G_to_freq,
+        '5G': channel_5G_to_freq,
+        '6G': channel_6G_to_freq
     }
 
 
@@ -1606,42 +1615,7 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
 def wifi_connect_using_network_request(ad,
                                        network,
                                        network_specifier,
-                                       num_of_tries=3,
-                                       assert_on_fail=True):
-    """Connect an Android device to a wifi network using network request.
-
-    Trigger a network request with the provided network specifier,
-    wait for the "onMatch" event, ensure that the scan results in "onMatch"
-    event contain the specified network, then simulate the user granting the
-    request with the specified network selected. Then wait for the "onAvailable"
-    network callback indicating successful connection to network.
-
-    This will directly fail a test if anything goes wrong.
-
-    Args:
-        ad: android_device object to initiate connection on.
-        network_specifier: A dictionary representing the network specifier to
-                           use.
-        network: A dictionary representing the network to connect to. The
-                 dictionary must have the key "SSID".
-        num_of_tries: An integer that is the number of times to try before
-                      delaring failure.
-        assert_on_fail: If True, error checks in this function will raise test
-                        failure signals.
-
-    Returns:
-        Returns a value only if assert_on_fail is false.
-        Returns True if the connection was successful, False otherwise.
-    """
-    _assert_on_fail_handler(_wifi_connect_using_network_request,
-                            assert_on_fail, ad, network, network_specifier,
-                            num_of_tries)
-
-
-def _wifi_connect_using_network_request(ad,
-                                        network,
-                                        network_specifier,
-                                        num_of_tries=3):
+                                       num_of_tries=3):
     """Connect an Android device to a wifi network using network request.
 
     Trigger a network request with the provided network specifier,
@@ -1666,7 +1640,8 @@ def _wifi_connect_using_network_request(ad,
     # Need a delay here because UI interaction should only start once wifi
     # starts processing the request.
     time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
-    _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries)
+    _wait_for_wifi_connect_after_network_request(ad, network, key,
+                                                 num_of_tries)
     return key
 
 
@@ -1702,7 +1677,10 @@ def wait_for_wifi_connect_after_network_request(ad,
                             assert_on_fail, ad, network, key, num_of_tries)
 
 
-def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=3):
+def _wait_for_wifi_connect_after_network_request(ad,
+                                                 network,
+                                                 key,
+                                                 num_of_tries=3):
     """
     Simulate and verify the connection flow after initiating the network
     request.
@@ -1753,13 +1731,11 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
 
         # Wait for the platform to connect to the network.
         autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            60,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 60,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_AVAILABLE))
         on_capabilities_changed = autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            10,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 10,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED))
@@ -1769,8 +1745,7 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
         asserts.assert_equal(
             connected_network[WifiEnums.SSID_KEY], expected_ssid,
             "Connected to the wrong network."
-            "Expected %s, but got %s."
-            % (network, connected_network))
+            "Expected %s, but got %s." % (network, connected_network))
     except Empty:
         asserts.fail("Failed to connect to %s" % expected_ssid)
     except Exception as error:

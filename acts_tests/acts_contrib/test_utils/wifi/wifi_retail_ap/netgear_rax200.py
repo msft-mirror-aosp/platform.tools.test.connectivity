@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import collections
-import selenium
 import time
 from acts_contrib.test_utils.wifi.wifi_retail_ap import WifiRetailAP
 from acts_contrib.test_utils.wifi.wifi_retail_ap import BlockingBrowser
