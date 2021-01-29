@@ -119,6 +119,24 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
             self.monsoon.set_max_current(
                 monsoon_config.get_numeric('max_current'))
 
+    def power_cycle(self, monsoon_config=None, **__):
+        """Power cycles the delegated monsoon controller."""
+
+        if monsoon_config is None:
+            raise MonsoonError('monsoon_config can not be None')
+
+        self._log.info('Setting up Monsoon %s' % self.monsoon.serial)
+        voltage = monsoon_config.get_numeric('voltage', 4.2)
+        self._log.info('Setting up Monsoon voltage %s' % voltage)
+        self.monsoon.set_voltage_safe(0)
+        if 'max_current' in monsoon_config:
+            self.monsoon.set_max_current(
+                monsoon_config.get_numeric('max_current'))
+            self.monsoon.set_max_initial_current(
+                monsoon_config.get_numeric('max_current'))
+        self.connect_usb()
+        self.monsoon.set_voltage_safe(voltage)
+
     def connect_usb(self, **__):
         self.monsoon.usb('on')
 
@@ -143,6 +161,21 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
 
     def disconnect_usb(self, **__):
         self.monsoon.usb('off')
+
+    def get_battery_waveform(self, monsoon_file_path=None):
+        """Parses a monsoon_file_path to obtain all current (in amps) samples.
+
+        Args:
+            monsoon_file_path: Path to a monsoon file.
+
+        Returns:
+            A list of tuples in which the first element is a timestamp and the
+            second element is the sampled current at that time.
+        """
+        if monsoon_file_path is None:
+            raise MonsoonError('monsoon_file_path can not be None')
+
+        return list(power_metrics.import_raw_data(monsoon_file_path))
 
     def get_metrics(self, start_time=None, voltage=None, monsoon_file_path=None,
                     timestamps=None, **__):

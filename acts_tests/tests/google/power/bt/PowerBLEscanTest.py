@@ -15,9 +15,9 @@
 #   limitations under the License.
 
 import time
-import acts.test_utils.bt.BleEnum as bleenum
-import acts.test_utils.bt.bt_power_test_utils as btputils
-import acts.test_utils.power.PowerBTBaseTest as PBtBT
+import acts_contrib.test_utils.bt.BleEnum as bleenum
+import acts_contrib.test_utils.bt.bt_power_test_utils as btputils
+import acts_contrib.test_utils.power.PowerBTBaseTest as PBtBT
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put secure location_mode 3'
 EXTRA_SCAN_TIME = 3

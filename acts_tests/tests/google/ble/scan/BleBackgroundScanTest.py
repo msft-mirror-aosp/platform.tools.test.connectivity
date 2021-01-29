@@ -21,18 +21,18 @@ from queue import Empty
 
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import bluetooth_off
-from acts.test_utils.bt.bt_test_utils import bluetooth_on
-from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
-from acts.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.bt.bt_constants import bluetooth_le_off
-from acts.test_utils.bt.bt_constants import bluetooth_le_on
-from acts.test_utils.bt.bt_constants import bt_adapter_states
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import scan_result
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_off
+from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_on
+from acts_contrib.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
+from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts_contrib.test_utils.bt.bt_constants import bluetooth_le_off
+from acts_contrib.test_utils.bt.bt_constants import bluetooth_le_on
+from acts_contrib.test_utils.bt.bt_constants import bt_adapter_states
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import scan_result
 
 import time
 

@@ -21,15 +21,15 @@ import time
 
 import acts.controllers.packet_capture as packet_capture
 import acts.signals as signals
-import acts.test_utils.wifi.rpm_controller_utils as rutils
-import acts.test_utils.wifi.wifi_datastore_utils as dutils
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.rpm_controller_utils as rutils
+import acts_contrib.test_utils.wifi.wifi_datastore_utils as dutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 

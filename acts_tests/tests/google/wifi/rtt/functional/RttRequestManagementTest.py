@@ -19,9 +19,9 @@ import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.rtt import rtt_const as rconsts
-from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
-from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
+from acts_contrib.test_utils.wifi.rtt import rtt_const as rconsts
+from acts_contrib.test_utils.wifi.rtt import rtt_test_utils as rutils
+from acts_contrib.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
 class RttRequestManagementTest(RttBaseTest):

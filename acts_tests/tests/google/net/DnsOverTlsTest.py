@@ -13,85 +13,105 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
-import os
-import random
-import socket
-import threading
 import time
 
 from acts import asserts
-from acts import base_test
-from acts import test_runner
-from acts.controllers import adb
+from acts.controllers.openwrt_ap import MOBLY_CONTROLLER_CONFIG_NAME as OPENWRT
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import connectivity_const as cconst
-from acts.test_utils.net import connectivity_test_utils as cutils
-from acts.test_utils.net import net_test_utils as nutils
-from acts.test_utils.net.net_test_utils import start_tcpdump
-from acts.test_utils.net.net_test_utils import stop_tcpdump
-from acts.test_utils.tel import tel_test_utils as tutils
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.wifi import wifi_test_utils as wutils
-
-from scapy.all import TCP
-from scapy.all import UDP
+from acts_contrib.test_utils.net import connectivity_const as cconst
+from acts_contrib.test_utils.net import connectivity_test_utils as cutils
+from acts_contrib.test_utils.net import net_test_utils as nutils
+from acts_contrib.test_utils.net.net_test_utils import start_tcpdump
+from acts_contrib.test_utils.net.net_test_utils import stop_tcpdump
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from scapy.all import rdpcap
 from scapy.all import Scapy_Exception
+from scapy.all import TCP
+from scapy.all import UDP
+
 
 RST = 0x04
 SSID = wutils.WifiEnums.SSID_KEY
 
-class DnsOverTlsTest(base_test.BaseTestClass):
-    """ Tests for Wifi Tethering """
+class DnsOverTlsTest(WifiBaseTest):
+    """Tests for DNS-over-TLS."""
 
     def setup_class(self):
-        """ Setup devices for tethering and unpack params """
+        """Setup devices for DNS-over-TLS test and unpack params."""
 
         self.dut = self.android_devices[0]
-        self.dut_b = self.android_devices[1]
+        if len(self.android_devices) > 1:
+            self.dut_b = self.android_devices[1]
         for ad in self.android_devices:
+            ad.droid.setPrivateDnsMode(True)
             nutils.verify_lte_data_and_tethering_supported(ad)
             set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
-        req_params = ("ping_hosts", "ipv4_only_network", "ipv4_ipv6_network",)
-        self.unpack_userparams(req_params)
+        req_params = ("ping_hosts",)
+        opt_params = ("ipv4_only_network", "ipv4_ipv6_network", "dns_name")
+        self.unpack_userparams(req_param_names=req_params,
+                               opt_param_names=opt_params)
+
+        if OPENWRT in self.user_params:
+            self.openwrt = self.access_points[0]
+            self.private_dns_servers = [self.dns_name]
+            self.configure_openwrt_ap_and_start(wpa_network=True)
+            self.openwrt.network_setting.setup_dns_server(self.dns_name)
+        else:
+            self.private_dns_servers = [cconst.DNS_GOOGLE,
+                                        cconst.DNS_QUAD9,
+                                        cconst.DNS_CLOUDFLARE]
         self.tcpdump_pid = None
-        self.private_dns_servers = [cconst.DNS_GOOGLE,
-                                    cconst.DNS_QUAD9,
-                                    cconst.DNS_CLOUDFLARE]
 
     def teardown_test(self):
         wutils.reset_wifi(self.dut)
 
+    def teardown_class(self):
+        for ad in self.android_devices:
+            ad.droid.setPrivateDnsMode(True)
+
+        if OPENWRT in self.user_params:
+            self.openwrt.network_setting.remove_dns_server()
+
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
 
-    """ Helper functions """
+    def get_wifi_network(self, ipv6_supported):
+        if OPENWRT in self.user_params:
+            if ipv6_supported:
+                self.openwrt.network_setting.enable_ipv6()
+            else:
+                self.openwrt.network_setting.disable_ipv6()
+            return self.openwrt.get_wifi_network()
+        if ipv6_supported:
+            return self.ipv4_ipv6_network
+        return self.ipv4_only_network
 
     def _start_tcp_dump(self, ad):
-        """ Start tcpdump on the give dut
+        """Start tcpdump on the given dut.
 
         Args:
-            1. ad: dut to run tcpdump on
+            ad: dut to run tcpdump on
         """
         self.tcpdump_pid = start_tcpdump(ad, self.test_name)
 
     def _stop_tcp_dump(self, ad):
-        """ Stop tcpdump and pull it to the test run logs
+        """Stop tcpdump and pull it to the test run logs.
 
         Args:
-            1. ad: dut to pull tcpdump from
+            ad: dut to pull tcpdump from
         """
         return stop_tcpdump(ad, self.tcpdump_pid, self.test_name)
 
     def _verify_dns_queries_over_tls(self, pcap_file, tls=True):
-        """ Verify if DNS queries were over TLS or not
+        """Verify if DNS queries were over TLS or not.
 
         Args:
-            1. pcap_file: tcpdump file
-            2. tls: if queries should be over TLS or port 853
+            pcap_file: tcpdump file
+            tls: if queries should be over TLS or port 853
         """
         try:
             packets = rdpcap(pcap_file)
@@ -100,7 +120,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         for pkt in packets:
             summary = "%s" % pkt.summary()
             for host in self.ping_hosts:
-                host = host.split('.')[-2]
+                host = host.split(".")[-2]
                 if tls and UDP in pkt and pkt[UDP].dport == 53 and \
                     host in summary:
                       asserts.fail("Found query to port 53: %s" % summary)
@@ -108,11 +128,11 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                     not pkt[TCP].flags:
                       asserts.fail("Found query to port 853: %s" % summary)
 
-    def _verify_rst_packets(self, pcap_file):
-        """ Verify if RST packets are found in the pcap file
+    def _verify_no_rst_packets_port_853(self, pcap_file):
+        """Verify if RST packets are found in the pcap file.
 
         Args:
-            1. pcap_file: full path of tcpdump file
+            pcap_file: full path of tcpdump file
         """
         packets = rdpcap(pcap_file)
         for pkt in packets:
@@ -120,14 +140,14 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                 asserts.fail("Found RST packets: %s" % pkt.summary())
 
     def _test_private_dns_mode(self, ad, net, dns_mode, use_tls, hostname=None):
-        """ Test private DNS mode
+        """Test private DNS mode.
 
         Args:
-            1. ad: android device object
-            2. net: wifi network to connect to, LTE network if None
-            3. dns_mode: private DNS mode
-            4. use_tls: if True, the DNS packets should be encrypted
-            5. hostname: private DNS hostname to set to
+            ad: android device object
+            net: wifi network to connect to, LTE network if None
+            dns_mode: private DNS mode
+            use_tls: if True, the DNS packets should be encrypted
+            hostname: private DNS hostname to set to
         """
 
         # set private dns mode
@@ -159,11 +179,9 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         # reset wifi
         wutils.reset_wifi(self.dut)
 
-    """ Test Cases """
-
     @test_tracker_info(uuid="2957e61c-d333-45fb-9ff9-2250c9c8535a")
     def test_private_dns_mode_off_wifi_ipv4_only_network(self):
-        """ Verify private dns mode off on ipv4 only network
+        """Verify private dns mode off on ipv4 only network.
 
         Steps:
             1. Set private dns mode off
@@ -173,13 +191,13 @@ class DnsOverTlsTest(base_test.BaseTestClass):
             5. Verify that all queries go to port 53
         """
         self._test_private_dns_mode(self.dut,
-                                    self.ipv4_only_network,
+                                    self.get_wifi_network(False),
                                     cconst.PRIVATE_DNS_MODE_OFF,
                                     False)
 
     @test_tracker_info(uuid="ea036d22-25af-4df0-b6cc-0027bc1efbe9")
     def test_private_dns_mode_off_wifi_ipv4_ipv6_network(self):
-        """ Verify private dns mode off on ipv4-ipv6 network
+        """Verify private dns mode off on ipv4-ipv6 network.
 
         Steps:
             1. Set private dns mode off
@@ -189,13 +207,13 @@ class DnsOverTlsTest(base_test.BaseTestClass):
             5. Verify that all queries go to port 53
         """
         self._test_private_dns_mode(self.dut,
-                                    self.ipv4_ipv6_network,
+                                    self.get_wifi_network(True),
                                     cconst.PRIVATE_DNS_MODE_OFF,
                                     False)
 
     @test_tracker_info(uuid="4227abf4-0a75-4b4d-968c-dfc63052f5db")
     def test_private_dns_mode_opportunistic_wifi_ipv4_only_network(self):
-        """ Verify private dns mode opportunistic on ipv4 only network
+        """Verify private dns mode opportunistic on ipv4 only network.
 
         Steps:
             1. Set private dns to opportunistic mode
@@ -205,13 +223,13 @@ class DnsOverTlsTest(base_test.BaseTestClass):
             5. Verify that all queries go to port 853 and encrypted
         """
         self._test_private_dns_mode(self.dut,
-                                    self.ipv4_only_network,
+                                    self.get_wifi_network(False),
                                     cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC,
                                     True)
 
     @test_tracker_info(uuid="0c97cfef-4313-4346-b05b-395de63c5c3f")
     def test_private_dns_mode_opportunistic_wifi_ipv4_ipv6_network(self):
-        """ Verify private dns mode opportunistic on ipv4-ipv6 network
+        """Verify private dns mode opportunistic on ipv4-ipv6 network.
 
         Steps:
             1. Set private dns to opportunistic mode
@@ -221,13 +239,13 @@ class DnsOverTlsTest(base_test.BaseTestClass):
             5. Verify that all queries go to port 853
         """
         self._test_private_dns_mode(self.dut,
-                                    self.ipv4_ipv6_network,
+                                    self.get_wifi_network(True),
                                     cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC,
                                     True)
 
     @test_tracker_info(uuid="b70569f1-2613-49d0-be49-fd3464dde305")
     def test_private_dns_mode_strict_wifi_ipv4_only_network(self):
-        """ Verify private dns mode strict on ipv4 only network
+        """Verify private dns mode strict on ipv4 only network.
 
         Steps:
             1. Set private dns to strict mode
@@ -238,14 +256,14 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         """
         for dns in self.private_dns_servers:
             self._test_private_dns_mode(self.dut,
-                                        self.ipv4_only_network,
+                                        self.get_wifi_network(False),
                                         cconst.PRIVATE_DNS_MODE_STRICT,
                                         True,
                                         dns)
 
     @test_tracker_info(uuid="85738b52-823b-4c59-a0d5-219e2fab2929")
     def test_private_dns_mode_strict_wifi_ipv4_ipv6_network(self):
-        """ Verify private dns mode strict on ipv4-ipv6 network
+        """Verify private dns mode strict on ipv4-ipv6 network.
 
         Steps:
             1. Set private dns to strict mode
@@ -256,14 +274,14 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         """
         for dns in self.private_dns_servers:
             self._test_private_dns_mode(self.dut,
-                                        self.ipv4_ipv6_network,
+                                        self.get_wifi_network(True),
                                         cconst.PRIVATE_DNS_MODE_STRICT,
                                         True,
                                         dns)
 
     @test_tracker_info(uuid="727e280a-d2bd-463f-b2a1-653d4b3f7f29")
     def test_private_dns_mode_off_vzw_carrier(self):
-        """ Verify private dns mode off on VZW network
+        """Verify private dns mode off on VZW network.
 
         Steps:
             1. Set private dns mode off
@@ -281,7 +299,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="b16f6e2c-a24f-4efe-9003-2bfaf28b8d5e")
     def test_private_dns_mode_off_tmo_carrier(self):
-        """ Verify private dns mode off on TMO network
+        """Verify private dns mode off on TMO network.
 
         Steps:
             1. Set private dns to off mode
@@ -299,7 +317,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="edfa7bfe-3e52-46b4-9d72-7c6c300b3680")
     def test_private_dns_mode_opportunistic_vzw_carrier(self):
-        """ Verify private dns mode opportunistic on VZW network
+        """Verify private dns mode opportunistic on VZW network.
 
         Steps:
             1. Set private dns mode opportunistic
@@ -317,7 +335,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="41c3f2c4-11b7-4bb8-a3c9-fac63f6822f6")
     def test_private_dns_mode_opportunistic_tmo_carrier(self):
-        """ Verify private dns mode opportunistic on TMO network
+        """Verify private dns mode opportunistic on TMO network.
 
         Steps:
             1. Set private dns mode opportunistic
@@ -335,7 +353,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="65fd2052-f0c0-4446-b353-7ed2273e6c95")
     def test_private_dns_mode_strict_vzw_carrier(self):
-        """ Verify private dns mode strict on VZW network
+        """Verify private dns mode strict on VZW network.
 
         Steps:
             1. Set private dns mode strict
@@ -355,7 +373,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="bca141f7-06c9-4e44-854e-4bdb9443b2da")
     def test_private_dns_mode_strict_tmo_carrier(self):
-        """ Verify private dns mode strict on TMO network
+        """Verify private dns mode strict on TMO network.
 
         Steps:
             1. Set private dns mode strict
@@ -375,7 +393,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="7d977987-d9e3-4be1-b8fc-e5a84050ed48")
     def test_private_dns_mode_opportunistic_connectivity_toggle_networks(self):
-        """ Verify private DNS opportunistic mode connectivity by toggling networks
+        """Verify private DNS opportunistic mode connectivity by toggling networks.
 
         Steps:
             1. Set private DNS opportunistic mode
@@ -413,7 +431,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="bc2f228f-e288-4539-a4b9-c02968209985")
     def test_private_dns_mode_strict_connectivity_toggle_networks(self):
-        """ Verify private DNS strict mode connectivity by toggling networks
+        """Verify private DNS strict mode connectivity by toggling networks.
 
         Steps:
             1. Set private DNS strict mode
@@ -436,7 +454,6 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                 self._test_private_dns_mode(
                     self.dut, None, None, True, dns)
 
-
                 # verify dns over tls on wifi network
                 self._test_private_dns_mode(
                     self.dut, self.ipv4_ipv6_network, None, True, dns)
@@ -448,7 +465,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="1426673a-7728-4df7-8de5-dfb3529ada62")
     def test_dns_server_link_properties_strict_mode(self):
-        """ Verify DNS server in the link properties when set in strict mode
+        """Verify DNS server in the link properties when set in strict mode.
 
         Steps:
             1. Set DNS server hostname in Private DNS settings (stict mode)
@@ -471,18 +488,18 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
         # DNS server in link properties for wifi network
         link_prop = self.dut.droid.connectivityGetActiveLinkProperties()
-        wifi_dns_servers = link_prop['PrivateDnsServerName']
+        wifi_dns_servers = link_prop["PrivateDnsServerName"]
         self.log.info("Link prop: %s" % wifi_dns_servers)
 
         # DUT is on LTE data
         wutils.reset_wifi(self.dut)
-        time.sleep(1) # wait till lte network becomes active
+        time.sleep(1)  # wait till lte network becomes active
         for host in self.ping_hosts:
             wutils.validate_connection(self.dut, host)
 
         # DNS server in link properties for cell network
         link_prop = self.dut.droid.connectivityGetActiveLinkProperties()
-        lte_dns_servers = link_prop['PrivateDnsServerName']
+        lte_dns_servers = link_prop["PrivateDnsServerName"]
         self.log.info("Link prop: %s" % lte_dns_servers)
 
         # stop tcpdump on device
@@ -496,7 +513,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="525a6f2d-9751-474e-a004-52441091e427")
     def test_dns_over_tls_no_reset_packets(self):
-        """ Verify there are no TCP packets with RST flags
+        """Verify there are no TCP packets with RST flags on port 853.
 
         Steps:
             1. Enable opportunistic or strict mode
@@ -519,11 +536,11 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         pcap_file = self._stop_tcp_dump(self.dut)
 
         # check that there no RST TCP packets
-        self._verify_rst_packets(pcap_file)
+        self._verify_no_rst_packets_port_853(pcap_file)
 
     @test_tracker_info(uuid="af6e34f1-3ad5-4ab0-b3b9-53008aa08294")
     def test_private_dns_mode_strict_invalid_hostnames(self):
-        """ Verify that invalid hostnames are not saved for strict mode
+        """Verify that invalid hostnames are not saved for strict mode.
 
         Steps:
             1. Set private DNS to strict mode with invalid hostname

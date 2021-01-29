@@ -29,13 +29,9 @@ install_requires = [
     # Latest version of mock (4.0.0b) causes a number of compatibility issues with ACTS unit tests
     # b/148695846, b/148814743
     'mock==3.0.5',
-    # b/157117302: python3.5 is not supported by NumPy 1.19+
-    'numpy<=1.18.1',
-    # b/157117302: python3.5 is not supported by SciPy 1.5.0+ (Monsoon dependency)
-    'scipy==1.4.1',
     'pyserial',
     'pyyaml>=5.1',
-    'protobuf>=3.11.3',
+    'protobuf>=3.14.0',
     'retry',
     'requests',
     'scapy',
@@ -47,8 +43,25 @@ install_requires = [
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
-    'dlipower'
+    'dlipower',
+    'zeroconf'
 ]
+
+# numpy and scipy version matrix per:
+# https://docs.scipy.org/doc/scipy/reference/toolchain.html
+if sys.version_info < (3, 6):
+    # Python <= 3.5 uses scipy up to 1.4 and numpy up to 1.18.x
+    # b/157117302:Monsoon dependency
+    install_requires.append('scipy<1.5')
+    install_requires.append('numpy<1.19')
+elif sys.version_info < (3, 7):
+    # Python 3.6 uses scipy up to 1.5 and numpy up to 1.19.x
+    install_requires.append('scipy<1.6')
+    install_requires.append('numpy==1.18.1')
+else:
+    # Python 3.7+ is supported by latest scipy and numpy
+    install_requires.append('scipy')
+    install_requires.append('numpy')
 
 if sys.version_info < (3, ):
     install_requires.append('enum34')
@@ -58,9 +71,7 @@ if sys.version_info < (3, ):
     install_requires.append('py2-ipaddress')
     install_requires.append('subprocess32')
 
-DEV_PACKAGES = [
-    'shiv'
-]
+DEV_PACKAGES = ['shiv']
 
 framework_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -69,13 +80,15 @@ class PyTest(test.test):
     """Class used to execute unit tests using PyTest. This allows us to execute
     unit tests without having to install the package.
     """
+
     def finalize_options(self):
         test.test.finalize_options(self)
         self.test_args = ['-x', "tests"]
         self.test_suite = True
 
     def run_tests(self):
-        test_path = os.path.join(framework_dir, '../tests/meta/ActsUnitTest.py')
+        test_path = os.path.join(framework_dir,
+                                 '../tests/meta/ActsUnitTest.py')
         result = subprocess.Popen('python3 %s' % test_path,
                                   stdout=sys.stdout,
                                   stderr=sys.stderr,

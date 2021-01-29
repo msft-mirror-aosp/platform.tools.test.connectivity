@@ -93,6 +93,7 @@ class ActsTestRunnerTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.android_device.AndroidDevice.exit_setup_wizard',
         return_value=True)
+    @mock.patch('acts.controllers.android_device.AndroidDevice.start_services')
     def test_run_two_test_classes(self, *_):
         """Verifies that running more than one test class in one test run works
         properly.

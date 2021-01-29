@@ -18,7 +18,7 @@ Continuously poll for energy info for a single Android Device
 """
 
 from queue import Empty
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 
 class EnergyTest(BluetoothBaseTest):

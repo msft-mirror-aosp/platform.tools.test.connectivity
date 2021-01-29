@@ -23,16 +23,16 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import adv_succ
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_constants import scan_failed
-from acts.test_utils.bt.bt_constants import scan_result
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import adv_succ
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_constants import scan_failed
+from acts_contrib.test_utils.bt.bt_constants import scan_result
+from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class ConcurrentBleScanningTest(BluetoothBaseTest):

@@ -21,7 +21,7 @@ from acts.test_decorators import repeated_test
 from acts import signals
 
 
-def get_median_current(test_results):
+def get_median_current(test_results, _):
     """Returns the median current, or a failure if the test failed."""
     # If the last run was not a pass signal, the test exceeded
     # acceptable_failures.

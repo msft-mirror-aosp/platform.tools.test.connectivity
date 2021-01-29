@@ -21,12 +21,12 @@ import time
 
 import acts.base_test
 import acts.signals
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 class WifiHiddenSSIDTest(WifiBaseTest):
@@ -51,10 +51,6 @@ class WifiHiddenSSIDTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(hidden=True)
-        elif "OpenWrtAP" in self.user_params:
-            self.configure_openwrt_ap_and_start(open_network=True,
-                                                wpa_network=True,
-                                                hidden=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,

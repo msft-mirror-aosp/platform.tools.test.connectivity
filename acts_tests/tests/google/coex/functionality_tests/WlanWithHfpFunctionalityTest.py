@@ -14,21 +14,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from acts.test_utils.bt import BtEnum
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
-from acts.test_utils.coex.coex_test_utils import connect_dev_to_headset
-from acts.test_utils.coex.coex_test_utils import connect_wlan_profile
-from acts.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
-from acts.test_utils.coex.coex_test_utils import initiate_disconnect_call_dut
-from acts.test_utils.coex.coex_test_utils import multithread_func
-from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
-from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
-from acts.test_utils.coex.coex_test_utils import toggle_screen_state
-from acts.test_utils.coex.coex_test_utils import setup_tel_config
-from acts.test_utils.coex.coex_test_utils import start_fping
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts_contrib.test_utils.coex.coex_test_utils import connect_dev_to_headset
+from acts_contrib.test_utils.coex.coex_test_utils import connect_wlan_profile
+from acts_contrib.test_utils.coex.coex_test_utils import initiate_disconnect_from_hf
+from acts_contrib.test_utils.coex.coex_test_utils import initiate_disconnect_call_dut
+from acts_contrib.test_utils.coex.coex_test_utils import multithread_func
+from acts_contrib.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts_contrib.test_utils.coex.coex_test_utils import perform_classic_discovery
+from acts_contrib.test_utils.coex.coex_test_utils import toggle_screen_state
+from acts_contrib.test_utils.coex.coex_test_utils import setup_tel_config
+from acts_contrib.test_utils.coex.coex_test_utils import start_fping
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 
 BLUETOOTH_WAIT_TIME = 2
 

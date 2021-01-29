@@ -20,7 +20,7 @@ import logging
 import time
 
 from acts.controllers.relay_lib.relay import SynchronizeRelays
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 log = logging
 

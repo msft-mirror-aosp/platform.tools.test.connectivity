@@ -17,9 +17,9 @@
     Test Script for Telephony Stress data Test
 """
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_test_utils import iperf_test_by_adb
-from acts.test_utils.tel.tel_test_utils import iperf_udp_test_by_adb
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import iperf_test_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import iperf_udp_test_by_adb
 
 
 class TelLiveStressDataTest(TelephonyBaseTest):

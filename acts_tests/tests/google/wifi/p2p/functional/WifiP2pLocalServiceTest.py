@@ -17,9 +17,9 @@
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
-from acts.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
-from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
+from acts_contrib.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
+from acts_contrib.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
+from acts_contrib.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 
 
 class WifiP2pLocalServiceTest(WifiP2pBaseTest):

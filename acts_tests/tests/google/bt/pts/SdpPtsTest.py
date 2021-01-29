@@ -16,14 +16,14 @@
 """
 SDP PTS Tests.
 """
-from acts.test_utils.abstract_devices.bluetooth_device import AndroidBluetoothDevice
-from acts.test_utils.abstract_devices.bluetooth_device import FuchsiaBluetoothDevice
-from acts.test_utils.bt.bt_constants import bt_attribute_values
-from acts.test_utils.bt.bt_constants import sig_uuid_constants
-from acts.test_utils.bt.pts.pts_base_class import PtsBaseClass
+from acts_contrib.test_utils.abstract_devices.bluetooth_device import AndroidBluetoothDevice
+from acts_contrib.test_utils.abstract_devices.bluetooth_device import FuchsiaBluetoothDevice
+from acts_contrib.test_utils.bt.bt_constants import bt_attribute_values
+from acts_contrib.test_utils.bt.bt_constants import sig_uuid_constants
+from acts_contrib.test_utils.bt.pts.pts_base_class import PtsBaseClass
 
-import acts.test_utils.bt.pts.fuchsia_pts_ics_lib as f_ics_lib
-import acts.test_utils.bt.pts.fuchsia_pts_ixit_lib as f_ixit_lib
+import acts_contrib.test_utils.bt.pts.fuchsia_pts_ics_lib as f_ics_lib
+import acts_contrib.test_utils.bt.pts.fuchsia_pts_ixit_lib as f_ixit_lib
 
 # SDP_RECORD Definition is WIP
 SDP_RECORD = {

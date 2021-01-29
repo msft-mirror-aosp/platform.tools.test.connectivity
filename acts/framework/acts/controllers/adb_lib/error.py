@@ -30,3 +30,7 @@ class AdbError(error.ActsError):
     def __str__(self):
         return ("Error executing adb cmd '%s'. ret: %d, stdout: %s, stderr: %s"
                 ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
+
+
+class AdbCommandError(AdbError):
+    """Raised when there is an error in the command being run through ADB."""

@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts.test_utils.power.PowerCoexBaseTest as PCoBT
+import acts_contrib.test_utils.power.PowerCoexBaseTest as PCoBT
 from acts.test_decorators import test_tracker_info
 
 

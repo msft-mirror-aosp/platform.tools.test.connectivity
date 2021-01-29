@@ -28,10 +28,10 @@ SL4A. The script does the following:
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.base_test import BaseTestClass
-from acts.test_utils.bt import bt_test_utils
-from acts.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt import bt_test_utils
+from acts_contrib.test_utils.bt import BtEnum
 from acts import asserts
 
 

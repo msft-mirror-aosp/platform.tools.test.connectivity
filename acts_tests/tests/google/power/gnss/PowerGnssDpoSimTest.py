@@ -14,9 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts.test_utils.power.PowerGnssBaseTest as GBT
-from acts.test_utils.gnss import dut_log_test_utils as diaglog
-from acts.test_utils.gnss import gnss_test_utils as gutil
+import acts_contrib.test_utils.power.PowerGnssBaseTest as GBT
+from acts_contrib.test_utils.gnss import dut_log_test_utils as diaglog
+from acts_contrib.test_utils.gnss import gnss_test_utils as gutil
 import time
 import os
 from acts import utils

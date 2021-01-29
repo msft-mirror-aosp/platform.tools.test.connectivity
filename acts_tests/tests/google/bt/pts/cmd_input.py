@@ -16,10 +16,10 @@
 """
 Python script for wrappers to various libraries.
 """
-from acts.test_utils.bt.bt_constants import bt_scan_mode_types
-from acts.test_utils.bt.bt_constants import gatt_server_responses
-import acts.test_utils.bt.gatt_test_database as gatt_test_database
-from acts.test_utils.bt.bt_carkit_lib import E2eBtCarkitLib
+from acts_contrib.test_utils.bt.bt_constants import bt_scan_mode_types
+from acts_contrib.test_utils.bt.bt_constants import gatt_server_responses
+import acts_contrib.test_utils.bt.gatt_test_database as gatt_test_database
+from acts_contrib.test_utils.bt.bt_carkit_lib import E2eBtCarkitLib
 
 import threading
 import time

@@ -25,8 +25,8 @@ CHANNEL_BANDWIDTH_160MHZ = 160
 WEP = 0
 WPA1 = 1
 WPA2 = 2
-WPA3 = 2  # same as wpa2, distinguished by wpa_key_mgmt
-MIXED = 3
+WPA3 = 2  # same as wpa2 and wpa2/wpa3, distinguished by wpa_key_mgmt
+MIXED = 3  # applies to wpa/wpa2, and wpa/wpa2/wpa3, distinquished by wpa_key_mgmt
 ENT = 4  # get the correct constant
 MAX_WPA_PSK_LENGTH = 64
 MIN_WPA_PSK_LENGTH = 8
@@ -36,13 +36,39 @@ WPA_DEFAULT_CIPHER = 'TKIP'
 WPA2_DEFAULT_CIPER = 'CCMP'
 WPA_GROUP_KEY_ROTATION_TIME = 600
 WPA_STRICT_REKEY_DEFAULT = True
+WEP_STRING = 'wep'
 WPA_STRING = 'wpa'
 WPA2_STRING = 'wpa2'
 WPA_MIXED_STRING = 'wpa/wpa2'
 WPA3_STRING = 'wpa3'
-WPA3_KEY_MGMT = 'SAE'
+WPA2_WPA3_MIXED_STRING = 'wpa2/wpa3'
+WPA_WPA2_WPA3_MIXED_STRING = 'wpa/wpa2/wpa3'
 ENT_STRING = 'ent'
 ENT_KEY_MGMT = 'WPA-EAP'
+WPA_PSK_KEY_MGMT = 'WPA-PSK'
+SAE_KEY_MGMT = 'SAE'
+DUAL_WPA_PSK_SAE_KEY_MGMT = 'WPA-PSK SAE'
+SECURITY_STRING_TO_SECURITY_MODE_INT = {
+    WPA_STRING: WPA1,
+    WPA2_STRING: WPA2,
+    WPA_MIXED_STRING: MIXED,
+    WPA3_STRING: WPA3,
+    WPA2_WPA3_MIXED_STRING: WPA3,
+    WPA_WPA2_WPA3_MIXED_STRING: MIXED,
+    WEP_STRING: WEP,
+    ENT_STRING: ENT
+}
+SECURITY_STRING_TO_WPA_KEY_MGMT = {
+    WPA_STRING: WPA_PSK_KEY_MGMT,
+    WPA2_STRING: WPA_PSK_KEY_MGMT,
+    WPA_MIXED_STRING: WPA_PSK_KEY_MGMT,
+    WPA3_STRING: SAE_KEY_MGMT,
+    WPA2_WPA3_MIXED_STRING: DUAL_WPA_PSK_SAE_KEY_MGMT,
+    WPA_WPA2_WPA3_MIXED_STRING: DUAL_WPA_PSK_SAE_KEY_MGMT
+}
+WPA3_MODE_STRINGS = {
+    WPA3_STRING, WPA2_WPA3_MIXED_STRING, WPA_WPA2_WPA3_MIXED_STRING
+}
 IEEE8021X = 1
 WLAN0_STRING = 'wlan0'
 WLAN1_STRING = 'wlan1'
@@ -50,7 +76,6 @@ WLAN2_STRING = 'wlan2'
 WLAN3_STRING = 'wlan3'
 WLAN0_GALE = 'wlan-2400mhz'
 WLAN1_GALE = 'wlan-5000mhz'
-WEP_STRING = 'wep'
 WEP_DEFAULT_KEY = 0
 WEP_HEX_LENGTH = [10, 26, 32, 58]
 WEP_STR_LENGTH = [5, 13, 16]
@@ -141,6 +166,8 @@ US_CHANNELS_5G = [
     36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128,
     132, 136, 140, 144, 149, 153, 157, 161, 165
 ]
+
+LOWEST_5G_CHANNEL = 36
 
 MODE_11A = 'a'
 MODE_11B = 'b'
@@ -406,6 +433,82 @@ WMM_NON_DEFAULT_PARAMS = {
     'wmm_ac_vo_cwmin': 6,
     'wmm_ac_vo_cwmax': 10,
     'wmm_ac_vo_txop_limit': 94
+}
+
+WMM_DEGRADED_VO_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 2,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 2,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 2,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 10,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
+}
+
+WMM_DEGRADED_VI_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 2,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 2,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 10,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 2,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
+}
+
+WMM_IMPROVE_BE_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 10,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 2,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 10,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 10,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
+}
+
+WMM_IMPROVE_BK_PARAMS = {
+    'wmm_ac_bk_cwmin': 7,
+    'wmm_ac_bk_cwmax': 15,
+    'wmm_ac_bk_aifs': 2,
+    'wmm_ac_bk_txop_limit': 0,
+    'wmm_ac_be_aifs': 10,
+    'wmm_ac_be_cwmin': 7,
+    'wmm_ac_be_cwmax': 15,
+    'wmm_ac_be_txop_limit': 0,
+    'wmm_ac_vi_aifs': 10,
+    'wmm_ac_vi_cwmin': 7,
+    'wmm_ac_vi_cwmax': 15,
+    'wmm_ac_vi_txop_limit': 94,
+    'wmm_ac_vo_aifs': 10,
+    'wmm_ac_vo_cwmin': 7,
+    'wmm_ac_vo_cwmax': 15,
+    'wmm_ac_vo_txop_limit': 47
 }
 
 WMM_ACM_BK = {'wmm_ac_bk_acm': 1}

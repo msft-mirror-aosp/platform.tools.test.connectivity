@@ -23,19 +23,19 @@ from queue import Empty
 import concurrent.futures
 import threading
 import time
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts.test_utils.bt.bt_constants import bt_profile_constants
-from acts.test_utils.bt.bt_constants import gatt_characteristic
-from acts.test_utils.bt.bt_constants import gatt_characteristic_value_format
-from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
-from acts.test_utils.bt.bt_constants import gatt_descriptor
-from acts.test_utils.bt.bt_constants import gatt_service_types
-from acts.test_utils.bt.bt_constants import scan_result
-from acts.test_utils.bt.bt_gatt_utils import run_continuous_write_descriptor
-from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
-from acts.test_utils.bt.gatts_lib import GattServerLib
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import bt_profile_constants
+from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
+from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic_value_format
+from acts_contrib.test_utils.bt.bt_constants import gatt_char_desc_uuids
+from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
+from acts_contrib.test_utils.bt.bt_constants import gatt_service_types
+from acts_contrib.test_utils.bt.bt_constants import scan_result
+from acts_contrib.test_utils.bt.bt_gatt_utils import run_continuous_write_descriptor
+from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_connection
+from acts_contrib.test_utils.bt.gatts_lib import GattServerLib
 from acts.test_decorators import test_tracker_info
 
 service_uuid = '0000a00a-0000-1000-8000-00805f9b34fb'

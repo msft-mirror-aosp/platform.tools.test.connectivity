@@ -19,51 +19,54 @@ import time
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
+from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
     TelephonyVoiceTestResult
-from acts.test_utils.tel.loggers.telephony_metric_logger import \
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import \
     TelephonyMetricLogger
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
-from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
+    get_incoming_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
-from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_subid_on_same_network_of_host_ad
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import \
     sms_send_receive_verify_for_subscription
-from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
-from acts.test_utils.tel.tel_test_utils import log_messaging_screen_shot
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_csfb_for_subscription
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_voice_3g_for_subscription
-from acts.test_utils.tel.tel_voice_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    sms_in_collision_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    sms_rx_power_off_multiple_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    voice_call_in_collision_with_mt_sms_msim
+from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
+from acts_contrib.test_utils.tel.tel_test_utils import log_messaging_screen_shot
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_voice_utils import \
     phone_setup_voice_general_for_subscription
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_volte_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts.utils import rand_ascii_str
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
-        self.message_lengths = (50, 160, 180)
-        self.tel_logger = TelephonyMetricLogger.for_test_case()
-
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        self.message_lengths = (50, 160, 180)
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
@@ -133,6 +136,116 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
                           msg, self.message_lengths)
         return True
 
+    def _msim_sms_collision_test(
+        self,
+        ad_mo,
+        ad_mo2,
+        ad_mt,
+        ad_mt2,
+        mo1_sub_id,
+        mo2_sub_id,
+        mt_sub_id,
+        mt2_sub_id):
+        """Send 2 SMS' at the same time. SMS collision can be met when both SMS'
+        are sent to the same recipient.
+
+        Args:
+            ad_mo: Android object of the device sending SMS
+            ad_mo2: Android object of the device sending SMS
+            ad_mt: Android object of the device receiving SMS
+            ad_mt2: Android object of the device receiving SMS
+            mo1_sub_id: Sub ID of ad_mo
+            mo2_sub_id: Sub ID of ad_mo2
+            mt_sub_id: Sub ID of ad_mt
+            mt2_sub_id: Sub ID of ad_mt2
+
+        Returns:
+            True if both SMS' are sent and received successfully and False on
+            the contrary.
+        """
+        for length in self.message_lengths:
+            message_array = [rand_ascii_str(length)]
+            message_array2 = [rand_ascii_str(length)]
+            if not sms_in_collision_send_receive_verify_for_subscription(
+                self.log,
+                ad_mo,
+                ad_mo2,
+                ad_mt,
+                ad_mt2,
+                mo1_sub_id,
+                mo2_sub_id,
+                mt_sub_id,
+                mt2_sub_id,
+                message_array,
+                message_array2):
+                self.log.warning(
+                    "Test of SMS collision with length %s failed", length)
+                return False
+            else:
+                self.log.info(
+                    "Test of SMS collision with length %s succeeded", length)
+        self.log.info(
+            "Test of SMS collision with lengths %s characters succeeded.",
+            self.message_lengths)
+        return True
+
+    def _msim_rx_power_off_multiple_sms_test(
+        self,
+        ad_mo,
+        ad_mo2,
+        ad_mt,
+        mo1_sub_id,
+        mo2_sub_id,
+        mt_sub_id,
+        mt2_sub_id,
+        num_array_message,
+        num_array_message2):
+        """Power off the recipient and then send 2 SMS'. Make sure all SMS' can
+        be received correctly after the recipient is poweron on again.
+
+        Args:
+            ad_mo: Android object of the device sending SMS
+            ad_mo2: Android object of the device sending SMS
+            ad_mt: Android object of the device receiving SMS
+            mo1_sub_id: Sub ID of ad_mo
+            mo2_sub_id: Sub ID of ad_mo2
+            mt_sub_id: Sub ID of ad_mt
+            mt2_sub_id: Sub ID of ad_mt2
+            num_array_message: Number of messages to be sent by ad_mo
+            num_array_message2: Number of messages to be sent by ad_mo2
+
+        Returns:
+            True if all SMS' are sent and received successfully and False on
+            the contrary.
+        """
+        for length in self.message_lengths:
+            if not sms_rx_power_off_multiple_send_receive_verify_for_subscription(
+                self.log,
+                ad_mo,
+                ad_mo2,
+                ad_mt,
+                mo1_sub_id,
+                mo2_sub_id,
+                mt_sub_id,
+                mt2_sub_id,
+                length,
+                length,
+                num_array_message,
+                num_array_message2):
+                self.log.warning(
+                    "Test of multiple SMS with length %s during rx power off"
+                    " failed.", length)
+                return False
+            else:
+                self.log.info(
+                    "Test of multiple SMS with length %s during rx power off"
+                    " succeeded.", length)
+        self.log.info(
+            "Test of multiple SMS with lengths %s characters during rx power"
+            "off succeeded.", self.message_lengths)
+        return True
+
+
     def _test_msim_message(
             self,
             mo_slot,
@@ -181,7 +294,7 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
                 return False
             mo_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_mo, 1-mo_slot)
-            set_subid_for_message(ad_mo, mo_sub_id)
+            set_message_subid(ad_mo, mo_sub_id)
         else:
             _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
                 ads, type="sms")
@@ -189,7 +302,7 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
                 ad_mo.log.warning("Failed to get sub ID at slot %s.", mo_slot)
                 return False
             mo_slot = "auto"
-            set_subid_for_message(ad_mo, mo_sub_id)
+            set_message_subid(ad_mo, mo_sub_id)
             if msg == "MMS":
                 set_subid_for_data(ad_mo, mo_sub_id)
                 ad_mo.droid.telephonyToggleDataConnection(True)
@@ -203,7 +316,7 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
                 return False
             mt_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_mt, 1-mt_slot)
-            set_subid_for_message(ad_mt, mt_sub_id)
+            set_message_subid(ad_mt, mt_sub_id)
         else:
             _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
                 ads, type="sms")
@@ -211,7 +324,7 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
                 ad_mt.log.warning("Failed to get sub ID at slot %s.", mt_slot)
                 return False
             mt_slot = "auto"
-            set_subid_for_message(ad_mt, mt_sub_id)
+            set_message_subid(ad_mt, mt_sub_id)
             if msg == "MMS":
                 set_subid_for_data(ad_mt, mt_sub_id)
                 ad_mt.droid.telephonyToggleDataConnection(True)
@@ -243,105 +356,31 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         else:
             self.log.info("Verify http connection successfully.")
 
-        if mo_rat[0] == "volte":
-            mo_slot0_phone_setup_func = phone_setup_volte_for_subscription
-        elif mo_rat[0] == "csfb":
-            mo_slot0_phone_setup_func = phone_setup_csfb_for_subscription
-        elif mo_rat[0] == "3g":
-            mo_slot0_phone_setup_func = phone_setup_voice_3g_for_subscription
-        elif not mo_rat[0] or mo_rat[0] == "general":
-            mo_slot0_phone_setup_func = \
-                phone_setup_voice_general_for_subscription
+        if mo_slot == 0 or mo_slot == 1:
+            phone_setup_on_rat(self.log, ad_mo, mo_rat[1-mo_slot], mo_other_sub_id)
+        else:
+            phone_setup_on_rat(self.log, ad_mo, 'general', sub_id_type='sms')
 
-        if mo_rat[1] == "volte":
-            mo_slot1_phone_setup_func = phone_setup_volte_for_subscription
-        elif mo_rat[1] == "csfb":
-            mo_slot1_phone_setup_func = phone_setup_csfb_for_subscription
-        elif mo_rat[1] == "3g":
-            mo_slot1_phone_setup_func = phone_setup_voice_3g_for_subscription
-        elif not mo_rat[1] or mo_rat[1] == "general":
-            mo_slot1_phone_setup_func = \
-                phone_setup_voice_general_for_subscription
+        if mt_slot == 0 or mt_slot == 1:
+            phone_setup_on_rat(self.log, ad_mt, mt_rat[1-mt_slot], mt_other_sub_id)
+        else:
+            phone_setup_on_rat(self.log, ad_mt, 'general', sub_id_type='sms')
 
-        if mt_rat[0] == "volte":
-            mt_slot0_phone_setup_func = phone_setup_volte_for_subscription
-        elif mt_rat[0] == "csfb":
-            mt_slot0_phone_setup_func = phone_setup_csfb_for_subscription
-        elif mt_rat[0] == "3g":
-            mt_slot0_phone_setup_func = phone_setup_voice_3g_for_subscription
-        elif not mt_rat[0] or mt_rat[0] == "general":
-            mt_slot0_phone_setup_func = \
-                phone_setup_voice_general_for_subscription
-
-        if mt_rat[1] == "volte":
-            mt_slot1_phone_setup_func = phone_setup_volte_for_subscription
-        elif mt_rat[1] == "csfb":
-            mt_slot1_phone_setup_func = phone_setup_csfb_for_subscription
-        elif mt_rat[1] == "3g":
-            mt_slot1_phone_setup_func = phone_setup_voice_3g_for_subscription
-        elif not mt_rat[1] or mt_rat[1] == "general":
-            mt_slot1_phone_setup_func = \
-                phone_setup_voice_general_for_subscription
-
-        if mo_slot == 1:
-            mo_phone_setup_func = mo_slot1_phone_setup_func
-            if mo_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif not mo_rat[0] or mo_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-        elif mo_slot == 0:
-            mo_phone_setup_func = mo_slot0_phone_setup_func
-            if mo_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif not mo_rat[1] or mo_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
+        if mo_slot == 0 or mo_slot == 1:
+            mo_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad_mo,
+                mo_rat[mo_slot],
+                only_return_fn=True)
         else:
             mo_phone_setup_func = phone_setup_voice_general_for_subscription
 
-        if mt_slot == 1:
-            mt_phone_setup_func = mt_slot1_phone_setup_func
-            if mt_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif not mt_rat[0] or mt_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-        elif mt_slot == 0:
-            mt_phone_setup_func = mt_slot0_phone_setup_func
-            if mt_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif not mt_rat[1] or mt_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
+        if mt_slot == 0 or mt_slot == 1:
+            mt_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad_mt,
+                mt_rat[mt_slot],
+                only_return_fn=True)
         else:
             mt_phone_setup_func = phone_setup_voice_general_for_subscription
 
@@ -379,6 +418,245 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
             log_messaging_screen_shot(ad_mt, test_name="%s_rx" % msg)
 
         return result
+
+
+    def _test_msim_voice_call_in_collision_with_mt_sms(
+            self,
+            mo_voice_slot,
+            mt_sms_slot,
+            dds_slot,
+            rat=["", ""],
+            call_direction="mo"):
+        """Make MO/MT voice call in collision with MT SMS at specific slot in
+        specific RAT with DDS at specific slot.
+
+        Args:
+            mo_voice_slot: Slot for voice call. 0 for pSIM or 1 for eSIM
+            mt_sms_slot: Slot for MT SMS. 0 for pSIM or 1 for eSIM
+            dds_slot: Preferred data slot
+            rat: RAT for both slots of the primary device
+            call_direction: "mo" or "mt"
+
+        Returns:
+            True or False
+        """
+        ads = self.android_devices
+        ad = ads[0]
+        ad_mo_sms = ads[2]
+        ad_mt_voice = ads[1]
+
+        mo_voice_sub_id = get_subid_from_slot_index(self.log, ad, mo_voice_slot)
+        if mo_voice_sub_id == INVALID_SUB_ID:
+            ad.log.warning("Failed to get sub ID ar slot %s.", mo_voice_slot)
+            return False
+        mo_voice_other_sub_id = get_subid_from_slot_index(
+            self.log, ad, 1-mo_voice_slot)
+        set_voice_sub_id(ad, mo_voice_sub_id)
+
+        _, mt_voice_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
+        set_voice_sub_id(ad_mt_voice, mt_voice_sub_id)
+        ad_mt_voice.log.info("Sub ID for incoming call at slot %s: %s",
+            get_slot_index_from_subid(self.log, ad_mt_voice, mt_voice_sub_id),
+            get_incoming_voice_sub_id(ad_mt_voice))
+
+        set_message_subid(
+            ad, get_subid_from_slot_index(self.log, ad, mt_sms_slot))
+
+        self.log.info("Step 1: Switch DDS.")
+        if dds_slot:
+            if not set_dds_on_slot_1(ads[0]):
+                ads[0].log.warning("Failed to set DDS at eSIM.")
+                return False
+        else:
+            if not set_dds_on_slot_0(ads[0]):
+                ads[0].log.warning("Failed to set DDS at pSIM.")
+                return False
+
+        self.log.info("Step 2: Check HTTP connection after DDS switch.")
+        if not verify_http_connection(self.log,
+           ads[0],
+           url="https://www.google.com",
+           retry=5,
+           retry_interval=15,
+           expected_state=True):
+
+            self.log.error("Failed to verify http connection.")
+            return False
+        else:
+            self.log.info("Verify http connection successfully.")
+
+        phone_setup_on_rat(
+            self.log, ad, rat[1-mo_voice_slot], mo_voice_other_sub_id)
+        phone_setup_on_rat(self.log, ad, 'general')
+        phone_setup_on_rat(self.log, ad_mt_voice, 'general')
+        phone_setup_on_rat(self.log, ad_mo_sms, 'general', sub_id_type='sms')
+
+        if mo_voice_slot == 0 or mo_voice_slot == 1:
+            mo_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad,
+                rat[mo_voice_slot],
+                only_return_fn=True)
+
+        is_mo_in_call = is_phone_in_call_on_rat(
+            self.log, ad, rat[mo_voice_slot], only_return_fn=True)
+
+        self.log.info("Step 3: Set up the phone in desired RAT.")
+        tasks = [(mo_phone_setup_func, (self.log, ad, mo_voice_sub_id))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        self.log.info("Step 4: Make a MO voice call in collision with MT SMS.")
+        result = voice_call_in_collision_with_mt_sms_msim(
+            self.log,
+            ad,
+            ad_mo_sms,
+            ad_mt_voice,
+            get_subid_from_slot_index(self.log, ad, mt_sms_slot),
+            get_outgoing_message_sub_id(ad_mo_sms),
+            mo_voice_sub_id,
+            mt_voice_sub_id,
+            [rand_ascii_str(50)],
+            ad,
+            is_mo_in_call,
+            None,
+            call_direction)
+
+        call_result = True
+        sms_result = True
+
+        try:
+            self.tel_logger.set_result(result.result_value)
+            if not result:
+                call_result = False
+        except:
+            sms_result = False
+
+        extras = {}
+        if not sms_result:
+            log_messaging_screen_shot(ad_mo_sms, test_name="sms_tx")
+            log_messaging_screen_shot(ad, test_name="sms_rx")
+            extras = {"sms_fail_reason": "SMS failed"}
+
+        if not call_result:
+            self.log.error(
+                "Failed to make MO call from %s slot %s to %s slot %s",
+                ad.serial,
+                mo_voice_slot,
+                ad_mt_voice.serial,
+                get_slot_index_from_subid(
+                    self.log, ad_mt_voice, mt_voice_sub_id))
+            extras = {"call_fail_reason": str(result.result_value)}
+
+        if not sms_result or not call_result:
+            raise signals.TestFailure("Failed", extras=extras)
+
+        return True
+
+    def multiple_mt_sms(
+        self,
+        slot_0_nw_gen="volte",
+        slot_1_nw_gen="volte",
+        power_off=False):
+        """Receive multiple MT SMS' at the same time at specific slot in specific
+        RAT to make SMS collision.
+
+        Args:
+            slot_0_nw_gen: Network generation (RAT) at pSIM
+            slot_1_nw_gen: Network generation (RAT) at eSIM
+            power_off: True if MT SMS' have to be sent when target DUT is
+            power-off.
+
+        Returns:
+            True of False
+        """
+        ad = self.android_devices[0]
+        slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
+        slot_1_subid = get_subid_from_slot_index(ad.log, ad, 1)
+
+        if slot_0_subid == INVALID_SUB_ID or slot_1_subid == INVALID_SUB_ID:
+            self.log.error("Not all slots have valid sub ID.")
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Not all slots have valid sub ID"})
+
+        slot0_phone_setup_func = phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_0_nw_gen,
+            only_return_fn=True)
+
+        tasks = [(slot0_phone_setup_func, (self.log, ad, slot_0_subid))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        slot1_phone_setup_func = phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_1_nw_gen,
+            only_return_fn=True)
+
+        tasks = [(slot1_phone_setup_func, (self.log, ad, slot_1_subid))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        ad_host = self.android_devices[0]
+        ad_mo_1 = self.android_devices[1]
+        ad_mo_2 = self.android_devices[2]
+
+        for host_sub_id in [
+            [slot_0_subid, slot_1_subid],
+            [slot_1_subid, slot_0_subid]]:
+            _, mo1_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                self.android_devices, host_sub_id=host_sub_id[0])
+            set_message_subid(ad_mo_1, mo1_sub_id)
+
+            _, _, mo2_sub_id = get_subid_on_same_network_of_host_ad(
+                self.android_devices, host_sub_id=host_sub_id[1])
+            set_message_subid(ad_mo_2, mo2_sub_id)
+
+            if power_off:
+                res = self._msim_rx_power_off_multiple_sms_test(
+                    ad_mo_1,
+                    ad_mo_2,
+                    ad_host,
+                    mo1_sub_id,
+                    mo2_sub_id,
+                    host_sub_id[0],
+                    host_sub_id[1],
+                    5,
+                    5)
+            else:
+                res = self._msim_sms_collision_test(
+                    ad_mo_1,
+                    ad_mo_2,
+                    ad_host,
+                    ad_host,
+                    mo1_sub_id,
+                    mo2_sub_id,
+                    host_sub_id[0],
+                    host_sub_id[1])
+
+            if not res:
+                log_messaging_screen_shot(
+                    ad_host, test_name="sms rx subid: %s" % host_sub_id[0])
+                log_messaging_screen_shot(
+                    ad_host, test_name="sms rx subid: %s" % host_sub_id[1])
+                log_messaging_screen_shot(
+                    ad_mo_1, test_name="sms tx subid: %s" % mo1_sub_id)
+                log_messaging_screen_shot(
+                    ad_mo_2, test_name="sms tx subid: %s" % mo2_sub_id)
+
+                return False
+        return True
 
     @test_tracker_info(uuid="4ae61fdf-2078-4e50-ae03-cb2e9299ce8d")
     @TelephonyBaseTest.tel_test_wrap
@@ -428,8 +706,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["volte", "volte"], msg="SMS", direction="mt")
 
-
-
     @test_tracker_info(uuid="5ede96ed-78b5-4cfb-94a3-44c34d610bef")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_sms_mo_volte_csfb_psim_dds_slot_0(self):
@@ -477,9 +753,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_sms_mt_volte_csfb_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["volte", "csfb"], msg="SMS", direction="mt")
-
-
-
 
     @test_tracker_info(uuid="c7645032-8006-448e-ae3e-86c9223482cf")
     @TelephonyBaseTest.tel_test_wrap
@@ -529,9 +802,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["csfb", "volte"], msg="SMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="a5f2c1b0-5ae7-4187-ad63-4782dc47f62b")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_sms_mo_volte_3g_psim_dds_slot_0(self):
@@ -579,9 +849,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_sms_mt_volte_3g_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["volte", "3g"], msg="SMS", direction="mt")
-
-
-
 
     @test_tracker_info(uuid="c1084606-a63b-41da-a0cb-2db972b6a8ce")
     @TelephonyBaseTest.tel_test_wrap
@@ -631,8 +898,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["3g", "volte"], msg="SMS", direction="mt")
 
-
-
     @test_tracker_info(uuid="b9a5cb40-4986-4811-90e7-628d1729ccb2")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_sms_mo_csfb_psim_dds_slot_0(self):
@@ -680,9 +945,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_sms_mt_csfb_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["csfb", "csfb"], msg="SMS", direction="mt")
-
-
-
 
     @test_tracker_info(uuid="a42994d0-bdb3-487e-98f2-665899d3edba")
     @TelephonyBaseTest.tel_test_wrap
@@ -732,9 +994,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["csfb", "3g"], msg="SMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="9a3d1330-e70e-4ac0-a8bc-fec5710a8dcd")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_sms_mo_3g_csfb_psim_dds_slot_0(self):
@@ -782,9 +1041,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_sms_mt_3g_csfb_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["3g", "csfb"], msg="SMS", direction="mt")
-
-
-
 
     @test_tracker_info(uuid="947ceba7-9aeb-402c-ba36-4856bc4352eb")
     @TelephonyBaseTest.tel_test_wrap
@@ -834,9 +1090,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["3g", "3g"], msg="SMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="24268e9f-b047-4c67-92f9-22e0bd8b3a11")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_mms_mo_volte_psim_dds_slot_0(self):
@@ -884,8 +1137,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_mms_mt_volte_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["volte", "volte"], msg="MMS", direction="mt")
-
-
 
     @test_tracker_info(uuid="50ee8103-0196-4194-b982-9d07c68e57e4")
     @TelephonyBaseTest.tel_test_wrap
@@ -935,9 +1186,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["volte", "csfb"], msg="MMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="eeaa1262-c2a0-4f47-baa5-7435fa9e9315")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_mms_mo_csfb_volte_psim_dds_slot_0(self):
@@ -985,8 +1233,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_mms_mt_csfb_volte_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["csfb", "volte"], msg="MMS", direction="mt")
-
-
 
     @test_tracker_info(uuid="5057f8e4-19e7-42c0-bc63-1678d8ce1504")
     @TelephonyBaseTest.tel_test_wrap
@@ -1036,9 +1282,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["volte", "3g"], msg="MMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="1dcebefb-3338-4550-96fa-07b64493db1c")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_mms_mo_3g_volte_psim_dds_slot_0(self):
@@ -1086,9 +1329,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_mms_mt_3g_volte_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["3g", "volte"], msg="MMS", direction="mt")
-
-
-
 
     @test_tracker_info(uuid="35d33d3e-f618-4ce1-8b40-3dac0ef2731a")
     @TelephonyBaseTest.tel_test_wrap
@@ -1138,9 +1378,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["csfb", "csfb"], msg="MMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="a35df875-72eb-43d7-874c-a7b3f0aea2a9")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_mms_mo_csfb_3g_psim_dds_slot_0(self):
@@ -1188,8 +1425,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_mms_mt_csfb_3g_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["csfb", "3g"], msg="MMS", direction="mt")
-
-
 
     @test_tracker_info(uuid="a53ebb84-945e-4068-a78a-fd78362e8073")
     @TelephonyBaseTest.tel_test_wrap
@@ -1239,9 +1474,6 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["3g", "csfb"], msg="MMS", direction="mt")
 
-
-
-
     @test_tracker_info(uuid="2efdf7da-d2ec-4580-a164-5f7b740f9ac6")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_mms_mo_3g_psim_dds_slot_0(self):
@@ -1289,3 +1521,145 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
     def test_msim_mms_mt_3g_esim_dds_slot_1(self):
         return self._test_msim_message(
             None, 1, 1, mt_rat=["3g", "3g"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="207a23b7-17f1-4e27-892d-6c276f463b07")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_mt_at_the_same_time(
+        self,
+        slot_0_nw_gen="volte",
+        slot_1_nw_gen="volte"):
+        ad = self.android_devices[0]
+        slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
+        slot_1_subid = get_subid_from_slot_index(ad.log, ad, 1)
+
+        if slot_0_subid == INVALID_SUB_ID or slot_1_subid == INVALID_SUB_ID:
+            self.log.error("Not all slots have valid sub ID.")
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Not all slots have valid sub ID"})
+
+        slot0_phone_setup_func = phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_0_nw_gen,
+            only_return_fn=True)
+
+        tasks = [(slot0_phone_setup_func, (self.log, ad, slot_0_subid))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        slot1_phone_setup_func = phone_setup_on_rat(
+            self.log,
+            ad,
+            slot_1_nw_gen,
+            only_return_fn=True)
+
+        tasks = [(slot1_phone_setup_func, (self.log, ad, slot_1_subid))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+        ad_host = self.android_devices[0]
+        ad_mt = self.android_devices[1]
+        ad_mo = self.android_devices[2]
+
+        for ads in [[slot_0_subid, slot_1_subid], [slot_1_subid, slot_0_subid]]:
+            set_message_subid(ad_host, ads[0])
+            _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                self.android_devices, host_sub_id=ads[0])
+
+            _, _, mo_sub_id = get_subid_on_same_network_of_host_ad(
+                self.android_devices, host_sub_id=ads[1])
+            set_message_subid(ad_mo, mo_sub_id)
+
+            res = self._msim_sms_collision_test(
+                ad_host,
+                ad_mo,
+                ad_mt,
+                ad_host,
+                ads[0],
+                mo_sub_id,
+                mt_sub_id,
+                ads[1])
+
+            if not res:
+                log_messaging_screen_shot(
+                    ad_host,
+                    test_name="sms tx subid: %s; sms rx subid: %s" % (
+                        ads[0], ads[1]))
+                log_messaging_screen_shot(
+                    ad_mo, test_name="sms tx subid: %s" % mo_sub_id)
+                log_messaging_screen_shot(
+                    ad_mt, test_name="sms rx subid: %s" % mt_sub_id)
+
+                return False
+
+    @test_tracker_info(uuid="e0483de8-f760-4e40-a451-a867c7f94d3a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_at_both_slots_at_the_same_time(
+        self,
+        slot_0_nw_gen="volte",
+        slot_1_nw_gen="volte"):
+        return self.multiple_mt_sms(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            power_off=False)
+
+    @test_tracker_info(uuid="6594e5b5-6baf-4f1e-865b-0ea70ef23aee")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_at_both_slots_when_power_off(
+        self,
+        slot_0_nw_gen="volte",
+        slot_1_nw_gen="volte"):
+        return self.multiple_mt_sms(
+            slot_0_nw_gen="volte",
+            slot_1_nw_gen="volte",
+            power_off=True)
+
+    @test_tracker_info(uuid="13dfe0a1-c393-4c1a-b636-ac39d47a70b5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_interworking_between_mo_voice_call_in_collision_with_mt_sms(self):
+        result = True
+        self.log.info("Scenario 1: MO voice call at slot 0 & MT SMS at slot 0")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            0, 0, 0, rat=["volte", "volte"], call_direction="mo"):
+            result =  False
+        self.log.info("Scenario 2: MO voice call at slot 0 & MT SMS at slot 1")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            0, 1, 0, rat=["volte", "volte"], call_direction="mo"):
+            result =  False
+        self.log.info("Scenario 3: MO voice call at slot 1 & MT SMS at slot 0")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            1, 0, 0, rat=["volte", "volte"], call_direction="mo"):
+            result =  False
+        self.log.info("Scenario 1: MO voice call at slot 1 & MT SMS at slot 1")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            1, 1, 0, rat=["volte", "volte"], call_direction="mo"):
+            result =  False
+        return result
+
+    @test_tracker_info(uuid="a5c90676-c2ba-4ac6-b639-8f895d98480c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_interworking_between_mt_voice_call_in_collision_with_mt_sms(self):
+        result = True
+        self.log.info("Scenario 1: MT voice call at slot 0 & MT SMS at slot 0")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            0, 0, 0, rat=["volte", "volte"], call_direction="mt"):
+            result =  False
+        self.log.info("Scenario 2: MT voice call at slot 0 & MT SMS at slot 1")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            0, 1, 0, rat=["volte", "volte"], call_direction="mt"):
+            result =  False
+        self.log.info("Scenario 3: MT voice call at slot 1 & MT SMS at slot 0")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            1, 0, 0, rat=["volte", "volte"], call_direction="mt"):
+            result =  False
+        self.log.info("Scenario 4: MT voice call at slot 1 & MT SMS at slot 1")
+        if not self._test_msim_voice_call_in_collision_with_mt_sms(
+            1, 1, 0, rat=["volte", "volte"], call_direction="mt"):
+            result =  False
+        return result

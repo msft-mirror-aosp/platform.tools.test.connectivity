@@ -25,10 +25,10 @@ from acts import asserts
 from acts.controllers import attenuator
 from acts.controllers.sl4a_lib import rpc_client
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net.net_test_utils import start_tcpdump, stop_tcpdump
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.net.net_test_utils import start_tcpdump, stop_tcpdump
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import stop_standing_subprocess
 
 TCPDUMP_PATH = '/data/local/tmp/tcpdump'

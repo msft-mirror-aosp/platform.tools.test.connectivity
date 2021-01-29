@@ -14,13 +14,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import gatt_characteristic
-from acts.test_utils.bt.bt_constants import gatt_descriptor
-from acts.test_utils.bt.bt_constants import gatt_service_types
-from acts.test_utils.bt.bt_constants import gatt_characteristic_value_format
-from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
-from acts.test_utils.bt.gatts_lib import GattServerLib
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
+from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
+from acts_contrib.test_utils.bt.bt_constants import gatt_service_types
+from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic_value_format
+from acts_contrib.test_utils.bt.bt_constants import gatt_char_desc_uuids
+from acts_contrib.test_utils.bt.gatts_lib import GattServerLib
 
 service_uuid = '0000a00a-0000-1000-8000-00805f9b34fb'
 characteristic_uuid = 'aa7edd5a-4d1d-4f0e-883a-d145616a1630'

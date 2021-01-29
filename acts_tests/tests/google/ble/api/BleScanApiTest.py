@@ -22,12 +22,12 @@ then other test suites utilising Ble Scanner will also fail.
 
 from acts.controllers.sl4a_lib import rpc_client
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_result_types
-from acts.test_utils.bt.bt_constants import ble_scan_settings_report_delay_milli_seconds
-from acts.test_utils.bt.bt_constants import ble_uuids
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_result_types
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_report_delay_milli_seconds
+from acts_contrib.test_utils.bt.bt_constants import ble_uuids
 
 
 class BleScanResultsError(Exception):

@@ -18,7 +18,7 @@ import pprint
 import queue
 
 import acts.base_test
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 from acts import asserts
 from acts.controllers.sl4a_lib import rpc_client

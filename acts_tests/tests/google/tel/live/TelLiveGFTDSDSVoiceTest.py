@@ -17,56 +17,42 @@
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
+from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
     TelephonyVoiceTestResult
-from acts.test_utils.tel.loggers.telephony_metric_logger import \
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import \
     TelephonyMetricLogger
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
-from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
+from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
-from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_subid_on_same_network_of_host_ad
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_csfb_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_voice_3g_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts.test_utils.tel.tel_voice_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_voice_utils import \
     phone_setup_voice_general_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_voice_utils import \
-    phone_setup_volte_for_subscription
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
-        self.tel_logger = TelephonyMetricLogger.for_test_case()
-
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
@@ -122,14 +108,14 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
                 return False
             mo_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_mo, 1-mo_slot)
-            set_incoming_voice_sub_id(ad_mo, mo_sub_id)
+            set_voice_sub_id(ad_mo, mo_sub_id)
         else:
             _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
             if mo_sub_id == INVALID_SUB_ID:
                 ad_mo.log.warning("Failed to get sub ID ar slot %s.", mo_slot)
                 return False
             mo_slot = "auto"
-            set_incoming_voice_sub_id(ad_mo, mo_sub_id)
+            set_voice_sub_id(ad_mo, mo_sub_id)
         ad_mo.log.info("Sub ID for outgoing call at slot %s: %s",
             mo_slot, get_outgoing_voice_sub_id(ad_mo))
 
@@ -140,14 +126,14 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
                 return False
             mt_other_sub_id = get_subid_from_slot_index(
                 self.log, ad_mt, 1-mt_slot)
-            set_incoming_voice_sub_id(ad_mt, mt_sub_id)
+            set_voice_sub_id(ad_mt, mt_sub_id)
         else:
             _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
             if mt_sub_id == INVALID_SUB_ID:
                 ad_mt.log.warning("Failed to get sub ID at slot %s.", mt_slot)
                 return False
             mt_slot = "auto"
-            set_incoming_voice_sub_id(ad_mt, mt_sub_id)
+            set_voice_sub_id(ad_mt, mt_sub_id)
         ad_mt.log.info("Sub ID for incoming call at slot %s: %s", mt_slot,
             get_incoming_voice_sub_id(ad_mt))
 
@@ -174,129 +160,39 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
         else:
             self.log.info("Verify http connection successfully.")
 
-        if mo_rat[0] == "volte":
-            mo_slot0_phone_setup_func = phone_setup_volte
-            is_mo_slot0_in_call = is_phone_in_call_volte
-        elif mo_rat[0] == "csfb":
-            mo_slot0_phone_setup_func = phone_setup_csfb
-            is_mo_slot0_in_call = is_phone_in_call_csfb
-        elif mo_rat[0] == "3g":
-            mo_slot0_phone_setup_func = phone_setup_voice_3g
-            is_mo_slot0_in_call = is_phone_in_call_3g
-        elif not mo_rat[0] or mo_rat[0] == "general":
-            mo_slot0_phone_setup_func = phone_setup_voice_general
-            is_mo_slot0_in_call = None
-
-        if mo_rat[1] == "volte":
-            mo_slot1_phone_setup_func = phone_setup_volte
-            is_mo_slot1_in_call = is_phone_in_call_volte
-        elif mo_rat[1] == "csfb":
-            mo_slot1_phone_setup_func = phone_setup_csfb
-            is_mo_slot1_in_call = is_phone_in_call_csfb
-        elif mo_rat[1] == "3g":
-            mo_slot1_phone_setup_func = phone_setup_voice_3g
-            is_mo_slot1_in_call = is_phone_in_call_3g
-        elif not mo_rat[1] or mo_rat[1] == "general":
-            mo_slot1_phone_setup_func = phone_setup_voice_general
-            is_mo_slot1_in_call = None
-
-        if mt_rat[0] == "volte":
-            mt_slot0_phone_setup_func = phone_setup_volte
-            is_mt_slot0_in_call = is_phone_in_call_volte
-        elif mt_rat[0] == "csfb":
-            mt_slot0_phone_setup_func = phone_setup_csfb
-            is_mt_slot0_in_call = is_phone_in_call_csfb
-        elif mt_rat[0] == "3g":
-            mt_slot0_phone_setup_func = phone_setup_voice_3g
-            is_mt_slot0_in_call = is_phone_in_call_3g
-        elif not mt_rat[0] or mt_rat[0] == "general":
-            mt_slot0_phone_setup_func = phone_setup_voice_general
-            is_mt_slot0_in_call = None
-
-        if mt_rat[1] == "volte":
-            mt_slot1_phone_setup_func = phone_setup_volte
-            is_mt_slot1_in_call = is_phone_in_call_volte
-        elif mt_rat[1] == "csfb":
-            mt_slot1_phone_setup_func = phone_setup_csfb
-            is_mt_slot1_in_call = is_phone_in_call_csfb
-        elif mt_rat[1] == "3g":
-            mt_slot1_phone_setup_func = phone_setup_voice_3g
-            is_mt_slot1_in_call = is_phone_in_call_3g
-        elif not mt_rat[1] or mt_rat[1] == "general":
-            mt_slot1_phone_setup_func = phone_setup_voice_general
-            is_mt_slot1_in_call = None
-
-        if mo_slot == 1:
-            mo_phone_setup_func = mo_slot1_phone_setup_func
-            is_mo_in_call = is_mo_slot1_in_call
-            if mo_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif not mo_rat[0] or mo_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-        elif mo_slot == 0:
-            mo_phone_setup_func = mo_slot0_phone_setup_func
-            is_mo_in_call = is_mo_slot0_in_call
-            if mo_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif mo_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
-            elif not mo_rat[1] or mo_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mo, mo_other_sub_id)
+        if mo_slot == 0 or mo_slot == 1:
+            phone_setup_on_rat(self.log, ad_mo, mo_rat[1-mo_slot], mo_other_sub_id)
+            mo_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad_mo,
+                mo_rat[mo_slot],
+                only_return_fn=True)
+            is_mo_in_call = is_phone_in_call_on_rat(
+                self.log, ad_mo, mo_rat[mo_slot], only_return_fn=True)
         else:
-            mo_phone_setup_func = phone_setup_voice_general
-            is_mo_in_call = None
+            phone_setup_on_rat(self.log, ad_mo, 'general')
+            mo_phone_setup_func = phone_setup_voice_general_for_subscription
+            is_mo_in_call = is_phone_in_call_on_rat(
+                self.log, ad_mo, 'general', only_return_fn=True)
 
-        if mt_slot == 1:
-            mt_phone_setup_func = mt_slot1_phone_setup_func
-            is_mt_in_call = is_mt_slot1_in_call
-            if mt_rat[0] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[0] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[0] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif not mt_rat[0] or mt_rat[0] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-        elif mt_slot == 0:
-            mt_phone_setup_func = mt_slot0_phone_setup_func
-            is_mt_in_call = is_mt_slot0_in_call
-            if mt_rat[1] == "volte":
-                phone_setup_volte_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[1] == "csfb":
-                phone_setup_csfb_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif mt_rat[1] == "3g":
-                phone_setup_voice_3g_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
-            elif not mt_rat[1] or mt_rat[1] == "general":
-                phone_setup_voice_general_for_subscription(
-                    self.log, ad_mt, mt_other_sub_id)
+        if mt_slot == 0 or mt_slot == 1:
+            phone_setup_on_rat(self.log, ad_mt, mt_rat[1-mt_slot], mt_other_sub_id)
+            mt_phone_setup_func = phone_setup_on_rat(
+                self.log,
+                ad_mt,
+                mt_rat[mt_slot],
+                only_return_fn=True)
+            is_mt_in_call = is_phone_in_call_on_rat(
+                self.log, ad_mt, mt_rat[mt_slot], only_return_fn=True)
         else:
-            mt_phone_setup_func = phone_setup_voice_general
-            is_mt_in_call = None
+            phone_setup_on_rat(self.log, ad_mt, 'general')
+            mt_phone_setup_func = phone_setup_voice_general_for_subscription
+            is_mt_in_call = is_phone_in_call_on_rat(
+                self.log, ad_mt, 'general', only_return_fn=True)
 
         self.log.info("Step 3: Set up phones in desired RAT.")
-        tasks = [(mo_phone_setup_func, (self.log, ad_mo)),
-                 (mt_phone_setup_func, (self.log, ad_mt))]
+        tasks = [(mo_phone_setup_func, (self.log, ad_mo, mo_sub_id)),
+                 (mt_phone_setup_func, (self.log, ad_mt, mt_sub_id))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
@@ -372,9 +268,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["volte", "volte"], call_direction="mt")
 
-
-
-
     @test_tracker_info(uuid="0786d7d3-d272-4233-83dd-0667e844094d")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_voice_call_mo_volte_csfb_psim_dds_slot_0(self):
@@ -422,9 +315,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
     def test_msim_voice_call_mt_volte_csfb_esim_dds_slot_1(self):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["volte", "csfb"], call_direction="mt")
-
-
-
 
     @test_tracker_info(uuid="f15f6696-6e11-414b-8e28-9c16793b66b0")
     @TelephonyBaseTest.tel_test_wrap
@@ -474,8 +364,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["csfb", "volte"], call_direction="mt")
 
-
-
     @test_tracker_info(uuid="216f8569-8120-43c4-a9c5-da3081d168db")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_voice_call_mo_volte_3g_psim_dds_slot_0(self):
@@ -523,9 +411,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
     def test_msim_voice_call_mt_volte_3g_esim_dds_slot_1(self):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["volte", "3g"], call_direction="mt")
-
-
-
 
     @test_tracker_info(uuid="82e6f955-5156-4ad3-885d-d1d5ff0526cb")
     @TelephonyBaseTest.tel_test_wrap
@@ -575,9 +460,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["3g", "volte"], call_direction="mt")
 
-
-
-
     @test_tracker_info(uuid="fce99df9-8931-4a34-9285-121145fb9b2f")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_voice_call_mo_csfb_psim_dds_slot_0(self):
@@ -625,8 +507,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
     def test_msim_voice_call_mt_csfb_esim_dds_slot_1(self):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["csfb", "csfb"], call_direction="mt")
-
-
 
     @test_tracker_info(uuid="0bf59f38-ddbc-4a88-bc8a-d6985e7d7567")
     @TelephonyBaseTest.tel_test_wrap
@@ -676,9 +556,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["csfb", "3g"], call_direction="mt")
 
-
-
-
     @test_tracker_info(uuid="ef4b5c61-e9c9-4a29-8ff1-f9920ec9f4dd")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_voice_call_mo_3g_csfb_psim_dds_slot_0(self):
@@ -726,9 +603,6 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
     def test_msim_voice_call_mt_3g_csfb_esim_dds_slot_1(self):
         return self._test_msim_call_voice(
             None, 1, 1, mt_rat=["3g", "csfb"], call_direction="mt")
-
-
-
 
     @test_tracker_info(uuid="5620c3c8-e847-42c1-ae4e-b3370a0b6f98")
     @TelephonyBaseTest.tel_test_wrap

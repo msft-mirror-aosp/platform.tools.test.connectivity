@@ -54,7 +54,8 @@ class Process(object):
         process, use Process.start().
         """
         # Split command string into list if shell=True is not specified
-        if not kwargs.get('shell', False) and isinstance(command, str):
+        self._use_shell = kwargs.get('shell', False)
+        if not self._use_shell and isinstance(command, str):
             command = shlex.split(command)
         self._command = command
         self._subprocess_kwargs = kwargs
@@ -271,6 +272,8 @@ class Process(object):
                               command)
                 retry_value = self._on_terminate_callback(self._process)
                 if retry_value:
+                    if not self._use_shell and isinstance(retry_value, str):
+                        retry_value = shlex.split(retry_value)
                     command = retry_value
                 else:
                     break

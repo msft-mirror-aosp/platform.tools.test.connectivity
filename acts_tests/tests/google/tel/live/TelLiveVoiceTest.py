@@ -21,83 +21,81 @@ import time
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
-from acts.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
-from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
-from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
-from acts.test_utils.tel.tel_defines import GEN_2G
-from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
-from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
-from acts.test_utils.tel.tel_defines import GEN_3G
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
-from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
-from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts_contrib.test_utils.tel.tel_defines import GEN_2G
+from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts_contrib.test_utils.tel.tel_defines import GEN_3G
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
+from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
-from acts.test_utils.tel.tel_test_utils import active_file_download_task
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
-from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import is_phone_in_call_active
-from acts.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import num_active_calls
-from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import run_multithread_func
-from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts.test_utils.tel.tel_test_utils import verify_incall_state
-from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
-from acts.test_utils.tel.tel_test_utils import wait_for_state
-from acts.test_utils.tel.tel_test_utils import start_youtube_video
-from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
-from acts.test_utils.tel.tel_test_utils import STORY_LINE
-from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
-from acts.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
-from acts.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts.test_utils.tel.tel_voice_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
+from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
+from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
+from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
+from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import \
     phone_setup_iwlan_cellular_preferred
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_voice_utils import phone_idle_2g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_2g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
 DEFAULT_PING_DURATION = 120  # in seconds
@@ -664,111 +662,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not result:
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": str(result.result_value)})
-
-
-    @test_tracker_info(uuid="63f2a722-8c2f-4cf1-b694-0836256ffb54")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_volte_to_volte_5g_nsa(self):
-        """ VoLTE to VoLTE call test
-
-        1. Make Sure PhoneA is in 5g NSA mode (with VoLTE).
-        2. Make Sure PhoneB is in 5g NSA mode (with VoLTE).
-        3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        5. Verify both PhoneA and PhoneB gets attached back to 5g NSA
-
-        Raises:
-            TestFailure if not success.
-        """
-        ads = self.android_devices
-        # LTE attach
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up in VoLTE.")
-            return False
-
-        # Mode Pref
-        tasks = [(set_preferred_mode_for_5g, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to set preferred network mode.")
-            return False
-
-        # Attach 5g
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        # VoLTE calls
-        result = two_phone_call_short_seq(
-            self.log, ads[0], None, is_phone_in_call_volte, ads[1],
-            None, is_phone_in_call_volte, None,
-            WAIT_TIME_IN_CALL_FOR_IMS)
-        if not result:
-            self.log.error("Failure is VoLTE call during 5G NSA.")
-            return False
-
-        # Attach 5g
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA after call end.")
-            return False
-
-        self.log.info("PASS - VoLTE test over 5G NSA validated")
-        return True
-
-
-    @test_tracker_info(uuid="6add9dd3-f90e-4a96-a4e7-469e44b5caed")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_volte_to_3g_5g_nsa(self):
-        """ VoLTE to 3G call test
-
-        1. Make Sure PhoneA is in 5g NSA mode (with VoLTE).
-        2. Make Sure PhoneB is in 3G mode.
-        3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        5. Verify both PhoneA gets attached back to 5g NSA
-
-        Raises:
-            TestFailure if not success.
-        """
-        ads = self.android_devices
-
-        # LTE attach
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_voice_3g, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up in VoLTE/3G.")
-            return False
-
-        # Mode Pref
-        set_preferred_mode_for_5g(ads[0])
-
-        # Attach 5g
-        if not is_current_network_5g_nsa(ads[0]):
-            ads[0].log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        # VoLTE to 3G
-        result = two_phone_call_short_seq(
-            self.log, ads[0], None, is_phone_in_call_volte, ads[1],
-            None, is_phone_in_call_3g, None,
-            WAIT_TIME_IN_CALL_FOR_IMS)
-        if not result:
-            self.log.error("Failure is VoLTE to 3G call during 5G NSA.")
-            return False
-
-        # Attach 5g
-        if not is_current_network_5g_nsa(ads[0]):
-            ads[0].log.error("Phone not attached on 5G NSA after call end.")
-            return False
-
-        self.log.info("PASS - VoLTE to 3G over 5G NSA validated")
-        return True
 
 
     def _call_epdg_to_epdg_wfc(self, ads, apm_mode, wfc_mode, wifi_ssid,
@@ -2583,146 +2476,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         if not hangup_call(self.log, ads[0]):
             self.log.error("Call Hangup Failed")
-            return False
-
-        return True
-
-    @test_tracker_info(uuid="b5475061-30b4-4543-85c4-0ef2ecb2c0ef")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_volte_mo_hold_unhold_5g_nsa(self):
-        """ VoLTE MO call hold/unhold test in 5G NSA network.
-
-        1. Attach PhoneA/B to 5G NSA.
-        2. Make Sure PhoneA/B is in 5G NSA (with VoLTE).
-        3. Make Sure PhoneA/B is able to make/receive call.
-        4. Call from PhoneA to PhoneB, accept on PhoneB.
-        5. Make sure PhoneA/B are in call.
-        6. Hold and unhold on PhoneA.
-        7. Make sure PhoneA/B are in 5G NSA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-
-        # Mode Pref
-        tasks = [(set_preferred_mode_for_5g, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to set preferred network mode.")
-            return False
-
-        # Attach 5g
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        ads[0].droid.telecomCallClearCallList()
-        if num_active_calls(self.log, ads[0]) != 0:
-            ads[0].log.error("Call List is not empty.")
-            return False
-
-        self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
-            return False
-
-        if not self._hold_unhold_test(ads):
-            self.log.error("Hold/Unhold test fail.")
-            return False
-
-        if not hangup_call(self.log, ads[0]):
-            self.log.error("Call Hangup Failed")
-            return False
-
-        # Check if phoneA are attached to 5g after Hold/Unhold test.
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA after call.")
-            return False
-
-        return True
-
-    @test_tracker_info(uuid="ecbc7ea3-a591-4b81-930e-39598c7ee5b8")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_volte_mt_hold_unhold_5g_nsa(self):
-        """ VoLTE MT call hold/unhold test in 5G NSA network.
-
-        1. Attach PhoneA/B to 5G NSA.
-        2. Make Sure PhoneA/B is in 5G NSA (with VoLTE).
-        3. Make Sure PhoneB/A is able to make/receive call.
-        4. Call from PhoneB to PhoneA, accept on PhoneA.
-        5. Make sure PhoneA/B are in call.
-        6. Hold and unhold on PhoneA.
-        7. Make sure PhoneA/B are in 5G NSA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-
-        # Mode Pref
-        tasks = [(set_preferred_mode_for_5g, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to set preferred network mode.")
-            return False
-
-        # Attach 5g
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        ads[0].droid.telecomCallClearCallList()
-        if num_active_calls(self.log, ads[0]) != 0:
-            ads[0].log.error("Call List is not empty.")
-            return False
-
-        self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[1],
-                ads[0],
-                ad_hangup=None,
-                verify_caller_func=None,
-                verify_callee_func=is_phone_in_call_volte):
-            return False
-
-        if not self._hold_unhold_test(ads):
-            self.log.error("Hold/Unhold test fail.")
-            return False
-
-        if not hangup_call(self.log, ads[0]):
-            self.log.error("Call Hangup Failed")
-            return False
-
-        # Check if phoneA are attached to 5g after Hold/Unhold test.
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA after call.")
             return False
 
         return True

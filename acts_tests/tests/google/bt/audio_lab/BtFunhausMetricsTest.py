@@ -15,15 +15,13 @@ import time
 
 from acts.test_decorators import test_tracker_info
 from acts import asserts
-from acts.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
+from acts_contrib.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
 
 
 class BtFunhausMetricsTest(BtFunhausBaseTest):
     def __init__(self, controllers):
         BtFunhausBaseTest.__init__(self, controllers)
-        self.bluetooth_proto_path = None
         self.metrics_path = None
-        self.bluetooth_proto_module = None
 
     def setup_class(self):
         return super(BtFunhausMetricsTest, self).setup_class()

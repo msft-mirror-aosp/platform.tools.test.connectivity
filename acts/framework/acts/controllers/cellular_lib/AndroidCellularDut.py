@@ -14,9 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts.controllers.android_lib.tel import tel_utils
 from acts.controllers.cellular_lib import BaseCellularDut
-from acts.test_utils.tel import tel_test_utils as tel_utils
-from acts.test_utils.tel import tel_defines
 
 
 class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
@@ -74,11 +73,11 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
           type: an instance of class PreferredNetworkType
         """
         if type == BaseCellularDut.PreferredNetworkType.LTE_ONLY:
-            formatted_type = tel_defines.NETWORK_MODE_LTE_ONLY
+            formatted_type = tel_utils.NETWORK_MODE_LTE_ONLY
         elif type == BaseCellularDut.PreferredNetworkType.WCDMA_ONLY:
-            formatted_type = tel_defines.NETWORK_MODE_WCDMA_ONLY
+            formatted_type = tel_utils.NETWORK_MODE_WCDMA_ONLY
         elif type == BaseCellularDut.PreferredNetworkType.GSM_ONLY:
-            formatted_type = tel_defines.NETWORK_MODE_GSM_ONLY
+            formatted_type = tel_utils.NETWORK_MODE_GSM_ONLY
         else:
             raise ValueError('Invalid RAT type.')
 

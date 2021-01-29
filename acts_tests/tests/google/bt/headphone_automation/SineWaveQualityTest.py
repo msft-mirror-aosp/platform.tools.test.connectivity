@@ -1,7 +1,7 @@
 from acts import asserts
 from acts.signals import TestPass
-from acts.test_utils.audio_analysis_lib import audio_analysis
-from acts.test_utils.bt.A2dpBaseTest import A2dpBaseTest
+from acts_contrib.test_utils.audio_analysis_lib import audio_analysis
+from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
 
 
 class SineWaveQualityTest(A2dpBaseTest):

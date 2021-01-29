@@ -19,8 +19,8 @@ Test script to exercise Gatt Apis.
 
 from acts.controllers.sl4a_lib import rpc_client
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
 class GattApiTest(BluetoothBaseTest):

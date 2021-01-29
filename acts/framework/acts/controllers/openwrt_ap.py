@@ -4,10 +4,12 @@ import time
 
 from acts import logger
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.openwrt_lib import network_settings
 from acts.controllers.openwrt_lib import wireless_config
 from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+import yaml
 
 MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
@@ -15,7 +17,10 @@ OPEN_SECURITY = "none"
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
+OWE_SECURITY = "owe"
+SAE_SECURITY = "sae"
 ENABLE_RADIO = "0"
+PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
 
@@ -83,10 +88,11 @@ class OpenWrtAP(object):
   """An AccessPoint controller.
 
   Attributes:
-    log: Logging object for AccessPoint.
     ssh: The ssh connection to the AP.
     ssh_settings: The ssh settings being used by the ssh connection.
+    log: Logging object for AccessPoint.
     wireless_setting: object holding wireless configuration.
+    network_setting: Object for network configuration
   """
 
   def __init__(self, config):
@@ -96,6 +102,8 @@ class OpenWrtAP(object):
     self.log = logger.create_logger(
         lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
+    self.network_setting = network_settings.NetworkSettings(
+        self.ssh, config["ssh_config"]["host"], self.log)
 
   def configure_ap(self, wifi_configs, channel_2g, channel_5g):
     """Configure AP with the required settings.
@@ -148,6 +156,58 @@ class OpenWrtAP(object):
     self.ssh.run("wifi down")
     time.sleep(9)  # wait for sometime for AP to go down
 
+  def get_bssids_for_wifi_networks(self):
+    """Get BSSIDs for wifi networks configured.
+
+    Returns:
+      Dictionary of SSID - BSSID map for both bands.
+    """
+    bssid_map = {"2g": {}, "5g": {}}
+    for radio in ["radio0", "radio1"]:
+      ssid_ifname_map = self.get_ifnames_for_ssids(radio)
+      if radio == "radio0":
+        for ssid, ifname in ssid_ifname_map.items():
+          bssid_map["5g"][ssid] = self.get_bssid(ifname)
+      elif radio == "radio1":
+        for ssid, ifname in ssid_ifname_map.items():
+          bssid_map["2g"][ssid] = self.get_bssid(ifname)
+    return bssid_map
+
+  def get_ifnames_for_ssids(self, radio):
+    """Get interfaces for wifi networks.
+
+    Args:
+      radio: 2g or 5g radio get the bssids from.
+
+    Returns:
+      dictionary of ssid - ifname mappings.
+    """
+    ssid_ifname_map = {}
+    str_output = self.ssh.run("wifi status %s" % radio).stdout
+    wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                            Loader=yaml.FullLoader)
+    wifi_status = wifi_status[radio]
+    if wifi_status["up"]:
+      interfaces = wifi_status["interfaces"]
+      for config in interfaces:
+        ssid = config["config"]["ssid"]
+        ifname = config["ifname"]
+        ssid_ifname_map[ssid] = ifname
+    return ssid_ifname_map
+
+  def get_bssid(self, ifname):
+    """Get MAC address from an interface.
+
+    Args:
+      ifname: interface name of the corresponding MAC.
+
+    Returns:
+      BSSID of the interface.
+    """
+    ifconfig = self.ssh.run("ifconfig %s" % ifname).stdout
+    mac_addr = ifconfig.split("\n")[0].split()[-1]
+    return mac_addr
+
   def generate_wireless_configs(self, wifi_configs):
     """Generate wireless configs to configure.
 
@@ -190,6 +250,23 @@ class OpenWrtAP(object):
                                              config["security"],
                                              hostapd_constants.BAND_2G,
                                              hidden=config["hiddenSSID"]))
+        elif config["security"] == OWE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_2G,
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
+        elif config["security"] == SAE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_2G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
         elif config["security"] == ENT_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig(
@@ -227,6 +304,23 @@ class OpenWrtAP(object):
                                              config["security"],
                                              hostapd_constants.BAND_5G,
                                              hidden=config["hiddenSSID"]))
+        elif config["security"] == OWE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_5G,
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
+        elif config["security"] == SAE_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_5G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"],
+                                             ieee80211w=PMF_ENABLED))
         elif config["security"] == ENT_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig(
@@ -242,12 +336,39 @@ class OpenWrtAP(object):
 
     return wireless_configs
 
+  def get_wifi_network(self, security=None, band=None):
+    """Return first match wifi interface's config.
+
+    Args:
+      security: psk2 or none
+      band: '2g' or '5g'
+
+    Returns:
+      A dict contains match wifi interface's config.
+    """
+
+    for wifi_iface in self.wireless_setting.wireless_configs:
+      match_list = []
+      wifi_network = wifi_iface.__dict__
+      if security:
+        match_list.append(security == wifi_network["security"])
+      if band:
+        match_list.append(band == wifi_network["band"])
+
+      if all(match_list):
+        wifi_network["SSID"] = wifi_network["ssid"]
+        if not wifi_network["password"]:
+          del wifi_network["password"]
+        return wifi_network
+    return None
+
   def close(self):
-    """Reset wireless settings to default and stop AP."""
+    """Reset wireless and network settings to default and stop AP."""
+    if self.network_setting.config:
+      self.network_setting.cleanup_network_settings()
     if self.wireless_setting:
       self.wireless_setting.cleanup_wireless_settings()
 
   def close_ssh(self):
     """Close SSH connection to AP."""
     self.ssh.close()
-

@@ -1,14 +1,19 @@
 """Class to configure wireless settings."""
 
 import time
+
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.openwrt_lib.network_settings import SERVICE_DNSMASQ
+from acts.controllers.openwrt_lib.network_settings import ServiceManager
+
 
 LEASE_FILE = "/tmp/dhcp.leases"
-DNSMASQ_RESTART = "/etc/init.d/dnsmasq restart"
 OPEN_SECURITY = "none"
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
+OWE_SECURITY = "owe"
+SAE_SECURITY = "sae"
 ENABLE_RADIO = "0"
 DISABLE_RADIO = "1"
 ENABLE_HIDDEN = "1"
@@ -19,6 +24,7 @@ class WirelessSettingsApplier(object):
 
   Attributes:
     ssh: ssh object for the AP.
+    service_manager: Object manage service configuration
     wireless_configs: a list of
       acts.controllers.openwrt_lib.wireless_config.WirelessConfig.
     channel_2g: channel for 2G band.
@@ -36,6 +42,7 @@ class WirelessSettingsApplier(object):
       channel_5g: channel for 5G band.
     """
     self.ssh = ssh
+    self.service_manager = ServiceManager(ssh)
     self.wireless_configs = configs
     self.channel_2g = channel_2g
     self.channel_5g = channel_5g
@@ -91,7 +98,7 @@ class WirelessSettingsApplier(object):
                    (config.name, config.ssid))
       self.ssh.run("uci set wireless.%s.encryption='%s'" %
                    (config.name, config.security))
-      if config.security == PSK_SECURITY:
+      if config.security == PSK_SECURITY or config.security == SAE_SECURITY:
         self.ssh.run("uci set wireless.%s.key='%s'" %
                      (config.name, config.password))
       elif config.security == WEP_SECURITY:
@@ -106,6 +113,9 @@ class WirelessSettingsApplier(object):
                      (config.name, config.radius_server_ip))
         self.ssh.run("uci set wireless.%s.auth_port='%s'" %
                      (config.name, config.radius_server_port))
+      if config.ieee80211w:
+        self.ssh.run("uci set wireless.%s.ieee80211w='%s'" %
+                     (config.name, config.ieee80211w))
       if config.hidden:
         self.ssh.run("uci set wireless.%s.hidden='%s'" %
                      (config.name, ENABLE_HIDDEN))
@@ -119,6 +129,5 @@ class WirelessSettingsApplier(object):
     self.ssh.run("rm -f /etc/config/wireless")
     self.ssh.run("wifi config")
     self.ssh.run("cp %s.tmp %s" % (LEASE_FILE, LEASE_FILE))
-    self.ssh.run(DNSMASQ_RESTART)
+    self.service_manager.restart(SERVICE_DNSMASQ)
     time.sleep(9)
-

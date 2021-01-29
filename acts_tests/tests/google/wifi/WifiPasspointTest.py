@@ -20,16 +20,16 @@ import queue
 import time
 
 import acts.base_test
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 
-import WifiManagerTest
 from acts import asserts
 from acts import signals
 from acts.libs.uicd.uicd_cli import UicdCli
 from acts.libs.uicd.uicd_cli import UicdError
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums
@@ -307,7 +307,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         # Install both Passpoint profiles on the device.
         passpoint_ssid = list()
         for passpoint_config in self.passpoint_networks[:2]:
-            passpoint_ssid.append(passpoint_config[WifiEnums.SSID_KEY])
+            passpoint_ssid.extend(passpoint_config[WifiEnums.SSID_KEY])
             self.install_passpoint_profile(passpoint_config)
             time.sleep(DEFAULT_TIMEOUT)
 
@@ -320,12 +320,12 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                                      "configured Passpoint networks.")
 
         expected_ssid =  self.passpoint_networks[0][WifiEnums.SSID_KEY]
-        if current_ssid == expected_ssid:
+        if current_ssid in expected_ssid:
             expected_ssid = self.passpoint_networks[1][WifiEnums.SSID_KEY]
 
         # Remove the current Passpoint profile.
         for network in self.passpoint_networks[:2]:
-            if network[WifiEnums.SSID_KEY] == current_ssid:
+            if current_ssid in network[WifiEnums.SSID_KEY]:
                 if not wutils.delete_passpoint(self.dut, network["fqdn"]):
                     raise signals.TestFailure("Failed to delete Passpoint"
                                               " configuration with FQDN = %s" %
@@ -334,7 +334,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         time.sleep(DEFAULT_TIMEOUT)
 
         current_passpoint = self.dut.droid.wifiGetConnectionInfo()
-        if current_passpoint[WifiEnums.SSID_KEY] != expected_ssid:
+        if current_passpoint[WifiEnums.SSID_KEY] not in expected_ssid:
             raise signals.TestFailure("Device did not failover to the %s"
                                       " passpoint network" % expected_ssid)
 
@@ -360,6 +360,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
 
 
     @test_tracker_info(uuid="e3e826d2-7c39-4c37-ab3f-81992d5aa0e8")
+    @WifiBaseTest.wifi_test_wrap
     def test_att_passpoint_network(self):
         """Add a AT&T Passpoint network and verify device connects to it.
 
