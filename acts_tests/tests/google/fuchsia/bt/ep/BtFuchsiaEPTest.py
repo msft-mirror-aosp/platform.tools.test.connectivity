@@ -58,17 +58,20 @@ class BtFuchsiaEPTest(BaseTestClass):
             fd.take_bug_report(test_name, begin_time)
         self._unbond_all_known_devices()
         self.sec_dut.ble_lib.bleStopBleAdvertising()
-        self._kill_a2dp_services()
+        self._kill_media_services()
 
     def teardown_class(self):
-        self._kill_a2dp_services()
+        self._kill_media_services()
 
-    def _kill_a2dp_services(self):
-        """Kill any BT services related to A2DP on all Fuchsia devices.
+    def _kill_media_services(self):
+        """Kill any BT services related to A2DP/AVRCP on all Fuchsia devices.
         """
         ssh_timeout = 30
         for fd in self.fuchsia_devices:
             fd.send_command_ssh("killall bt-a2dp*",
+                                timeout=ssh_timeout,
+                                skip_status_code_check=True)
+            fd.send_command_ssh("killall bt-avrcp*",
                                 timeout=ssh_timeout,
                                 skip_status_code_check=True)
 
@@ -228,7 +231,7 @@ class BtFuchsiaEPTest(BaseTestClass):
             Priority: 0
         """
         self._unbond_all_known_devices()
-        self._kill_a2dp_services()
+        self._kill_media_services()
 
         source_device_name = generate_id_by_size(10)
         target_device_name = generate_id_by_size(10)
@@ -239,8 +242,9 @@ class BtFuchsiaEPTest(BaseTestClass):
         input_capabilities = "NONE"
         output_capabilities = "NONE"
         self.pri_dut.avdtp_lib.init()
-        self.sec_dut.avdtp_lib.init()
-
+        self.pri_dut.control_daemon("bt-avrcp.cmx", "start")
+        self.sec_dut.avdtp_lib.init(initiator_delay=2000)
+        self.sec_dut.control_daemon("bt-avrcp-target.cmx", "start")
         self.pri_dut.bts_lib.acceptPairing(input_capabilities,
                                            output_capabilities)
 
@@ -272,10 +276,10 @@ class BtFuchsiaEPTest(BaseTestClass):
                 "Failed to connect to device {}.".format(source_device_name))
 
         security_level = "NONE"
-        non_bondable = False
+        bondable = True
         transport = 1  #BREDR
         pair_result = self.pri_dut.bts_lib.pair(unique_mac_addr_id,
-                                                security_level, non_bondable,
+                                                security_level, bondable,
                                                 transport)
         if pair_result.get("error") is not None:
             raise signals.TestFailure("Failed to pair with {}.".format(
