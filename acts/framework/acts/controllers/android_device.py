@@ -764,12 +764,18 @@ class AndroidDevice:
                         out.write(line)
         return adb_excerpt_path
 
-    def search_logcat(self, matching_string, begin_time=None, logcat_path=None):
+    def search_logcat(self,
+                    matching_string,
+                    begin_time=None,
+                    end_time=None,
+                    logcat_path=None):
         """Search logcat message with given string.
 
         Args:
             matching_string: matching_string to search.
             begin_time: only the lines with time stamps later than begin_time
+                will be searched.
+            end_time: only the lines with time stamps earlier than end_time
                 will be searched.
             logcat_path: the path of a specific file in which the search should
                 be performed. If None the path will be the default device log
@@ -802,16 +808,27 @@ class AndroidDevice:
         if not output.stdout or output.exit_status != 0:
             return []
         if begin_time:
-            log_begin_time = acts_logger.epoch_to_log_line_timestamp(
-                begin_time)
-            begin_time = datetime.strptime(log_begin_time,
-                                           "%Y-%m-%d %H:%M:%S.%f")
+            if not isinstance(begin_time, datetime):
+                log_begin_time = acts_logger.epoch_to_log_line_timestamp(
+                    begin_time)
+                begin_time = datetime.strptime(log_begin_time,
+                                            "%Y-%m-%d %H:%M:%S.%f")
+        if end_time:
+            if not isinstance(end_time, datetime):
+                log_end_time = acts_logger.epoch_to_log_line_timestamp(
+                    end_time)
+                end_time = datetime.strptime(log_end_time,
+                                            "%Y-%m-%d %H:%M:%S.%f")
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
         for log in logs:
             time_stamp = log[0]
             time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
+
             if begin_time and time_obj < begin_time:
+                continue
+
+            if end_time and time_obj > end_time:
                 continue
 
             res = re.findall(r'.*\[(\d+)\]', log[1])
