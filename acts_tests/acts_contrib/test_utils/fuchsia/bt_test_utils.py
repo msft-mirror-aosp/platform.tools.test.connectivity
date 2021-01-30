@@ -133,7 +133,6 @@ def verify_device_state_by_name(fd, log, search_name, state, services=None):
             name = d['name']
             if name == search_name:
                 print(d)
-                input("continue?")
                 if state == "CONNECTED" and d['connected']:
                     log.info("Found connected device {}".format(d))
                     found_state = True
