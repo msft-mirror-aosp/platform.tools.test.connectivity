@@ -1163,12 +1163,12 @@ class FuchsiaDevice:
             self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
         out_name = "%s.pcap" % out_name
         if custom_name:
-            out_name = "%s.pcap" % custom_name
+            out_name = "%s_%s.pcap" % (self.serial, custom_name)
         else:
             out_name = "%s.pcap" % out_name
         full_out_path = os.path.join(bt_snoop_path, out_name)
-        bt_snoop_data = self.send_command_ssh('bt-snoop-cli -d -f pcap').stdout
-        bt_snoop_file = open(full_out_path, 'w')
+        bt_snoop_data = self.send_command_ssh('bt-snoop-cli -d -f pcap').raw_stdout
+        bt_snoop_file = open(full_out_path, 'wb')
         bt_snoop_file.write(bt_snoop_data)
         bt_snoop_file.close()
 
