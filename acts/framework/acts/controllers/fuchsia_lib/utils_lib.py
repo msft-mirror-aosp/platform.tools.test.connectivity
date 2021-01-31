@@ -155,13 +155,18 @@ class SshResults:
         exit_status: The file descriptor of the SSH command.
     """
     def __init__(self, stdin, stdout, stderr, exit_status):
-        self._stdout = stdout.read().decode('utf-8', errors='replace')
+        self._raw_stdout = stdout.read()
+        self._stdout = self._raw_stdout.decode('utf-8', errors='replace')
         self._stderr = stderr.read().decode('utf-8', errors='replace')
         self._exit_status = exit_status.recv_exit_status()
 
     @property
     def stdout(self):
         return self._stdout
+
+    @property
+    def raw_stdout(self):
+        return self._raw_stdout
 
     @property
     def stderr(self):
