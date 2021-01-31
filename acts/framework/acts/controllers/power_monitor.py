@@ -14,10 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import tempfile
 import logging
-from acts.controllers.monsoon_lib.api.common import MonsoonError
+import tempfile
+
 from acts.controllers import power_metrics
+from acts.controllers.monsoon_lib.api.common import MonsoonError
 
 
 class ResourcesRegistryError(Exception):
@@ -141,7 +142,7 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
         self.monsoon.usb('on')
 
     def measure(self, measurement_args=None, start_time=None,
-                          output_path=None, **__):
+                monsoon_output_path=None, **__):
         if measurement_args is None:
             raise MonsoonError('measurement_args can not be None')
 
@@ -149,11 +150,10 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
             self.monsoon.measure_power(**measurement_args,
                                        output_path=tmon.name)
 
-            if output_path and start_time is not None:
+            if monsoon_output_path and start_time is not None:
                 _write_raw_data_in_standard_format(
                     power_metrics.import_raw_data(tmon.name),
-                    output_path,
-                    start_time)
+                    monsoon_output_path, start_time)
 
     def release_resources(self, **__):
         # nothing to do
