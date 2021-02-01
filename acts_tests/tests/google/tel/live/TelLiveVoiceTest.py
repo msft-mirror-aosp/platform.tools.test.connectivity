@@ -4047,6 +4047,52 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return self._test_call_setup_in_active_youtube_video(
             None, DIRECTION_MOBILE_TERMINATED)
 
+    @test_tracker_info(uuid="e115e8a6-25bf-41fc-aeb8-8f4c922c50e4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_apm_wifi_wfc_in_active_youtube_video_cellular(self):
+        """Test call can be established during active youtube video.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_CELLULAR_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="d754d3dd-0b02-4f13-bc65-fdafa254196b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_apm_wifi_wfc_in_active_youtube_video_cellular(self):
+        """Test call can be established during active youtube video.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_CELLULAR_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_TERMINATED)
+
     @test_tracker_info(uuid="88822edf-4c4a-4bc4-9280-2f27ee9e28d5")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_mo_voice_apm_wifi_in_active_youtube_video_cellular(self):
