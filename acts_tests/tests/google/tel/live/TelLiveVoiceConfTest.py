@@ -374,8 +374,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            ads[0].log.error("not CDMA phone, abort this 1x test.")
-            return None, None, None
+            raise signals.TestSkip("not CDMA phone, abort this 1x test.")
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]], [
@@ -415,8 +414,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            ads[0].log.error("not CDMA phone, abort this 1x test.")
-            return None, None, None
+            raise signals.TestSkip("not CDMA phone, abort this 1x test.")
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]], [
@@ -469,8 +467,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            ads[0].log.error("not CDMA phone, abort this 1x test.")
-            return None, None, None
+            raise signals.TestSkip("not CDMA phone, abort this 1x test.")
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]], [
@@ -963,8 +960,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                ad.log.error("not CDMA phone, abort 1x swap test.")
-                return None, None
+                raise signals.TestSkip("not CDMA phone, abort this 1x swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
@@ -1013,8 +1009,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                ad.log.error("not CDMA phone, abort 1x swap test.")
-                return None, None
+                raise signals.TestSkip("not CDMA phone, abort this 1x swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
@@ -1063,8 +1058,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("not CDMA phone, abort 1x swap test.")
-                return None, None
+                raise signals.TestSkip("not CDMA phone, abort this 1x swap test.")
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
@@ -2215,8 +2209,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                ad.log.error("not CDMA phone, abort 1x swap test.")
-                return None, None
+                raise signals.TestSkip("not CDMA phone, abort this 1x swap test.")
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_1x_swap_x in test cases.
@@ -2266,8 +2259,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                ad.log.error("not CDMA phone, abort 1x swap test.")
-                return None, None
+                raise signals.TestSkip("not CDMA phone, abort this 1x swap test.")
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_1x_swap_x in test cases.
@@ -2317,8 +2309,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                ad.log.error("not CDMA phone, abort 1x swap test.")
-                return None, None
+                raise signals.TestSkip("not CDMA phone, abort this 1x swap test.")
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_1x_swap_x in test cases.
