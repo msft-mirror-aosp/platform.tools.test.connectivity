@@ -333,4 +333,4 @@ class BitsClient(object):
                     for row in reader:
                         ts = float(row[0]) / 1e9
                         amps = float(row[1]) / 1e3
-                        dest.write('%s %s\n' % (ts, amps))
+                        dest.write('%.7f %.12f\n' % (ts, amps))
