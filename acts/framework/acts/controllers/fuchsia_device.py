@@ -181,9 +181,12 @@ class FuchsiaDevice:
     Each object of this class represents one Fuchsia device in ACTS.
 
     Attributes:
-        address: The full address to contact the Fuchsia device at
+        ip: The full address or Fuchsia abstract name to contact the Fuchsia
+            device at
         log: A logger object.
-        port: The TCP port number of the Fuchsia device.
+        ssh_port: The SSH TCP port number of the Fuchsia device.
+        sl4f_port: The SL4F HTTP port number of the Fuchsia device.
+        ssh_config: The ssh_config for connecting to the Fuchsia device.
     """
     def __init__(self, fd_conf_data):
         """
@@ -192,17 +195,20 @@ class FuchsiaDevice:
                 Required keys:
                     ip: IP address of fuchsia device
                 optional key:
-                    port: Port for the sl4f web server on the fuchsia device
-                        (Default: 80)
+                    sl4_port: Port for the sl4f web server on the fuchsia device
+                              (Default: 80)
                     ssh_config: Location of the ssh_config file to connect to
                         the fuchsia device
                         (Default: None)
+                    ssh_port: Port for the ssh server on the fuchsia device
+                              (Default: 22)
         """
         self.conf_data = fd_conf_data
         if "ip" not in fd_conf_data:
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
         self.ip = fd_conf_data["ip"]
-        self.port = fd_conf_data.get("port", 80)
+        self.sl4f_port = fd_conf_data.get("sl4f_port", 80)
+        self.ssh_port = fd_conf_data.get("ssh_port", 22)
         self.ssh_config = fd_conf_data.get("ssh_config", None)
 
         # Instead of the input ssh_config, a new config with
@@ -235,9 +241,9 @@ class FuchsiaDevice:
             'preserve_saved_networks', True)
 
         if utils.is_valid_ipv4_address(self.ip):
-            self.address = "http://{}:{}".format(self.ip, self.port)
+            self.address = "http://{}:{}".format(self.ip, self.sl4f_port)
         elif utils.is_valid_ipv6_address(self.ip):
-            self.address = "http://[{}]:{}".format(self.ip, self.port)
+            self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
         else:
             mdns_ip = None
             for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
@@ -248,7 +254,7 @@ class FuchsiaDevice:
                     time.sleep(1)
             if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
                 self.ip = mdns_ip
-                self.address = "http://[{}]:{}".format(self.ip, self.port)
+                self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
             else:
                 raise ValueError('Invalid IP: %s' % self.ip)
 
@@ -727,6 +733,7 @@ class FuchsiaDevice:
                     self.ip,
                     self.ssh_username,
                     self.ssh_config,
+                    ssh_port=self.ssh_port,
                     connect_timeout=connect_timeout)
                 cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
                     ssh_conn.exec_command(test_cmd, timeout=timeout))
@@ -921,7 +928,10 @@ class FuchsiaDevice:
         try:
             if not self._persistent_ssh_conn:
                 self._persistent_ssh_conn = (create_ssh_connection(
-                    self.ip, self.ssh_username, self.ssh_config))
+                    self.ip,
+                    self.ssh_username,
+                    self.ssh_config,
+                    ssh_port=self.ssh_port))
             self._persistent_ssh_conn.exec_command(
                 "killall %s" % process_name, timeout=CHANNEL_OPEN_TIMEOUT)
             # This command will effectively stop the process but should
@@ -1056,9 +1066,12 @@ class FuchsiaDevice:
         self.log.debug("Attempting to start Fuchsia device services on %s." %
                        self.ip)
         if self.ssh_config:
-            self.log_process = start_syslog(self.serial, self.log_path,
-                                            self.ip, self.ssh_username,
-                                            self.ssh_config)
+            self.log_process = start_syslog(self.serial,
+                                            self.log_path,
+                                            self.ip,
+                                            self.ssh_username,
+                                            self.ssh_config,
+                                            ssh_port=self.ssh_port)
 
             if ENABLE_LOG_LISTENER:
                 try:
@@ -1172,7 +1185,8 @@ class FuchsiaDevice:
         else:
             out_name = "%s.pcap" % out_name
         full_out_path = os.path.join(bt_snoop_path, out_name)
-        bt_snoop_data = self.send_command_ssh('bt-snoop-cli -d -f pcap').raw_stdout
+        bt_snoop_data = self.send_command_ssh(
+            'bt-snoop-cli -d -f pcap').raw_stdout
         bt_snoop_file = open(full_out_path, 'wb')
         bt_snoop_file.write(bt_snoop_data)
         bt_snoop_file.close()
