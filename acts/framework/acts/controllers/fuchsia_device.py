@@ -207,15 +207,8 @@ class FuchsiaDevice:
         # Instead of the input ssh_config, a new config with
         # proper ControlPath values is set and written to
         # /tmp/temp_fuchsia_ssh_config.config.
-        ssh_config_copy = ""
-
-        with open(self.ssh_config, 'r') as file:
-            ssh_config_copy = re.sub('(\sControlPath\s.*)',
-                                     CONTROL_PATH_REPLACE_VALUE,
-                                     file.read(),
-                                     flags=re.M)
-        with open("/tmp/temp_fuchsia_ssh_config.config", 'w') as file:
-            file.write(ssh_config_copy)
+        self._set_control_path_config(self.ssh_config,
+                                      "/tmp/temp_fuchsia_ssh_config.config")
 
         self.ssh_config = "/tmp/temp_fuchsia_ssh_config.config"
 
@@ -382,8 +375,6 @@ class FuchsiaDevice:
         # Init server
         self.init_server_connection()
 
-        self.configure_regulatory_domain(self.config_country_code)
-
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
 
@@ -393,6 +384,24 @@ class FuchsiaDevice:
             # Prevent a threading error, since controller isn't fully up yet.
             self.clean_up()
             raise FuchsiaDeviceError('Failed to run setup commands.')
+
+    def _set_control_path_config(self, old_config, new_config):
+        """Given an input ssh_config, write to a new config with
+        proper ControlPath values in place.
+
+        Args:
+            old_config: string, path to the input config
+            new_config: string, path to store the new config
+        """
+        ssh_config_copy = ""
+
+        with open(old_config, 'r') as file:
+            ssh_config_copy = re.sub('(\sControlPath\s.*)',
+                                     CONTROL_PATH_REPLACE_VALUE,
+                                     file.read(),
+                                     flags=re.M)
+        with open(new_config, 'w') as file:
+            file.write(ssh_config_copy)
 
     @backoff.on_exception(
         backoff.constant,
@@ -474,6 +483,11 @@ class FuchsiaDevice:
         Raises:
             FuchsiaDeviceError, if configuration fails
         """
+
+        # Set the country code US by default, or country code provided
+        # in ACTS config
+        self.configure_regulatory_domain(self.config_country_code)
+
         # If args aren't provided, use the defaults, which can be set in the
         # config.
         if association_mechanism is None:
@@ -1149,12 +1163,12 @@ class FuchsiaDevice:
             self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
         out_name = "%s.pcap" % out_name
         if custom_name:
-            out_name = "%s.pcap" % custom_name
+            out_name = "%s_%s.pcap" % (self.serial, custom_name)
         else:
             out_name = "%s.pcap" % out_name
         full_out_path = os.path.join(bt_snoop_path, out_name)
-        bt_snoop_data = self.send_command_ssh('bt-snoop-cli -d -f pcap').stdout
-        bt_snoop_file = open(full_out_path, 'w')
+        bt_snoop_data = self.send_command_ssh('bt-snoop-cli -d -f pcap').raw_stdout
+        bt_snoop_file = open(full_out_path, 'wb')
         bt_snoop_file.write(bt_snoop_data)
         bt_snoop_file.close()
 
