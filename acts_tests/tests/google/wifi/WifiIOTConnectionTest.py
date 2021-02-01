@@ -25,7 +25,7 @@ from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.wifi import pdu_controller_utils
 
 WifiEnums = wutils.WifiEnums
-
+WAIT_BETWEEN_ACTIONS = 5
 
 class WifiIOTConnectionTest(WifiBaseTest):
     """ Tests for wifi IOT Connection
@@ -206,13 +206,15 @@ class WifiIOTConnectionTest(WifiBaseTest):
                 if ap['SSID'] == ssid:
                     wutils.wifi_connect(self.dut, network, num_of_tries=1,
                                         check_connectivity=False)
-                    time.sleep(3)
+                    time.sleep(WAIT_BETWEEN_ACTIONS)
                     self.rssi, self.link_speed, self.freq = self.get_wifi_info()
+                    time.sleep(WAIT_BETWEEN_ACTIONS)
                     if self.ping_public_gateway_ip():
                         connection_pass += 1
                     wutils.wifi_forget_network(self.dut, ssid)
                     self.dut.log.info("connection_pass: {}"
                                       .format(connection_pass))
+                    time.sleep(WAIT_BETWEEN_ACTIONS)
 
         # Create a dictionary to store data in a json file.
         connection_result = {}

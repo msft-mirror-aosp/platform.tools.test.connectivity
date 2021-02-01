@@ -24,8 +24,8 @@ import threading
 import uuid
 
 from acts import signals
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts_contrib.test_utils.fuchsia import utils
@@ -50,12 +50,12 @@ class PingStressTest(BaseTestClass):
         self.fd = self.fuchsia_devices[0]
         self.wlan_device = create_wlan_device(self.fd)
         self.ap = self.access_points[0]
-        setup_ap_and_associate(access_point=self.ap,
-                               client=self.wlan_device,
-                               profile_name='whirlwind',
-                               channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                               ssid=self.ssid,
-                               setup_bridge=True)
+        setup_ap(access_point=self.ap,
+                 profile_name='whirlwind',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid,
+                 setup_bridge=True)
+        self.wlan_device.associate(self.ssid)
 
     def teardown_class(self):
         self.wlan_device.disconnect()

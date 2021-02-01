@@ -16,7 +16,7 @@
 
 import unittest
 import mobly.config_parser as mobly_config_parser
-import mock_bokeh
+
 from unittest import mock
 
 

@@ -1960,62 +1960,41 @@ class CommandInput(cmd.Cmd):
     """End Profile Server wrappers"""
     """Begin AVDTP wrappers"""
 
-    def complete_avdtp_init(self, text, line, begidx, endidx):
-        roles = ["sink", "source"]
-        if not text:
-            completions = roles
-        else:
-            completions = [s for s in roles if s.startswith(text)]
-        return completions
-
-    def do_avdtp_init(self, role):
+    def do_avdtp_init(self, initiator_delay):
         """
-        Description: Init the AVDTP and A2DP service corresponding to the input
-        role.
+        Description: Init the A2DP component start and AVDTP service to
+            initiate.
 
         Input(s):
-            role: The specified role. Either 'source' or 'sink'.
+            initiator_delay: [Optional] The stream initiator delay to set in
+            milliseconds.
 
         Usage:
           Examples:
-            avdtp_init source
-            avdtp_init sink
+            avdtp_init 0
+            avdtp_init 2000
+            avdtp_init
         """
         cmd = "Initialize AVDTP proxy"
         try:
-            result = self.pri_dut.avdtp_lib.init(role)
+            if not initiator_delay:
+                initiator_delay = None
+            result = self.pri_dut.avdtp_lib.init(initiator_delay)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
-    def do_avdtp_kill_a2dp_sink(self, line):
+    def do_avdtp_kill_a2dp(self, line):
         """
-        Description: Quickly kill any A2DP sink service currently running on the
-        device.
+        Description: Quickly kill any A2DP components.
 
         Usage:
           Examples:
-            avdtp_kill_a2dp_sink
+            avdtp_kill_a2dp
         """
-        cmd = "Killing A2DP sink"
+        cmd = "Kill A2DP service"
         try:
-            result = self.pri_dut.control_daemon("bt-a2dp-sink.cmx", "stop")
-            self.log.info(result)
-        except Exception as err:
-            self.log.error(FAILURE.format(cmd, err))
-
-    def do_avdtp_kill_a2dp_source(self, line):
-        """
-        Description: Quickly kill any A2DP source service currently running on
-        the device.
-
-        Usage:
-          Examples:
-            avdtp_kill_a2dp_source
-        """
-        cmd = "Killing A2DP source"
-        try:
-            result = self.pri_dut.control_daemon("bt-a2dp-source.cmx", "stop")
+            result = self.pri_dut.control_daemon("bt-a2dp.cmx", "stop")
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -2249,3 +2228,51 @@ class CommandInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End AVDTP wrappers"""
+    """Begin Audio wrappers"""
+
+    def do_audio_start_output_save(self, line):
+        """
+        Description: Start audio output save
+
+        Usage:
+          Examples:
+            audio_start_output_save
+        """
+        cmd = "Start audio capture"
+        try:
+            result = self.pri_dut.audio_lib.startOutputSave()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_stop_output_save(self, line):
+        """
+        Description: Stop audio output save
+
+        Usage:
+          Examples:
+            audio_stop_output_save
+        """
+        cmd = "Stop audio capture"
+        try:
+            result = self.pri_dut.audio_lib.stopOutputSave()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_get_output_audio(self, line):
+        """
+        Description: Get the audio output saved to a local file
+
+        Usage:
+          Examples:
+            audio_get_output_audio
+        """
+        cmd = "Get audio capture"
+        try:
+            save_path = "{}/{}".format(self.pri_dut.log_path, "audio.raw")
+            result = self.pri_dut.audio_lib.getOutputAudio(save_path)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End Audio wrappers"""

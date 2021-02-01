@@ -821,20 +821,17 @@ def wait_for_sims_ready_by_adb(log, ad, wait_time=90):
 def get_service_state_by_adb(log, ad):
     output = ad.adb.shell("dumpsys telephony.registry | grep mServiceState")
     if "mVoiceRegState" in output:
-        result = re.search(r"mVoiceRegState=(\S+)\((\S+)\)", output)
+        result = re.findall(r"mVoiceRegState=(\S+)\((\S+)\)", output)
         if result:
-            ad.log.info("mVoiceRegState is %s %s", result.group(1),
-                        result.group(2))
-            return result.group(2)
-        else:
-            if getattr(ad, "sdm_log", False):
-                #look for all occurrence in string
-                result2 = re.findall(r"mVoiceRegState=(\S+)\((\S+)\)", output)
-                for voice_state in result2:
-                    if voice_state[0] == 0:
-                        ad.log.info("mVoiceRegState is 0 %s", voice_state[1])
-                        return voice_state[1]
-                return result2[1][1]
+            if getattr(ad, 'dsds', False):
+                default_slot = getattr(ad, 'default_slot', 0)
+                ad.log.info("mVoiceRegState is %s %s", result[default_slot][0],
+                            result[default_slot][1])
+                return result[default_slot][1]
+            else:
+                ad.log.info("mVoiceRegState is %s %s", result[0][0],
+                            result[0][1])
+                return result[0][1]
     else:
         result = re.search(r"mServiceState=(\S+)", output)
         if result:
@@ -3929,7 +3926,7 @@ def iperf_test_with_options(log,
                             rate_dict=None,
                             blocking=True,
                             log_file_path=None):
-    """Iperf adb run helper.
+    """iperf adb run helper.
 
     Args:
         log: log object
@@ -3941,13 +3938,13 @@ def iperf_test_with_options(log,
         blocking: run iperf in blocking mode if True
         log_file_path: location to save logs
     Returns:
-        True if IPerf runs without throwing an exception
+        True if iperf runs without throwing an exception
     """
     try:
         if log_file_path:
             ad.adb.shell("rm %s" % log_file_path, ignore_status=True)
         ad.log.info("Running adb iperf test with server %s", iperf_server)
-        ad.log.info("IPerf options are %s", iperf_option)
+        ad.log.info("iperf options are %s", iperf_option)
         if not blocking:
             ad.run_iperf_client_nb(
                 iperf_server,
@@ -3957,28 +3954,28 @@ def iperf_test_with_options(log,
             return True
         result, data = ad.run_iperf_client(
             iperf_server, iperf_option, timeout=timeout + 60)
-        ad.log.info("IPerf test result with server %s is %s", iperf_server,
+        ad.log.info("iperf test result with server %s is %s", iperf_server,
                     result)
         if result:
             iperf_str = ''.join(data)
-            iperf_result = ipf.IPerfResult(iperf_str)
+            iperf_result = ipf.IPerfResult(iperf_str, 'None')
             if "-u" in iperf_option:
                 udp_rate = iperf_result.avg_rate
                 if udp_rate is None:
                     ad.log.warning(
                         "UDP rate is none, IPerf server returned error: %s",
                         iperf_result.error)
-                ad.log.info("IPerf3 udp speed is %sbps", udp_rate)
+                ad.log.info("iperf3 UDP DL speed is %.6s Mbps", (udp_rate/1000000))
             else:
                 tx_rate = iperf_result.avg_send_rate
                 rx_rate = iperf_result.avg_receive_rate
                 if (tx_rate or rx_rate) is None:
                     ad.log.warning(
-                        "A TCP rate is none, IPerf server returned error: %s",
+                        "A TCP rate is none, iperf server returned error: %s",
                         iperf_result.error)
                 ad.log.info(
-                    "IPerf3 upload speed is %sbps, download speed is %sbps",
-                    tx_rate, rx_rate)
+                    "iperf3 TCP - UL speed is %.6s Mbps, DL speed is %.6s Mbps",
+                    (tx_rate/1000000), (rx_rate/1000000))
             if rate_dict is not None:
                 rate_dict["Uplink"] = tx_rate
                 rate_dict["Downlink"] = rx_rate
@@ -3995,6 +3992,7 @@ def iperf_udp_test_by_adb(log,
                           reverse=False,
                           timeout=180,
                           limit_rate=None,
+                          pacing_timer=None,
                           omit=10,
                           ipv6=False,
                           rate_dict=None,
@@ -4019,6 +4017,8 @@ def iperf_udp_test_by_adb(log,
     iperf_option = "-u -i 1 -t %s -O %s -J" % (timeout, omit)
     if limit_rate:
         iperf_option += " -b %s" % limit_rate
+    if pacing_timer:
+        iperf_option += " --pacing-timer %s" % pacing_timer
     if port_num:
         iperf_option += " -p %s" % port_num
     if ipv6:
@@ -4132,13 +4132,6 @@ def http_file_download_by_curl(ad,
             return False
     except Exception as e:
         ad.log.warning("Download %s failed with exception %s", url, e)
-        for cmd in ("ls -lh /data/local/tmp/tcpdump/",
-                    "ls -lh /sdcard/Download/",
-                    "ls -lh /data/vendor/radio/diag_logs/logs/",
-                    "df -h",
-                    "du -d 4 -h /data"):
-            out = ad.adb.shell(cmd)
-            ad.log.debug("%s", out)
         return False
     finally:
         if remove_file_after_check:
@@ -4296,13 +4289,6 @@ def http_file_download_by_sl4a(ad,
             ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
         except Exception as e:
             ad.log.warning("SL4A file download error: %s", e)
-            for cmd in ("ls -lh /data/local/tmp/tcpdump/",
-                        "ls -lh /sdcard/Download/",
-                        "ls -lh /data/vendor/radio/diag_logs/logs/",
-                        "df -h",
-                        "du -d 4 -h /data"):
-                out = ad.adb.shell(cmd)
-                ad.log.debug("%s", out)
             ad.data_droid.terminate()
             return False
         if _check_file_existance(ad, file_path, expected_file_size):
@@ -7186,7 +7172,7 @@ def ensure_phone_subscription(log, ad):
         ad.log.error("Unable to find valid data or voice sub id")
         return False
     while duration < MAX_WAIT_TIME_NW_SELECTION:
-        data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
         if data_sub_id > INVALID_SUB_ID:
             data_rat = get_network_rat_for_subscription(
                 log, ad, data_sub_id, NETWORK_SERVICE_DATA)
@@ -7977,21 +7963,6 @@ def set_qxdm_logger_command(ad, mask=None):
         output_path = os.path.join(ad.qxdm_log_path, "logs")
         ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 90 -c" %
                                   (mask_path, output_path))
-        for prop in ("persist.sys.modem.diag.mdlog",
-                     "persist.vendor.sys.modem.diag.mdlog"):
-            if ad.adb.getprop(prop):
-                # Enable qxdm always on if supported
-                for conf_path in ("/data/vendor/radio/diag_logs",
-                                  "/vendor/etc/mdlog"):
-                    if "diag.conf" in ad.adb.shell(
-                            "ls %s" % conf_path, ignore_status=True):
-                        conf_path = "%s/diag.conf" % conf_path
-                        ad.adb.shell('echo "%s" > %s' %
-                                     (ad.qxdm_logger_command, conf_path),
-                                     ignore_status=True)
-                        break
-                ad.adb.shell("setprop %s true" % prop, ignore_status=True)
-                break
         return True
 
 
@@ -8008,6 +7979,9 @@ def start_sdm_logger(ad):
         ad.adb.shell(
             "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
             (ad.sdm_log_path, seconds))
+    # Disable any modem logging already running
+    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
+    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
     ad.log.debug("start sdm logging")
@@ -9009,10 +8983,12 @@ def log_messaging_screen_shot(ad, test_name=""):
     ad.send_keycode("HOME")
     ad.adb.shell("am start -n com.google.android.apps.messaging/.ui."
                  "ConversationListActivity")
+    time.sleep(3)
     log_screen_shot(ad, test_name)
     ad.adb.shell("am start -n com.google.android.apps.messaging/com.google."
-                 "android.apps.messaging.ui.conversation.ConversationActivity"
-                 " -e conversation_id 1")
+                 "android.apps.messaging.ui.conversation."
+                 "LaunchConversationShimActivity -e conversation_id 1")
+    time.sleep(3)
     log_screen_shot(ad, test_name)
     ad.send_keycode("HOME")
 
@@ -11009,3 +10985,103 @@ def change_voice_subid_temporarily(ad, sub_id, state_check_func):
         set_incoming_voice_sub_id(ad, current_sub_id)
 
     return result
+
+def wait_for_network_service(
+    log,
+    ad,
+    wifi_connected=False,
+    wifi_ssid=None,
+    ims_reg=True,
+    recover=False,
+    retry=3):
+    """ Wait for multiple network services in sequence, including:
+        - service state
+        - network connection
+        - wifi connection
+        - cellular data
+        - internet connection
+        - IMS registration
+
+        The mechanism (cycling airplane mode) to recover network services is
+        also provided if any service is not available.
+
+        Args:
+            log: log object
+            ad: android device
+            wifi_connected: True if wifi should be connected. Otherwise False.
+            ims_reg: True if IMS should be registered. Otherwise False.
+            recover: True if the mechanism (cycling airplane mode) to recover
+            network services should be enabled (by default False).
+            retry: times of retry.
+    """
+    times = 1
+    while times <= retry:
+        while True:
+            if not wait_for_state(
+                    get_service_state_by_adb,
+                    "IN_SERVICE",
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK,
+                    log,
+                    ad):
+                ad.log.error("Current service state is not 'IN_SERVICE'.")
+                break
+
+            if not wait_for_state(
+                    ad.droid.connectivityNetworkIsConnected,
+                    True,
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK):
+                ad.log.error("Network is NOT connected!")
+                break
+
+            if wifi_connected and wifi_ssid:
+                if not wait_for_state(
+                        check_is_wifi_connected,
+                        True,
+                        MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                        WAIT_TIME_BETWEEN_STATE_CHECK,
+                        log,
+                        ad,
+                        wifi_ssid):
+                    ad.log.error("Failed to connect Wi-Fi SSID '%s'.", wifi_ssid)
+                    break
+            else:
+                if not wait_for_cell_data_connection(log, ad, True):
+                    ad.log.error("Failed to enable data connection.")
+                    break
+
+            if not wait_for_state(
+                    verify_internet_connection,
+                    True,
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK,
+                    log,
+                    ad):
+                ad.log.error("Data not available on cell.")
+                break
+
+            if ims_reg:
+                if not wait_for_ims_registered(log, ad):
+                    ad.log.error("IMS is not registered.")
+                    break
+                ad.log.info("IMS is registered.")
+            return True
+
+        if recover:
+            ad.log.warning("Trying to recover by cycling airplane mode...")
+            if not toggle_airplane_mode(log, ad, True):
+                ad.log.error("Failed to enable airplane mode")
+                break
+
+            time.sleep(5)
+
+            if not toggle_airplane_mode(log, ad, False):
+                ad.log.error("Failed to disable airplane mode")
+                break
+
+            times = times + 1
+
+        else:
+            return False
+    return False

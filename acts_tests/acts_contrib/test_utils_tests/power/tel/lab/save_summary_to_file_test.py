@@ -15,11 +15,11 @@
 #   limitations under the License.
 
 import unittest
-import mobly.config_parser as mobly_config_parser
-import mock_bokeh
-from acts.controllers.cellular_lib.LteSimulation import LteSimulation
 from unittest import mock
 from unittest.mock import mock_open
+
+import mobly.config_parser as mobly_config_parser
+from acts.controllers.cellular_lib.LteSimulation import LteSimulation
 
 
 class SaveSummaryToFileTest(unittest.TestCase):

@@ -482,10 +482,12 @@ class WifiBaseTest(BaseTestClass):
                 owe_dict[hostapd_constants.BAND_5G]["security"] = "owe"
                 network_list.append(owe_dict)
             if sae_network:
-                sae_dict = self.get_psk_network(
-                    mirror_ap, self.sae_networks, hidden, same_ssid,
-                    hostapd_constants.WPA3_KEY_MGMT, ssid_length_2g,
-                    ssid_length_5g, passphrase_length_2g, passphrase_length_5g)
+                sae_dict = self.get_psk_network(mirror_ap, self.sae_networks,
+                                                hidden, same_ssid,
+                                                hostapd_constants.SAE_KEY_MGMT,
+                                                ssid_length_2g, ssid_length_5g,
+                                                passphrase_length_2g,
+                                                passphrase_length_5g)
                 sae_dict[hostapd_constants.BAND_2G]["security"] = "sae"
                 sae_dict[hostapd_constants.BAND_5G]["security"] = "sae"
                 network_list.append(sae_dict)

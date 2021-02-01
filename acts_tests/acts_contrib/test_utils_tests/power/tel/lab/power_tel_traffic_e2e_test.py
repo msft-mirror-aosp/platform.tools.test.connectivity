@@ -15,12 +15,12 @@
 #   limitations under the License.
 
 import unittest
-import mock_bokeh
+from unittest import mock
+
 import acts_contrib.test_utils.power.cellular.cellular_traffic_power_test as ctpt
 import mobly.config_parser as mobly_config_parser
 from acts.controllers.cellular_lib.LteSimulation import LteSimulation
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
-from unittest import mock
 
 magic_patch = lambda patched: mock.patch(patched, mock.MagicMock())
 

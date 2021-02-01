@@ -15,11 +15,11 @@
 #   limitations under the License.
 
 import unittest
+from unittest import mock
+
 import mobly.config_parser as mobly_config_parser
-import mock_bokeh
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
-from unittest import mock
 
 
 class InitializeSimulatorTest(unittest.TestCase):

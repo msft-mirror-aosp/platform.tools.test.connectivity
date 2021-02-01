@@ -17,6 +17,7 @@ import time
 
 from acts import asserts
 from acts import context
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.radvd import Radvd
 from acts.controllers.ap_lib import radvd_constants
@@ -24,8 +25,6 @@ from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.attenuator import get_attenuators_for_device
 from acts.controllers.iperf_server import IPerfResult
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import associate
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -276,10 +275,9 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
             associate_counter = 0
             associate_max_attempts = 3
             while associate_counter < associate_max_attempts:
-                if associate(self.dut,
-                             ssid,
-                             password,
-                             check_connectivity=False):
+                if self.dut.associate(ssid,
+                                      target_pwd=password,
+                                      check_connectivity=False):
                     break
                 else:
                     associate_counter += 1
@@ -432,10 +430,9 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                 if not associated:
                     self.log.info('Trying to associate at relative '
                                   'attenuation of %s db' % step)
-                    if associate(self.dut,
-                                 ssid,
-                                 password,
-                                 check_connectivity=False):
+                    if self.dut.associate(ssid,
+                                          target_pwd=password,
+                                          check_connectivity=False):
                         associated = True
                         self.log.info('Successfully associated.')
                     else:

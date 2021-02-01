@@ -163,6 +163,10 @@ CORRECT_EMPTY_IP_LIST = {
 
 FUCHSIA_INIT_SERVER = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
                        'init_server_connection')
+FUCHSIA_SET_CONTROL_PATH_CONFIG = ('acts.controllers.fuchsia_device.'
+                                   'FuchsiaDevice._set_control_path_config')
+FUCHSIA_START_SERVICES = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
+                          'start_services')
 FUCHSIA_NETSTACK_LIST_INTERFACES = (
     'acts.controllers.'
     'fuchsia_lib.netstack.netstack_lib.'
@@ -528,10 +532,14 @@ class IpAddressUtilTest(unittest.TestCase):
             CORRECT_EMPTY_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)
+    @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
+    @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
     @mock.patch(FUCHSIA_INIT_NETSTACK)
     def test_fuchsia_get_interface_ip_addresses_full(self, init_mock,
                                                      list_interfaces_mock,
+                                                     start_services_mock,
+                                                     control_path_mock,
                                                      fuchsia_device_mock):
         init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
@@ -542,10 +550,14 @@ class IpAddressUtilTest(unittest.TestCase):
             CORRECT_FULL_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)
+    @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
+    @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
     @mock.patch(FUCHSIA_INIT_NETSTACK)
     def test_fuchsia_get_interface_ip_addresses_empty(self, init_mock,
                                                       list_interfaces_mock,
+                                                      start_services_mock,
+                                                      control_path_mock,
                                                       fuchsia_device_mock):
         init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES

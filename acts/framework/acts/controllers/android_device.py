@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2016 - The Android Open Source Project
+#   Copyright 2021 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -764,22 +764,41 @@ class AndroidDevice:
                         out.write(line)
         return adb_excerpt_path
 
-    def search_logcat(self, matching_string, begin_time=None):
+    def search_logcat(self,
+                    matching_string,
+                    begin_time=None,
+                    end_time=None,
+                    logcat_path=None):
         """Search logcat message with given string.
 
         Args:
             matching_string: matching_string to search.
+            begin_time: only the lines with time stamps later than begin_time
+                will be searched.
+            end_time: only the lines with time stamps earlier than end_time
+                will be searched.
+            logcat_path: the path of a specific file in which the search should
+                be performed. If None the path will be the default device log
+                path.
 
         Returns:
-            A list of dictionaries with full log message, time stamp string
-            and time object. For example:
+            A list of dictionaries with full log message, time stamp string,
+            time object and message ID. For example:
             [{"log_message": "05-03 17:39:29.898   968  1001 D"
                               "ActivityManager: Sending BOOT_COMPLETE user #0",
               "time_stamp": "2017-05-03 17:39:29.898",
-              "datetime_obj": datetime object}]
+              "datetime_obj": datetime object,
+              "message_id": None}]
+
+            [{"log_message": "08-12 14:26:42.611043  2360  2510 D RILJ    : "
+                             "[0853]< DEACTIVATE_DATA_CALL  [PHONE0]",
+              "time_stamp": "2020-08-12 14:26:42.611043",
+              "datetime_obj": datetime object},
+              "message_id": "0853"}]
         """
-        logcat_path = os.path.join(self.device_log_path,
-                                   'adblog_%s_debug.txt' % self.serial)
+        if not logcat_path:
+            logcat_path = os.path.join(self.device_log_path,
+                                    'adblog_%s_debug.txt' % self.serial)
         if not os.path.exists(logcat_path):
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
@@ -789,21 +808,40 @@ class AndroidDevice:
         if not output.stdout or output.exit_status != 0:
             return []
         if begin_time:
-            log_begin_time = acts_logger.epoch_to_log_line_timestamp(
-                begin_time)
-            begin_time = datetime.strptime(log_begin_time,
-                                           "%Y-%m-%d %H:%M:%S.%f")
+            if not isinstance(begin_time, datetime):
+                log_begin_time = acts_logger.epoch_to_log_line_timestamp(
+                    begin_time)
+                begin_time = datetime.strptime(log_begin_time,
+                                            "%Y-%m-%d %H:%M:%S.%f")
+        if end_time:
+            if not isinstance(end_time, datetime):
+                log_end_time = acts_logger.epoch_to_log_line_timestamp(
+                    end_time)
+                end_time = datetime.strptime(log_end_time,
+                                            "%Y-%m-%d %H:%M:%S.%f")
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
         for log in logs:
             time_stamp = log[0]
             time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
+
             if begin_time and time_obj < begin_time:
                 continue
+
+            if end_time and time_obj > end_time:
+                continue
+
+            res = re.findall(r'.*\[(\d+)\]', log[1])
+            try:
+                message_id = res[0]
+            except:
+                message_id = None
+
             result.append({
                 "log_message": "".join(log),
                 "time_stamp": time_stamp,
-                "datetime_obj": time_obj
+                "datetime_obj": time_obj,
+                "message_id": message_id
             })
         return result
 

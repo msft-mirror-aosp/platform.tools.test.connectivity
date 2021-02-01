@@ -59,6 +59,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_usage
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_service
 
 def wifi_tethering_cleanup(log, provider, client_list):
     """Clean up steps for WiFi Tethering.
@@ -315,17 +317,22 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
         wifi_toggle_state(log, ad, False)
 
 
-def airplane_mode_test(log, ad, retries=3):
+def airplane_mode_test(log, ad, wifi_ssid=None, retries=3):
     """ Test airplane mode basic on Phone and Live SIM.
 
-    Ensure phone attach, data on, WiFi off and verify Internet.
-    Turn on airplane mode to make sure detach.
-    Turn off airplane mode to make sure attach.
-    Verify Internet connection.
+    Test steps:
+        1. Ensure airplane mode is disabled and multiple network services are
+           available. Check WiFi and IMS registration status.
+        2. Turn on airplane mode and ensure cellular data and internet
+           connection are not available.
+        3. Turn off airplane mode and then ensure multiple network services are
+           available. Check if WiFi and IMS registration status keep the same.
 
     Args:
         log: log object.
         ad: android object.
+        wifi_ssid: SSID of WiFi AP which ad should connect to.
+        retries: times of retry
 
     Returns:
         True if pass; False if fail.
@@ -335,41 +342,32 @@ def airplane_mode_test(log, ad, retries=3):
         return False
 
     try:
-        ad.droid.telephonyToggleDataConnection(True)
-        wifi_toggle_state(log, ad, False)
+        log.info("Step1: disable airplane mode and ensure attach")
 
-        ad.log.info("Step1: disable airplane mode and ensure attach")
         if not toggle_airplane_mode(log, ad, False):
-            ad.log.error("Failed initial attach")
+            ad.log.error("Failed to disable airplane mode,")
             return False
 
-        if not wait_for_state(
-                get_service_state_by_adb,
-                "IN_SERVICE",
-                MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                WAIT_TIME_BETWEEN_STATE_CHECK,
-                log,
-                ad):
-            ad.log.error("Current service state is not 'IN_SERVICE'.")
-            return False
+        wifi_connected = False
+        if wifi_ssid:
+            wifi_connected = check_is_wifi_connected(log, ad, wifi_ssid)
 
-        time.sleep(30)
-        if not ad.droid.connectivityNetworkIsConnected():
-            ad.log.error("Network is NOT connected!")
-            return False
+        ims_reg = is_ims_registered(log, ad)
 
-        if not wait_for_cell_data_connection(log, ad, True):
-            ad.log.error("Failed to enable data connection.")
-            return False
+        if not wait_for_network_service(
+            log,
+            ad,
+            wifi_connected=wifi_connected,
+            wifi_ssid=wifi_ssid,
+            ims_reg=ims_reg):
 
-        if not verify_internet_connection(log, ad, retries=3):
-            ad.log.error("Data not available on cell.")
             return False
 
         log.info("Step2: enable airplane mode and ensure detach")
         if not toggle_airplane_mode(log, ad, True):
             ad.log.error("Failed to enable Airplane Mode")
             return False
+
         if not wait_for_cell_data_connection(log, ad, False):
             ad.log.error("Failed to disable cell data connection")
             return False
@@ -383,27 +381,15 @@ def airplane_mode_test(log, ad, retries=3):
             ad.log.error("Failed to disable Airplane Mode")
             return False
 
-        if not wait_for_state(
-                get_service_state_by_adb,
-                "IN_SERVICE",
-                MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                WAIT_TIME_BETWEEN_STATE_CHECK,
-                log,
-                ad):
-            ad.log.error("Current service state is not 'IN_SERVICE'.")
+        if not wait_for_network_service(
+            log,
+            ad,
+            wifi_connected=wifi_connected,
+            wifi_ssid=wifi_ssid,
+            ims_reg=ims_reg):
+
             return False
 
-        time.sleep(30)
-        if not ad.droid.connectivityNetworkIsConnected():
-            ad.log.warning("Network is NOT connected!")
-
-        if not wait_for_cell_data_connection(log, ad, True):
-            ad.log.error("Failed to enable cell data connection")
-            return False
-
-        if not verify_internet_connection(log, ad, retries=3):
-            ad.log.warning("Data not available on cell")
-            return False
         return True
     finally:
         toggle_airplane_mode(log, ad, False)
@@ -620,14 +606,18 @@ def reboot_test(log, ad, wifi_ssid=None):
     """ Reboot test to verify the service availability after reboot.
 
     Test procedure:
-    1. Reboot
-    2. Wait WAIT_TIME_AFTER_REBOOT for reboot complete.
-    3. Check service state. False will be returned if service state is not "IN_SERVICE".
-    4. Check if network is connected. False will be returned if not.
-    5. Check if cellular data or Wi-Fi connection is available. False will be returned if not.
-    6. Check if internet connection is available. False will be returned if not.
-    7. Check if DSDS mode, data sub ID, voice sub ID and message sub ID still keep the same.
-    8. Check if voice and data RAT keep the same.
+    1. Check WiFi and IMS registration status.
+    2. Reboot
+    3. Wait WAIT_TIME_AFTER_REBOOT for reboot complete.
+    4. Wait for multiple network services, including:
+       - service state
+       - network connection
+       - wifi connection if connected before reboot
+       - cellular data
+       - internet connection
+       - IMS registration if available before reboot
+    5. Check if DSDS mode, data sub ID, voice sub ID and message sub ID still keep the same.
+    6. Check if voice and data RAT keep the same.
 
     Args:
         log: log object.
@@ -638,10 +628,6 @@ def reboot_test(log, ad, wifi_ssid=None):
         True if pass; False if fail.
     """
     try:
-        wifi_connected = False
-        if wifi_ssid and check_is_wifi_connected(ad.log, ad, wifi_ssid):
-            wifi_connected = True
-
         data_subid = get_default_data_sub_id(ad)
         voice_subid = get_outgoing_voice_sub_id(ad)
         sms_subid = get_outgoing_message_sub_id(ad)
@@ -651,37 +637,26 @@ def reboot_test(log, ad, wifi_ssid=None):
         voice_rat_before_reboot = get_network_rat_for_subscription(
             log, ad, voice_subid, NETWORK_SERVICE_VOICE)
 
+        wifi_connected = False
+        if wifi_ssid:
+            wifi_connected = check_is_wifi_connected(log, ad, wifi_ssid)
+
+        ims_reg = is_ims_registered(log, ad)
+
         ad.reboot()
         time.sleep(WAIT_TIME_AFTER_REBOOT)
 
-        if not wait_for_state(
-                get_service_state_by_adb,
-                "IN_SERVICE",
-                MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                WAIT_TIME_BETWEEN_STATE_CHECK,
-                log,
-                ad):
-            ad.log.error("Current service state: %s" % service_state)
-            return False
+        if not wait_for_network_service(
+            log,
+            ad,
+            wifi_connected=wifi_connected,
+            wifi_ssid=wifi_ssid,
+            ims_reg=ims_reg):
 
-        if not ad.droid.connectivityNetworkIsConnected():
-            ad.log.error("Network is NOT connected!")
-            return False
-
-        if wifi_connected:
-            if not check_is_wifi_connected(ad.log, ad, wifi_ssid):
-                return False
-        else:
-            if not wait_for_cell_data_connection(log, ad, True):
-                ad.log.error("Failed to enable data connection.")
-                return False
-
-        if not verify_internet_connection(log, ad):
-            ad.log.error("Internet connection is not available")
             return False
 
         sim_mode = ad.droid.telephonyGetPhoneCount()
-        if hasattr(ad, "dsds"):
+        if getattr(ad, 'dsds', False):
             if sim_mode == 1:
                 ad.log.error("Phone is in single SIM mode after reboot.")
                 return False

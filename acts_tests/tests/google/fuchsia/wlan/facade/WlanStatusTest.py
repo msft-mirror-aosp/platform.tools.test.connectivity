@@ -30,7 +30,8 @@ class WlanStatusTest(BaseTestClass):
     def setup_class(self):
         super().setup_class()
         for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanCreateClientController()
+            fd.configure_wlan(association_mechanism='policy',
+                              preserve_saved_networks=True)
 
     def on_fail(self, test_name, begin_time):
         for fd in self.fuchsia_devices:
@@ -43,7 +44,8 @@ class WlanStatusTest(BaseTestClass):
             try:
                 if fd.device.hard_reboot_on_fail:
                     fd.hard_power_cycle(self.pdu_devices)
-                    fd.wlan_policy_lib.wlanCreateClientController()
+                    fd.configure_wlan(association_mechanism='policy',
+                                      preserve_saved_networks=True)
             except AttributeError:
                 pass
 
@@ -54,7 +56,7 @@ class WlanStatusTest(BaseTestClass):
         an error when queried for status.
         """
         for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanStopClientConnections()
+            fd.deconfigure_wlan()
 
             status = fd.wlan_lib.wlanStatus()
             self.log.debug(status)
@@ -72,7 +74,8 @@ class WlanStatusTest(BaseTestClass):
         status.
         """
         for fd in self.fuchsia_devices:
-            fd.wlan_policy_lib.wlanStartClientConnections()
+            fd.configure_wlan(association_mechanism='policy',
+                              preserve_saved_networks=True)
 
             status = fd.wlan_lib.wlanStatus()
             self.log.debug(status)
