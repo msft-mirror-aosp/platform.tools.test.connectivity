@@ -2228,3 +2228,51 @@ class CommandInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End AVDTP wrappers"""
+    """Begin Audio wrappers"""
+
+    def do_audio_start_output_save(self, line):
+        """
+        Description: Start audio output save
+
+        Usage:
+          Examples:
+            audio_start_output_save
+        """
+        cmd = "Start audio capture"
+        try:
+            result = self.pri_dut.audio_lib.startOutputSave()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_stop_output_save(self, line):
+        """
+        Description: Stop audio output save
+
+        Usage:
+          Examples:
+            audio_stop_output_save
+        """
+        cmd = "Stop audio capture"
+        try:
+            result = self.pri_dut.audio_lib.stopOutputSave()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_get_output_audio(self, line):
+        """
+        Description: Get the audio output saved to a local file
+
+        Usage:
+          Examples:
+            audio_get_output_audio
+        """
+        cmd = "Get audio capture"
+        try:
+            save_path = "{}/{}".format(self.pri_dut.log_path, "audio.raw")
+            result = self.pri_dut.audio_lib.getOutputAudio(save_path)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End Audio wrappers"""
