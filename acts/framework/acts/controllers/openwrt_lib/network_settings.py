@@ -13,18 +13,26 @@
 #   limitations under the License.
 
 import re
+from acts.controllers.openwrt_lib import network_const
 
 SERVICE_DNSMASQ = "dnsmasq"
 SERVICE_STUNNEL = "stunnel"
 SERVICE_NETWORK = "network"
 SERVICE_PPTPD = "pptpd"
 SERVICE_FIREWALL = "firewall"
-PPTP_PACKAGE = "pptpd kmod-mppe kmod-nf-nathelper-extra"
+SERVICE_IPSEC = "ipsec"
+SERVICE_XL2TPD = "xl2tpd"
+PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
+L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
+XL2TPD_CONFIG_PATH = "/etc/xl2tpd/xl2tpd.conf"
+XL2TPD_OPTION_CONFIG_PATH = "/etc/ppp/options.xl2tpd"
 FIREWALL_CUSTOM_OPTION_PATH = "/etc/firewall.user"
 PPP_CHAP_SECRET_PATH = "/etc/ppp/chap-secrets"
+LOCALHOST = "192.168.1.1"
+DEFAULT_PACKAGE_INSTALL_TIMEOUT = 200
 
 
 class NetworkSettings(object):
@@ -38,6 +46,7 @@ class NetworkSettings(object):
         config: A list to store changes on network settings.
         firewall_rules_list: A list of firewall rule name list
         cleanup_map: A dict for compare oppo functions.
+        l2tp: profile for vpn l2tp server.
     """
 
     def __init__(self, ssh, ip, logger):
@@ -57,6 +66,7 @@ class NetworkSettings(object):
         self.cleanup_map = {
             "setup_dns_server": self.remove_dns_server,
             "setup_vpn_pptp_server": self.remove_vpn_pptp_server,
+            "setup_vpn_l2tp_server": self.remove_vpn_l2tp_server,
             "disable_ipv6": self.enable_ipv6
         }
         # This map contains cleanup functions to restore the configuration to
@@ -93,27 +103,36 @@ class NetworkSettings(object):
         self.create_config_file("\n".join(self.config),
                                 HISTORY_CONFIG_PATH)
 
-    def install(self, package_name):
-        """Install package on OpenWrtAP via opkg.
+    def package_install(self, package_list):
+        """Install packages on OpenWrtAP via opkg If not installed.
 
         Args:
-            package_name: package name want to install.
+            package_list: package list to install.
+                          e.g. "pptpd kmod-mppe kmod-nf-nathelper-extra"
         """
         self.ssh.run("opkg update")
-        self.ssh.run("opkg install %s" % package_name)
+        for package_name in package_list.split(" "):
+            if not self._package_installed(package_name):
+                self.ssh.run("opkg install %s" % package_name,
+                             timeout=DEFAULT_PACKAGE_INSTALL_TIMEOUT)
+                self.log.info("Package: %s installed." % package_name)
+            else:
+                self.log.info("Package: %s skipped (already installed)." % package_name)
 
-    def remove(self, package_name):
-        """Remove package on OpenWrtAP via opkg.
+    def package_remove(self, package_list):
+        """Remove packages on OpenWrtAP via opkg If existed.
 
         Args:
-            package_name: package name want to install.
+            package_list: package list to remove.
         """
-        if self.package_installed(package_name):
-            self.ssh.run("opkg remove %s" % package_name)
-        else:
-            self.log.info("No exist package %s found." % package_name)
+        for package_name in package_list.split(" "):
+            if self._package_installed(package_name):
+                self.ssh.run("opkg remove %s" % package_name)
+                self.log.info("Package: %s removed." % package_name)
+            else:
+                self.log.info("No exist package %s found." % package_name)
 
-    def package_installed(self, package_name):
+    def _package_installed(self, package_name):
         """Check if target package installed on OpenWrtAP.
 
         Args:
@@ -127,7 +146,7 @@ class NetworkSettings(object):
         return False
 
     def file_exists(self, abs_file_path):
-        """Check if target file exist on specific path.
+        """Check if target file exist on specific path on OpenWrt.
 
         Args:
             abs_file_path: Absolute path for the file.
@@ -140,6 +159,14 @@ class NetworkSettings(object):
                         ignore_status=True).stdout:
             return True
         return False
+
+    def path_exists(self, abs_path):
+        """Check if dir exist on OpenWrt."""
+        try:
+            self.ssh.run("ls %s" % abs_path)
+        except:
+            return False
+        return True
 
     def count(self, config, key):
         """Count in uci config.
@@ -214,10 +241,9 @@ class NetworkSettings(object):
         self.commit_changes()
 
         # Check stunnel package is installed
-        if not self.package_installed("stunnel"):
-            self.install("stunnel")
-            self.service_manager.stop(SERVICE_STUNNEL)
-            self.service_manager.disable(SERVICE_STUNNEL)
+        self.package_install("stunnel")
+        self.service_manager.stop(SERVICE_STUNNEL)
+        self.service_manager.disable(SERVICE_STUNNEL)
 
         # Enable stunnel
         self.create_stunnel_config()
@@ -282,8 +308,7 @@ class NetworkSettings(object):
             password: password for pptp user.
         """
         #  Install pptp service
-        if not self.package_installed(PPTP_PACKAGE):
-            self.install(PPTP_PACKAGE)
+        self.package_install(PPTP_PACKAGE)
 
         self.config.add("setup_vpn_pptp_server")
         # Edit /etc/config/pptpd & /etc/ppp/options.pptpd
@@ -308,6 +333,10 @@ class NetworkSettings(object):
         self.service_manager.need_restart(SERVICE_FIREWALL)
         self.config.discard("setup_vpn_pptp_server")
         self.commit_changes()
+
+        self.package_remove(PPTP_PACKAGE)
+        self.ssh.run("rm /etc/ppp/options.pptpd")
+        self.ssh.run("rm /etc/config/pptpd")
 
     def setup_pptpd(self, local_ip, username, password, ms_dns="8.8.8.8"):
         """Setup pptpd config for ip addr and account.
@@ -342,8 +371,181 @@ class NetworkSettings(object):
     def restore_pptpd(self):
         """Disable pptpd."""
         self.ssh.run("uci set pptpd.pptpd.enabled=0")
-        self.remove_config_option(r"\S+ pptp-server \S+ \*", PPP_CHAP_SECRET_PATH)
+        self.remove_config_option(r"\S+ pptp-server \S+ \*",
+                                  PPP_CHAP_SECRET_PATH)
         self.service_manager.need_restart(SERVICE_PPTPD)
+
+    def setup_vpn_l2tp_server(self,
+                              vpn_server_hostname,
+                              vpn_server_address,
+                              vpn_username,
+                              vpn_password,
+                              psk_secret,
+                              server_name,
+                              country,
+                              org):
+        """Setup l2tp vpn server on OpenWrt.
+
+        Args:
+            vpn_server_hostname: vpn server domain name
+            vpn_server_address: vpn server addr
+            vpn_username: vpn account
+            vpn_password: vpn password
+            psk_secret: psk for ipsec
+            server_name: vpn server name for register in OpenWrt
+            country: country code for generate cert keys.
+            org: Organization name for generate cert keys.
+        """
+        self.l2tp = network_const.VpnL2tp(vpn_server_hostname,
+                                           vpn_server_address,
+                                           vpn_username,
+                                           vpn_password,
+                                           psk_secret,
+                                           server_name)
+
+        self.package_install(L2TP_PACKAGE)
+        self.config.add("setup_vpn_l2tp_server")
+
+        # /etc/strongswan.conf: Strongswan configuration file
+        self.setup_strongswan()
+        # /etc/ipsec.conf /etc/ipsec.secrets
+        self.setup_ipsec()
+        # /etc/xl2tpd/xl2tpd.conf & /etc/ppp/options.xl2tpd
+        self.setup_xl2tpd()
+        # /etc/ppp/chap-secrets
+        self.setup_ppp_secret()
+        # /etc/config/firewall & /etc/firewall.user
+        self.setup_firewall_rules_for_l2tp()
+        # generate cert and key for rsa
+        self.generate_vpn_cert_keys(country, org)
+        # restart service
+        self.service_manager.need_restart(SERVICE_IPSEC)
+        self.service_manager.need_restart(SERVICE_XL2TPD)
+        self.service_manager.need_restart(SERVICE_FIREWALL)
+        self.commit_changes()
+
+    def remove_vpn_l2tp_server(self):
+        """Remove l2tp vpn server on OpenWrt."""
+        self.config.discard("setup_vpn_l2tp_server")
+        self.restore_firewall_rules_for_l2tp()
+        self.service_manager.need_restart(SERVICE_IPSEC)
+        self.service_manager.need_restart(SERVICE_XL2TPD)
+        self.service_manager.need_restart(SERVICE_FIREWALL)
+        self.commit_changes()
+        self.package_remove(L2TP_PACKAGE)
+        if hasattr(self, "l2tp"):
+            delattr(self, "l2tp")
+
+    def setup_strongswan(self, dns="8.8.8.8"):
+        """Setup strongswan config."""
+        config = [
+            "charon {",
+            "   load_modular = yes",
+            "   plugins {",
+            "       include strongswan.d/charon/*.conf",
+            "   }",
+            "   dns1=%s" % dns,
+            "}"
+        ]
+        self.create_config_file("\n".join(config), "/etc/strongswan.conf")
+
+    def setup_ipsec(self):
+        """Setup ipsec config."""
+        def load_config(data):
+            for i in data.keys():
+                config.append(i)
+                for j in data[i].keys():
+                    config.append("\t %s=%s" % (j, data[i][j]))
+                config.append("")
+
+        config = []
+        load_config(network_const.IPSEC_CONF)
+        load_config(network_const.IPSEC_L2TP_PSK)
+        load_config(network_const.IPSEC_L2TP_RSA)
+        self.create_config_file("\n".join(config), "/etc/ipsec.conf")
+
+        ipsec_secret = []
+        ipsec_secret.append(r": PSK \"%s\"" % self.l2tp.psk_secret)
+        ipsec_secret.append(r": RSA \"%s\"" % "serverKey.der")
+        self.create_config_file("\n".join(ipsec_secret), "/etc/ipsec.secrets")
+
+    def setup_xl2tpd(self, ip_range=20):
+        """Setup xl2tpd config."""
+        net_id, host_id = self.l2tp.address.rsplit(".", 1)
+        xl2tpd_conf = network_const.XL2TPD_CONF_GLOBAL
+        xl2tpd_conf.append("auth file = %s" % PPP_CHAP_SECRET_PATH)
+        xl2tpd_conf.extend(network_const.XL2TPD_CONF_INS)
+        xl2tpd_conf.append("ip range = %s.%s-%s.%s" %
+                           (net_id, host_id, net_id,
+                            str(int(host_id)+ip_range)))
+        xl2tpd_conf.append("local ip = %s" % self.l2tp.address)
+        xl2tpd_conf.append("name = %s" % self.l2tp.name)
+        xl2tpd_conf.append("pppoptfile = %s" % XL2TPD_OPTION_CONFIG_PATH)
+
+        self.create_config_file("\n".join(xl2tpd_conf), XL2TPD_CONFIG_PATH)
+        xl2tpd_option = network_const.XL2TPD_OPTION
+        xl2tpd_option.append("name %s" % self.l2tp.name)
+        self.create_config_file("\n".join(xl2tpd_option),
+                                XL2TPD_OPTION_CONFIG_PATH)
+
+    def setup_ppp_secret(self):
+        self.replace_config_option(
+            r"\S+ %s \S+ \*" % self.l2tp.name,
+            "%s %s %s *" % (self.l2tp.username,
+                            self.l2tp.name,
+                            self.l2tp.password),
+            PPP_CHAP_SECRET_PATH)
+
+    def generate_vpn_cert_keys(self, country, org):
+        """Generate cert and keys for vpn server."""
+        rsa = "--type rsa"
+        lifetime = "--lifetime 365"
+        size = "--size 4096"
+
+        self.ssh.run("ipsec pki --gen %s %s --outform der > caKey.der" %
+                     (rsa, size))
+        self.ssh.run("ipsec pki --self --ca %s --in caKey.der %s --dn "
+                     "\"C=%s, O=%s, CN=%s\" --outform der > caCert.der" %
+                     (lifetime, rsa, country, org, self.l2tp.hostname))
+        self.ssh.run("ipsec pki --gen %s %s --outform der > serverKey.der" %
+                     (size, rsa))
+        self.ssh.run("ipsec pki --pub --in serverKey.der %s | ipsec pki "
+                     "--issue %s --cacert caCert.der --cakey caKey.der "
+                     "--dn \"C=%s, O=%s, CN=%s\" --san %s --flag serverAuth"
+                     " --flag ikeIntermediate --outform der > serverCert.der" %
+                     (rsa, lifetime, country, org, self.l2tp.hostname, LOCALHOST))
+        self.ssh.run("ipsec pki --gen %s %s --outform der > clientKey.der" %
+                     (size, rsa))
+        self.ssh.run("ipsec pki --pub --in clientKey.der %s | ipsec pki "
+                     "--issue %s --cacert caCert.der --cakey caKey.der "
+                     "--dn \"C=%s, O=%s, CN=%s@%s\" --outform der > "
+                     "clientCert.der" % (rsa, lifetime, country, org,
+                                         self.l2tp.username, self.l2tp.hostname))
+
+        self.ssh.run(
+            "openssl rsa -inform DER -in clientKey.der"
+            " -out clientKey.pem -outform PEM"
+        )
+        self.ssh.run(
+            "openssl x509 -inform DER -in clientCert.der"
+            " -out clientCert.pem -outform PEM"
+        )
+        self.ssh.run(
+            "openssl x509 -inform DER -in caCert.der"
+            " -out caCert.pem -outform PEM"
+        )
+        self.ssh.run(
+            "openssl pkcs12 -in clientCert.pem -inkey  clientKey.pem"
+            " -certfile caCert.pem -export -out clientPkcs.p12 -passout pass:"
+        )
+
+        self.ssh.run("mv caCert.pem /etc/ipsec.d/cacerts/")
+        self.ssh.run("mv *Cert* /etc/ipsec.d/certs/")
+        self.ssh.run("mv *Key* /etc/ipsec.d/private/")
+        if not self.path_exists("/www/downloads/"):
+            self.ssh.run("mkdir /www/downloads/")
+        self.ssh.run("mv clientPkcs.p12 /www/downloads/")
+        self.ssh.run("chmod 664 /www/downloads/clientPkcs.p12")
 
     def update_firewall_rules_list(self):
         """Update rule list in /etc/config/firewall."""
@@ -372,11 +574,7 @@ class NetworkSettings(object):
             self.ssh.run("uci set firewall.@rule[-1].src='wan'")
             self.ssh.run("uci set firewall.@rule[-1].proto='47'")
 
-        iptable_rules = [
-            "iptables -A input_rule -i ppp+ -j ACCEPT",
-            "iptables -A output_rule -o ppp+ -j ACCEPT",
-            "iptables -A forwarding_rule -i ppp+ -j ACCEPT"
-        ]
+        iptable_rules = network_const.FIREWALL_RULES_FOR_PPTP
         self.add_custom_firewall_rules(iptable_rules)
         self.service_manager.need_restart(SERVICE_FIREWALL)
 
@@ -390,6 +588,58 @@ class NetworkSettings(object):
         if "GRP" in self.firewall_rules_list:
             self.ssh.run("uci del firewall.@rule[%s]"
                          % self.firewall_rules_list.index("GRP"))
+        self.remove_custom_firewall_rules()
+        self.service_manager.need_restart(SERVICE_FIREWALL)
+
+    def setup_firewall_rules_for_l2tp(self):
+        """Setup firewall for vpn l2tp server."""
+        self.update_firewall_rules_list()
+        if "ipsec esp" not in self.firewall_rules_list:
+            self.ssh.run("uci add firewall rule")
+            self.ssh.run("uci set firewall.@rule[-1].name='ipsec esp'")
+            self.ssh.run("uci set firewall.@rule[-1].target='ACCEPT'")
+            self.ssh.run("uci set firewall.@rule[-1].proto='esp'")
+            self.ssh.run("uci set firewall.@rule[-1].src='wan'")
+
+        if "ipsec nat-t" not in self.firewall_rules_list:
+            self.ssh.run("uci add firewall rule")
+            self.ssh.run("uci set firewall.@rule[-1].name='ipsec nat-t'")
+            self.ssh.run("uci set firewall.@rule[-1].target='ACCEPT'")
+            self.ssh.run("uci set firewall.@rule[-1].src='wan'")
+            self.ssh.run("uci set firewall.@rule[-1].proto='udp'")
+            self.ssh.run("uci set firewall.@rule[-1].dest_port='4500'")
+
+        if "auth header" not in self.firewall_rules_list:
+            self.ssh.run("uci add firewall rule")
+            self.ssh.run("uci set firewall.@rule[-1].name='auth header'")
+            self.ssh.run("uci set firewall.@rule[-1].target='ACCEPT'")
+            self.ssh.run("uci set firewall.@rule[-1].src='wan'")
+            self.ssh.run("uci set firewall.@rule[-1].proto='ah'")
+
+        net_id = self.l2tp.address.rsplit(".", 1)[0]
+        iptable_rules = network_const.FIREWALL_RULES_FOR_L2TP
+        iptable_rules.append("iptables -A FORWARD -s %s.0/24"
+                             "  -j ACCEPT" % net_id)
+        iptable_rules.append("iptables -t nat -A POSTROUTING"
+                             " -s %s.0/24 -o eth0.2 -j MASQUERADE" % net_id)
+
+        self.add_custom_firewall_rules(iptable_rules)
+        self.service_manager.need_restart(SERVICE_FIREWALL)
+
+    def restore_firewall_rules_for_l2tp(self):
+        """Restore firewall for vpn l2tp server."""
+        self.update_firewall_rules_list()
+        if "ipsec esp" in self.firewall_rules_list:
+            self.ssh.run("uci del firewall.@rule[%s]"
+                         % self.firewall_rules_list.index("ipsec esp"))
+        self.update_firewall_rules_list()
+        if "ipsec nat-t" in self.firewall_rules_list:
+            self.ssh.run("uci del firewall.@rule[%s]"
+                         % self.firewall_rules_list.index("ipsec nat-t"))
+        self.update_firewall_rules_list()
+        if "auth header" in self.firewall_rules_list:
+            self.ssh.run("uci del firewall.@rule[%s]"
+                         % self.firewall_rules_list.index("auth header"))
         self.remove_custom_firewall_rules()
         self.service_manager.need_restart(SERVICE_FIREWALL)
 
@@ -413,12 +663,12 @@ class NetworkSettings(object):
             self.ssh.run("mv %s %s" % (backup_file_path,
                                        FIREWALL_CUSTOM_OPTION_PATH))
         else:
-            self.log.warning("Did not find %s" % backup_file_path)
+            self.log.debug("Did not find %s" % backup_file_path)
             self.ssh.run("echo "" > %s" % FIREWALL_CUSTOM_OPTION_PATH)
 
     def disable_pptp_service(self):
         """Disable pptp service."""
-        self.remove(PPTP_PACKAGE)
+        self.package_remove(PPTP_PACKAGE)
 
     def enable_ipv6(self):
         """Enable ipv6 on OpenWrt."""
