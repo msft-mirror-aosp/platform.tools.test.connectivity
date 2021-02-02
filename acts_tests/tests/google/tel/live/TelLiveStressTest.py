@@ -50,6 +50,7 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_SING
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_test_utils import configure_sdm_logs
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
@@ -132,9 +133,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.sdm_log = self.user_params.get("sdm_log", False)
         for ad in self.android_devices:
             setattr(ad, "sdm_log", self.sdm_log)
+            configure_sdm_logs(ad)
             ad.adb.shell("setprop nfc.debug_enable 1")
             if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
+                
         self.user_params["telephony_auto_rerun"] = 0
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
@@ -162,6 +165,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.gps_log_file = self.user_params.get("gps_log_file", None)
         self.file_name_list = self.user_params.get("file_downloads", DEFAULT_FILE_DOWNLOADS)
         self.tel_logger = TelephonyMetricLogger.for_test_case()
+        
         return True
 
     def setup_test(self):
