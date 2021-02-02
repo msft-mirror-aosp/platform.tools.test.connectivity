@@ -72,6 +72,7 @@ def get_private_key(ip_address, ssh_config):
 def create_ssh_connection(ip_address,
                           ssh_username,
                           ssh_config,
+                          ssh_port=22,
                           connect_timeout=10,
                           auth_timeout=10,
                           banner_timeout=10):
@@ -98,6 +99,7 @@ def create_ssh_connection(ip_address,
                        username=ssh_username,
                        allow_agent=False,
                        pkey=ssh_key,
+                       port=ssh_port,
                        timeout=connect_timeout,
                        auth_timeout=auth_timeout,
                        banner_timeout=banner_timeout)
