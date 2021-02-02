@@ -30,29 +30,7 @@ LOCAL_FRAMEWORK_DIR = '../acts/framework'
 
 acts_tests_dir = os.path.abspath(os.path.dirname(__file__))
 
-install_requires = [
-    # Future needs to have a newer version that contains urllib.
-    'future>=0.16.0',
-    # Latest version of mock (4.0.0b) causes a number of compatibility issues
-    # with ACTS unit tests (b/148695846, b/148814743)
-    'mock==3.0.5',
-    # b/157117302: python3.5 is not supported by NumPy 1.19+
-    'numpy<=1.18.1',
-    'pyserial',
-    'pyyaml>=5.1',
-    'protobuf>=3.14.0',
-    'requests',
-    'scapy',
-    'xlsxwriter',
-    'mobly>=1.10.0',
-]
-
-if sys.version_info < (3, ):
-    install_requires.append('enum34')
-    install_requires.append('statistics')
-    # "futures" is needed for py2 compatibility and it only works in 2.7
-    install_requires.append('futures')
-    install_requires.append('subprocess32')
+install_requires = []
 
 
 def _setup_acts_framework(option, *args):
