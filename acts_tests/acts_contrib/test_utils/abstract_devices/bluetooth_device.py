@@ -1220,7 +1220,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         disconnect_result = self.device.gattc_lib.bleDisconnectPeripheral(
             peer_identifier)
-        if disconnect_result.get("error") is None:
+        if disconnect_result.get("error") is not None:
             self.log.error("Failed to disconnect from peer id {}: {}".format(
                 peer_identifier, disconnect_result.get("error")))
             return False
