@@ -45,6 +45,7 @@ def start_syslog(serial,
                  ip_address,
                  ssh_username,
                  ssh_config,
+                 ssh_port=22,
                  extra_params=''):
     """Creates a FuchsiaSyslogProcess that automatically attempts to reconnect.
 
@@ -55,6 +56,7 @@ def start_syslog(serial,
         ssh_username: Username for the device for the Fuchsia Device.
         ssh_config: Location of the ssh_config for connecting to the remote
             device
+        ssh_port: The ssh port of the Fuchsia device.
         extra_params: Any additional params to be added to the syslog cmdline.
 
     Returns:
@@ -65,7 +67,7 @@ def start_syslog(serial,
                                       log_styles=(LogStyles.LOG_DEBUG
                                                   | LogStyles.MONOLITH_LOG))
     syslog = FuchsiaSyslogProcess(ssh_username, ssh_config, ip_address,
-                                  extra_params)
+                                  extra_params, ssh_port)
     timestamp_tracker = TimestampTracker()
     syslog.set_on_output_callback(_log_line_func(logger, timestamp_tracker))
     return syslog
@@ -78,18 +80,25 @@ class FuchsiaSyslogError(Exception):
 class FuchsiaSyslogProcess(object):
     """A class representing a Fuchsia Syslog object that communicates over ssh.
     """
-    def __init__(self, ssh_username, ssh_config, ip_address, extra_params):
+    def __init__(self,
+        ssh_username,
+        ssh_config,
+        ip_address,
+        extra_params,
+        ssh_port):
         """
         Args:
             ssh_username: The username to connect to Fuchsia over ssh.
             ssh_config: The ssh config that holds the information to connect to
             a Fuchsia device over ssh.
             ip_address: The ip address of the Fuchsia device.
+            ssh_port: The ssh port of the Fuchsia device.
         """
         self.ssh_config = ssh_config
         self.ip_address = ip_address
         self.extra_params = extra_params
         self.ssh_username = ssh_username
+        self.ssh_port = ssh_port
         self._output_file = None
         self._ssh_client = None
         self._listening_thread = None
@@ -192,7 +201,8 @@ class FuchsiaSyslogProcess(object):
 
         self._ssh_client = create_ssh_connection(self.ip_address,
                                                  self.ssh_username,
-                                                 self.ssh_config)
+                                                 self.ssh_config,
+                                                 ssh_port=self.ssh_port)
         transport = self._ssh_client.get_transport()
         channel = transport.open_session()
         channel.get_pty()
