@@ -547,9 +547,6 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     def setup_dut(self, testcase_params):
         """Sets up the DUT in the configuration required by the test."""
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
@@ -567,6 +564,18 @@ class WifiRssiTest(base_test.BaseTestClass):
                                 num_of_tries=5)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
+    def validate_skip_conditions(self, testcase_params):
+        """Checks if test should be skipped."""
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('DUT battery level too low.')
+        if '6g' in testcase_params[
+                'channel'] and not self.dut.droid.is6GhzBandSupported():
+            asserts.skip('DUT does not support 6 GHz band.')
+        if not self.access_point.band_lookup_by_channel(
+                testcase_params['channel']):
+            asserts.skip('AP does not support requested channel.')
+
     def setup_rssi_test(self, testcase_params):
         """Main function to test RSSI.
 
@@ -579,6 +588,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         Returns:
             rssi_result: dict containing rssi_results and meta data
         """
+        # Check if test should be skipped.
+        self.validate_skip_conditions(testcase_params)
         # Configure AP
         self.setup_ap(testcase_params)
         # Initialize attenuators

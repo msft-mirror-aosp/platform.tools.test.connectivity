@@ -465,12 +465,13 @@ class WifiRetailAP(object):
         Args:
             channel: channel number to lookup
         Returns:
-            band: name of band which this channel belongs to on this ap
+            band: name of band which this channel belongs to on this ap, False
+            if not supported
         """
         for key, value in self.capabilities['channels'].items():
             if channel in value:
                 return key
-        raise ValueError('Invalid channel passed in argument.')
+        return False
 
     def _get_control_ip_address(self):
         """Function to get AP's Control Interface IP address."""
