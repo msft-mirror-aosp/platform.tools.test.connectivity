@@ -109,6 +109,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
+            dev.go_to_sleep()
         self.process_testclass_results()
 
     def process_testclass_results(self):
@@ -508,7 +509,10 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         self.sta_dut = self.android_devices[0]
         # Turn screen off to preserve battery
-        self.sta_dut.go_to_sleep()
+        if self.testclass_params.get('screen_on', False):
+            self.sta_dut.droid.wakeLockAcquireDim()
+        else:
+            self.sta_dut.go_to_sleep()
         if wputils.validate_network(self.sta_dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
