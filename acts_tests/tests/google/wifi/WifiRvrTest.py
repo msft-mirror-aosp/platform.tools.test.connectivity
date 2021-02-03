@@ -507,11 +507,6 @@ class WifiRvrTest(base_test.BaseTestClass):
             testcase_params: dict containing AP and other test params
         """
         self.sta_dut = self.android_devices[0]
-        # Check battery level before test
-        if not wputils.health_check(
-                self.sta_dut,
-                20) and testcase_params['traffic_direction'] == 'UL':
-            asserts.skip('Overheating or Battery level low. Skipping test.')
         # Turn screen off to preserve battery
         self.sta_dut.go_to_sleep()
         if wputils.validate_network(self.sta_dut,
@@ -536,12 +531,27 @@ class WifiRvrTest(base_test.BaseTestClass):
                 if self.testbed_params['sniffer_enable']:
                     self.sniffer.stop_capture(tag='connection_setup')
 
+    def validate_skip_conditions(self, testcase_params):
+        """Checks if test should be skipped."""
+        # Check battery level before test
+        if not wputils.health_check(self.android_devices[0], 10):
+            asserts.skip('DUT battery level too low.')
+        if testcase_params[
+                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
+                ):
+            asserts.skip('DUT does not support 6 GHz band.')
+        if not self.access_point.band_lookup_by_channel(
+                testcase_params['channel']):
+            asserts.skip('AP does not support requested channel.')
+
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
 
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped.
+        self.validate_skip_conditions(testcase_params)
         # Configure AP
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
@@ -859,10 +869,10 @@ class WifiOtaRvrTest(WifiRvrTest):
         wputils.BokehFigure.save_figures(figure_list, output_file_path)
 
     def setup_rvr_test(self, testcase_params):
-        # Set turntable orientation
-        self.ota_chamber.set_orientation(testcase_params['orientation'])
         # Continue test setup
         WifiRvrTest.setup_rvr_test(self, testcase_params)
+        # Set turntable orientation
+        self.ota_chamber.set_orientation(testcase_params['orientation'])
 
     def generate_test_cases(self, channels, modes, angles, traffic_types,
                             directions):

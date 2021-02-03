@@ -6,7 +6,7 @@ from acts_contrib.test_utils.wifi.wifi_retail_ap import BlockingBrowser
 
 BROWSER_WAIT_SHORT = 1
 BROWSER_WAIT_MED = 3
-BROWSER_WAIT_LONG = 30
+BROWSER_WAIT_LONG = 10
 BROWSER_WAIT_EXTRA_LONG = 60
 
 
@@ -99,10 +99,13 @@ class BrcmRefAP(WifiRetailAP):
         if channel_string == '0':
             return 'Auto'
         if 'u' in channel_string or 'l' in channel_string:
-            return str(channel_string[0:-1])
-        if len(channel_string.split('/')) > 1:
-            return channel_string.split('/')[0]
-        return channel_string
+            channel_string = channel_string[0:-1]
+        elif len(channel_string.split('/')) > 1:
+            channel_string = channel_string.split('/')[0]
+        if '6g' in channel_string:
+            return channel_string
+        else:
+            return int(channel_string)
 
     def _get_channel_str(self, interface, channel, bandwidth):
         bandwidth = int(''.join([x for x in bandwidth if x.isdigit()]))
@@ -177,7 +180,8 @@ class BrcmRefAP(WifiRetailAP):
             if 'channel' in settings_to_update['2G_5G']:
                 band = '2.4 GHz' if int(
                     settings_to_update['2G_5G']['channel']) < 13 else '5 GHz'
-                settings_to_update['2G_5G']['bandwidth'] = 'HE20'
+                if band == '2.4 GHz':
+                    settings_to_update['2G_5G']['bandwidth'] = 'HE20'
                 settings_to_update['2G_5G']['band'] = band
         self.ap_settings, updates_requested, status_toggle_flag = self._update_settings_dict(
             self.ap_settings, settings_to_update)
@@ -235,3 +239,5 @@ class BrcmRefAP(WifiRetailAP):
                 time.sleep(BROWSER_WAIT_SHORT)
                 config_item.first.click()
                 time.sleep(BROWSER_WAIT_LONG)
+                browser.visit_persistent(self.config_page, BROWSER_WAIT_LONG,
+                                     10)

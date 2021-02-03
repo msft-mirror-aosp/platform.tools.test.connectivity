@@ -390,23 +390,20 @@ class WifiPingTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
+            testcase_params['test_network']['channel'] = testcase_params[
+                'channel']
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
-            testcase_params['test_network']['channel'] = testcase_params[
-                'channel']
             wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],
-                                num_of_tries=5,
+                                num_of_tries=1,
                                 check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if testcase_params['channel'] not in self.atten_dut_chain_map.keys():
@@ -422,12 +419,27 @@ class WifiPingTest(base_test.BaseTestClass):
             else:
                 atten.offset = 0
 
+    def validate_skip_conditions(self, testcase_params):
+        """Checks if test should be skipped."""
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('DUT battery level too low.')
+        if testcase_params[
+                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
+                ):
+            asserts.skip('DUT does not support 6 GHz band.')
+        if not self.access_point.band_lookup_by_channel(
+                testcase_params['channel']):
+            asserts.skip('AP does not support requested channel.')
+
     def setup_ping_test(self, testcase_params):
         """Function that gets devices ready for the test.
 
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped.
+        self.validate_skip_conditions(testcase_params)
         # Configure AP
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB

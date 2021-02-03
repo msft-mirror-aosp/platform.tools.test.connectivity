@@ -330,7 +330,23 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             self.testbed_params['ap_tx_power_offset'][str(
                 testcase_params['channel'])] - ping_result['range'])
 
+    def validate_skip_conditions(self, testcase_params):
+        """Checks if test should be skipped."""
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('DUT battery level too low.')
+        if testcase_params[
+                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
+                ):
+            asserts.skip('DUT does not support 6 GHz band.')
+        if not self.access_point.band_lookup_by_channel(
+                testcase_params['channel']):
+            asserts.skip('AP does not support requested channel.')
+
     def setup_sensitivity_test(self, testcase_params):
+        # Check if test should be skipped.
+        self.validate_skip_conditions(testcase_params)
+        # Setup test
         if testcase_params['traffic_type'].lower() == 'ping':
             self.setup_ping_test(testcase_params)
             self.run_sensitivity_test = self.run_ping_test
@@ -386,9 +402,6 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
@@ -680,9 +693,6 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     self.dut, int(testcase_params['chain_mask']))
             else:
                 wputils.set_ini_two_chain_mode(self.dut)
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
