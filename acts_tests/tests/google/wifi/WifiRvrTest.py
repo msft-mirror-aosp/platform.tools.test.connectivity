@@ -534,7 +534,7 @@ class WifiRvrTest(base_test.BaseTestClass):
     def validate_skip_conditions(self, testcase_params):
         """Checks if test should be skipped."""
         # Check battery level before test
-        if not wputils.health_check(self.sta_dut, 10):
+        if not wputils.health_check(self.android_devices[0], 10):
             asserts.skip('DUT battery level too low.')
         if '6g' in testcase_params[
                 'channel'] and not self.sta_dut.droid.is6GhzBandSupported():
