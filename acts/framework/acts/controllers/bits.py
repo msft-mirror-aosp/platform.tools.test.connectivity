@@ -335,6 +335,9 @@ class Bits(object):
         metrics = {}
 
         for segment_name, times in timestamps.items():
+            if 'start' not in times or 'end' not in times:
+                continue
+
             start = times['start']
             end = times['end']
 
@@ -344,9 +347,9 @@ class Bits(object):
             # The preferred way for new calls to this function should be using
             # datetime instead which is unambiguous
             if isinstance(start, (int, float)):
-                start = times['start'] * 1e6
+                start = start * 1e6
             if isinstance(end, (int, float)):
-                end = times['end'] * 1e6
+                end = end * 1e6
 
             raw_metrics = self._client.get_metrics(self._active_collection.name,
                                                    start=start, end=end)
