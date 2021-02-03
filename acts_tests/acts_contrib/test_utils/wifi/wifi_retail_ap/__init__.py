@@ -350,7 +350,7 @@ class WifiRetailAP(object):
         if channel not in self.capabilities['channels'][network]:
             self.log.error('Ch{} is not supported on {} interface.'.format(
                 channel, network))
-        setting_to_update = {network: {'channel': str(channel)}}
+        setting_to_update = {network: {'channel': channel}}
         self.update_ap_settings(setting_to_update)
 
     def set_bandwidth(self, network, bandwidth):
@@ -368,7 +368,7 @@ class WifiRetailAP(object):
         if bandwidth not in self.capabilities['modes'][network]:
             self.log.error('{} mode is not supported on {} interface.'.format(
                 bandwidth, network))
-        setting_to_update = {network: {'bandwidth': str(bandwidth)}}
+        setting_to_update = {network: {'bandwidth': bandwidth}}
         self.update_ap_settings(setting_to_update)
 
     def set_power(self, network, power):
@@ -381,7 +381,7 @@ class WifiRetailAP(object):
         if 'power' not in self.ap_settings[network].keys():
             self.log.error(
                 'Cannot configure power on {} interface.'.format(network))
-        setting_to_update = {network: {'power': str(power)}}
+        setting_to_update = {network: {'power': power}}
         self.update_ap_settings(setting_to_update)
 
     def set_security(self, network, security_type, *password):
