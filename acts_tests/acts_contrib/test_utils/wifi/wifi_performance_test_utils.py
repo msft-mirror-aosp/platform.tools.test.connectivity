@@ -47,6 +47,7 @@ RSSI_ERROR_VAL = float('nan')
 RTT_REGEX = re.compile(r'^\[(?P<timestamp>\S+)\] .*? time=(?P<rtt>\S+)')
 LOSS_REGEX = re.compile(r'(?P<loss>\S+)% packet loss')
 FW_REGEX = re.compile(r'FW:(?P<firmware>\S+) HW:')
+CHANNELS_6GHz = ['6g{}'.format(4 * x + 1) for x in range(59)]
 
 
 # Threading decorator

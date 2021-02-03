@@ -335,8 +335,9 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         # Check battery level before test
         if not wputils.health_check(self.dut, 10):
             asserts.skip('DUT battery level too low.')
-        if '6g' in testcase_params[
-                'channel'] and not self.dut.droid.is6GhzBandSupported():
+        if testcase_params[
+                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
+                ):
             asserts.skip('DUT does not support 6 GHz band.')
         if not self.access_point.band_lookup_by_channel(
                 testcase_params['channel']):
