@@ -535,27 +535,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                 if self.testbed_params['sniffer_enable']:
                     self.sniffer.stop_capture(tag='connection_setup')
 
-    def validate_skip_conditions(self, testcase_params):
-        """Checks if test should be skipped."""
-        # Check battery level before test
-        if not wputils.health_check(self.android_devices[0], 10):
-            asserts.skip('DUT battery level too low.')
-        if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.android_devices[
-                    0].droid.is6GhzBandSupported():
-            asserts.skip('DUT does not support 6 GHz band.')
-        if not self.access_point.band_lookup_by_channel(
-                testcase_params['channel']):
-            asserts.skip('AP does not support requested channel.')
-
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
 
         Args:
             testcase_params: dict containing test-specific parameters
         """
-        # Check if test should be skipped.
-        self.validate_skip_conditions(testcase_params)
         # Configure AP
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
@@ -587,12 +572,28 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.monitored_dut = self.sta_dut
         self.monitored_interface = None
 
+    def check_skip_conditions(self, testcase_params):
+        """Checks if test should be skipped."""
+        # Check battery level before test
+        if not wputils.health_check(self.android_devices[0], 10):
+            asserts.skip('DUT battery level too low.')
+        if testcase_params[
+                'channel'] in wputils.CHANNELS_6GHz and not self.android_devices[
+                    0].droid.is6GhzBandSupported():
+            asserts.skip('DUT does not support 6 GHz band.')
+        if not self.access_point.band_lookup_by_channel(
+                testcase_params['channel']):
+            asserts.skip('AP does not support requested channel.')
+
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
 
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped based on parameters.
+        self.check_skip_conditions(testcase_params)
+
         num_atten_steps = int((self.testclass_params['atten_stop'] -
                                self.testclass_params['atten_start']) /
                               self.testclass_params['atten_step'])
