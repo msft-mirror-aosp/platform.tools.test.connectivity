@@ -77,6 +77,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -850,7 +851,7 @@ def phone_setup_iwlan_for_subscription(log,
         ad.log.info("WiFi network SSID not specified, available user "
                     "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
                     "wifi_network_ssid_5g")
-    if not set_wfc_mode(log, ad, wfc_mode):
+    if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
     if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
