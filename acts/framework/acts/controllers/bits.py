@@ -177,7 +177,10 @@ class Bits(object):
     def setup(self, *_, registry=None, **__):
         """Starts a bits_service in the background.
 
-        This function needs to be
+        This function needs to be called with either a registry or after calling
+        power_monitor.update_registry, and it needs to be called before any other
+        method in this class.
+
         Args:
             registry: A dictionary with files used by bits. Format:
                 {
@@ -236,6 +239,8 @@ class Bits(object):
             'bits_service_out_%s.txt' % self.index)
         service_name = 'bits_config_%s' % self.index
 
+        self._active_collection = None
+        self._collections_counter = 0
         self._service = bits_service.BitsService(config,
                                                  bits_service_binary,
                                                  output_log,
