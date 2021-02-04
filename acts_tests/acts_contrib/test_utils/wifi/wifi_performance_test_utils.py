@@ -1203,26 +1203,19 @@ def get_connected_rssi_brcm(dut,
 
         try:
             per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
-        except:
-            per_chain_rssi = DISCONNECTION_MESSAGE_BRCM
-        if DISCONNECTION_MESSAGE_BRCM not in per_chain_rssi:
             per_chain_rssi = per_chain_rssi.split(' ')
             chain_0_rssi = int(per_chain_rssi[1])
             chain_1_rssi = int(per_chain_rssi[4])
-            connected_rssi['chain_0_rssi']['data'].append(chain_0_rssi)
-            connected_rssi['chain_1_rssi']['data'].append(chain_1_rssi)
-            combined_rssi = math.pow(10, chain_0_rssi / 10) + math.pow(
-                10, chain_1_rssi / 10)
-            combined_rssi = 10 * math.log10(combined_rssi)
-            connected_rssi['signal_poll_rssi']['data'].append(combined_rssi)
-            connected_rssi['signal_poll_avg_rssi']['data'].append(
-                combined_rssi)
-        else:
-            connected_rssi['chain_0_rssi']['data'].append(RSSI_ERROR_VAL)
-            connected_rssi['chain_1_rssi']['data'].append(RSSI_ERROR_VAL)
-            connected_rssi['signal_poll_rssi']['data'].append(RSSI_ERROR_VAL)
-            connected_rssi['signal_poll_avg_rssi']['data'].append(
-                RSSI_ERROR_VAL)
+        except:
+            chain_0_rssi = RSSI_ERROR_VAL
+            chain_1_rssi = RSSI_ERROR_VAL
+        connected_rssi['chain_0_rssi']['data'].append(chain_0_rssi)
+        connected_rssi['chain_1_rssi']['data'].append(chain_1_rssi)
+        combined_rssi = math.pow(10, chain_0_rssi / 10) + math.pow(
+            10, chain_1_rssi / 10)
+        combined_rssi = 10 * math.log10(combined_rssi)
+        connected_rssi['signal_poll_rssi']['data'].append(combined_rssi)
+        connected_rssi['signal_poll_avg_rssi']['data'].append(combined_rssi)
         measurement_elapsed_time = time.time() - measurement_start_time
         time.sleep(max(0, polling_frequency - measurement_elapsed_time))
 
