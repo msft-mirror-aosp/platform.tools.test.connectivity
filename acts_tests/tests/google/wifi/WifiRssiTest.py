@@ -564,19 +564,6 @@ class WifiRssiTest(base_test.BaseTestClass):
                                 num_of_tries=5)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
-    def validate_skip_conditions(self, testcase_params):
-        """Checks if test should be skipped."""
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('DUT battery level too low.')
-        if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
-                ):
-            asserts.skip('DUT does not support 6 GHz band.')
-        if not self.access_point.band_lookup_by_channel(
-                testcase_params['channel']):
-            asserts.skip('AP does not support requested channel.')
-
     def setup_rssi_test(self, testcase_params):
         """Main function to test RSSI.
 
@@ -589,8 +576,6 @@ class WifiRssiTest(base_test.BaseTestClass):
         Returns:
             rssi_result: dict containing rssi_results and meta data
         """
-        # Check if test should be skipped.
-        self.validate_skip_conditions(testcase_params)
         # Configure AP
         self.setup_ap(testcase_params)
         # Initialize attenuators
@@ -615,12 +600,28 @@ class WifiRssiTest(base_test.BaseTestClass):
                       ) * atten_step_duration + MED_SLEEP
         return timeout
 
+    def check_skip_conditions(self, testcase_params):
+        """Checks if test should be skipped."""
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('DUT battery level too low.')
+        if testcase_params[
+                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
+                ):
+            asserts.skip('DUT does not support 6 GHz band.')
+        if not self.access_point.band_lookup_by_channel(
+                testcase_params['channel']):
+            asserts.skip('AP does not support requested channel.')
+
     def compile_rssi_vs_atten_test_params(self, testcase_params):
         """Function to complete compiling test-specific parameters
 
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped.
+        self.check_skip_conditions(testcase_params)
+
         testcase_params.update(
             connected_measurements=self.
             testclass_params['rssi_vs_atten_connected_measurements'],
@@ -664,6 +665,9 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped.
+        self.check_skip_conditions(testcase_params)
+
         testcase_params.update(
             connected_measurements=int(
                 self.testclass_params['rssi_stability_duration'] /
@@ -696,6 +700,9 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped.
+        self.check_skip_conditions(testcase_params)
+
         testcase_params.update(connected_measurements=int(
             1 / self.testclass_params['polling_frequency']),
                                scan_measurements=0,
@@ -985,6 +992,9 @@ class WifiOtaRssiTest(WifiRssiTest):
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        # Check if test should be skipped.
+        self.check_skip_conditions(testcase_params)
+
         if 'rssi_over_orientation' in self.test_name:
             rssi_test_duration = self.testclass_params[
                 'rssi_over_orientation_duration']
