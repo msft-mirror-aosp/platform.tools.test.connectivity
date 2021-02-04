@@ -251,6 +251,10 @@ class NetgearRAX200AP(WifiRetailAP):
                         for item in config_item:
                             if item.checked:
                                 self.ap_settings[key[0]][key[1]] = item.value
+                    elif 'channel' in key:
+                        config_item = browser.find_by_name(value)
+                        self.ap_settings[key[0]][
+                            key[1]] = int(config_item.first.value)
                     else:
                         config_item = browser.find_by_name(value)
                         self.ap_settings[key[0]][
@@ -335,7 +339,6 @@ class NetgearRAX200AP(WifiRetailAP):
                 time.sleep(BROWSER_WAIT_SHORT)
             browser.visit_persistent(self.config_page, BROWSER_WAIT_EXTRA_LONG,
                                      10)
-        self.validate_ap_settings()
 
     def configure_radio_on_off(self):
         """Helper configuration function to turn radios on/off."""
