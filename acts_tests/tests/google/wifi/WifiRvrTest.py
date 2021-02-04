@@ -541,8 +541,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         if not wputils.health_check(self.android_devices[0], 10):
             asserts.skip('DUT battery level too low.')
         if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
-                ):
+                'channel'] in wputils.CHANNELS_6GHz and not self.android_devices[
+                    0].droid.is6GhzBandSupported():
             asserts.skip('DUT does not support 6 GHz band.')
         if not self.access_point.band_lookup_by_channel(
                 testcase_params['channel']):
