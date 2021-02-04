@@ -1367,17 +1367,18 @@ def get_sw_signature_qcom(dut):
 
 
 def get_sw_signature_brcm(dut):
-    bdf_output = dut.adb.shell('cksum /vendor/etc/wifi/bcmdhd*')
+    bdf_output = dut.adb.shell('cksum /vendor/firmware/bcmdhd*')
     logging.debug('BDF Checksum output: {}'.format(bdf_output))
     bdf_signature = sum(
         [int(line.split(' ')[0]) for line in bdf_output.splitlines()]) % 1000
 
-    fw_output = dut.adb.shell('getprop vendor.wlan.firmware.version')
-    logging.debug('Firmware version output: {}'.format(fw_output))
-    fw_version = fw_output.split('.')[-1]
-    driver_output = dut.adb.shell('getprop vendor.wlan.driver.version')
-    driver_version = driver_output.split('.')[-1]
-    fw_signature = float('{}.{}'.format(fw_version, driver_version))
+    fw_version = dut.adb.shell('getprop vendor.wlan.firmware.version')
+    driver_version = dut.adb.shell('getprop vendor.wlan.driver.version')
+    logging.debug('Firmware version : {}. Driver version: {}'.format(
+        fw_version, driver_version))
+    fw_signature = '{}+{}'.format(fw_version, driver_version)
+    fw_signature = int(hashlib.md5(fw_signature.encode()).hexdigest(),
+                       16) % 1000
     serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(), 16) % 1000
     return {
         'config_signature': bdf_signature,
