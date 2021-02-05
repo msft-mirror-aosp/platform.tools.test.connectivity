@@ -1,5 +1,6 @@
 """Controller for Open WRT access point."""
 
+import re
 import time
 
 from acts import logger
@@ -14,6 +15,7 @@ import yaml
 MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
 OPEN_SECURITY = "none"
+PSK1_SECURITY = 'psk'
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
@@ -236,6 +238,45 @@ class OpenWrtAP(object):
     mac_addr = ifconfig.split("\n")[0].split()[-1]
     return mac_addr
 
+  def set_wpa_encryption(self, encryption):
+    """Set different encryptions to wpa or wpa2.
+
+    Args:
+      encryption: ccmp, tkip, or ccmp+tkip.
+    """
+    str_output = self.ssh.run("wifi status").stdout
+    wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                            Loader=yaml.FullLoader)
+
+    # Counting how many interface are enabled.
+    total_interface = 0
+    for radio in ["radio0", "radio1"]:
+      num_interface = len(wifi_status[radio]['interfaces'])
+      total_interface += num_interface
+
+    # Iterates every interface to get and set wpa encryption.
+    default_extra_interface = 2
+    for i in range(total_interface + default_extra_interface):
+      origin_encryption = self.ssh.run(
+          'uci get wireless.@wifi-iface[{}].encryption'.format(i)).stdout
+      origin_psk_pattern = re.match(r'psk\b', origin_encryption)
+      target_psk_pattern = re.match(r'psk\b', encryption)
+      origin_psk2_pattern = re.match(r'psk2\b', origin_encryption)
+      target_psk2_pattern = re.match(r'psk2\b', encryption)
+
+      if origin_psk_pattern == target_psk_pattern:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].encryption={}'.format(
+                i, encryption))
+
+      if origin_psk2_pattern == target_psk2_pattern:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].encryption={}'.format(
+                i, encryption))
+
+    self.ssh.run("uci commit wireless")
+    self.ssh.run("wifi")
+
   def generate_wireless_configs(self, wifi_configs):
     """Generate wireless configs to configure.
 
@@ -256,6 +297,14 @@ class OpenWrtAP(object):
       if hostapd_constants.BAND_2G in wifi_configs[i]:
         config = wifi_configs[i][hostapd_constants.BAND_2G]
         if config["security"] == PSK_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_2G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"]))
+        elif config["security"] == PSK1_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
                                              config["SSID"],
@@ -310,6 +359,14 @@ class OpenWrtAP(object):
       if hostapd_constants.BAND_5G in wifi_configs[i]:
         config = wifi_configs[i][hostapd_constants.BAND_5G]
         if config["security"] == PSK_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_5G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"]))
+        elif config["security"] == PSK1_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
                                              config["SSID"],
