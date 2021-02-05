@@ -1405,6 +1405,7 @@ def hangup_call(log, ad, is_emergency=False):
     """
     # short circuit in case no calls are active
     if not ad.droid.telecomIsInCall():
+        ad.log.warning("No active call exists.")
         return True
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallState()
