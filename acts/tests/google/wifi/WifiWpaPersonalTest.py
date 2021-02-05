@@ -18,6 +18,7 @@
 import acts.test_utils.wifi.wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.controllers.openwrt_lib.openwrt_constants import OpenWrtWifiSecurity
+from acts.test_decorators import test_tracker_info
 from acts import asserts
 
 
@@ -87,6 +88,7 @@ class WifiWpaPersonalTest(WifiBaseTest):
 
   """ Tests"""
 
+  @test_tracker_info(uuid="0c68a772-b70c-47d6-88ab-1b069c1d8005")
   def test_connect_to_wpa_psk_ccmp_2g(self):
     """
       Change AP's security type to "WPA" and cipher to "CCMP".
@@ -99,6 +101,7 @@ class WifiWpaPersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa_psk_2g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA_PSK_CCMP)
 
+  @test_tracker_info(uuid="4722dffc-2960-4459-9729-0f8114af2321")
   def test_connect_to_wpa_psk_ccmp_5g(self):
     """
       Change AP's security type to "WPA" and cipher to "CCMp".
@@ -111,6 +114,7 @@ class WifiWpaPersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa_psk_5g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA_PSK_CCMP)
 
+  @test_tracker_info(uuid="4759503e-ef9c-430b-9306-b96a347ca3de")
   def test_connect_to_wpa_psk_tkip_2g(self):
     """
     Steps:
@@ -124,6 +128,7 @@ class WifiWpaPersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa_psk_2g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA_PSK_TKIP)
 
+  @test_tracker_info(uuid="9c836ca6-af14-4d6b-a98e-227fb29e84ee")
   def test_connect_to_wpa_psk_tkip_5g(self):
     """
     Steps:
@@ -136,6 +141,7 @@ class WifiWpaPersonalTest(WifiBaseTest):
         self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
     wutils.connect_to_wifi_network(self.dut, self.wpa_psk_5g)
 
+  @test_tracker_info(uuid="c03b362b-cd03-4e34-a99a-ef80a9db6db9")
   def test_connect_to_wpa_psk_tkip_and_ccmp_2g(self):
     """
     Steps:
@@ -150,6 +156,7 @@ class WifiWpaPersonalTest(WifiBaseTest):
     self.verify_wpa_network_encryption(
         OpenWrtWifiSecurity.WPA_PSK_TKIP_AND_CCMP)
 
+  @test_tracker_info(uuid="203d7e7f-536d-4feb-9aa2-648f1f9a685d")
   def test_connect_to_wpa_psk_tkip_and_ccmp_5g(self):
     """
     Steps:
