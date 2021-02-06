@@ -17,7 +17,6 @@
 import csv
 from datetime import datetime
 import logging
-import os
 import tempfile
 
 from acts.libs.proc import job
