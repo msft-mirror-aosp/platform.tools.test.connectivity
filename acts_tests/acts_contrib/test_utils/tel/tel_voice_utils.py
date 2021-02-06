@@ -77,6 +77,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -165,7 +166,8 @@ def two_phone_call_short_seq(log,
                              phone_b_idle_func,
                              phone_b_in_call_check_func,
                              call_sequence_func=None,
-                             wait_time_in_call=WAIT_TIME_IN_CALL):
+                             wait_time_in_call=WAIT_TIME_IN_CALL,
+                             call_params=None):
     """Call process short sequence.
     1. Ensure phone idle and in idle_func check return True.
     2. Call from PhoneA to PhoneB, accept on PhoneB.
@@ -184,18 +186,39 @@ def two_phone_call_short_seq(log,
         call_sequence_func: default parameter, not implemented.
         wait_time_in_call: time to wait in call.
             This is optional, default is WAIT_TIME_IN_CALL
+        call_params: list of call parameters for both MO/MT devices, including:
+            - MO device object
+            - MT device object
+            - Device object hanging up the call
+            - Function to check the in-call state of MO device
+            - Function to check the in-call state of MT device
+
+            and the format should be:
+            [(Args for the 1st call), (Args for the 2nd call), ......]
+
+            The format of args for each call should be:
+            (mo_device_obj, mt_device_obj, device_obj_hanging_up,
+            mo_in_call_check_func, mt_in_call_check_func)
+
+            Example of a call, which will not be hung up:
+
+            call_params = [
+                (ads[0], ads[1], None, mo_in_call_check_func,
+                mt_in_call_check_func)
+            ]
 
     Returns:
         TelResultWrapper which will evaluate as False if error.
     """
     ads = [phone_a, phone_b]
 
-    call_params = [
-        (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
-         phone_b_in_call_check_func),
-        (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
-         phone_b_in_call_check_func),
-    ]
+    if not call_params:
+        call_params = [
+            (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
+            phone_b_in_call_check_func),
+            (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
+            phone_b_in_call_check_func),
+        ]
 
     tel_result = TelResultWrapper(CallResult('SUCCESS'))
     for param in call_params:
@@ -828,7 +851,7 @@ def phone_setup_iwlan_for_subscription(log,
         ad.log.info("WiFi network SSID not specified, available user "
                     "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
                     "wifi_network_ssid_5g")
-    if not set_wfc_mode(log, ad, wfc_mode):
+    if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
     if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
