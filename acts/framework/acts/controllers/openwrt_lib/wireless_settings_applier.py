@@ -6,6 +6,7 @@ from acts.controllers.ap_lib import hostapd_constants
 LEASE_FILE = "/tmp/dhcp.leases"
 DNSMASQ_RESTART = "/etc/init.d/dnsmasq restart"
 OPEN_SECURITY = "none"
+PSK1_SECURITY = "psk"
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
@@ -98,7 +99,8 @@ class WirelessSettingsApplier(object):
                    (config.name, config.ssid))
       self.ssh.run("uci set wireless.%s.encryption='%s'" %
                    (config.name, config.security))
-      if config.security == PSK_SECURITY or config.security == SAE_SECURITY:
+      if config.security == PSK_SECURITY or config.security == SAE_SECURITY\
+              or config.security == PSK1_SECURITY:
         self.ssh.run("uci set wireless.%s.key='%s'" %
                      (config.name, config.password))
       elif config.security == WEP_SECURITY:
