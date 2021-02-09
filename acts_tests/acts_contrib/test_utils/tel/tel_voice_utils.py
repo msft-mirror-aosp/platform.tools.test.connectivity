@@ -52,6 +52,7 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -103,6 +104,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import \
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -1997,3 +2000,126 @@ def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
             return is_phone_in_call_iwlan(log, ad)
     else:
         return None
+
+
+def hold_unhold_test(log, ads):
+    """ Test hold/unhold functionality.
+
+    PhoneA is in call with PhoneB. The call on PhoneA is active.
+    Get call list on PhoneA.
+    Hold call_id on PhoneA.
+    Check call_id state.
+    Unhold call_id on PhoneA.
+    Check call_id state.
+
+    Args:
+        log: log object
+        ads: List of android objects.
+            This list should contain 2 android objects.
+            ads[0] is the ad to do hold/unhold operation.
+
+    Returns:
+        List of test result and call states.
+        The first element of the list is always the test result.
+        True if pass; False if fail.
+        The rest of the list contains call states.
+    """
+    call_list = ads[0].droid.telecomCallGetCallIds()
+    log.info("Calls in PhoneA %s", call_list)
+    if num_active_calls(ads[0].log, ads[0]) != 1:
+        log.error("No voice call or too many voice calls in PhoneA!")
+        call_state_list = [ads[0].droid.telecomCallGetCallState(call_id) for call_id in call_list]
+        return [False] + call_state_list
+    call_id = call_list[0]
+
+    call_state = ads[0].droid.telecomCallGetCallState(call_id)
+    if call_state != CALL_STATE_ACTIVE:
+        log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
+                  call_id,
+                  ads[0].droid.telecomCallGetCallState(call_id))
+        return [False, call_state]
+    # TODO: b/26296375 add voice check.
+
+    log.info("Hold call_id %s on PhoneA", call_id)
+    ads[0].droid.telecomCallHold(call_id)
+    time.sleep(WAIT_TIME_IN_CALL)
+
+    call_state = ads[0].droid.telecomCallGetCallState(call_id)
+    if call_state != CALL_STATE_HOLDING:
+        ads[0].log.error("Call_id:%s, state:%s, expected: STATE_HOLDING",
+                         call_id,
+                         ads[0].droid.telecomCallGetCallState(call_id))
+        return [False, call_state]
+    # TODO: b/26296375 add voice check.
+
+    log.info("Unhold call_id %s on PhoneA", call_id)
+    ads[0].droid.telecomCallUnhold(call_id)
+    time.sleep(WAIT_TIME_IN_CALL)
+
+    call_state = ads[0].droid.telecomCallGetCallState(call_id)
+    if call_state != CALL_STATE_ACTIVE:
+        log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
+                  call_id,
+                  call_state)
+        return [False, call_state]
+    # TODO: b/26296375 add voice check.
+
+    return [True, call_state]
+
+
+def phone_setup_call_hold_unhold_test(log,
+                                      ads,
+                                      call_direction=DIRECTION_MOBILE_ORIGINATED,
+                                      caller_func=None,
+                                      callee_func=None):
+    """Test hold and unhold in voice call.
+
+    1. Clear call list.
+    2. Set up MO/MT call.
+    3. Test hold and unhold in call.
+    4. hangup call.
+
+    Args:
+        log: log object
+        ads: list of android objects, this list should have two ad.
+        call_direction: MO(DIRECTION_MOBILE_ORIGINATED) or MT(DIRECTION_MOBILE_TERMINATED) call.
+        caller_func: function to verify caller is in correct state while in-call.
+        callee_func: function to verify callee is in correct state while in-call.
+
+    Returns:
+        True if pass; False if fail.
+    """
+
+    ads[0].droid.telecomCallClearCallList()
+    if num_active_calls(log, ads[0]) != 0:
+        ads[0].log.error("call list is not empty")
+        return False
+    log.info("begin hold/unhold test")
+
+    ad_caller = ads[0]
+    ad_callee = ads[1]
+
+    if call_direction != DIRECTION_MOBILE_ORIGINATED:
+        ad_caller = ads[1]
+        ad_callee = ads[0]
+
+    if not call_setup_teardown(
+                log,
+                ad_caller,
+                ad_callee,
+                ad_hangup=None,
+                verify_caller_func=caller_func,
+                verify_callee_func=callee_func):
+        return False
+
+    if not hold_unhold_test(ads[0].log, ads)[0]:
+        log.error("hold/unhold test fail.")
+        # hangup call in case voice call is still active.
+        hangup_call(log, ads[0])
+        return False
+
+    if not hangup_call(log, ads[0]):
+        log.error("call hangup failed")
+        return False
+    return True
+
