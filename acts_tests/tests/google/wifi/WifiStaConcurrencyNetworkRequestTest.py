@@ -152,6 +152,8 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
                 network_cap[cconsts.NETWORK_CAP_TRANSPORT_TYPE_KEY])
             if cconsts.NETWORK_CAP_TRANSPORT_WIFI in transport_types:
               num_wifi_networks += 1
+              self.dut.log.info("Wifi connection %s: %s",
+                                num_wifi_networks, network_cap)
         asserts.assert_equal(2, num_wifi_networks, "Expected 2 wifi networks")
 
 
@@ -331,3 +333,76 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
 
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
+    @test_tracker_info(uuid="")
+    def test_connect_to_2g_internet_while_connected_to_2g_p2p_same_ssid(self):
+        """
+        Initiates a connection to a peer to peer network via network request while
+        already connected to an internet connectivity network.
+
+        Steps:
+        1. Setup 2 5G & 2G band WPA-PSK networks with the same SSID.
+        2. Send a network specifier with the specific SSID/credentials of
+           WPA-PSK 2G network.
+        3. Wait for platform to scan and find matching networks.
+        4. Simulate user selecting the network.
+        5. Ensure that the device connects to the network.
+        6. Connect to WPA-PSK 2G network for internet connectivity.
+        7. Ensure that the device remains connected to both the networks.
+        8. Disconnect both connections.
+        """
+        self.configure_openwrt_ap_and_start(
+            wpa_network=True,
+            channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
+            channel_2g_ap2=WIFI_NETWORK_AP_CHANNEL_2G_2,
+            mirror_ap=True,
+            ap_count=2)
+
+        self.connect_to_p2p_and_wait_for_on_available(
+            self.wpa_networks[0]["2g"])
+        self.connect_to_internet_and_wait_for_on_available(
+            self.wpa_networks[0]["2g"])
+
+        self.ensure_both_connections_are_active_and_dont_disconnect()
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_5g_p2p_while_connected_to_5g_internet_same_ssid(self):
+        """
+        Initiates a connection to a peer to peer network via network request while
+        already connected to an internet connectivity network.
+
+        Steps:
+        1. Setup 2 5G & 2G band WPA-PSK networks with the same SSID.
+        2. Connect to WPA-PSK 5G network for internet connectivity.
+        3. Send a network specifier with the specific SSID/credentials of
+           WPA-PSK 5G network (with the other bssid).
+        4. Wait for platform to scan and find matching networks.
+        5. Simulate user selecting the network.
+        6. Ensure that the device connects to the network.
+        7. Ensure that the device remains connected to both the networks.
+        8. Disconnect both connections.
+        """
+        self.configure_openwrt_ap_and_start(
+            wpa_network=True,
+            channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
+            channel_5g_ap2=WIFI_NETWORK_AP_CHANNEL_5G_2,
+            mirror_ap=True,
+            ap_count=2)
+
+        self.connect_to_internet_and_wait_for_on_available(
+            self.wpa_networks[0]["5g"])
+
+        ssid = self.wpa_networks[0]["5g"][WifiEnums.SSID_KEY]
+        bssids = [self.bssid_map[0]["5g"][ssid], self.bssid_map[1]["5g"][ssid]]
+        # Find the internet connection bssid.
+        wifi_info = self.dut.droid.wifiGetConnectionInfo()
+        connected_bssid = wifi_info[WifiEnums.BSSID_KEY].upper()
+        # Find the bssid of the other access point with same ssid.
+        p2p_bssid = set(bssids) - {connected_bssid}
+
+        # Construct specifier for the other bssid.
+        network_specifier_with_bssid = self.wpa_networks[0]["5g"].copy()
+        network_specifier_with_bssid[WifiEnums.BSSID_KEY] = next(iter(p2p_bssid))
+        self.connect_to_p2p_and_wait_for_on_available(
+            network_specifier_with_bssid)
+
+        self.ensure_both_connections_are_active_and_dont_disconnect()
