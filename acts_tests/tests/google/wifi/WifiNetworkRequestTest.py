@@ -241,6 +241,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         # Send the second request.
         key2 = self.dut.droid.connectivityRequestWifiNetwork(self.open_5g, 0)
         self.dut.log.info("Sent network request with %s", self.open_5g)
+        self.dut.ed.clear_all_events()
         # Ensure we do not disconnect from the previous network until the user
         # approves the new request.
         autils.fail_on_event_with_keys(
