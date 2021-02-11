@@ -28,6 +28,7 @@ from acts import signals
 from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
+from acts_contrib.test_utils.tel.loggers.telephony_stress_metric_logger import TelephonyStressMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC
@@ -105,6 +106,19 @@ from acts.utils import rand_ascii_str
 EXCEPTION_TOLERANCE = 5
 BINDER_LOGS = ["/sys/kernel/debug/binder"]
 DEFAULT_FILE_DOWNLOADS = ["1MB", "5MB", "10MB", "20MB", "50MB"]
+RESULTS_LIST = {-2: "UNAVAILABLE_NETWORK_TYPE",
+                -1: "CALL_SETUP_FAILURE",
+                 0: "SUCCESS",
+                 1: "INITIATE_FAILED",
+                 2: "NO_RING_EVENT_OR_ANSWER_FAILED",
+                 3: "NO_CALL_ID_FOUND",
+                 4: "CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT",
+                 5: "AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT",
+                 6: "AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED",
+                 7: "CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT",
+                 8: "CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED",
+                 9: "CALL_HANGUP_FAIL",
+                 10: "CALL_ID_CLEANUP_FAIL"}
 
 
 class TelLiveStressTest(TelephonyBaseTest):
@@ -162,6 +176,20 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.gps_log_file = self.user_params.get("gps_log_file", None)
         self.file_name_list = self.user_params.get("file_downloads", DEFAULT_FILE_DOWNLOADS)
         self.tel_logger = TelephonyMetricLogger.for_test_case()
+        self.tel_logger = TelephonyStressMetricLogger.for_test_case()
+        self.result_collection = {"UNAVAILABLE_NETWORK_TYPE" : 0,
+                                  "CALL_SETUP_FAILURE" : 0,
+                                  "SUCCESS" : 0,
+                                  "INITIATE_FAILED" : 0,
+                                  "NO_RING_EVENT_OR_ANSWER_FAILED" : 0,
+                                  "NO_CALL_ID_FOUND" : 0,
+                                  "CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT" : 0,
+                                  "AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT" : 0,
+                                  "AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED" : 0,
+                                  "CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT" : 0,
+                                  "CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED": 0,
+                                  "CALL_HANGUP_FAIL": 0,
+                                  "CALL_ID_CLEANUP_FAIL": 0 }
         return True
 
     def setup_test(self):
@@ -444,8 +472,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 wait_time_in_call=0,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
                 slot_id_callee=slot_id_callee)
+            self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
-            self.tel_logger.set_result(call_setup_result.result_value)
         if not call_setup_result:
             get_telephony_signal_strength(ads[0])
             if not self.single_phone_test:
@@ -751,6 +779,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
+        self.tel_logger.set_result(self.result_collection)
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
