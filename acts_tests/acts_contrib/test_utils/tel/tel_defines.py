@@ -475,6 +475,7 @@ GEN_UNKNOWN = "UNKNOWN"
 # Constant for Network RAT
 RAT_IWLAN = "IWLAN"
 RAT_NR = "NR"
+RAT_NR_SA = "NR_SA"
 RAT_LTE = "LTE"
 RAT_5G = "5G"
 RAT_4G = "4G"

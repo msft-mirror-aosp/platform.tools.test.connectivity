@@ -404,6 +404,13 @@ class _TelTables():
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_NR
         },
+        tel_defines.RAT_NR_SA: {
+            'is_voice_rat': True,
+            'is_data_rat': True,
+            'generation': tel_defines.GEN_5G,
+            'simultaneous_voice_data': True,
+            'rat_family': tel_defines.RAT_FAMILY_NR
+        },
         tel_defines.RAT_EHRPD: {
             'is_voice_rat': False,
             'is_data_rat': True,
