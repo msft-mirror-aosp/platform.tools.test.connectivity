@@ -1706,6 +1706,7 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
             matched_network = match_networks(
                 {WifiEnums.SSID_KEY: network[WifiEnums.SSID_KEY]},
                 matched_scan_results)
+            ad.log.debug("Network request on match %s", matched_network)
             if matched_network:
                 break
 
