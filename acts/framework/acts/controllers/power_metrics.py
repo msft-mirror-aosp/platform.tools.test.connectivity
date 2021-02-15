@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import math
+import numpy as np
 
 # Metrics timestamp keys
 START_TIMESTAMP = 'start'
@@ -164,6 +165,57 @@ def import_raw_data(path):
         for line in f:
             time, sample = line.split()
             yield float(time[:-1]), float(sample)
+
+
+def generate_percentiles(monsoon_file, timestamps, percentiles):
+    """Generates metrics .
+
+    Args:
+        monsoon_file: monsoon-like file where each line has two
+            numbers separated by a space, in the format:
+            seconds_since_epoch amperes
+            seconds_since_epoch amperes
+        timestamps: dict following the output format of
+            instrumentation_proto_parser.get_test_timestamps()
+        percentiles: percentiles to be returned
+    """
+    if timestamps is None:
+        timestamps = {}
+    test_starts = {}
+    test_ends = {}
+    for seg_name, times in timestamps.items():
+        if START_TIMESTAMP in times and END_TIMESTAMP in times:
+            test_starts[seg_name] = Metric(
+                times[START_TIMESTAMP], TIME, MILLISECOND).to_unit(
+                SECOND).value
+            test_ends[seg_name] = Metric(
+                times[END_TIMESTAMP], TIME, MILLISECOND).to_unit(
+                SECOND).value
+
+    arrays = {}
+    for seg_name in test_starts:
+        arrays[seg_name] = []
+
+    with open(monsoon_file, 'r') as m:
+        for line in m:
+            timestamp = float(line.strip().split()[0])
+            value = float(line.strip().split()[1])
+            for seg_name in arrays.keys():
+                if test_starts[seg_name] <= timestamp <= test_ends[seg_name]:
+                    arrays[seg_name].append(value)
+
+    results = {}
+    for seg_name in arrays:
+        if len(arrays[seg_name]) == 0:
+            continue
+
+        pairs = zip(percentiles, np.percentile(arrays[seg_name],
+                                               percentiles))
+        results[seg_name] = [
+            Metric.amps(p[1], 'percentile_%s' % p[0]).to_unit(MILLIAMP) for p in
+            pairs
+        ]
+    return results
 
 
 def generate_test_metrics(raw_data, timestamps=None,
