@@ -21,6 +21,9 @@ import acts_contrib.test_utils.instrumentation.device.command.instrumentation_co
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put global ble_scan_always_enabled 1'
 BLE_LOCATION_SCAN_DISABLE = 'settings put global ble_scan_always_enabled 0'
+START_BLE_ADV = 'am start -n com.google.bletesting/.ActsCommandExecutor --es command ADVERTISE#2#2#30000'
+START_BLE_SCAN = 'am start -n com.google.bletesting/.ActsCommandExecutor --es command SCAN#2#10000'
+SCAN_DURATION = 10
 SCREEN_WAIT_TIME = 1
 
 
@@ -29,7 +32,6 @@ class MediaControl(object):
 
     Object to control media play status using adb.
     """
-
     def __init__(self, android_device, music_file):
         """Initialize the media_control class.
 
@@ -157,3 +159,27 @@ def start_apk_ble_scan(dut, scan_mode, scan_duration):
     logging.info('Start BLE {} scans for {} seconds'.format(
         bleenum.ScanSettingsScanMode(scan_mode).name, scan_duration))
     dut.adb.shell_nb(scan_command)
+
+
+def establish_ble_connection(client_ad, server_ad, con_priority):
+    """Establish BLE connection using BLE_Test.apk.
+
+    Args:
+        client_ad: the Android device performing the BLE connection.
+        server_ad: the Android device accepting the BLE connection.
+        con_priority: The BLE Connection Priority.
+            {0: 'BALANCED'= Use the connection parameters recommended by the Bluetooth SIG,
+            1: 'HIGH'= Request a high priority, low latency connection,
+            2: 'LOW_POWER= Request low power, reduced data rate connection parameters }
+    """
+    server_ad.adb.shell(START_BLE_ADV)
+    time.sleep(5)
+    client_ad.adb.shell(START_BLE_SCAN)
+    time.sleep(SCAN_DURATION)
+    logging.info("Connection Priority is:{}".format(con_priority))
+    client_ad.adb.shell(
+        'am start -n com.google.bletesting/.ActsCommandExecutor '
+        '--es command GATTCONNECT#{}'.format(con_priority))
+    logging.info(
+        "BLE Connection Successful with Connection Priority:{}".format(
+            con_priority))
