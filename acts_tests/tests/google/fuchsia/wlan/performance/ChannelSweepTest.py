@@ -110,10 +110,24 @@ class ChannelSweepTest(WifiBaseTest):
         self.android_devices = getattr(self, 'android_devices', [])
 
         self.access_point = self.access_points[0]
-        self.iperf_server = self.iperf_servers[0]
-        self.iperf_server.start()
-        self.iperf_client = self.iperf_clients[0]
         self.access_point.stop_all_aps()
+
+        self.iperf_server = None
+        self.iperf_client = None
+
+        self.channel_sweep_test_params = self.user_params.get(
+            'channel_sweep_test_params', {})
+        # Allows users to skip the iperf throughput measurements, just verifying
+        # association.
+        if not self.channel_sweep_test_params.get('skip_performance'):
+            try:
+                self.iperf_server = self.iperf_servers[0]
+                self.iperf_server.start()
+                self.iperf_client = self.iperf_clients[0]
+            except AttributeError:
+                self.log.warn(
+                    'Missing iperf config. Throughput cannot be measured, so only '
+                    'association will be tested.')
 
     def setup_test(self):
         # TODO(fxb/46417): Uncomment when wlanClearCountry is implemented up any
@@ -364,6 +378,9 @@ class ChannelSweepTest(WifiBaseTest):
         """Create graph html files from throughput data, plotting channel vs
         tx_throughput and channel vs rx_throughput.
         """
+        # If performance measurement is skipped
+        if not self.iperf_server:
+            return
         output_path = context.get_current_context().get_base_output_path()
         test_name = self.throughput_data['test']
         channel_bandwidth = self.throughput_data['channel_bandwidth']
@@ -431,6 +448,9 @@ class ChannelSweepTest(WifiBaseTest):
         Raises:
             TestFailure, if standard deviation of throughput exceeds max_std_dev
         """
+        # If performance measurement is skipped
+        if not self.iperf_server:
+            return
         self.log.info('Verifying standard deviation across channels does not '
                       'exceed max standard deviation of %s Mb/s' % max_std_dev)
         tx_values = []
@@ -599,40 +619,47 @@ class ChannelSweepTest(WifiBaseTest):
         ssid = self.setup_ap(channel, channel_bandwidth, security_profile)
         associated = self.dut.associate(ssid, target_pwd=password)
         if not associated:
-            self.log_to_file_and_throughput_data(channel, channel_bandwidth,
-                                                 None, None)
+            if self.iperf_server:
+                self.log_to_file_and_throughput_data(channel,
+                                                     channel_bandwidth, None,
+                                                     None)
             asserts.fail('Device failed to associate with network %s' % ssid)
         self.log.info('DUT (%s) connected to network %s.' %
                       (self.dut.device.ip, ssid))
-        self.iperf_server.renew_test_interface_ip_address()
-        self.log.info(
-            'Getting ip address for iperf server. Will retry for %s seconds.' %
-            self.time_to_wait_for_ip_addr)
-        iperf_server_address = self.get_and_verify_iperf_address(
-            channel, self.iperf_server)
-        self.log.info(
-            'Getting ip address for DUT. Will retry for %s seconds.' %
-            self.time_to_wait_for_ip_addr)
-        iperf_client_address = self.get_and_verify_iperf_address(
-            channel, self.dut, self.iperf_client.test_interface)
-        tx_throughput = self.get_iperf_throughput(iperf_server_address,
-                                                  iperf_client_address)
-        rx_throughput = self.get_iperf_throughput(iperf_server_address,
-                                                  iperf_client_address,
-                                                  reverse=True)
-        self.log_to_file_and_throughput_data(channel, channel_bandwidth,
-                                             tx_throughput, rx_throughput)
-        self.log.info('Throughput (tx, rx): (%s Mb/s, %s Mb/s), '
-                      'Minimum threshold (tx, rx): (%s Mb/s, %s Mb/s)' %
-                      (tx_throughput, rx_throughput, min_tx_throughput,
-                       min_rx_throughput))
-        base_message = (
-            'Actual throughput (on channel: %s, channel bandwidth: '
-            '%s, security: %s)' % (channel, channel_bandwidth, security))
-        if (tx_throughput < min_tx_throughput
-                or rx_throughput < min_rx_throughput):
-            asserts.fail('%s below the minimum threshold.' % base_message)
-        asserts.explicit_pass('%s above the minimum threshold.' % base_message)
+        if self.iperf_server:
+            self.iperf_server.renew_test_interface_ip_address()
+            self.log.info(
+                'Getting ip address for iperf server. Will retry for %s seconds.'
+                % self.time_to_wait_for_ip_addr)
+            iperf_server_address = self.get_and_verify_iperf_address(
+                channel, self.iperf_server)
+            self.log.info(
+                'Getting ip address for DUT. Will retry for %s seconds.' %
+                self.time_to_wait_for_ip_addr)
+            iperf_client_address = self.get_and_verify_iperf_address(
+                channel, self.dut, self.iperf_client.test_interface)
+            tx_throughput = self.get_iperf_throughput(iperf_server_address,
+                                                      iperf_client_address)
+            rx_throughput = self.get_iperf_throughput(iperf_server_address,
+                                                      iperf_client_address,
+                                                      reverse=True)
+            self.log_to_file_and_throughput_data(channel, channel_bandwidth,
+                                                 tx_throughput, rx_throughput)
+            self.log.info('Throughput (tx, rx): (%s Mb/s, %s Mb/s), '
+                          'Minimum threshold (tx, rx): (%s Mb/s, %s Mb/s)' %
+                          (tx_throughput, rx_throughput, min_tx_throughput,
+                           min_rx_throughput))
+            base_message = (
+                'Actual throughput (on channel: %s, channel bandwidth: '
+                '%s, security: %s)' % (channel, channel_bandwidth, security))
+            if (tx_throughput < min_tx_throughput
+                    or rx_throughput < min_rx_throughput):
+                asserts.fail('%s below the minimum threshold.' % base_message)
+            asserts.explicit_pass('%s above the minimum threshold.' %
+                                  base_message)
+        else:
+            asserts.explicit_pass(
+                'Association test pass. No throughput measurement taken.')
 
     def verify_regulatory_compliance(self, settings):
         """Test function for regulatory compliance tests. Verify device complies
