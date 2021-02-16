@@ -46,14 +46,17 @@ class ScanSettingsScanMode(Enum):
     SCAN_MODE_BALANCED = 1
     SCAN_MODE_LOW_LATENCY = 2
 
+
 class ScanSettingsReportDelaySeconds(Enum):
     MIN = 0
     MAX = 9223372036854775807
+
 
 class ScanSettingsPhy(Enum):
     PHY_LE_1M = 1
     PHY_LE_CODED = 3
     PHY_LE_ALL_SUPPORTED = 255
+
 
 class AdvertiseSettingsAdvertiseType(Enum):
     ADVERTISE_TYPE_NON_CONNECTABLE = 0
@@ -71,6 +74,13 @@ class AdvertiseSettingsAdvertiseTxPower(Enum):
     ADVERTISE_TX_POWER_LOW = 1
     ADVERTISE_TX_POWER_MEDIUM = 2
     ADVERTISE_TX_POWER_HIGH = 3
+
+
+class BLEConnectionPriority(Enum):
+    # Connection Interval: BALANCED = 36ms, HIGH = 12ms, LOW = 96ms
+    CONNECTION_PRIORITY_BALANCED = 0
+    CONNECTION_PRIORITY_HIGH = 1
+    CONNECTION_PRIORITY_LOW = 2
 
 
 class JavaInteger(Enum):
