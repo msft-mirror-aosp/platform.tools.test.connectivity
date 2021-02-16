@@ -804,8 +804,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                ad.log.error("not GSM phone, abort wcdma swap test.")
-                return None, None
+                raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
@@ -856,8 +855,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                ad.log.error("not GSM phone, abort wcdma swap test.")
-                return None, None
+                raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
@@ -908,8 +906,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                ad.log.error("not GSM phone, abort wcdma swap test.")
-                return None, None
+                raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
@@ -1106,8 +1103,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ad.log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]], [
@@ -1156,8 +1152,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ads[0].log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]], [
@@ -1206,8 +1201,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ads[0].log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]], [
@@ -1256,8 +1250,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ads[0].log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]], [
@@ -1306,8 +1299,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ads[0].log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]], [
@@ -2050,8 +2042,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                ad.log.error("not GSM phone, abort wcdma swap test.")
-                return None, None
+                raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_wcdma_swap_x in test cases.
@@ -2103,8 +2094,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                ad.log.error("not GSM phone, abort wcdma swap test.")
-                return None, None
+                raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_wcdma_swap_x in test cases.
@@ -2156,8 +2146,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                ad.log.error("not GSM phone, abort wcdma swap test.")
-                return None, None
+                raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_wcdma_swap_x in test cases.
@@ -9501,8 +9490,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ads[0].log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]], [
@@ -9551,8 +9539,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            ads[0].log.error("not GSM phone, abort wcdma swap test.")
-            return None, None
+            raise signals.TestSkip("not GSM phone, abort wcdma swap test.")
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]], [
