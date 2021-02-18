@@ -49,3 +49,32 @@ class FuchsiaHfpLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def initiateIncomingCall(self, remote):
+        """Opens an incoming call channel and alerts the HFP peer.
+
+        Args:
+            remote: The number of the remote party.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.IncomingCall"
+        test_args = {"remote": remote }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def listPeers(self):
+        """List all connected HFP peer devices.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.ListPeers"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
