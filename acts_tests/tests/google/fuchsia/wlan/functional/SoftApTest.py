@@ -27,6 +27,7 @@ from acts.controllers import iperf_client
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
+from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 
 ANDROID_DEFAULT_WLAN_INTERFACE = 'wlan0'
@@ -80,6 +81,8 @@ def get_ap_params_from_config_or_default(config):
     security_mode = config.get('security_mode', None)
     password = config.get('password', None)
     if security_mode:
+        if not password:
+            password = generate_random_password(security_mode=security_mode)
         security = hostapd_security.Security(security_mode, password)
     else:
         security = None
@@ -110,6 +113,12 @@ def get_soft_ap_params_from_config_or_default(config):
     operating_band = config.get('operating_band', OPERATING_BAND_2G)
     security_type = config.get('security_type', SECURITY_OPEN)
     password = config.get('password', '')
+
+    # The SoftAP API uses 'open' security instead of None, '' password
+    # instead of None, and security_type instead of security_mode, hence
+    # the difference between ap_params and soft_ap_params
+    if security_type != SECURITY_OPEN and password == '':
+        password = generate_random_password(security_mode=security_type)
 
     return {
         'ssid': ssid,
@@ -291,9 +300,13 @@ class SoftApTest(BaseTestClass):
 
         check_connectivity = settings[
             'connectivity_mode'] == CONNECTIVITY_MODE_UNRESTRICTED
-        associated = w_device.associate(settings['ssid'],
-                                        target_pwd=settings.get('password'),
-                                        check_connectivity=check_connectivity)
+        associated = w_device.associate(
+            settings['ssid'],
+            target_pwd=settings.get('password'),
+            target_security=hostapd_constants.
+            SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+                settings['security_type'], None),
+            check_connectivity=check_connectivity)
 
         if not associated:
             self.log.error('Failed to connect to SoftAp.')
@@ -950,9 +963,20 @@ class SoftApTest(BaseTestClass):
         ap_ssid = ap_params['ssid']
         ap_password = ap_params['password']
         ap_channel = ap_params['channel']
+        ap_security = ap_params.get('security')
+
+        if ap_security:
+            ap_security_mode = ap_security.security_mode_string
+        else:
+            ap_security_mode = None
+
         self.log.info('Associating DUT with AP network: %s' % ap_ssid)
-        associated = self.dut.associate(target_ssid=ap_ssid,
-                                        target_pwd=ap_password)
+        associated = self.dut.associate(
+            target_ssid=ap_ssid,
+            target_pwd=ap_password,
+            target_security=hostapd_constants.
+            SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+                ap_security_mode, None))
         if not associated:
             raise EnvironmentError('Failed to associate DUT in client mode.')
         else:
@@ -1235,8 +1259,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WEP,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(security_mode=SECURITY_WEP),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1248,8 +1271,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WEP,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(security_mode=SECURITY_WEP),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_5G
         }
@@ -1261,8 +1283,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WEP,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(security_mode=SECURITY_WEP),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1273,8 +1294,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WPA,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1286,8 +1306,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_5G
         }
@@ -1299,8 +1318,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1312,8 +1330,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WPA2,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1325,8 +1342,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA2,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_5G
         }
@@ -1338,8 +1354,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA2,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1351,8 +1366,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WPA3,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1364,8 +1378,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA3,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1377,8 +1390,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA3,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_LOCAL,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1423,8 +1435,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WEP,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(security_mode=SECURITY_WEP),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1436,8 +1447,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WEP,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(security_mode=SECURITY_WEP),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_5G
         }
@@ -1449,8 +1459,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WEP,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(security_mode=SECURITY_WEP),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1462,8 +1471,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WPA,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1475,8 +1483,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_5G
         }
@@ -1488,8 +1495,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1501,8 +1507,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WPA2,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1514,8 +1519,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA2,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_5G
         }
@@ -1527,8 +1531,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA2,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1540,8 +1543,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G),
             'security_type': SECURITY_WPA3,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_2G
         }
@@ -1553,8 +1555,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA3,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1566,8 +1567,7 @@ class SoftApTest(BaseTestClass):
         soft_ap_params = {
             'ssid': utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_5G),
             'security_type': SECURITY_WPA3,
-            'password':
-            utils.rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH),
+            'password': generate_random_password(),
             'connectivity_mode': CONNECTIVITY_MODE_UNRESTRICTED,
             'operating_band': OPERATING_BAND_ANY
         }
@@ -1602,7 +1602,8 @@ class SoftApTest(BaseTestClass):
 
         test_params = self.soft_ap_test_params.get('multi_client_test_params',
                                                    {})
-        soft_ap_params = get_soft_ap_params_from_config_or_default(test_params)
+        soft_ap_params = get_soft_ap_params_from_config_or_default(
+            test_params.get('soft_ap_params', {}))
 
         self.start_soft_ap(soft_ap_params)
 
@@ -1786,7 +1787,7 @@ class SoftApTest(BaseTestClass):
         test_settings_list = []
         for config_settings in tests:
             soft_ap_params = get_soft_ap_params_from_config_or_default(
-                config_settings)
+                config_settings.get('soft_ap_params', {}))
             test_type = config_settings.get('test_type',
                                             'associate_and_pass_traffic')
             iterations = config_settings.get('iterations',
@@ -1896,7 +1897,7 @@ class SoftApTest(BaseTestClass):
         test_settings_list = []
         for config_settings in tests:
             soft_ap_params = get_soft_ap_params_from_config_or_default(
-                config_settings)
+                config_settings.get('soft_ap_params', {}))
             iterations = config_settings.get('iterations',
                                              DEFAULT_STRESS_TEST_ITERATIONS)
             test_settings = {
@@ -1942,7 +1943,8 @@ class SoftApTest(BaseTestClass):
 
         test_settings_list = []
         for config_settings in tests:
-            ap_params = get_ap_params_from_config_or_default(config_settings)
+            ap_params = get_ap_params_from_config_or_default(
+                config_settings.get('ap_params', {}))
             iterations = config_settings.get('iterations',
                                              DEFAULT_STRESS_TEST_ITERATIONS)
             test_settings = {
@@ -1970,8 +1972,9 @@ class SoftApTest(BaseTestClass):
         test_settings_list = []
         for config_settings in tests:
             soft_ap_params = get_soft_ap_params_from_config_or_default(
-                config_settings)
-            ap_params = get_ap_params_from_config_or_default(config_settings)
+                config_settings.get('soft_ap_params', {}))
+            ap_params = get_ap_params_from_config_or_default(
+                config_settings.get('ap_params', {}))
             iterations = config_settings.get('iterations',
                                              DEFAULT_STRESS_TEST_ITERATIONS)
             test_settings = {
@@ -2001,8 +2004,9 @@ class SoftApTest(BaseTestClass):
         test_settings_list = []
         for config_settings in tests:
             soft_ap_params = get_soft_ap_params_from_config_or_default(
-                config_settings)
-            ap_params = get_ap_params_from_config_or_default(config_settings)
+                config_settings.get('soft_ap_params', {}))
+            ap_params = get_ap_params_from_config_or_default(
+                config_settings.get('ap_params', {}))
             iterations = config_settings.get('iterations',
                                              DEFAULT_STRESS_TEST_ITERATIONS)
             test_settings = {
@@ -2034,8 +2038,9 @@ class SoftApTest(BaseTestClass):
         test_settings_list = []
         for config_settings in tests:
             soft_ap_params = get_soft_ap_params_from_config_or_default(
-                config_settings)
-            ap_params = get_ap_params_from_config_or_default(config_settings)
+                config_settings.get('soft_ap_params', {}))
+            ap_params = get_ap_params_from_config_or_default(
+                config_settings.get('ap_params', {}))
             iterations = config_settings.get('iterations',
                                              DEFAULT_STRESS_TEST_ITERATIONS)
             test_settings = {
