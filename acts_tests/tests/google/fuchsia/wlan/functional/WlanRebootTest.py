@@ -28,6 +28,8 @@ from acts.controllers import iperf_server
 from acts.controllers import pdu
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib.hostapd_security import Security
+from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts.controllers.ap_lib.radvd import Radvd
 from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
@@ -169,7 +171,13 @@ class WlanRebootTest(WifiBaseTest):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.get_log(test_name, begin_time)
 
-    def setup_ap(self, ssid, band, ipv4=True, ipv6=False):
+    def setup_ap(self,
+                 ssid,
+                 band,
+                 ipv4=True,
+                 ipv6=False,
+                 security_mode=None,
+                 password=None):
         """Setup ap with basic config.
 
         Args:
@@ -179,16 +187,22 @@ class WlanRebootTest(WifiBaseTest):
             ipv6: True if using ipv6 (radvd), else False.
         """
         # TODO(fxb/63719): Add varying AP parameters
+        security_profile = None
+        if security_mode:
+            security_profile = Security(security_mode=security_mode,
+                                        password=password)
         if band == BAND_2G:
             setup_ap(access_point=self.access_point,
                      profile_name='whirlwind',
                      channel=11,
-                     ssid=ssid)
+                     ssid=ssid,
+                     security=security_profile)
         elif band == BAND_5G:
             setup_ap(access_point=self.access_point,
                      profile_name='whirlwind',
                      channel=36,
-                     ssid=ssid)
+                     ssid=ssid,
+                     security=security_profile)
 
         if not ipv4:
             self.access_point.stop_dhcp()
@@ -523,6 +537,10 @@ class WlanRebootTest(WifiBaseTest):
         reboot_device = settings['reboot_device']
         reboot_type = settings['reboot_type']
         band = settings['band']
+        security_mode = settings.get('security_mode', None)
+        password = settings.get('password', None)
+        if security_mode and not password:
+            password = generate_random_password(security_mode=security_mode)
         interrupt = settings.get('interrupt', None)
         # Skip hard reboots if no PDU present
         asserts.skip_if(
@@ -546,8 +564,12 @@ class WlanRebootTest(WifiBaseTest):
         if band != BAND_2G and band != BAND_5G:
             raise ValueError('Invalid band: %s' % band)
 
-        self.setup_ap(self.ssid, band, ipv4, ipv6)
-        if not self.dut.associate(self.ssid):
+        self.setup_ap(self.ssid, band, ipv4, ipv6, security_mode, password)
+        if not self.dut.associate(
+                self.ssid,
+                target_security=hostapd_constants.
+                SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(security_mode),
+                target_pwd=password):
             raise EnvironmentError('Initial network connection failed.')
 
         dut_test_interface = self.iperf_client_on_dut.test_interface
