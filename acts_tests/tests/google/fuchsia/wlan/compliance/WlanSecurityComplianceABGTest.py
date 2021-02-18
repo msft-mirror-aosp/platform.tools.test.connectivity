@@ -21,12 +21,10 @@ from functools import wraps
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
+from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.utils import rand_ascii_str
-from acts.utils import rand_hex_str
-
 AP_11ABG_PROFILE_NAME = 'whirlwind_11ag_legacy'
 
 
@@ -98,19 +96,23 @@ def create_security_profile(test_func):
             wpa_cipher = 'CCMP'
             wpa2_cipher = 'CCMP'
         if 'max_length_password' in test_func.__name__:
-            password = rand_ascii_str(
-                hostapd_constants.MAX_WPA_PASSWORD_LENGTH)
+            password = generate_random_password(
+                length=hostapd_constants.MAX_WPA_PASSWORD_LENGTH)
         elif 'max_length_psk' in test_func.__name__:
-            password = str(rand_hex_str(
-                hostapd_constants.MAX_WPA_PSK_LENGTH)).lower()
+            password = str(
+                generate_random_password(
+                    length=hostapd_constants.MAX_WPA_PSK_LENGTH,
+                    hex=True)).lower()
         elif 'wep_5_chars' in test_func.__name__:
-            password = rand_ascii_str(5)
+            password = generate_random_password(length=5)
         elif 'wep_13_chars' in test_func.__name__:
-            password = rand_ascii_str(13)
+            password = generate_random_password(length=13)
         elif 'wep_10_hex' in test_func.__name__:
-            password = str(rand_hex_str(10)).lower()
+            password = str(generate_random_password(length=10,
+                                                    hex=True)).lower()
         elif 'wep_26_hex' in test_func.__name__:
-            password = str(rand_hex_str(26)).lower()
+            password = str(generate_random_password(length=26,
+                                                    hex=True)).lower()
         elif 'utf8' in test_func.__name__:
             if 'french' in test_func.__name__:
                 password = utf8_password_2g_french
@@ -135,13 +137,9 @@ def create_security_profile(test_func):
             else:
                 password = utf8_password_2g
         else:
-            password = rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH)
-        if security_mode in hostapd_constants.WPA3_MODE_STRINGS:
-            target_security = 'wpa3'
-        elif security_mode == 'wpa/wpa2':
-            target_security = 'wpa2'
-        else:
-            target_security = security_mode
+            password = generate_random_password()
+        target_security = hostapd_constants.SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+            security_mode, None)
 
         self.security_profile = Security(security_mode=security_mode,
                                          password=password,

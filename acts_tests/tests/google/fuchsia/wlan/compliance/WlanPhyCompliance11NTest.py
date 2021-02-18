@@ -22,10 +22,11 @@ from acts import utils
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
+from acts.controllers.ap_lib.hostapd_security import Security
+from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.utils import rand_ascii_str
 
 FREQUENCY_24 = ['2.4GHz']
 FREQUENCY_5 = ['5GHz']
@@ -136,7 +137,6 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
         ssid = utils.rand_ascii_str(20)
         security_profile = None
         password = None
-        target_security = None
         temp_n_capabilities = list(ap_settings['n_capabilities'])
         n_capabilities = []
         for n_capability in temp_n_capabilities:
@@ -175,13 +175,14 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
             n_capabilities.append(extended_channel)
 
         if ap_settings['security'] == 'wpa2':
-            security_profile = Security(security_mode=SECURITY_WPA2,
-                                        password=rand_ascii_str(20),
-                                        wpa_cipher='CCMP',
-                                        wpa2_cipher='CCMP')
+            security_profile = Security(
+                security_mode=SECURITY_WPA2,
+                password=generate_random_password(length=20),
+                wpa_cipher='CCMP',
+                wpa2_cipher='CCMP')
             password = security_profile.password
-            target_security = hostapd_constants.WPA2_STRING
-
+        target_security = hostapd_constants.SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+            ap_settings['security'], None)
         setup_ap(access_point=self.access_point,
                  profile_name='whirlwind',
                  mode=hostapd_constants.MODE_11N_MIXED,
