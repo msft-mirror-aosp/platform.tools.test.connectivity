@@ -21,7 +21,6 @@ import wave
 
 from acts import context
 
-
 WAVE_FILE_TEMPLATE = 'recorded_audio_%s.wav'
 ADB_PATH = 'sdcard/Music/'
 ADB_FILE = 'rec.pcm'
@@ -29,7 +28,6 @@ ADB_FILE = 'rec.pcm'
 
 class AudioCaptureBase(object):
     """Base class for Audio capture."""
-
     def __init__(self):
 
         self.wave_file = os.path.join(self.log_path, WAVE_FILE_TEMPLATE)
@@ -64,7 +62,7 @@ class AudioCaptureBase(object):
             duration (float): duration of recorded file in milliseconds.
         """
         latest_file_path = self.wave_file % self.last_fileno
-        print (latest_file_path)
+        print(latest_file_path)
         with wave.open(latest_file_path, 'r') as f:
             frames = f.getnframes()
             rate = f.getframerate()
@@ -97,7 +95,6 @@ class CaptureAudioOverAdb(AudioCaptureBase):
     a2dp sink or hfp client. This captures the digital audio and converts
     to analog audio for post processing.
     """
-
     def __init__(self, ad, audio_params):
         """Initializes CaptureAudioOverAdb.
 
@@ -114,9 +111,10 @@ class CaptureAudioOverAdb(AudioCaptureBase):
         """Start the audio capture over adb."""
         self.adb_path = os.path.join(ADB_PATH, ADB_FILE)
         cmd = 'ap2f --usage 1 --start --duration {} --target {}'.format(
-            self.audio_params['duration'], self.adb_path,
+            self.audio_params['duration'],
+            self.adb_path,
         )
-        self._ad.adb.shell_nb(cmd)
+        return self._ad.adb.shell_nb(cmd)
 
     def stop(self):
         """Stops the audio capture and stores it in wave file.
