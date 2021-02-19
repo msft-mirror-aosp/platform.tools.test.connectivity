@@ -2308,26 +2308,6 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
-    def do_hfp_incoming_call(self, line):
-        """
-        Description: Simulate an incoming call on the call manager
-
-        Input(s):
-            remote: The number of the remote party on the incoming call
-
-        Usage:
-          Examples:
-            hfp_incoming_call <remote>
-            hfp_incoming_call 14085555555
-        """
-        cmd = "Simulates an incoming call"
-        try:
-            remote = line.strip()
-            result = self.pri_dut.hfp_lib.initiateIncomingCall(remote)
-            self.log.info(result)
-        except Exception as err:
-            self.log.error(FAILURE.format(cmd, err))
-
     def do_hfp_list_peers(self, line):
         """
         Description: List all HFP Hands-Free peers connected to the DUT.
@@ -2360,6 +2340,138 @@ class CommandInput(cmd.Cmd):
         try:
             peer_id = int(line.strip())
             result = self.pri_dut.hfp_lib.setActivePeer(peer_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_list_calls(self, line):
+        """
+        Description: List all calls known to the sl4f component on the DUT.
+
+        Input(s):
+
+        Usage:
+          Examples:
+            hfp_list_calls
+        """
+        cmd = "Lists all calls"
+        try:
+            result = self.pri_dut.hfp_lib.listCalls()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_incoming_call(self, line):
+        """
+        Description: Simulate an incoming call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the incoming call
+
+        Usage:
+          Examples:
+            hfp_incoming_call <remote>
+            hfp_incoming_call 14085555555
+        """
+        cmd = "Simulates an incoming call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateIncomingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_outgoing_call(self, line):
+        """
+        Description: Simulate an outgoing call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the outgoing call
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <remote>
+        """
+        cmd = "Simulates an outgoing call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateOutgoingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_active(self, line):
+        """
+        Description: Set the specified call to the "OngoingActive" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to active"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallActive(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_held(self, line):
+        """
+        Description: Set the specified call to the "OngoingHeld" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to held"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallHeld(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_terminated(self, line):
+        """
+        Description: Set the specified call to the "Terminated" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to terminated"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallTerminated(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_transferred_to_ag(self, line):
+        """
+        Description: Set the specified call to the "TransferredToAg" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to TransferredToAg"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallTransferredToAg(call_id)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
