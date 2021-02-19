@@ -593,11 +593,16 @@ class ChannelSweepTest(WifiBaseTest):
                     hostapd_constants.MIN_WPA_PSK_LENGTH)
             security_profile = Security(security_mode=security,
                                         password=password)
+            target_security = hostapd_constants.SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+                security)
         else:
             password = None
             security_profile = None
+            target_security = None
         ssid = self.setup_ap(channel, channel_bandwidth, security_profile)
-        associated = self.dut.associate(ssid, target_pwd=password)
+        associated = self.dut.associate(ssid,
+                                        target_pwd=password,
+                                        target_security=target_security)
         if not associated:
             self.log_to_file_and_throughput_data(channel, channel_bandwidth,
                                                  None, None)

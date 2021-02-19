@@ -232,6 +232,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
 
     def run_rvr(self,
                 ssid,
+                security_mode=None,
                 password=None,
                 band='2g',
                 traffic_dir='tx',
@@ -275,9 +276,13 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
             associate_counter = 0
             associate_max_attempts = 3
             while associate_counter < associate_max_attempts:
-                if self.dut.associate(ssid,
-                                      target_pwd=password,
-                                      check_connectivity=False):
+                if self.dut.associate(
+                        ssid,
+                        target_pwd=password,
+                        target_security=hostapd_constants.
+                        SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+                            security_mode),
+                        check_connectivity=False):
                     break
                 else:
                     associate_counter += 1
@@ -355,6 +360,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                     iperf_server_ip_address,
                     ip_version,
                     ssid=ssid,
+                    security_mode=security_mode,
                     password=password,
                     reverse=True,
                     throughput=throughput,
@@ -376,6 +382,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  iperf_server_ip_address,
                  ip_version,
                  ssid=None,
+                 security_mode=None,
                  password=None,
                  reverse=False,
                  throughput=None,
@@ -430,9 +437,13 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                 if not associated:
                     self.log.info('Trying to associate at relative '
                                   'attenuation of %s db' % step)
-                    if self.dut.associate(ssid,
-                                          target_pwd=password,
-                                          check_connectivity=False):
+                    if self.dut.associate(
+                            ssid,
+                            target_pwd=password,
+                            target_security=hostapd_constants.
+                            SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+                                security_mode),
+                            check_connectivity=False):
                         associated = True
                         self.log.info('Successfully associated.')
                     else:
@@ -655,6 +666,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='5g',
                                   traffic_dir='tx',
@@ -679,6 +691,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='5g',
                                   traffic_dir='rx',
@@ -703,6 +716,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='5g',
                                   traffic_dir='tx',
@@ -727,6 +741,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='5g',
                                   traffic_dir='rx',
@@ -831,6 +846,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='2g',
                                   traffic_dir='tx',
@@ -855,6 +871,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='2g',
                                   traffic_dir='rx',
@@ -879,6 +896,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='2g',
                                   traffic_dir='tx',
@@ -903,6 +921,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                  security=security_profile,
                  setup_bridge=True)
         graph_data = self.run_rvr(ssid,
+                                  security_mode='wpa2',
                                   password=password,
                                   band='2g',
                                   traffic_dir='rx',
