@@ -24,11 +24,11 @@ from bokeh.models import Span, Label
 from acts import asserts
 from acts import context
 from acts import utils
+from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts_contrib.test_utils.abstract_devices import wmm_transceiver
 from acts_contrib.test_utils.fuchsia import wmm_test_cases
-from acts_contrib.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
@@ -259,13 +259,17 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
                 'Cannot associate a WmmTransceiver that does not have a '
                 'WlanDevice.')
         ssid = ap_params['ssid']
-        # This will never be present
         password = None
+        target_security = None
         security = ap_params.get('security')
         if security:
             password = security.password
-        associated = wmm_transceiver.wlan_device.associate(target_ssid=ssid,
-                                                           target_pwd=password)
+            target_security = hostapd_constants.SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+                security.security_mode_string)
+        associated = wmm_transceiver.wlan_device.associate(
+            target_ssid=ssid,
+            target_pwd=password,
+            target_security=target_security)
         if not associated:
             raise ConnectionError('Failed to associate WmmTransceiver %s.' %
                                   wmm_transceiver.identifier)
