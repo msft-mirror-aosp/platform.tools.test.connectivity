@@ -2476,4 +2476,42 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_set_speaker_gain(self, line):
+        """
+        Description: Set the active peer's speaker gain.
+
+        Input(s):
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_speaker_gain <value>
+        """
+        cmd = "Set the active peer's speaker gain"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setSpeakerGain(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_microphone_gain(self, line):
+        """
+        Description: Set the active peer's microphone gain.
+
+        Input(s):
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_microphone_gain <value>
+        """
+        cmd = "Set the active peer's microphone gain"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setMicrophoneGain(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     """End HFP wrappers"""
