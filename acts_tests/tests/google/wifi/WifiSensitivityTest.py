@@ -246,7 +246,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 metric_tag_dict['channel'], metric_tag_dict['mode'],
                 metric_tag_dict['num_streams'], metric_tag_dict['chain_mask'])
             metric_key = '{}.avg_sensitivity'.format(metric_tag)
-            metric_value = numpy.nanmean(metric_data)
+            metric_value = numpy.mean(metric_data)
             self.testclass_metric_logger.add_metric(metric_key, metric_value)
 
         # write csv
@@ -393,6 +393,10 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
+            wutils.wifi_toggle_state(self.dut, False)
+            wutils.set_wifi_country_code(self.dut,
+                                         self.testclass_params['country_code'])
+            wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
@@ -700,6 +704,10 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
+            wutils.wifi_toggle_state(self.dut, False)
+            wutils.set_wifi_country_code(self.dut,
+                                         self.testclass_params['country_code'])
+            wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
@@ -708,7 +716,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],
                                 num_of_tries=5,
-                                check_connectivity=False)
+                                check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def process_testclass_results(self):

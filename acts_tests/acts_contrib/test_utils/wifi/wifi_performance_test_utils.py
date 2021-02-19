@@ -681,7 +681,7 @@ def atten_by_label(atten_list, path_label, atten_level):
     """
     for atten in atten_list:
         if path_label in atten.path:
-            atten.set_atten(atten_level)
+            atten.set_atten(atten_level, retry=True)
 
 
 def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
@@ -702,7 +702,7 @@ def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
     logging.info('Searching attenuation for RSSI = {}dB'.format(target_rssi))
     # Set attenuator to 0 dB
     for atten in attenuators:
-        atten.set_atten(0, strict=False)
+        atten.set_atten(0, strict=False, retry=True)
     # Start ping traffic
     dut_ip = dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
     # Measure starting RSSI
@@ -731,7 +731,7 @@ def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
         if target_atten > attenuators[0].get_max_atten():
             return attenuators[0].get_max_atten()
         for atten in attenuators:
-            atten.set_atten(target_atten, strict=False)
+            atten.set_atten(target_atten, strict=False, retry=True)
         ping_future = get_ping_stats_nb(src_device=ping_server,
                                         dest_address=dut_ip,
                                         ping_duration=1.5,
@@ -784,7 +784,7 @@ def get_current_atten_dut_chain_map(attenuators,
     """
     # Set attenuator to 0 dB
     for atten in attenuators:
-        atten.set_atten(0, strict=False)
+        atten.set_atten(0, strict=False, retry=True)
     # Start ping traffic
     dut_ip = dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
     if ping_from_dut:
@@ -803,7 +803,7 @@ def get_current_atten_dut_chain_map(attenuators,
     chain_map = []
     for test_atten in attenuators:
         # Set one attenuator to 30 dB down
-        test_atten.set_atten(30, strict=False)
+        test_atten.set_atten(30, strict=False, retry=True)
         # Get new RSSI
         test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
         # Assign attenuator to path that has lower RSSI
@@ -816,7 +816,7 @@ def get_current_atten_dut_chain_map(attenuators,
         else:
             chain_map.append(None)
         # Reset attenuator to 0
-        test_atten.set_atten(0, strict=False)
+        test_atten.set_atten(0, strict=False, retry=True)
     ping_future.result()
     logging.debug('Chain Map: {}'.format(chain_map))
     return chain_map
@@ -846,7 +846,7 @@ def get_full_rf_connection_map(attenuators,
         rf_map_by_atten: list of RF connections indexed by attenuator
     """
     for atten in attenuators:
-        atten.set_atten(0, strict=False)
+        atten.set_atten(0, strict=False, retry=True)
 
     rf_map_by_network = collections.OrderedDict()
     rf_map_by_atten = [[] for atten in attenuators]
