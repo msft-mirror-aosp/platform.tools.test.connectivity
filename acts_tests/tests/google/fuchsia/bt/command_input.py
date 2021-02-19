@@ -2345,4 +2345,23 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_set_active_peer(self, line):
+        """
+        Description: Set the active HFP Hands-Free peer for the DUT.
+
+        Input(s):
+            peer_id: The id of the peer to be set active.
+
+        Usage:
+          Examples:
+            hfp_set_active_peer <peer_id>
+        """
+        cmd = "Set the active peer"
+        try:
+            peer_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setActivePeer(peer_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     """End HFP wrappers"""
