@@ -1764,6 +1764,13 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
     for interface in interface_list:
         interface_ipv6_link_local = \
             get_interface_ip_addresses(job, interface)['ipv6_link_local']
+        if 'fe80::1' in interface_ipv6_link_local:
+            logging.info('Removing IPv6 loopback IP from %s interface list.'
+                         '  Not modifying actual system IP addresses.' %
+                         interface)
+            # This is needed as the Zeroconf library crashes if you try to
+            # instantiate it on a IPv6 loopback IP address.
+            interface_ipv6_link_local.remove('fe80::1')
 
         if interface_ipv6_link_local:
             zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
