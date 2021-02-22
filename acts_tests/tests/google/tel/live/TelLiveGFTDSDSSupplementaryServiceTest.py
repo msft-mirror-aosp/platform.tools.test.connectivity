@@ -20,49 +20,49 @@ import time
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
+from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
     TelephonyVoiceTestResult
-from acts.test_utils.tel.loggers.telephony_metric_logger import \
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import \
     TelephonyMetricLogger
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
-from acts.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
-from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
-from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
+from acts_contrib.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import set_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
-from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
-from acts.test_utils.tel.tel_subscription_utils import \
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_subid_on_same_network_of_host_ad
-from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import num_active_calls
-from acts.test_utils.tel.tel_test_utils import verify_incall_state
-from acts.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
-from acts.test_utils.tel.tel_test_utils import set_call_waiting
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
+from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
+from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
+from acts_contrib.test_utils.tel.tel_test_utils import set_call_waiting
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_test_utils import \
     wait_and_reject_call_for_subscription
-from acts.test_utils.tel.tel_test_utils import erase_call_forwarding_by_mmi
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
-from acts.test_utils.tel.tel_voice_utils import \
+from acts_contrib.test_utils.tel.tel_test_utils import erase_call_forwarding_by_mmi
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
+from acts_contrib.test_utils.tel.tel_voice_utils import \
     three_phone_call_forwarding_short_seq
-from acts.test_utils.tel.tel_voice_utils import \
+from acts_contrib.test_utils.tel.tel_voice_utils import \
     three_phone_call_waiting_short_seq
-from acts.test_utils.tel.tel_voice_utils import swap_calls
-from acts.test_utils.tel.tel_voice_utils import phone_setup_on_rat
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 

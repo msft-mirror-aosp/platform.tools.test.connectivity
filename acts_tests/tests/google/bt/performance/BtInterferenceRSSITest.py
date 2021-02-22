@@ -1,7 +1,7 @@
 from multiprocessing import Process
 import time
 
-from acts.test_utils.bt.A2dpBaseTest import A2dpBaseTest
+from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
 
 END_TOKEN = "end"
 

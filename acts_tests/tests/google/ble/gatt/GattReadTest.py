@@ -18,12 +18,12 @@ This test script exercises different GATT read procedures.
 """
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
-from acts.test_utils.bt.bt_constants import gatt_characteristic
-from acts.test_utils.bt.bt_constants import gatt_descriptor
-from acts.test_utils.bt.bt_constants import gatt_event
-from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
+from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
+from acts_contrib.test_utils.bt.bt_constants import gatt_descriptor
+from acts_contrib.test_utils.bt.bt_constants import gatt_event
+from acts_contrib.test_utils.bt.bt_constants import gatt_cb_strings
 from math import ceil
 
 

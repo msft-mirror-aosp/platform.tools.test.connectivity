@@ -16,9 +16,9 @@
 """Stream music through connected device from phone across different
 attenuations."""
 from acts.signals import TestPass
-from acts.test_utils.bt.BtInterferenceBaseTest import BtInterferenceBaseTest
+from acts_contrib.test_utils.bt.BtInterferenceBaseTest import BtInterferenceBaseTest
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
-from acts.test_utils.bt.BtInterferenceBaseTest import get_iperf_results
+from acts_contrib.test_utils.bt.BtInterferenceBaseTest import get_iperf_results
 from multiprocessing import Process, Queue
 
 DEFAULT_THDN_THRESHOLD = 0.9

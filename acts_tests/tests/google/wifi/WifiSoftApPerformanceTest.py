@@ -22,10 +22,10 @@ from acts import base_test
 from acts.controllers import iperf_server as ipf
 from acts.controllers import iperf_client as ipc
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
-from acts.test_utils.wifi import ota_sniffer
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi import wifi_performance_test_utils as wputils
-from acts.test_utils.wifi import wifi_retail_ap as retail_ap
+from acts_contrib.test_utils.wifi import ota_sniffer
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from WifiRvrTest import WifiRvrTest
 
 AccessPointTuple = collections.namedtuple(('AccessPointTuple'),

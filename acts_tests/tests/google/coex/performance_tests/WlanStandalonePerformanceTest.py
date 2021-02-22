@@ -16,8 +16,8 @@
 
 import itertools
 
-from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
-from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts_contrib.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
 
 
 class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):

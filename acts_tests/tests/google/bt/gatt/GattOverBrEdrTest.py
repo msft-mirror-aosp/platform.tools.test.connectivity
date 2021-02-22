@@ -21,22 +21,22 @@ import time
 from queue import Empty
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_constants import gatt_characteristic
-from acts.test_utils.bt.bt_constants import gatt_service_types
-from acts.test_utils.bt.bt_constants import gatt_transport
-from acts.test_utils.bt.bt_constants import gatt_cb_strings
-from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
-from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
-from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
-from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
-from acts.test_utils.bt.bt_gatt_utils import setup_gatt_characteristics
-from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
-from acts.test_utils.bt.bt_gatt_utils import setup_gatt_descriptors
-from acts.test_utils.bt.bt_gatt_utils import setup_multiple_services
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_constants import gatt_characteristic
+from acts_contrib.test_utils.bt.bt_constants import gatt_service_types
+from acts_contrib.test_utils.bt.bt_constants import gatt_transport
+from acts_contrib.test_utils.bt.bt_constants import gatt_cb_strings
+from acts_contrib.test_utils.bt.bt_gatt_utils import GattTestUtilsError
+from acts_contrib.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
+from acts_contrib.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
+from acts_contrib.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
+from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_characteristics
+from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_connection
+from acts_contrib.test_utils.bt.bt_gatt_utils import setup_gatt_descriptors
+from acts_contrib.test_utils.bt.bt_gatt_utils import setup_multiple_services
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class GattOverBrEdrTest(BluetoothBaseTest):

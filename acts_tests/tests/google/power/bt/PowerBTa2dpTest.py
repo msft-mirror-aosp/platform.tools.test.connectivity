@@ -15,10 +15,10 @@
 #   limitations under the License.
 
 import time
-import acts.test_utils.bt.bt_test_utils as btutils
-import acts.test_utils.power.PowerBTBaseTest as PBtBT
+import acts_contrib.test_utils.bt.bt_test_utils as btutils
+import acts_contrib.test_utils.power.PowerBTBaseTest as PBtBT
 from acts import asserts
-from acts.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt import BtEnum
 
 EXTRA_PLAY_TIME = 10
 

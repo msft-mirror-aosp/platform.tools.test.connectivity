@@ -21,15 +21,15 @@ import time
 
 from queue import Empty
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.BtEnum import BluetoothScanModeType
-from acts.test_utils.bt.bt_test_utils import check_device_supported_profiles
-from acts.test_utils.bt.bt_test_utils import log_energy_info
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import set_device_name
-from acts.test_utils.bt.bt_test_utils import set_bt_scan_mode
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BtEnum import BluetoothScanModeType
+from acts_contrib.test_utils.bt.bt_test_utils import check_device_supported_profiles
+from acts_contrib.test_utils.bt.bt_test_utils import log_energy_info
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import set_device_name
+from acts_contrib.test_utils.bt.bt_test_utils import set_bt_scan_mode
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class BtCarBasicFunctionalityTest(BluetoothBaseTest):

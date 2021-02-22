@@ -14,14 +14,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import acts.test_utils.bt.bt_test_utils as btutils
+import acts_contrib.test_utils.bt.bt_test_utils as btutils
 from acts import asserts
 from acts.signals import TestPass
-from acts.test_utils.bt import bt_constants
-from acts.test_utils.bt import BtEnum
-from acts.test_utils.bt.A2dpBaseTest import A2dpBaseTest
-from acts.test_utils.bt.loggers import bluetooth_metric_logger as log
-from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
+from acts_contrib.test_utils.bt import bt_constants
+from acts_contrib.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
+from acts_contrib.test_utils.bt.loggers import bluetooth_metric_logger as log
+from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
 
 
 class BtA2dpRangeTest(A2dpBaseTest):

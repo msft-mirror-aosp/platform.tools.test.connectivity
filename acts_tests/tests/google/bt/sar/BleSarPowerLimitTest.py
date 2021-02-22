@@ -18,13 +18,13 @@ import os
 import time
 from acts import utils
 
-import acts.test_utils.bt.bt_test_utils as bt_utils
-import acts.test_utils.wifi.wifi_performance_test_utils as wifi_utils
-from acts.test_utils.bt.ble_performance_test_utils import ble_gatt_disconnection
-from acts.test_utils.bt.ble_performance_test_utils import ble_coc_connection
-from acts.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.BtSarBaseTest import BtSarBaseTest
+import acts_contrib.test_utils.bt.bt_test_utils as bt_utils
+import acts_contrib.test_utils.wifi.wifi_performance_test_utils as wifi_utils
+from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_gatt_disconnection
+from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_coc_connection
+from acts_contrib.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
+from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts_contrib.test_utils.bt.BtSarBaseTest import BtSarBaseTest
 
 FIXED_ATTENUATION = 36
 

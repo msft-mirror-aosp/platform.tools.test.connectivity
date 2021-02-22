@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.power.PowerBaseTest import PowerBaseTest
+from acts_contrib.test_utils.power.PowerBaseTest import PowerBaseTest
 
 
 class PowerBaselineTest(PowerBaseTest):

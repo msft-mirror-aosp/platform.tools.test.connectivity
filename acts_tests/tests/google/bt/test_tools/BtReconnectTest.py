@@ -16,8 +16,8 @@
 
 import time
 
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import *
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import *
 
 
 class BtReconnectTest(BluetoothBaseTest):

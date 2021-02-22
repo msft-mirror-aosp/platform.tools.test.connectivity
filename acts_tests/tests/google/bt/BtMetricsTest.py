@@ -16,11 +16,11 @@ import time
 from google import protobuf
 
 from acts import asserts
-from acts.test_utils.bt.BtMetricsBaseTest import BtMetricsBaseTest
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.protos import bluetooth_pb2
+from acts_contrib.test_utils.bt.BtMetricsBaseTest import BtMetricsBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts_contrib.test_utils.bt.protos import bluetooth_pb2
 from acts.utils import get_current_epoch_time, sync_device_time
 
 

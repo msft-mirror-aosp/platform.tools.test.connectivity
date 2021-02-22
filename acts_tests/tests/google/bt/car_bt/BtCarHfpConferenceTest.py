@@ -20,19 +20,19 @@ Test the HFP profile for conference calling functionality.
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
-from acts.test_utils.bt import BtEnum
-from acts.test_utils.bt import bt_test_utils
-from acts.test_utils.car import car_telecom_utils
-from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
-from acts.test_utils.tel.tel_voice_utils import get_audio_route
-from acts.test_utils.tel.tel_voice_utils import set_audio_route
-from acts.test_utils.tel.tel_voice_utils import swap_calls
+from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
+from acts_contrib.test_utils.bt import BtEnum
+from acts_contrib.test_utils.bt import bt_test_utils
+from acts_contrib.test_utils.car import car_telecom_utils
+from acts_contrib.test_utils.tel import tel_defines
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
+from acts_contrib.test_utils.tel.tel_voice_utils import get_audio_route
+from acts_contrib.test_utils.tel.tel_voice_utils import set_audio_route
+from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
 
 BLUETOOTH_PKG_NAME = "com.android.bluetooth"
 CALL_TYPE_OUTGOING = "CALL_TYPE_OUTGOING"

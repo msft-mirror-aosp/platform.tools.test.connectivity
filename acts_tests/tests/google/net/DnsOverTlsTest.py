@@ -18,16 +18,16 @@ import time
 from acts import asserts
 from acts.controllers.openwrt_ap import MOBLY_CONTROLLER_CONFIG_NAME as OPENWRT
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import connectivity_const as cconst
-from acts.test_utils.net import connectivity_test_utils as cutils
-from acts.test_utils.net import net_test_utils as nutils
-from acts.test_utils.net.net_test_utils import start_tcpdump
-from acts.test_utils.net.net_test_utils import stop_tcpdump
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.net import connectivity_const as cconst
+from acts_contrib.test_utils.net import connectivity_test_utils as cutils
+from acts_contrib.test_utils.net import net_test_utils as nutils
+from acts_contrib.test_utils.net.net_test_utils import start_tcpdump
+from acts_contrib.test_utils.net.net_test_utils import stop_tcpdump
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from scapy.all import rdpcap
 from scapy.all import Scapy_Exception
 from scapy.all import TCP

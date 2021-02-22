@@ -5,9 +5,9 @@ import tempfile
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
-from acts.test_utils.tel.tel_test_utils import get_iccid_by_adb
-from acts.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
+from acts_contrib.test_utils.tel.tel_defines import EventSmsSentSuccess
+from acts_contrib.test_utils.tel.tel_test_utils import get_iccid_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
 
 
 class GnssSimInventoryTest(BaseTestClass):

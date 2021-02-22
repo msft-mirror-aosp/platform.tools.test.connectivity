@@ -26,10 +26,10 @@ from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.libs.ota import ota_updater
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.net import connectivity_const as cconst
+from acts_contrib.test_utils.net import connectivity_const as cconst
 
-import acts.test_utils.net.net_test_utils as nutils
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts_contrib.test_utils.net.net_test_utils as nutils
+import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
