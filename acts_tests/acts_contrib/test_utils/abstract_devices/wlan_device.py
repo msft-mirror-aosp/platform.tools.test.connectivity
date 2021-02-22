@@ -22,6 +22,7 @@ from acts.utils import get_interface_ip_addresses
 from acts.utils import adb_shell_ping
 
 from acts import asserts
+from acts.controllers import iperf_client
 from acts.controllers.fuchsia_device import FuchsiaDevice
 from acts.controllers.android_device import AndroidDevice
 
@@ -120,6 +121,10 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def get_default_wlan_test_interface(self):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
     def destroy_wlan_interface(self, iface_id):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
@@ -168,6 +173,10 @@ class WlanDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def clear_saved_networks(self):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def create_iperf_client(self, test_interface=None):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
@@ -241,6 +250,9 @@ class AndroidWlanDevice(WlanDevice):
     def get_wlan_interface_id_list(self):
         pass
 
+    def get_default_wlan_test_interface(self):
+        return 'wlan0'
+
     def destroy_wlan_interface(self, iface_id):
         pass
 
@@ -279,6 +291,23 @@ class AndroidWlanDevice(WlanDevice):
 
     def clear_saved_networks(self):
         pass
+
+    def create_iperf_client(self, test_interface=None):
+        """ Returns an iperf client on the Android, without requiring a
+        specific config.
+
+        Args:
+            test_interface: optional, string, name of test interface.
+
+        Returns:
+            IPerfClient object
+        """
+        if not test_interface:
+            test_interface = self.get_default_wlan_test_interface()
+
+        return iperf_client.IPerfClientOverAdb(
+            android_device_or_serial=self.device,
+            test_interface=test_interface)
 
 
 class FuchsiaWlanDevice(WlanDevice):
@@ -408,6 +437,10 @@ class FuchsiaWlanDevice(WlanDevice):
         """
         return self.device.wlan_lib.wlanGetIfaceIdList().get('result')
 
+    def get_default_wlan_test_interface(self):
+        """Returns name of the WLAN client interface"""
+        return self.device.wlan_controller.get_wlan_interface_name()
+
     def destroy_wlan_interface(self, iface_id):
         """Function to associate a Fuchsia WLAN device.
 
@@ -482,3 +515,25 @@ class FuchsiaWlanDevice(WlanDevice):
                 'are a policy layer concept.')
         if not self.device.wlan_policy_controller.remove_all_networks():
             raise EnvironmentError('Failed to clear saved networks')
+
+    def create_iperf_client(self, test_interface=None):
+        """ Returns an iperf client on the FuchsiaDevice, without requiring a
+        specific config.
+
+        Args:
+            test_interface: optional, string, name of test interface. Defaults
+                to first found wlan client interface.
+
+        Returns:
+            IPerfClient object
+        """
+        if not test_interface:
+            test_interface = self.get_default_wlan_test_interface()
+        return iperf_client.IPerfClientOverSsh(
+            {
+                'user': 'fuchsia',
+                'host': self.device.ip,
+                'ssh_config': self.device.ssh_config
+            },
+            use_paramiko=True,
+            test_interface=test_interface)
