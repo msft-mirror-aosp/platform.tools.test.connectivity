@@ -48,6 +48,18 @@ RTT_REGEX = re.compile(r'^\[(?P<timestamp>\S+)\] .*? time=(?P<rtt>\S+)')
 LOSS_REGEX = re.compile(r'(?P<loss>\S+)% packet loss')
 FW_REGEX = re.compile(r'FW:(?P<firmware>\S+) HW:')
 CHANNELS_6GHz = ['6g{}'.format(4 * x + 1) for x in range(59)]
+BAND_TO_CHANNEL_MAP = {
+    '2.4GHz': list(range(1, 14)),
+    'UNII-1': [36, 40, 44, 48],
+    'UNII-2':
+    [52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 140],
+    'UNII-3': [149, 153, 157, 161, 165],
+    '6GHz': CHANNELS_6GHz
+}
+CHANNEL_TO_BAND_MAP = {
+    channel: band
+    for band, channels in BAND_TO_CHANNEL_MAP.items() for channel in channels
+}
 
 
 # Threading decorator

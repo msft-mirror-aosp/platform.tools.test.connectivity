@@ -594,12 +594,13 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Check if test should be skipped based on parameters.
         self.check_skip_conditions(testcase_params)
 
-        num_atten_steps = int((self.testclass_params['atten_stop'] -
-                               self.testclass_params['atten_start']) /
-                              self.testclass_params['atten_step'])
+        band = wputils.CHANNEL_TO_BAND_MAP[testcase_params['channel']]
+        start_atten = self.testclass_params['atten_start'].get(band, 0)
+        num_atten_steps = int(
+            (self.testclass_params['atten_stop'] - start_atten) /
+            self.testclass_params['atten_step'])
         testcase_params['atten_range'] = [
-            self.testclass_params['atten_start'] +
-            x * self.testclass_params['atten_step']
+            start_atten + x * self.testclass_params['atten_step']
             for x in range(0, num_atten_steps)
         ]
         band = self.access_point.band_lookup_by_channel(
