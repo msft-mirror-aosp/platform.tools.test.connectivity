@@ -63,6 +63,7 @@ from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import Fuchs
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
+from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
 from acts.libs.proc import job
 from acts.utils import get_fuchsia_mdns_ipv6_address
@@ -376,6 +377,9 @@ class FuchsiaDevice:
         self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
                                                     self.test_counter,
                                                     self.client_id)
+
+        # Contains WLAN core functions
+        self.wlan_controller = WlanController(self)
 
         # Contains WLAN policy functions like save_network, remove_network, etc
         self.wlan_policy_controller = WlanPolicyController(self)
