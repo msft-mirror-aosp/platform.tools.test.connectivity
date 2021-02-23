@@ -129,12 +129,6 @@ class WlanRebootTest(WifiBaseTest):
 
         self.access_point = self.access_points[0]
 
-        # IPerf Server is run on the AP and setup in the tests
-        self.iperf_server_on_ap = None
-        self.iperf_client_on_dut = self.iperf_clients[0]
-
-        self.router_adv_daemon = None
-
         # Times (in seconds) to wait for DUT network connection and assigning an
         # ip address to the wlan interface.
         self.wlan_reboot_test_params = self.user_params.get(
@@ -143,6 +137,21 @@ class WlanRebootTest(WifiBaseTest):
             'dut_network_connection_timeout', DUT_NETWORK_CONNECTION_TIMEOUT)
         self.dut_ip_address_timeout = self.wlan_reboot_test_params.get(
             'dut_ip_address_timeout', DUT_IP_ADDRESS_TIMEOUT)
+        self.skip_iperf = self.wlan_reboot_test_params.get('skip_iperf', False)
+
+        self.iperf_server_on_ap = None
+        self.iperf_client_on_dut = None
+        if not self.skip_iperf:
+            try:
+                self.iperf_client_on_dut = self.iperf_clients[0]
+            except AttributeError:
+                self.iperf_client_on_dut = self.dut.create_iperf_client()
+        else:
+            self.log.info(
+                'Skipping iperf throughput validation as requested by ACTS '
+                'config')
+
+        self.router_adv_daemon = None
 
     def setup_test(self):
         self.access_point.stop_all_aps()
@@ -577,22 +586,24 @@ class WlanRebootTest(WifiBaseTest):
                 target_pwd=password):
             raise EnvironmentError('Initial network connection failed.')
 
-        dut_test_interface = self.iperf_client_on_dut.test_interface
-        if ipv4:
-            self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
-        if ipv6:
-            self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
+        if not self.skip_iperf:
+            dut_test_interface = self.iperf_client_on_dut.test_interface
+            if ipv4:
+                self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
+            if ipv6:
+                self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
 
-        self.iperf_server_on_ap = self.setup_iperf_server_on_ap(band)
-        self.iperf_server_on_ap.start()
+            self.iperf_server_on_ap = self.setup_iperf_server_on_ap(band)
+            self.iperf_server_on_ap.start()
 
-        if ipv4:
-            self.verify_traffic_between_dut_and_ap(self.iperf_server_on_ap,
-                                                   self.iperf_client_on_dut)
-        if ipv6:
-            self.verify_traffic_between_dut_and_ap(self.iperf_server_on_ap,
-                                                   self.iperf_client_on_dut,
-                                                   ip_version=IPV6)
+            if ipv4:
+                self.verify_traffic_between_dut_and_ap(
+                    self.iperf_server_on_ap, self.iperf_client_on_dut)
+            if ipv6:
+                self.verify_traffic_between_dut_and_ap(
+                    self.iperf_server_on_ap,
+                    self.iperf_client_on_dut,
+                    ip_version=IPV6)
 
         # Looping reboots for stress testing
         for run in range(iterations):
@@ -609,8 +620,9 @@ class WlanRebootTest(WifiBaseTest):
 
             # DUT reboots
             if reboot_device == DUT:
-                if type(self.iperf_client_on_dut
-                        ) == iperf_client.IPerfClientOverSsh:
+                if not self.skip_iperf and type(
+                        self.iperf_client_on_dut
+                ) == iperf_client.IPerfClientOverSsh:
                     self.iperf_client_on_dut.close_ssh()
                 if reboot_type == SOFT:
                     self.dut.device.reboot()
@@ -623,7 +635,8 @@ class WlanRebootTest(WifiBaseTest):
                     self.log.info('Cleanly stopping ap.')
                     self.access_point.stop_all_aps()
                 elif reboot_type == HARD:
-                    self.iperf_server_on_ap.close_ssh()
+                    if not self.skip_iperf:
+                        self.iperf_server_on_ap.close_ssh()
                     self.access_point.hard_power_cycle(self.pdu_devices)
                 self.setup_ap(self.ssid, band, ipv4, ipv6, security_mode,
                               password)
@@ -633,20 +646,23 @@ class WlanRebootTest(WifiBaseTest):
             try:
                 self.wait_for_dut_network_connection(self.ssid)
                 time_to_reconnect = time.time() - uptime
-                if ipv4:
-                    self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
-                if ipv6:
-                    self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
-                self.iperf_server_on_ap.start()
 
-                if ipv4:
-                    self.verify_traffic_between_dut_and_ap(
-                        self.iperf_server_on_ap, self.iperf_client_on_dut)
-                if ipv6:
-                    self.verify_traffic_between_dut_and_ap(
-                        self.iperf_server_on_ap,
-                        self.iperf_client_on_dut,
-                        ip_version=IPV6)
+                if not self.skip_iperf:
+                    if ipv4:
+                        self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
+                    if ipv6:
+                        self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
+
+                    self.iperf_server_on_ap.start()
+
+                    if ipv4:
+                        self.verify_traffic_between_dut_and_ap(
+                            self.iperf_server_on_ap, self.iperf_client_on_dut)
+                    if ipv6:
+                        self.verify_traffic_between_dut_and_ap(
+                            self.iperf_server_on_ap,
+                            self.iperf_client_on_dut,
+                            ip_version=IPV6)
 
             except ConnectionError as err:
                 self.log_and_continue(run, error=err)
