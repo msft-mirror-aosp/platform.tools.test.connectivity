@@ -80,6 +80,13 @@ GNSSTOOL_PERMISSIONS = [
     "android.permission.READ_CONTACTS",
     "android.permission.ACCESS_BACKGROUND_LOCATION"
 ]
+DISABLE_LTO_FILE_CONTENTS = """\
+LONGTERM_PSDS_SERVER_1="http://"
+LONGTERM_PSDS_SERVER_2="http://"
+LONGTERM_PSDS_SERVER_3="http://"
+NORMAL_PSDS_SERVER="http://"
+REALTIME_PSDS_SERVER="http://"
+"""
 
 
 class GnssTestUtilsError(Exception):
@@ -125,7 +132,11 @@ def enable_gnss_verbose_logging(ad):
     """
     remount_device(ad)
     ad.log.info("Enable GNSS VERBOSE Logging and persistent logcat.")
-    ad.adb.shell("echo -e '\nDEBUG_LEVEL = 5' >> /vendor/etc/gps.conf")
+    if check_chipset_vendor_by_qualcomm(ad):
+        ad.adb.shell("echo -e '\nDEBUG_LEVEL = 5' >> /vendor/etc/gps.conf")
+    else:
+        ad.adb.shell("echo LogEnabled=true >> /data/vendor/gps/libgps.conf")
+        ad.adb.shell("chown gps.system /data/vendor/gps/libgps.conf")
     ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.logpersistd.size 20000")
@@ -198,10 +209,14 @@ def enable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Enable SUPL mode.")
     ad.adb.shell("echo -e '\nSUPL_MODE=1' >> /etc/gps_debug.conf")
+    if not check_chipset_vendor_by_qualcomm(ad):
+        lto_mode(ad, True)
+    else:
+        reboot(ad)
 
 
 def disable_supl_mode(ad):
-    """Kill SUPL to test XTRA only test item.
+    """Kill SUPL to test XTRA/LTO only test item.
 
     Args:
         ad: An AndroidDevice object.
@@ -209,7 +224,10 @@ def disable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Disable SUPL mode.")
     ad.adb.shell("echo -e '\nSUPL_MODE=0' >> /etc/gps_debug.conf")
-    reboot(ad)
+    if not check_chipset_vendor_by_qualcomm(ad):
+        lto_mode(ad, True)
+    else:
+        reboot(ad)
 
 
 def kill_xtra_daemon(ad):
@@ -219,8 +237,11 @@ def kill_xtra_daemon(ad):
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    ad.log.info("Disable XTRA-daemon until next reboot.")
-    ad.adb.shell("killall xtra-daemon", ignore_status=True)
+    if check_chipset_vendor_by_qualcomm(ad):
+        ad.log.info("Disable XTRA-daemon until next reboot.")
+        ad.adb.shell("killall xtra-daemon", ignore_status=True)
+    else:
+        lto_mode(ad, False)
 
 
 def disable_private_dns_mode(ad):
@@ -245,13 +266,14 @@ def _init_device(ad):
     """
     enable_gnss_verbose_logging(ad)
     enable_compact_and_particle_fusion_log(ad)
-    disable_xtra_throttle(ad)
+    if check_chipset_vendor_by_qualcomm(ad):
+        disable_xtra_throttle(ad)
+        set_gnss_qxdm_mask(ad, QXDM_MASKS)
     enable_supl_mode(ad)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
     ad.droid.bluetoothToggleState(False)
-    set_gnss_qxdm_mask(ad, QXDM_MASKS)
     check_location_service(ad)
     set_wifi_and_bt_scanning(ad, True)
     disable_private_dns_mode(ad)
@@ -321,7 +343,11 @@ def clear_logd_gnss_qxdm_log(ad):
     ad.adb.shell(
         'find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH,
         ignore_status=True)
-    output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
+    if check_chipset_vendor_by_qualcomm(ad):
+        output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
+    else:
+        output_path = ("/sdcard/Android/data/com.android.pixellogger/files"
+                       "/logs/gps/")
     ad.adb.shell("rm -rf %s" % output_path, ignore_status=True)
     reboot(ad)
 
@@ -344,9 +370,15 @@ def get_gnss_qxdm_log(ad, qdb_path):
                 timeout=PULL_TIMEOUT, ignore_status=True)
     shutil.make_archive(gnss_log_path, "zip", gnss_log_path)
     shutil.rmtree(gnss_log_path)
-    output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs/.")
-    file_count = ad.adb.shell(
-        "find %s -type f -iname *.qmdl | wc -l" % output_path)
+    if check_chipset_vendor_by_qualcomm(ad):
+        output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs/.")
+        file_count = ad.adb.shell(
+            "find %s -type f -iname *.qmdl | wc -l" % output_path)
+    else:
+        output_path = ("/sdcard/Android/data/com.android.pixellogger/files"
+                       "/logs/gps/")
+        file_count = ad.adb.shell(
+            "find %s -type f -iname *.zip | wc -l" % output_path)
     if not int(file_count) == 0:
         qxdm_log_name = "QXDM_%s_%s" % (ad.model, ad.serial)
         qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
@@ -465,13 +497,22 @@ def check_xtra_download(ad, begin_time):
         otherwise return False.
     """
     ad.send_keycode("HOME")
-    logcat_results = ad.search_logcat("XTRA download success. "
-                                      "inject data into modem", begin_time)
-    if logcat_results:
-        ad.log.debug("%s" % logcat_results[-1]["log_message"])
-        ad.log.info("XTRA downloaded and injected successfully.")
-        return True
-    ad.log.error("XTRA downloaded FAIL.")
+    if check_chipset_vendor_by_qualcomm(ad):
+        xtra_results = ad.search_logcat("XTRA download success. "
+                                        "inject data into modem", begin_time)
+        if xtra_results:
+            ad.log.debug("%s" % xtra_results[-1]["log_message"])
+            ad.log.info("XTRA downloaded and injected successfully.")
+            return True
+        ad.log.error("XTRA downloaded FAIL.")
+    else:
+        lto_results = ad.search_logcat("GnssPsdsAidl: injectPsdsData: "
+                                       "psdsType: 1", begin_time)
+        if lto_results:
+            ad.log.debug("%s" % lto_results[-1]["log_message"])
+            ad.log.info("LTO downloaded and injected successfully.")
+            return True
+        ad.log.error("LTO downloaded and inject FAIL.")
     return False
 
 
@@ -603,6 +644,8 @@ def clear_aiding_data_by_gtw_gpstool(ad):
     Args:
         ad: An AndroidDevice object.
     """
+    if not check_chipset_vendor_by_qualcomm(ad):
+        delete_lto_file(ad)
     ad.log.info("Launch GTW GPSTool and Clear all GNSS aiding data")
     ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode clear")
     time.sleep(10)
@@ -1190,7 +1233,9 @@ def start_youtube_video(ad, url=None, retries=0):
     """
     for i in range(retries):
         ad.log.info("Open an youtube video - attempt %d" % (i+1))
-        ad.adb.shell("am start -a android.intent.action.VIEW -d \"%s\"" % url)
+        cmd = ("am start -n com.google.android.youtube/"
+               "com.google.android.youtube.UrlActivity -d \"%s\"" % url)
+        ad.adb.shell(cmd)
         time.sleep(2)
         out = ad.adb.shell(
             "dumpsys activity | grep NewVersionAvailableActivity")
@@ -1443,6 +1488,7 @@ def check_adblog_functionality(ad):
         ad.stop_adb_logcat()
         ad.start_adb_logcat()
 
+
 def build_instrumentation_call(package,
                                runner,
                                test_methods=None,
@@ -1473,3 +1519,112 @@ def build_instrumentation_call(package,
     for option_key, option_value in options.items():
         cmd_builder.add_key_value_param(option_key, option_value)
     return cmd_builder.build()
+
+
+def check_chipset_vendor_by_qualcomm(ad):
+    """Check if cipset vendor is by Qualcomm.
+
+    Args:
+        ad: An AndroidDevice object.
+
+    Returns:
+        True if it's by Qualcomm. False irf not.
+    """
+    ad.root_adb()
+    soc = str(ad.adb.shell("getprop gsm.version.ril-impl"))
+    ad.log.debug("SOC = %s" % soc)
+    return "Qualcomm" in soc
+
+
+def delete_lto_file(ad):
+    """Delete downloaded LTO files.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    remount_device(ad)
+    status = ad.adb.shell("rm -rf /data/vendor/gps/lto*")
+    ad.log.info("Delete downloaded LTO files.\n%s" % status)
+
+
+def lto_mode(ad, state):
+    """Enable or Disable LTO mode.
+
+    Args:
+        ad: An AndroidDevice object.
+        state: True to enable. False to disable.
+    """
+    server_list = ["LONGTERM_PSDS_SERVER_1",
+                   "LONGTERM_PSDS_SERVER_2",
+                   "LONGTERM_PSDS_SERVER_3",
+                   "NORMAL_PSDS_SERVER",
+                   "REALTIME_PSDS_SERVER"]
+    delete_lto_file(ad)
+    tmp_path = tempfile.mkdtemp()
+    ad.pull_files("/etc/gps_debug.conf", tmp_path)
+    gps_conf_path = os.path.join(tmp_path, "gps_debug.conf")
+    gps_conf_file = open(gps_conf_path, "r")
+    lines = gps_conf_file.readlines()
+    gps_conf_file.close()
+    fout = open(gps_conf_path, "w")
+    if state:
+        for line in lines:
+            for server in server_list:
+                if server in line:
+                    line = line.replace(line, "")
+            fout.write(line)
+        fout.close()
+        ad.push_system_file(gps_conf_path, "/etc/gps_debug.conf")
+        ad.log.info("Push back modified gps_debug.conf")
+        ad.log.info("LTO/RTO/RTI enabled")
+    else:
+        ad.adb.shell("echo %r >> /etc/gps_debug.conf" %
+                     DISABLE_LTO_FILE_CONTENTS)
+        ad.log.info("LTO/RTO/RTI disabled")
+    reboot(ad)
+
+
+def start_pixel_logger(ad):
+    """adb to start pixel logger for GNSS logging.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    start_timeout_sec = 60
+    start_cmd = ("am startservice -a com.android.pixellogger."
+                 "service.logging.LoggingService.ACTION_START_LOGGING "
+                 "-e intent_logger brcm_gps")
+    begin_time = get_current_epoch_time()
+    ad.log.info("Start Pixel Logger.")
+    ad.adb.shell(start_cmd)
+    while get_current_epoch_time() - begin_time <= start_timeout_sec * 1000:
+        start_result = ad.search_logcat("startRecording", begin_time)
+        if start_result:
+            ad.log.info("Pixel Logger starts recording successfully.")
+            break
+    else:
+        ad.log.warn("Pixel Logger fails to start recording.")
+
+
+def stop_pixel_logger(ad):
+    """adb to stop pixel logger for GNSS logging.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    stop_timeout_sec = 300
+    stop_cmd = ("am startservice -a com.android.pixellogger."
+                "service.logging.LoggingService.ACTION_STOP_LOGGING "
+                "-e intent_logger brcm_gps")
+    begin_time = get_current_epoch_time()
+    ad.log.info("Stop Pixel Logger.")
+    ad.adb.shell(stop_cmd)
+    while get_current_epoch_time() - begin_time <= stop_timeout_sec * 1000:
+        stop_result = ad.search_logcat("LoggingService: Stopping service",
+                                       begin_time)
+        if stop_result:
+            ad.log.info("Pixel Logger stops successfully.")
+            break
+    else:
+        ad.log.warn(
+            "Pixel Logger fails to stop in %d seconds." % stop_timeout_sec)
