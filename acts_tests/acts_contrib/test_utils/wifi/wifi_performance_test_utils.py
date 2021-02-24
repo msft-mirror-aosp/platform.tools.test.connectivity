@@ -1694,7 +1694,6 @@ class LinkLayerStatsBrcm():
 
     LLSTATS_CMD = 'wl dump ampdu; wl counters;'
     LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
-    PEER_REGEX = 'LL_STATS_PEER_ALL'
     MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
     RX_REGEX = re.compile(r'RX HE\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
                           '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
@@ -1702,6 +1701,16 @@ class LinkLayerStatsBrcm():
                           '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
     TX_PER_REGEX = re.compile(r'HE PER\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
                               '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    RX_FCS_REGEX = re.compile(
+        r'rxbadfcs (?P<rx_bad_fcs>[0-9]*).+\n.+goodfcs (?P<rx_good_fcs>[0-9]*)'
+    )
+    RX_AGG_REGEX = re.compile(r'rxmpduperampdu (?P<aggregation>[0-9]*)')
+    TX_AGG_REGEX = re.compile(r' mpduperampdu (?P<aggregation>[0-9]*)')
+    TX_AGG_STOP_REGEX = re.compile(
+        r'agg stop reason: tot_agg_tried (?P<agg_tried>[0-9]+) agg_txcancel (?P<agg_canceled>[0-9]+) (?P<agg_stop_reason>.+)'
+    )
+    TX_AGG_STOP_REASON_REGEX = re.compile(
+        r'(?P<reason>\w+) [0-9]+ \((?P<value>[0-9]+%)\)')
     MCS_ID = collections.namedtuple(
         'mcs_id', ['mode', 'num_streams', 'bandwidth', 'mcs', 'gi'])
     MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
@@ -1731,6 +1740,7 @@ class LinkLayerStatsBrcm():
 
     def _empty_llstats(self):
         return collections.OrderedDict(mcs_stats=collections.OrderedDict(),
+                                       mpdu_stats=collections.OrderedDict(),
                                        summary=collections.OrderedDict())
 
     def _empty_mcs_stat(self):
@@ -1777,6 +1787,31 @@ class LinkLayerStatsBrcm():
                     current_mcs)] = current_stats
         return llstats_dict
 
+    def _parse_mpdu_stats(self, llstats_output):
+        rx_agg_match = re.search(self.RX_AGG_REGEX, llstats_output)
+        tx_agg_match = re.search(self.TX_AGG_REGEX, llstats_output)
+        tx_agg_stop_match = re.search(self.TX_AGG_STOP_REGEX, llstats_output)
+        rx_fcs_match = re.search(self.RX_FCS_REGEX, llstats_output)
+        if rx_agg_match and tx_agg_match and tx_agg_stop_match and rx_fcs_match:
+            agg_stop_dict = collections.OrderedDict(
+                rx_aggregation=int(rx_agg_match.group('aggregation')),
+                tx_aggregation=int(tx_agg_match.group('aggregation')),
+                tx_agg_tried=int(tx_agg_stop_match.group('agg_tried')),
+                tx_agg_canceled=int(tx_agg_stop_match.group('agg_canceled')),
+                rx_good_fcs=int(rx_fcs_match.group('rx_good_fcs')),
+                rx_bad_fcs=int(rx_fcs_match.group('rx_bad_fcs')),
+                agg_stop_reason=collections.OrderedDict())
+            agg_reason_match = re.finditer(
+                self.TX_AGG_STOP_REASON_REGEX,
+                tx_agg_stop_match.group('agg_stop_reason'))
+            for reason_match in agg_reason_match:
+                agg_stop_dict['agg_stop_reason'][reason_match.group(
+                    'reason')] = reason_match.group('value')
+
+        else:
+            agg_stop_dict = collections.OrderedDict()
+        return agg_stop_dict
+
     def _generate_stats_summary(self, llstats_dict):
         llstats_summary = collections.OrderedDict(common_tx_mcs=None,
                                                   common_tx_mcs_count=0,
@@ -1806,7 +1841,10 @@ class LinkLayerStatsBrcm():
     def _update_stats(self, llstats_output):
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
+        self.llstats_incremental['raw_output'] = llstats_output
         self.llstats_incremental['mcs_stats'] = self._parse_mcs_stats(
+            llstats_output)
+        self.llstats_incremental['mpdu_stats'] = self._parse_mpdu_stats(
             llstats_output)
         self.llstats_incremental['summary'] = self._generate_stats_summary(
             self.llstats_incremental)
