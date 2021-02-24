@@ -130,6 +130,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             plots[plot_id].add_line(result['total_attenuation'],
                                     result['throughput_receive'],
                                     result['test_name'],
+                                    hover_text=result['hover_text'],
                                     marker='circle')
         figure_list = []
         for plot_id, plot in plots.items():
@@ -278,7 +279,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.log.warning('ValueError: Golden file not found')
 
         # Generate graph annotatios
-        hover_text = [
+        rvr_result['hover_text'] = [
             'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
                 curr_llstats['summary']['common_tx_mcs'],
                 curr_llstats['summary']['common_tx_mcs_freq'] * 100,
@@ -289,7 +290,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         figure.add_line(rvr_result['total_attenuation'],
                         rvr_result['throughput_receive'],
                         'Test Results',
-                        hover_text=hover_text,
+                        hover_text=rvr_result['hover_text'],
                         color='red',
                         marker='circle')
 
@@ -517,12 +518,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
-            wutils.wifi_toggle_state(self.dut, False)
-            wutils.set_wifi_country_code(self.dut,
+            wutils.wifi_toggle_state(self.sta_dut, False)
+            wutils.set_wifi_country_code(self.sta_dut,
                                          self.testclass_params['country_code'])
-            wutils.wifi_toggle_state(self.dut, True)
-            wutils.reset_wifi(self.dut)
-            wutils.set_wifi_country_code(self.dut,
+            wutils.wifi_toggle_state(self.sta_dut, True)
+            wutils.reset_wifi(self.sta_dut)
+            wutils.set_wifi_country_code(self.sta_dut,
                                          self.testclass_params['country_code'])
             if self.testbed_params['sniffer_enable']:
                 self.sniffer.start_capture(
