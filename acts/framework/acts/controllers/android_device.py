@@ -1046,6 +1046,21 @@ class AndroidDevice:
         """
         return self.adb.shell('echo $EXTERNAL_STORAGE')
 
+    def file_exists(self, file_path):
+        """Returns whether a file exists on a device.
+
+        Args:
+            file_path: The path of the file to check for.
+        """
+        cmd = '(test -f %s && echo yes) || echo no' % file_path
+        result = self.adb.shell(cmd)
+        if result == 'yes':
+            return True
+        elif result == 'no':
+            return False
+        raise ValueError('Couldn\'t determine if %s exists. '
+                         'Expected yes/no, got %s' % (file_path, result[cmd]))
+
     def pull_files(self, device_paths, host_path=None):
         """Pull files from devices.
 

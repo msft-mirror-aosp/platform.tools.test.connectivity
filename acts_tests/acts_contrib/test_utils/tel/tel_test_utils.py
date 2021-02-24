@@ -187,6 +187,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_mes
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
+from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import adb_shell_ping
 from acts.utils import load_config
 from acts.utils import start_standing_subprocess
@@ -1405,6 +1406,7 @@ def hangup_call(log, ad, is_emergency=False):
     """
     # short circuit in case no calls are active
     if not ad.droid.telecomIsInCall():
+        ad.log.warning("No active call exists.")
         return True
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallState()
@@ -7917,7 +7919,7 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
         start_nexuslogger(ad)
         # Find the log mask path
         for path in (DEFAULT_QXDM_LOG_PATH, "/data/diag_logs",
-                     "/vendor/etc/mdlog/"):
+                     "/vendor/etc/mdlog/", "/vendor/etc/modem/"):
             out = ad.adb.shell(
                 "find %s -type f -iname %s" % (path, mask), ignore_status=True)
             if out and "No such" not in out and "Permission denied" not in out:
@@ -7926,9 +7928,10 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
                 else:
                     setattr(ad, "qxdm_log_path", path)
                 return out.split("\n")[0]
-        if mask in ad.adb.shell("ls /vendor/etc/mdlog/"):
-            setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
-            return "%s/%s" % ("/vendor/etc/mdlog/", mask)
+        for mask_file in ("/vendor/etc/mdlog/", "/vendor/etc/modem/"):
+            if mask in ad.adb.shell("ls %s" % mask_file, ignore_status=True):
+                setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
+                return "%s/%s" % (mask_file, mask)
     else:
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
@@ -8238,6 +8241,11 @@ def start_adb_tcpdump(ad,
             else:
                 cmds.append("adb -s %s shell tcpdump -i %s -s0 -w %s" %
                             (ad.serial, intf, log_file_name))
+    if not gutils.check_chipset_vendor_by_qualcomm(ad):
+        log_file_name = ("/data/local/tmp/tcpdump/tcpdump_%s_any_%s_%s.pcap"
+                         % (ad.serial, test_name, begin_time))
+        cmds.append("adb -s %s shell nohup tcpdump -i any -s0 -w %s" %
+                    (ad.serial, log_file_name))
     for cmd in cmds:
         ad.log.info(cmd)
         try:

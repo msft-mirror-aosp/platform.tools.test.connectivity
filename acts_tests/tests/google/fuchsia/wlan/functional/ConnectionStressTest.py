@@ -87,9 +87,21 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
             ssid: ssid to connect to
             password: password for the ssid to connect to
         """
+        security_mode = ap_config.get('security_mode', None)
+        target_security = hostapd_constants.SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
+            security_mode, None)
+
+        if security_mode:
+            security_profile = hostapd_security.Security(
+                security_mode=ap_config['security_mode'],
+                password=ap_config['password'])
+        else:
+            security_profile = None
+
         # Start AP
-        self.start_ap(ap_config['profile'], ap_config['channel'],
-                      ap_config['security'])
+        self.start_ap(ap_config['profile'],
+                      ap_config['channel'],
+                      security=security_profile)
 
         failed = False
         # Connect and Disconnect several times
@@ -97,7 +109,9 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
             if not ssid:
                 ssid = self.ssid
             if negative_test:
-                if not self.dut.associate(ssid, target_pwd=password):
+                if not self.dut.associate(ssid,
+                                          target_pwd=password,
+                                          target_security=target_security):
                     self.log.info(
                         'Attempt %d. Did not associate as expected.' % x)
                 else:
@@ -127,42 +141,42 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
         self.connect_disconnect({
             'profile': 'whirlwind',
             'channel': self.channel_2G,
-            'security': None
+            'security_mode': None
         })
 
     def test_whirlwind_5g(self):
         self.connect_disconnect({
             'profile': 'whirlwind',
             'channel': self.channel_5G,
-            'security': None
+            'security_mode': None
         })
 
     def test_whirlwind_11ab_2g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ab_legacy',
             'channel': self.channel_2G,
-            'security': None
+            'security_mode': None
         })
 
     def test_whirlwind_11ab_5g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ab_legacy',
             'channel': self.channel_5G,
-            'security': None
+            'security_mode': None
         })
 
     def test_whirlwind_11ag_2g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ag_legacy',
             'channel': self.channel_2G,
-            'security': None
+            'security_mode': None
         })
 
     def test_whirlwind_11ag_5g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ag_legacy',
             'channel': self.channel_5G,
-            'security': None
+            'security_mode': None
         })
 
     def test_wrong_ssid_whirlwind_2g(self):
@@ -170,7 +184,7 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
             {
                 'profile': 'whirlwind',
                 'channel': self.channel_2G,
-                'security': None
+                'security_mode': None
             },
             ssid=rand_ascii_str(20),
             negative_test=True)
@@ -180,7 +194,7 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
             {
                 'profile': 'whirlwind',
                 'channel': self.channel_5G,
-                'security': None
+                'security_mode': None
             },
             ssid=rand_ascii_str(20),
             negative_test=True)
@@ -188,13 +202,10 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
     def test_wrong_password_whirlwind_2g(self):
         self.connect_disconnect(
             {
-                'profile':
-                'whirlwind',
-                'channel':
-                self.channel_2G,
-                'security':
-                hostapd_security.Security(security_mode='wpa2',
-                                          password=rand_ascii_str(10))
+                'profile': 'whirlwind',
+                'channel': self.channel_2G,
+                'security_mode': hostapd_constants.WPA2_STRING,
+                'password': rand_ascii_str(10)
             },
             password=rand_ascii_str(20),
             negative_test=True)
@@ -202,13 +213,10 @@ class ConnectionStressTest(AbstractDeviceWlanDeviceBaseTest):
     def test_wrong_password_whirlwind_5g(self):
         self.connect_disconnect(
             {
-                'profile':
-                'whirlwind',
-                'channel':
-                self.channel_5G,
-                'security':
-                hostapd_security.Security(security_mode='wpa2',
-                                          password=rand_ascii_str(10))
+                'profile': 'whirlwind',
+                'channel': self.channel_5G,
+                'security_mode': hostapd_constants.WPA2_STRING,
+                'password': rand_ascii_str(10)
             },
             password=rand_ascii_str(20),
             negative_test=True)
