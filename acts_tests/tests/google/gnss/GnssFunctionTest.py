@@ -114,7 +114,8 @@ class GnssFunctionTest(BaseTestClass):
             self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
         else:
             self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
-        if self.collect_logs:
+        if self.collect_logs and \
+            gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.flash_new_radio_or_mbn()
         _init_device(self.ad)
 
@@ -130,7 +131,10 @@ class GnssFunctionTest(BaseTestClass):
 
     def teardown_test(self):
         if self.collect_logs:
-            stop_qxdm_logger(self.ad)
+            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+                stop_qxdm_logger(self.ad)
+            else:
+                gutils.stop_pixel_logger(self.ad)
             stop_adb_tcpdump(self.ad)
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
@@ -146,12 +150,6 @@ class GnssFunctionTest(BaseTestClass):
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
             set_wifi_and_bt_scanning(self.ad, True)
-
-    def on_pass(self, test_name, begin_time):
-        if self.collect_logs:
-            self.ad.take_bug_report(test_name, begin_time)
-            get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
-            get_tcpdump_log(self.ad, test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         if self.collect_logs:
@@ -256,7 +254,10 @@ class GnssFunctionTest(BaseTestClass):
     def start_qxdm_and_tcpdump_log(self):
         """Start QXDM and adb tcpdump if collect_logs is True."""
         if self.collect_logs:
-            start_qxdm_logger(self.ad, get_current_epoch_time())
+            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+                start_qxdm_logger(self.ad, get_current_epoch_time())
+            else:
+                gutils.start_pixel_logger(self.ad)
             start_adb_tcpdump(self.ad)
 
     def supl_ttff_with_sim(self, mode, criteria):
@@ -266,8 +267,8 @@ class GnssFunctionTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def standalone_ttff_airplane_mode_on(self, mode, criteria):
@@ -291,8 +292,8 @@ class GnssFunctionTest(BaseTestClass):
         """
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def xtra_ttff_mobile_data(self, mode, criteria):
@@ -313,9 +314,9 @@ class GnssFunctionTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        disable_supl_mode(self.ad)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
+        disable_supl_mode(self.ad)
         self.start_qxdm_and_tcpdump_log()
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
@@ -435,6 +436,8 @@ class GnssFunctionTest(BaseTestClass):
             CAPABILITIES=0x37 which supports MSA + MSB.
             CAPABILITIES=0x17 = ON_DEMAND_TIME | MSA | MSB | SCHEDULING
         """
+        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Not Qualcomm chipset. Skip the test.")
         capabilities_state = str(
             self.ad.adb.shell(
                 "cat vendor/etc/gps.conf | grep CAPABILITIES")).split("=")[-1]
@@ -455,6 +458,8 @@ class GnssFunctionTest(BaseTestClass):
         Expected Results:
             SAP=PREMIUM
         """
+        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Not Qualcomm chipset. Skip the test.")
         sap_state = str(self.ad.adb.shell("cat vendor/etc/izat.conf | grep "
                                           "SAP="))
         self.ad.log.info("SAP Valid Modes - %s" % sap_state)
@@ -650,8 +655,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             supl_cs_criteria.
         """
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.ad.droid.setVoiceCallVolume(25)
         initiate_call(self.ad.log, self.ad, "99117")
         time.sleep(5)
@@ -673,8 +678,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         download = Process(target=http_file_download_by_sl4a,
                            args=(self.ad, "https://speed.hetzner.de/10GB.bin",
                                  None, None, True, 3600))
@@ -705,8 +710,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.ad.droid.setMediaVolume(25)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(
@@ -734,8 +739,10 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         supl_ssr_test_result_all = []
-        self.start_qxdm_and_tcpdump_log()
+        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Not Qualcomm chipset. Skip the test.")
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
             gnss_trigger_modem_ssr_by_mds(self.ad)
@@ -813,8 +820,8 @@ class GnssFunctionTest(BaseTestClass):
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         set_mobile_data(self.ad, False)
         self.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria)
 
@@ -836,6 +843,7 @@ class GnssFunctionTest(BaseTestClass):
             DUT could get location fixed again.
         """
         supl_no_gnss_signal_all = []
+        enable_supl_mode(self.ad)
         self.start_qxdm_and_tcpdump_log()
         for times in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -918,8 +926,8 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.unlock_screen(password=None)
             _init_device(self.ad)
             begin_time = get_current_epoch_time()
-            self.start_qxdm_and_tcpdump_log()
             kill_xtra_daemon(self.ad)
+            self.start_qxdm_and_tcpdump_log()
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             start_ttff_by_gtw_gpstool(
                 self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
@@ -1071,8 +1079,10 @@ class GnssFunctionTest(BaseTestClass):
         Expected Results:
             All XTRA TTFF Cold Start results should be within xtra_cs_criteria.
         """
-        disable_supl_mode(self.ad)
         xtra_ssr_test_result_all = []
+        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Not Qualcomm chipset. Skip the test.")
+        disable_supl_mode(self.ad)
         self.start_qxdm_and_tcpdump_log()
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
@@ -1118,7 +1128,7 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.log.info("Iteration %d => %s" % (i, mobile_xtra_result))
             mobile_xtra_result_all.append(mobile_xtra_result)
         asserts.assert_true(all(mobile_xtra_result_all),
-                            "Fail to Download XTRA file")
+                            "Fail to Download and Inject XTRA/LTO File.")
 
     @test_tracker_info(uuid="625ac665-1446-4406-a722-e6a19645222c")
     def test_xtra_download_wifi(self):
@@ -1151,7 +1161,7 @@ class GnssFunctionTest(BaseTestClass):
             wifi_xtra_result_all.append(wifi_xtra_result)
             self.ad.log.info("Iteration %d => %s" % (i, wifi_xtra_result))
         asserts.assert_true(all(wifi_xtra_result_all),
-                            "Fail to Download XTRA file")
+                            "Fail to Download and Inject XTRA/LTO File.")
 
     @test_tracker_info(uuid="2a9f2890-3c0a-48b8-821d-bf97e36355e9")
     def test_quick_toggle_gnss_state(self):
@@ -1169,7 +1179,6 @@ class GnssFunctionTest(BaseTestClass):
             No single Timeout is seen in 10 iterations.
         """
         enable_supl_mode(self.ad)
-        reboot(self.ad)
         self.start_qxdm_and_tcpdump_log()
         start_toggle_gnss_by_gtw_gpstool(
             self.ad, iteration=self.ttff_test_cycle)
@@ -1188,8 +1197,8 @@ class GnssFunctionTest(BaseTestClass):
             Location fixed within supl_cs_criteria.
         """
         overall_test_result = []
-        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for test_loop in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
@@ -1247,7 +1256,6 @@ class GnssFunctionTest(BaseTestClass):
         """
         overall_test_result = []
         enable_supl_mode(self.ad)
-        reboot(self.ad)
         process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
         start_gnss_by_gtw_gpstool(self.ad, False)
         for test_loop in range(1, 11):
