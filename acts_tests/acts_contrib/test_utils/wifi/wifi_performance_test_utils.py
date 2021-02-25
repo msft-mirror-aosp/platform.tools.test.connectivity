@@ -1691,35 +1691,162 @@ class LinkLayerStatsQcom():
 
 
 class LinkLayerStatsBrcm():
+
+    LLSTATS_CMD = 'wl dump ampdu; wl counters;'
+    LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
+    MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
+    RX_REGEX = re.compile(r'RX HE\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+                          '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    TX_REGEX = re.compile(r'TX HE\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+                          '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    TX_PER_REGEX = re.compile(r'HE PER\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+                              '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    RX_FCS_REGEX = re.compile(
+        r'rxbadfcs (?P<rx_bad_fcs>[0-9]*).+\n.+goodfcs (?P<rx_good_fcs>[0-9]*)'
+    )
+    RX_AGG_REGEX = re.compile(r'rxmpduperampdu (?P<aggregation>[0-9]*)')
+    TX_AGG_REGEX = re.compile(r' mpduperampdu (?P<aggregation>[0-9]*)')
+    TX_AGG_STOP_REGEX = re.compile(
+        r'agg stop reason: tot_agg_tried (?P<agg_tried>[0-9]+) agg_txcancel (?P<agg_canceled>[0-9]+) (?P<agg_stop_reason>.+)'
+    )
+    TX_AGG_STOP_REASON_REGEX = re.compile(
+        r'(?P<reason>\w+) [0-9]+ \((?P<value>[0-9]+%)\)')
+    MCS_ID = collections.namedtuple(
+        'mcs_id', ['mode', 'num_streams', 'bandwidth', 'mcs', 'gi'])
+    MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
+    BW_MAP = {'0': 20, '1': 40, '2': 80}
+
     def __init__(self, dut, llstats_enabled=True):
         self.dut = dut
         self.llstats_enabled = llstats_enabled
+        self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
-        self.llstats_cumulative = self.llstats_incremental
+
+    def update_stats(self):
+        if self.llstats_enabled:
+            try:
+                llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
+                                                    timeout=0.3)
+                self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
+            except:
+                llstats_output = ''
+        else:
+            llstats_output = ''
+        self._update_stats(llstats_output)
+
+    def reset_stats(self):
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
 
     def _empty_llstats(self):
         return collections.OrderedDict(mcs_stats=collections.OrderedDict(),
+                                       mpdu_stats=collections.OrderedDict(),
                                        summary=collections.OrderedDict())
 
-    def update_stats(self):
+    def _empty_mcs_stat(self):
+        return collections.OrderedDict(txmpdu=0,
+                                       rxmpdu=0,
+                                       mpdu_lost=0,
+                                       retries=0,
+                                       retries_short=0,
+                                       retries_long=0)
+
+    def _mcs_id_to_string(self, mcs_id):
+        mcs_string = '{} Nss{} MCS{} GI{}'.format(mcs_id.mode,
+                                                  mcs_id.num_streams,
+                                                  mcs_id.mcs, mcs_id.gi)
+        return mcs_string
+
+    def _parse_mcs_stats(self, llstats_output):
+        llstats_dict = {}
+        # Look for per-peer stats
+        match = re.search(self.RX_REGEX, llstats_output)
+        if not match:
+            self.reset_stats()
+            return collections.OrderedDict()
+        # Find and process all matches for per stream stats
+        rx_match = re.search(self.RX_REGEX, llstats_output)
+        tx_match = re.search(self.TX_REGEX, llstats_output)
+        tx_per_match = re.search(self.TX_PER_REGEX, llstats_output)
+        for nss in [1, 2]:
+            rx_mcs_iter = re.finditer(self.MCS_REGEX, rx_match.group(nss))
+            tx_mcs_iter = re.finditer(self.MCS_REGEX, tx_match.group(nss))
+            tx_per_iter = re.finditer(self.MCS_REGEX, tx_per_match.group(nss))
+            for mcs, (rx_mcs_stats, tx_mcs_stats,
+                      tx_per_mcs_stats) in enumerate(
+                          zip(rx_mcs_iter, tx_mcs_iter, tx_per_iter)):
+                current_mcs = self.MCS_ID('11ax', nss, 0, mcs, 0)
+                current_stats = collections.OrderedDict(
+                    txmpdu=int(tx_mcs_stats.group('count')),
+                    rxmpdu=int(rx_mcs_stats.group('count')),
+                    mpdu_lost=0,
+                    retries=tx_per_mcs_stats.group('count'),
+                    retries_short=0,
+                    retries_long=0)
+                llstats_dict[self._mcs_id_to_string(
+                    current_mcs)] = current_stats
+        return llstats_dict
+
+    def _parse_mpdu_stats(self, llstats_output):
+        rx_agg_match = re.search(self.RX_AGG_REGEX, llstats_output)
+        tx_agg_match = re.search(self.TX_AGG_REGEX, llstats_output)
+        tx_agg_stop_match = re.search(self.TX_AGG_STOP_REGEX, llstats_output)
+        rx_fcs_match = re.search(self.RX_FCS_REGEX, llstats_output)
+        if rx_agg_match and tx_agg_match and tx_agg_stop_match and rx_fcs_match:
+            agg_stop_dict = collections.OrderedDict(
+                rx_aggregation=int(rx_agg_match.group('aggregation')),
+                tx_aggregation=int(tx_agg_match.group('aggregation')),
+                tx_agg_tried=int(tx_agg_stop_match.group('agg_tried')),
+                tx_agg_canceled=int(tx_agg_stop_match.group('agg_canceled')),
+                rx_good_fcs=int(rx_fcs_match.group('rx_good_fcs')),
+                rx_bad_fcs=int(rx_fcs_match.group('rx_bad_fcs')),
+                agg_stop_reason=collections.OrderedDict())
+            agg_reason_match = re.finditer(
+                self.TX_AGG_STOP_REASON_REGEX,
+                tx_agg_stop_match.group('agg_stop_reason'))
+            for reason_match in agg_reason_match:
+                agg_stop_dict['agg_stop_reason'][reason_match.group(
+                    'reason')] = reason_match.group('value')
+
+        else:
+            agg_stop_dict = collections.OrderedDict()
+        return agg_stop_dict
+
+    def _generate_stats_summary(self, llstats_dict):
+        llstats_summary = collections.OrderedDict(common_tx_mcs=None,
+                                                  common_tx_mcs_count=0,
+                                                  common_tx_mcs_freq=0,
+                                                  common_rx_mcs=None,
+                                                  common_rx_mcs_count=0,
+                                                  common_rx_mcs_freq=0)
+        txmpdu_count = 0
+        rxmpdu_count = 0
+        for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
+            if mcs_stats['txmpdu'] > llstats_summary['common_tx_mcs_count']:
+                llstats_summary['common_tx_mcs'] = mcs_id
+                llstats_summary['common_tx_mcs_count'] = mcs_stats['txmpdu']
+            if mcs_stats['rxmpdu'] > llstats_summary['common_rx_mcs_count']:
+                llstats_summary['common_rx_mcs'] = mcs_id
+                llstats_summary['common_rx_mcs_count'] = mcs_stats['rxmpdu']
+            txmpdu_count += mcs_stats['txmpdu']
+            rxmpdu_count += mcs_stats['rxmpdu']
+        if txmpdu_count:
+            llstats_summary['common_tx_mcs_freq'] = (
+                llstats_summary['common_tx_mcs_count'] / txmpdu_count)
+        if rxmpdu_count:
+            llstats_summary['common_rx_mcs_freq'] = (
+                llstats_summary['common_rx_mcs_count'] / rxmpdu_count)
+        return llstats_summary
+
+    def _update_stats(self, llstats_output):
+        self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
-        self.llstats_incremental['summary'] = collections.OrderedDict(
-            common_tx_mcs=None,
-            common_tx_mcs_count=1,
-            common_tx_mcs_freq=1,
-            common_rx_mcs=None,
-            common_rx_mcs_count=1,
-            common_rx_mcs_freq=1)
-        if self.llstats_enabled:
-            try:
-                rate_info = self.dut.adb.shell('wl rate_info', timeout=0.1)
-                self.llstats_incremental['summary'][
-                    'common_tx_mcs'] = '{} Mbps'.format(
-                        re.findall('\[Tx\]:'
-                                   ' (\d+[.]*\d* Mbps)', rate_info))
-                self.llstats_incremental['summary'][
-                    'common_rx_mcs'] = '{} Mbps'.format(
-                        re.findall('\[Rx\]:'
-                                   ' (\d+[.]*\d* Mbps)', rate_info))
-            except:
-                pass
+        self.llstats_incremental['raw_output'] = llstats_output
+        self.llstats_incremental['mcs_stats'] = self._parse_mcs_stats(
+            llstats_output)
+        self.llstats_incremental['mpdu_stats'] = self._parse_mpdu_stats(
+            llstats_output)
+        self.llstats_incremental['summary'] = self._generate_stats_summary(
+            self.llstats_incremental)
+        self.llstats_cumulative['summary'] = self._generate_stats_summary(
+            self.llstats_cumulative)
