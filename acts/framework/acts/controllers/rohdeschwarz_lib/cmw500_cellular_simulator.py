@@ -358,7 +358,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             self.cmw.configure_mimo_settings(cmw500.MimoScenario.SCEN4x4)
             bts.dl_antenna = cmw500.MimoModes.MIMO4x4
         else:
-            RuntimeError('The requested MIMO mode is not supported.')
+            raise RuntimeError('The requested MIMO mode is not supported.')
 
     def set_transmission_mode(self, bts_index, tmode):
         """ Sets the transmission mode for the indicated base station.
