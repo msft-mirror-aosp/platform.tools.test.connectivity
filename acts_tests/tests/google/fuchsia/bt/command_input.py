@@ -2276,3 +2276,36 @@ class CommandInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End Audio wrappers"""
+    """Begin HFP wrappers"""
+
+    def do_hfp_init(self, line):
+        """
+        Description: Init the HFP component initiate.
+
+        Usage:
+          Examples:
+            hfp_init
+        """
+        cmd = "Initialize HFP proxy"
+        try:
+            result = self.pri_dut.hfp_lib.init()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_remove_service(self, line):
+        """
+        Description: Removes the HFP service in use.
+
+        Usage:
+          Examples:
+            hfp_remove_service
+        """
+        cmd = "Remove HFP service"
+        try:
+            result = self.pri_dut.hfp_lib.removeService()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End HFP wrappers"""
