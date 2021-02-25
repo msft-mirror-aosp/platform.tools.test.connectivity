@@ -388,7 +388,12 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             testcase_params: dict containing AP and other test params
         """
         # Turn screen off to preserve battery
-        self.dut.go_to_sleep()
+        if self.testbed_params.get('screen_on',
+                                   False) or self.testclass_params.get(
+                                       'screen_on', False):
+            self.dut.droid.wakeLockAcquireDim()
+        else:
+            self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
@@ -699,7 +704,12 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             else:
                 wputils.set_ini_two_chain_mode(self.dut)
         # Turn screen off to preserve battery
-        self.dut.go_to_sleep()
+        if self.testbed_params.get('screen_on',
+                                   False) or self.testclass_params.get(
+                                       'screen_on', False):
+            self.dut.droid.wakeLockAcquireDim()
+        else:
+            self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
