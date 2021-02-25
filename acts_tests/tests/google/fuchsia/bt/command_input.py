@@ -2308,4 +2308,41 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_incoming_call(self, line):
+        """
+        Description: Simulate an incoming call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the incoming call
+
+        Usage:
+          Examples:
+            hfp_incoming_call <remote>
+            hfp_incoming_call 14085555555
+        """
+        cmd = "Simulates an incoming call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateIncomingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_list_peers(self, line):
+        """
+        Description: List all HFP Hands-Free peers connected to the DUT.
+
+        Input(s):
+
+        Usage:
+          Examples:
+            hfp_list_peers
+        """
+        cmd = "Lists connected peers"
+        try:
+            result = self.pri_dut.hfp_lib.listPeers()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     """End HFP wrappers"""
