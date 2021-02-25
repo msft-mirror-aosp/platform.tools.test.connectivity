@@ -70,6 +70,16 @@ def is_current_network_5g_nsa(ad, timeout=30):
     return None
 
 
+def provision_device_for_5g(log, ad):
+    # Mode Pref
+    set_preferred_mode_for_5g(ad)
+
+    # Attach nsa5g
+    if not is_current_network_5g_nsa(ad):
+        ad.log.error("Phone not attached on nsa 5g")
+        return False
+    return True
+
 def provision_both_devices_for_5g(log, ads):
     # Mode Pref
     tasks = [(set_preferred_mode_for_5g, [ad]) for ad in ads]
