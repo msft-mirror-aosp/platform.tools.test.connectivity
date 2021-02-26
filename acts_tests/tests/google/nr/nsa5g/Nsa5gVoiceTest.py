@@ -46,6 +46,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_call_hold_unhold_test
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
@@ -72,56 +74,6 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
-
-
-    def _hold_unhold_test(self, ads):
-        """ Test hold/unhold functionality.
-
-        PhoneA is in call with PhoneB. The call on PhoneA is active.
-        Get call list on PhoneA.
-        Hold call_id on PhoneA.
-        Check call_id state.
-        Unhold call_id on PhoneA.
-        Check call_id state.
-
-        Args:
-            ads: List of android objects.
-                This list should contain 2 android objects.
-                ads[0] is the ad to do hold/unhold operation.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        call_list = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", call_list)
-        if num_active_calls(ads[0].log, ads[0]) != 1:
-            return False
-        call_id = call_list[0]
-        if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error("call_id:%s, state:%s, expected: STATE_ACTIVE",
-                             call_id,
-                             ads[0].droid.telecomCallGetCallState(call_id))
-            return False
-        ads[0].log.info("hold call_id %s on PhoneA", call_id)
-        ads[0].droid.telecomCallHold(call_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_HOLDING:
-            ads[0].log.error("call_id:%s, state:%s, expected: STATE_HOLDING",
-                             call_id,
-                             ads[0].droid.telecomCallGetCallState(call_id))
-            return False
-        ads[0].log.info("unhold call_id %s on PhoneA", call_id)
-        ads[0].droid.telecomCallUnhold(call_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error("call_id:%s, state:%s, expected: STATE_ACTIVE",
-                             call_id,
-                             ads[0].droid.telecomCallGetCallState(call_id))
-            return False
-        if not verify_incall_state(self.log, [ads[0], ads[1]], True):
-            self.log.error("caller/callee dropped call.")
-            return False
-        return True
 
 
     def _test_call_setup_in_active_data_transfer_5g_nsa(
@@ -361,59 +313,6 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             self.log.error("ICMP transfer failed with parallel phone call.")
         return all(results)
 
-    def _test_call_setup_hold_unhold(self,
-                                     ads,
-                                     call_direction=DIRECTION_MOBILE_ORIGINATED,
-                                     caller_func=None,
-                                     callee_func=None):
-        """Test hold and unhold in voice call.
-
-        1. Clear call list.
-        2. Set up MO/MT call.
-        3. Test hold and unhold in call.
-        4. hangup call.
-
-        Args:
-            ads: list of android objects, this list should have two ad.
-            call_direction: MO or MT call.
-            caller_func: function to verify caller is in correct state while in-call.
-            callee_func: function to verify callee is in correct state while in-call.
-
-        Returns:
-            True if pass; False if fail.
-        """
-
-        ads[0].droid.telecomCallClearCallList()
-        if num_active_calls(self.log, ads[0]) != 0:
-            ads[0].log.error("call list is not empty")
-            return False
-        self.log.info("begin hold/unhold test")
-
-        ad_caller = ads[0]
-        ad_callee = ads[1]
-
-        if call_direction != DIRECTION_MOBILE_ORIGINATED:
-            ad_caller = ads[1]
-            ad_callee = ads[0]
-
-        if not call_setup_teardown(
-                    self.log,
-                    ad_caller,
-                    ad_callee,
-                    ad_hangup=None,
-                    verify_caller_func=caller_func,
-                    verify_callee_func=callee_func):
-            return False
-
-        if not self._hold_unhold_test(ads):
-            self.log.error("hold/unhold test fail.")
-            return False
-
-        if not hangup_call(self.log, ads[0]):
-            self.log.error("call hangup failed")
-            return False
-        return True
-
     """ Tests Begin """
 
     @test_tracker_info(uuid="1bef3da1-4608-4b0e-8b78-f3f7be0115d5")
@@ -523,7 +422,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._test_call_setup_hold_unhold(ads,
+        if not phone_setup_call_hold_unhold_test(self.log,
+                                                 ads,
                                                  DIRECTION_MOBILE_ORIGINATED,
                                                  caller_func=is_phone_in_call_volte):
             return False
@@ -554,7 +454,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._test_call_setup_hold_unhold(ads,
+        if not phone_setup_call_hold_unhold_test(self.log,
+                                                 ads,
                                                  DIRECTION_MOBILE_TERMINATED,
                                                  callee_func=is_phone_in_call_volte):
             return False
@@ -836,7 +737,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             ads[0].log.error("Phone not attached on 5G NSA before call.")
             return False
 
-        if not self._test_call_setup_hold_unhold(ads,
+        if not phone_setup_call_hold_unhold_test(self.log,
+                                                 ads,
                                                  DIRECTION_MOBILE_ORIGINATED,
                                                  caller_func=is_phone_in_call_iwlan):
             return False
@@ -878,7 +780,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             ads[0].log.error("Phone not attached on 5G NSA before call.")
             return False
 
-        if not self._test_call_setup_hold_unhold(ads,
+        if not phone_setup_call_hold_unhold_test(self.log,
+                                                 ads,
                                                  DIRECTION_MOBILE_TERMINATED,
                                                  callee_func=is_phone_in_call_iwlan):
             return False
