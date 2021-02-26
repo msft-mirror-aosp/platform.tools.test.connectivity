@@ -267,7 +267,12 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             testcase_params: dict containing AP and other test params
         """
         # Turn screen off to preserve battery
-        self.dut.go_to_sleep()
+        if self.testbed_params.get('screen_on',
+                                   False) or self.testclass_params.get(
+                                       'screen_on', False):
+            self.dut.droid.wakeLockAcquireDim()
+        else:
+            self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         if wputils.validate_network(self.dut,

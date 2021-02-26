@@ -510,7 +510,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         self.sta_dut = self.android_devices[0]
         # Turn screen off to preserve battery
-        if self.testclass_params.get('screen_on', False):
+        if self.testbed_params.get('screen_on',
+                                   False) or self.testclass_params.get(
+                                       'screen_on', False):
             self.sta_dut.droid.wakeLockAcquireDim()
         else:
             self.sta_dut.go_to_sleep()
@@ -841,11 +843,12 @@ class WifiOtaRvrTest(WifiRvrTest):
             plots[test_id].add_line(result['total_attenuation'],
                                     result['throughput_receive'],
                                     result['test_name'],
+                                    hover_text=result['hover_text'],
                                     width=1,
                                     style='dashed',
                                     marker='circle')
 
-        # Compute average RvRs and compount metrics over orientations
+        # Compute average RvRs and compute metrics over orientations
         for test_id, test_data in compiled_data.items():
             test_id_dict = dict(test_id)
             metric_tag = '{}_{}_ch{}_{}'.format(

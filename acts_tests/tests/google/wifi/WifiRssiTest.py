@@ -548,7 +548,12 @@ class WifiRssiTest(base_test.BaseTestClass):
     def setup_dut(self, testcase_params):
         """Sets up the DUT in the configuration required by the test."""
         # Turn screen off to preserve battery
-        self.dut.go_to_sleep()
+        if self.testbed_params.get('screen_on',
+                                   False) or self.testclass_params.get(
+                                       'screen_on', False):
+            self.dut.droid.wakeLockAcquireDim()
+        else:
+            self.dut.go_to_sleep()
         if wputils.validate_network(self.dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
