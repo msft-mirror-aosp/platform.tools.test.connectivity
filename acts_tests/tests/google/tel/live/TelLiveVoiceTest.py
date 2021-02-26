@@ -96,6 +96,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
 DEFAULT_PING_DURATION = 120  # in seconds
@@ -1951,63 +1952,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         else:
             return False
 
-    def _hold_unhold_test(self, ads):
-        """ Test hold/unhold functionality.
-
-        PhoneA is in call with PhoneB. The call on PhoneA is active.
-        Get call list on PhoneA.
-        Hold call_id on PhoneA.
-        Check call_id state.
-        Unhold call_id on PhoneA.
-        Check call_id state.
-
-        Args:
-            ads: List of android objects.
-                This list should contain 2 android objects.
-                ads[0] is the ad to do hold/unhold operation.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        call_list = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", call_list)
-        if num_active_calls(ads[0].log, ads[0]) != 1:
-            return False
-        call_id = call_list[0]
-
-        if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
-                             call_id,
-                             ads[0].droid.telecomCallGetCallState(call_id))
-            return False
-        # TODO: b/26296375 add voice check.
-
-        ads[0].log.info("Hold call_id %s on PhoneA", call_id)
-        ads[0].droid.telecomCallHold(call_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_HOLDING:
-            ads[0].log.error("Call_id:%s, state:%s, expected: STATE_HOLDING",
-                             call_id,
-                             ads[0].droid.telecomCallGetCallState(call_id))
-            return False
-        # TODO: b/26296375 add voice check.
-
-        ads[0].log.info("Unhold call_id %s on PhoneA", call_id)
-        ads[0].droid.telecomCallUnhold(call_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
-                             call_id,
-                             ads[0].droid.telecomCallGetCallState(call_id))
-            return False
-        # TODO: b/26296375 add voice check.
-
-        if not verify_incall_state(self.log, [ads[0], ads[1]], True):
-            self.log.error("Caller/Callee dropped call.")
-            return False
-
-        return True
-
     @test_tracker_info(uuid="4043c68a-c5d4-4e1d-9010-ef65b205cab1")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_epdg_mo_hold_unhold_wfc_wifi_only(self):
@@ -2046,7 +1990,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2094,7 +2038,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2142,7 +2086,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2190,7 +2134,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2238,7 +2182,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_iwlan):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2286,7 +2230,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_iwlan):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2330,7 +2274,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_iwlan):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2378,7 +2322,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_iwlan):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2424,7 +2368,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2470,7 +2414,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_volte):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2522,7 +2466,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2574,7 +2518,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_3g):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2625,7 +2569,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2677,7 +2621,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_csfb):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -2990,7 +2934,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
@@ -3035,7 +2979,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 verify_callee_func=is_phone_in_call_2g):
             return False
 
-        if not self._hold_unhold_test(ads):
+        if not hold_unhold_test(ads[0].log, ads)[0]:
             self.log.error("Hold/Unhold test fail.")
             return False
 
