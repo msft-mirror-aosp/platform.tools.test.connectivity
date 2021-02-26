@@ -18,30 +18,33 @@
 """
 
 import time
-
+from acts.utils import rand_ascii_str
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mo
+from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mt
+from acts_contrib.test_utils.tel.tel_sms_utils import _long_sms_test_mo
+from acts_contrib.test_utils.tel.tel_sms_utils import _long_sms_test_mt
 
-from acts.utils import rand_ascii_str
 
 class Nsa5gSmsTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
-        self.number_of_devices = 2
-        self.message_lengths = (50, 160, 180)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -49,31 +52,6 @@ class Nsa5gSmsTest(TelephonyBaseTest):
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
 
-
-    def _sms_test_mo(self, ads):
-        return self._sms_test([ads[0], ads[1]])
-
-    def _sms_test_mt(self, ads):
-        return self._sms_test([ads[1], ads[0]])
-
-    def _sms_test(self, ads):
-        """Test SMS between two phones.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        for length in self.message_lengths:
-            message_array = [rand_ascii_str(length)]
-            if not sms_send_receive_verify(self.log, ads[0], ads[1],
-                                           message_array):
-                ads[0].log.error("SMS of length %s test failed", length)
-                return False
-            else:
-                ads[0].log.info("SMS of length %s test succeeded", length)
-        self.log.info("SMS test of length %s characters succeeded.",
-                      self.message_lengths)
-        return True
 
     """ Tests Begin """
 
@@ -94,7 +72,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             return False
 
         if not verify_5g_attach_for_both_devices(self.log, ads):
@@ -125,7 +103,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             return False
 
         if not verify_5g_attach_for_both_devices(self.log, ads):
@@ -166,13 +144,12 @@ class Nsa5gSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             return False
 
         if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
         return True
-
 
     @test_tracker_info(uuid="1f914d5c-ac24-4794-9fcb-cb28e483d69a")
     @TelephonyBaseTest.tel_test_wrap
@@ -204,12 +181,11 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             return False
 
         self.log.info("PASS - iwlan sms test over 5g nsa validated")
         return True
-
 
     @test_tracker_info(uuid="7274be32-b9dd-4ce3-83d1-f32ab14ce05e")
     @TelephonyBaseTest.tel_test_wrap
@@ -241,7 +217,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             self.log.error("failed to send receive sms over 5g nsa")
             return False
         self.log.info("PASS - iwlan sms test over 5g nsa validated")
@@ -249,7 +225,6 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
         return True
-
 
     @test_tracker_info(uuid="2d1787f2-d6fe-4b41-b389-2a8f817594e4")
     @TelephonyBaseTest.tel_test_wrap
@@ -292,7 +267,111 @@ class Nsa5gSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
+    @test_tracker_info(uuid="")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_long_message_mo_mt(self):
+        """Test SMS basic function between two phone. Phones in nsa 5G network.
+
+        Airplane mode is off.
+        Send SMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+
+        if not disable_apm_mode_both_devices(self.log, ads):
+            return False
+
+        if not provision_both_devices_for_5g(self.log, ads):
+            return False
+
+        return _long_sms_test_mo(self.log, ads)
+
+    @test_tracker_info(uuid="")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_in_call_volte(self):
+        """ Test MO SMS during a MO VoLTE call.
+
+        Make sure PhoneA is in nsa 5G mode (with VoLTE).
+        Make sure PhoneB is able to make/receive call.
+        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_voice_general,
+                                                           (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not provision_device_for_5g(self.log, ads[0]):
+            return False
+
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call SMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
+            return False
+
+        if not _sms_test_mo(self.log, ads):
+            self.log.error("SMS test fail.")
+            return False
+
+        return True
+
+    @test_tracker_info(uuid="")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_in_call_volte(self):
+        """ Test MT SMS during a MT VoLTE call.
+
+        Make sure PhoneA is in nsa 5G mode (with VoLTE).
+        Make sure PhoneB is able to make/receive call.
+        Call from PhoneA to PhoneB, accept on PhoneB, receive SMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_voice_general,
+                                                           (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not provision_device_for_5g(self.log, ads[0]):
+            return False
+
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call SMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
+            return False
+
+        if not _sms_test_mt(self.log, ads):
+            self.log.error("SMS test fail.")
+            return False
+        return True
 
     """ Tests End """
