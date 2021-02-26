@@ -2276,3 +2276,92 @@ class CommandInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End Audio wrappers"""
+    """Begin HFP wrappers"""
+
+    def do_hfp_init(self, line):
+        """
+        Description: Init the HFP component initiate.
+
+        Usage:
+          Examples:
+            hfp_init
+        """
+        cmd = "Initialize HFP proxy"
+        try:
+            result = self.pri_dut.hfp_lib.init()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_remove_service(self, line):
+        """
+        Description: Removes the HFP service in use.
+
+        Usage:
+          Examples:
+            hfp_remove_service
+        """
+        cmd = "Remove HFP service"
+        try:
+            result = self.pri_dut.hfp_lib.removeService()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_incoming_call(self, line):
+        """
+        Description: Simulate an incoming call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the incoming call
+
+        Usage:
+          Examples:
+            hfp_incoming_call <remote>
+            hfp_incoming_call 14085555555
+        """
+        cmd = "Simulates an incoming call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateIncomingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_list_peers(self, line):
+        """
+        Description: List all HFP Hands-Free peers connected to the DUT.
+
+        Input(s):
+
+        Usage:
+          Examples:
+            hfp_list_peers
+        """
+        cmd = "Lists connected peers"
+        try:
+            result = self.pri_dut.hfp_lib.listPeers()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_active_peer(self, line):
+        """
+        Description: Set the active HFP Hands-Free peer for the DUT.
+
+        Input(s):
+            peer_id: The id of the peer to be set active.
+
+        Usage:
+          Examples:
+            hfp_set_active_peer <peer_id>
+        """
+        cmd = "Set the active peer"
+        try:
+            peer_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setActivePeer(peer_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End HFP wrappers"""
