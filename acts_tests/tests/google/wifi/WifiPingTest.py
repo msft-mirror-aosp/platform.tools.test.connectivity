@@ -304,6 +304,7 @@ class WifiPingTest(base_test.BaseTestClass):
                 len(testcase_params['atten_range']) + self.TEST_TIMEOUT)
         # Run ping and sweep attenuation as needed
         zero_counter = 0
+        pending_first_ping = 1
         for atten in testcase_params['atten_range']:
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False, retry=True)
@@ -336,12 +337,20 @@ class WifiPingTest(base_test.BaseTestClass):
                     zero_counter = zero_counter + 1
                 else:
                     zero_counter = 0
+                    pending_first_ping = 0
             else:
                 self.log.info(
                     'Attenuation = {}dB. Disconnected.'.format(atten))
                 zero_counter = zero_counter + 1
             test_result['ping_results'].append(current_ping_stats.as_dict())
-            if zero_counter == self.MAX_CONSECUTIVE_ZEROS:
+            # Test ends when ping loss stable at 0. If test has successfully
+            # started, test ends on MAX_CONSECUTIVE_ZEROS. In case of a restry
+            # extra zeros are allowed to ensure a test properly starts.
+            if self.retry_flag and pending_first_ping:
+                allowable_zeros = self.MAX_CONSECUTIVE_ZEROS**2
+            else:
+                allowable_zeros = self.MAX_CONSECUTIVE_ZEROS
+            if zero_counter == allowable_zeros:
                 self.log.info('Ping loss stable at 100%. Stopping test now.')
                 for idx in range(
                         len(testcase_params['atten_range']) -
