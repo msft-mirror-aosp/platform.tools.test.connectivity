@@ -36,6 +36,7 @@ from acts.controllers import pdu
 from acts.controllers.fuchsia_lib.audio_lib import FuchsiaAudioLib
 from acts.controllers.fuchsia_lib.backlight_lib import FuchsiaBacklightLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
+from acts.controllers.fuchsia_lib.bt.hfp_lib import FuchsiaHfpLib
 from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
 
 from acts.controllers.fuchsia_lib.basemgr_lib import FuchsiaBasemgrLib
@@ -285,6 +286,10 @@ class FuchsiaDevice:
 
         # Grab commands from FuchsiaAvdtpLib
         self.avdtp_lib = FuchsiaAvdtpLib(self.address, self.test_counter,
+                                         self.client_id)
+
+        # Grab commands from FuchsiaHfpLib
+        self.hfp_lib = FuchsiaHfpLib(self.address, self.test_counter,
                                          self.client_id)
 
         # Grab commands from FuchsiaLightLib
