@@ -2514,4 +2514,67 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_set_service_available(self, line):
+        """
+        Description: Sets the simulated network service status reported by the call manager.
+
+        Input(s):
+            value: "true" to set the network connection to available.
+
+        Usage:
+          Examples:
+            hfp_set_service_available <value>
+            hfp_set_service_available true
+            hfp_set_service_available false
+        """
+        cmd = "Sets the simulated network service status reported by the call manager"
+        try:
+            value = line.strip() == "true"
+            result = self.pri_dut.hfp_lib.setServiceAvailable(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_roaming(self, line):
+        """
+        Description: Sets the simulated roaming status reported by the call manager.
+
+        Input(s):
+            value: "true" to set the network connection to roaming.
+
+        Usage:
+          Examples:
+            hfp_set_roaming <value>
+            hfp_set_roaming true
+            hfp_set_roaming false
+        """
+        cmd = "Sets the simulated roaming status reported by the call manager"
+        try:
+            value = line.strip() == "true"
+            result = self.pri_dut.hfp_lib.setRoaming(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_signal_strength(self, line):
+        """
+        Description: Sets the simulated signal strength reported by the call manager.
+
+        Input(s):
+            value: The signal strength value to set. Must be between 0-5 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_signal_strength <value>
+            hfp_set_signal_strength 0
+            hfp_set_signal_strength 3
+            hfp_set_signal_strength 5
+        """
+        cmd = "Sets the simulated signal strength reported by the call manager"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setSignalStrength(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
     """End HFP wrappers"""
