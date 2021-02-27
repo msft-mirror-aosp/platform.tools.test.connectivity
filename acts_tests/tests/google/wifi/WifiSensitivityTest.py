@@ -46,6 +46,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
     example_connectivity_performance_ap_sta.json.
     """
 
+    MAX_CONSECUTIVE_ZEROS = 5
     RSSI_POLL_INTERVAL = 0.2
     VALID_TEST_CONFIGS = {
         1: ['legacy', 'VHT20'],
