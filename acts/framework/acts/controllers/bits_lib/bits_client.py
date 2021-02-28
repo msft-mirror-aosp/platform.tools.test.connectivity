@@ -228,8 +228,11 @@ class BitsClient(object):
                '--time',
                ONE_YEAR,
                '--default_sampling_rate',
-               '1000',
-               '--disk_space_saver']
+               '1000']
+
+        if self._server_config.has_kibbles:
+            cmd = cmd + ['--disk_space_saver']
+
         self._log.info('starting collection %s', collection_name)
         job.run(cmd, timeout=10)
 
