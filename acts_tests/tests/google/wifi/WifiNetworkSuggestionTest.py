@@ -36,6 +36,7 @@ EAP = WifiEnums.Eap
 EapPhase2 = WifiEnums.EapPhase2
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
+BOINGO = 1
 ATT = 2
 # Suggestion network Macros
 Untrusted = "untrusted"
@@ -93,9 +94,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             isinstance(self.hidden_networks, list):
               self.hidden_network = self.hidden_networks[0]
         if hasattr(self, "passpoint_networks"):
-            self.passpoint_network = self.passpoint_networks[ATT]
+            self.passpoint_network = self.passpoint_networks[BOINGO]
             self.passpoint_network[WifiEnums.SSID_KEY] = \
-                self.passpoint_networks[ATT][WifiEnums.SSID_KEY][0]
+                self.passpoint_networks[BOINGO][WifiEnums.SSID_KEY][0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
         self.dut.adb.shell(
             "pm disable com.google.android.apps.carrier.carrierwifi", ignore_status=True)
@@ -747,7 +748,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         """
         asserts.skip_if(not hasattr(self, "passpoint_networks"),
                         "No passpoint networks, skip this test")
-        passpoint_config = self.passpoint_network
+        passpoint_config = self.passpoint_networks[ATT]
+        passpoint_config[WifiEnums.SSID_KEY] = self.passpoint_networks[
+                ATT][WifiEnums.SSID_KEY][0]
         asserts.skip_if("carrierId" not in passpoint_config,
                         "Not a SIM based passpoint network, skip this test")
 
