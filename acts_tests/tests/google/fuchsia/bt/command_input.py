@@ -2577,4 +2577,19 @@ class CommandInput(cmd.Cmd):
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_get_state(self, line):
+        """
+        Description: Get the call manager's complete state
+
+        Usage:
+          Examples:
+            hfp_get_state
+        """
+        cmd = "Get the call manager's state"
+        try:
+            result = self.pri_dut.hfp_lib.getState()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
     """End HFP wrappers"""

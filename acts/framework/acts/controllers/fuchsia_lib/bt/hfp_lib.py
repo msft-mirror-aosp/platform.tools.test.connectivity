@@ -269,3 +269,16 @@ class FuchsiaHfpLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def getState(self):
+        """Get the call manager's state.
+
+        Returns:
+            Dictionary, State dictionary if success, error if error.
+        """
+        test_cmd = "hfp_facade.GetState"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
