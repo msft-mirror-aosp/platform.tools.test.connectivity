@@ -78,3 +78,21 @@ class FuchsiaHfpLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def setActivePeer(self, peer_id):
+        """Set the active HFP peer device. All peer specific commands will be
+        directed to this device.
+
+        Args:
+            peer_id: The id of the peer to set as active. Use "listPeers" to
+            find connected peer ids.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetActivePeer"
+        test_args = { "peer_id": peer_id }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
