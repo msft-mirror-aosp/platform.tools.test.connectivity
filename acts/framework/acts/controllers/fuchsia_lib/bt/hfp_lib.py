@@ -270,6 +270,54 @@ class FuchsiaHfpLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def setSubscriberNumber(self, value):
+        """Sets the subscriber number reported by the call manager.
+
+        Args:
+            value: The subscriber number to set. Maximum length 128 characters.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetSubscriberNumber"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setOperator(self, value):
+        """Sets the operator value reported by the call manager.
+
+        Args:
+            value: The operator value to set. Maximum length 16 characters.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetOperator"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setNrecSupport(self, value):
+        """Sets the noise reduction/echo cancelation support reported by the call manager.
+
+        Args:
+            value: The nrec support bool.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetNrecSupport"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def getState(self):
         """Get the call manager's state.
 
