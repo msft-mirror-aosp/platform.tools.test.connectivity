@@ -60,7 +60,7 @@ from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import wifi_cell_switching_for_5g_nsa
+from test_utils.tel.tel_data_utils import wifi_cell_switching
 
 
 class Nsa5gVoiceTest(TelephonyBaseTest):
@@ -557,8 +557,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         else:
             self.log.info("Call setup succeed")
 
-        if not wifi_cell_switching_for_5g_nsa(self.log, ads[0], self.wifi_network_ssid,
-                                              self.wifi_network_pass):
+        if not wifi_cell_switching(self.log, ads[0], None, self.wifi_network_ssid,
+                                   self.wifi_network_pass):
             ads[0].log.error("Failed to do WIFI and Cell switch in call")
             result = False
 
