@@ -60,7 +60,7 @@ from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 
 
 class Nsa5gVoiceTest(TelephonyBaseTest):
