@@ -462,13 +462,13 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_monitor.measure(measurement_args=measurement_args,
                                    start_time=device_to_host_offset,
                                    monsoon_output_path=data_path)
+        self.power_monitor.release_resources()
         self.power_monitor.connect_usb()
         self.dut.wait_for_boot_completion()
         time.sleep(10)
         self.dut.start_services()
 
-        return self.power_monitor.get_battery_waveform(
-            monsoon_file_path=data_path)
+        return self.power_monitor.get_waveform(file_path=data_path)
 
     def process_iperf_results(self):
         """Get the iperf results and process.
