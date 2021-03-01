@@ -428,6 +428,21 @@ class Bits(object):
             self._active_collection.name,
             milli_amps_channel)
 
+    def get_waveform(self, file_path=None):
+        """Parses a file generated in release_resources.
+
+        Args:
+            file_path: Path to a waveform file.
+
+        Returns:
+            A list of tuples in which the first element is a timestamp and the
+            second element is the sampled current at that time.
+        """
+        if file_path is None:
+            raise ValueError('file_path can not be None')
+
+        return list(power_metrics.import_raw_data(file_path))
+
     def teardown(self):
         if self._service is None:
             return
