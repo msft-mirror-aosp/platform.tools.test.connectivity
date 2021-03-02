@@ -189,3 +189,35 @@ class FuchsiaHfpLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def setSpeakerGain(self, value):
+        """Sets the active peer's speaker gain.
+
+        Args:
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetSpeakerGain"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setMicrophoneGain(self, value):
+        """Sets the active peer's microphone gain.
+
+        Args:
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetMicrophoneGain"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
