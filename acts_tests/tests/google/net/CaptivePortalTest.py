@@ -82,13 +82,13 @@ class CaptivePortalTest(base_test.BaseTestClass):
         """Verify sign in notification shows for captive portal."""
         curr_time = time.time()
         while time.time() < curr_time + TIME_OUT:
+            time.sleep(3) # wait for sometime before checking the notification
             screen_dump = uutils.get_screen_dump_xml(self.dut)
             nodes = screen_dump.getElementsByTagName('node')
             for node in nodes:
                 if SIGN_IN_NOTIFICATION in node.getAttribute(
                     'text') or CONNECTED in node.getAttribute('text'):
                   return
-            time.sleep(3) # wait for sometime before checking the notification
         asserts.fail("Failed to get sign in notification")
 
     def _verify_captive_portal(self, network, click_accept=ACCEPT_CONTINUE):
@@ -116,11 +116,11 @@ class CaptivePortalTest(base_test.BaseTestClass):
         # wait for sometime for captive portal connection to go through
         curr_time = time.time()
         while time.time() < curr_time + TIME_OUT:
+            time.sleep(3) # wait for sometime for AP to send DHCP info
             link_prop = self.dut.droid.connectivityGetActiveLinkProperties()
             self.log.debug("Link properties %s" % link_prop)
             if link_prop and link_prop[IFACE] == WLAN:
                 break
-            time.sleep(2)
 
         # verify connectivity
         asserts.assert_true(

@@ -21,6 +21,7 @@ import re
 import time
 
 import acts.controllers.power_monitor as power_monitor_lib
+import acts.controllers.monsoon as monsoon_controller
 import acts.controllers.iperf_server as ipf
 from acts import asserts
 from acts import base_test
@@ -106,7 +107,14 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         Raises an exception if there are no controllers available.
         """
-        if hasattr(self, 'monsoons'):
+        if hasattr(self, 'bitses'):
+            if hasattr(self, 'monsoons'):
+                self.log.info('Destroying monsoon controller.')
+                monsoon_controller.destroy(self.monsoons)
+                time.sleep(2)
+            self.power_monitor = self.bitses[0]
+            self.power_monitor.setup(registry=self.user_params)
+        elif hasattr(self, 'monsoons'):
             self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
                 self.monsoons[0])
             self.monsoons[0].set_max_current(8.0)
@@ -462,13 +470,13 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_monitor.measure(measurement_args=measurement_args,
                                    start_time=device_to_host_offset,
                                    monsoon_output_path=data_path)
+        self.power_monitor.release_resources()
         self.power_monitor.connect_usb()
         self.dut.wait_for_boot_completion()
         time.sleep(10)
         self.dut.start_services()
 
-        return self.power_monitor.get_battery_waveform(
-            monsoon_file_path=data_path)
+        return self.power_monitor.get_waveform(file_path=data_path)
 
     def process_iperf_results(self):
         """Get the iperf results and process.
