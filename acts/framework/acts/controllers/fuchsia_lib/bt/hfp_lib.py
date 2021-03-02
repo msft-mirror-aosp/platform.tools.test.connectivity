@@ -221,3 +221,51 @@ class FuchsiaHfpLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def setServiceAvailable(self, value):
+        """Sets the simulated network service status reported by the call manager.
+
+        Args:
+            value: True to set the network service to available.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetServiceAvailable"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setRoaming(self, value):
+        """Sets the simulated roaming status reported by the call manager.
+
+        Args:
+            value: True to set the network connection to roaming.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetRoaming"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setSignalStrength(self, value):
+        """Sets the simulated signal strength reported by the call manager.
+
+        Args:
+            value: The signal strength value to set. Must be between 0-5 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetSignalStrength"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
