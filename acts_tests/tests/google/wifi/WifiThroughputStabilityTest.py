@@ -444,7 +444,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 reverse_direction=1,
                 traffic_type=testcase_params['traffic_type'],
                 socket_size=testcase_params['iperf_socket_size'],
-                num_processes=testcase_params['iperf_processes'])
+                num_processes=testcase_params['iperf_processes'],
+                udp_throughput=self.testclass_params['UDP_rates'][
+                    testcase_params['mode']])
             testcase_params['use_client_output'] = True
         else:
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
@@ -452,7 +454,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 reverse_direction=0,
                 traffic_type=testcase_params['traffic_type'],
                 socket_size=testcase_params['iperf_socket_size'],
-                num_processes=testcase_params['iperf_processes'])
+                num_processes=testcase_params['iperf_processes'],
+                udp_throughput=self.testclass_params['UDP_rates'][
+                    testcase_params['mode']])
             testcase_params['use_client_output'] = False
 
         return testcase_params
