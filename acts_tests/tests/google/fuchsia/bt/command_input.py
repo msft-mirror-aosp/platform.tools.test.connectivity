@@ -2577,4 +2577,80 @@ class CommandInput(cmd.Cmd):
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_subscriber_number(self, line):
+        """
+        Description: Sets the subscriber number reported by the call manager.
+
+        Input(s):
+            value: The subscriber number to set. Maximum length 128 characters.
+
+        Usage:
+          Examples:
+            hfp_set_subscriber_number <value>
+            hfp_set_subscriber_number 14085555555
+        """
+        cmd = "Sets the subscriber number reported by the call manager"
+        try:
+            value = line.strip()
+            result = self.pri_dut.hfp_lib.setSubscriberNumber(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_operator(self, line):
+        """
+        Description: Sets the operator value reported by the call manager.
+
+        Input(s):
+            value: The operator value to set. Maximum length 16 characters.
+
+        Usage:
+          Examples:
+            hfp_set_operator <value>
+            hfp_set_operator GoogleFi
+        """
+        cmd = "Sets the operator value reported by the call manager"
+        try:
+            value = line.strip()
+            result = self.pri_dut.hfp_lib.setOperator(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_nrec_support(self, line):
+        """
+        Description: Sets the noise reduction/echo cancelation support reported by the call manager.
+
+        Input(s):
+            value: The nrec support bool.
+
+        Usage:
+          Examples:
+            hfp_set_nrec_support <value>
+            hfp_set_nrec_support true
+            hfp_set_nrec_support false
+        """
+        cmd = "Sets the noise reduction/echo cancelation support reported by the call manager"
+        try:
+            value = line.strip() == "true"
+            result = self.pri_dut.hfp_lib.setNrecSupport(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_get_state(self, line):
+        """
+        Description: Get the call manager's complete state
+
+        Usage:
+          Examples:
+            hfp_get_state
+        """
+        cmd = "Get the call manager's state"
+        try:
+            result = self.pri_dut.hfp_lib.getState()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
     """End HFP wrappers"""
