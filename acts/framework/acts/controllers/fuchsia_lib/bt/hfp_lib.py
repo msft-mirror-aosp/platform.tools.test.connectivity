@@ -50,22 +50,6 @@ class FuchsiaHfpLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def initiateIncomingCall(self, remote):
-        """Opens an incoming call channel and alerts the HFP peer.
-
-        Args:
-            remote: The number of the remote party.
-
-        Returns:
-            Dictionary, None if success, error if error.
-        """
-        test_cmd = "hfp_facade.IncomingCall"
-        test_args = {"remote": remote }
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
     def listPeers(self):
         """List all connected HFP peer devices.
 
@@ -92,6 +76,256 @@ class FuchsiaHfpLib(BaseLib):
         """
         test_cmd = "hfp_facade.SetActivePeer"
         test_args = { "peer_id": peer_id }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def listCalls(self):
+        """List all calls known to the sl4f component.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.ListCalls"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def initiateIncomingCall(self, remote):
+        """Opens an incoming call channel and alerts the HFP peer.
+
+        Args:
+            remote: The number of the remote party.
+
+        Returns:
+            Dictionary, call_id if success, error if error.
+        """
+        test_cmd = "hfp_facade.IncomingCall"
+        test_args = {"remote": remote }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def initiateOutgoingCall(self, remote):
+        """Opens an outgoing call channel and alerts the HFP peer.
+
+        Args:
+            remote: The number of the remote party.
+
+        Returns:
+            Dictionary, call_id if success, error if error.
+        """
+        test_cmd = "hfp_facade.OutgoingCall"
+        test_args = {"remote": remote }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setCallActive(self, call_id):
+        """Sets the specified call to the "OngoingActive" state.
+
+        Args:
+            call_id: The unique id of the call.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetCallActive"
+        test_args = {"call_id": call_id }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setCallHeld(self, call_id):
+        """Sets the specified call to the "OngoingHeld" state.
+
+        Args:
+            call_id: The unique id of the call.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetCallHeld"
+        test_args = {"call_id": call_id }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setCallTerminated(self, call_id):
+        """Sets the specified call to the "Terminated" state.
+
+        Args:
+            call_id: The unique id of the call.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetCallTerminated"
+        test_args = {"call_id": call_id }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setCallTransferredToAg(self, call_id):
+        """Sets the specified call to the "TransferredToAg" state.
+
+        Args:
+            call_id: The unique id of the call.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetCallTransferredToAg"
+        test_args = {"call_id": call_id }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setSpeakerGain(self, value):
+        """Sets the active peer's speaker gain.
+
+        Args:
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetSpeakerGain"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setMicrophoneGain(self, value):
+        """Sets the active peer's microphone gain.
+
+        Args:
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetMicrophoneGain"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setServiceAvailable(self, value):
+        """Sets the simulated network service status reported by the call manager.
+
+        Args:
+            value: True to set the network service to available.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetServiceAvailable"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setRoaming(self, value):
+        """Sets the simulated roaming status reported by the call manager.
+
+        Args:
+            value: True to set the network connection to roaming.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetRoaming"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setSignalStrength(self, value):
+        """Sets the simulated signal strength reported by the call manager.
+
+        Args:
+            value: The signal strength value to set. Must be between 0-5 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetSignalStrength"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setSubscriberNumber(self, value):
+        """Sets the subscriber number reported by the call manager.
+
+        Args:
+            value: The subscriber number to set. Maximum length 128 characters.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetSubscriberNumber"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setOperator(self, value):
+        """Sets the operator value reported by the call manager.
+
+        Args:
+            value: The operator value to set. Maximum length 16 characters.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetOperator"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setNrecSupport(self, value):
+        """Sets the noise reduction/echo cancelation support reported by the call manager.
+
+        Args:
+            value: The nrec support bool.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetNrecSupport"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def getState(self):
+        """Get the call manager's state.
+
+        Returns:
+            Dictionary, State dictionary if success, error if error.
+        """
+        test_cmd = "hfp_facade.GetState"
+        test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
