@@ -29,6 +29,7 @@ from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
+from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
@@ -107,7 +108,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             'throughput_stability_test_params', 'testbed_params',
             'main_network', 'RetailAccessPoints', 'RemoteServer'
         ]
-        self.unpack_userparams(req_params)
+        opt_params = ['OTASniffer']
+        self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.throughput_stability_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.remote_server = ssh.connection.SshConnection(
@@ -115,6 +117,13 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.iperf_server = self.iperf_servers[0]
         self.iperf_client = self.iperf_clients[0]
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
+        if hasattr(self,
+                   'OTASniffer') and self.testbed_params['sniffer_enable']:
+            try:
+                self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
+            except:
+                self.log.warning('Could not start sniffer. Disabling sniffs.')
+                self.testbed_params['sniffer_enable'] = 0
         self.log_path = os.path.join(logging.log_path, 'test_results')
         os.makedirs(self.log_path, exist_ok=True)
         self.log.info('Access Point Configuration: {}'.format(
@@ -336,6 +345,12 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.log.info('Starting iperf test.')
         llstats_obj = wputils.LinkLayerStats(self.dut)
         llstats_obj.update_stats()
+        if self.testbed_params['sniffer_enable']:
+            self.sniffer.start_capture(
+                network=testcase_params['test_network'],
+                chan=testcase_params['channel'],
+                bw=testcase_params['bandwidth'],
+                duration=self.testclass_params['iperf_duration'] / 5)
         self.iperf_server.start(tag=str(testcase_params['atten_level']))
         current_rssi = wputils.get_connected_rssi_nb(
             dut=self.dut,
@@ -350,6 +365,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             self.testclass_params['iperf_duration'] + TEST_TIMEOUT)
         current_rssi = current_rssi.result()
         server_output_path = self.iperf_server.stop()
+        # Stop sniffer
+        if self.testbed_params['sniffer_enable']:
+            self.sniffer.stop_capture()
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
             attenuator.set_atten(0)
