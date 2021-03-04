@@ -82,6 +82,7 @@ class WifiPasspointTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.dut.unlock_screen()
+        self.dut.adb.shell("input keyevent KEYCODE_HOME")
 
 
     def teardown_test(self):
@@ -227,7 +228,7 @@ class WifiPasspointTest(WifiBaseTest):
                                           "expected_ssids"])
         # Delete the Passpoint profile.
         self.get_configured_passpoint_and_delete()
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, timeout=15)
 
 
     """Tests"""
