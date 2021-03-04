@@ -55,9 +55,12 @@ class WirelessSettingsApplier(object):
     self.ssh.run("uci set wireless.radio0.channel='%s'" % self.channel_5g)
     if self.channel_5g == 165:
       self.ssh.run("uci set wireless.radio0.htmode='VHT20'")
-    elif self.channel_5g == 132:
+    elif self.channel_5g == 132 or self.channel_5g == 136:
       self.ssh.run("iw reg set ZA")
       self.ssh.run("uci set wireless.radio0.htmode='VHT40'")
+
+    if self.channel_2g == 13:
+      self.ssh.run("iw reg set AU")
 
     # disable default OpenWrt SSID
     self.ssh.run("uci set wireless.default_radio1.disabled='%s'" %
