@@ -77,7 +77,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         if hasattr(self,
                    'OTASniffer') and self.testbed_params['sniffer_enable']:
-            self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
+            try:
+                self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
+            except:
+                self.log.warning('Could not start sniffer. Disabling sniffs.')
+                self.testbed_params['sniffer_enable'] = 0
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')

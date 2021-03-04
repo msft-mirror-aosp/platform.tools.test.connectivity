@@ -209,7 +209,7 @@ class BitsClient(object):
         self._log.info('disconnecting monsoon\'s usb')
         job.run(cmd, timeout=10)
 
-    def start_collection(self, collection_name):
+    def start_collection(self, collection_name, default_sampling_rate=1000):
         """Indicates Bits to start a collection.
 
         Args:
@@ -217,6 +217,7 @@ class BitsClient(object):
             Collection names must be unique at Bits' service level. If multiple
             collections must be taken within the context of the same Bits'
             service, ensure that each collection is given a different one.
+            default_sampling_rate: Samples per second to be collected
         """
 
         cmd = [self._binary,
@@ -228,7 +229,7 @@ class BitsClient(object):
                '--time',
                ONE_YEAR,
                '--default_sampling_rate',
-               '1000']
+               str(default_sampling_rate)]
 
         if self._server_config.has_kibbles:
             cmd = cmd + ['--disk_space_saver']

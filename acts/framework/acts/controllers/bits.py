@@ -272,7 +272,10 @@ class Bits(object):
             measurement_args: A dictionary with the following structure:
                 {
                    'duration': <seconds to measure for>
+                   'hz': <samples per second>
                 }
+                The actual number of samples per second is limited by the
+                bits configuration. The value of hz is defaulted to 1000.
             measurement_name: A name to give to the measurement (which is also
                 used as the Bits collection name. Bits collection names (and
                 therefore measurement names) need to be unique within the
@@ -286,8 +289,9 @@ class Bits(object):
         duration = measurement_args.get('duration')
         if duration is None:
             raise ValueError(
-
                 'duration can not be left undefined within measurement_args')
+
+        hz = measurement_args.get('hz', 1000)
 
         if self._active_collection:
             raise BitsError(
@@ -306,7 +310,8 @@ class Bits(object):
 
         self._active_collection = _BitsCollection(measurement_name,
                                                   monsoon_output_path)
-        self._client.start_collection(self._active_collection.name)
+        self._client.start_collection(self._active_collection.name,
+                                      default_sampling_rate=hz)
         time.sleep(duration)
 
     def get_metrics(self, *_, timestamps=None, **__):

@@ -59,6 +59,36 @@ class BitsClientTest(unittest.TestCase):
                          'did not expect call with usb_disconnect')
 
     @mock.patch('acts.libs.proc.job.run')
+    def test_start_collection__frecuency_arg_gets_populated(self, mock_run):
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=MONSOONED_CONFIG)
+
+        client.start_collection('collection', default_sampling_rate=12345)
+
+        mock_run.assert_called()
+        args_list = mock_run.call_args_list
+        expected_calls = list(
+            filter(lambda call: '--time' in call.args[0], args_list))
+        self.assertEqual(len(expected_calls), 1, 'expected 1 calls with --time')
+        self.assertIn('--default_sampling_rate', expected_calls[0][0][0])
+        self.assertIn('12345', expected_calls[0][0][0])
+
+    @mock.patch('acts.libs.proc.job.run')
+    def test_start_collection__sampling_rate_defaults_to_1000(self, mock_run):
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=MONSOONED_CONFIG)
+
+        client.start_collection('collection')
+
+        mock_run.assert_called()
+        args_list = mock_run.call_args_list
+        expected_calls = list(
+            filter(lambda call: '--time' in call.args[0], args_list))
+        self.assertEqual(len(expected_calls), 1, 'expected 1 calls with --time')
+        self.assertIn('--default_sampling_rate', expected_calls[0][0][0])
+        self.assertIn('1000', expected_calls[0][0][0])
+
+    @mock.patch('acts.libs.proc.job.run')
     def test_stop_collection__usb_not_automanaged__does_not_connect_monsoon(
         self, mock_run):
         client = bits_client.BitsClient('bits.par', self.mock_service,
