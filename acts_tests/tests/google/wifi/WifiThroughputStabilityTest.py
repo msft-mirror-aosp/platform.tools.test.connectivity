@@ -141,6 +141,12 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
     def teardown_test(self):
         self.iperf_server.stop()
 
+    def teardown_class(self):
+        # Turn WiFi OFF
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, False)
+            dev.go_to_sleep()
+
     def pass_fail_check(self, test_result_dict):
         """Check the test result and decide if it passed or failed.
 
@@ -518,6 +524,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
+        WifiThroughputStabilityTest.teardown_class(self)
         self.ota_chamber.reset_chamber()
         self.process_testclass_results()
 
