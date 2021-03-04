@@ -45,6 +45,7 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -80,10 +81,18 @@ from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
+from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 
 
 def wifi_tethering_cleanup(log, provider, client_list):
@@ -1323,3 +1332,256 @@ def test_wifi_connect_disconnect(log, ad, wifi_network_ssid=None, wifi_network_p
             log.error("Failed to get user-plane traffic, aborting!")
             return False
     return True
+
+
+def test_call_setup_in_active_data_transfer(
+        log,
+        ads,
+        nw_gen=None,
+        call_direction=DIRECTION_MOBILE_ORIGINATED,
+        allow_data_transfer_interruption=False):
+    """Test call can be established during active data connection.
+
+    Turn off airplane mode, disable WiFi, enable Cellular Data.
+    Make sure phone in <nw_gen>.
+    Starting downloading file from Internet.
+    Initiate a voice call. Verify call can be established.
+    Hangup Voice Call, verify file is downloaded successfully.
+    Note: file download will be suspended when call is initiated if voice
+          is using voice channel and voice channel and data channel are
+          on different RATs.
+    Args:
+        log: log object.
+        ads: list of android objects, this list should have two ad.
+        nw_gen: network generation.
+        call_direction: MO(DIRECTION_MOBILE_ORIGINATED) or MT(DIRECTION_MOBILE_TERMINATED) call.
+        allow_data_transfer_interruption: if allow to interrupt data transfer.
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+
+    def _call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
+                             caller_verifier, callee_verifier,
+                             wait_time_in_call):
+        # wait time for active data transfer
+        time.sleep(5)
+        return call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
+                                   caller_verifier, callee_verifier,
+                                   wait_time_in_call)
+
+    if nw_gen == GEN_5G:
+        if not provision_device_for_5g(log, ads[0]):
+            ads[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+    elif nw_gen:
+        if not ensure_network_generation(log, ads[0], nw_gen,
+                                         MAX_WAIT_TIME_NW_SELECTION,
+                                         NETWORK_SERVICE_DATA):
+            ads[0].log.error("Device failed to reselect in %s.",
+                             MAX_WAIT_TIME_NW_SELECTION)
+            return False
+
+        ads[0].droid.telephonyToggleDataConnection(True)
+        if not wait_for_cell_data_connection(log, ads[0], True):
+            ads[0].log.error("Data connection is not on cell")
+            return False
+    else:
+        ads[0].log.debug("Skipping network generation since it is None")
+
+    if not verify_internet_connection(log, ads[0]):
+        ads[0].log.error("Internet connection is not available")
+        return False
+
+    if call_direction == DIRECTION_MOBILE_ORIGINATED:
+        ad_caller = ads[0]
+        ad_callee = ads[1]
+    else:
+        ad_caller = ads[1]
+        ad_callee = ads[0]
+    ad_download = ads[0]
+
+    start_youtube_video(ad_download)
+    call_task = (_call_setup_teardown, (log, ad_caller, ad_callee,
+                                        ad_caller, None, None, 30))
+    download_task = active_file_download_task(log, ad_download)
+    results = run_multithread_func(log, [download_task, call_task])
+    if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+        ad_download.log.info("After call hangup, audio is back to music")
+    else:
+        ad_download.log.warning(
+            "After call hang up, audio is not back to music")
+    ad_download.force_stop_apk("com.google.android.youtube")
+    if not results[1]:
+        log.error("Call setup failed in active data transfer.")
+    if results[0]:
+        ad_download.log.info("Data transfer succeeded.")
+        return True
+    elif not allow_data_transfer_interruption:
+        ad_download.log.error(
+            "Data transfer failed with parallel phone call.")
+        return False
+    else:
+        ad_download.log.info("Retry data connection after call hung up")
+        if not verify_internet_connection(log, ad_download):
+            ad_download.log.error("Internet connection is not available")
+            return False
+    if nw_gen == GEN_5G and not is_current_network_5g_nsa(ads[0]):
+        ads[0].log.error("Phone not attached on 5G NSA after call.")
+        return False
+    return True
+
+
+def test_call_setup_in_active_youtube_video(
+        log,
+        ads,
+        nw_gen=None,
+        call_direction=DIRECTION_MOBILE_ORIGINATED,
+        allow_data_transfer_interruption=False):
+    """Test call can be established during active data connection.
+
+    Turn off airplane mode, disable WiFi, enable Cellular Data.
+    Make sure phone in <nw_gen>.
+    Starting playing youtube video.
+    Initiate a voice call. Verify call can be established.
+    Args:
+        log: log object.
+        ads: list of android objects, this list should have two ad.
+        nw_gen: network generation.
+        call_direction: MO(DIRECTION_MOBILE_ORIGINATED) or MT(DIRECTION_MOBILE_TERMINATED) call.
+        allow_data_transfer_interruption: if allow to interrupt data transfer.
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    if nw_gen == GEN_5G:
+        if not provision_device_for_5g(log, ads[0]):
+            ads[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+    elif nw_gen:
+        if not ensure_network_generation(log, ads[0], nw_gen,
+                                         MAX_WAIT_TIME_NW_SELECTION,
+                                         NETWORK_SERVICE_DATA):
+            ads[0].log.error("Device failed to reselect in %s.",
+                             MAX_WAIT_TIME_NW_SELECTION)
+            return False
+    else:
+        ensure_phones_default_state(log, ads)
+    ads[0].droid.telephonyToggleDataConnection(True)
+    if not wait_for_cell_data_connection(log, ads[0], True):
+        ads[0].log.error("Data connection is not on cell")
+        return False
+
+    if not verify_internet_connection(log, ads[0]):
+        ads[0].log.error("Internet connection is not available")
+        return False
+
+    if call_direction == DIRECTION_MOBILE_ORIGINATED:
+        ad_caller = ads[0]
+        ad_callee = ads[1]
+    else:
+        ad_caller = ads[1]
+        ad_callee = ads[0]
+    ad_download = ads[0]
+
+    if not start_youtube_video(ad_download):
+        ad_download.log.warning("Fail to bring up youtube video")
+
+    if not call_setup_teardown(log, ad_caller, ad_callee, ad_caller,
+                               None, None, 30):
+        ad_download.log.error("Call setup failed in active youtube video")
+        result = False
+    else:
+        ad_download.log.info("Call setup succeed in active youtube video")
+        result = True
+
+    if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+        ad_download.log.info("After call hangup, audio is back to music")
+    else:
+        ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+    ad_download.force_stop_apk("com.google.android.youtube")
+    if nw_gen == GEN_5G and not is_current_network_5g_nsa(ads[0]):
+        ads[0].log.error("Phone not attached on 5G NSA after call.")
+        result = False
+    return result
+
+
+def call_epdg_to_epdg_wfc(log,
+                          ads,
+                          apm_mode,
+                          wfc_mode,
+                          wifi_ssid,
+                          wifi_pwd,
+                          nw_gen=None):
+    """ Test epdg<->epdg call functionality.
+
+    Make Sure PhoneA is set to make epdg call.
+    Make Sure PhoneB is set to make epdg call.
+    Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+    Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+
+    Args:
+        log: log object.
+        ads: list of android objects, this list should have two ad.
+        apm_mode: phones' airplane mode.
+            if True, phones are in airplane mode during test.
+            if False, phones are not in airplane mode during test.
+        wfc_mode: phones' wfc mode.
+            Valid mode includes: WFC_MODE_WIFI_ONLY, WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_WIFI_PREFERRED, WFC_MODE_DISABLED.
+        wifi_ssid: WiFi ssid to connect during test.
+        wifi_pwd: WiFi password.
+        nw_gen: network generation.
+
+    Returns:
+        True if pass; False if fail.
+    """
+    DEFAULT_PING_DURATION = 120
+
+    if nw_gen == GEN_5G:
+        # Turn off apm first before setting network preferred mode to 5G NSA.
+        log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (log, ads[0], False)),
+                 (toggle_airplane_mode, (log, ads[1], False))]
+        if not multithread_func(log, tasks):
+            log.error("Failed to turn off airplane mode")
+            return False
+        if not provision_both_devices_for_5g(log, ads):
+            log.error("Phone not attached on 5G NSA before epdg call.")
+            return False
+
+    tasks = [(phone_setup_iwlan, (log, ads[0], apm_mode, wfc_mode,
+                                  wifi_ssid, wifi_pwd)),
+             (phone_setup_iwlan, (log, ads[1], apm_mode, wfc_mode,
+                                  wifi_ssid, wifi_pwd))]
+    if not multithread_func(log, tasks):
+        log.error("Phone Failed to Set Up Properly.")
+        return False
+
+    ad_ping = ads[0]
+
+    call_task = (two_phone_call_short_seq,
+                 (log, ads[0], phone_idle_iwlan,
+                  is_phone_in_call_iwlan, ads[1], phone_idle_iwlan,
+                  is_phone_in_call_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS))
+    ping_task = (adb_shell_ping, (ad_ping, DEFAULT_PING_DURATION))
+
+    results = run_multithread_func(log, [ping_task, call_task])
+
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+    if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(log, ads):
+        log.error("Phone not attached on 5G NSA after epdg call.")
+        return False
+
+    if not results[1]:
+        log.error("Call setup failed in active ICMP transfer.")
+    if results[0]:
+        log.info("ICMP transfer succeeded with parallel phone call.")
+    else:
+        log.error("ICMP transfer failed with parallel phone call.")
+    return all(results)
+
