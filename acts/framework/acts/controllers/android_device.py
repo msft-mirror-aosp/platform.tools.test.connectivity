@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2016 - The Android Open Source Project
+#   Copyright 2021 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -764,11 +764,22 @@ class AndroidDevice:
                         out.write(line)
         return adb_excerpt_path
 
-    def search_logcat(self, matching_string, begin_time=None):
+    def search_logcat(self,
+                    matching_string,
+                    begin_time=None,
+                    end_time=None,
+                    logcat_path=None):
         """Search logcat message with given string.
 
         Args:
             matching_string: matching_string to search.
+            begin_time: only the lines with time stamps later than begin_time
+                will be searched.
+            end_time: only the lines with time stamps earlier than end_time
+                will be searched.
+            logcat_path: the path of a specific file in which the search should
+                be performed. If None the path will be the default device log
+                path.
 
         Returns:
             A list of dictionaries with full log message, time stamp string,
@@ -785,8 +796,9 @@ class AndroidDevice:
               "datetime_obj": datetime object},
               "message_id": "0853"}]
         """
-        logcat_path = os.path.join(self.device_log_path,
-                                   'adblog_%s_debug.txt' % self.serial)
+        if not logcat_path:
+            logcat_path = os.path.join(self.device_log_path,
+                                    'adblog_%s_debug.txt' % self.serial)
         if not os.path.exists(logcat_path):
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
@@ -796,16 +808,27 @@ class AndroidDevice:
         if not output.stdout or output.exit_status != 0:
             return []
         if begin_time:
-            log_begin_time = acts_logger.epoch_to_log_line_timestamp(
-                begin_time)
-            begin_time = datetime.strptime(log_begin_time,
-                                           "%Y-%m-%d %H:%M:%S.%f")
+            if not isinstance(begin_time, datetime):
+                log_begin_time = acts_logger.epoch_to_log_line_timestamp(
+                    begin_time)
+                begin_time = datetime.strptime(log_begin_time,
+                                            "%Y-%m-%d %H:%M:%S.%f")
+        if end_time:
+            if not isinstance(end_time, datetime):
+                log_end_time = acts_logger.epoch_to_log_line_timestamp(
+                    end_time)
+                end_time = datetime.strptime(log_end_time,
+                                            "%Y-%m-%d %H:%M:%S.%f")
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
         for log in logs:
             time_stamp = log[0]
             time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
+
             if begin_time and time_obj < begin_time:
+                continue
+
+            if end_time and time_obj > end_time:
                 continue
 
             res = re.findall(r'.*\[(\d+)\]', log[1])
@@ -1022,6 +1045,21 @@ class AndroidDevice:
         The $EXTERNAL_STORAGE path on the device. Most commonly set to '/sdcard'
         """
         return self.adb.shell('echo $EXTERNAL_STORAGE')
+
+    def file_exists(self, file_path):
+        """Returns whether a file exists on a device.
+
+        Args:
+            file_path: The path of the file to check for.
+        """
+        cmd = '(test -f %s && echo yes) || echo no' % file_path
+        result = self.adb.shell(cmd)
+        if result == 'yes':
+            return True
+        elif result == 'no':
+            return False
+        raise ValueError('Couldn\'t determine if %s exists. '
+                         'Expected yes/no, got %s' % (file_path, result[cmd]))
 
     def pull_files(self, device_paths, host_path=None):
         """Pull files from devices.

@@ -14,10 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import tempfile
 import logging
-from acts.controllers.monsoon_lib.api.common import MonsoonError
+import tempfile
+
 from acts.controllers import power_metrics
+from acts.controllers.monsoon_lib.api.common import MonsoonError
 
 
 class ResourcesRegistryError(Exception):
@@ -89,6 +90,9 @@ class BasePowerMonitor(object):
     def get_metrics(self, **kwargs):
         raise NotImplementedError()
 
+    def get_waveform(self, **kwargs):
+        raise NotImplementedError()
+
     def teardown(self, **kwargs):
         raise NotImplementedError()
 
@@ -141,7 +145,7 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
         self.monsoon.usb('on')
 
     def measure(self, measurement_args=None, start_time=None,
-                          output_path=None, **__):
+                monsoon_output_path=None, **__):
         if measurement_args is None:
             raise MonsoonError('measurement_args can not be None')
 
@@ -149,11 +153,10 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
             self.monsoon.measure_power(**measurement_args,
                                        output_path=tmon.name)
 
-            if output_path and start_time is not None:
+            if monsoon_output_path and start_time is not None:
                 _write_raw_data_in_standard_format(
                     power_metrics.import_raw_data(tmon.name),
-                    output_path,
-                    start_time)
+                    monsoon_output_path, start_time)
 
     def release_resources(self, **__):
         # nothing to do
@@ -162,20 +165,20 @@ class PowerMonitorMonsoonFacade(BasePowerMonitor):
     def disconnect_usb(self, **__):
         self.monsoon.usb('off')
 
-    def get_battery_waveform(self, monsoon_file_path=None):
-        """Parses a monsoon_file_path to obtain all current (in amps) samples.
+    def get_waveform(self, file_path=None):
+        """Parses a file to obtain all current (in amps) samples.
 
         Args:
-            monsoon_file_path: Path to a monsoon file.
+            file_path: Path to a monsoon file.
 
         Returns:
             A list of tuples in which the first element is a timestamp and the
             second element is the sampled current at that time.
         """
-        if monsoon_file_path is None:
-            raise MonsoonError('monsoon_file_path can not be None')
+        if file_path is None:
+            raise MonsoonError('file_path can not be None')
 
-        return list(power_metrics.import_raw_data(monsoon_file_path))
+        return list(power_metrics.import_raw_data(file_path))
 
     def get_metrics(self, start_time=None, voltage=None, monsoon_file_path=None,
                     timestamps=None, **__):

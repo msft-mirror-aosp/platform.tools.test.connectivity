@@ -2228,3 +2228,429 @@ class CommandInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End AVDTP wrappers"""
+    """Begin Audio wrappers"""
+
+    def do_audio_start_output_save(self, line):
+        """
+        Description: Start audio output save
+
+        Usage:
+          Examples:
+            audio_start_output_save
+        """
+        cmd = "Start audio capture"
+        try:
+            result = self.pri_dut.audio_lib.startOutputSave()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_stop_output_save(self, line):
+        """
+        Description: Stop audio output save
+
+        Usage:
+          Examples:
+            audio_stop_output_save
+        """
+        cmd = "Stop audio capture"
+        try:
+            result = self.pri_dut.audio_lib.stopOutputSave()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_get_output_audio(self, line):
+        """
+        Description: Get the audio output saved to a local file
+
+        Usage:
+          Examples:
+            audio_get_output_audio
+        """
+        cmd = "Get audio capture"
+        try:
+            save_path = "{}/{}".format(self.pri_dut.log_path, "audio.raw")
+            result = self.pri_dut.audio_lib.getOutputAudio(save_path)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End Audio wrappers"""
+    """Begin HFP wrappers"""
+
+    def do_hfp_init(self, line):
+        """
+        Description: Init the HFP component initiate.
+
+        Usage:
+          Examples:
+            hfp_init
+        """
+        cmd = "Initialize HFP proxy"
+        try:
+            result = self.pri_dut.hfp_lib.init()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_remove_service(self, line):
+        """
+        Description: Removes the HFP service in use.
+
+        Usage:
+          Examples:
+            hfp_remove_service
+        """
+        cmd = "Remove HFP service"
+        try:
+            result = self.pri_dut.hfp_lib.removeService()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_list_peers(self, line):
+        """
+        Description: List all HFP Hands-Free peers connected to the DUT.
+
+        Input(s):
+
+        Usage:
+          Examples:
+            hfp_list_peers
+        """
+        cmd = "Lists connected peers"
+        try:
+            result = self.pri_dut.hfp_lib.listPeers()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_active_peer(self, line):
+        """
+        Description: Set the active HFP Hands-Free peer for the DUT.
+
+        Input(s):
+            peer_id: The id of the peer to be set active.
+
+        Usage:
+          Examples:
+            hfp_set_active_peer <peer_id>
+        """
+        cmd = "Set the active peer"
+        try:
+            peer_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setActivePeer(peer_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_list_calls(self, line):
+        """
+        Description: List all calls known to the sl4f component on the DUT.
+
+        Input(s):
+
+        Usage:
+          Examples:
+            hfp_list_calls
+        """
+        cmd = "Lists all calls"
+        try:
+            result = self.pri_dut.hfp_lib.listCalls()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_incoming_call(self, line):
+        """
+        Description: Simulate an incoming call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the incoming call
+
+        Usage:
+          Examples:
+            hfp_incoming_call <remote>
+            hfp_incoming_call 14085555555
+        """
+        cmd = "Simulates an incoming call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateIncomingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_outgoing_call(self, line):
+        """
+        Description: Simulate an outgoing call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the outgoing call
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <remote>
+        """
+        cmd = "Simulates an outgoing call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateOutgoingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_active(self, line):
+        """
+        Description: Set the specified call to the "OngoingActive" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to active"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallActive(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_held(self, line):
+        """
+        Description: Set the specified call to the "OngoingHeld" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to held"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallHeld(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_terminated(self, line):
+        """
+        Description: Set the specified call to the "Terminated" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to terminated"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallTerminated(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_call_transferred_to_ag(self, line):
+        """
+        Description: Set the specified call to the "TransferredToAg" state.
+
+        Input(s):
+            call_id: The unique id of the call.
+
+        Usage:
+          Examples:
+            hfp_outgoing_call <call_id>
+        """
+        cmd = "Set the specified call to TransferredToAg"
+        try:
+            call_id = int(line.strip())
+            result = self.pri_dut.hfp_lib.setCallTransferredToAg(call_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_speaker_gain(self, line):
+        """
+        Description: Set the active peer's speaker gain.
+
+        Input(s):
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_speaker_gain <value>
+        """
+        cmd = "Set the active peer's speaker gain"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setSpeakerGain(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_microphone_gain(self, line):
+        """
+        Description: Set the active peer's microphone gain.
+
+        Input(s):
+            value: The gain value to set. Must be between 0-15 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_microphone_gain <value>
+        """
+        cmd = "Set the active peer's microphone gain"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setMicrophoneGain(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_service_available(self, line):
+        """
+        Description: Sets the simulated network service status reported by the call manager.
+
+        Input(s):
+            value: "true" to set the network connection to available.
+
+        Usage:
+          Examples:
+            hfp_set_service_available <value>
+            hfp_set_service_available true
+            hfp_set_service_available false
+        """
+        cmd = "Sets the simulated network service status reported by the call manager"
+        try:
+            value = line.strip() == "true"
+            result = self.pri_dut.hfp_lib.setServiceAvailable(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_roaming(self, line):
+        """
+        Description: Sets the simulated roaming status reported by the call manager.
+
+        Input(s):
+            value: "true" to set the network connection to roaming.
+
+        Usage:
+          Examples:
+            hfp_set_roaming <value>
+            hfp_set_roaming true
+            hfp_set_roaming false
+        """
+        cmd = "Sets the simulated roaming status reported by the call manager"
+        try:
+            value = line.strip() == "true"
+            result = self.pri_dut.hfp_lib.setRoaming(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_signal_strength(self, line):
+        """
+        Description: Sets the simulated signal strength reported by the call manager.
+
+        Input(s):
+            value: The signal strength value to set. Must be between 0-5 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_signal_strength <value>
+            hfp_set_signal_strength 0
+            hfp_set_signal_strength 3
+            hfp_set_signal_strength 5
+        """
+        cmd = "Sets the simulated signal strength reported by the call manager"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setSignalStrength(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_subscriber_number(self, line):
+        """
+        Description: Sets the subscriber number reported by the call manager.
+
+        Input(s):
+            value: The subscriber number to set. Maximum length 128 characters.
+
+        Usage:
+          Examples:
+            hfp_set_subscriber_number <value>
+            hfp_set_subscriber_number 14085555555
+        """
+        cmd = "Sets the subscriber number reported by the call manager"
+        try:
+            value = line.strip()
+            result = self.pri_dut.hfp_lib.setSubscriberNumber(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_operator(self, line):
+        """
+        Description: Sets the operator value reported by the call manager.
+
+        Input(s):
+            value: The operator value to set. Maximum length 16 characters.
+
+        Usage:
+          Examples:
+            hfp_set_operator <value>
+            hfp_set_operator GoogleFi
+        """
+        cmd = "Sets the operator value reported by the call manager"
+        try:
+            value = line.strip()
+            result = self.pri_dut.hfp_lib.setOperator(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_nrec_support(self, line):
+        """
+        Description: Sets the noise reduction/echo cancelation support reported by the call manager.
+
+        Input(s):
+            value: The nrec support bool.
+
+        Usage:
+          Examples:
+            hfp_set_nrec_support <value>
+            hfp_set_nrec_support true
+            hfp_set_nrec_support false
+        """
+        cmd = "Sets the noise reduction/echo cancelation support reported by the call manager"
+        try:
+            value = line.strip() == "true"
+            result = self.pri_dut.hfp_lib.setNrecSupport(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_get_state(self, line):
+        """
+        Description: Get the call manager's complete state
+
+        Usage:
+          Examples:
+            hfp_get_state
+        """
+        cmd = "Get the call manager's state"
+        try:
+            result = self.pri_dut.hfp_lib.getState()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+    """End HFP wrappers"""

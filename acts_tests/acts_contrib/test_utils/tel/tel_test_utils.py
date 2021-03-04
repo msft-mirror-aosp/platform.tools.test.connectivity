@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from datetime import datetime
 from future import standard_library
 standard_library.install_aliases()
 
@@ -186,6 +187,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_mes
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
+from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import adb_shell_ping
 from acts.utils import load_config
 from acts.utils import start_standing_subprocess
@@ -1404,6 +1406,7 @@ def hangup_call(log, ad, is_emergency=False):
     """
     # short circuit in case no calls are active
     if not ad.droid.telecomIsInCall():
+        ad.log.warning("No active call exists.")
         return True
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallState()
@@ -7916,7 +7919,7 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
         start_nexuslogger(ad)
         # Find the log mask path
         for path in (DEFAULT_QXDM_LOG_PATH, "/data/diag_logs",
-                     "/vendor/etc/mdlog/"):
+                     "/vendor/etc/mdlog/", "/vendor/etc/modem/"):
             out = ad.adb.shell(
                 "find %s -type f -iname %s" % (path, mask), ignore_status=True)
             if out and "No such" not in out and "Permission denied" not in out:
@@ -7925,9 +7928,10 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
                 else:
                     setattr(ad, "qxdm_log_path", path)
                 return out.split("\n")[0]
-        if mask in ad.adb.shell("ls /vendor/etc/mdlog/"):
-            setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
-            return "%s/%s" % ("/vendor/etc/mdlog/", mask)
+        for mask_file in ("/vendor/etc/mdlog/", "/vendor/etc/modem/"):
+            if mask in ad.adb.shell("ls %s" % mask_file, ignore_status=True):
+                setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
+                return "%s/%s" % (mask_file, mask)
     else:
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
@@ -7965,6 +7969,11 @@ def set_qxdm_logger_command(ad, mask=None):
                                   (mask_path, output_path))
         return True
 
+def configure_sdm_logs(ad):
+    if not getattr(ad, "sdm_log", True): return
+     # Disable any modem logging already running
+    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
+    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
 
 def start_sdm_logger(ad):
     """Start SDM logger."""
@@ -8232,6 +8241,11 @@ def start_adb_tcpdump(ad,
             else:
                 cmds.append("adb -s %s shell tcpdump -i %s -s0 -w %s" %
                             (ad.serial, intf, log_file_name))
+    if not gutils.check_chipset_vendor_by_qualcomm(ad):
+        log_file_name = ("/data/local/tmp/tcpdump/tcpdump_%s_any_%s_%s.pcap"
+                         % (ad.serial, test_name, begin_time))
+        cmds.append("adb -s %s shell nohup tcpdump -i any -s0 -w %s" %
+                    (ad.serial, log_file_name))
     for cmd in cmds:
         ad.log.info(cmd)
         try:
@@ -11082,3 +11096,35 @@ def wait_for_network_service(
         else:
             return False
     return False
+
+def wait_for_log(ad, pattern, begin_time=None, end_time=None, max_wait_time=120):
+    """Wait for logcat logs matching given pattern. This function searches in
+    logcat for strings matching given pattern by using search_logcat per second
+    until max_wait_time reaches.
+
+    Args:
+        ad: android device object
+        pattern: pattern to be searched in grep format
+        begin_time: only the lines in logcat with time stamps later than
+            begin_time will be searched.
+        end_time: only the lines in logcat with time stamps earlier than
+            end_time will be searched.
+        max_wait_time: timeout of this function
+
+    Returns:
+        All matched lines will be returned. If no line matches the given pattern
+        None will be returned.
+    """
+    start_time = datetime.now()
+    while True:
+        ad.log.info(
+            '====== Searching logcat for "%s" ====== ', pattern)
+        res = ad.search_logcat(
+            pattern, begin_time=begin_time, end_time=end_time)
+        if res:
+            return res
+        time.sleep(1)
+        stop_time = datetime.now()
+        passed_time = (stop_time - start_time).total_seconds()
+        if passed_time > max_wait_time:
+            return

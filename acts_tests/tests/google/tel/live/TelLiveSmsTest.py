@@ -21,18 +21,13 @@ import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_defines import GEN_3G
-from acts_contrib.test_utils.tel.tel_defines import GEN_4G
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
-from acts_contrib.test_utils.tel.tel_defines import RAT_3G
 from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
@@ -42,14 +37,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
-from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import setup_sim
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import \
     sms_in_collision_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import \
@@ -57,7 +46,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import \
 from acts_contrib.test_utils.tel.tel_video_utils import phone_setup_video
 from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -66,13 +54,20 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwl
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_data_general
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan_cellular_preferred
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mo
+from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mt
+from acts_contrib.test_utils.tel.tel_sms_utils import _long_sms_test_mo
+from acts_contrib.test_utils.tel.tel_sms_utils import _long_sms_test_mt
+from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo
+from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt
+from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mo
+from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mt
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts.utils import rand_ascii_str
 
 SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
@@ -89,10 +84,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         # as the active call help device.
         self.caller = self.android_devices[0]
         self.callee = self.android_devices[1]
-        self.number_of_devices = 2
         self.message_lengths = (50, 160, 180)
-        self.long_message_lengths = (800, 1600)
-        self.long_message_lengths_of_jp_carriers = (800, 1530)
 
         is_roaming = False
         for ad in self.android_devices:
@@ -109,94 +101,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
-
-    def _sms_test(self, ads):
-        """Test SMS between two phones.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        for length in self.message_lengths:
-            message_array = [rand_ascii_str(length)]
-            if not sms_send_receive_verify(self.log, ads[0], ads[1],
-                                           message_array):
-                ads[0].log.warning("SMS of length %s test failed", length)
-                return False
-            else:
-                ads[0].log.info("SMS of length %s test succeeded", length)
-        self.log.info("SMS test of length %s characters succeeded.",
-                      self.message_lengths)
-        return True
-
-    def _long_sms_test(self, ads):
-        """Test SMS between two phones.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        sender_message_sub_id = get_outgoing_message_sub_id(ads[0])
-        sender_mcc = ads[0].telephony["subscription"][sender_message_sub_id]["mcc"]
-        long_message_lengths = self.long_message_lengths
-        if str(sender_mcc) in ["440", "441"]:
-            long_message_lengths = self.long_message_lengths_of_jp_carriers
-
-        for length in long_message_lengths:
-            message_array = [rand_ascii_str(length)]
-            if not sms_send_receive_verify(self.log, ads[0], ads[1],
-                                           message_array):
-                ads[0].log.warning("SMS of length %s test failed", length)
-                return False
-            else:
-                ads[0].log.info("SMS of length %s test succeeded", length)
-                time.sleep(30)
-        self.log.info("SMS test of length %s characters succeeded.",
-                      self.message_lengths)
-        return True
-
-    def _mms_test(self, ads, expected_result=True):
-        """Test MMS between two phones.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        for length in self.message_lengths:
-            message_array = [("Test Message", rand_ascii_str(length), None)]
-            if not mms_send_receive_verify(
-                    self.log,
-                    ads[0],
-                    ads[1],
-                    message_array,
-                    expected_result=expected_result):
-                self.log.warning("MMS of body length %s test failed", length)
-                return False
-            else:
-                self.log.info("MMS of body length %s test succeeded", length)
-        self.log.info("MMS test of body lengths %s succeeded",
-                      self.message_lengths)
-        return True
-
-    def _long_mms_test(self, ads):
-        """Test MMS between two phones.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        for length in self.long_message_lengths:
-            message_array = [("Test Message", rand_ascii_str(length), None)]
-            if not mms_send_receive_verify(self.log, ads[0], ads[1],
-                                           message_array):
-                self.log.warning("MMS of body length %s test failed", length)
-                return False
-            else:
-                self.log.info("MMS of body length %s test succeeded", length)
-                time.sleep(30)
-        self.log.info("MMS test of body lengths %s succeeded",
-                      self.message_lengths)
-        return True
 
     def _mms_test_after_call_hangup(self, ads):
         """Test MMS send out after call hang up.
@@ -224,32 +128,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.info("MMS is send and received successfully in call.")
             return True
 
-    def _sms_test_mo(self, ads):
-        return self._sms_test([ads[0], ads[1]])
-
-    def _sms_test_mt(self, ads):
-        return self._sms_test([ads[1], ads[0]])
-
-    def _mms_test_mo(self, ads, expected_result=True):
-        return self._mms_test(
-            [ads[0], ads[1]], expected_result=expected_result)
-
-    def _mms_test_mt(self, ads, expected_result=True):
-        return self._mms_test(
-            [ads[1], ads[0]], expected_result=expected_result)
-
-    def _long_sms_test_mo(self, ads):
-        return self._long_sms_test([ads[0], ads[1]])
-
-    def _long_sms_test_mt(self, ads):
-        return self._long_sms_test([ads[1], ads[0]])
-
-    def _long_mms_test_mo(self, ads):
-        return self._long_mms_test([ads[0], ads[1]])
-
-    def _long_mms_test_mt(self, ads):
-        return self._long_mms_test([ads[1], ads[0]])
-
     def _mms_test_mo_after_call_hangup(self, ads):
         return self._mms_test_after_call_hangup([ads[0], ads[1]])
 
@@ -267,7 +145,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -284,7 +162,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mt(ads):
+        if not _sms_test_mt(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -302,7 +180,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
 
         if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mo(ads)
+            return _mms_test_mo(self.log, ads)
         else:
             return self._mms_test_mo_after_call_hangup(ads)
 
@@ -318,7 +196,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
 
         if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mt(ads)
+            return _mms_test_mt(self.log, ads)
         else:
             return self._mms_test_mt_after_call_hangup(ads)
 
@@ -333,7 +211,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -350,7 +228,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mt(ads):
+        if not _sms_test_mt(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -368,7 +246,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
 
         if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mo(ads)
+            return _mms_test_mo(self.log, ads)
         else:
             return self._mms_test_mo_after_call_hangup(ads)
 
@@ -384,7 +262,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
 
         if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mt(ads)
+            return _mms_test_mt(self.log, ads)
         else:
             return self._mms_test_mt_after_call_hangup(ads)
 
@@ -399,7 +277,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -416,7 +294,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mt(ads):
+        if not _sms_test_mt(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -434,7 +312,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
 
         if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mo(ads)
+            return _mms_test_mo(self.log, ads)
         else:
             return self._mms_test_mo_after_call_hangup(ads)
 
@@ -450,7 +328,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
 
         if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mt(ads)
+            return _mms_test_mt(self.log, ads)
         else:
             return self._mms_test_mt_after_call_hangup(ads)
 
@@ -503,6 +381,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.message_lengths)
         return True
 
+    """ Tests Begin """
+
     @test_tracker_info(uuid="480b6ba2-1e5f-4a58-9d88-9b75c8fab1b6")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_general(self):
@@ -525,7 +405,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="aa87fe73-8236-44c7-865c-3fe3b733eeb4")
     @TelephonyBaseTest.tel_test_wrap
@@ -548,7 +428,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="bb8e1a06-a4b5-4f9b-9ab2-408ace9a1deb")
     @TelephonyBaseTest.tel_test_wrap
@@ -572,7 +452,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="f2779e1e-7d09-43f0-8b5c-87eae5d146be")
     @TelephonyBaseTest.tel_test_wrap
@@ -595,7 +475,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="2c229a4b-c954-4ba3-94ba-178dc7784d03")
     @TelephonyBaseTest.tel_test_wrap
@@ -619,7 +499,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="17fafc41-7e12-47ab-a4cc-fb9bd94e79b9")
     @TelephonyBaseTest.tel_test_wrap
@@ -643,7 +523,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="b4919317-18b5-483c-82f4-ced37a04f28d")
     @TelephonyBaseTest.tel_test_wrap
@@ -667,7 +547,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="cd56bb8a-0794-404d-95bd-c5fd00f4b35a")
     @TelephonyBaseTest.tel_test_wrap
@@ -691,7 +571,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="b39fbc30-9cc2-4d86-a9f4-6f0c1dd0a905")
     @TelephonyBaseTest.tel_test_wrap
@@ -716,7 +596,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="b158a0a7-9697-4b3b-8d5b-f9b6b6bc1c03")
     @TelephonyBaseTest.tel_test_wrap
@@ -742,7 +622,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="f094e3da-2523-4f92-a1f3-7cf9edcff850")
     @TelephonyBaseTest.tel_test_wrap
@@ -766,7 +646,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="2186e152-bf83-4d6e-93eb-b4bf9ae2d76e")
     @TelephonyBaseTest.tel_test_wrap
@@ -791,7 +671,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="e716c678-eee9-4a0d-a9cd-ca9eae4fea51")
     @TelephonyBaseTest.tel_test_wrap
@@ -816,7 +696,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="e864a99e-d935-4bd9-95f6-8183cdd3d760")
     @TelephonyBaseTest.tel_test_wrap
@@ -841,7 +721,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="07cdfe26-9021-4af3-8bf6-1abd0cb9e932")
     @TelephonyBaseTest.tel_test_wrap
@@ -865,7 +745,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return self._long_sms_test_mo(ads)
+        return _long_sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="740efe0d-fef9-42bc-a732-fe79a3485426")
     @TelephonyBaseTest.tel_test_wrap
@@ -890,7 +770,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_sms_test_mt(ads)
+        return _long_sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="b0d27de3-1a98-48da-a9c9-c20c8587f256")
     @TelephonyBaseTest.tel_test_wrap
@@ -915,7 +795,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mo(ads)
+        return _long_mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="fd5a1583-94d2-4b3a-b613-a0a9745daa25")
     @TelephonyBaseTest.tel_test_wrap
@@ -940,7 +820,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mt(ads)
+        return _long_mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="c6cfba55-6cde-41cd-93bb-667c317a0127")
     @TelephonyBaseTest.tel_test_wrap
@@ -967,7 +847,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="83c5dd99-f2fe-433d-9775-80a36d0d493b")
     @TelephonyBaseTest.tel_test_wrap
@@ -994,7 +874,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
 
     @test_tracker_info(uuid="54a68d6a-dae7-4fe6-b2bb-7c73151a4a73")
@@ -1020,7 +900,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="d0adcd69-37fc-49d1-8dd3-c03dd163fb25")
     @TelephonyBaseTest.tel_test_wrap
@@ -1045,7 +925,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="8d454a25-a1e5-4872-8193-d435a84d54fa")
     @TelephonyBaseTest.tel_test_wrap
@@ -1070,7 +950,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="79b8239e-9e6a-4781-942b-2df5b060718d")
     @TelephonyBaseTest.tel_test_wrap
@@ -1095,7 +975,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="5b9e1195-1e42-4405-890f-631e8c58d0c2")
     @TelephonyBaseTest.tel_test_wrap
@@ -1120,7 +1000,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_sms_test_mo(ads)
+        return _long_sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="c328cbe7-1899-4ca8-af1c-5eb05683a322")
     @TelephonyBaseTest.tel_test_wrap
@@ -1145,7 +1025,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_sms_test_mt(ads)
+        return _long_sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="a843c2f7-e4de-4b99-b3a9-f05ecda5fe73")
     @TelephonyBaseTest.tel_test_wrap
@@ -1170,7 +1050,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mo(ads)
+        return _long_mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="26dcba4d-7ddb-438d-84e7-0e754178b5ef")
     @TelephonyBaseTest.tel_test_wrap
@@ -1195,7 +1075,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mt(ads)
+        return _long_mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="c97687e2-155a-4cf3-9f51-22543b89d53e")
     @TelephonyBaseTest.tel_test_wrap
@@ -1219,7 +1099,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="e2e01a47-2b51-4d00-a7b2-dbd3c8ffa6ae")
     @TelephonyBaseTest.tel_test_wrap
@@ -1242,7 +1122,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="90fc6775-de19-49d1-8b8e-e3bc9384c733")
     @TelephonyBaseTest.tel_test_wrap
@@ -1267,7 +1147,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="274572bb-ec9f-4c30-aab4-1f4c3f16b372")
     @TelephonyBaseTest.tel_test_wrap
@@ -1292,7 +1172,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="44392814-98dd-406a-ae82-5c39e2d082f3")
     @TelephonyBaseTest.tel_test_wrap
@@ -1316,7 +1196,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_sms_test_mo(ads)
+        return _long_sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="0f8358a5-a7d5-4dfa-abe0-99fb8b10d48d")
     @TelephonyBaseTest.tel_test_wrap
@@ -1339,7 +1219,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return self._long_sms_test_mt(ads)
+        return _long_sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="18edde2b-7db9-40f4-96c4-3286a56d090b")
     @TelephonyBaseTest.tel_test_wrap
@@ -1364,7 +1244,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mo(ads)
+        return _long_mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="49805d08-6f1f-4c90-9bf4-e9acd6f63640")
     @TelephonyBaseTest.tel_test_wrap
@@ -1389,7 +1269,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mt(ads)
+        return _long_mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="c7349fdf-a376-4846-b466-1f329bd1557f")
     @TelephonyBaseTest.tel_test_wrap
@@ -1416,7 +1296,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="1affab34-e03c-49dd-9062-e9ed8eac406b")
     @TelephonyBaseTest.tel_test_wrap
@@ -1444,7 +1324,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="7ee57edb-2962-4d20-b6eb-79cebce91fff")
     @TelephonyBaseTest.tel_test_wrap
@@ -1460,11 +1340,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
+
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -1476,7 +1354,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -1496,11 +1374,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
+
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -1512,7 +1388,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mt(ads):
+        if not _sms_test_mt(self.log, ads):
             self.log.error("SMS test fail.")
             return False
         return True
@@ -1531,11 +1407,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
+
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -1547,7 +1421,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mo(ads):
+        if not _mms_test_mo(self.log, ads):
             self.log.error("MMS test fail.")
             return False
 
@@ -1567,11 +1441,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
+
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
@@ -1583,7 +1455,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mt(ads):
+        if not _mms_test_mt(self.log, ads):
             self.log.error("MMS test fail.")
             return False
 
@@ -1604,11 +1476,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
+
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
@@ -1622,7 +1492,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mo(ads):
+        if not _mms_test_mo(self.log, ads):
             self.log.error("MMS test fail.")
             return False
 
@@ -1643,11 +1513,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        if not provision_both_devices_for_volte(self.log, ads):
             return False
+
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
@@ -1661,74 +1529,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mt(ads):
+        if not _mms_test_mt(self.log, ads):
             self.log.error("MMS test fail.")
-            return False
-
-        return True
-
-    @test_tracker_info(uuid="a5b95867-133f-4576-8a44-bd057ee0188f")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_mt_in_call_volte_wifi_5g_nsa(self):
-        """ Test MO MMS during a MO VoLTE call over 5G NSA.
-
-        Make sure PhoneA/B are in 5G NSA (with VoLTE).
-        Make sure PhoneA/B are able to make/receive call.
-        Connect PhoneA/B to Wifi.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
-        Make sure PhoneA/B are in 5G NSA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
-                                                           (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        # Mode Pref
-        tasks = [(set_preferred_mode_for_5g, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Failed to set preferred network mode.")
-            return False
-
-        # Attach nsa5g
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        tasks = [(ensure_wifi_connected, (self.log, ad, self.wifi_network_ssid,
-                                          self.wifi_network_pass))
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to connect to wifi.")
-            return False
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
-            return False
-
-        if not self._mms_test_mo(ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        # Check if phoneA/B are attached to nsa5g after sending mms.
-        tasks = [(is_current_network_5g_nsa, [ad])
-                 for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone not attached on 5G NSA after call.")
             return False
 
         return True
@@ -2046,7 +1848,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="4d4b0b7b-bf00-44f6-a0ed-23b438c30fc2")
     @TelephonyBaseTest.tel_test_wrap
@@ -2073,7 +1875,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="264e2557-e18c-41c0-8d99-49cee3fe6f07")
     @TelephonyBaseTest.tel_test_wrap
@@ -2100,7 +1902,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="330db618-f074-4bfc-bf5e-78939fbee532")
     @TelephonyBaseTest.tel_test_wrap
@@ -2127,7 +1929,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="875ce520-7a09-4032-8e88-965ce143c1f5")
     @TelephonyBaseTest.tel_test_wrap
@@ -2154,7 +1956,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_sms_test_mo(ads)
+        return _long_sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="a317a1b3-16c8-4c2d-bbfd-aebcc0897499")
     @TelephonyBaseTest.tel_test_wrap
@@ -2181,7 +1983,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_sms_test_mt(ads)
+        return _long_sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="d692c439-6e96-45a6-be0f-1ff81226416c")
     @TelephonyBaseTest.tel_test_wrap
@@ -2208,7 +2010,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mo(ads)
+        return _long_mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="a0958a1b-23ea-4353-9af6-7bc5d6a0a3d2")
     @TelephonyBaseTest.tel_test_wrap
@@ -2235,7 +2037,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._long_mms_test_mt(ads)
+        return _long_mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="94bb8297-f646-4793-9d97-6f82a706127a")
     @TelephonyBaseTest.tel_test_wrap
@@ -2262,7 +2064,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="e4acce6a-75ae-45c1-be85-d3a2eb2da7c2")
     @TelephonyBaseTest.tel_test_wrap
@@ -2289,7 +2091,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="6c003c28-5712-4456-89cb-64d417ab2ce4")
     @TelephonyBaseTest.tel_test_wrap
@@ -2316,7 +2118,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="0ac5c8ff-83e5-49f2-ba71-ebb283feed9e")
     @TelephonyBaseTest.tel_test_wrap
@@ -2342,7 +2144,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="075933a2-df7f-4374-a405-92f96bcc7770")
     @TelephonyBaseTest.tel_test_wrap
@@ -2370,7 +2172,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="637af228-29fc-4b74-a963-883f66ddf080")
     @TelephonyBaseTest.tel_test_wrap
@@ -2398,7 +2200,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="502aba0d-8895-4807-b394-50a44208ecf7")
     @TelephonyBaseTest.tel_test_wrap
@@ -2426,7 +2228,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="235bfdbf-4275-4d89-99f5-41b5b7de8345")
     @TelephonyBaseTest.tel_test_wrap
@@ -2453,7 +2255,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="e5a31b94-1cb6-4770-a2bc-5a0ddba51502")
     @TelephonyBaseTest.tel_test_wrap
@@ -2491,7 +2293,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="d6d30cc5-f75b-42df-b517-401456ee8466")
     @TelephonyBaseTest.tel_test_wrap
@@ -2529,7 +2331,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="a98a5a97-3864-4ff8-9085-995212eada20")
     @TelephonyBaseTest.tel_test_wrap
@@ -2567,7 +2369,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="0464a87b-d45b-4b03-9895-17ece360a796")
     @TelephonyBaseTest.tel_test_wrap
@@ -2605,7 +2407,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="029e05cd-df6b-4a82-8402-77fc6eadf66f")
     @TelephonyBaseTest.tel_test_wrap
@@ -2643,7 +2445,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="c3c47a68-a839-4470-87f6-e85496cfab23")
     @TelephonyBaseTest.tel_test_wrap
@@ -2681,7 +2483,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="4c6cd913-4aca-4f2b-b33b-1efe0a7dc11d")
     @TelephonyBaseTest.tel_test_wrap
@@ -2719,7 +2521,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="5b667ca1-cafd-47d4-86dc-8b87232ddcfa")
     @TelephonyBaseTest.tel_test_wrap
@@ -2757,7 +2559,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="9f1933bb-c4cb-4655-8655-327c1f38e8ee")
     @TelephonyBaseTest.tel_test_wrap
@@ -2791,7 +2593,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Failed to setup a call")
             return False
 
-        return self._sms_test_mo(ads)
+        return _sms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="0a07e737-4862-4492-9b48-8d94799eab91")
     @TelephonyBaseTest.tel_test_wrap
@@ -2825,7 +2627,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Failed to setup a call")
             return False
 
-        return self._sms_test_mt(ads)
+        return _sms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="55d70548-6aee-40e9-b94d-d10de84fb50f")
     @TelephonyBaseTest.tel_test_wrap
@@ -2859,7 +2661,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Failed to setup a call")
             return False
 
-        return self._mms_test_mo(ads)
+        return _mms_test_mo(self.log, ads)
 
     @test_tracker_info(uuid="75f97c9a-4397-42f1-bb00-8fc6d04fdf6d")
     @TelephonyBaseTest.tel_test_wrap
@@ -2893,7 +2695,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log.error("Failed to setup a call")
             return False
 
-        return self._mms_test_mt(ads)
+        return _mms_test_mt(self.log, ads)
 
     @test_tracker_info(uuid="2a72ecc6-702d-4add-a7a2-8c1001628bb6")
     @TelephonyBaseTest.tel_test_wrap
@@ -2929,7 +2731,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mo(ads):
+        if not _sms_test_mo(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -2969,7 +2771,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._sms_test_mt(ads):
+        if not _sms_test_mt(self.log, ads):
             self.log.error("SMS test fail.")
             return False
 
@@ -3109,7 +2911,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            return self._sms_test_mo(ads)
+            return _sms_test_mo(self.log, ads)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
@@ -3139,7 +2941,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            return self._sms_test_mt(ads)
+            return _sms_test_mt(self.log, ads)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
@@ -3174,7 +2976,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
             log_msg = "expecting successful mms receive" if (
                 expected_result) else "expecting mms receive failure"
-            if not self._mms_test_mo(ads, expected_result=expected_result):
+            if not _mms_test_mo(self.log, ads, expected_result=expected_result):
                 ads[0].log.error("Mms test failed, %s", log_msg)
                 return False
             else:
@@ -3212,7 +3014,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
             log_msg = "expecting successful mms receive" if (
                 expected_result) else "expecting mms receive failure"
-            if not self._mms_test_mt(ads, expected_result=expected_result):
+            if not _mms_test_mt(self.log, ads, expected_result=expected_result):
                 ads[0].log.error("Mms test failed, %s", log_msg)
                 return False
             else:
@@ -3272,3 +3074,4 @@ class TelLiveSmsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_in_collision_when_power_off_test(ads)
+

@@ -15,6 +15,9 @@
 #   limitations under the License.
 import logging
 import os
+import re
+import time
+import urllib.request
 
 from acts import asserts
 from acts import signals
@@ -24,16 +27,12 @@ from acts.controllers.adb_lib.error import AdbError
 from acts.utils import start_standing_subprocess
 from acts.utils import stop_standing_subprocess
 from acts_contrib.test_utils.net import connectivity_const as cconst
-from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from scapy.all import get_if_list
 
-import os
-import re
-import time
-import urllib.request
 
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
@@ -42,13 +41,14 @@ TCPDUMP_PATH = "/data/local/tmp/"
 USB_CHARGE_MODE = "svc usb setFunctions"
 USB_TETHERING_MODE = "svc usb setFunctions rndis"
 DEVICE_IP_ADDRESS = "ip address"
+LOCALHOST = "192.168.1.1"
 
 GCE_SSH = "gcloud compute ssh "
 GCE_SCP = "gcloud compute scp "
 
 
 def verify_lte_data_and_tethering_supported(ad):
-    """Verify if LTE data is enabled and tethering supported"""
+    """Verify if LTE data is enabled and tethering supported."""
     wutils.wifi_toggle_state(ad, False)
     ad.droid.telephonyToggleDataConnection(True)
     wait_for_cell_data_connection(ad.log, ad, True)
@@ -63,7 +63,11 @@ def verify_lte_data_and_tethering_supported(ad):
 
 def set_chrome_browser_permissions(ad):
     """Set chrome browser start with no-first-run verification.
+
     Give permission to read from and write to storage
+
+    Args:
+        ad: android device object
     """
     commands = ["pm grant com.android.chrome "
                 "android.permission.READ_EXTERNAL_STORAGE",
@@ -81,12 +85,14 @@ def set_chrome_browser_permissions(ad):
 
 
 def verify_ping_to_vpn_ip(ad, vpn_ping_addr):
-    """ Verify if IP behind VPN server is pingable.
+    """Verify if IP behind VPN server is pingable.
+
     Ping should pass, if VPN is connected.
     Ping should fail, if VPN is disconnected.
 
     Args:
-      ad: android device object
+        ad: android device object
+        vpn_ping_addr: target ping addr
     """
     ping_result = None
     pkt_loss = "100% packet loss"
@@ -99,7 +105,7 @@ def verify_ping_to_vpn_ip(ad, vpn_ping_addr):
 
 
 def legacy_vpn_connection_test_logic(ad, vpn_profile, vpn_ping_addr):
-    """ Test logic for each legacy VPN connection
+    """Test logic for each legacy VPN connection.
 
     Steps:
       1. Generate profile for the VPN type
@@ -111,8 +117,9 @@ def legacy_vpn_connection_test_logic(ad, vpn_profile, vpn_ping_addr):
       7. Verify that ping to IP behind VPN fails
 
     Args:
-      1. ad: Android device object
-      2. VpnProfileType (1 of the 6 types supported by Android)
+        ad: Android device object
+        vpn_profile: object contains attribute for create vpn profile
+        vpn_ping_addr: addr to verify vpn connection
     """
     # Wait for sometime so that VPN server flushes all interfaces and
     # connections after graceful termination
@@ -149,7 +156,7 @@ def legacy_vpn_connection_test_logic(ad, vpn_profile, vpn_ping_addr):
 
 def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
                         ipsec_server_type, log_path):
-    """ Download the certificates from VPN server and push to sdcard of DUT
+    """Download the certificates from VPN server and push to sdcard of DUT.
 
     Args:
       ad: android device object
@@ -165,12 +172,15 @@ def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
     url = "http://%s%s%s" % (vpn_server_addr,
                              vpn_params['cert_path_vpnserver'],
                              vpn_params['client_pkcs_file_name'])
+    logging.info("URL is: %s" % url)
+    if vpn_server_addr == LOCALHOST:
+        ad.droid.httpDownloadFile(url, "/sdcard/")
+        return vpn_params['client_pkcs_file_name']
+
     local_cert_name = "%s_%s_%s" % (vpn_type.name,
                                     ipsec_server_type,
                                     vpn_params['client_pkcs_file_name'])
-
     local_file_path = os.path.join(log_path, local_cert_name)
-    logging.info("URL is: %s" % url)
     try:
         ret = urllib.request.urlopen(url)
         with open(local_file_path, "wb") as f:
@@ -188,7 +198,7 @@ def generate_legacy_vpn_profile(ad,
                                 vpn_server_addr,
                                 ipsec_server_type,
                                 log_path):
-    """ Generate legacy VPN profile for a VPN
+    """Generate legacy VPN profile for a VPN.
 
     Args:
       ad: android device object
@@ -223,13 +233,13 @@ def generate_legacy_vpn_profile(ad,
                                         ipsec_server_type,
                                         log_path)
         vpn_profile[VPN_CONST.IPSEC_USER_CERT] = cert_name.split('.')[0]
-        vpn_profile[VPN_CONST.IPSEC_CA_CERT] = cert_name.split('.')[0]
         ad.droid.installCertificate(vpn_profile, cert_name,
                                     vpn_params['cert_password'])
     else:
         vpn_profile[VPN_CONST.MPPE] = "mppe"
 
     return vpn_profile
+
 
 def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
     """Generate VPN profile for IKEv2 VPN.
@@ -276,8 +286,9 @@ def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
 
     return vpn_profile
 
+
 def start_tcpdump(ad, test_name):
-    """Start tcpdump on all interfaces
+    """Start tcpdump on all interfaces.
 
     Args:
         ad: android device object.
@@ -299,13 +310,15 @@ def start_tcpdump(ad, test_name):
 
     return None
 
+
 def stop_tcpdump(ad,
                  proc,
                  test_name,
                  pull_dump=True,
                  adb_pull_timeout=adb.DEFAULT_ADB_PULL_TIMEOUT):
-    """Stops tcpdump on any iface
-       Pulls the tcpdump file in the tcpdump dir if necessary
+    """Stops tcpdump on any iface.
+
+       Pulls the tcpdump file in the tcpdump dir if necessary.
 
     Args:
         ad: android device object.
@@ -328,14 +341,15 @@ def stop_tcpdump(ad,
         log_path = os.path.join(ad.device_log_path, "TCPDUMP_%s" % ad.serial)
         os.makedirs(log_path, exist_ok=True)
         ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path),
-                timeout=adb_pull_timeout)
+                    timeout=adb_pull_timeout)
         ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
         file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
         return "%s/%s" % (log_path, file_name)
     return None
 
+
 def start_tcpdump_gce_server(ad, test_name, dest_port, gce):
-    """ Start tcpdump on gce server
+    """Start tcpdump on gce server.
 
     Args:
         ad: android device object
@@ -368,8 +382,9 @@ def start_tcpdump_gce_server(ad, test_name, dest_port, gce):
         raise signals.TestFailure("Failed to start tcpdump on gce server")
     return tcpdump_pid[1], fname
 
+
 def stop_tcpdump_gce_server(ad, tcpdump_pid, fname, gce):
-    """ Stop and pull tcpdump file from gce server
+    """Stop and pull tcpdump file from gce server.
 
     Args:
         ad: android device object
@@ -413,6 +428,7 @@ def stop_tcpdump_gce_server(ad, tcpdump_pid, fname, gce):
     pcap_file = "%s/%s.pcap" % (ad.device_log_path, fname.split('/')[-1])
     return pcap_file
 
+
 def is_ipaddress_ipv6(ip_address):
     """Verify if the given string is a valid IPv6 address.
 
@@ -429,6 +445,7 @@ def is_ipaddress_ipv6(ip_address):
     except socket.error:
         return False
 
+
 def carrier_supports_ipv6(dut):
     """Verify if carrier supports ipv6.
 
@@ -444,8 +461,12 @@ def carrier_supports_ipv6(dut):
     operator = get_operator_name("log", dut)
     return operator in carrier_supports_ipv6
 
+
 def supports_ipv6_tethering(self, dut):
-    """ Check if provider supports IPv6 tethering.
+    """Check if provider supports IPv6 tethering.
+
+    Args:
+        dut: Android device that is being checked
 
     Returns:
         True: if provider supports IPv6 tethering
@@ -494,7 +515,7 @@ def wait_for_new_iface(old_ifaces):
     old_set = set(old_ifaces)
     # Try 10 times to find a new interface with a 1s sleep every time
     # (equivalent to a 9s timeout)
-    for i in range(0, 10):
+    for _ in range(0, 10):
         new_ifaces = set(get_if_list()) - old_set
         asserts.assert_true(len(new_ifaces) < 2,
                             "Too many new interfaces after turning on "

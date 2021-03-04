@@ -43,7 +43,7 @@ class LegacyVpnTest(WifiBaseTest):
         req_params = [
             x for x in req_params if not x.startswith("__")
         ]
-        opt_params = ["wifi_network"]
+        opt_params = ["wifi_network", "vpn_cert_country", "vpn_cert_org"]
         self.unpack_userparams(req_param_names=req_params,
                                opt_param_names=opt_params)
 
@@ -55,6 +55,21 @@ class LegacyVpnTest(WifiBaseTest):
             self.wifi_network = self.openwrt.get_wifi_network()
             # Wait for OpenWrt statement update
             time.sleep(10)
+            self.openwrt.network_setting.setup_vpn_pptp_server(
+                self.vpn_verify_addresses["PPTP"][0],
+                self.vpn_username,
+                self.vpn_password
+            )
+            self.openwrt.network_setting.setup_vpn_l2tp_server(
+                self.vpn_server_hostname,
+                self.vpn_verify_addresses["L2TP_IPSEC_RSA"][0],
+                self.vpn_username,
+                self.vpn_password,
+                self.vpn_identity,
+                "l2tp-server",
+                self.vpn_cert_country,
+                self.vpn_cert_org
+            )
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut, self.wifi_network["SSID"])
         wutils.wifi_connect(self.dut, self.wifi_network)
@@ -84,9 +99,6 @@ class LegacyVpnTest(WifiBaseTest):
             self.ipsec_server_type[2],
             self.log_path)
         vpn_addr = self.vpn_verify_addresses[vpn.name][0]
-        if OPENWRT in self.user_params:
-            self.openwrt.network_setting.setup_vpn_pptp_server(
-                vpn_addr, self.vpn_username, self.vpn_password)
         nutils.legacy_vpn_connection_test_logic(self.dut, vpn_profile, vpn_addr)
 
     @test_tracker_info(uuid="99af78dd-40b8-483a-8344-cd8f67594971")
