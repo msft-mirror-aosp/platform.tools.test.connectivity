@@ -20,6 +20,7 @@ from acts import signals
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -756,5 +757,59 @@ def _test_call_mt_mt_add_swap_x(log,
             return None, None
 
     return call_ab_id, call_ac_id
+
+
+def _three_phone_hangup_call_verify_call_state(
+        log, ad_hangup, ad_verify, call_id, call_state, ads_active):
+    """Private Test utility for swap test.
+
+    Hangup on 'ad_hangup'.
+    Verify 'call_id' on 'ad_verify' is in expected 'call_state'
+    Verify each ad in ads_active are 'in-call'.
+
+    Args:
+        ad_hangup: android object to hangup call.
+        ad_verify: android object to verify call id state.
+        call_id: call id in 'ad_verify'.
+        call_state: expected state for 'call_id'.
+            'call_state' is either CALL_STATE_HOLDING or CALL_STATE_ACTIVE.
+        ads_active: list of android object.
+            Each one of them should be 'in-call' after 'hangup' operation.
+
+    Returns:
+        True if no error happened. Otherwise False.
+
+    """
+
+    ad_hangup.log.info("Hangup, verify call continues.")
+    if not _hangup_call(log, ad_hangup):
+        ad_hangup.log.error("Phone fails to hang up")
+        return False
+    time.sleep(WAIT_TIME_IN_CALL)
+
+    if ad_verify.droid.telecomCallGetCallState(call_id) != call_state:
+        ad_verify.log.error(
+            "Call_id: %s, state: %s, expected: %s", call_id,
+            ad_verify.droid.telecomCallGetCallState(call_id), call_state)
+        return False
+    ad_verify.log.info("Call in expected %s state", call_state)
+
+    if not verify_incall_state(log, ads_active, True):
+        ads_active.log.error("Phone not in call state")
+        return False
+    if not verify_incall_state(log, [ad_hangup], False):
+        ad_hangup.log.error("Phone not in hangup state")
+        return False
+
+    return True
+
+
+def _get_expected_call_state(ad):
+    if "vzw" in [
+            sub["operator"]
+            for sub in ad.telephony["subscription"].values()
+    ]:
+        return CALL_STATE_ACTIVE
+    return CALL_STATE_HOLDING
 
 
