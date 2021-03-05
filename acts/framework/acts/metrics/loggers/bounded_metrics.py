@@ -81,10 +81,15 @@ class BoundedMetricsLogger(MetricLogger):
         metric data, and sends them to the publisher.
         """
         metrics = []
+        bundle = metrics_pb2.BoundedMetricsBundle()
         for metric_name, bounded_metric in self._metric_map.items():
             if bounded_metric is None:
                 continue
             metrics.append(
                 ProtoMetric(name='bounded_metric_%s' % metric_name,
                             data=bounded_metric))
+            bundle.bounded_metrics.append(bounded_metric)
+
+        metrics.append(ProtoMetric(name='bounded_metrics_bundle',
+                                   data=bundle))
         return self.publisher.publish(metrics)
