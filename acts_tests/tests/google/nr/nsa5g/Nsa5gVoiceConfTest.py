@@ -70,10 +70,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="68a8be5b-a5e0-4475-a5bd-42adfdb6535f")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -102,9 +102,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="bd828db0-dcc5-4d49-b049-48dd76f5f2f0")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -133,10 +133,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="5c3a3370-094d-43ff-b024-58a8a2983274")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -165,9 +165,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9ae61738-925b-44f8-b3a7-0e58f2ebd6ec")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -196,9 +196,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e3488699-9eb1-4a66-a2bd-b229c51e63c9")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_merge_drop_second_call_from_participant(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -227,9 +227,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="15b23934-ac8c-4c3a-9967-c19e46c0d86b")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -258,10 +258,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="86faf200-be78-452d-8662-85e7f42a2d3b")
+    @test_tracker_info(uuid="2d0b60db-44cd-48c2-8361-6a3af051eb22")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -290,9 +290,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="c6b47773-70f2-413c-8f6c-29dc4abce44f")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -321,10 +321,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="47fe393b-9605-4c52-b322-c3baeb6aae3e")
     def test_5g_nsa_volte_mt_mt_add_5g_nsa_volte_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -353,9 +353,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7d633e59-2918-4e7c-b01d-576bc2f31ab3")
     def test_5g_nsa_volte_mt_mt_add_5g_nsa_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -384,10 +384,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="23faa690-e96f-40bc-ab2c-7c4e51f1323c")
     def test_5g_nsa_volte_mt_mt_add_5g_nsa_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -416,9 +416,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="67dff58b-8111-41ba-9b8e-f06056b0db0a")
     def test_5g_nsa_volte_mt_mt_add_5g_nsa_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -447,10 +447,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4cf986be-d63c-472e-9702-9a30bf0d4f79")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (VoLTE), accept on PhoneC.
@@ -479,9 +479,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d77bd012-390d-433a-a705-b0a4d263d73c")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (VoLTE), accept on PhoneC.
@@ -510,10 +510,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3d3945bc-39c3-42dc-9deb-a3f7fb46bba9")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (VoLTE), accept on PhoneC.
@@ -542,9 +542,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="6bce0033-da88-4601-bc2f-7fd930b4cc6f")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneA (nsa 5G VoLTE) to PhoneC (VoLTE), accept on PhoneC.
@@ -573,9 +573,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="c76be000-eda1-452e-a813-5f2b3c1ea85d")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_merge_drop_second_call_from_participant(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -604,9 +604,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ea104940-872a-4cf7-a47c-db620762c818")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -635,10 +635,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="86faf200-be78-452d-8662-85e7f42a2d3b")
+    @test_tracker_info(uuid="1dde3ce7-cd02-4434-99b9-af025b5ada05")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -667,9 +667,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3ae5aee3-94c2-40ad-b8a1-c3e05a6c8365")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5G VoLTE) to PhoneB (VoLTE), accept on PhoneB.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -698,10 +698,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f45fb3c8-40b5-4731-9743-c6c63460ff9e")
     def test_5g_nsa_volte_mt_mt_add_4g_volte_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -730,9 +730,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1ae31dcf-b5e5-44f1-aec7-472fa6300c16")
     def test_5g_nsa_volte_mt_mt_add_4g_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -761,10 +761,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b35ec011-e98c-4b79-98ea-7d6acf63c3fe")
     def test_5g_nsa_volte_mt_mt_add_4g_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -793,9 +793,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="22db778c-bedb-4099-8764-f2832d87dcd9")
     def test_5g_nsa_volte_mt_mt_add_4g_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
         2. Call from PhoneC (VoLTE) to PhoneA (nsa 5G VoLTE), accept on PhoneA.
@@ -824,10 +824,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e98ca225-7c65-4c61-bde7-9c3ef350dc30")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -856,9 +856,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3d7cf9ce-7658-46f7-a852-c429cd772bda")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -887,10 +887,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="5803ba4f-4b73-4f88-a9c4-1b61a4afd84b")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -919,9 +919,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1f44800c-2bb2-46a3-9011-818f00e75e3f")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneA (VoLTE) to PhoneC (nsa 5G VoLTE), accept on PhoneC.
@@ -950,9 +950,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="fbc13772-314d-4b9a-8940-6edfe577c9f4")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_merge_drop_second_call_from_participant(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -981,9 +981,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7b4e7c11-d633-4dc5-8fb1-25ad1ef4a4e8")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1012,10 +1012,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="86faf200-be78-452d-8662-85e7f42a2d3b")
+    @test_tracker_info(uuid="98adc3f4-ab57-4485-946f-08c1e8a69efb")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1044,9 +1044,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="93adad3d-c3ca-4fc1-88ec-e32c5330efd6")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (VoLTE) to PhoneB (nsa 5G VoLTE), accept on PhoneB.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1075,10 +1075,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="6064eed6-0b23-4089-af30-f0c1f3ea844e")
     def test_4g_volte_mt_mt_add_5g_nsa_volte_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1107,9 +1107,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="845e0521-fcb9-4609-a325-3ecb7681e3d8")
     def test_4g_volte_mt_mt_add_5g_nsa_volte_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1138,10 +1138,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="c676851a-e723-420f-be64-b4dbcab9cbea")
     def test_4g_volte_mt_mt_add_5g_nsa_volte_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1170,9 +1170,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="a2aac8d9-5f87-4d95-a4d3-d8b174652a0e")
     def test_4g_volte_mt_mt_add_5g_nsa_volte_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
         2. Call from PhoneC (nsa 5G VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -1199,13 +1199,12 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         return _test_ims_conference_merge_drop_first_call_from_host(self.log, ads,
             call_ab_id, call_ac_id)
 
-    """" New Test """
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9c1a213f-8c85-4234-a974-2add9f698389")
     def test_5g_nsa_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneA (nsa 5g VoLTE) to PhoneC (WCDMA), accept on PhoneC.
@@ -1234,9 +1233,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="53882070-35d3-4b8b-bc09-4debce8a094c")
     def test_5g_nsa_volte_mo_mo_add_wcdma_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneA (nsa 5g VoLTE) to PhoneC (WCDMA), accept on PhoneC.
@@ -1265,10 +1264,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="a69588a5-3e08-4d33-92f7-5397c4d1c58d")
     def test_5g_nsa_volte_mo_mo_add_wcdma_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneA (nsa 5g VoLTE) to PhoneC (WCDMA), accept on PhoneC.
@@ -1297,9 +1296,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="da541f3e-6054-4f92-bbe4-242d03d90da2")
     def test_5g_nsa_volte_mo_mo_add_wcdma_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneA (nsa 5g VoLTE) to PhoneC (WCDMA), accept on PhoneC.
@@ -1328,10 +1327,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
-    def test_5g_nsa_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_cep(
+    @test_tracker_info(uuid="54269ba5-bb78-428e-afd0-cba5783d797a")
+    def test_5g_nsa_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1361,9 +1360,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d2bf3176-f9e8-4d2a-ad2a-c49fed9fd913")
     def test_5g_nsa_volte_mo_mt_add_wcdma_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1392,10 +1391,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="93c54a43-6b64-404a-9306-b9a74b563e41")
     def test_5g_nsa_volte_mo_mt_add_wcdma_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1424,9 +1423,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8e699115-1513-4c86-acd4-099b05acb859")
     def test_5g_nsa_volte_mo_mt_add_wcdma_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneA (nsa 5g VoLTE) to PhoneB (WCDMA), accept on PhoneB.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1455,10 +1454,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
-    def test_5g_nsa_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_cep(
+    @test_tracker_info(uuid="48edf043-1f45-4490-85fc-36ec49328768")
+    def test_5g_nsa_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1487,9 +1486,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="a276b9d4-ddef-4712-9f96-aa4b71c7b35d")
     def test_5g_nsa_volte_mt_mt_add_wcdma_merge_drop_second_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1518,10 +1517,10 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d702a65e-c2c9-44cf-be13-16ae56377647")
     def test_5g_nsa_volte_mt_mt_add_wcdma_merge_drop_first_call_from_participant(
             self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1550,9 +1549,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="dd3df9eb-a600-4397-b257-b8465592af82")
     def test_5g_nsa_volte_mt_mt_add_wcdma_merge_drop_first_call_from_host(self):
-        """ Test VoLTE Conference Call among three phones.
+        """ Test nsa 5g VoLTE Conference Call among three phones.
 
         1. Call from PhoneB (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
         2. Call from PhoneC (WCDMA) to PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1581,15 +1580,18 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d1174d8f-80e4-4adf-8866-e00ac7706849")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_swap_twice_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
         Swap active call on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
+
+        Returns:
+            True if pass; False if fail.
 
         """
         ads = self.android_devices
@@ -1615,9 +1617,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="c631b985-1fc4-4de6-95cd-00258283ef62")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_swap_twice_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
@@ -1625,6 +1627,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1649,9 +1653,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="0af58d3e-a7cc-4e5b-89df-b002deee022a")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_swap_twice_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1659,6 +1663,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1683,9 +1689,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d00d0b87-4df2-40af-9b5e-dd425ec5ca4f")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_swap_twice_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1693,6 +1699,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1717,15 +1725,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="dc46308c-197f-4372-afca-b2ec131dcc34")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_swap_once_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1750,16 +1760,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="471cc6d1-03aa-41a0-b13a-fdd696f17fca")
     def test_5g_nsa_volte_mo_mo_add_5g_nsa_volte_swap_once_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
         Swap active call on PhoneA.
-        Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1784,15 +1795,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="bb9d69eb-40f4-494d-9399-7dbd046962e3")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_swap_once_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1816,15 +1829,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="33c9e964-c9d4-4cbc-894f-8682122598a7")
     def test_5g_nsa_volte_mo_mt_add_5g_nsa_volte_swap_once_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1849,9 +1864,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="43e4cc02-93d9-4540-97b6-f5656d7d669f")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_swap_twice_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (VoLTE), accept on PhoneC.
@@ -1859,6 +1874,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1883,9 +1900,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f3081bbd-9f18-4c0b-a1ab-630d5e622259")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_swap_twice_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (VoLTE), accept on PhoneC.
@@ -1893,6 +1910,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1917,9 +1936,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ff4a731b-3bf9-45d5-beeb-e8ad53ceb722")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_swap_twice_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneC (VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1927,6 +1946,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1951,9 +1972,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9ebae664-41bb-45fe-8f52-08c2dabab659")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_swap_twice_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneC (VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
@@ -1961,6 +1982,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -1985,15 +2008,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b8ae81dd-3f67-4c2c-aec0-d6368efb872e")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_swap_once_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (VoLTE), accept on PhoneC.
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2018,16 +2043,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="2c588e87-8b69-4a8e-b55a-4e101806297c")
     def test_5g_nsa_volte_mo_mo_add_4g_volte_swap_once_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneA (nsa 5g VoLTE) call PhoneC (VoLTE), accept on PhoneC.
         Swap active call on PhoneA.
-        Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2052,15 +2078,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="367e8d25-5a9d-4c0d-914d-c241399bb343")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_swap_once_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneC (VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2084,15 +2112,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8a8f915e-025a-4992-b05d-bf74173e3852")
     def test_5g_nsa_volte_mo_mt_add_4g_volte_swap_once_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (nsa 5g VoLTE) call PhoneB (VoLTE), accept on PhoneB.
         PhoneC (VoLTE) call PhoneA (nsa 5g VoLTE), accept on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2117,9 +2147,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="880c3f9e-1a97-489a-80b1-db4c9aaa7be0")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_swap_twice_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
@@ -2127,6 +2157,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2151,9 +2183,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b869f455-bf1b-4f03-bba3-a6f029f9f594")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_swap_twice_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
@@ -2161,6 +2193,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2185,9 +2219,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="32ce220a-7abe-40f4-bd59-e948e7e8f735")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_swap_twice_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -2195,6 +2229,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2219,9 +2255,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="0b6bc57b-4dfb-4d2a-9160-fbebcecd8970")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_swap_twice_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -2229,6 +2265,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2253,15 +2291,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1d70289e-bbef-420a-b484-77c5573cc8fb")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_swap_once_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2286,9 +2326,9 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3a62d358-ccb6-43fc-acb5-469dc9c5d5b2")
     def test_4g_volte_mo_mo_add_5g_nsa_volte_swap_once_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneA (VoLTE) call PhoneC (nsa 5g VoLTE), accept on PhoneC.
@@ -2296,6 +2336,8 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2320,15 +2362,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="52e0a840-3fb3-4351-b2f0-d67cf9928a16")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_swap_once_drop_held(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (VoLTE), accept on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneC, check if call continues between AB.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
@@ -2352,15 +2396,17 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="6b63555a-c009-4431-be14-abc546cff911")
     def test_4g_volte_mo_mt_add_5g_nsa_volte_swap_once_drop_active(self):
-        """Test swap feature in VoLTE call.
+        """Test swap feature in nsa 5g VoLTE call.
 
         PhoneA (VoLTE) call PhoneB (nsa 5g VoLTE), accept on PhoneB.
         PhoneC (nsa 5g VoLTE) call PhoneA (VoLTE), accept on PhoneA.
         Swap active call on PhoneA.
         Hangup call from PhoneB, check if call continues between AC.
 
+        Returns:
+            True if pass; False if fail.
         """
         ads = self.android_devices
 
