@@ -110,6 +110,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
         wutils.stop_wifi_tethering(self.android_devices[0])
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
+            dev.go_to_sleep()
         self.process_testclass_results()
         # Teardown AP and release it's lockfile
         self.access_point.teardown()

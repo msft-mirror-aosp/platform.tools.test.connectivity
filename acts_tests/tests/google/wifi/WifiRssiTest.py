@@ -90,6 +90,12 @@ class WifiRssiTest(base_test.BaseTestClass):
     def teardown_test(self):
         self.iperf_server.stop()
 
+    def teardown_class(self):
+        # Turn WiFi OFF and reset AP
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, False)
+            dev.go_to_sleep()
+
     def pass_fail_check_rssi_stability(self, testcase_params,
                                        postprocessed_results):
         """Check the test result and decide if it passed or failed.
@@ -910,6 +916,7 @@ class WifiOtaRssiTest(WifiRssiTest):
             self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
+        WifiRssiTest.teardown_class(self)
         self.ota_chamber.reset_chamber()
         self.process_testclass_results()
 
