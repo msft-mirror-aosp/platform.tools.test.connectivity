@@ -269,7 +269,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
 
         return _sms_test_mo(self.log, ads)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="784062e8-02a4-49ce-8fc1-5359ab40bbdd")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_long_message_mo_mt(self):
         """Test SMS basic function between two phone. Phones in nsa 5G network.
@@ -293,7 +293,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
 
         return _long_sms_test_mo(self.log, ads)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="82b7e68e-2d82-410f-ad02-f44dd9fe3745")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mo_in_call_volte(self):
         """ Test MO SMS during a MO VoLTE call.
@@ -334,7 +334,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
 
         return True
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="acf7d5c1-5c14-44e8-b33d-3cb7d7947479")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mt_in_call_volte(self):
         """ Test MT SMS during a MT VoLTE call.
