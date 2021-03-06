@@ -319,7 +319,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             return False
         return True
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8c795c3a-59d4-408c-9b99-5287e79ba00b")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_long_message_mo_mt(self):
         """Test MMS basic function between two phone. Phones in nsa 5G network.
@@ -343,7 +343,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         return _long_mms_test_mo(self.log, ads)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e09b82ab-69a9-4eae-8cbe-b6f2cff993ad")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_mo_wifi(self):
         """Test MMS basic function between two phone. Phones in nsa 5g network.
@@ -371,7 +371,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         return _mms_test_mo(self.log, ads)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="fedae24f-2577-4f84-9d76-53bbbe109d48")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_mt_wifi(self):
         """Test MMS basic function between two phone. Phones in nsa 5g network.
@@ -399,7 +399,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         return _mms_test_mt(self.log, ads)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="22531406-847e-4f64-94ae-572bb60978da")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_mo_in_call_volte_wifi(self):
         """ Test MO MMS during a MO VoLTE call.
@@ -442,7 +442,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         return True
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="bd232ea8-17a5-422e-85cc-cd5698118b4f")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_mt_in_call_volte_wifi(self):
         """ Test MT MMS during a MO VoLTE call.

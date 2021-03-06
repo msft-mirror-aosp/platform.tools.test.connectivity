@@ -13,12 +13,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import pprint
-import random
 import time
 
-from acts import asserts
-from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -45,7 +41,7 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = (
-            "attn_vals",
+            "roaming_attn",
             # Expected time within which roaming should finish, in seconds.
             "roam_interval",
             "ca_cert",
@@ -115,13 +111,13 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
             self.attn_b = self.attenuators[1]
         # Set screen lock password so ConfigStore is unlocked.
         self.dut.droid.setDevicePassword(self.device_password)
-        self.set_attns("default")
+        wutils.set_attns(self.attenuators, "default")
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
         self.dut.droid.disableDevicePassword(self.device_password)
         self.dut.ed.clear_all_events()
-        self.set_attns("default")
+        wutils.set_attns(self.attenuators, "default")
 
     def setup_test(self):
         super().setup_test()
@@ -136,23 +132,7 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiStopTrackingStateChange()
-        self.set_attns("default")
-
-    def set_attns(self, attn_val_name):
-        """Sets attenuation values on attenuators used in this test.
-
-        Args:
-            attn_val_name: Name of the attenuation value pair to use.
-        """
-        self.log.info("Set attenuation values to %s",
-                      self.attn_vals[attn_val_name])
-        try:
-            self.attn_a.set_atten(self.attn_vals[attn_val_name][0])
-            self.attn_b.set_atten(self.attn_vals[attn_val_name][1])
-        except:
-            self.log.exception("Failed to set attenuation values %s.",
-                           attn_val_name)
-            raise
+        wutils.set_attns(self.attenuators, "default")
 
     def trigger_roaming_and_validate(self, attn_val_name, expected_con):
         """Sets attenuators to trigger roaming and validate the DUT connected
@@ -163,9 +143,9 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
             expected_con: The expected info of the network to we expect the DUT
                 to roam to.
         """
-        self.set_attns(attn_val_name)
+        wutils.set_attns_steps(
+            self.attenuators, attn_val_name, self.roaming_attn)
         self.log.info("Wait %ss for roaming to finish.", self.roam_interval)
-        time.sleep(self.roam_interval)
         try:
             self.dut.droid.wakeLockAcquireBright()
             self.dut.droid.wakeUpNow()
@@ -195,13 +175,14 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
             WifiEnums.SSID_KEY: self.ent_roaming_ssid,
             WifiEnums.BSSID_KEY: self.bssid_b,
         }
-        self.set_attns("a_on_b_off")
-        wutils.wifi_connect(self.dut, config)
+        wutils.set_attns_steps(
+            self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
+        wutils.connect_to_wifi_network(self.dut, config)
         wutils.verify_wifi_connection_info(self.dut, expected_con_to_a)
         self.log.info("Roaming from %s to %s", self.bssid_a, self.bssid_b)
-        self.trigger_roaming_and_validate("b_on_a_off", expected_con_to_b)
+        self.trigger_roaming_and_validate("AP1_off_AP2_on", expected_con_to_b)
         self.log.info("Roaming from %s to %s", self.bssid_b, self.bssid_a)
-        self.trigger_roaming_and_validate("a_on_b_off", expected_con_to_a)
+        self.trigger_roaming_and_validate("AP1_on_AP2_off", expected_con_to_a)
 
     """ Tests Begin """
 
