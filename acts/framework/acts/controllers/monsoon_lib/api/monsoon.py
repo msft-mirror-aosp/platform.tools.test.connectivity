@@ -84,7 +84,7 @@ class BaseMonsoon(object):
         normalized_voltage = self.get_closest_valid_voltage(voltage)
         if voltage != normalized_voltage:
             self._log.debug(
-                'Requested voltage %sV is invalid.' % normalized_voltage)
+                'Requested voltage %sV is invalid.' % voltage)
         self.set_voltage(normalized_voltage)
 
     def ramp_voltage(self, start, end):
