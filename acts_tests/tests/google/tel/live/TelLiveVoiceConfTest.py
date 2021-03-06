@@ -59,6 +59,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
 from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_forwarding_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_waiting_short_seq
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _get_expected_call_state
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _hangup_call
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
     _test_ims_conference_merge_drop_first_call_from_host
@@ -74,6 +75,7 @@ from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mt_mt_ad
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mo
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mt
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mt_add_mt
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_hangup_call_verify_call_state
 
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
@@ -96,15 +98,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     # conference call functionality is working.
     # Need to add code to check for voice.
     """ Private Test Utils """
-
-    def _get_expected_call_state(self, ad):
-        if "vzw" in [
-                sub["operator"]
-                for sub in ad.telephony["subscription"].values()
-        ]:
-            return CALL_STATE_ACTIVE
-        return CALL_STATE_HOLDING
-
 
     def _three_phone_call_mo_add_mt_reject(self, ads, verify_funcs, reject):
         """Use 3 phones to make MO call and MT call.
@@ -511,51 +504,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         return True
 
-
-    def _three_phone_hangup_call_verify_call_state(
-            self, ad_hangup, ad_verify, call_id, call_state, ads_active):
-        """Private Test utility for swap test.
-
-        Hangup on 'ad_hangup'.
-        Verify 'call_id' on 'ad_verify' is in expected 'call_state'
-        Verify each ad in ads_active are 'in-call'.
-
-        Args:
-            ad_hangup: android object to hangup call.
-            ad_verify: android object to verify call id state.
-            call_id: call id in 'ad_verify'.
-            call_state: expected state for 'call_id'.
-                'call_state' is either CALL_STATE_HOLDING or CALL_STATE_ACTIVE.
-            ads_active: list of android object.
-                Each one of them should be 'in-call' after 'hangup' operation.
-
-        Returns:
-            True if no error happened. Otherwise False.
-
-        """
-
-        ad_hangup.log.info("Hangup, verify call continues.")
-        if not _hangup_call(self.log, ad_hangup):
-            ad_hangup.log.error("Phone fails to hang up")
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-
-        if ad_verify.droid.telecomCallGetCallState(call_id) != call_state:
-            ad_verify.log.error(
-                "Call_id: %s, state: %s, expected: %s", call_id,
-                ad_verify.droid.telecomCallGetCallState(call_id), call_state)
-            return False
-        ad_verify.log.info("Call in expected %s state", call_state)
-        # TODO: b/26296375 add voice check.
-
-        if not verify_incall_state(self.log, ads_active, True):
-            ads_active.log.error("Phone not in call state")
-            return False
-        if not verify_incall_state(self.log, [ad_hangup], False):
-            ad_hangup.log.error("Phone not in hangup state")
-            return False
-
-        return True
 
 
     """ Tests Begin """
@@ -2860,7 +2808,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -2894,11 +2842,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -2928,7 +2876,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -2962,11 +2910,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -2995,7 +2943,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -3029,11 +2977,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -3061,7 +3009,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                                         verify_phone_c_network_subscription=is_phone_in_call_volte)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -3094,11 +3042,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -3129,7 +3077,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -3163,11 +3111,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -3198,7 +3146,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -3232,11 +3180,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -3266,7 +3214,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -3300,11 +3248,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -3334,7 +3282,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -3368,11 +3316,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -3403,7 +3351,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -3437,11 +3385,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -3472,7 +3420,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -3506,11 +3454,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -3539,7 +3487,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -3572,11 +3520,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -3606,7 +3554,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -3639,11 +3587,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -7059,11 +7007,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # All calls still CONNECTED?
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -9214,7 +9162,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -9261,7 +9209,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -9308,11 +9256,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -9356,11 +9304,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -9404,11 +9352,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -9451,7 +9399,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -9498,7 +9446,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
@@ -9545,11 +9493,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -9593,11 +9541,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 
@@ -9639,7 +9587,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -9685,7 +9633,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -9731,11 +9679,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -9778,11 +9726,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -9825,11 +9773,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -9870,7 +9818,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                                         verify_phone_c_network_subscription=is_phone_in_call_iwlan)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -9915,7 +9863,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                                         verify_phone_c_network_subscription=is_phone_in_call_iwlan)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -9960,7 +9908,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                                         verify_phone_c_network_subscription=is_phone_in_call_iwlan)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -10006,11 +9954,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -10053,11 +10001,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
 
@@ -10186,7 +10134,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
@@ -10251,11 +10199,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(
+        return _three_phone_hangup_call_verify_call_state(log=self.log,
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=self._get_expected_call_state(ads[0]),
+            call_state=_get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
 

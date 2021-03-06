@@ -432,8 +432,10 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                 "Failed to setup iwlan with APM off and WIFI and WFC on")
             return False
 
-        return self._test_call_setup_in_active_data_transfer_5g_nsa(
-            call_direction=DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(self.log,
+                                                       self.android_devices,
+                                                       GEN_5G,
+                                                       DIRECTION_MOBILE_ORIGINATED)
 
 
     @test_tracker_info(uuid="4d1d7dd9-b373-4361-8301-8517ef77b57b")
@@ -461,8 +463,10 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                 "Failed to setup iwlan with APM off and WIFI and WFC on")
             return False
 
-        return self._test_call_setup_in_active_data_transfer_5g_nsa(
-            call_direction=DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(self.log,
+                                                       self.android_devices,
+                                                       GEN_5G,
+                                                       DIRECTION_MOBILE_TERMINATED)
 
 
     @test_tracker_info(uuid="e360bc3a-96b3-4fdf-9bf3-fe3aa08b1af5")
