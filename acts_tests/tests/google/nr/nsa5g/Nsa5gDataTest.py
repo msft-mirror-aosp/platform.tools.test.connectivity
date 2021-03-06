@@ -388,7 +388,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return browsing_test(ad.log, ad)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7179f0f1-f0ca-4496-8f4a-7eebc616a41a")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_switching(self):
         """Test data connection network switching when phone camped on nsa 5G.
@@ -408,7 +408,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
                                    self.wifi_network_pass)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="75066e0a-0e2e-4346-a253-6ed11d1c4d23")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_multi_bearer(self):
         """Test nsa5G data connection before call and in call. (VoLTE call)
@@ -431,7 +431,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return test_data_connectivity_multi_bearer(self.log, ads, GEN_5G)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e88b226e-3842-4c45-a33e-d4fee7d8f6f0")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa(self):
         """Test data connection in nsa5g.
@@ -452,7 +452,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(ad.log, ad, GEN_5G)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4c70e09d-f215-4c5b-8c61-f9e9def43d30")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_not_associated(self):
         """Test data connection in nsa 5g.
@@ -474,7 +474,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(ad.log, ad, GEN_5G)
 
 
-    @test_tracker_info(uuid="2d945656-22f7-4610-9a84-40ce04d603a4")
+    @test_tracker_info(uuid="9feb4c81-17c6-46ed-9cf7-7aa3d5ae2da0")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering(self):
         """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
@@ -497,7 +497,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="db70c6ec-5edc-44c2-b61b-1c39516a7475")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering_with_voice_call(self):
         """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
@@ -521,7 +521,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
             toggle_tethering=False, toggle_bluetooth=False, voice_call=True)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="12efb94f-7466-40e9-9a79-59b4074ab4dd")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering_toggle_data(self):
         """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
@@ -544,7 +544,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
             toggle_tethering=False, toggle_bluetooth=False, toggle_data=True)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="475b485a-1228-4f18-b9f2-593f96850165")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering_toggle_tethering(self):
         """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
@@ -568,7 +568,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
             toggle_tethering=True, toggle_bluetooth=False, toggle_data=False)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="07f8e523-b471-4156-b057-558123973a5b")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering_rat_from_5g_nsa_to_4g(self):
         """Bluetooth Tethering test: nsa 5G to 4G Bluetooth Tethering
@@ -595,7 +595,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
             change_rat=RAT_4G)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="93040a69-fa85-431f-ac9d-80091c6c8223")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering_rat_from_5g_nsa_to_3g(self):
         """Bluetooth Tethering test: nsa5G to 3G Bluetooth Tethering
@@ -622,7 +622,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
             change_rat=RAT_3G)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="6cc17fc7-13a0-4493-9673-920952a16fcc")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_bluetooth_tethering_rat_from_5g_nsa_to_2g(self):
         """Bluetooth Tethering test: nsa5G to 2G Bluetooth Tethering
@@ -649,65 +649,11 @@ class Nsa5gDataTest(TelephonyBaseTest):
             change_rat=RAT_2G)
 
 
-    @test_tracker_info(uuid="0e38f30e-08f3-4be1-af61-c07c37c93b70")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_2gwifi(self):
-        """WiFi Tethering test: 5G NSA to WiFI 2G Tethering
-
-        1. DUT in 5G NSA mode, attached.
-        2. DUT start 5G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G NSA Internet access failed.")
-            return False
-
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider,
-            self.clients,
-            ap_band=WIFI_CONFIG_APBAND_2G,
-            check_interval=10,
-            check_iteration=10)
-
-
-    @test_tracker_info(uuid="5f2c6cb3-c32c-4f96-a2f4-7b901bb9a328")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_5gwifi(self):
-        """WiFi Tethering test: 5G NSA to WiFI 5G Tethering
-
-        1. DUT in 5G NSA mode, attached.
-        2. DUT start 5G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G nsa Internet access failed.")
-            return False
-
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider,
-            self.clients,
-            ap_band=WIFI_CONFIG_APBAND_5G,
-            check_interval=10,
-            check_iteration=10)
-
-
     # Invalid Live Test. Can't rely on the result of this test with live network.
     # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8bef3215-8218-4f7f-9a5f-954fa36ac5d8")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_5g_to_3g(self):
+    def test_5g_nsa_wifi_tethering_from_5g_nsa_to_3g(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from nsa 5G to 3G,
             during active WiFi Tethering.
 
@@ -768,9 +714,9 @@ class Nsa5gDataTest(TelephonyBaseTest):
 
     # Invalid Live Test. Can't rely on the result of this test with live network.
     # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="633f187d-3a8f-46dc-86de-f87b733a83ba")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_3g_to_5g(self):
+    def test_5g_nsa_wifi_tethering_from_3g_to_5g_nsa(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from 3G to nsa5G,
             during active WiFi Tethering.
 
@@ -833,9 +779,9 @@ class Nsa5gDataTest(TelephonyBaseTest):
 
     # Invalid Live Test. Can't rely on the result of this test with live network.
     # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="28e654a6-2318-4f36-a4f0-16214d8e004d")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_5g_to_4g(self):
+    def test_5g_nsa_wifi_tethering_from_5g_nsa_to_4g(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from nsa 5G to 4G,
             during active WiFi Tethering.
 
@@ -896,9 +842,9 @@ class Nsa5gDataTest(TelephonyBaseTest):
 
     # Invalid Live Test. Can't rely on the result of this test with live network.
     # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="a8190c2a-a9ee-4673-b003-769691d1a575")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_4g_to_5g(self):
+    def test_5g_nsa_wifi_tethering_from_4g_to_5g_nsa(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from 4G to nsa5G,
             during active WiFi Tethering.
 
@@ -959,7 +905,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return True
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ac3ff18a-69e0-4a8a-bbfa-41fad7f05200")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_tethering_volte_call(self):
         """WiFi Tethering test: VoLTE call during WiFi tethering
@@ -978,7 +924,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
             RAT_5G, phone_setup_volte, is_phone_in_call_volte)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8308bf40-7f1b-443f-bde6-19d9ff97e471")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_connect_disconnect(self):
         """Perform multiple connects and disconnects from WiFi and verify that

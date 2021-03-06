@@ -82,6 +82,7 @@ class WifiPasspointTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.dut.unlock_screen()
+        self.dut.adb.shell("input keyevent KEYCODE_HOME")
 
 
     def teardown_test(self):
@@ -156,18 +157,21 @@ class WifiPasspointTest(WifiBaseTest):
         for _ in range(3):
             self.dut.adb.shell("input swipe 300 900 300 300")
 
-        # Enter username
-        uutils.wait_and_input_text(self.dut,
-                                   input_text=self.boingo_username,
-                                   text="",
-                                   class_name=EDIT_TEXT_CLASS_NAME)
-        self.dut.adb.shell("input keyevent 111")  # collapse keyboard
-        self.dut.adb.shell("input swipe 300 900 300 750")  # swipe up to show text
-
-        # Enter password
-        uutils.wait_and_input_text(self.dut,
-                                   input_text=self.boingo_password,
-                                   text=PASSWORD_TEXT)
+        # Enter username & password
+        screen_dump = uutils.get_screen_dump_xml(self.dut)
+        nodes = screen_dump.getElementsByTagName("node")
+        index = 0
+        for node in nodes:
+            if uutils.match_node(node, class_name="android.widget.EditText"):
+                x, y = eval(node.attributes["bounds"].value.split("][")[0][1:])
+                self.dut.adb.shell("input tap %s %s" % (x, y))
+                if index == 0:
+                    self.dut.adb.shell("input text %s" % self.boingo_username)
+                    index += 1
+                else:
+                    self.dut.adb.shell("input text %s" % self.boingo_password)
+                    break
+                self.dut.adb.shell("input keyevent 111")
         self.dut.adb.shell("input keyevent 111")  # collapse keyboard
         self.dut.adb.shell("input swipe 300 900 300 750")  # swipe up to show text
 
@@ -227,7 +231,7 @@ class WifiPasspointTest(WifiBaseTest):
                                           "expected_ssids"])
         # Delete the Passpoint profile.
         self.get_configured_passpoint_and_delete()
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, timeout=15)
 
 
     """Tests"""

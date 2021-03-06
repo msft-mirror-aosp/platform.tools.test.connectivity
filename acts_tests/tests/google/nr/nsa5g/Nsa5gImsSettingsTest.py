@@ -64,7 +64,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9ed17e7b-c933-4b46-9349-a76fbcba3a24")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_volte_wifi_connected_toggle_wfc(self):
         """Test for WiFi Calling settings:
@@ -133,7 +133,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                 wfc_mode=None)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="425b16ec-869d-4a0b-a1bc-a3243503525f")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_connected_toggle_wfc(self):
         """Test for WiFi Calling settings:
@@ -202,7 +202,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode=None)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9405d8cf-5b73-4d47-a83d-da115caed177")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_volte_wfc_enabled_toggle_wifi(self):
         """Test for WiFi Calling settings:
@@ -269,7 +269,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode=None)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="548f07a6-74e2-4071-ba41-2acf3cd51752")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wfc_enabled_toggle_wifi(self):
         """Test for WiFi Calling settings:
@@ -335,7 +335,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode=None)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f53f8403-b993-4a3b-8d3f-ffc87cdc856e")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wfc_enabled_wifi_connected_toggle_volte(self):
         """Test for WiFi Calling settings:
@@ -406,7 +406,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode=None)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9d951951-bc04-4db1-85e3-f0980f564fd3")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_volte_wfc_wifi_preferred_to_cellular_preferred(self):
         """Test for WiFi Calling settings:
@@ -466,7 +466,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode= WFC_MODE_CELLULAR_PREFERRED)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9d951951-bc04-4db1-85e3-f0980f564fd3")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wfc_wifi_preferred_to_cellular_preferred(self):
         """Test for WiFi Calling settings:
@@ -525,7 +525,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode= WFC_MODE_CELLULAR_PREFERRED)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="bb3acfce-1ea9-40c2-9151-12fbc235e359")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_volte_wfc_cellular_preferred_to_wifi_preferred(self):
         """Test for WiFi Calling settings:
@@ -584,7 +584,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
                                        wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d4dea8e0-5795-4769-80e2-29c0f951a84a")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wfc_cellular_preferred_to_wifi_preferred(self):
         """Test for WiFi Calling settings:
