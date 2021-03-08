@@ -179,7 +179,7 @@ class WlanPhyCompliance11ACTest(AbstractDeviceWlanDeviceBaseTest):
         target_security = None
         if security:
             password = security.password
-            target_security = security.security_mode
+            target_security = security.security_mode_string
         n_capabilities = ap_settings['n_capabilities']
         ac_capabilities = ap_settings['ac_capabilities']
 
