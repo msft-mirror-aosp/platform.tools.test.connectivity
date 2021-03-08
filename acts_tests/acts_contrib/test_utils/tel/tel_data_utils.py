@@ -46,6 +46,10 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
+from acts_contrib.test_utils.tel.tel_defines import \
+    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -84,6 +88,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
@@ -1584,4 +1589,218 @@ def call_epdg_to_epdg_wfc(log,
     else:
         log.error("ICMP transfer failed with parallel phone call.")
     return all(results)
+
+
+def verify_toggle_apm_tethering_internet_connection(log, provider, clients, ssid):
+    """ Verify internet connection by toggling apm during wifi tethering.
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+        clients: a list of clients using tethered WiFi.
+        ssid: use this string as WiFi SSID to setup tethered WiFi network.
+
+    """
+    if not provider.droid.wifiIsApEnabled():
+        log.error("Provider WiFi tethering stopped.")
+        return False
+
+    log.info(
+        "Provider turn on APM, verify no wifi/data on Client.")
+
+    if not toggle_airplane_mode(log, provider, True):
+        log.error("Provider turn on APM failed.")
+        return False
+    time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+
+    if provider.droid.wifiIsApEnabled():
+        provider.log.error("Provider WiFi tethering not stopped.")
+        return False
+
+    if not verify_internet_connection(log, clients[0], expected_state=False):
+        clients[0].log.error(
+            "Client should not have Internet connection.")
+        return False
+
+    wifi_info = clients[0].droid.wifiGetConnectionInfo()
+    clients[0].log.info("WiFi Info: {}".format(wifi_info))
+    if wifi_info[WIFI_SSID_KEY] == ssid:
+        clients[0].log.error(
+            "WiFi error. WiFi should not be connected.".format(
+                wifi_info))
+        return False
+
+    log.info("Provider turn off APM.")
+    if not toggle_airplane_mode(log, provider, False):
+        provider.log.error("Provider turn on APM failed.")
+        return False
+    time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+    if provider.droid.wifiIsApEnabled():
+        provider.log.error(
+            "Provider WiFi tethering should not on.")
+        return False
+    if not verify_internet_connection(log, provider):
+        provider.log.error(
+            "Provider should have Internet connection.")
+        return False
+    return True
+
+
+def verify_tethering_entitlement_check(log, provider):
+    """Tethering Entitlement Check Test
+
+    Get tethering entitlement check result.
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+
+    Returns:
+        True if entitlement check returns True.
+    """
+    if (not wait_for_cell_data_connection(log, provider, True)
+            or not verify_internet_connection(log, provider)):
+        log.error("Failed cell data call for entitlement check.")
+        return False
+
+    result = provider.droid.carrierConfigIsTetheringModeAllowed(
+        TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK)
+    provider.log.info("Tethering entitlement check result: %s",
+                      result)
+    return result
+
+
+def test_wifi_tethering(log, provider,
+                        clients,
+                        clients_tethering,
+                        nw_gen,
+                        ap_band=WIFI_CONFIG_APBAND_2G,
+                        check_interval=30,
+                        check_iteration=4,
+                        do_cleanup=True,
+                        ssid=None,
+                        password=None):
+    """WiFi Tethering test
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+        clients: a list of clients are valid for tethered WiFi.
+        clients_tethering: a list of clients using tethered WiFi.
+        nw_gen: network generation.
+        ap_band: setup WiFi tethering on 2G or 5G.
+            This is optional, default value is WIFI_CONFIG_APBAND_2G
+        check_interval: delay time between each around of Internet connection check.
+            This is optional, default value is 30 (seconds).
+        check_iteration: check Internet connection for how many times in total.
+            This is optional, default value is 4 (4 times).
+        do_cleanup: after WiFi tethering test, do clean up to tear down tethering
+            setup or not. This is optional, default value is True.
+        ssid: use this string as WiFi SSID to setup tethered WiFi network.
+            This is optional. Default value is None.
+            If it's None, a random string will be generated.
+        password: use this string as WiFi password to setup tethered WiFi network.
+            This is optional. Default value is None.
+            If it's None, a random string will be generated.
+
+    """
+    if not test_setup_tethering(log, provider, clients, nw_gen):
+        log.error("Verify %s Internet access failed.", nw_gen)
+        return False
+
+    return wifi_tethering_setup_teardown(
+        log,
+        provider,
+        clients_tethering,
+        ap_band=ap_band,
+        check_interval=check_interval,
+        check_iteration=check_iteration,
+        do_cleanup=do_cleanup,
+        ssid=ssid,
+        password=password)
+
+
+def run_stress_test(log,
+                    stress_test_number,
+                    precondition_func,
+                    test_case_func):
+    """Run stress test of a test case.
+
+    Args:
+        log: log object.
+        stress_test_number: The number of times the test case is run.
+        precondition_func: A function performing set up before running test case
+        test_case_func: A test case function.
+
+    Returns:
+        True stress pass rate is higher than MINIMUM_SUCCESS_RATE.
+        False otherwise.
+
+    """
+    MINIMUM_SUCCESS_RATE = .95
+    success_count = 0
+    fail_count = 0
+    for i in range(1, stress_test_number + 1):
+
+        precondition_func()
+        result = test_case_func()
+        if result:
+            success_count += 1
+            result_str = "Succeeded"
+        else:
+            fail_count += 1
+            result_str = "Failed"
+        log.info("Iteration {} {}. Current: {} / {} passed.".format(
+            i, result_str, success_count, stress_test_number))
+
+    log.info("Final Count - Success: {}, Failure: {} - {}%".format(
+        success_count, fail_count,
+        str(100 * success_count / (success_count + fail_count))))
+    if success_count / (
+            success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        return True
+    else:
+        return False
+
+
+def test_start_wifi_tethering_connect_teardown(log,
+                                               ad_host,
+                                               ad_client,
+                                               ssid,
+                                               password):
+    """Private test util for WiFi Tethering.
+
+    1. Host start WiFi tethering.
+    2. Client connect to tethered WiFi.
+    3. Host tear down WiFi tethering.
+
+    Args:
+        log: log object.
+        ad_host: android device object for host
+        ad_client: android device object for client
+        ssid: WiFi tethering ssid
+        password: WiFi tethering password
+
+    Returns:
+        True if no error happen, otherwise False.
+    """
+    result = True
+    # Turn off active SoftAP if any.
+    if ad_host.droid.wifiIsApEnabled():
+        stop_wifi_tethering(log, ad_host)
+
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+    if not start_wifi_tethering(log, ad_host, ssid, password,
+                                WIFI_CONFIG_APBAND_2G):
+        log.error("Start WiFi tethering failed.")
+        result = False
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+    if not ensure_wifi_connected(log, ad_client, ssid, password):
+        log.error("Client connect to WiFi failed.")
+        result = False
+    if not wifi_reset(log, ad_client):
+        log.error("Reset client WiFi failed. {}".format(
+            ad_client.serial))
+        result = False
+    if not stop_wifi_tethering(log, ad_host):
+        log.error("Stop WiFi tethering failed.")
+        result = False
+    return result
 
