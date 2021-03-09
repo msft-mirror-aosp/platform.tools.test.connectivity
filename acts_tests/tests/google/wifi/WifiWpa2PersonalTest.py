@@ -18,6 +18,7 @@
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.controllers.openwrt_lib.openwrt_constants import OpenWrtWifiSecurity
+from acts.test_decorators import test_tracker_info
 from acts import asserts
 
 
@@ -81,6 +82,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
 
   """ Tests"""
 
+  @test_tracker_info(uuid="d1f984c9-d85f-4b0d-8d64-2e8d6ce74c48")
   def test_connect_to_wpa2_psk_ccmp_2g(self):
     """Change AP's security type to "WPA2" and cipher to "CCMP".
        Connect to 2g network.
@@ -90,6 +92,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa2_psk_2g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA2_PSK_CCMP)
 
+  @test_tracker_info(uuid="0f9631e8-04a9-4b9c-8225-ab30b4d1173b")
   def test_connect_to_wpa2_psk_ccmp_5g(self):
     """Change AP's security type to "WPA2" and cipher to "CCMP".
        Connect to 5g network.
@@ -99,6 +102,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa2_psk_5g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA2_PSK_CCMP)
 
+  @test_tracker_info(uuid="e6eb3932-10cc-476f-a5d7-936e2631afc1")
   def test_connect_to_wpa2_psk_tkip_2g(self):
     """Change AP's security type to "WPA2" and cipher to "TKIP".
        Connect to 2g network.
@@ -108,6 +112,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa2_psk_2g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA2_PSK_TKIP)
 
+  @test_tracker_info(uuid="59ba3cd4-dbc5-44f9-9290-48ae468a51da")
   def test_connect_to_wpa2_psk_tkip_5g(self):
     """Change AP's security type to "WPA2" and cipher to "TKIP".
        Connect to 5g network.
@@ -117,6 +122,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     wutils.connect_to_wifi_network(self.dut, self.wpa2_psk_5g)
     self.verify_wpa_network_encryption(OpenWrtWifiSecurity.WPA2_PSK_TKIP)
 
+  @test_tracker_info(uuid="a06be3db-d653-4549-95f3-87bbeb0db813")
   def test_connect_to_wpa2_psk_tkip_and_ccmp_2g(self):
     """Change AP's security type to "WPA2" and cipher to "CCMP and TKIP".
        Connect to 2g network.
@@ -127,6 +133,7 @@ class WifiWpa2PersonalTest(WifiBaseTest):
     self.verify_wpa_network_encryption(
         OpenWrtWifiSecurity.WPA2_PSK_TKIP_AND_CCMP)
 
+  @test_tracker_info(uuid="ac9b9581-0b32-42b4-8e76-de702c837b86")
   def test_connect_to_wpa2_psk_tkip_and_ccmp_5g(self):
     """Change AP's security type to "WPA2" and cipher to "CCMP and TKIP".
        Connect to 5g network.
