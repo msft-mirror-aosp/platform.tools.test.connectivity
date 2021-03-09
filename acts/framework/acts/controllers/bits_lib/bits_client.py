@@ -119,6 +119,37 @@ class BitsClient(object):
                        path)
         job.run(cmd, timeout=600)
 
+    def export_as_csv(self, channels, collection_name, output_file):
+        """Export bits data as CSV.
+
+        Writes the selected channel data to the given output_file. Note that
+        the first line of the file contains headers.
+
+        Args:
+          channels: A list of string pattern matches for the channel to be
+            retrieved. For example, ":mW" will export all power channels,
+            ":mV" will export all voltage channels, "C1_01__" will export
+            power/voltage/current for the first fail of connector 1.
+          collection_name: A string for a collection that is sampling.
+          output_file: A string file path where the CSV will be written.
+        """
+        channels_arg = ','.join(channels)
+        cmd = [self._binary,
+               '--port',
+               self._service.port,
+               '--csvfile',
+               output_file,
+               '--name',
+               collection_name,
+               '--ignore_gaps',
+               '--csv_rawtimestamps',
+               '--channels',
+               channels_arg]
+        self._log.info(
+            'exporting csv for collection %s to %s, with channels %s',
+            collection_name, output_file, channels_arg)
+        job.run(cmd, timeout=600)
+
     def add_markers(self, collection_name, markers):
         """Appends markers to a collection.
 
@@ -310,21 +341,7 @@ class BitsClient(object):
             multiplied by 1000.
         """
         with tempfile.NamedTemporaryFile(prefix='bits_csv_') as tmon:
-            cmd = [self._binary,
-                   '--port',
-                   self._service.port,
-                   '--csvfile',
-                   tmon.name,
-                   '--name',
-                   collection_name,
-                   '--ignore_gaps',
-                   '--csv_rawtimestamps',
-                   '--channels',
-                   channel_pattern]
-            self._log.info(
-                'exporting csv for collection %s to %s, with command %s',
-                collection_name, tmon.name, channel_pattern)
-            job.run(cmd, timeout=600)
+            self.export_as_csv([channel_pattern], collection_name, tmon.name)
 
             self._log.info('massaging bits csv to monsoon format for collection'
                            ' %s', collection_name)

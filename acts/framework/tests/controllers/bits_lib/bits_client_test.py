@@ -100,7 +100,7 @@ class BitsClientTest(unittest.TestCase):
         args_list = mock_run.call_args_list
         non_expected_call = list(
             filter(lambda call: 'usb_connect' in call.args[0], args_list))
-        self.assertEquals(len(non_expected_call), 0,
+        self.assertEqual(len(non_expected_call), 0,
                           'did not expect call with usb_connect')
 
     @mock.patch('acts.libs.proc.job.run')
@@ -128,6 +128,23 @@ class BitsClientTest(unittest.TestCase):
             bits_client.BitsClientError,
             r'collections can only be exported to files ending in .7z.bits',
             client.export, 'collection', '/path/')
+
+    @mock.patch('acts.libs.proc.job.run')
+    def test_export_as_csv(self, mock_run):
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=MONSOONED_CONFIG)
+        output_file = '/path/to/csv'
+        collection = 'collection'
+
+        client.export_as_csv([':mW', ':mV'], collection, output_file)
+
+        mock_run.assert_called()
+        cmd = mock_run.call_args_list[0].args[0]
+        self,
+        self.assertIn(collection, cmd)
+        self.assertIn(output_file, cmd)
+        self.assertIn(':mW,:mV', cmd)
+
 
     @mock.patch('acts.libs.proc.job.run')
     def test_add_markers(self, mock_run):
