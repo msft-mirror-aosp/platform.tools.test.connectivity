@@ -53,6 +53,9 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_defines import \
     WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_PASSWORD_HAS_ESCAPE
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_SSID_LIST
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_PASSWORD_LIST
 from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
@@ -66,7 +69,12 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconn
 from acts_contrib.test_utils.tel.tel_data_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
+from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_apm_tethering_internet_connection
+from acts_contrib.test_utils.tel.tel_data_utils import verify_tethering_entitlement_check
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
+from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_tethering
+from acts_contrib.test_utils.tel.tel_data_utils import test_start_wifi_tethering_connect_teardown
+from acts_contrib.test_utils.tel.tel_data_utils import run_stress_test
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
@@ -1488,43 +1496,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
-            if not self.provider.droid.wifiIsApEnabled():
-                self.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.log.info(
-                "Provider turn on APM, verify no wifi/data on Client.")
-            if not toggle_airplane_mode(self.log, self.provider, True):
-                self.log.error("Provider turn on APM failed.")
-                return False
-            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering not stopped.")
-                return False
-            if not verify_internet_connection(self.log, self.clients[0], expected_state=False):
-                self.clients[0].log.error(
-                    "Client should not have Internet connection.")
-                return False
-            wifi_info = self.clients[0].droid.wifiGetConnectionInfo()
-            self.clients[0].log.info("WiFi Info: {}".format(wifi_info))
-            if wifi_info[WIFI_SSID_KEY] == ssid:
-                self.clients[0].log.error(
-                    "WiFi error. WiFi should not be connected.".format(
-                        wifi_info))
-                return False
-
-            self.log.info("Provider turn off APM.")
-            if not toggle_airplane_mode(self.log, self.provider, False):
-                self.provider.log.error("Provider turn on APM failed.")
-                return False
-            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error(
-                    "Provider WiFi tethering should not on.")
-                return False
-            if not verify_internet_connection(self.log, self.provider):
-                self.provider.log.error(
-                    "Provider should have Internet connection.")
+            if not verify_toggle_apm_tethering_internet_connection(self.log,
+                                                                   self.provider,
+                                                                   self.clients,
+                                                                   ssid):
                 return False
         finally:
             self.clients[0].droid.telephonyToggleDataConnection(True)
@@ -1541,16 +1516,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         Returns:
             True if entitlement check returns True.
         """
-        if (not wait_for_cell_data_connection(self.log, self.provider, True)
-                or not verify_internet_connection(self.log, self.provider)):
-            self.log.error("Failed cell data call for entitlement check.")
-            return False
-
-        result = self.provider.droid.carrierConfigIsTetheringModeAllowed(
-            TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK)
-        self.provider.log.info("Tethering entitlement check result: %s",
-                               result)
-        return result
+        return verify_tethering_entitlement_check(self.log,
+                                                  self.provider)
 
     @test_tracker_info(uuid="4972826e-39ea-42f7-aae0-06fe3aa9ecc6")
     @TelephonyBaseTest.tel_test_wrap
@@ -1564,31 +1531,19 @@ class TelLiveDataTest(TelephonyBaseTest):
             True stress pass rate is higher than MINIMUM_SUCCESS_RATE.
             False otherwise.
         """
-        MINIMUM_SUCCESS_RATE = .95
-        success_count = 0
-        fail_count = 0
-
-        for i in range(1, self.stress_test_number + 1):
-
+        def precondition():
             ensure_phones_default_state(self.log, self.android_devices)
 
-            if self.test_tethering_4g_to_2gwifi():
-                success_count += 1
-                result_str = "Succeeded"
-            else:
-                fail_count += 1
-                result_str = "Failed"
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
-
-        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count, fail_count,
-            str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
-            return True
-        else:
-            return False
+        def test_case():
+            return test_wifi_tethering(self.log,
+                                       self.provider,
+                                       self.clients,
+                                       self.clients,
+                                       RAT_4G,
+                                       WIFI_CONFIG_APBAND_2G,
+                                       check_interval=10,
+                                       check_iteration=10)
+        return run_stress_test(self.log, self.stress_test_number, precondition, test_case)
 
     @test_tracker_info(uuid="54e85aed-09e3-42e2-bb33-bca1005d93ab")
     @TelephonyBaseTest.tel_test_wrap
@@ -1602,21 +1557,19 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, None):
-            self.log.error("Verify Internet access failed.")
-            return False
         ssid = "\"" + rand_ascii_str(10) + "\""
         self.log.info(
             "Starting WiFi Tethering test with ssid: {}".format(ssid))
 
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider,
-            self.clients,
-            ap_band=WIFI_CONFIG_APBAND_2G,
-            check_interval=10,
-            check_iteration=10,
-            ssid=ssid)
+        return test_wifi_tethering(self.log,
+                                   self.provider,
+                                   self.clients,
+                                   self.clients,
+                                   None,
+                                   WIFI_CONFIG_APBAND_2G,
+                                   check_interval=10,
+                                   check_iteration=10,
+                                   ssid=ssid)
 
     @test_tracker_info(uuid="320326da-bf32-444d-81f9-f781c55dbc99")
     @TelephonyBaseTest.tel_test_wrap
@@ -1635,7 +1588,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify Internet access failed.")
             return False
 
-        password = '"DQ=/{Yqq;M=(^_3HzRvhOiL8S%`]w&l<Qp8qH)bs<4E9v_q=HLr^)}w$blA0Kg'
+        password = TETHERING_PASSWORD_HAS_ESCAPE
         self.log.info(
             "Starting WiFi Tethering test with password: {}".format(password))
 
@@ -1647,47 +1600,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10,
             password=password)
-
-    def _test_start_wifi_tethering_connect_teardown(self, ad_host, ad_client,
-                                                    ssid, password):
-        """Private test util for WiFi Tethering.
-
-        1. Host start WiFi tethering.
-        2. Client connect to tethered WiFi.
-        3. Host tear down WiFi tethering.
-
-        Args:
-            ad_host: android device object for host
-            ad_client: android device object for client
-            ssid: WiFi tethering ssid
-            password: WiFi tethering password
-
-        Returns:
-            True if no error happen, otherwise False.
-        """
-        result = True
-        self.number_of_devices = 2
-        # Turn off active SoftAP if any.
-        if ad_host.droid.wifiIsApEnabled():
-            stop_wifi_tethering(self.log, ad_host)
-
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        if not start_wifi_tethering(self.log, ad_host, ssid, password,
-                                    WIFI_CONFIG_APBAND_2G):
-            self.log.error("Start WiFi tethering failed.")
-            result = False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        if not ensure_wifi_connected(self.log, ad_client, ssid, password):
-            self.log.error("Client connect to WiFi failed.")
-            result = False
-        if not wifi_reset(self.log, ad_client):
-            self.log.error("Reset client WiFi failed. {}".format(
-                ad_client.serial))
-            result = False
-        if not stop_wifi_tethering(self.log, ad_host):
-            self.log.error("Stop WiFi tethering failed.")
-            result = False
-        return result
 
     @test_tracker_info(uuid="617c7e71-f166-465f-bfd3-b5a3a40cc0d4")
     @TelephonyBaseTest.tel_test_wrap
@@ -1704,26 +1616,20 @@ class TelLiveDataTest(TelephonyBaseTest):
         if not test_setup_tethering(self.log, self.provider, self.clients, RAT_4G):
             self.log.error("Setup Failed.")
             return False
-        ssid_list = [
-            " !\"#$%&'()*+,-./0123456789:;<=>?",
-            "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
-            "`abcdefghijklmnopqrstuvwxyz{|}~", " a ", "!b!", "#c#", "$d$",
-            "%e%", "&f&", "'g'", "(h(", ")i)", "*j*", "+k+", "-l-", ".m.",
-            "/n/", "_", " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}",
-            "\u0644\u062c\u0648\u062c", "\u8c37\u6b4c", "\uad6c\uae00"
-            "\u30b0\u30fc\u30eb",
-            "\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0443\u0439"
-        ]
+        ssid_list = TETHERING_SPECIAL_SSID_LIST
         fail_list = {}
-
+        self.number_of_devices = 2
         for ssid in ssid_list:
             password = rand_ascii_str(8)
             self.log.info("SSID: <{}>, Password: <{}>".format(ssid, password))
-            if not self._test_start_wifi_tethering_connect_teardown(
-                    self.provider, self.clients[0], ssid, password):
+            if not test_start_wifi_tethering_connect_teardown(self.log,
+                                                          self.provider,
+                                                          self.clients[0],
+                                                          ssid,
+                                                          password):
                 fail_list[ssid] = password
 
-        if (len(fail_list) > 0):
+        if len(fail_list) > 0:
             self.log.error("Failed cases: {}".format(fail_list))
             return False
         else:
@@ -1744,26 +1650,20 @@ class TelLiveDataTest(TelephonyBaseTest):
         if not test_setup_tethering(self.log, self.provider, self.clients, RAT_4G):
             self.log.error("Setup Failed.")
             return False
-        password_list = [
-            " !\"#$%&'()*+,-./0123456789:;<=>?",
-            "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
-            "`abcdefghijklmnopqrstuvwxyz{|}~",
-            " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}", "abcdefgh",
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!",
-            " a12345 ", "!b12345!", "#c12345#", "$d12345$", "%e12345%",
-            "&f12345&", "'g12345'", "(h12345(", ")i12345)", "*j12345*",
-            "+k12345+", "-l12345-", ".m12345.", "/n12345/"
-        ]
+        password_list = TETHERING_SPECIAL_PASSWORD_LIST
         fail_list = {}
-
+        self.number_of_devices = 2
         for password in password_list:
             ssid = rand_ascii_str(8)
             self.log.info("SSID: <{}>, Password: <{}>".format(ssid, password))
-            if not self._test_start_wifi_tethering_connect_teardown(
-                    self.provider, self.clients[0], ssid, password):
+            if not test_start_wifi_tethering_connect_teardown(self.log,
+                                                          self.provider,
+                                                          self.clients[0],
+                                                          ssid,
+                                                          password):
                 fail_list[ssid] = password
 
-        if (len(fail_list) > 0):
+        if len(fail_list) > 0:
             self.log.error("Failed cases: {}".format(fail_list))
             return False
         else:
