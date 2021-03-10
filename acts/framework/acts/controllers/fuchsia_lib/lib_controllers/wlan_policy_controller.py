@@ -54,29 +54,41 @@ class WlanPolicyController:
             preserve_saved_networks: bool, whether to clear existing saved
                 networks and client state, to be restored at test close.
         """
-        # Kill basemgr and create client controller in a retry loop, to
-        # account for small timing variations during boot
         end_time = time.time() + timeout
+
+        # Kill basemgr
         while time.time() < end_time:
             response = self.device.basemgr_lib.killBasemgr()
-            if response.get('error'):
-                self.log.debug('Failed to kill basemgr: %s' %
-                               response['error'])
-                time.sleep(1)
-                continue
+            if not response.get('error'):
+                self.log.debug('Basemgr kill call successfully issued.')
+                break
+            self.log.debug(response['error'])
+            time.sleep(1)
+        else:
+            raise WlanPolicyControllerError(
+                'Failed to issue successful basemgr kill call.')
+
+        # Acquire control of policy layer
+        while time.time() < end_time:
+            # Create a client controller
             response = self.device.wlan_policy_lib.wlanCreateClientController()
             if response.get('error'):
-                self.log.debug(
-                    'Failed to create client controller for WLAN Policy layer: %s'
-                    % response['error'])
+                self.log.debug(response['error'])
                 time.sleep(1)
                 continue
-            self.log.debug('Client controller created successfully.')
+            # Attempt to use the client controller (failure indicates a closed
+            # channel, meaning the client controller was rejected.
+            response = self.device.wlan_policy_lib.wlanGetSavedNetworks()
+            if response.get('error'):
+                self.log.debug(response['error'])
+                time.sleep(1)
+                continue
             break
         else:
             raise WlanPolicyControllerError(
-                'Failed to create a client controller after %s seconds.' %
-                timeout)
+                'Failed to create and use a WLAN policy client controller.')
+
+        self.log.info('ACTS tests now have control of the WLAN policy layer.')
 
         if preserve_saved_networks and not self.preserved_networks_and_client_state:
             self.preserved_networks_and_client_state = self.remove_and_preserve_networks_and_client_state(
