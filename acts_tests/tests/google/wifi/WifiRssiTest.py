@@ -31,6 +31,7 @@ from acts.controllers import iperf_server as ipf
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from concurrent.futures import ThreadPoolExecutor
@@ -297,9 +298,9 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             postprocessed_results: compiled arrays of RSSI data.
         """
-        figure = wputils.BokehFigure(self.current_test_name,
-                                     x_label='Attenuation (dB)',
-                                     primary_y_label='RSSI (dBm)')
+        figure = BokehFigure(self.current_test_name,
+                             x_label='Attenuation (dB)',
+                             primary_y_label='RSSI (dBm)')
         figure.add_line(postprocessed_results['total_attenuation'],
                         postprocessed_results['signal_poll_rssi']['mean'],
                         'Signal Poll RSSI',
@@ -335,7 +336,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             center_curvers: boolean indicating whether to shift curves to align
             them with predicted RSSIs
         """
-        figure = wputils.BokehFigure(
+        figure = BokehFigure(
             self.current_test_name,
             x_label='Time (s)',
             primary_y_label=center_curves * 'Centered' + 'RSSI (dBm)',
@@ -411,10 +412,10 @@ class WifiRssiTest(base_test.BaseTestClass):
                 cum_prob += prob
                 rssi_dist[rssi_key]['rssi_cdf'].append(cum_prob)
 
-        figure = wputils.BokehFigure(self.current_test_name,
-                                     x_label='RSSI (dBm)',
-                                     primary_y_label='p(RSSI = x)',
-                                     secondary_y_label='p(RSSI <= x)')
+        figure = BokehFigure(self.current_test_name,
+                             x_label='RSSI (dBm)',
+                             primary_y_label='p(RSSI = x)',
+                             secondary_y_label='p(RSSI <= x)')
         for rssi_key, rssi_data in rssi_dist.items():
             figure.add_line(x_data=rssi_data['rssi_values'],
                             y_data=rssi_data['rssi_pdf'],
@@ -570,6 +571,8 @@ class WifiRssiTest(base_test.BaseTestClass):
                 'channel'] = testcase_params['channel']
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
+            if self.testbed_params.get('txbf_off', False):
+                wputils.disable_beamforming(self.dut)
             wutils.wifi_connect(self.dut,
                                 self.main_network[testcase_params['band']],
                                 num_of_tries=5)
@@ -975,7 +978,7 @@ class WifiOtaRssiTest(WifiRssiTest):
             return
         plots = []
         for channel, channel_data in testclass_data.items():
-            current_plot = wputils.BokehFigure(
+            current_plot = BokehFigure(
                 title='Channel {} - Rssi vs. Position'.format(channel),
                 x_label=x_label,
                 primary_y_label='RSSI (dBm)',
@@ -988,7 +991,7 @@ class WifiOtaRssiTest(WifiRssiTest):
             plots.append(current_plot)
         current_context = context.get_current_context().get_full_output_path()
         plot_file_path = os.path.join(current_context, 'results.html')
-        wputils.BokehFigure.save_figures(plots, plot_file_path)
+        BokehFigure.save_figures(plots, plot_file_path)
 
     def setup_rssi_test(self, testcase_params):
         # Test setup

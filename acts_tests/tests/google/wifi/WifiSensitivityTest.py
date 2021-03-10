@@ -29,6 +29,7 @@ from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from functools import partial
@@ -775,10 +776,9 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 test_id_str = 'Channel {} - {} MCS{}'.format(
                     test_id_dict['channel'], test_id_dict['mode'],
                     test_id_dict['rate'])
-            curr_plot = wputils.BokehFigure(
-                title=str(test_id_str),
-                x_label='Orientation (deg)',
-                primary_y_label='Sensitivity (dBm)')
+            curr_plot = BokehFigure(title=str(test_id_str),
+                                    x_label='Orientation (deg)',
+                                    primary_y_label='Sensitivity (dBm)')
             for line_id, line_results in test_data.items():
                 curr_plot.add_line(line_results['orientation'],
                                    line_results['sensitivity'],
@@ -807,7 +807,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             curr_plot.generate_figure(output_file_path)
             plots.append(curr_plot)
         output_file_path = os.path.join(current_context, 'results.html')
-        wputils.BokehFigure.save_figures(plots, output_file_path)
+        BokehFigure.save_figures(plots, output_file_path)
 
     def get_start_atten(self, testcase_params):
         """Gets the starting attenuation for this sensitivity test.
