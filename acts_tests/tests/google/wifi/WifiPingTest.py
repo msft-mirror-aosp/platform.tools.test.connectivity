@@ -29,6 +29,7 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
 from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from functools import partial
@@ -257,10 +258,9 @@ class WifiPingTest(base_test.BaseTestClass):
 
         # Plot results
         if 'range' not in self.current_test_name:
-            figure = wputils.BokehFigure(
-                self.current_test_name,
-                x_label='Timestamp (s)',
-                primary_y_label='Round Trip Time (ms)')
+            figure = BokehFigure(self.current_test_name,
+                                 x_label='Timestamp (s)',
+                                 primary_y_label='Round Trip Time (ms)')
             for idx, result in enumerate(ping_range_result['ping_results']):
                 if len(result['rtt']) > 1:
                     x_data = [
@@ -422,6 +422,8 @@ class WifiPingTest(base_test.BaseTestClass):
                                          self.testclass_params['country_code'])
             wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
+            if self.testbed_params.get('txbf_off', False):
+                wputils.disable_beamforming(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
             wutils.wifi_connect(self.dut,
@@ -683,7 +685,7 @@ class WifiOtaPingTest(WifiPingTest):
             x_label = 'Angle (deg)'
         elif chamber_mode == 'stepped stirrers':
             x_label = 'Position Index'
-        figure = wputils.BokehFigure(
+        figure = BokehFigure(
             title='Range vs. Position',
             x_label=x_label,
             primary_y_label='Range (dB)',

@@ -30,6 +30,7 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
 from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from functools import partial
@@ -124,7 +125,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             plot_id = (result['testcase_params']['channel'],
                        result['testcase_params']['mode'])
             if plot_id not in plots:
-                plots[plot_id] = wputils.BokehFigure(
+                plots[plot_id] = BokehFigure(
                     title='Channel {} {} ({})'.format(
                         result['testcase_params']['channel'],
                         result['testcase_params']['mode'],
@@ -141,7 +142,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             plot.generate_figure()
             figure_list.append(plot)
         output_file_path = os.path.join(self.log_path, 'results.html')
-        wputils.BokehFigure.save_figures(figure_list, output_file_path)
+        BokehFigure.save_figures(figure_list, output_file_path)
 
     def pass_fail_check(self, rvr_result):
         """Check the test result and decide if it passed or failed.
@@ -254,9 +255,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         with open(results_file_path, 'w') as results_file:
             json.dump(rvr_result, results_file, indent=4)
         # Plot and save
-        figure = wputils.BokehFigure(title=test_name,
-                                     x_label='Attenuation (dB)',
-                                     primary_y_label='Throughput (Mbps)')
+        figure = BokehFigure(title=test_name,
+                             x_label='Attenuation (dB)',
+                             primary_y_label='Throughput (Mbps)')
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
@@ -529,6 +530,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                                          self.testclass_params['country_code'])
             wutils.wifi_toggle_state(self.sta_dut, True)
             wutils.reset_wifi(self.sta_dut)
+            if self.testbed_params.get('txbf_off', False):
+                wputils.disable_beamforming(self.sta_dut)
             wutils.set_wifi_country_code(self.sta_dut,
                                          self.testclass_params['country_code'])
             if self.testbed_params['sniffer_enable']:
@@ -827,7 +830,7 @@ class WifiOtaRvrTest(WifiRvrTest):
                     key: []
                     for key in result['metrics'].keys()
                 }
-                plots[test_id] = wputils.BokehFigure(
+                plots[test_id] = BokehFigure(
                     title='Channel {} {} ({} {})'.format(
                         result['testcase_params']['channel'],
                         result['testcase_params']['mode'],
@@ -884,7 +887,7 @@ class WifiOtaRvrTest(WifiRvrTest):
             plot.generate_figure()
             figure_list.append(plot)
         output_file_path = os.path.join(self.log_path, 'results.html')
-        wputils.BokehFigure.save_figures(figure_list, output_file_path)
+        BokehFigure.save_figures(figure_list, output_file_path)
 
     def setup_rvr_test(self, testcase_params):
         # Continue test setup
@@ -938,7 +941,7 @@ class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
                                               list(range(0, 360, 45)), ['TCP'],
                                               ['DL'])
         self.tests.extend(
-            self.generate_test_cases([36, 149], ['bw80'],
+            self.generate_test_cases([36, 149], ['bw80', 'bw160'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
         self.tests.extend(
             self.generate_test_cases(['6g5'], ['bw160'],
