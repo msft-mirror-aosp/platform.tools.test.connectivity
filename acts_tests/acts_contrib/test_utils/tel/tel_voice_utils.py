@@ -2123,3 +2123,17 @@ def phone_setup_call_hold_unhold_test(log,
         return False
     return True
 
+
+def _test_call_long_duration(log, ads, dut_incall_check_func, total_duration):
+
+    log.info("Long Duration Call Test. Total duration = %s",
+                  total_duration)
+    return call_setup_teardown(
+        log,
+        ads[0],
+        ads[1],
+        ads[0],
+        verify_caller_func=dut_incall_check_func,
+        wait_time_in_call=total_duration)
+
+
