@@ -326,6 +326,23 @@ class WifiPasspointTest(WifiBaseTest):
                                       " was successfully deleted.")
 
 
+    @test_tracker_info(uuid="")
+    def test_global_reach_passpoint(self):
+        """Test connection to global reach passpoint.
+
+        Steps:
+          1. Install global reach passpoint profile.
+          2. Verify connection to the global reach wifi network.
+          3. Delete passpoint and verify device disconnects.
+        """
+        passpoint_config = self.passpoint_networks[GLOBAL_RE]
+        self.install_passpoint_profile(passpoint_config)
+        ssid = passpoint_config[WifiEnums.SSID_KEY]
+        self.check_passpoint_connection(ssid)
+        self.get_configured_passpoint_and_delete()
+        wutils.wait_for_disconnect(self.dut)
+
+
     @test_tracker_info(uuid="bf03c03a-e649-4e2b-a557-1f791bd98951")
     def test_passpoint_failover(self):
         """Add a pair of passpoint networks and test failover when one of the"
@@ -407,8 +424,8 @@ class WifiPasspointTest(WifiBaseTest):
         """
         carriers = ["att"]
         operator = get_operator_name(self.log, self.dut)
-        asserts.skip_if(operator not in carriers,
-                        "Device %s does not have a ATT sim" % self.dut.model)
+        if operator not in carriers:
+            self.log.warn("Device %s does not have a ATT sim" % self.dut.model)
 
         passpoint_config = self.passpoint_networks[ATT]
         self.install_passpoint_profile(passpoint_config)
