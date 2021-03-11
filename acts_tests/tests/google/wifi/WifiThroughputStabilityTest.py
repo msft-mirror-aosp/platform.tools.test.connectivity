@@ -31,6 +31,7 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
 from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from functools import partial
@@ -235,9 +236,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         with open(results_file_path, 'w') as results_file:
             json.dump(test_result_dict, results_file)
         # Plot and save
-        figure = wputils.BokehFigure(test_name,
-                                     x_label='Time (s)',
-                                     primary_y_label='Throughput (Mbps)')
+        figure = BokehFigure(test_name,
+                             x_label='Time (s)',
+                             primary_y_label='Throughput (Mbps)')
         time_data = list(range(0, len(instantaneous_rates_Mbps)))
         figure.add_line(time_data,
                         instantaneous_rates_Mbps,
@@ -296,6 +297,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         else:
             wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
+            if self.testbed_params.get('txbf_off', False):
+                wputils.disable_beamforming(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
@@ -580,7 +583,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         # Plot test class results
         plots = []
         for channel, channel_data in testclass_data.items():
-            current_plot = wputils.BokehFigure(
+            current_plot = BokehFigure(
                 title='Channel {} - Rate vs. Position'.format(channel),
                 x_label=x_label,
                 primary_y_label='Rate (Mbps)',
@@ -597,7 +600,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             plots.append(current_plot)
         current_context = context.get_current_context().get_full_output_path()
         plot_file_path = os.path.join(current_context, 'results.html')
-        wputils.BokehFigure.save_figures(plots, plot_file_path)
+        BokehFigure.save_figures(plots, plot_file_path)
 
     def setup_throughput_stability_test(self, testcase_params):
         WifiThroughputStabilityTest.setup_throughput_stability_test(
