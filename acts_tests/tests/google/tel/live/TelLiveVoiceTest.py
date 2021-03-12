@@ -35,6 +35,7 @@ from acts_contrib.test_utils.tel.tel_defines import GEN_4G
 from acts_contrib.test_utils.tel.tel_defines import GEN_3G
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
+from acts_contrib.test_utils.tel.tel_defines import TOTAL_LONG_CALL_DURATION
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
@@ -73,6 +74,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import _test_call_long_duration
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import \
@@ -91,7 +93,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
 
-DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
+
 DEFAULT_PING_DURATION = 120  # in seconds
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
@@ -101,9 +103,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         super().setup_class()
 
         self.stress_test_number = self.get_stress_test_number()
-        self.long_duration_call_total_duration = self.user_params.get(
-            "long_duration_call_total_duration",
-            DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
+        self.long_call_duration = self.user_params.get(
+            "long_call_duration",
+            TOTAL_LONG_CALL_DURATION)
         self.number_of_devices = 2
         self.call_server_number = self.user_params.get(
                 "call_server_number", STORY_LINE)
@@ -2943,18 +2945,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         return True
 
-    def _test_call_long_duration(self, dut_incall_check_func, total_duration):
-        ads = self.android_devices
-        self.log.info("Long Duration Call Test. Total duration = %s",
-                      total_duration)
-        return call_setup_teardown(
-            self.log,
-            ads[0],
-            ads[1],
-            ads[0],
-            verify_caller_func=dut_incall_check_func,
-            wait_time_in_call=total_duration)
-
     @test_tracker_info(uuid="d0008b51-25ed-414a-9b82-3ffb139a6e0d")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_long_duration_volte(self):
@@ -2980,8 +2970,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return self._test_call_long_duration(
-            is_phone_in_call_volte, self.long_duration_call_total_duration)
+        return _test_call_long_duration(self.log, ads,
+            is_phone_in_call_volte, self.long_call_duration)
 
     @test_tracker_info(uuid="d4c1aec0-df05-403f-954c-496faf18605a")
     @TelephonyBaseTest.tel_test_wrap
@@ -3010,8 +3000,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return self._test_call_long_duration(
-            is_phone_in_call_iwlan, self.long_duration_call_total_duration)
+        return _test_call_long_duration(self.log, ads,
+            is_phone_in_call_iwlan, self.long_call_duration)
 
     @test_tracker_info(uuid="bc44f3ca-2616-4024-b959-3a5a85503dfd")
     @TelephonyBaseTest.tel_test_wrap
@@ -3038,8 +3028,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return self._test_call_long_duration(
-            is_phone_in_call_3g, self.long_duration_call_total_duration)
+        return _test_call_long_duration(self.log, ads,
+            is_phone_in_call_3g, self.long_call_duration)
 
     def _test_call_hangup_while_ringing(self, ad_caller, ad_callee):
         """ Call a phone and verify ringing, then hangup from the originator

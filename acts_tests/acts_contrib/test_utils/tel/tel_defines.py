@@ -141,6 +141,9 @@ WAIT_TIME_IN_CALL_LONG = 60
 # that the call is actually successful
 WAIT_TIME_IN_CALL_FOR_IMS = 30
 
+# Default total duration for a long call is 1 hour
+TOTAL_LONG_CALL_DURATION = 1 * 60 * 60
+
 # Time to wait after phone receive incoming call before phone reject this call.
 WAIT_TIME_REJECT_CALL = 2
 
