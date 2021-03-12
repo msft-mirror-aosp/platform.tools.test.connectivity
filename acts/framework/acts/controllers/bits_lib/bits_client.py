@@ -145,6 +145,8 @@ class BitsClient(object):
                '--csv_rawtimestamps',
                '--channels',
                channels_arg]
+        if self._server_config.has_virtual_metrics_file:
+            cmd = cmd + ['--vm_file', 'default']
         self._log.info(
             'exporting csv for collection %s to %s, with channels %s',
             collection_name, output_file, channels_arg)

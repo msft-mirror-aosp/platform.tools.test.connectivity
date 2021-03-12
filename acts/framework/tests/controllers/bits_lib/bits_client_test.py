@@ -33,6 +33,18 @@ CONTROLLER_CONFIG_WITHOUT_MONSOON = {}
 NON_MONSOONED_CONFIG = bits_service_config.BitsServiceConfig(
     CONTROLLER_CONFIG_WITHOUT_MONSOON)
 
+KIBBLES_CONFIG = bits_service_config.BitsServiceConfig(
+    {
+        'Kibbles': [{
+            'board': 'board',
+            'connector': 'connector',
+            'serial': 'serial',
+        }],
+    },
+    kibble_bin='bin',
+    kibble_board_file='file.board',
+    virtual_metrics_file='file.vm')
+
 
 class BitsClientTest(unittest.TestCase):
 
@@ -140,11 +152,27 @@ class BitsClientTest(unittest.TestCase):
 
         mock_run.assert_called()
         cmd = mock_run.call_args_list[0].args[0]
-        self,
         self.assertIn(collection, cmd)
         self.assertIn(output_file, cmd)
         self.assertIn(':mW,:mV', cmd)
+        self.assertNotIn('--vm_file', cmd)
+        self.assertNotIn('default', cmd)
 
+    @mock.patch('acts.libs.proc.job.run')
+    def test_export_as_csv_with_virtual_metrics_file(self, mock_run):
+        output_file = '/path/to/csv'
+        collection = 'collection'
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=KIBBLES_CONFIG)
+
+        client.export_as_csv([':mW', ':mV'], collection, output_file)
+
+        mock_run.assert_called()
+        cmd = mock_run.call_args_list[0].args[0]
+        self.assertIn(collection, cmd)
+        self.assertIn(':mW,:mV', cmd)
+        self.assertIn('--vm_file', cmd)
+        self.assertIn('default', cmd)
 
     @mock.patch('acts.libs.proc.job.run')
     def test_add_markers(self, mock_run):
