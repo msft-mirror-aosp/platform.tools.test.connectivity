@@ -20,11 +20,18 @@ message BoundedMetric {
 }
 
 // Wrapper needed to support proto3-like style nullable values.
+// next id: 2
 message DoubleValue {
   optional double value = 1;
 }
 
+// next id: 3
 message KeyValue {
   optional string key = 1;
   optional string value = 2;
+}
+
+// next id: 2
+message BoundedMetricsBundle {
+  repeated BoundedMetric bounded_metrics = 1;
 }
