@@ -64,6 +64,22 @@ def wait_for_event(ad, event_name, timeout=EVENT_TIMEOUT):
         ad.log.info('%sTimed out while waiting for %s', prefix, event_name)
         asserts.fail(event_name)
 
+def _filter_callbacks(event, expected_kv):
+    """
+    Helper method to use in |fail_on_event_with_keys| and
+    |wait_for_event_with_keys|
+    """
+    for expected_k, expected_v in expected_kv:
+        actual_v = event['data'][expected_k]
+        if isinstance(expected_v, dict) and isinstance(actual_v, dict):
+            # |expected_v| not a subset of |actual_v|
+            if not(expected_v.items() <= actual_v.items()):
+                return False
+        else:
+            if actual_v != expected_v:
+                return False
+    return True
+
 
 def wait_for_event_with_keys(ad,
                              event_name,
@@ -75,22 +91,16 @@ def wait_for_event_with_keys(ad,
     ad: The android device
     event_name: The event to wait on
     timeout: Number of seconds to wait
-    keyvalues: (kay, value) pairs
+    keyvalues: Expected (key, value) pairs. If the value for a key is a dict,
+               then this will perform subset matching for that key.
   Returns:
     The event (if available)
   """
-    def filter_callbacks(event, keyvalues):
-        for keyvalue in keyvalues:
-            key, value = keyvalue
-            if event['data'][key] != value:
-                return False
-        return True
-
     prefix = ''
     if hasattr(ad, 'pretty_name'):
         prefix = '[%s] ' % ad.pretty_name
     try:
-        event = ad.ed.wait_for_event(event_name, filter_callbacks, timeout,
+        event = ad.ed.wait_for_event(event_name, _filter_callbacks, timeout,
                                      keyvalues)
         ad.log.info('%s%s: %s', prefix, event_name, event['data'])
         return event
@@ -129,20 +139,14 @@ def fail_on_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT, *keyvalues):
     ad: The android device
     event_name: The event to wait on
     timeout: Number of seconds to wait
-    keyvalues: (kay, value) pairs
+    keyvalues: Expected (key, value) pairs. If the value for a key is a dict,
+               then this will perform subset matching for that key.
   """
-    def filter_callbacks(event, keyvalues):
-        for keyvalue in keyvalues:
-            key, value = keyvalue
-            if event['data'][key] != value:
-                return False
-        return True
-
     prefix = ''
     if hasattr(ad, 'pretty_name'):
         prefix = '[%s] ' % ad.pretty_name
     try:
-        event = ad.ed.wait_for_event(event_name, filter_callbacks, timeout,
+        event = ad.ed.wait_for_event(event_name, _filter_callbacks, timeout,
                                      keyvalues)
         ad.log.info('%sReceived unwanted %s: %s', prefix, event_name,
                     event['data'])
