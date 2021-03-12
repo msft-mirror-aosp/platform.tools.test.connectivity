@@ -36,9 +36,9 @@ NON_MONSOONED_CONFIG = bits_service_config.BitsServiceConfig(
 KIBBLES_CONFIG = bits_service_config.BitsServiceConfig(
     {
         'Kibbles': [{
-            'board': 'board',
+            'board':     'board',
             'connector': 'connector',
-            'serial': 'serial',
+            'serial':    'serial',
         }],
     },
     kibble_bin='bin',
@@ -52,6 +52,25 @@ class BitsClientTest(unittest.TestCase):
         super().setUp()
         self.mock_service = mock.Mock()
         self.mock_service.port = '42'
+
+    @mock.patch('acts.libs.proc.job.run')
+    def test_execute_generic_command(self, mock_run):
+        mock_service = mock.Mock()
+        mock_service.port = '1337'
+        client = bits_client.BitsClient('bits.par', mock_service,
+                                        service_config=KIBBLES_CONFIG)
+
+        client.run_cmd('-i', '-am', '-not', '-a', '-teapot', timeout=12345)
+
+        expected_final_command = ['bits.par',
+                                  '--port',
+                                  '1337',
+                                  '-i',
+                                  '-am',
+                                  '-not',
+                                  '-a',
+                                  '-teapot']
+        mock_run.assert_called_with(expected_final_command, timeout=12345)
 
     @mock.patch('acts.libs.proc.job.run')
     def test_start_collection__without_monsoon__does_not_disconnect_monsoon(
@@ -113,7 +132,7 @@ class BitsClientTest(unittest.TestCase):
         non_expected_call = list(
             filter(lambda call: 'usb_connect' in call.args[0], args_list))
         self.assertEqual(len(non_expected_call), 0,
-                          'did not expect call with usb_connect')
+                         'did not expect call with usb_connect')
 
     @mock.patch('acts.libs.proc.job.run')
     def test_export_ignores_dataseries_gaps(self, mock_run):

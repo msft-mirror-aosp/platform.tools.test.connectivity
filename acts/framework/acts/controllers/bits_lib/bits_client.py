@@ -71,26 +71,33 @@ class BitsClient(object):
     def _acquire_monsoon(self):
         """Gets hold of a Monsoon so no other processes can use it.
         Only works if there is a monsoon."""
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--collector',
-               'Monsoon',
-               '--collector_cmd',
-               'acquire_monsoon']
-        self._log.info('acquiring monsoon')
-        job.run(cmd, timeout=10)
+        self._log.debug('acquiring monsoon')
+        self.run_cmd('--collector',
+                     'Monsoon',
+                     '--collector_cmd',
+                     'acquire_monsoon', timeout=10)
 
     def _release_monsoon(self):
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--collector',
-               'Monsoon',
-               '--collector_cmd',
-               'release_monsoon']
-        self._log.info('releasing monsoon')
-        job.run(cmd, timeout=10)
+        self._log.debug('releasing monsoon')
+        self.run_cmd('--collector',
+                     'Monsoon',
+                     '--collector_cmd',
+                     'release_monsoon', timeout=10)
+
+    def run_cmd(self, *args, timeout=60):
+        """Executes a generic bits.par command.
+
+        Args:
+            args: A bits.par command as a tokenized array. The path to the
+              binary and the service port are provided by default, cmd should
+              only contain the remaining tokens of the desired command.
+            timeout: Number of seconds to wait for the command to finish before
+              forcibly killing it.
+        """
+        result = job.run([self._binary, '--port',
+                          self._service.port] + [str(arg) for arg in args],
+                         timeout=timeout)
+        return result.stdout
 
     def export(self, collection_name, path):
         """Exports a collection to its bits persistent format.
@@ -105,19 +112,16 @@ class BitsClient(object):
         if not path.endswith('.7z.bits'):
             raise BitsClientError('Bits\' collections can only be exported to '
                                   'files ending in .7z.bits, got %s' % path)
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--name',
-               collection_name,
-               '--ignore_gaps',
-               '--export',
-               '--export_path',
-               path]
-        self._log.info('exporting collection %s to %s',
-                       collection_name,
-                       path)
-        job.run(cmd, timeout=600)
+        self._log.debug('exporting collection %s to %s',
+                        collection_name,
+                        path)
+        self.run_cmd('--name',
+                     collection_name,
+                     '--ignore_gaps',
+                     '--export',
+                     '--export_path',
+                     path,
+                     timeout=600)
 
     def export_as_csv(self, channels, collection_name, output_file):
         """Export bits data as CSV.
@@ -134,10 +138,7 @@ class BitsClient(object):
           output_file: A string file path where the CSV will be written.
         """
         channels_arg = ','.join(channels)
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--csvfile',
+        cmd = ['--csvfile',
                output_file,
                '--name',
                collection_name,
@@ -147,10 +148,10 @@ class BitsClient(object):
                channels_arg]
         if self._server_config.has_virtual_metrics_file:
             cmd = cmd + ['--vm_file', 'default']
-        self._log.info(
+        self._log.debug(
             'exporting csv for collection %s to %s, with channels %s',
             collection_name, output_file, channels_arg)
-        job.run(cmd, timeout=600)
+        self.run_cmd(*cmd, timeout=600)
 
     def add_markers(self, collection_name, markers):
         """Appends markers to a collection.
@@ -179,17 +180,14 @@ class BitsClient(object):
         # sorts markers in chronological order before adding them. This is
         # required by go/pixel-bits
         for ts, marker in sorted(markers, key=lambda x: _to_ns(x[0])):
-            self._log.info('Adding marker at %s: %s', str(ts), marker)
-            cmd = [self._binary,
-                   '--port',
-                   self._service.port,
-                   '--name',
-                   collection_name,
-                   '--log_ts',
-                   str(_to_ns(ts)),
-                   '--log',
-                   marker]
-            job.run(cmd, timeout=10)
+            self._log.debug('Adding marker at %s: %s', str(ts), marker)
+            self.run_cmd('--name',
+                         collection_name,
+                         '--log_ts',
+                         str(_to_ns(ts)),
+                         '--log',
+                         marker,
+                         timeout=10)
 
     def get_metrics(self, collection_name, start=None, end=None):
         """Extracts metrics for a period of time.
@@ -204,10 +202,7 @@ class BitsClient(object):
             end of the collection.
         """
         with tempfile.NamedTemporaryFile(prefix='bits_metrics') as tf:
-            cmd = [self._binary,
-                   '--port',
-                   self._service.port,
-                   '--name',
+            cmd = ['--name',
                    collection_name,
                    '--ignore_gaps',
                    '--aggregates_yaml_path',
@@ -220,7 +215,7 @@ class BitsClient(object):
             if self._server_config.has_virtual_metrics_file:
                 cmd = cmd + ['--vm_file', 'default']
 
-            job.run(cmd)
+            self.run_cmd(*cmd)
             with open(tf.name) as mf:
                 self._log.debug(
                     'bits aggregates for collection %s [%s-%s]: %s' % (
@@ -232,15 +227,11 @@ class BitsClient(object):
 
     def disconnect_usb(self):
         """Disconnects the monsoon's usb. Only works if there is a monsoon"""
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--collector',
-               'Monsoon',
-               '--collector_cmd',
-               'usb_disconnect']
-        self._log.info('disconnecting monsoon\'s usb')
-        job.run(cmd, timeout=10)
+        self._log.debug('disconnecting monsoon\'s usb')
+        self.run_cmd('--collector',
+                     'Monsoon',
+                     '--collector_cmd',
+                     'usb_disconnect', timeout=10)
 
     def start_collection(self, collection_name, default_sampling_rate=1000):
         """Indicates Bits to start a collection.
@@ -253,10 +244,7 @@ class BitsClient(object):
             default_sampling_rate: Samples per second to be collected
         """
 
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--name',
+        cmd = ['--name',
                collection_name,
                '--non_blocking',
                '--time',
@@ -267,32 +255,25 @@ class BitsClient(object):
         if self._server_config.has_kibbles:
             cmd = cmd + ['--disk_space_saver']
 
-        self._log.info('starting collection %s', collection_name)
-        job.run(cmd, timeout=10)
+        self._log.debug('starting collection %s', collection_name)
+        self.run_cmd(*cmd, timeout=10)
 
     def connect_usb(self):
         """Connects the monsoon's usb. Only works if there is a monsoon."""
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--collector',
+        cmd = ['--collector',
                'Monsoon',
                '--collector_cmd',
                'usb_connect']
-        self._log.info('connecting monsoon\'s usb')
-        job.run(cmd, timeout=10)
+        self._log.debug('connecting monsoon\'s usb')
+        self.run_cmd(*cmd, timeout=10)
 
     def stop_collection(self, collection_name):
         """Stops the active collection."""
-        self._log.info('stopping collection %s', collection_name)
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--name',
-               collection_name,
-               '--stop']
-        job.run(cmd)
-        self._log.info('stopped collection %s', collection_name)
+        self._log.debug('stopping collection %s', collection_name)
+        self.run_cmd('--name',
+                     collection_name,
+                     '--stop')
+        self._log.debug('stopped collection %s', collection_name)
 
     def list_devices(self):
         """Lists devices managed by the bits_server this client is connected
@@ -301,13 +282,8 @@ class BitsClient(object):
         Returns:
             bits' output when called with --list devices.
         """
-        cmd = [self._binary,
-               '--port',
-               self._service.port,
-               '--list',
-               'devices']
         self._log.debug('listing devices')
-        result = job.run(cmd, timeout=20)
+        result = self.run_cmd('--list', 'devices', timeout=20)
         return result.stdout
 
     def list_channels(self, collection_name):
@@ -345,12 +321,13 @@ class BitsClient(object):
         with tempfile.NamedTemporaryFile(prefix='bits_csv_') as tmon:
             self.export_as_csv([channel_pattern], collection_name, tmon.name)
 
-            self._log.info('massaging bits csv to monsoon format for collection'
-                           ' %s', collection_name)
+            self._log.debug(
+                'massaging bits csv to monsoon format for collection'
+                ' %s', collection_name)
             with open(tmon.name) as csv_file:
                 reader = csv.reader(csv_file)
                 headers = next(reader)
-                logging.getLogger().info('csv headers %s', headers)
+                self._log.debug('csv headers %s', headers)
                 with open(dest_path, 'w') as dest:
                     for row in reader:
                         ts = float(row[0]) / 1e9
