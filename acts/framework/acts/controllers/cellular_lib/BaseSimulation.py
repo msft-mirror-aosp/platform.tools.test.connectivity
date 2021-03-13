@@ -21,7 +21,7 @@ import numpy as np
 from acts.controllers import cellular_simulator
 
 
-class BaseSimulation():
+class BaseSimulation(object):
     """ Base class for cellular connectivity simulations.
 
     Classes that inherit from this base class implement different simulation
