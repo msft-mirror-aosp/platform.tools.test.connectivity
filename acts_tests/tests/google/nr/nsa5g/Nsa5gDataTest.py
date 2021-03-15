@@ -26,20 +26,12 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DAT
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackCapabilitiesChanged
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackLost
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts_contrib.test_utils.tel.tel_defines import RAT_2G
-from acts_contrib.test_utils.tel.tel_defines import RAT_3G
-from acts_contrib.test_utils.tel.tel_defines import RAT_4G
-from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
-from acts_contrib.test_utils.tel.tel_defines import \
-    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_detection
 from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_test_utils import check_network_validation_fail
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
@@ -51,26 +43,17 @@ from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failur
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
 from acts_contrib.test_utils.tel.tel_data_utils import test_data_connectivity_multi_bearer
-from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
-from acts_contrib.test_utils.tel.tel_data_utils import test_tethering_wifi_and_voice_call
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
-from acts_contrib.test_utils.tel.tel_data_utils import tethering_check_internet_connection
-from acts_contrib.test_utils.tel.tel_data_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import verify_for_network_callback
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
-from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
-from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 
@@ -388,7 +371,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return browsing_test(ad.log, ad)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7179f0f1-f0ca-4496-8f4a-7eebc616a41a")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_switching(self):
         """Test data connection network switching when phone camped on nsa 5G.
@@ -408,7 +391,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
                                    self.wifi_network_pass)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="75066e0a-0e2e-4346-a253-6ed11d1c4d23")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_multi_bearer(self):
         """Test nsa5G data connection before call and in call. (VoLTE call)
@@ -431,7 +414,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return test_data_connectivity_multi_bearer(self.log, ads, GEN_5G)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e88b226e-3842-4c45-a33e-d4fee7d8f6f0")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa(self):
         """Test data connection in nsa5g.
@@ -452,7 +435,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(ad.log, ad, GEN_5G)
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4c70e09d-f215-4c5b-8c61-f9e9def43d30")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_not_associated(self):
         """Test data connection in nsa 5g.
@@ -474,511 +457,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(ad.log, ad, GEN_5G)
 
 
-    @test_tracker_info(uuid="2d945656-22f7-4610-9a84-40ce04d603a4")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering(self):
-        """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start Bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Toggle provider bluetooth connection
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients)
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering_with_voice_call(self):
-        """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start Bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Verify provider and client are able to make or receive phone call
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients,
-            toggle_tethering=False, toggle_bluetooth=False, voice_call=True)
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering_toggle_data(self):
-        """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start Bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Toggle provider data connection
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients,
-            toggle_tethering=False, toggle_bluetooth=False, toggle_data=True)
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering_toggle_tethering(self):
-        """Bluetooth Tethering test: nsa 5G to Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start Bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Toggle provider bluetooth tethering
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 4G Internet access failed.")
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients,
-            toggle_tethering=True, toggle_bluetooth=False, toggle_data=False)
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering_rat_from_5g_nsa_to_4g(self):
-        """Bluetooth Tethering test: nsa 5G to 4G Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Change provider RAT to 4G
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients,
-            toggle_tethering=False,
-            toggle_bluetooth=False,
-            toggle_data=False,
-            change_rat=RAT_4G)
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering_rat_from_5g_nsa_to_3g(self):
-        """Bluetooth Tethering test: nsa5G to 3G Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Change provider RAT to 3G
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients,
-            toggle_tethering=False,
-            toggle_bluetooth=False,
-            toggle_data=False,
-            change_rat=RAT_3G)
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_bluetooth_tethering_rat_from_5g_nsa_to_2g(self):
-        """Bluetooth Tethering test: nsa5G to 2G Bluetooth Tethering
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start bluetooth Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-        5. Change provider RAT to 2G
-        6. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-
-        return verify_bluetooth_tethering_connection(self.log, self.provider, self.clients,
-            toggle_tethering=False,
-            toggle_bluetooth=False,
-            toggle_data=False,
-            change_rat=RAT_2G)
-
-
-    @test_tracker_info(uuid="0e38f30e-08f3-4be1-af61-c07c37c93b70")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_2gwifi(self):
-        """WiFi Tethering test: 5G NSA to WiFI 2G Tethering
-
-        1. DUT in 5G NSA mode, attached.
-        2. DUT start 5G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G NSA Internet access failed.")
-            return False
-
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider,
-            self.clients,
-            ap_band=WIFI_CONFIG_APBAND_2G,
-            check_interval=10,
-            check_iteration=10)
-
-
-    @test_tracker_info(uuid="5f2c6cb3-c32c-4f96-a2f4-7b901bb9a328")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_5gwifi(self):
-        """WiFi Tethering test: 5G NSA to WiFI 5G Tethering
-
-        1. DUT in 5G NSA mode, attached.
-        2. DUT start 5G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verify Internet access on DUT and PhoneB
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G nsa Internet access failed.")
-            return False
-
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider,
-            self.clients,
-            ap_band=WIFI_CONFIG_APBAND_5G,
-            check_interval=10,
-            check_iteration=10)
-
-
-    # Invalid Live Test. Can't rely on the result of this test with live network.
-    # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_5g_to_3g(self):
-        """WiFi Tethering test: Change Cellular Data RAT generation from nsa 5G to 3G,
-            during active WiFi Tethering.
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start 2.4G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verily Internet access on DUT and PhoneB
-        5. Change DUT Cellular Data RAT generation from nsa5G to 3G.
-        6. Verify both DUT and PhoneB have Internet access.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-        try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
-                return False
-
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.log.info("Provider change RAT from nsa 5G to 3G.")
-            if not ensure_network_generation(
-                    self.log,
-                    self.provider,
-                    RAT_3G,
-                    voice_or_data=NETWORK_SERVICE_DATA,
-                    toggle_apm_after_setting=False):
-                self.provider.log.error("Provider failed to reselect to 3G.")
-                return False
-            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_internet_connection(self.log, self.provider):
-                self.provider.log.error("Data not available on Provider.")
-                return False
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-            if not tethering_check_internet_connection(
-                    self.log, self.provider, [self.clients[0]], 10, 5):
-                return False
-        finally:
-            if not wifi_tethering_cleanup(self.log, self.provider,
-                                          self.clients):
-                return False
-        return True
-
-
-    # Invalid Live Test. Can't rely on the result of this test with live network.
-    # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_3g_to_5g(self):
-        """WiFi Tethering test: Change Cellular Data RAT generation from 3G to nsa5G,
-            during active WiFi Tethering.
-
-        1. DUT in 3G mode, idle.
-        2. DUT start 2.4G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verily Internet access on DUT and PhoneB
-        5. Change DUT Cellular Data RAT generation from 3G to nsa5G.
-        6. Verify both DUT and PhoneB have Internet access.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_3G):
-            self.log.error("Verify 3G Internet access failed.")
-            return False
-        try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
-                return False
-
-            if not self.provider.droid.wifiIsApEnabled():
-                self.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.log.info("Provider change RAT from 3G to 5G.")
-            if not ensure_network_generation(
-                    self.log,
-                    self.provider,
-                    RAT_4G,
-                    voice_or_data=NETWORK_SERVICE_DATA,
-                    toggle_apm_after_setting=False):
-                self.log.error("Provider failed to reselect to LTE")
-                return False
-            if not provision_device_for_5g(self.log, self.provider):
-                self.log.error("Provider failed to reselect to nsa 5G")
-                return False
-            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_internet_connection(self.log, self.provider):
-                self.provider.log.error("Data not available on Provider.")
-                return False
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-            if not tethering_check_internet_connection(
-                    self.log, self.provider, [self.clients[0]], 10, 5):
-                return False
-        finally:
-            if not wifi_tethering_cleanup(self.log, self.provider, [self.clients[0]]):
-                return False
-        return True
-
-
-    # Invalid Live Test. Can't rely on the result of this test with live network.
-    # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_5g_to_4g(self):
-        """WiFi Tethering test: Change Cellular Data RAT generation from nsa 5G to 4G,
-            during active WiFi Tethering.
-
-        1. DUT in nsa 5G mode, idle.
-        2. DUT start 2.4G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verily Internet access on DUT and PhoneB
-        5. Change DUT Cellular Data RAT generation from nsa5G to LTE.
-        6. Verify both DUT and PhoneB have Internet access.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G):
-            self.log.error("Verify 5G Internet access failed.")
-            return False
-        try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
-                return False
-
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.log.info("Provider change RAT from 5G to LTE.")
-            if not ensure_network_generation(
-                    self.log,
-                    self.provider,
-                    RAT_4G,
-                    voice_or_data=NETWORK_SERVICE_DATA,
-                    toggle_apm_after_setting=False):
-                self.provider.log.error("Provider failed to reselect to 4G.")
-                return False
-            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_internet_connection(self.log, self.provider):
-                self.provider.log.error("Data not available on Provider.")
-                return False
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-            if not tethering_check_internet_connection(
-                    self.log, self.provider, [self.clients[0]], 10, 5):
-                return False
-        finally:
-            if not wifi_tethering_cleanup(self.log, self.provider,
-                                          self.clients):
-                return False
-        return True
-
-
-    # Invalid Live Test. Can't rely on the result of this test with live network.
-    # Network may decide not to change the RAT when data connection is active.
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_from_4g_to_5g(self):
-        """WiFi Tethering test: Change Cellular Data RAT generation from 4G to nsa5G,
-            during active WiFi Tethering.
-
-        1. DUT in 4G mode, idle.
-        2. DUT start 2.4G WiFi Tethering
-        3. PhoneB disable data, connect to DUT's softAP
-        4. Verily Internet access on DUT and PhoneB
-        5. Change DUT Cellular Data RAT generation from 4G to nsa5G.
-        6. Verify both DUT and PhoneB have Internet access.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
-            return False
-        try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
-                return False
-
-            if not self.provider.droid.wifiIsApEnabled():
-                self.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.log.info("Provider change RAT from 4G to 5G.")
-            if not ensure_network_generation(
-                    self.log,
-                    self.provider,
-                    RAT_4G,
-                    voice_or_data=NETWORK_SERVICE_DATA,
-                    toggle_apm_after_setting=False):
-                self.log.error("Provider failed to reselect to LTE")
-                return False
-            if not provision_device_for_5g(self.log, self.provider):
-                self.log.error("Provider failed to reselect to nsa 5G")
-                return False
-            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_internet_connection(self.log, self.provider):
-                self.provider.log.error("Data not available on Provider.")
-                return False
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-            if not tethering_check_internet_connection(
-                    self.log, self.provider, [self.clients[0]], 10, 5):
-                return False
-        finally:
-            if not wifi_tethering_cleanup(self.log, self.provider, [self.clients[0]]):
-                return False
-        return True
-
-
-    @test_tracker_info(uuid="")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_wifi_tethering_volte_call(self):
-        """WiFi Tethering test: VoLTE call during WiFi tethering
-        1. Start LTE to WiFi (2.4G) tethering.
-        2. Verify tethering.
-        3. Make outgoing VoLTE call on tethering provider.
-        4. Verify tethering still works.
-        5. Make incoming VoLTE call on tethering provider.
-        6. Verify tethering still works.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        return test_tethering_wifi_and_voice_call(self.log, self.provider, self.clients,
-            RAT_5G, phone_setup_volte, is_phone_in_call_volte)
-
-
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8308bf40-7f1b-443f-bde6-19d9ff97e471")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_connect_disconnect(self):
         """Perform multiple connects and disconnects from WiFi and verify that

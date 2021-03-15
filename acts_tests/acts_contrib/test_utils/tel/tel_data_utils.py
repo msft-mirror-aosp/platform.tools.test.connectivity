@@ -45,6 +45,11 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
+from acts_contrib.test_utils.tel.tel_defines import \
+    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -80,10 +85,19 @@ from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
+from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 
 
 def wifi_tethering_cleanup(log, provider, client_list):
@@ -1323,3 +1337,470 @@ def test_wifi_connect_disconnect(log, ad, wifi_network_ssid=None, wifi_network_p
             log.error("Failed to get user-plane traffic, aborting!")
             return False
     return True
+
+
+def test_call_setup_in_active_data_transfer(
+        log,
+        ads,
+        nw_gen=None,
+        call_direction=DIRECTION_MOBILE_ORIGINATED,
+        allow_data_transfer_interruption=False):
+    """Test call can be established during active data connection.
+
+    Turn off airplane mode, disable WiFi, enable Cellular Data.
+    Make sure phone in <nw_gen>.
+    Starting downloading file from Internet.
+    Initiate a voice call. Verify call can be established.
+    Hangup Voice Call, verify file is downloaded successfully.
+    Note: file download will be suspended when call is initiated if voice
+          is using voice channel and voice channel and data channel are
+          on different RATs.
+    Args:
+        log: log object.
+        ads: list of android objects, this list should have two ad.
+        nw_gen: network generation.
+        call_direction: MO(DIRECTION_MOBILE_ORIGINATED) or MT(DIRECTION_MOBILE_TERMINATED) call.
+        allow_data_transfer_interruption: if allow to interrupt data transfer.
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+
+    def _call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
+                             caller_verifier, callee_verifier,
+                             wait_time_in_call):
+        # wait time for active data transfer
+        time.sleep(5)
+        return call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
+                                   caller_verifier, callee_verifier,
+                                   wait_time_in_call)
+
+    if nw_gen == GEN_5G:
+        if not provision_device_for_5g(log, ads[0]):
+            ads[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+    elif nw_gen:
+        if not ensure_network_generation(log, ads[0], nw_gen,
+                                         MAX_WAIT_TIME_NW_SELECTION,
+                                         NETWORK_SERVICE_DATA):
+            ads[0].log.error("Device failed to reselect in %s.",
+                             MAX_WAIT_TIME_NW_SELECTION)
+            return False
+
+        ads[0].droid.telephonyToggleDataConnection(True)
+        if not wait_for_cell_data_connection(log, ads[0], True):
+            ads[0].log.error("Data connection is not on cell")
+            return False
+    else:
+        ads[0].log.debug("Skipping network generation since it is None")
+
+    if not verify_internet_connection(log, ads[0]):
+        ads[0].log.error("Internet connection is not available")
+        return False
+
+    if call_direction == DIRECTION_MOBILE_ORIGINATED:
+        ad_caller = ads[0]
+        ad_callee = ads[1]
+    else:
+        ad_caller = ads[1]
+        ad_callee = ads[0]
+    ad_download = ads[0]
+
+    start_youtube_video(ad_download)
+    call_task = (_call_setup_teardown, (log, ad_caller, ad_callee,
+                                        ad_caller, None, None, 30))
+    download_task = active_file_download_task(log, ad_download)
+    results = run_multithread_func(log, [download_task, call_task])
+    if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+        ad_download.log.info("After call hangup, audio is back to music")
+    else:
+        ad_download.log.warning(
+            "After call hang up, audio is not back to music")
+    ad_download.force_stop_apk("com.google.android.youtube")
+    if not results[1]:
+        log.error("Call setup failed in active data transfer.")
+    if results[0]:
+        ad_download.log.info("Data transfer succeeded.")
+        return True
+    elif not allow_data_transfer_interruption:
+        ad_download.log.error(
+            "Data transfer failed with parallel phone call.")
+        return False
+    else:
+        ad_download.log.info("Retry data connection after call hung up")
+        if not verify_internet_connection(log, ad_download):
+            ad_download.log.error("Internet connection is not available")
+            return False
+    if nw_gen == GEN_5G and not is_current_network_5g_nsa(ads[0]):
+        ads[0].log.error("Phone not attached on 5G NSA after call.")
+        return False
+    return True
+
+
+def test_call_setup_in_active_youtube_video(
+        log,
+        ads,
+        nw_gen=None,
+        call_direction=DIRECTION_MOBILE_ORIGINATED,
+        allow_data_transfer_interruption=False):
+    """Test call can be established during active data connection.
+
+    Turn off airplane mode, disable WiFi, enable Cellular Data.
+    Make sure phone in <nw_gen>.
+    Starting playing youtube video.
+    Initiate a voice call. Verify call can be established.
+    Args:
+        log: log object.
+        ads: list of android objects, this list should have two ad.
+        nw_gen: network generation.
+        call_direction: MO(DIRECTION_MOBILE_ORIGINATED) or MT(DIRECTION_MOBILE_TERMINATED) call.
+        allow_data_transfer_interruption: if allow to interrupt data transfer.
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    if nw_gen == GEN_5G:
+        if not provision_device_for_5g(log, ads[0]):
+            ads[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+    elif nw_gen:
+        if not ensure_network_generation(log, ads[0], nw_gen,
+                                         MAX_WAIT_TIME_NW_SELECTION,
+                                         NETWORK_SERVICE_DATA):
+            ads[0].log.error("Device failed to reselect in %s.",
+                             MAX_WAIT_TIME_NW_SELECTION)
+            return False
+    else:
+        ensure_phones_default_state(log, ads)
+    ads[0].droid.telephonyToggleDataConnection(True)
+    if not wait_for_cell_data_connection(log, ads[0], True):
+        ads[0].log.error("Data connection is not on cell")
+        return False
+
+    if not verify_internet_connection(log, ads[0]):
+        ads[0].log.error("Internet connection is not available")
+        return False
+
+    if call_direction == DIRECTION_MOBILE_ORIGINATED:
+        ad_caller = ads[0]
+        ad_callee = ads[1]
+    else:
+        ad_caller = ads[1]
+        ad_callee = ads[0]
+    ad_download = ads[0]
+
+    if not start_youtube_video(ad_download):
+        ad_download.log.warning("Fail to bring up youtube video")
+
+    if not call_setup_teardown(log, ad_caller, ad_callee, ad_caller,
+                               None, None, 30):
+        ad_download.log.error("Call setup failed in active youtube video")
+        result = False
+    else:
+        ad_download.log.info("Call setup succeed in active youtube video")
+        result = True
+
+    if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+        ad_download.log.info("After call hangup, audio is back to music")
+    else:
+        ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+    ad_download.force_stop_apk("com.google.android.youtube")
+    if nw_gen == GEN_5G and not is_current_network_5g_nsa(ads[0]):
+        ads[0].log.error("Phone not attached on 5G NSA after call.")
+        result = False
+    return result
+
+
+def call_epdg_to_epdg_wfc(log,
+                          ads,
+                          apm_mode,
+                          wfc_mode,
+                          wifi_ssid,
+                          wifi_pwd,
+                          nw_gen=None):
+    """ Test epdg<->epdg call functionality.
+
+    Make Sure PhoneA is set to make epdg call.
+    Make Sure PhoneB is set to make epdg call.
+    Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+    Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+
+    Args:
+        log: log object.
+        ads: list of android objects, this list should have two ad.
+        apm_mode: phones' airplane mode.
+            if True, phones are in airplane mode during test.
+            if False, phones are not in airplane mode during test.
+        wfc_mode: phones' wfc mode.
+            Valid mode includes: WFC_MODE_WIFI_ONLY, WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_WIFI_PREFERRED, WFC_MODE_DISABLED.
+        wifi_ssid: WiFi ssid to connect during test.
+        wifi_pwd: WiFi password.
+        nw_gen: network generation.
+
+    Returns:
+        True if pass; False if fail.
+    """
+    DEFAULT_PING_DURATION = 120
+
+    if nw_gen == GEN_5G:
+        # Turn off apm first before setting network preferred mode to 5G NSA.
+        log.info("Turn off APM mode before starting testing.")
+        tasks = [(toggle_airplane_mode, (log, ads[0], False)),
+                 (toggle_airplane_mode, (log, ads[1], False))]
+        if not multithread_func(log, tasks):
+            log.error("Failed to turn off airplane mode")
+            return False
+        if not provision_both_devices_for_5g(log, ads):
+            log.error("Phone not attached on 5G NSA before epdg call.")
+            return False
+
+    tasks = [(phone_setup_iwlan, (log, ads[0], apm_mode, wfc_mode,
+                                  wifi_ssid, wifi_pwd)),
+             (phone_setup_iwlan, (log, ads[1], apm_mode, wfc_mode,
+                                  wifi_ssid, wifi_pwd))]
+    if not multithread_func(log, tasks):
+        log.error("Phone Failed to Set Up Properly.")
+        return False
+
+    ad_ping = ads[0]
+
+    call_task = (two_phone_call_short_seq,
+                 (log, ads[0], phone_idle_iwlan,
+                  is_phone_in_call_iwlan, ads[1], phone_idle_iwlan,
+                  is_phone_in_call_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS))
+    ping_task = (adb_shell_ping, (ad_ping, DEFAULT_PING_DURATION))
+
+    results = run_multithread_func(log, [ping_task, call_task])
+
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+    if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(log, ads):
+        log.error("Phone not attached on 5G NSA after epdg call.")
+        return False
+
+    if not results[1]:
+        log.error("Call setup failed in active ICMP transfer.")
+    if results[0]:
+        log.info("ICMP transfer succeeded with parallel phone call.")
+    else:
+        log.error("ICMP transfer failed with parallel phone call.")
+    return all(results)
+
+
+def verify_toggle_apm_tethering_internet_connection(log, provider, clients, ssid):
+    """ Verify internet connection by toggling apm during wifi tethering.
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+        clients: a list of clients using tethered WiFi.
+        ssid: use this string as WiFi SSID to setup tethered WiFi network.
+
+    """
+    if not provider.droid.wifiIsApEnabled():
+        log.error("Provider WiFi tethering stopped.")
+        return False
+
+    log.info(
+        "Provider turn on APM, verify no wifi/data on Client.")
+
+    if not toggle_airplane_mode(log, provider, True):
+        log.error("Provider turn on APM failed.")
+        return False
+    time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+
+    if provider.droid.wifiIsApEnabled():
+        provider.log.error("Provider WiFi tethering not stopped.")
+        return False
+
+    if not verify_internet_connection(log, clients[0], expected_state=False):
+        clients[0].log.error(
+            "Client should not have Internet connection.")
+        return False
+
+    wifi_info = clients[0].droid.wifiGetConnectionInfo()
+    clients[0].log.info("WiFi Info: {}".format(wifi_info))
+    if wifi_info[WIFI_SSID_KEY] == ssid:
+        clients[0].log.error(
+            "WiFi error. WiFi should not be connected.".format(
+                wifi_info))
+        return False
+
+    log.info("Provider turn off APM.")
+    if not toggle_airplane_mode(log, provider, False):
+        provider.log.error("Provider turn on APM failed.")
+        return False
+    time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+    if provider.droid.wifiIsApEnabled():
+        provider.log.error(
+            "Provider WiFi tethering should not on.")
+        return False
+    if not verify_internet_connection(log, provider):
+        provider.log.error(
+            "Provider should have Internet connection.")
+        return False
+    return True
+
+
+def verify_tethering_entitlement_check(log, provider):
+    """Tethering Entitlement Check Test
+
+    Get tethering entitlement check result.
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+
+    Returns:
+        True if entitlement check returns True.
+    """
+    if (not wait_for_cell_data_connection(log, provider, True)
+            or not verify_internet_connection(log, provider)):
+        log.error("Failed cell data call for entitlement check.")
+        return False
+
+    result = provider.droid.carrierConfigIsTetheringModeAllowed(
+        TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK)
+    provider.log.info("Tethering entitlement check result: %s",
+                      result)
+    return result
+
+
+def test_wifi_tethering(log, provider,
+                        clients,
+                        clients_tethering,
+                        nw_gen,
+                        ap_band=WIFI_CONFIG_APBAND_2G,
+                        check_interval=30,
+                        check_iteration=4,
+                        do_cleanup=True,
+                        ssid=None,
+                        password=None):
+    """WiFi Tethering test
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+        clients: a list of clients are valid for tethered WiFi.
+        clients_tethering: a list of clients using tethered WiFi.
+        nw_gen: network generation.
+        ap_band: setup WiFi tethering on 2G or 5G.
+            This is optional, default value is WIFI_CONFIG_APBAND_2G
+        check_interval: delay time between each around of Internet connection check.
+            This is optional, default value is 30 (seconds).
+        check_iteration: check Internet connection for how many times in total.
+            This is optional, default value is 4 (4 times).
+        do_cleanup: after WiFi tethering test, do clean up to tear down tethering
+            setup or not. This is optional, default value is True.
+        ssid: use this string as WiFi SSID to setup tethered WiFi network.
+            This is optional. Default value is None.
+            If it's None, a random string will be generated.
+        password: use this string as WiFi password to setup tethered WiFi network.
+            This is optional. Default value is None.
+            If it's None, a random string will be generated.
+
+    """
+    if not test_setup_tethering(log, provider, clients, nw_gen):
+        log.error("Verify %s Internet access failed.", nw_gen)
+        return False
+
+    return wifi_tethering_setup_teardown(
+        log,
+        provider,
+        clients_tethering,
+        ap_band=ap_band,
+        check_interval=check_interval,
+        check_iteration=check_iteration,
+        do_cleanup=do_cleanup,
+        ssid=ssid,
+        password=password)
+
+
+def run_stress_test(log,
+                    stress_test_number,
+                    precondition_func,
+                    test_case_func):
+    """Run stress test of a test case.
+
+    Args:
+        log: log object.
+        stress_test_number: The number of times the test case is run.
+        precondition_func: A function performing set up before running test case
+        test_case_func: A test case function.
+
+    Returns:
+        True stress pass rate is higher than MINIMUM_SUCCESS_RATE.
+        False otherwise.
+
+    """
+    MINIMUM_SUCCESS_RATE = .95
+    success_count = 0
+    fail_count = 0
+    for i in range(1, stress_test_number + 1):
+
+        precondition_func()
+        result = test_case_func()
+        if result:
+            success_count += 1
+            result_str = "Succeeded"
+        else:
+            fail_count += 1
+            result_str = "Failed"
+        log.info("Iteration {} {}. Current: {} / {} passed.".format(
+            i, result_str, success_count, stress_test_number))
+
+    log.info("Final Count - Success: {}, Failure: {} - {}%".format(
+        success_count, fail_count,
+        str(100 * success_count / (success_count + fail_count))))
+    if success_count / (
+            success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        return True
+    else:
+        return False
+
+
+def test_start_wifi_tethering_connect_teardown(log,
+                                               ad_host,
+                                               ad_client,
+                                               ssid,
+                                               password):
+    """Private test util for WiFi Tethering.
+
+    1. Host start WiFi tethering.
+    2. Client connect to tethered WiFi.
+    3. Host tear down WiFi tethering.
+
+    Args:
+        log: log object.
+        ad_host: android device object for host
+        ad_client: android device object for client
+        ssid: WiFi tethering ssid
+        password: WiFi tethering password
+
+    Returns:
+        True if no error happen, otherwise False.
+    """
+    result = True
+    # Turn off active SoftAP if any.
+    if ad_host.droid.wifiIsApEnabled():
+        stop_wifi_tethering(log, ad_host)
+
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+    if not start_wifi_tethering(log, ad_host, ssid, password,
+                                WIFI_CONFIG_APBAND_2G):
+        log.error("Start WiFi tethering failed.")
+        result = False
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+    if not ensure_wifi_connected(log, ad_client, ssid, password):
+        log.error("Client connect to WiFi failed.")
+        result = False
+    if not wifi_reset(log, ad_client):
+        log.error("Reset client WiFi failed. {}".format(
+            ad_client.serial))
+        result = False
+    if not stop_wifi_tethering(log, ad_host):
+        log.error("Stop WiFi tethering failed.")
+        result = False
+    return result
+
