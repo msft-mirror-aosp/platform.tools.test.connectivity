@@ -5130,12 +5130,12 @@ def toggle_wfc_for_subscription(log, ad, new_state=None, sub_id=None):
             new_state = not current_state
         if new_state != current_state:
             ad.log.info(
-                "Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s",
+                "Toggle Wi-Fi calling from %s to %s on sub_id %s",
                 current_state, new_state, sub_id)
             ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, new_state)
         check_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
         if check_state != new_state:
-            ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, \
+            ad.log.error("Failed to toggle Wi-Fi calling to %s, \
                 still set to %s on sub_id %s", new_state, check_state, sub_id)
             result = False
         return result
