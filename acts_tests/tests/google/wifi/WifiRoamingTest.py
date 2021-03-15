@@ -16,8 +16,10 @@
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.net import connectivity_const as cconsts
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
 
 WifiEnums = wutils.WifiEnums
 
@@ -64,6 +66,26 @@ class WifiRoamingTest(WifiBaseTest):
 
     ### Helper Methods ###
 
+    def register_network_callback_for_internet(self):
+        self.dut.log.debug("Registering network callback for wifi internet"
+                           "connectivity")
+        network_request = {
+            cconsts.NETWORK_CAP_TRANSPORT_TYPE_KEY :
+                cconsts.NETWORK_CAP_TRANSPORT_WIFI,
+            cconsts.NETWORK_CAP_CAPABILITY_KEY :
+                [cconsts.NETWORK_CAP_CAPABILITY_INTERNET]
+        }
+        key = self.dut.droid.connectivityRegisterNetworkCallback(network_request)
+        return key
+
+    def generate_wifi_info(self, network):
+        return {
+            WifiEnums.SSID_KEY : network[WifiEnums.SSID_KEY],
+            # We need to use "BSSID" in WifiInfo map, also need to use lower
+            # chars for bssid.
+            WifiEnums.BSSID_KEY : network["bssid"].lower()
+        }
+
     def roaming_from_AP1_and_AP2(self, AP1_network, AP2_network):
         """Test roaming between two APs.
 
@@ -78,14 +100,47 @@ class WifiRoamingTest(WifiBaseTest):
         4. Expect DUT to roam to AP2.
         5. Validate connection information and ping.
         """
+        network_cb_key = None
+        if self.dut.droid.isSdkAtLeastS():
+            network_cb_key = self.register_network_callback_for_internet()
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
         wifi_config = AP1_network.copy()
         wifi_config.pop("bssid")
         wutils.connect_to_wifi_network(self.dut, wifi_config)
+        if network_cb_key is not None:
+            self.dut.log.info("Waiting for onAvailable and "
+                              "onCapabilitiesChanged after connection")
+            # Ensure that the connection completed and we got the ON_AVAILABLE
+            # callback.
+            autils.wait_for_event_with_keys(
+                self.dut,
+                cconsts.EVENT_NETWORK_CALLBACK,
+                20,
+                (cconsts.NETWORK_CB_KEY_ID, network_cb_key),
+                (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_AVAILABLE))
+            autils.wait_for_event_with_keys(
+                self.dut, cconsts.EVENT_NETWORK_CALLBACK, 10,
+                (cconsts.NETWORK_CB_KEY_ID, network_cb_key),
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_TRANSPORT_INFO,
+                 self.generate_wifi_info(AP1_network)))
         self.log.info("Roaming from %s to %s", AP1_network, AP2_network)
         wutils.trigger_roaming_and_validate(
             self.dut, self.attenuators, "AP1_off_AP2_on", AP2_network,
             self.roaming_attn)
+        if network_cb_key is not None:
+            self.dut.log.info("Waiting for onCapabilitiesChanged after"
+                              " roaming")
+            # Ensure that the roaming complete triggered a capabilities change
+            # with the new bssid.
+            autils.wait_for_event_with_keys(
+                self.dut, cconsts.EVENT_NETWORK_CALLBACK, 10,
+                (cconsts.NETWORK_CB_KEY_ID, network_cb_key),
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_TRANSPORT_INFO,
+                 self.generate_wifi_info(AP2_network)))
 
     ### Test Cases ###
 
