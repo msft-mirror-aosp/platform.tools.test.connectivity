@@ -21,6 +21,8 @@ from queue import Empty
 
 from acts.utils import adb_shell_ping
 from acts.utils import rand_ascii_str
+from acts.utils import disable_doze
+from acts.utils import enable_doze
 from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
@@ -50,6 +52,7 @@ from acts_contrib.test_utils.tel.tel_defines import \
     WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -117,7 +120,8 @@ def wifi_tethering_cleanup(log, provider, client_list):
     for client in client_list:
         client.droid.telephonyToggleDataConnection(True)
         set_wifi_to_default(log, client)
-    if not stop_wifi_tethering(log, provider):
+    # If wifi tethering is enabled, disable it.
+    if provider.droid.wifiIsApEnabled() and not stop_wifi_tethering(log, provider):
         provider.log.error("Provider stop WiFi tethering failed.")
         return False
     if provider.droid.wifiIsApEnabled():
@@ -1677,7 +1681,8 @@ def test_wifi_tethering(log, provider,
                         check_iteration=4,
                         do_cleanup=True,
                         ssid=None,
-                        password=None):
+                        password=None,
+                        pre_teardown_func=None):
     """WiFi Tethering test
     Args:
         log: log object.
@@ -1699,11 +1704,15 @@ def test_wifi_tethering(log, provider,
         password: use this string as WiFi password to setup tethered WiFi network.
             This is optional. Default value is None.
             If it's None, a random string will be generated.
+        pre_teardown_func: execute custom actions between tethering setup adn teardown.
 
     """
     if not test_setup_tethering(log, provider, clients, nw_gen):
         log.error("Verify %s Internet access failed.", nw_gen)
         return False
+
+    if pre_teardown_func:
+        pre_teardown_func()
 
     return wifi_tethering_setup_teardown(
         log,
@@ -1719,8 +1728,8 @@ def test_wifi_tethering(log, provider,
 
 def run_stress_test(log,
                     stress_test_number,
-                    precondition_func,
-                    test_case_func):
+                    precondition_func=None,
+                    test_case_func=None):
     """Run stress test of a test case.
 
     Args:
@@ -1738,9 +1747,10 @@ def run_stress_test(log,
     success_count = 0
     fail_count = 0
     for i in range(1, stress_test_number + 1):
-
-        precondition_func()
-        result = test_case_func()
+        if precondition_func:
+            precondition_func()
+        if test_case_func:
+            result = test_case_func()
         if result:
             success_count += 1
             result_str = "Succeeded"
@@ -1779,7 +1789,7 @@ def test_start_wifi_tethering_connect_teardown(log,
         password: WiFi tethering password
 
     Returns:
-        True if no error happen, otherwise False.
+        True if pass, otherwise False.
     """
     result = True
     # Turn off active SoftAP if any.
@@ -1804,3 +1814,146 @@ def test_start_wifi_tethering_connect_teardown(log,
         result = False
     return result
 
+
+def verify_wifi_tethering_when_reboot(log,
+                                      provider,
+                                      post_reboot_func=None):
+    """ Verify wifi tethering when reboot.
+
+    Verify wifi tethering is enabled before reboot and disabled
+    after reboot, and execute additional custom actions verification
+    of wifi tethering.
+
+    Args:
+        log: log object.
+        provider: android object provide WiFi tethering.
+        post_reboot_func: execute custom actions after reboot.
+    Returns:
+        True if pass, otherwise False.
+
+    """
+    if not provider.droid.wifiIsApEnabled():
+        log.error("Provider WiFi tethering stopped.")
+        return False
+
+    provider.log.info("Reboot provider")
+    provider.reboot()
+    time.sleep(
+        WAIT_TIME_AFTER_REBOOT + WAIT_TIME_TETHERING_AFTER_REBOOT)
+
+    log.info("After reboot check if tethering stopped.")
+    if provider.droid.wifiIsApEnabled():
+        log.error("Provider WiFi tethering did NOT stopped.")
+        return False
+    if post_reboot_func:
+        post_reboot_func()
+    return True
+
+
+def setup_device_internet_connection(log,
+                                     device,
+                                     network_ssid,
+                                     network_password):
+    """Setup wifi network for device and verify internet connection.
+    Args:
+        log: log object.
+        device: android device object.
+        network_ssid: wifi network ssid.
+        network_password: wifi network password.
+    Returns:
+        True if pass, otherwise False.
+
+    """
+    log.info("Make sure DUT can connect to live network by WIFI")
+    if ((not ensure_wifi_connected(log,
+                                   device,
+                                   network_ssid,
+                                   network_password))
+            or (not verify_internet_connection(log, device))):
+        log.error("WiFi connect fail.")
+        return False
+    return True
+
+
+def wait_and_verify_device_internet_connection(log,
+                                               device):
+    """Wait for device connecting to wifi network and verify internet connection.
+    Args:
+        log: log object.
+        device: Android device object.
+    Returns:
+        True if pass, otherwise False.
+
+    """
+    log.info("Make sure WiFi can connect automatically.")
+    if (not wait_for_wifi_data_connection(log, device, True) or
+            not verify_internet_connection(log, device)):
+        log.error("Data did not return to WiFi")
+        return False
+    return True
+
+
+def setup_device_internet_connection_then_reboot(log,
+                                                 device,
+                                                 network_ssid,
+                                                 network_password):
+    """Setup wifi network for device and verify internet connection, then reboot.
+    Args:
+        log: log object.
+        device: android device object.
+        network_ssid: wifi network ssid.
+        network_password: wifi network password.
+    Returns:
+        True if pass, otherwise False.
+
+    """
+    if not setup_device_internet_connection(log,
+                                            device,
+                                            network_ssid,
+                                            network_password):
+        return False
+
+    device.log.info("Reboot!")
+    device.reboot()
+    time.sleep(WAIT_TIME_AFTER_REBOOT)
+    time.sleep(WAIT_TIME_TETHERING_AFTER_REBOOT)
+    return True
+
+
+def verify_internet_connection_in_doze_mode(log,
+                                            provider,
+                                            client):
+    """Set provider in doze mode and verify client's internet connection.
+    Args:
+        log: log object.
+        provider: android device object for provider.
+        client: android device object for client.
+    Returns:
+        True if pass, otherwise False.
+
+    """
+    try:
+        if not provider.droid.wifiIsApEnabled():
+            provider.log.error("Provider WiFi tethering stopped.")
+            return False
+        provider.log.info("Turn off screen on provider")
+        provider.droid.goToSleepNow()
+        time.sleep(60)
+        if not verify_internet_connection(log, client):
+            client.log.error("Client have no Internet access.")
+            return False
+
+        provider.log.info("Enable doze mode on provider")
+        if not enable_doze(provider):
+            provider.log.error("Failed to enable doze mode.")
+            return False
+        time.sleep(60)
+        if not verify_internet_connection(log, client):
+            client.log.error("Client have no Internet access.")
+            return False
+    finally:
+        log.info("Disable doze mode.")
+        if not disable_doze(provider):
+            log.error("Failed to disable doze mode.")
+            return False
+    return True
