@@ -93,3 +93,31 @@ class FuchsiaWlanApPolicyLib(BaseLib):
         test_args = {}
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def wlanSetNewListener(self):
+        """ Sets the update listener stream of the facade to a new stream so that updates will be
+            reset. Intended to be used between tests so that the behaviour of updates in a test is
+            independent from previous tests.
+        """
+        test_cmd = "wlan_ap_policy.set_new_update_listener"
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
+
+    def wlanGetUpdate(self, timeout=30):
+        """ Gets a list of AP state updates. This call will return with an update immediately the
+            first time the update listener is initialized by setting a new listener or by creating
+            a client controller before setting a new listener. Subsequent calls will hang until
+            there is an update.
+            Returns:
+                A list of AP state updated. If there is no error, the result is a list with a
+                structure that matches the FIDL AccessPointState struct given for updates.
+        """
+        test_cmd = "wlan_ap_policy.get_update"
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id,
+                                 test_cmd, {},
+                                 response_timeout=timeout)

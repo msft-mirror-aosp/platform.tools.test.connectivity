@@ -33,6 +33,18 @@ CONTROLLER_CONFIG_WITHOUT_MONSOON = {}
 NON_MONSOONED_CONFIG = bits_service_config.BitsServiceConfig(
     CONTROLLER_CONFIG_WITHOUT_MONSOON)
 
+KIBBLES_CONFIG = bits_service_config.BitsServiceConfig(
+    {
+        'Kibbles': [{
+            'board':     'board',
+            'connector': 'connector',
+            'serial':    'serial',
+        }],
+    },
+    kibble_bin='bin',
+    kibble_board_file='file.board',
+    virtual_metrics_file='file.vm')
+
 
 class BitsClientTest(unittest.TestCase):
 
@@ -40,6 +52,25 @@ class BitsClientTest(unittest.TestCase):
         super().setUp()
         self.mock_service = mock.Mock()
         self.mock_service.port = '42'
+
+    @mock.patch('acts.libs.proc.job.run')
+    def test_execute_generic_command(self, mock_run):
+        mock_service = mock.Mock()
+        mock_service.port = '1337'
+        client = bits_client.BitsClient('bits.par', mock_service,
+                                        service_config=KIBBLES_CONFIG)
+
+        client.run_cmd('-i', '-am', '-not', '-a', '-teapot', timeout=12345)
+
+        expected_final_command = ['bits.par',
+                                  '--port',
+                                  '1337',
+                                  '-i',
+                                  '-am',
+                                  '-not',
+                                  '-a',
+                                  '-teapot']
+        mock_run.assert_called_with(expected_final_command, timeout=12345)
 
     @mock.patch('acts.libs.proc.job.run')
     def test_start_collection__without_monsoon__does_not_disconnect_monsoon(
@@ -101,7 +132,7 @@ class BitsClientTest(unittest.TestCase):
         non_expected_call = list(
             filter(lambda call: 'usb_connect' in call.args[0], args_list))
         self.assertEqual(len(non_expected_call), 0,
-                          'did not expect call with usb_connect')
+                         'did not expect call with usb_connect')
 
     @mock.patch('acts.libs.proc.job.run')
     def test_export_ignores_dataseries_gaps(self, mock_run):
@@ -140,11 +171,27 @@ class BitsClientTest(unittest.TestCase):
 
         mock_run.assert_called()
         cmd = mock_run.call_args_list[0].args[0]
-        self,
         self.assertIn(collection, cmd)
         self.assertIn(output_file, cmd)
         self.assertIn(':mW,:mV', cmd)
+        self.assertNotIn('--vm_file', cmd)
+        self.assertNotIn('default', cmd)
 
+    @mock.patch('acts.libs.proc.job.run')
+    def test_export_as_csv_with_virtual_metrics_file(self, mock_run):
+        output_file = '/path/to/csv'
+        collection = 'collection'
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=KIBBLES_CONFIG)
+
+        client.export_as_csv([':mW', ':mV'], collection, output_file)
+
+        mock_run.assert_called()
+        cmd = mock_run.call_args_list[0].args[0]
+        self.assertIn(collection, cmd)
+        self.assertIn(':mW,:mV', cmd)
+        self.assertIn('--vm_file', cmd)
+        self.assertIn('default', cmd)
 
     @mock.patch('acts.libs.proc.job.run')
     def test_add_markers(self, mock_run):
