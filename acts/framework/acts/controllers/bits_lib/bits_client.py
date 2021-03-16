@@ -284,7 +284,7 @@ class BitsClient(object):
         """
         self._log.debug('listing devices')
         result = self.run_cmd('--list', 'devices', timeout=20)
-        return result.stdout
+        return result
 
     def list_channels(self, collection_name):
         """Finds all the available channels in a given collection.
