@@ -14,9 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
+
 from acts import logger
 from acts import signals
 from acts import utils
+
+TIME_TO_SLEEP_BETWEEN_RETRIES = 1
+TIME_TO_WAIT_FOR_COUNTRY_CODE = 10
 
 
 class WlanControllerError(signals.ControllerError):
@@ -119,3 +124,56 @@ class WlanController:
             if iface_info['mac'] == mac_addr:
                 return iface_info['name']
         return None
+
+    def set_country_code(self, country_code):
+        """Sets country code through the regulatory region service and waits
+        for the code to be applied to WLAN PHY.
+
+        Args:
+            country_code: string, the 2 character country code to set
+
+        Raises:
+            EnvironmentError - failure to get/set regulatory region
+            ConnectionError - failure to query PHYs
+        """
+        self.log.info('Setting DUT country code to %s' % country_code)
+        country_code_response = self.device.regulatory_region_lib.setRegion(
+            country_code)
+        if country_code_response.get('error'):
+            raise EnvironmentError(
+                'Failed to set country code (%s) on DUT. Error: %s' %
+                (country_code, country_code_response['error']))
+
+        self.log.info('Verifying DUT country code was correctly set to %s.' %
+                      country_code)
+        phy_ids_response = self.device.wlan_lib.wlanPhyIdList()
+        if phy_ids_response.get('error'):
+            raise ConnectionError('Failed to get phy ids from DUT. Error: %s' %
+                                  (country_code, phy_ids_response['error']))
+
+        end_time = time.time() + TIME_TO_WAIT_FOR_COUNTRY_CODE
+        while time.time() < end_time:
+            for id in phy_ids_response['result']:
+                get_country_response = self.device.wlan_lib.wlanGetCountry(id)
+                if get_country_response.get('error'):
+                    raise ConnectionError(
+                        'Failed to query PHY ID (%s) for country. Error: %s' %
+                        (id, get_country_response['error']))
+
+                set_code = ''.join([
+                    chr(ascii_char)
+                    for ascii_char in get_country_response['result']
+                ])
+                if set_code != country_code:
+                    self.log.debug(
+                        'PHY (id: %s) has incorrect country code set. '
+                        'Expected: %s, Got: %s' % (id, country_code, set_code))
+                    break
+            else:
+                self.log.info('All PHYs have expected country code (%s)' %
+                              country_code)
+                break
+            time.sleep(TIME_TO_SLEEP_BETWEEN_RETRIES)
+        else:
+            raise EnvironmentError('Failed to set DUT country code to %s.' %
+                                   country_code)
