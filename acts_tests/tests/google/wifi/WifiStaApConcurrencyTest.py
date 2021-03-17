@@ -436,6 +436,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.open_2g, WIFI_CONFIG_APBAND_2G)
         self.softap_change_band(self.dut)
 
+    @test_tracker_info(uuid="d549a18e-73d9-45e7-b4df-b59446c4b833")
     def test_wifi_connection_hidden_2g_softap_2G_to_softap_5g(self):
         """Test connection to a hidden 2G network on Channel 1 and
         followed by SoftAp on 2G, and switch SoftAp to 5G.
