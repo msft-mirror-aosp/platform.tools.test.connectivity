@@ -702,7 +702,7 @@ class NetworkSettings(object):
         self.ssh.run("uci set dhcp.lan.ra=relay")
         self.ssh.run("uci set dhcp.lan.ndp=relay")
 
-        self.ssh.run("uci add dhcp wan6")
+        self.ssh.run("uci set dhcp.wan6=dhcp")
         self.ssh.run("uci set dhcp.wan6.dhcpv6=relay")
         self.ssh.run("uci set dhcp.wan6.ra=relay")
         self.ssh.run("uci set dhcp.wan6.ndp=relay")
@@ -721,7 +721,7 @@ class NetworkSettings(object):
         self.ssh.run("uci set dhcp.lan.ra=server")
         self.ssh.run("uci delete dhcp.lan.ndp")
 
-        self.ssh.run("uci delete dhcp.@wan6[0]")
+        self.ssh.run("uci delete dhcp.wan6")
 
         self.service_manager.need_restart(SERVICE_ODHCPD)
         self.commit_changes()
