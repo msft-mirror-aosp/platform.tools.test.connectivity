@@ -1553,6 +1553,8 @@ def is_current_network_5g_nsa(ad, timeout=30):
         ad.droid.telephonyStopTrackingDisplayInfoChange()
     return None
 
+def is_current_network_5g_nsa_for_subscription(ad, timeout=30, sub_id=None):
+    return change_voice_subid_temporarily(ad, sub_id, is_current_network_5g_nsa, params=[ad, timeout])
 
 def disconnect_call_by_id(log, ad, call_id):
     """Disconnect call by call id.
@@ -10981,7 +10983,7 @@ def voice_call_in_collision_with_mt_sms_msim(
 
     return tel_result_wrapper
 
-def change_voice_subid_temporarily(ad, sub_id, state_check_func):
+def change_voice_subid_temporarily(ad, sub_id, state_check_func, params=None):
     result = False
     voice_sub_id_changed = False
     current_sub_id = get_incoming_voice_sub_id(ad)
@@ -10989,8 +10991,12 @@ def change_voice_subid_temporarily(ad, sub_id, state_check_func):
         set_incoming_voice_sub_id(ad, sub_id)
         voice_sub_id_changed = True
 
-    if state_check_func():
-        result = True
+    if not params:
+        if state_check_func():
+            result = True
+    else:
+        if state_check_func(*params):
+            result = True
 
     if voice_sub_id_changed:
         set_incoming_voice_sub_id(ad, current_sub_id)
