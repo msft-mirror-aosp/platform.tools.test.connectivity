@@ -131,7 +131,9 @@ class WifiEnums():
         WPA3_SAE = "WPA3_SAE"
 
     class CountryCode():
+        AUSTRALIA = "AU"
         CHINA = "CN"
+        GERMANY = "DE"
         JAPAN = "JP"
         UK = "GB"
         US = "US"
