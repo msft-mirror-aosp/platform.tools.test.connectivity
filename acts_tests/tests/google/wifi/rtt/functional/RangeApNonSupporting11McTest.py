@@ -111,6 +111,8 @@ class RangeApNonSupporting11McTest(RttBaseTest, WifiBaseTest):
         device not having privilege access (expect failures).
         """
         dut = self.android_devices[0]
+        asserts.skip_if(dut.droid.isSdkAtLeastS(),
+                        "Build at least S doesn't need privilege access to use one-sided RTT.")
         rutils.config_privilege_override(dut, True)
         non_rtt_aps = rutils.select_best_scan_results(
             rutils.scan_with_rtt_support_constraint(dut, False),

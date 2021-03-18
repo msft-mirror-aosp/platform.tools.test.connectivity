@@ -75,6 +75,11 @@ from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_setup_tear
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_start_wifi_tethering_connect_teardown
 from acts_contrib.test_utils.tel.tel_data_utils import run_stress_test
+from acts_contrib.test_utils.tel.tel_data_utils import verify_wifi_tethering_when_reboot
+from acts_contrib.test_utils.tel.tel_data_utils import wait_and_verify_device_internet_connection
+from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_connection
+from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_connection_then_reboot
+from acts_contrib.test_utils.tel.tel_data_utils import verify_internet_connection_in_doze_mode
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
@@ -1765,38 +1770,27 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, None):
-            self.log.error("Verify Internet access failed.")
-            return False
         try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
+            if not test_wifi_tethering(self.log,
+                                       self.provider,
+                                       self.clients,
+                                       [self.clients[0]],
+                                       None,
+                                       WIFI_CONFIG_APBAND_2G,
+                                       check_interval=10,
+                                       check_iteration=2,
+                                       do_cleanup=False):
                 return False
 
-            if not self.provider.droid.wifiIsApEnabled():
-                self.log.error("Provider WiFi tethering stopped.")
+            if not verify_wifi_tethering_when_reboot(self.log,
+                                                     self.provider):
                 return False
 
-            self.provider.log.info("Reboot provider")
-            self.provider.reboot()
-            time.sleep(
-                WAIT_TIME_AFTER_REBOOT + WAIT_TIME_TETHERING_AFTER_REBOOT)
-
-            self.log.info("After reboot check if tethering stopped.")
-            if self.provider.droid.wifiIsApEnabled():
-                self.log.error("Provider WiFi tethering did NOT stopped.")
-                return False
         finally:
-            self.clients[0].droid.telephonyToggleDataConnection(True)
-            wifi_reset(self.log, self.clients[0])
-            if self.provider.droid.wifiIsApEnabled():
-                stop_wifi_tethering(self.log, self.provider)
+            if not wifi_tethering_cleanup(self.log, self.provider,
+                                          self.clients):
+                return False
+
         return True
 
     @test_tracker_info(uuid="5cf04ca2-dfde-43d6-be74-78b9abdf6c26")
@@ -1817,56 +1811,43 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, None):
-            self.log.error("Verify Internet access failed.")
-            return False
 
-        self.log.info("Make sure DUT can connect to live network by WIFI")
-        if ((not ensure_wifi_connected(self.log, self.provider,
-                                       self.wifi_network_ssid,
-                                       self.wifi_network_pass))
-                or (not verify_internet_connection(self.log, self.provider))):
-            self.log.error("WiFi connect fail.")
-            return False
+        # Ensure provider connecting to wifi network.
+        def setup_provider_internet_connection():
+            return setup_device_internet_connection(self.log,
+                                                    self.provider,
+                                                    self.wifi_network_ssid,
+                                                    self.wifi_network_pass)
+
+        # wait for provider connecting to wifi network and verify
+        # internet connection is working.
+        def wait_and_verify_internet_connection():
+            return wait_and_verify_device_internet_connection(self.log,
+                                                              self.provider)
 
         try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
+            if not test_wifi_tethering(self.log,
+                                       self.provider,
+                                       self.clients,
+                                       [self.clients[0]],
+                                       None,
+                                       WIFI_CONFIG_APBAND_2G,
+                                       check_interval=10,
+                                       check_iteration=2,
+                                       do_cleanup=False,
+                                       pre_teardown_func=setup_provider_internet_connection):
                 return False
 
-            if not self.provider.droid.wifiIsApEnabled():
-                self.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.provider.log.info("Reboot Provider")
-            self.provider.reboot()
-            time.sleep(WAIT_TIME_AFTER_REBOOT)
-            time.sleep(WAIT_TIME_TETHERING_AFTER_REBOOT)
-
-            self.log.info("After reboot check if tethering stopped.")
-            if self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error(
-                    "Provider WiFi tethering did NOT stopped.")
-                return False
-
-            self.log.info("Make sure WiFi can connect automatically.")
-            if (not wait_for_wifi_data_connection(self.log, self.provider,
-                                                  True) or
-                    not verify_internet_connection(self.log, self.provider)):
-                self.log.error("Data did not return to WiFi")
+            if not verify_wifi_tethering_when_reboot(self.log,
+                                                     self.provider,
+                                                     post_reboot_func=wait_and_verify_internet_connection):
                 return False
 
         finally:
-            self.clients[0].droid.telephonyToggleDataConnection(True)
-            wifi_reset(self.log, self.clients[0])
-            if self.provider.droid.wifiIsApEnabled():
-                stop_wifi_tethering(self.log, self.provider)
+            if not wifi_tethering_cleanup(self.log,
+                                          self.provider,
+                                          self.clients):
+                return False
         return True
 
     @test_tracker_info(uuid="e0621997-c5bd-4137-afa6-b43406e9c713")
@@ -1886,35 +1867,28 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, None):
-            self.log.error("Verify Internet access failed.")
-            return False
 
-        self.log.info("Make sure DUT can connect to live network by WIFI")
-        if ((not ensure_wifi_connected(self.log, self.provider,
-                                       self.wifi_network_ssid,
-                                       self.wifi_network_pass))
-                or (not verify_internet_connection(self.log, self.provider))):
-            self.log.error("WiFi connect fail.")
-            return False
-
-        self.provider.log.info("Reboot provider")
-        self.provider.reboot()
-        time.sleep(WAIT_TIME_AFTER_REBOOT)
-        time.sleep(WAIT_TIME_TETHERING_AFTER_REBOOT)
-
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider, [self.clients[0]],
-            ap_band=WIFI_CONFIG_APBAND_2G,
-            check_interval=10,
-            check_iteration=10)
+        # Ensure provider connecting to wifi network and then reboot.
+        def setup_provider_internet_connect_then_reboot():
+            setup_device_internet_connection_then_reboot(self.log,
+                                                         self.provider,
+                                                         self.wifi_network_ssid,
+                                                         self.wifi_network_pass)
+        return test_wifi_tethering(self.log,
+                                   self.provider,
+                                   self.clients,
+                                   [self.clients[0]],
+                                   None,
+                                   WIFI_CONFIG_APBAND_2G,
+                                   check_interval=10,
+                                   check_iteration=2,
+                                   pre_teardown_func=setup_provider_internet_connect_then_reboot)
 
     @test_tracker_info(uuid="89a849ef-e2ed-4bf2-ac31-81d34aba672a")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_screen_off_enable_doze_mode(self):
         """WiFi Tethering test: Start WiFi tethering, then turn off DUT's screen,
-            then enable doze mode.
+            then enable doze mode, verify internet connection.
 
         1. Start WiFi tethering on DUT.
         2. PhoneB disable data, and connect to DUT's softAP
@@ -1923,50 +1897,31 @@ class TelLiveDataTest(TelephonyBaseTest):
             verify Internet access on Client PhoneB.
         5. Enable doze mode on DUT. Wait for 1 minute and
             verify Internet access on Client PhoneB.
+        6. Disable doze mode and turn off wifi tethering on DUT.
 
         Returns:
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, None):
-            self.log.error("Verify Internet access failed.")
-            return False
         try:
-            if not wifi_tethering_setup_teardown(
-                    self.log,
-                    self.provider, [self.clients[0]],
-                    ap_band=WIFI_CONFIG_APBAND_2G,
-                    check_interval=10,
-                    check_iteration=2,
-                    do_cleanup=False):
-                self.log.error("WiFi Tethering failed.")
+            if not test_wifi_tethering(self.log,
+                                       self.provider,
+                                       self.clients,
+                                       [self.clients[0]],
+                                       None,
+                                       WIFI_CONFIG_APBAND_2G,
+                                       check_interval=10,
+                                       check_iteration=2,
+                                       do_cleanup=False):
+                return False
+            if not verify_internet_connection_in_doze_mode(self.log,
+                                                           self.provider,
+                                                           self.clients[0]):
                 return False
 
-            if not self.provider.droid.wifiIsApEnabled():
-                self.provider.log.error("Provider WiFi tethering stopped.")
-                return False
-
-            self.provider.log.info("Turn off screen on provider")
-            self.provider.droid.goToSleepNow()
-            time.sleep(60)
-            if not verify_internet_connection(self.log, self.clients[0]):
-                self.client.log.error("Client have no Internet access.")
-                return False
-
-            self.provider.log.info("Enable doze mode on provider")
-            if not enable_doze(self.provider):
-                self.provider.log.error("Failed to enable doze mode.")
-                return False
-            time.sleep(60)
-            if not verify_internet_connection(self.log, self.clients[0]):
-                self.clients[0].log.error("Client have no Internet access.")
-                return False
         finally:
-            self.log.info("Disable doze mode.")
-            if not disable_doze(self.provider):
-                self.log.error("Failed to disable doze mode.")
-                return False
-            if not wifi_tethering_cleanup(self.log, self.provider,
+            if not wifi_tethering_cleanup(self.log,
+                                          self.provider,
                                           [self.clients[0]]):
                 return False
         return True
