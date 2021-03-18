@@ -38,7 +38,9 @@ class GnssConcurrencyTest(BaseTestClass):
     def setup_class(self):
         super().setup_class()
         self.ad = self.android_devices[0]
-        req_params = ["standalone_cs_criteria", "tolerate_rate"]
+        req_params = [
+            "standalone_cs_criteria", "chre_tolerate_rate", "qdsp6m_path"
+        ]
         self.unpack_userparams(req_param_names=req_params)
         gutils._init_device(self.ad)
 
@@ -67,11 +69,12 @@ class GnssConcurrencyTest(BaseTestClass):
                 res = self.ad.adb.shell("chre_power_test_client load")
                 if "success: 1" in res:
                     self.ad.log.info("Nano app loaded successfully")
-                    return "Success"
+                    break
             except Exception as e:
-                self.ad.log.info("Nano app loaded fail", e)
+                self.ad.log.warning("Nano app loaded fail: %s" % e)
                 gutils.reboot(self.ad)
-        raise signals.TestError("Failed to load CHRE nanoapp")
+        else:
+            raise signals.TestError("Failed to load CHRE nanoapp")
 
     def enable_gnss_concurrency(self, freq):
         """ Enable or disable gnss concurrency via nanoapp.
@@ -112,7 +115,7 @@ class GnssConcurrencyTest(BaseTestClass):
             begin_time: test begin time.
             type: str for location request type.
             criteria: int for test criteria.
-        Return: a list for test fail loop.
+        Return: List for the fail loops.
         """
         result = []
         fail_loop = []
@@ -125,61 +128,58 @@ class GnssConcurrencyTest(BaseTestClass):
         for i in range(len(search_results) - 1):
             timedelt = search_results[
                 i + 1]["datetime_obj"] - search_results[i]["datetime_obj"]
-            timedalt_sec = timedelt.total_seconds()
-            result.append(timedalt_sec)
-            if timedalt_sec > criteria * self.tolerate_rate:
-                self.ad.log.error("Fail loop: %r" % search_results[i])
-                fail_loop.append(search_results[i])
-        self.ad.log.info(type, " ".join([str(res) for res in result]))
+            timedelt_sec = timedelt.total_seconds()
+            result.append(timedelt_sec)
+            if timedelt_sec > criteria * self.chre_tolerate_rate:
+                fail_res = search_results[i + 1]
+                fail_loop.append(fail_res)
+                self.ad.log.error("Test fail at %s : %.2f sec" %
+                                  (fail_res["time_stamp"], timedelt_sec))
+                self.ad.log.error("Detail log: %r" % fail_res)
+        total_res = " ".join([str(res) for res in result])
+        self.ad.log.info("[%s]Overall Result: %s" % (type, total_res))
         return fail_loop
+
+    def execute_gnss_concurrency_test(self, criteria, test_duration):
+        """ Execute GNSS concurrency test steps.
+
+        Args:
+            criteria: int for test criteria.
+            test_duration: int for test duration.
+        """
+        fail_loop = {}
+        begin_time = self.run_concurrency_test(criteria["ap_location"],
+                                               criteria["gnss"], test_duration)
+        for type in CONCURRENCY_TYPE.keys():
+            fail_loop[type] = self.parse_concurrency_result(
+                begin_time, CONCURRENCY_TYPE[type], criteria[type])
+        for type in CONCURRENCY_TYPE.keys():
+            asserts.assert_false(
+                len(fail_loop[type]),
+                "Test fail to reach criteria, please see above errors")
 
     # Test Cases
     def test_gnss_concurrency_ct1(self):
-        fail_loop = {}
+        test_duration = 15
         criteria = {"ap_location": 1, "gnss": 1, "gnss_meas": 1}
-        begin_time = self.run_concurrency_test(1, 1, 15)
-        for type in CONCURRENCY_TYPE.keys():
-            fail_loop[type] = self.parse_concurrency_result(
-                begin_time, CONCURRENCY_TYPE[type], criteria[type])
-        for type in CONCURRENCY_TYPE.keys():
-            asserts.assert_true(fail_loop[type], "Failure detected")
+        self.execute_gnss_concurrency_test(criteria, test_duration)
 
     def test_gnss_concurrency_ct2(self):
-        fail_loop = {}
+        test_duration = 30
         criteria = {"ap_location": 1, "gnss": 8, "gnss_meas": 8}
-        begin_time = self.run_concurrency_test(1, 8, 30)
-        for type in CONCURRENCY_TYPE.keys():
-            fail_loop[type] = self.parse_concurrency_result(
-                begin_time, CONCURRENCY_TYPE[type], criteria[type])
-        for type in CONCURRENCY_TYPE.keys():
-            asserts.assert_true(fail_loop[type], "Failure detected")
+        self.execute_gnss_concurrency_test(criteria, test_duration)
 
     def test_gnss_concurrency_ct3(self):
-        fail_loop = {}
+        test_duration = 60
         criteria = {"ap_location": 15, "gnss": 8, "gnss_meas": 8}
-        begin_time = self.run_concurrency_test(15, 8, 60)
-        for type in CONCURRENCY_TYPE.keys():
-            fail_loop[type] = self.parse_concurrency_result(
-                begin_time, CONCURRENCY_TYPE[type], criteria[type])
-        for type in CONCURRENCY_TYPE.keys():
-            asserts.assert_true(fail_loop[type], "Failure detected")
+        self.execute_gnss_concurrency_test(criteria, test_duration)
 
     def test_gnss_concurrency_aoc1(self):
-        test_results = {}
+        test_duration = 120
         criteria = {"ap_location": 61, "gnss": 1, "gnss_meas": 1}
-        begin_time = self.run_concurrency_test(61, 1, 120)
-        for type in CONCURRENCY_TYPE.keys():
-            fail_loop[type] = self.parse_concurrency_result(
-                begin_time, CONCURRENCY_TYPE[type], criteria[type])
-        for type in CONCURRENCY_TYPE.keys():
-            asserts.assert_true(fail_loop[type], "Failure detected")
+        self.execute_gnss_concurrency_test(criteria, test_duration)
 
     def test_gnss_concurrency_aoc2(self):
-        test_results = {}
+        test_duration = 120
         criteria = {"ap_location": 61, "gnss": 10, "gnss_meas": 10}
-        begin_time = self.run_concurrency_test(61, 10, 120)
-        for type in CONCURRENCY_TYPE.keys():
-            fail_loop[type] = self.parse_concurrency_result(
-                begin_time, CONCURRENCY_TYPE[type], criteria[type])
-        for type in CONCURRENCY_TYPE.keys():
-            asserts.assert_true(fail_loop[type], "Failure detected")
+        self.execute_gnss_concurrency_test(criteria, test_duration)
