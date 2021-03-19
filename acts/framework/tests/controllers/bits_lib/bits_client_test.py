@@ -17,6 +17,7 @@
 from datetime import datetime
 import unittest
 
+from acts.libs.proc import job
 from acts.controllers.bits_lib import bits_client
 from acts.controllers.bits_lib import bits_service_config
 import mock
@@ -304,6 +305,21 @@ class BitsClientTest(unittest.TestCase):
                          'expected a call with --aggregates_yaml_path')
         self.assertIn('--vm_file', expected_call[0][0][0])
         self.assertIn('default', expected_call[0][0][0])
+
+    @mock.patch('acts.libs.proc.job.run',
+                return_value=job.Result(stdout=bytes('device', 'utf-8')))
+    def test_list_devices(self, mock_run):
+        service_config = mock.Mock()
+        client = bits_client.BitsClient('bits.par', self.mock_service,
+                                        service_config=service_config)
+
+        result = client.list_devices()
+
+        mock_run.assert_called()
+        cmd = mock_run.call_args_list[0].args[0]
+        self.assertIn('--list', cmd)
+        self.assertIn('devices', cmd)
+        self.assertEqual(result, 'device')
 
 
 if __name__ == '__main__':
