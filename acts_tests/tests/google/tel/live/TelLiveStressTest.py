@@ -34,6 +34,8 @@ from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts_contrib.test_utils.tel.tel_defines import GEN_3G
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import GOOGLE_CBRS_CARRIER_ID
+from acts_contrib.test_utils.tel.tel_defines import GOOGLE_FI_CARRIER_ID
 from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
@@ -100,7 +102,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_isopportunist
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_slways_allow_mms_data
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_mms_data
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
@@ -1017,7 +1019,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     carrier_id = get_carrierid_from_slot_index(ad, i)
                     is_opportunistic = get_isopportunistic_from_slot_index(ad, i)
                     ad.log.info("Slot %d - Sub %s - %s - %d", i, sub_id, operator, carrier_id)
-                    if carrier_id == 2340 or (carrier_id == 1989 and is_opportunistic):
+                    if carrier_id == GOOGLE_CBRS_CARRIER_ID or (carrier_id == GOOGLE_FI_CARRIER_ID and is_opportunistic):
                         ad.cbrs = sub_id
                         cbrs_sub_count += 1
             if cbrs_sub_count != 2:
@@ -1028,7 +1030,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             for ad in self.android_devices:
                 for i in range(0, 2):
                     sub_id = get_subid_from_slot_index(ad.log, ad, i)
-                    set_slways_allow_mms_data(ad, sub_id)
+                    set_always_allow_mms_data(ad, sub_id)
                     operator = get_operatorname_from_slot_index(ad, i)
                     ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
         # Actual test trigger
