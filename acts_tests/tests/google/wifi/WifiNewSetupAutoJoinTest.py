@@ -87,11 +87,6 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
             return
         else:
             self.log.info("Configured networks for testing")
-            self.attenuators[0].set_atten(0)
-            self.attenuators[1].set_atten(0)
-            self.attenuators[2].set_atten(90)
-            self.attenuators[3].set_atten(90)
-            wait_time = 15
             self.dut.droid.wakeLockAcquireBright()
             self.dut.droid.wakeUpNow()
             # Add and enable all networks.
@@ -121,7 +116,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
 
         Args:
             attn_value: Attenuation value for different APs signal.
-            bssid: Bssid of excepted network.
+            bssid: Bssid of expected network.
 
         Returns:
             True if bssid of current network match, else false.
@@ -130,7 +125,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
         self.attenuators[1].set_atten(attn_value[1])
         self.attenuators[2].set_atten(attn_value[2])
         self.attenuators[3].set_atten(attn_value[3])
-        time.sleep(10) #wait time for attenuation
+        time.sleep(10) # wait time for attenuation
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         try:
@@ -152,6 +147,14 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
+
+    def setup_test(self):
+        # initialize attenuators
+        self.attenuators[0].set_atten(0)
+        self.attenuators[1].set_atten(0)
+        self.attenuators[2].set_atten(90)
+        self.attenuators[3].set_atten(90)
+
 
     """ Tests Begin """
 
