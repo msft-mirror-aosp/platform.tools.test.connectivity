@@ -1952,7 +1952,19 @@ def phone_setup_on_rat(
         else:
             sub_id = get_outgoing_voice_sub_id(ad)
 
-    if rat.lower() == 'volte':
+    if rat.lower() == '5g_volte':
+        if only_return_fn:
+            return phone_setup_volte_for_subscription
+        else:
+            return phone_setup_volte_for_subscription(log, ad, sub_id, GEN_5G)
+
+    elif rat.lower() == '5g_csfb':
+        if only_return_fn:
+            return phone_setup_csfb_for_subscription
+        else:
+            return phone_setup_csfb_for_subscription(log, ad, sub_id, GEN_5G)
+
+    elif rat.lower() == 'volte':
         if only_return_fn:
             return phone_setup_volte_for_subscription
         else:
@@ -1989,13 +2001,13 @@ def phone_setup_on_rat(
             return phone_setup_voice_general_for_subscription(log, ad, sub_id)
 
 def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
-    if rat.lower() == 'volte':
+    if rat.lower() == 'volte' or rat.lower() == '5g_volte':
         if only_return_fn:
             return is_phone_in_call_volte
         else:
             return is_phone_in_call_volte(log, ad)
 
-    elif rat.lower() == 'csfb':
+    elif rat.lower() == 'csfb' or rat.lower() == '5g_csfb':
         if only_return_fn:
             return is_phone_in_call_csfb
         else:
