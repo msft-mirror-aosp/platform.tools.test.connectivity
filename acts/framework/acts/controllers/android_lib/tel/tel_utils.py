@@ -22,7 +22,7 @@ import time
 from queue import Empty
 
 from acts.logger import epoch_to_log_line_timestamp
-
+from acts.controllers.adb_lib.error import AdbCommandError
 
 INCALL_UI_DISPLAY_FOREGROUND = "foreground"
 INCALL_UI_DISPLAY_BACKGROUND = "background"
@@ -149,9 +149,13 @@ def get_rx_tx_power_levels(log, ad):
     cmd = ('am instrument -w -e request "80 00 e8 03 00 08 00 00 00" -e '
            'response wait "com.google.mdstest/com.google.mdstest.instrument.'
            'ModemCommandInstrumentation"')
-    output = ad.adb.shell(cmd)
+    try:
+        output = ad.adb.shell(cmd)
+    except AdbCommandError as e:
+        log.error(e)
+        output = None
 
-    if 'result=SUCCESS' not in output:
+    if not output or 'result=SUCCESS' not in output:
         raise RuntimeError('Could not obtain Tx/Rx power levels from MDS. Is '
                            'the MDS app installed?')
 
