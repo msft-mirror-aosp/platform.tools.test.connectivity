@@ -84,7 +84,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="c7957e52-d5e5-499b-b387-fced88fda237")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_5gwifi(self):
+    def test_5g_nsa_wifi_tethering_to_5gwifi(self):
         """WiFi Tethering test: 5G NSA to WiFI 5G Tethering
 
         1. DUT in 5G NSA mode, attached.
@@ -108,7 +108,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="0af10a6b-7c01-41fd-95ce-d839a787aa98")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_2gwifi(self):
+    def test_5g_nsa_wifi_tethering_to_2gwifi(self):
         """WiFi Tethering test: 5G NSA to WiFI 2G Tethering
 
         1. DUT in 5G NSA mode, attached.
@@ -174,7 +174,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2be31ba7-f69c-410b-86d1-daaeda892533")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_entitlement_check(self):
+    def test_5g_nsa_wifi_tethering_entitlement_check(self):
         """5G NSA Tethering Entitlement Check Test
 
         Get tethering entitlement check result.
@@ -191,10 +191,10 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="f07c316c-dbab-4c95-8bec-2a2fc029d5cd")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_to_2gwifi_stress(self):
+    def test_5g_nsa_wifi_tethering_to_2gwifi_stress(self):
         """Stress Test 5G NSA to WiFI 2.4G Tethering
 
-        This is a stress test for "test_tethering_4g_to_2gwifi".
+        This is a stress test for "test_5g_nsa_wifi_tethering_to_2gwifi".
         Default MINIMUM_SUCCESS_RATE is set to 95%.
 
         Returns:
@@ -218,7 +218,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="bbe9175d-8781-4b31-9962-21abb9441022")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_wifi_ssid_quotes(self):
+    def test_5g_nsa_wifi_tethering_ssid_quotes(self):
         """WiFi Tethering test: 5G NSA wifi tethering SSID name have quotes.
         1. Set SSID name have double quotes.
         2. Start LTE to WiFi (2.4G) tethering.
@@ -245,7 +245,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="678c6b04-6733-41e1-bb0c-af8c9d1183cb")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_wifi_password_escaping_characters(self):
+    def test_5g_nsa_wifi_tethering_password_escaping_characters(self):
         """WiFi Tethering test: 5G NSA wifi tethering password have escaping characters.
         1. Set password have escaping characters.
             e.g.: '"DQ=/{Yqq;M=(^_3HzRvhOiL8S%`]w&l<Qp8qH)bs<4E9v_q=HLr^)}w$blA0Kg'
@@ -274,7 +274,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="eacc5412-fe75-400b-aba9-c0c38bdfff71")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_wifi_ssid(self):
+    def test_5g_nsa_wifi_tethering_ssid(self):
         """WiFi Tethering test: start 5G NSA WiFi tethering with all kinds of SSIDs.
 
         For each listed SSID, start WiFi tethering on DUT, client connect WiFi,
@@ -309,7 +309,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="249cfa53-edb2-4d9c-8f4f-8291bf22fb36")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_tethering_wifi_password(self):
+    def test_5g_nsa_wifi_tethering_password(self):
         """WiFi Tethering test: start 5G NSA WiFi tethering with all kinds of passwords.
 
         For each listed password, start WiFi tethering on DUT, client connect WiFi,
