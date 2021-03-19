@@ -387,6 +387,14 @@ CALL_TEARDOWN_REMOTE = "REMOTE"
 
 WIFI_VERBOSE_LOGGING_ENABLED = 1
 WIFI_VERBOSE_LOGGING_DISABLED = 0
+
+# Constant Carrier ID
+GOOGLE_CBRS_CARRIER_ID = 2340
+GOOGLE_FI_CARRIER_ID = 1989
+
+# List of Chipset models
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit"]
+
 """
 Begin shared constant define for both Python and Java
 """
