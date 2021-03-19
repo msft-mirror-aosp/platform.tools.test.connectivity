@@ -119,7 +119,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_dat
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_slways_allow_mms_data
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_mms_data
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
@@ -320,7 +320,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             return False
 
         sub_id = get_subid_from_slot_index(ads[0].log, ads[0], slot_id)
-        set_slways_allow_mms_data(ads[0], sub_id)
+        set_always_allow_mms_data(ads[0], sub_id)
         if mo_mt == DIRECTION_MOBILE_ORIGINATED:
             ad_sender = ads[0]
             ad_receiver = ads[1]
