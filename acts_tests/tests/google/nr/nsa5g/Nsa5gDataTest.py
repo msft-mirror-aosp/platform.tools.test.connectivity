@@ -97,13 +97,13 @@ class Nsa5gDataTest(TelephonyBaseTest):
             ad.log.error("Failed to set network mode to NSA")
             return False
         ad.log.info("Set network mode to NSA successfully")
-        ad.log.info("Waiting for nsa5g NSA attach for 60 secs")
+        ad.log.info("Waiting for 5g NSA attach for 60 secs")
         if is_current_network_5g_nsa(ad, timeout=60):
-            ad.log.info("Success! attached on nsa5g NSA")
+            ad.log.info("Success! attached on 5g NSA")
         else:
             ad.log.error("Failure - expected NR_NSA, current %s",
                          get_current_override_network_type(ad))
-            # Can't attach nsa5g NSA, exit test!
+            # Can't attach 5g NSA, exit test!
             return False
         for iteration in range(3):
             connectivity = False
