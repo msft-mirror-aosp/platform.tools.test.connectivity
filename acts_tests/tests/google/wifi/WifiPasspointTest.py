@@ -32,7 +32,7 @@ from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums
 
-DEFAULT_TIMEOUT = 10
+DEFAULT_TIMEOUT = 15
 OSU_TEST_TIMEOUT = 300
 
 # Constants for providers.
