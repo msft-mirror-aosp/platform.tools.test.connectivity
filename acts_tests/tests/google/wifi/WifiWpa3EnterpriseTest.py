@@ -89,7 +89,10 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
         "identity": self.wpa3_rsa3072_network["identity"],
         "domain_suffix_match": self.wpa3_rsa3072_network["domain"]
     }
-    wutils.connect_to_wifi_network(self.dut, config)
+    # Synology AP is slow in sending out IP address after the connection.
+    # Increasing the wait time to receive IP address to 60s from 15s.
+    wutils.connect_to_wifi_network(self.dut, config, check_connectivity=False)
+    wutils.validate_connection(self.dut, wait_time=60)
 
   @test_tracker_info(uuid="4779c662-1925-4c26-a4d6-3d729393796e")
   def test_connect_to_wpa3_enterprise_insecure_rsa_cert(self):
