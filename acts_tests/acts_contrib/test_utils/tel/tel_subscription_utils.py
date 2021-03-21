@@ -18,6 +18,7 @@
 # It will be deleted once we have better solution for subscription ids.
 from future import standard_library
 standard_library.install_aliases()
+from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
@@ -251,6 +252,7 @@ def set_subid_for_message(ad, sub_id):
     if hasattr(ad, "outgoing_message_sub_id"):
         ad.outgoing_message_sub_id = sub_id
 
+
 def set_message_subid(ad, sub_id):
     """Set subId for both outgoing and incoming messages
 
@@ -297,6 +299,7 @@ def set_incoming_voice_sub_id(ad, sub_id):
     if hasattr(ad, "incoming_voice_sub_id"):
         ad.incoming_voice_sub_id = sub_id
 
+
 def set_voice_sub_id(ad, sub_id):
     """Set default subId for both incoming and outgoing voice calls
 
@@ -312,6 +315,7 @@ def set_voice_sub_id(ad, sub_id):
         ad.incoming_voice_sub_id = sub_id
     if hasattr(ad, "outgoing_voice_sub_id"):
         ad.outgoing_voice_sub_id = sub_id
+
 
 def set_voice_sub_id(ad, sub_id):
     """Set default subId for both incoming and outgoing voice calls
@@ -408,7 +412,7 @@ def set_dds_on_slot_1(ad):
         return False
 
 
-def set_slways_allow_mms_data(ad, sub_id, state=True):
+def set_always_allow_mms_data(ad, sub_id, state=True):
     """Set always allow mms data on sub_id
 
     Args:
@@ -419,8 +423,7 @@ def set_slways_allow_mms_data(ad, sub_id, state=True):
     Returns:
         None
     """
-    list_of_models = ["sdm", "msm", "kon", "lit"]
-    if any(model in ad.model for model in list_of_models):
+    if any(model in ad.model for model in CHIPSET_MODELS_LIST):
         ad.log.debug("SKIP telephonySetAlwaysAllowMmsData")
     else:
         ad.log.debug("telephonySetAlwaysAllowMmsData %s sub_id %s", state, sub_id)
@@ -458,6 +461,7 @@ def get_cbrs_and_default_sub_id(ad):
         if not cbrs_subid:
             ad.log.error("CBRS sub_id is not ACTIVE")
     return cbrs_subid, default_subid
+
 
 def get_subid_on_same_network_of_host_ad(ads, host_sub_id=None, type="voice"):
     ad_host = ads[0]

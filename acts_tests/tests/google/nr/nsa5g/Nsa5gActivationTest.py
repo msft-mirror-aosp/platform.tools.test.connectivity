@@ -76,9 +76,9 @@ class Nsa5gActivationTest(TelephonyBaseTest):
                     ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
                 ad.log.error("Fail to ensure initial data in 4G")
             # 5G attach
-            ad.log.info("Waiting for nsa5g NSA attach for 60 secs")
+            ad.log.info("Waiting for 5g NSA attach for 60 secs")
             if is_current_network_5g_nsa(ad, timeout=60):
-                ad.log.info("Success! attached on nsa5g NSA")
+                ad.log.info("Success! attached on 5g NSA")
                 return True
             else:
                 ad.log.error("Failure - expected NR_NSA, current %s",
@@ -114,9 +114,9 @@ class Nsa5gActivationTest(TelephonyBaseTest):
                     ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
                 ad.log.error("Fail to ensure initial data in 4G")
             # 5G attach
-            ad.log.info("Waiting for nsa5g NSA attach for 60 secs")
+            ad.log.info("Waiting for 5g NSA attach for 60 secs")
             if is_current_network_5g_nsa(ad, timeout=60):
-                ad.log.info("Success! attached on nsa5g NSA")
+                ad.log.info("Success! attached on 5g NSA")
                 return True
             else:
                 ad.log.error("Failure - expected NR_NSA, current %s",
@@ -157,9 +157,9 @@ class Nsa5gActivationTest(TelephonyBaseTest):
                     ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
                 ad.log.error("Fail to ensure initial data in 4G")
             # 5G attach
-            ad.log.info("Waiting for nsa5g NSA attach for 60 secs")
+            ad.log.info("Waiting for 5g NSA attach for 60 secs")
             if is_current_network_5g_nsa(ad, timeout=60):
-                ad.log.info("Success! attached on nsa5g NSA")
+                ad.log.info("Success! attached on 5g NSA")
                 return True
             else:
                 ad.log.error("Failure - expected NR_NSA, current %s",

@@ -62,7 +62,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import is_event_match
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
@@ -75,9 +75,16 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_video_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_voice_utils import is_call_hd
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan_for_subscription
 
 
-def phone_setup_video(log, ad, wfc_mode=WFC_MODE_DISABLED):
+def phone_setup_video(
+    log,
+    ad,
+    wfc_mode=WFC_MODE_DISABLED,
+    is_airplane_mode=False,
+    wifi_ssid=None,
+    wifi_pwd=None):
     """Setup phone default sub_id to make video call
 
     Args:
@@ -92,38 +99,63 @@ def phone_setup_video(log, ad, wfc_mode=WFC_MODE_DISABLED):
     """
     return phone_setup_video_for_subscription(log, ad,
                                               get_outgoing_voice_sub_id(ad),
-                                              wfc_mode)
+                                              wfc_mode,
+                                              False,
+                                              wifi_ssid,
+                                              wifi_pwd)
 
 
 def phone_setup_video_for_subscription(log,
                                        ad,
                                        sub_id,
-                                       wfc_mode=WFC_MODE_DISABLED):
+                                       wfc_mode=WFC_MODE_DISABLED,
+                                       is_airplane_mode=False,
+                                       wifi_ssid=None,
+                                       wifi_pwd=None):
     """Setup phone sub_id to make video call
 
     Args:
         log: log object.
         ad: android device object
         sub_id: ad's sub id.
-        wfc_mode: WFC mode to set to.
-            Valid mode includes: WFC_MODE_WIFI_ONLY, WFC_MODE_CELLULAR_PREFERRED,
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_DISABLED.
+        wfc_mode: WFC mode to set to. Valid mode includes:
+            - WFC_MODE_WIFI_ONLY
+                - Wi-Fi will be connected if wifi_ssid is assigned.
+            - WFC_MODE_CELLULAR_PREFERRED
+                - Wi-Fi will be connected if wifi_ssid is assigned.
+            - WFC_MODE_WIFI_PREFERRED
+                - Wi-Fi will be connected if wifi_ssid is assigned.
+            - WFC_MODE_DISABLED
+                - Only WFC mode will be set to DISABLED.
+            - None
+                - Neither WFC mode nor Wi-Fi state will be changed.
+        is_airplane_mode:
+            - False: airplane mode disabled
+            - True: airplane mode enabled for ViWifi
+        wifi_ssid: SSID of Wi-Fi AP to connect for ViWifi
+        wifi_ssid: Password of Wi-Fi AP SSID for ViWifi
 
     Returns:
         True if ad (sub_id) is setup correctly and idle for video call.
     """
-
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, wfc_mode):
-        log.error("{} WFC mode failed to be set to {}.".format(
-            ad.serial, wfc_mode))
-        return False
-    toggle_volte(log, ad, True)
-
     if not ensure_network_generation(
             log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} voice not in LTE mode.".format(ad.serial))
         return False
+
+    toggle_volte(log, ad, True)
+
+    if wfc_mode == WFC_MODE_DISABLED:
+        if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
+            log.error("{} WFC mode failed to be set to {}.".format(
+                ad.serial, wfc_mode))
+            return False
+    else:
+        if wfc_mode:
+            if not phone_setup_iwlan_for_subscription(log, ad, sub_id,
+                is_airplane_mode, wfc_mode, wifi_ssid, wifi_pwd):
+                log.error("Failed to set up phone on iwlan.")
+                return False
 
     return phone_idle_video_for_subscription(log, ad, sub_id)
 

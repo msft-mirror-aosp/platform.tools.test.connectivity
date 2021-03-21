@@ -22,8 +22,10 @@ SERVICE_PPTPD = "pptpd"
 SERVICE_FIREWALL = "firewall"
 SERVICE_IPSEC = "ipsec"
 SERVICE_XL2TPD = "xl2tpd"
+SERVICE_ODHCPD = "odhcpd"
 PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
 L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
+NAT6_PACKAGE = "ip6tables kmod-ipt-nat6"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
@@ -67,7 +69,9 @@ class NetworkSettings(object):
             "setup_dns_server": self.remove_dns_server,
             "setup_vpn_pptp_server": self.remove_vpn_pptp_server,
             "setup_vpn_l2tp_server": self.remove_vpn_l2tp_server,
-            "disable_ipv6": self.enable_ipv6
+            "disable_ipv6": self.enable_ipv6,
+            "setup_ipv6_bridge": self.remove_ipv6_bridge,
+            "ipv6_prefer_option": self.remove_ipv6_prefer_option
         }
         # This map contains cleanup functions to restore the configuration to
         # its default state. We write these keys to HISTORY_CONFIG_PATH prior to
@@ -688,6 +692,57 @@ class NetworkSettings(object):
         self.service_manager.reload(SERVICE_NETWORK)
         self.commit_changes()
 
+    def setup_ipv6_bridge(self):
+        """Setup ipv6 bridge for client have ability to access network."""
+        #  Install pptp service
+
+        self.config.add("setup_ipv6_bridge")
+
+        self.ssh.run("uci set dhcp.lan.dhcpv6=relay")
+        self.ssh.run("uci set dhcp.lan.ra=relay")
+        self.ssh.run("uci set dhcp.lan.ndp=relay")
+
+        self.ssh.run("uci set dhcp.wan6=dhcp")
+        self.ssh.run("uci set dhcp.wan6.dhcpv6=relay")
+        self.ssh.run("uci set dhcp.wan6.ra=relay")
+        self.ssh.run("uci set dhcp.wan6.ndp=relay")
+        self.ssh.run("uci set dhcp.wan6.master=1")
+        self.ssh.run("uci set dhcp.wan6.interface=wan6")
+
+        # Enable service
+        self.service_manager.need_restart(SERVICE_ODHCPD)
+        self.commit_changes()
+
+    def remove_ipv6_bridge(self):
+        """Discard ipv6 bridge on OpenWrt."""
+        self.config.discard("setup_ipv6_bridge")
+
+        self.ssh.run("uci set dhcp.lan.dhcpv6=server")
+        self.ssh.run("uci set dhcp.lan.ra=server")
+        self.ssh.run("uci delete dhcp.lan.ndp")
+
+        self.ssh.run("uci delete dhcp.wan6")
+
+        self.service_manager.need_restart(SERVICE_ODHCPD)
+        self.commit_changes()
+
+    def _add_dhcp_option(self, args):
+        self.ssh.run("uci add_list dhcp.lan.dhcp_option=\"%s\"" % args)
+
+    def _remove_dhcp_option(self, args):
+        self.ssh.run("uci del_list dhcp.lan.dhcp_option=\"%s\"" % args)
+
+    def add_ipv6_prefer_option(self):
+        self._add_dhcp_option("108,1800i")
+        self.config.add("ipv6_prefer_option")
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def remove_ipv6_prefer_option(self):
+        self._remove_dhcp_option("108,1800i")
+        self.config.discard("ipv6_prefer_option")
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
 
 class ServiceManager(object):
     """Class for service on OpenWrt.
@@ -720,6 +775,8 @@ class ServiceManager(object):
     def restart_services(self):
         """Restart all services need to restart."""
         for service in self._need_restart:
+            if service == SERVICE_NETWORK:
+                self.reload(service)
             self.restart(service)
         self._need_restart = set()
 

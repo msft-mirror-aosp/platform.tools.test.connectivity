@@ -63,6 +63,7 @@ from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_DISABLE
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_defines import GEN_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
@@ -5130,12 +5131,12 @@ def toggle_wfc_for_subscription(log, ad, new_state=None, sub_id=None):
             new_state = not current_state
         if new_state != current_state:
             ad.log.info(
-                "Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s",
+                "Toggle Wi-Fi calling from %s to %s on sub_id %s",
                 current_state, new_state, sub_id)
             ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, new_state)
         check_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
         if check_state != new_state:
-            ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, \
+            ad.log.error("Failed to toggle Wi-Fi calling to %s, \
                 still set to %s on sub_id %s", new_state, check_state, sub_id)
             result = False
         return result
@@ -6807,6 +6808,11 @@ def ensure_network_generation_for_subscription(
     if hasattr(ad, "dsds") and voice_or_data == "data" and sub_id != get_default_data_sub_id(ad):
         ad.log.info("MSIM - Non DDS, ignore data RAT")
         return True
+
+    if generation == GEN_5G:
+        if is_current_network_5g_nsa(ad):
+            ad.log.info("Current network type is 5G NSA.")
+            return True
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):

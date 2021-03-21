@@ -141,6 +141,9 @@ WAIT_TIME_IN_CALL_LONG = 60
 # that the call is actually successful
 WAIT_TIME_IN_CALL_FOR_IMS = 30
 
+# Default total duration for a long call is 1 hour
+TOTAL_LONG_CALL_DURATION = 1 * 60 * 60
+
 # Time to wait after phone receive incoming call before phone reject this call.
 WAIT_TIME_REJECT_CALL = 2
 
@@ -293,6 +296,29 @@ TETHERING_WIFI = 0
 TETHERING_USB = 1
 TETHERING_BLUETOOTH = 2
 
+# Constant for tethering test
+TETHERING_PASSWORD_HAS_ESCAPE = '"DQ=/{Yqq;M=(^_3HzRvhOiL8S%`]w&l<Qp8qH)bs<4E9v_q=HLr^)}w$blA0Kg'
+TETHERING_SPECIAL_SSID_LIST = [
+                " !\"#$%&'()*+,-./0123456789:;<=>?",
+                "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
+                "`abcdefghijklmnopqrstuvwxyz{|}~", " a ", "!b!", "#c#", "$d$",
+                "%e%", "&f&", "'g'", "(h(", ")i)", "*j*", "+k+", "-l-", ".m.",
+                "/n/", "_", " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}",
+                "\u0644\u062c\u0648\u062c", "\u8c37\u6b4c", "\uad6c\uae00"
+                                                            "\u30b0\u30fc\u30eb",
+                "\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0443\u0439"
+        ]
+TETHERING_SPECIAL_PASSWORD_LIST = [
+                " !\"#$%&'()*+,-./0123456789:;<=>?",
+                "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
+                "`abcdefghijklmnopqrstuvwxyz{|}~",
+                " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}", "abcdefgh",
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!",
+                " a12345 ", "!b12345!", "#c12345#", "$d12345$", "%e12345%",
+                "&f12345&", "'g12345'", "(h12345(", ")i12345)", "*j12345*",
+                "+k12345+", "-l12345-", ".m12345.", "/n12345/"
+        ]
+
 NETWORK_SERVICE_VOICE = 'voice'
 NETWORK_SERVICE_DATA = 'data'
 
@@ -361,6 +387,14 @@ CALL_TEARDOWN_REMOTE = "REMOTE"
 
 WIFI_VERBOSE_LOGGING_ENABLED = 1
 WIFI_VERBOSE_LOGGING_DISABLED = 0
+
+# Constant Carrier ID
+GOOGLE_CBRS_CARRIER_ID = 2340
+GOOGLE_FI_CARRIER_ID = 1989
+
+# List of Chipset models
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit"]
+
 """
 Begin shared constant define for both Python and Java
 """

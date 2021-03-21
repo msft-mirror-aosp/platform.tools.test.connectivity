@@ -106,6 +106,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -1054,7 +1055,7 @@ def phone_setup_2g_for_subscription(log, ad, sub_id):
     return phone_setup_data_for_subscription(log, ad, sub_id, GEN_2G)
 
 
-def phone_setup_csfb(log, ad):
+def phone_setup_csfb(log, ad, nw_gen=GEN_4G):
     """Setup phone for CSFB call test.
 
     Setup Phone to be in 4G mode.
@@ -1063,16 +1064,17 @@ def phone_setup_csfb(log, ad):
     Args:
         log: log object
         ad: Android device object.
+        nw_gen: GEN_4G or GEN_5G
 
     Returns:
         True if setup successfully.
         False for errors.
     """
     return phone_setup_csfb_for_subscription(log, ad,
-                                             get_outgoing_voice_sub_id(ad))
+                                        get_outgoing_voice_sub_id(ad), nw_gen)
 
 
-def phone_setup_csfb_for_subscription(log, ad, sub_id):
+def phone_setup_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
     """Setup phone for CSFB call test for subscription id.
 
     Setup Phone to be in 4G mode.
@@ -1082,6 +1084,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         log: log object
         ad: Android device object.
         sub_id: subscription id.
+        nw_gen: GEN_4G or GEN_5G
 
     Returns:
         True if setup successfully.
@@ -1094,29 +1097,35 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
             if show_enhanced_4g_lte_mode in ["false", "False", False]:
                 ad.log.warning("'VoLTE' option is hidden. Test will be skipped.")
                 raise signals.TestSkip("'VoLTE' option is hidden. Test will be skipped.")
-    if not phone_setup_4g_for_subscription(log, ad, sub_id):
-        ad.log.error("Failed to set to 4G data.")
-        return False
+
+    if nw_gen == GEN_4G:
+        if not phone_setup_4g_for_subscription(log, ad, sub_id):
+            ad.log.error("Failed to set to 4G data.")
+            return False
+    elif nw_gen == GEN_5G:
+        if not phone_setup_5g_for_subscription(log, ad, sub_id):
+            ad.log.error("Failed to set to 5G data.")
+            return False
 
     toggle_volte_for_subscription(log, ad, sub_id, False)
 
     if not ensure_network_generation_for_subscription(
-            log, ad, sub_id, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+            log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
                                                   MAX_WAIT_TIME_NW_SELECTION):
         return False
 
-    return phone_idle_csfb_for_subscription(log, ad, sub_id)
+    return phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen)
 
-
-def phone_setup_volte(log, ad):
+def phone_setup_volte(log, ad, nw_gen=GEN_4G):
     """Setup VoLTE enable.
 
     Args:
         log: log object
         ad: android device object.
+        nw_gen: GEN_4G or GEN_5G
 
     Returns:
         True: if VoLTE is enabled successfully.
@@ -1127,15 +1136,16 @@ def phone_setup_volte(log, ad):
         ad.log.error("VoLTE is not supported, abort test.")
         raise signals.TestSkip("VoLTE is not supported, abort test.")
     return phone_setup_volte_for_subscription(log, ad,
-                                              get_outgoing_voice_sub_id(ad))
+                                        get_outgoing_voice_sub_id(ad), nw_gen)
 
-
-def phone_setup_volte_for_subscription(log, ad, sub_id):
+def phone_setup_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
     """Setup VoLTE enable for subscription id.
     Args:
         log: log object
         ad: android device object.
         sub_id: subscription id.
+        nw_gen: GEN_4G or GEN_5G
+
     Returns:
         True: if VoLTE is enabled successfully.
         False: for errors
@@ -1144,9 +1154,15 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
         get_outgoing_voice_sub_id(ad)):
         ad.log.error("VoLTE is not supported, abort test.")
         raise signals.TestSkip("VoLTE is not supported, abort test.")
-    if not phone_setup_4g_for_subscription(log, ad, sub_id):
-        ad.log.error("Failed to set to 4G data.")
-        return False
+
+    if nw_gen == GEN_4G:
+        if not phone_setup_4g_for_subscription(log, ad, sub_id):
+            ad.log.error("Failed to set to 4G data.")
+            return False
+    elif nw_gen == GEN_5G:
+        if not phone_setup_5g_for_subscription(log, ad, sub_id):
+            ad.log.error("Failed to set to 5G data.")
+            return False
     operator_name = get_operator_name(log, ad, sub_id)
     if operator_name == CARRIER_TMO:
         return True
@@ -1155,7 +1171,7 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
             ad.log.error("Enhanced 4G LTE setting is not available")
             return False
         toggle_volte_for_subscription(log, ad, sub_id, True)
-    return phone_idle_volte_for_subscription(log, ad, sub_id)
+    return phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen)
 
 
 def phone_setup_voice_3g(log, ad):
@@ -1386,17 +1402,23 @@ def phone_idle_volte(log, ad):
                                              get_outgoing_voice_sub_id(ad))
 
 
-def phone_idle_volte_for_subscription(log, ad, sub_id):
+def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
     """Return if phone is idle for VoLTE call test for subscription id.
     Args:
         ad: Android device object.
         sub_id: subscription id.
+        nw_gen: GEN_4G or GEN_5G
     """
-    if not wait_for_network_rat_for_subscription(
-            log, ad, sub_id, RAT_FAMILY_LTE,
-            voice_or_data=NETWORK_SERVICE_VOICE):
-        ad.log.error("Voice rat not in LTE mode.")
-        return False
+    if nw_gen == GEN_5G:
+        if not is_current_network_5g_nsa(ad):
+            ad.log.error("Not in 5G NSA coverage.")
+            return False
+    else:
+        if not wait_for_network_rat_for_subscription(
+                log, ad, sub_id, RAT_FAMILY_LTE,
+                voice_or_data=NETWORK_SERVICE_VOICE):
+            ad.log.error("Voice rat not in LTE mode.")
+            return False
     if not wait_for_volte_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED, sub_id):
         ad.log.error(
             "Failed to <report volte enabled true> within %s seconds.",
@@ -1464,18 +1486,24 @@ def phone_idle_csfb(log, ad):
                                             get_outgoing_voice_sub_id(ad))
 
 
-def phone_idle_csfb_for_subscription(log, ad, sub_id):
+def phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
     """Return if phone is idle for CSFB call test for subscription id.
 
     Args:
         ad: Android device object.
         sub_id: subscription id.
+        nw_gen: GEN_4G or GEN_5G
     """
-    if not wait_for_network_rat_for_subscription(
-            log, ad, sub_id, RAT_FAMILY_LTE,
-            voice_or_data=NETWORK_SERVICE_DATA):
-        ad.log.error("Data rat not in lte mode.")
-        return False
+    if nw_gen == GEN_5G:
+        if not is_current_network_5g_nsa(ad):
+            ad.log.error("Not in 5G NSA coverage.")
+            return False
+    else:
+        if not wait_for_network_rat_for_subscription(
+                log, ad, sub_id, RAT_FAMILY_LTE,
+                voice_or_data=NETWORK_SERVICE_DATA):
+            ad.log.error("Data rat not in lte mode.")
+            return False
     return True
 
 
@@ -2123,3 +2151,15 @@ def phone_setup_call_hold_unhold_test(log,
         return False
     return True
 
+
+def _test_call_long_duration(log, ads, dut_incall_check_func, total_duration):
+
+    log.info("Long Duration Call Test. Total duration = %s",
+                  total_duration)
+    return call_setup_teardown(
+        log,
+        ads[0],
+        ads[1],
+        ads[0],
+        verify_caller_func=dut_incall_check_func,
+        wait_time_in_call=total_duration)
