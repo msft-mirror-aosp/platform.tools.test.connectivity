@@ -25,23 +25,18 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import connect_both_devices_to_wifi
 from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt
 from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mo
-from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mt
 
 class Nsa5gMmsTest(TelephonyBaseTest):
     def setup_class(self):
@@ -57,6 +52,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
 
     """ Tests Begin """
+
 
     @test_tracker_info(uuid="bc484c2c-8086-42db-94cd-a1e4a35f35cf")
     @TelephonyBaseTest.tel_test_wrap
@@ -83,6 +79,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         self.log.info("PASS - mms test over 5g nsa validated")
         return True
+
 
     @test_tracker_info(uuid="51d42104-cb87-4c9b-9a16-302e246a21dc")
     @TelephonyBaseTest.tel_test_wrap
@@ -114,6 +111,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         self.log.info("PASS - volte mms test over 5g nsa validated")
         return True
+
 
     @test_tracker_info(uuid="97d6b071-aef2-40c1-8245-7be6c31870a6")
     @TelephonyBaseTest.tel_test_wrap
@@ -275,6 +273,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         return _mms_test_mo(self.log, ads)
 
+
     @test_tracker_info(uuid="68c8e0ca-bea4-45e4-92cf-19424ee47ca4")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_mo_mt_in_call_volte_wifi(self):
@@ -319,6 +318,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             return False
         return True
 
+
     @test_tracker_info(uuid="8c795c3a-59d4-408c-9b99-5287e79ba00b")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_long_message_mo_mt(self):
@@ -342,6 +342,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             return False
 
         return _long_mms_test_mo(self.log, ads)
+
 
     @test_tracker_info(uuid="e09b82ab-69a9-4eae-8cbe-b6f2cff993ad")
     @TelephonyBaseTest.tel_test_wrap
@@ -371,6 +372,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
 
         return _mms_test_mo(self.log, ads)
 
+
     @test_tracker_info(uuid="fedae24f-2577-4f84-9d76-53bbbe109d48")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_mms_mt_wifi(self):
@@ -398,91 +400,5 @@ class Nsa5gMmsTest(TelephonyBaseTest):
                               self.wifi_network_pass)
 
         return _mms_test_mt(self.log, ads)
-
-    @test_tracker_info(uuid="22531406-847e-4f64-94ae-572bb60978da")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_mms_mo_in_call_volte_wifi(self):
-        """ Test MO MMS during a MO VoLTE call.
-
-        Make sure PhoneA is in nsa 5G mode (with VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Connect PhoneA to Wifi.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-
-        if not provision_device_for_5g(self.log, ads[0]):
-            return False
-
-        ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                              self.wifi_network_pass)
-
-        self.log.info("Begin In Call SMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
-            return False
-
-        if not _mms_test_mo(self.log, ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        return True
-
-    @test_tracker_info(uuid="bd232ea8-17a5-422e-85cc-cd5698118b4f")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_mms_mt_in_call_volte_wifi(self):
-        """ Test MT MMS during a MO VoLTE call.
-
-        Make sure PhoneA is in nsa 5G mode (with VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Connect PhoneA to Wifi.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-
-        if not provision_device_for_5g(self.log, ads[0]):
-            return False
-
-        ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                              self.wifi_network_pass)
-
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
-            return False
-
-        if not _mms_test_mt(self.log, ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        return True
 
     """ Tests End """
