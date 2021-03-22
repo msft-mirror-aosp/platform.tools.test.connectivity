@@ -149,6 +149,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
             del self.user_params["open_network"]
 
     def setup_test(self):
+        super().setup_test()
         # initialize attenuators
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
