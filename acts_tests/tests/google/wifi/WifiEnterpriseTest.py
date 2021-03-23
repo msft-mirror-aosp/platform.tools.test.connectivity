@@ -398,6 +398,20 @@ class WifiEnterpriseTest(WifiBaseTest):
         config = self.gen_negative_eap_configs(self.config_tls)
         self.eap_negative_connect_logic(config, self.dut)
 
+    @test_tracker_info(uuid="")
+    def test_network_selection_status_wpa2_eap_tls_invalid_cert(self):
+        config = self.gen_negative_eap_configs(self.config_tls)
+        try:
+            wutils.connect_to_wifi_network(self.dut, config)
+            asserts.fail(
+                "WPA2 EAP TLS worked with invalid cert. Expected to fail.")
+        except:
+            asserts.assert_true(
+                self.dut.droid.wifiIsNetworkTemporaryDisabledForNetwork(config),
+                "WiFi network is not temporary disabled.")
+            asserts.explicit_pass(
+                "Connection failed with correct network selection status.")
+
     @test_tracker_info(uuid="6466abde-1d16-4168-9dd8-1e7a0a19889b")
     def test_eap_connect_negative_with_config_pwd(self):
         config = self.gen_negative_eap_configs(self.config_pwd)
