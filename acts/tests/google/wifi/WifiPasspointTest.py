@@ -173,7 +173,7 @@ class WifiPasspointTest(WifiBaseTest):
 
         # Login
         uutils.wait_and_click(self.dut, text=PASSPOINT_BUTTON)
-
+        time.sleep(DEFAULT_TIMEOUT)
 
     def start_subscription_provisioning(self, state):
         """Start subscription provisioning with a default provider."""
