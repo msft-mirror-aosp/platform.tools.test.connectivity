@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts.test_decorators import test_tracker_info
 from WifiNewSetupAutoJoinTest import WifiNewSetupAutoJoinTest
 
 class WifiNewSetupWifiToWifiAutoJoinTest(WifiNewSetupAutoJoinTest):
