@@ -779,6 +779,9 @@ def gnss_tracking_via_gtw_gpstool(ad,
         meas_flag: True to enable GnssMeasurement. False is not to. Default
         set to False.
     """
+    gnss_crash_list = [".*Fatal signal.*gnss",
+                       ".*Fatal signal.*xtra",
+                       ".*F DEBUG.*gnss"]
     process_gnss_by_gtw_gpstool(
         ad, criteria=criteria, type=type, meas_flag=meas_flag)
     ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
@@ -787,10 +790,18 @@ def gnss_tracking_via_gtw_gpstool(ad,
     while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
-        crash_result = ad.search_logcat("Force finishing activity "
-                                        "com.android.gpstool/.GPSTool",
-                                        begin_time)
-        if crash_result:
+        for attr in gnss_crash_list:
+            gnss_crash_result = ad.adb.shell(
+                "logcat -d | grep -E -i '%s'" % attr)
+            if gnss_crash_result:
+                start_gnss_by_gtw_gpstool(ad, state=False, type=type)
+                raise signals.TestFailure(
+                    "Test failed due to GNSS HAL crashed. \n%s" %
+                    gnss_crash_result)
+        gpstool_crash_result = ad.search_logcat("Force finishing activity "
+                                                "com.android.gpstool/.GPSTool",
+                                                begin_time)
+        if gpstool_crash_result:
             raise signals.TestError("GPSTool crashed. Abort test.")
     ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, state=False, type=type)
