@@ -22,8 +22,12 @@ class AbstractDeviceWlanDeviceBaseTest(WifiBaseTest):
 
     def on_fail(self, test_name, begin_time):
         try:
-            self.dut.take_bug_report(test_name, begin_time)
             self.dut.get_log(test_name, begin_time)
+            if (not hasattr(self.dut.device, "take_bug_report_on_fail")
+                    or self.dut.device.take_bug_report_on_fail):
+                # Take a bug report if device does not have a take bug report flag,
+                # or if the flag is true
+                self.dut.take_bug_report(test_name, begin_time)
         except Exception:
             pass
 
