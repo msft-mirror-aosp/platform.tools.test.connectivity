@@ -82,6 +82,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
+from acts_contrib.test_utils.tel.tel_test_utils import check_voice_network_type
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -194,6 +195,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                   "CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED": 0,
                                   "CALL_HANGUP_FAIL": 0,
                                   "CALL_ID_CLEANUP_FAIL": 0 }
+        self.call_stats_check = self.user_params.get("call_stats_check", False)
         return True
 
     def setup_test(self):
@@ -427,6 +429,12 @@ class TelLiveStressTest(TelephonyBaseTest):
         test_name = "%s_No_%s_phone_call" % (self.test_name, the_number)
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s for %s seconds begin", log_msg, duration)
+
+        if self.call_stats_check:
+            voice_type_init = check_voice_network_type(ads, voice_init=True)
+        else:
+            voice_type_init = None
+
         begin_time = get_device_epoch_time(ads[0])
         for ad in self.android_devices:
             if self.user_params.get("turn_on_tcpdump", False):
@@ -463,7 +471,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log,
                 self.dut,
                 self.call_server_number,
-                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND
+                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
+                call_stats_check=self.call_stats_check,
+                voice_type_init=voice_type_init
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
@@ -475,7 +485,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 verify_callee_func=call_verification_func,
                 wait_time_in_call=0,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
-                slot_id_callee=slot_id_callee)
+                slot_id_callee=slot_id_callee,
+                call_stats_check=self.call_stats_check,
+                voice_type_init=voice_type_init)
             self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
