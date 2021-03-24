@@ -225,6 +225,8 @@ class FuchsiaDevice:
                                              FUCHSIA_SSH_USERNAME)
         self.hard_reboot_on_fail = fd_conf_data.get("hard_reboot_on_fail",
                                                     False)
+        self.take_bug_report_on_fail = fd_conf_data.get(
+            "take_bug_report_on_fail", False)
         self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self.config_country_code = fd_conf_data.get(
             'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US)
@@ -290,7 +292,7 @@ class FuchsiaDevice:
 
         # Grab commands from FuchsiaHfpLib
         self.hfp_lib = FuchsiaHfpLib(self.address, self.test_counter,
-                                         self.client_id)
+                                     self.client_id)
 
         # Grab commands from FuchsiaLightLib
         self.light_lib = FuchsiaLightLib(self.address, self.test_counter,
