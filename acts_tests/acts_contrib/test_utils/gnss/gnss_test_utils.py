@@ -1639,3 +1639,35 @@ def stop_pixel_logger(ad):
     else:
         ad.log.warn(
             "Pixel Logger fails to stop in %d seconds." % stop_timeout_sec)
+
+def launch_eecoexer(ad):
+    """adb to stop pixel logger for GNSS logging.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    launch_cmd = ("am start -a android.intent.action.MAIN -n"
+                      "com.google.eecoexer"
+                      "/.MainActivity")
+    ad.adb.shell(launch_cmd)
+    try:
+        ad.log.info("Launch EEcoexer.")
+    except Exception as e:
+        ad.log.error(e)
+        raise signals.TestError("Failed to launch EEcoexer.")
+
+def excute_eecoexer_function(ad, eecoexer_args):
+    """adb to stop pixel logger for GNSS logging.
+
+    Args:
+        ad: An AndroidDevice object.
+        eecoexer_args: EEcoexer function arguments
+    """
+    enqueue_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
+                   " --es sms_body ENQUEUE,{}".format(eecoexer_args))
+    exe_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
+                           " --es sms_body EXECUTE")
+    ad.log.info("EEcoexer Add Enqueue: {}".format(eecoexer_args))
+    ad.adb.shell(enqueue_cmd)
+    ad.log.info("EEcoexer Excute.")
+    ad.adb.shell(exe_cmd)
