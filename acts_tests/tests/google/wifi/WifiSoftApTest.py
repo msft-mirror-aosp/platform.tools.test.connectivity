@@ -46,7 +46,7 @@ class WifiSoftApTest(WifiBaseTest):
         super().setup_class()
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        req_params = ["dbs_supported_models"]
+        req_params = ["dbs_supported_models", "sta_sta_supported_models"]
         opt_param = ["open_network"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -78,6 +78,8 @@ class WifiSoftApTest(WifiBaseTest):
         self.AP_IFACE = 'wlan0'
         if self.dut.model in self.dbs_supported_models:
             self.AP_IFACE = 'wlan1'
+        if self.dut.model in self.sta_sta_supported_models:
+            self.AP_IFACE = 'wlan2'
         if len(self.android_devices) > 2:
             utils.sync_device_time(self.android_devices[2])
             wutils.set_wifi_country_code(self.android_devices[2], wutils.WifiEnums.CountryCode.US)
