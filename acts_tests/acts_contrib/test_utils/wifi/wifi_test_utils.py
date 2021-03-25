@@ -1730,8 +1730,15 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED))
-        connected_network =\
-            on_capabilities_changed["data"][cconsts.NETWORK_CB_KEY_TRANSPORT_INFO]
+        connected_network = None
+        # WifiInfo is attached to TransportInfo only in S.
+        if ad.droid.isSdkAtLeastS():
+            connected_network = (
+                on_capabilities_changed["data"][
+                    cconsts.NETWORK_CB_KEY_TRANSPORT_INFO]
+            )
+        else:
+            connected_network = ad.droid.wifiGetConnectionInfo()
         ad.log.info("Connected to network %s", connected_network)
         asserts.assert_equal(
             connected_network[WifiEnums.SSID_KEY], expected_ssid,
