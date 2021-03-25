@@ -1280,6 +1280,9 @@ class DiscoveryTest(AwareBaseTest):
         s_dut = self.android_devices[1]
         s_dut.pretty_name = "Subscriber"
 
+        asserts.skip_if(not s_dut.droid.isSdkAtLeastS(),
+                        "R build and below do not have onServiceLost API.")
+
         # Publisher+Subscriber: attach and wait for confirmation
         p_id = p_dut.droid.wifiAwareAttach(False)
         autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
