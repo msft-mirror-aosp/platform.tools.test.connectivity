@@ -105,7 +105,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                 self.log.info('Turning on airplane mode.')
                 asserts.assert_true(utils.force_airplane_mode(dev, True),
                                     'Can not turn on airplane mode.')
-        wutils.reset_wifi(dev)
+                wutils.reset_wifi(dev)
 
     def teardown_test(self):
         self.iperf_server.stop()
