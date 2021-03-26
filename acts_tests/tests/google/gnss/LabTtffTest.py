@@ -33,8 +33,8 @@ from acts_contrib.test_utils.gnss import gnss_testlog_utils as glogutils
 DEVICE_GPSLOG_FOLDER = '/sdcard/Android/data/com.android.gpstool/files/'
 GPS_PKG_NAME = 'com.android.gpstool'
 
-class LabTtffTest(base_test.BaseTestClass):
 
+class LabTtffTest(base_test.BaseTestClass):
     """ LAB TTFF Tests"""
     GTW_GPSTOOL_APP = 'gtw_gpstool_apk'
     SPECTRACOM_IP_KEY = 'spectracom_ip'
@@ -68,9 +68,8 @@ class LabTtffTest(base_test.BaseTestClass):
         req_params = [
             self.SPECTRACOM_IP_KEY, self.SPECTRACOM_PORT_KEY,
             self.SPECTRACOM_FILES_KEY, self.SPECTRACOM_POWER_KEY,
-            self.CSTTFF_CRITERIA, self.HSTTFF_CRITERIA,
-            self.WSTTFF_CRITERIA, self.TTFF_ITERATION,
-            self.SIMULATOR_LOCATION, self.DIAG_OPTION
+            self.CSTTFF_CRITERIA, self.HSTTFF_CRITERIA, self.WSTTFF_CRITERIA,
+            self.TTFF_ITERATION, self.SIMULATOR_LOCATION, self.DIAG_OPTION
         ]
 
         for param in req_params:
@@ -79,7 +78,7 @@ class LabTtffTest(base_test.BaseTestClass):
                                'file.'.format(param))
                 raise signals.TestAbortClass(
                     'Required parameter {} is missing in config '
-                               'file.'.format(param)) 
+                    'file.'.format(param))
         self.dut = self.android_devices[0]
         self.spectracom_ip = self.user_params[self.SPECTRACOM_IP_KEY]
         self.spectracom_port = self.user_params[self.SPECTRACOM_PORT_KEY]
@@ -90,16 +89,16 @@ class LabTtffTest(base_test.BaseTestClass):
         self.cs_ttff_criteria = self.user_params.get(self.CSTTFF_CRITERIA, [])
         self.hs_ttff_criteria = self.user_params.get(self.HSTTFF_CRITERIA, [])
         self.ws_ttff_criteria = self.user_params.get(self.WSTTFF_CRITERIA, [])
-        self.cs_ttff_pecriteria = self.user_params.get(
-            self.CSTTFF_PECRITERIA, [])
-        self.hs_ttff_pecriteria = self.user_params.get(
-            self.HSTTFF_PECRITERIA, [])
-        self.ws_ttff_pecriteria = self.user_params.get(
-            self.WSTTFF_PECRITERIA, [])
+        self.cs_ttff_pecriteria = self.user_params.get(self.CSTTFF_PECRITERIA,
+                                                       [])
+        self.hs_ttff_pecriteria = self.user_params.get(self.HSTTFF_PECRITERIA,
+                                                       [])
+        self.ws_ttff_pecriteria = self.user_params.get(self.WSTTFF_PECRITERIA,
+                                                       [])
         self.ttff_iteration = self.user_params.get(self.TTFF_ITERATION, [])
-        self.simulator_location = self.user_params.get(
-            self.SIMULATOR_LOCATION, [])
-	self.diag_option = self.user_params.get(self.DIAG_OPTION, [])
+        self.simulator_location = self.user_params.get(self.SIMULATOR_LOCATION,
+                                                       [])
+        self.diag_option = self.user_params.get(self.DIAG_OPTION, [])
 
         test_type = namedtuple('Type', ['command', 'criteria'])
         self.test_types = {
@@ -119,7 +118,7 @@ class LabTtffTest(base_test.BaseTestClass):
 
     def setup_test(self):
 
-	self.clear_gps_log()
+        self.clear_gps_log()
         self.spectracom = gsg6.GSG6(self.spectracom_ip, self.spectracom_port)
 
         self.spectracom.stop_scenario()
@@ -180,9 +179,10 @@ class LabTtffTest(base_test.BaseTestClass):
         gutils.process_gnss_by_gtw_gpstool(self.dut,
                                            self.test_types['cs'].criteria)
         begin_time = gutils.get_current_epoch_time()
-        gutils.start_ttff_by_gtw_gpstool(
-            self.dut, ttff_mode=mode,
-            iteration=self.ttff_iteration, aid_data=True)
+        gutils.start_ttff_by_gtw_gpstool(self.dut,
+                                         ttff_mode=mode,
+                                         iteration=self.ttff_iteration,
+                                         aid_data=True)
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.dut, begin_time,
                                                        self.simulator_location)
 
@@ -190,8 +190,8 @@ class LabTtffTest(base_test.BaseTestClass):
         self.dut.adb.pull("{} {}".format(DEVICE_GPSLOG_FOLDER, gps_log_path))
 
         gps_api_log = glob.glob(gps_log_path + '/GPS_API_*.txt')
-        ttff_loop_log = glob.glob(gps_log_path + '/GPS_{}_*.txt'.
-                                  format(mode.upper()))
+        ttff_loop_log = glob.glob(gps_log_path +
+                                  '/GPS_{}_*.txt'.format(mode.upper()))
 
         if not gps_api_log and ttff_loop_log:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
@@ -204,7 +204,7 @@ class LabTtffTest(base_test.BaseTestClass):
             d = ttff_data[i]._asdict()
             ttff_dict[i] = dict(d)
 
-        ttff_time =[]
+        ttff_time = []
         ttff_pe = []
         for i, k in ttff_dict.items():
             ttff_time.append(ttff_dict[i]['ttff_time'])
@@ -212,15 +212,13 @@ class LabTtffTest(base_test.BaseTestClass):
         df['ttff_time'] = ttff_time
         df['ttff_pe'] = ttff_pe
         df.to_json(gps_log_path + '/gps_log.json', orient='table')
-        result = gutils.check_ttff_data(
-            self.dut,
-            ttff_data,
-            ttff_mode=test_type.command,
-            criteria=test_type.criteria)
+        result = gutils.check_ttff_data(self.dut,
+                                        ttff_data,
+                                        ttff_mode=test_type.command,
+                                        criteria=test_type.criteria)
         if not result:
             raise signals.TestFailure('%s TTFF fails to reach '
-                                      'designated criteria'
-                                      % test_type.command)
+                                      'designated criteria' % test_type.command)
         return ttff_data
 
     def verify_pe(self, mode):
@@ -243,16 +241,13 @@ class LabTtffTest(base_test.BaseTestClass):
         test_type = self.test_types.get(mode)
 
         ttff_data = self.get_and_verify_ttff(mode)
-        result = gutils.check_ttff_pe(
-            self.dut,
-            ttff_data,
-            ttff_mode=test_type.command,
-            pecriteria=test_type.pecriteria
-        )
+        result = gutils.check_ttff_pe(self.dut,
+                                      ttff_data,
+                                      ttff_mode=test_type.command,
+                                      pecriteria=test_type.pecriteria)
         if not result:
             raise signals.TestFailure('%s TTFF fails to reach '
-                                      'designated criteria'
-                                      % test_type.command)
+                                      'designated criteria' % test_type.command)
         return ttff_data
 
     def clear_gps_log(self):
@@ -266,32 +261,37 @@ class LabTtffTest(base_test.BaseTestClass):
 
         self.start_and_set_spectracom_power()
         if self.diag_option is "QCOM":
-                diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
+            diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
         else:
-                #start_tbdlog() yet to add for Broadcom
-                pass
-	self.verify_pe('cs')
-        diaglog.stop_background_diagmdlog(self.dut, self.qxdm_log_path, keep_logs=False)
+            #start_tbdlog() yet to add for Broadcom
+            pass
+        self.verify_pe('cs')
+        diaglog.stop_background_diagmdlog(self.dut,
+                                          self.qxdm_log_path,
+                                          keep_logs=False)
 
     def test_gnss_warm_ttff_ffpe(self):
 
         self.start_and_set_spectracom_power()
-	if self.diag_option is "QCOM":
-	        diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
-	else:
-		#start_tbdlog() yet to add for Broadcom
-		pass
+        if self.diag_option is "QCOM":
+            diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
+        else:
+            #start_tbdlog() yet to add for Broadcom
+            pass
         self.verify_pe('ws')
-        diaglog.stop_background_diagmdlog(self.dut, self.qxdm_log_path, keep_logs=False)
+        diaglog.stop_background_diagmdlog(self.dut,
+                                          self.qxdm_log_path,
+                                          keep_logs=False)
 
     def test_gnss_hot_ttff_ffpe(self):
 
         self.start_and_set_spectracom_power()
         if self.diag_option is "QCOM":
-                diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
+            diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
         else:
-                #start_tbdlog() yet to add for Broadcom
-                pass
+            #start_tbdlog() yet to add for Broadcom
+            pass
         self.verify_pe('hs')
-        diaglog.stop_background_diagmdlog(self.dut, self.qxdm_log_path, keep_logs=False)
-
+        diaglog.stop_background_diagmdlog(self.dut,
+                                          self.qxdm_log_path,
+                                          keep_logs=False)
