@@ -334,7 +334,7 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def take_bug_report(self, test_name, begin_time):
         """Stub for Fuchsia implementation."""
-        pass
+        self.device.take_bug_report(test_name, begin_time)
 
     def get_log(self, test_name, begin_time):
         """Stub for Fuchsia implementation."""

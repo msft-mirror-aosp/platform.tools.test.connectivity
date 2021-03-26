@@ -407,7 +407,7 @@ class WifiManagerTest(WifiBaseTest):
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling Airplane mode.")
 
-    def helper_reboot_configstore_reconnect(self):
+    def helper_reboot_configstore_reconnect(self, lock_screen=False):
         """Connect to multiple networks, reboot then reconnect to previously
            connected network.
 
@@ -427,6 +427,9 @@ class WifiManagerTest(WifiBaseTest):
         reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
                                                 network_list[BAND_5GHZ])
 
+        if lock_screen:
+            self.dut.droid.wakeLockRelease()
+            self.dut.droid.goToSleepNow()
         reconnect = self.connect_to_wifi_network_with_id(
             reconnect_to[WifiEnums.NETID_KEY],
             reconnect_to[WifiEnums.SSID_KEY])
@@ -831,6 +834,32 @@ class WifiManagerTest(WifiBaseTest):
         """
         self.turn_location_on_and_scan_toggle_on()
         self.helper_toggle_airplane_reboot_configstore_reconnect()
+
+    @test_tracker_info(uuid="")
+    def test_reboot_configstore_reconnect_with_screen_lock(self):
+        """Verify device can re-connect to configured networks after reboot.
+
+        Steps:
+        1. Connect to 2G and 5G networks.
+        2. Reboot device
+        3. Verify device connects to 1 network automatically.
+        4. Lock screen and verify device can connect to the other network.
+        """
+        self.helper_reboot_configstore_reconnect(lock_screen=True)
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_5g_after_reboot_without_unlock(self):
+        """Connect to 5g network afer reboot without unlock.
+
+        Steps:
+        1. Reboot device and lock screen
+        2. Connect to 5G network and verify it works.
+        """
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
+        wutils.connect_to_wifi_network(self.dut, self.wpapsk_5g)
 
     @test_tracker_info(uuid="81eb7527-4c92-4422-897a-6b5f6445e84a")
     def test_config_store_with_wpapsk_2g(self):
