@@ -28,6 +28,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_data_transfer
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
+from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_cell_switching_in_call
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts_contrib.test_utils.tel.tel_defines import GEN_2G
@@ -4039,34 +4040,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
+
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
-                                   5):
-            self.log.error("Call setup failed")
-            return False
-        else:
-            self.log.info("Call setup succeed")
-
-        if not wifi_cell_switching(self.log, ads[0], self.wifi_network_ssid,
-                                   self.wifi_network_pass, GEN_4G):
-            ads[0].log.error("Failed to do WIFI and Cell switch in call")
-            result = False
-
-        if not is_phone_in_call_active(ads[0]):
-            return False
-        else:
-            if not ads[0].droid.telecomCallGetAudioState():
-                ads[0].log.error("Audio is not on call")
-                result = False
-            else:
-                ads[0].log.info("Audio is on call")
-            hangup_call(self.log, ads[0])
-            return result
+        return test_wifi_cell_switching_in_call(self.log,
+                                                ads,
+                                                self.wifi_network_ssid,
+                                                self.wifi_network_pass,
+                                                new_gen=GEN_4G)
 
     @test_tracker_info(uuid="8a853186-cdff-4078-930a-6c619ea89183")
     @TelephonyBaseTest.tel_test_wrap
@@ -4076,7 +4060,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         1. Make Sure PhoneA in wfc with APM off.
         2. Make Sure PhoneB in Voice Capable.
         3. Call from PhoneA to PhoneB.
-        4. Toggling Wifi connnection in call.
+        4. Toggling Wifi connection in call.
         5. Verify call is active.
         6. Hung up the call on PhoneA
 
@@ -4084,7 +4068,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
+
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -4093,28 +4077,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
-                                   5):
-            self.log.error("Call setup failed")
-            return False
-        else:
-            self.log.info("Call setup succeed")
-
-        if not wifi_cell_switching(self.log, ads[0], self.wifi_network_ssid,
-                                   self.wifi_network_pass, GEN_4G):
-            ads[0].log.error("Failed to do WIFI and Cell switch in call")
-            result = False
-
-        if not is_phone_in_call_active(ads[0]):
-            return False
-        else:
-            if not ads[0].droid.telecomCallGetAudioState():
-                ads[0].log.error("Audio is not on call")
-                result = False
-            else:
-                ads[0].log.info("Audio is on call")
-            hangup_call(self.log, ads[0])
-            return result
+        return test_wifi_cell_switching_in_call(self.log,
+                                                ads,
+                                                self.wifi_network_ssid,
+                                                self.wifi_network_pass,
+                                                new_gen=GEN_4G)
 
     @test_tracker_info(uuid="187bf7b5-d122-4914-82c0-b0709272ee12")
     @TelephonyBaseTest.tel_test_wrap
@@ -4124,7 +4091,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         1. Make Sure PhoneA in CSFB.
         2. Make Sure PhoneB in CSFB.
         3. Call from PhoneA to PhoneB.
-        4. Toggling Wifi connnection in call.
+        4. Toggling Wifi connection in call.
         5. Verify call is active.
         6. Hung up the call on PhoneA
 
@@ -4132,33 +4099,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
+
         tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
-                                   5):
-            self.log.error("Call setup failed")
-            return False
-        else:
-            self.log.info("Call setup succeed")
+        return test_wifi_cell_switching_in_call(self.log,
+                                                ads,
+                                                self.wifi_network_ssid,
+                                                self.wifi_network_pass,
+                                                new_gen=GEN_3G)
 
-        if not wifi_cell_switching(self.log, ads[0], self.wifi_network_ssid,
-                                   self.wifi_network_pass, GEN_3G):
-            ads[0].log.error("Faile to do WIFI and Cell switch in call")
-            result = False
-
-        if not is_phone_in_call_active(ads[0]):
-            return False
-        else:
-            if not ads[0].droid.telecomCallGetAudioState():
-                ads[0].log.error("Audio is not on call")
-                result = False
-            else:
-                ads[0].log.info("Audio is on call")
-            hangup_call(self.log, ads[0])
-            return result
 
 """ Tests End """
