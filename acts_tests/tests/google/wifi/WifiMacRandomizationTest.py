@@ -634,6 +634,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
             4. Connect to the network. Verify the MAC address is random and
                different from the randomized MAC observed in step 2.
         """
+        asserts.skip_if(not self.dut.droid.isSdkAtLeastS(),
+                        "This feature is only supported on S and later.")
+
         network_suggestion = self.reference_networks[0]["5g"]
         network_suggestion["enhancedMacRandomizationEnabled"] = True
 
