@@ -951,7 +951,8 @@ def start_wifi_background_scan(ad, scan_setting):
     return event['data']
 
 
-def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
+def start_wifi_tethering(ad, ssid, password, band=None, hidden=None,
+                         security=None):
     """Starts wifi tethering on an android_device.
 
     Args:
@@ -961,6 +962,7 @@ def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
         band: The band the soft AP should be set on. It should be either
             WifiEnums.WIFI_CONFIG_APBAND_2G or WifiEnums.WIFI_CONFIG_APBAND_5G.
         hidden: boolean to indicate if the AP needs to be hidden or not.
+        security: security type of softap.
 
     Returns:
         No return value. Error checks in this function will raise test failure signals
@@ -972,6 +974,8 @@ def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
         config[WifiEnums.AP_BAND_KEY] = band
     if hidden:
         config[WifiEnums.HIDDEN_KEY] = hidden
+    if security:
+        config[WifiEnums.SECURITY] = security
     asserts.assert_true(ad.droid.wifiSetWifiApConfiguration(config),
                         "Failed to update WifiAp Configuration")
     ad.droid.wifiStartTrackingTetherStateChange()
@@ -1730,8 +1734,15 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED))
-        connected_network =\
-            on_capabilities_changed["data"][cconsts.NETWORK_CB_KEY_TRANSPORT_INFO]
+        connected_network = None
+        # WifiInfo is attached to TransportInfo only in S.
+        if ad.droid.isSdkAtLeastS():
+            connected_network = (
+                on_capabilities_changed["data"][
+                    cconsts.NETWORK_CB_KEY_TRANSPORT_INFO]
+            )
+        else:
+            connected_network = ad.droid.wifiGetConnectionInfo()
         ad.log.info("Connected to network %s", connected_network)
         asserts.assert_equal(
             connected_network[WifiEnums.SSID_KEY], expected_ssid,
