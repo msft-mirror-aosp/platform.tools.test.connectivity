@@ -959,7 +959,8 @@ def start_wifi_background_scan(ad, scan_setting):
     return event['data']
 
 
-def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
+def start_wifi_tethering(ad, ssid, password, band=None, hidden=None,
+                         security=None):
     """Starts wifi tethering on an android_device.
 
     Args:
@@ -969,6 +970,7 @@ def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
         band: The band the soft AP should be set on. It should be either
             WifiEnums.WIFI_CONFIG_APBAND_2G or WifiEnums.WIFI_CONFIG_APBAND_5G.
         hidden: boolean to indicate if the AP needs to be hidden or not.
+        security: security type of softap.
 
     Returns:
         No return value. Error checks in this function will raise test failure signals
@@ -980,6 +982,8 @@ def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
         config[WifiEnums.AP_BAND_KEY] = band
     if hidden:
         config[WifiEnums.HIDDEN_KEY] = hidden
+    if security:
+        config[WifiEnums.SECURITY] = security
     asserts.assert_true(ad.droid.wifiSetWifiApConfiguration(config),
                         "Failed to update WifiAp Configuration")
     ad.droid.wifiStartTrackingTetherStateChange()
