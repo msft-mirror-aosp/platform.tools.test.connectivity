@@ -24,6 +24,7 @@ from acts.utils import adb_shell_ping
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
+from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
@@ -68,10 +69,13 @@ from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_data_transfer
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_cell_switching_in_call
+CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 
 class Nsa5gVoiceTest(TelephonyBaseTest):
@@ -985,5 +989,205 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             hangup_call(self.log, ads[0])
             return result
 
+    @test_tracker_info(uuid="95802175-06d5-4774-8ce8-fdf7922eca20")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mo_vowifi_in_active_youtube(self):
+        """Test call can be established during active youtube video on 5G NSA.
+
+        Turn off airplane mode, turn on wfc and wifi.
+        Starting youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup IWLAN with NON-APM WIFI WFC on")
+            return False
+        return test_call_setup_in_active_youtube_video(self.log,
+                                                       self.android_devices,
+                                                       GEN_5G,
+                                                       DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="f827a8b5-039c-4cc1-b030-78a09119acfc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mt_vowifi_in_active_youtube(self):
+        """Test call can be established during active youtube_video on 5G NSA.
+
+        Turn off airplane mode, turn on wfc and wifi.
+        Starting an youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM off and WIFI and WFC on")
+            return False
+        return test_call_setup_in_active_youtube_video(self.log,
+                                                       self.android_devices,
+                                                       GEN_5G,
+                                                       DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="af3254d0-a84a-47c8-8ebc-11517b7b4944")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mo_vowifi_apm_in_active_data_transfer(self):
+        """Test call can be established during active data connection on 5G NSA.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return test_call_setup_in_active_data_transfer(self.log,
+                                                       self.android_devices,
+                                                       None,
+                                                       DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="5c58af94-8c24-481b-a555-bdbf36db5f6e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mt_vowifi_apm_in_active_data_transfer(self):
+        """Test call can be established during active data connection on 5G NSA.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return test_call_setup_in_active_data_transfer(self.log,
+                                                       self.android_devices,
+                                                       None,
+                                                       DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="bcd874ae-58e1-4954-88af-bb3dd54d4abf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mo_vowifi_apm_in_active_youtube(self):
+        """Test call can be established during active youtube video on 5G NSA.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return test_call_setup_in_active_youtube_video(self.log,
+                                                       self.android_devices,
+                                                       None,
+                                                       DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="ad96f1cf-0d17-4a39-86cf-cacb5f4cc81c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_mt_vowifi_apm_in_active_youtube(self):
+        """Test call can be established during active youtube video on 5G NSA.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return test_call_setup_in_active_youtube_video(self.log,
+                                                       self.android_devices,
+                                                       None,
+                                                       DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="9d1121c1-aae4-428b-9167-09d4efdb7e37")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_call_wfc_in_call_wifi_toggling(self):
+        """ General voice to voice call on 5G NSA. TMO Only Test
+
+        1. Make Sure PhoneA in wfc with APM off.
+        2. Make Sure PhoneB in Voice Capable.
+        3. Call from PhoneA to PhoneB.
+        4. Toggling Wifi connection in call.
+        5. Verify call is active.
+        6. Hung up the call on PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        if not provision_both_devices_for_5g(self.log, ads):
+            return False
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        return test_wifi_cell_switching_in_call(self.log,
+                                                ads,
+                                                self.wifi_network_ssid,
+                                                self.wifi_network_pass)
 
     """ Tests End """
