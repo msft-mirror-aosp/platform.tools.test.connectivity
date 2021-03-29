@@ -1488,10 +1488,10 @@ def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
         pe_criteria: Criteria for current test item.
 
     """
-    ad.log.info("%d iterations of TTFF %s tests finished.",
-                (len(ttff_data.keys()), ttff_mode))
-    ad.log.info("%s PASS criteria is %f meters", (ttff_mode, pe_criteria))
-    ad.log.debug("%s TTFF data: %s", (ttff_mode, ttff_data))
+    ad.log.info("%d iterations of TTFF %s tests finished."
+                % (len(ttff_data.keys()), ttff_mode))
+    ad.log.info("%s PASS criteria is %f meters" % (ttff_mode, pe_criteria))
+    ad.log.debug("%s TTFF data: %s" % (ttff_mode, ttff_data))
 
     if len(ttff_data.keys()) == 0:
         ad.log.error("GTW_GPSTool didn't process TTFF properly.")
@@ -1499,11 +1499,14 @@ def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
 
     elif any(float(ttff_data[key].ttff_pe) >= pe_criteria for key in
              ttff_data.keys()):
-        ad.log.error("One or more TTFF %s are over test criteria %f meters",
-                     (ttff_mode, pe_criteria))
+        ad.log.error("One or more TTFF %s are over test criteria %f meters"
+                     % (ttff_mode, pe_criteria))
         raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
-    ad.log.info("All TTFF %s are within test criteria %f meters.",
-                (ttff_mode, pe_criteria))
+    else:
+        ad.log.info("All TTFF %s are within test criteria %f meters."
+                % (ttff_mode, pe_criteria))
+        return True
+
 
 
 def check_adblog_functionality(ad):
@@ -1705,10 +1708,12 @@ def stop_pixel_logger(ad):
 
 
 def launch_eecoexer(ad):
-    """adb to stop pixel logger for GNSS logging.
+    """Launch EEcoexer.
 
     Args:
         ad: An AndroidDevice object.
+    Raise:
+        signals.TestError if DUT fails to launch EEcoexer
     """
     launch_cmd = ("am start -a android.intent.action.MAIN -n"
                   "com.google.eecoexer"
@@ -1722,7 +1727,7 @@ def launch_eecoexer(ad):
 
 
 def excute_eecoexer_function(ad, eecoexer_args):
-    """adb to stop pixel logger for GNSS logging.
+    """Execute EEcoexer commands.
 
     Args:
         ad: An AndroidDevice object.
