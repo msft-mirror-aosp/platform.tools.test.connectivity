@@ -382,6 +382,9 @@ def perform_dds_switch(ad):
 
 def set_dds_on_slot_0(ad):
     sub_id = get_subid_from_slot_index(ad.log, ad, 0)
+    if sub_id == INVALID_SUB_ID:
+        ad.log.warning("Invalid sub ID at slot 0")
+        return False
     operator = get_operatorname_from_slot_index(ad, 0)
     if get_default_data_sub_id(ad) == sub_id:
         ad.log.info("Current DDS is already on %s", operator)
@@ -398,6 +401,9 @@ def set_dds_on_slot_0(ad):
 
 def set_dds_on_slot_1(ad):
     sub_id = get_subid_from_slot_index(ad.log, ad, 1)
+    if sub_id == INVALID_SUB_ID:
+        ad.log.warning("Invalid sub ID at slot 1")
+        return False
     operator = get_operatorname_from_slot_index(ad, 1)
     if get_default_data_sub_id(ad) == sub_id:
         ad.log.info("Current DDS is already on %s", operator)
