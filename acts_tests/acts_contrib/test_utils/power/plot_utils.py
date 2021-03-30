@@ -32,8 +32,7 @@ def current_waveform_plot(samples, voltage, dest_path, plot_title):
     Plotting power measurement data with bokeh to generate interactive plots.
     You can do interactive data analysis on the plot after generating with the
     provided widgets, which make the debugging much easier. To realize that,
-    bokeh callback java scripting is used. View a sample html output file:
-    https://drive.google.com/open?id=0Bwp8Cq841VnpT2dGUUxLYWZvVjA
+    bokeh callback java scripting is used.
 
     Args:
         samples: a list of tuples in which the first element is a timestamp and
@@ -92,7 +91,6 @@ def current_waveform_plot(samples, voltage, dest_path, plot_title):
     plot.circle('x', 'y', source=source, size=0.5, fill_color='color')
     plot.xaxis.axis_label = 'Time (s)'
     plot.yaxis.axis_label = 'Current (mA)'
-    plot.title.text_font_size = {'value': '15pt'}
 
     # Callback JavaScript
     source.selected.js_on_change(
