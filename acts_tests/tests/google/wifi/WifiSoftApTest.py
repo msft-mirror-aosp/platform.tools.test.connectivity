@@ -451,7 +451,7 @@ class WifiSoftApTest(WifiBaseTest):
         """
         asserts.skip_if(self.dut.model not in self.sta_sta_supported_models,
                         "DUT does not support WPA3 softAp")
-        self.validate_full_tether_startup(security=WPA3_SAE_SOFTAP, True)
+        self.validate_full_tether_startup(security=WPA3_SAE_SOFTAP, hidden=True)
 
     @test_tracker_info(uuid="")
     def test_full_tether_startup_2G_hidden_wpa3(self):
