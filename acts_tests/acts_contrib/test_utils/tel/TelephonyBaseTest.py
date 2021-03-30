@@ -90,6 +90,7 @@ from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts_contrib.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -248,7 +249,7 @@ class TelephonyBaseTest(BaseTestClass):
                 postfix=build_postfix)
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
-        list_of_models = ["sdm", "msm", "kon", "lit"]
+        list_of_models = CHIPSET_MODELS_LIST
         if any(model in ad.model for model in list_of_models):
             phone_mode = "ssss"
             if hasattr(ad, "mtp_dsds"):
