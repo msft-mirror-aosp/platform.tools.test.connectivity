@@ -18,6 +18,7 @@ import time
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.power import PowerWiFiBaseTest as PWBT
 from acts_contrib.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.controllers.adb_lib.error import AdbCommandError
 
 
 class PowerWiFidtimTest(PWBT.PowerWiFiBaseTest):
@@ -33,17 +34,35 @@ class PowerWiFidtimTest(PWBT.PowerWiFiBaseTest):
         attrs = ['screen_status', 'wifi_band', 'dtim']
         indices = [2, 4, 6]
         self.decode_test_configs(attrs, indices)
-        # Initialize the dut to rock-bottom state
-        rebooted = wputils.change_dtim(
-            self.dut,
-            gEnableModulatedDTIM=int(self.test_configs.dtim),
-            gMaxLIModulatedDTIM=dtim_max)
-        if rebooted:
-            self.dut_rockbottom()
-        self.dut.log.info('DTIM value of the phone is now {}'.format(
-            self.test_configs.dtim))
+
+        # Starts from P21 device, the dtim setting method is changed to use adb.
+        # If no file match '/vendor/firmware/wlan/*/*.ini', use adb to change
+        # the dtim.
+        change_dtim_with_adb = False
+        try:
+            self.dut.adb.shell('ls /vendor/firmware/wlan/*/*.ini')
+        except AdbCommandError as e:
+            change_dtim_with_adb = True
+
+        if not change_dtim_with_adb:
+            # Initialize the dut to rock-bottom state
+            rebooted = wputils.change_dtim(
+                self.dut,
+                gEnableModulatedDTIM=int(self.test_configs.dtim),
+                gMaxLIModulatedDTIM=dtim_max)
+            if rebooted:
+                self.dut_rockbottom()
+            self.dut.log.info('DTIM value of the phone is now {}'.format(
+                self.test_configs.dtim))
         self.setup_ap_connection(
             self.main_network[self.test_configs.wifi_band])
+
+        if change_dtim_with_adb:
+            self.dut.log.info('No ini file for dtim, change dtim with adb')
+            wputils.change_dtim_adb(
+                self.dut,
+                gEnableModulatedDTIM=int(self.test_configs.dtim))
+
         if self.test_configs.screen_status == 'OFF':
             self.dut.droid.goToSleepNow()
             self.dut.log.info('Screen is OFF')
