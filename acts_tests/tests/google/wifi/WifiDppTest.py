@@ -860,8 +860,8 @@ class WifiDppTest(WifiBaseTest):
             security: Security type, a string "SAE" or "PSK"
             curve: cryptography curve type, a string DPP_TEST_CRYPTOGRAPHY_CURVE_XXX
     """
-    if not self.dut.droid.wifiIsEasyConnectSupported():
-      self.log.warning("Easy Connect is not supported on device!")
+    if not self.dut.droid.wifiIsEasyConnectEnrolleeResponderModeSupported():
+      self.log.warning("Easy Connect Enrollee responder mode is not supported on device!")
       return
 
     wutils.wifi_toggle_state(self.dut, True)
