@@ -393,7 +393,7 @@ GOOGLE_CBRS_CARRIER_ID = 2340
 GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
-CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit"]
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
 
 """
 Begin shared constant define for both Python and Java
