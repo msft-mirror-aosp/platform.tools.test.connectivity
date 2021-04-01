@@ -212,31 +212,6 @@ class Nsa5gDataTest(TelephonyBaseTest):
             return False
 
 
-    @test_tracker_info(uuid="80d7b388-3926-44ed-a7f1-3f94e6e315c7")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_metered_airplane(self):
-        """ Verifies 5G Meteredness API
-
-        Set Mode to 5G, Turn on Airplane mode
-        Register for Connectivity callback
-        Verify value of metered flag
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ad = self.android_devices[0]
-        try:
-            wifi_toggle_state(ad.log, ad, False)
-            set_preferred_mode_for_5g(ad)
-            return verify_for_network_callback(ad.log, ad,
-                NetworkCallbackLost, apm_mode=True)
-        except Exception as e:
-            ad.log.error(e)
-            toggle_airplane_mode(ad.log, ad, False)
-            time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
-            return False
-
-
     @test_tracker_info(uuid="192a605c-d7a9-4c34-800a-96a7d3177d7b")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_metered_wifi(self):
