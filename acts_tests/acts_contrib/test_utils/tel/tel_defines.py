@@ -39,7 +39,13 @@ MAX_WAIT_TIME_CALLEE_RINGING = 90
 # country code list
 COUNTRY_CODE_LIST = [
     "+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47", "+246", "+86",
-    "+850", "+81"
+    "+850", "+81", "+886"
+]
+
+# For carriers with specific MMI to set up call forwarding mCallForwarding in
+# TelephonyRegistry cannot reflect current network configuration.
+NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST = [
+    "Far EasTone",
 ]
 
 # default pin/password
