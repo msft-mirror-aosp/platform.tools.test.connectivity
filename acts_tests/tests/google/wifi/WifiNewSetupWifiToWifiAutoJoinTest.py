@@ -27,6 +27,44 @@ class WifiNewSetupWifiToWifiAutoJoinTest(WifiNewSetupAutoJoinTest):
 
     def __init__(self, configs):
         super().__init__(configs)
+        # Since this test class is inherited, the test cases from the inherited
+        # class are also run. Adding the self.tests that are specific to only
+        # this class.
+        self.tests = (
+            "test_wifi_to_wifi_autojoin_Ap1_2g_AP1_20_AP2_95_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_2g_AP1_15_AP2_95_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_2g_AP1_10_AP2_95_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_2g_AP1_5_AP2_95_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_2gto5g_AP1_55_AP2_10_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_2gto5g_AP1_50_AP2_10_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_2gto5g_AP1_45_AP2_10_AP3_95",
+            "test_wifi_to_wifi_autojoin_in_AP1_5gto2g_AP1_5_AP2_80_AP3_95",
+            "test_wifi_to_wifi_autojoin_in_AP1_5gto2g_AP1_10_AP2_75_AP3_95",
+            "test_wifi_to_wifi_autojoin_in_AP1_5gto2g_AP1_15_AP2_70_AP3_95",
+            "test_wifi_to_wifi_autojoin_switch_AP1toAp2_AP1_65_AP2_75_AP3_2",
+            "test_wifi_to_wifi_autojoin_switch_AP1toAp2_AP1_70_AP2_70_AP3_2",
+            "test_wifi_to_wifi_autojoin_switch_AP1toAp2_AP1_75_AP2_65_AP3_2",
+            "test_wifi_to_wifi_autojoin_Ap2_2gto5g_AP1_70_AP2_85_AP3_75",
+            "test_wifi_to_wifi_autojoin_Ap2_2gto5g_AP1_75_AP2_80_AP3_75",
+            "test_wifi_to_wifi_autojoin_Ap2_2gto5g_AP1_75_AP2_75_AP3_75",
+            "test_wifi_to_wifi_autojoin_Ap2_5gto2g_AP1_75_AP2_70_AP3_10",
+            "test_wifi_to_wifi_autojoin_Ap2_5gto2g_AP1_75_AP2_75_AP3_10",
+            "test_wifi_to_wifi_autojoin_Ap2_5gto2g_AP1_75_AP2_80_AP3_10",
+            "test_wifi_to_wifi_autojoin_out_of_range",
+            "test_wifi_to_wifi_autojoin_Ap2_2g_AP1_75_AP2_85_AP3_10",
+            "test_wifi_to_wifi_autojoin_Ap2_2g_AP1_75_AP2_80_AP3_10",
+            "test_wifi_to_wifi_autojoin_Ap2_2g_AP1_75_AP2_75_AP3_10",
+            "test_wifi_to_wifi_autojoin_Ap2_2g_AP1_75_AP2_70_AP3_10",
+            "test_wifi_to_wifi_autojoin_in_Ap2_5gto2g_AP1_75_AP2_70_AP3_10",
+            "test_wifi_to_wifi_autojoin_in_Ap2_5gto2g_AP1_75_AP2_75_AP3_10",
+            "test_wifi_to_wifi_autojoin_in_Ap2_5gto2g_AP1_75_AP2_80_AP3_10",
+            "test_wifi_to_wifi_autojoin_switch_AP2toAp1_AP1_15_AP2_65_AP3_75",
+            "test_wifi_to_wifi_autojoin_switch_AP2toAp1_AP1_10_AP2_70_AP3_75",
+            "test_wifi_to_wifi_autojoin_switch_AP2toAp1_AP1_5_AP2_75_AP3_75",
+            "test_wifi_to_wifi_autojoin_Ap1_5gto2g_AP1_10_AP2_80_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_5gto2g_AP1_15_AP2_80_AP3_95",
+            "test_wifi_to_wifi_autojoin_Ap1_5gto2g_AP1_20_AP2_80_AP3_95",
+        )
 
     def setup_test(self):
         super().setup_test()
