@@ -543,51 +543,57 @@ class BaseTestClass(MoblyBaseTest):
                 except Exception as e:
                     self.log.error(traceback.format_exc())
                     tr_record.add_error("teardown_test", e)
-                    self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
             test_signal = e
             if self.user_params.get(
                     keys.Config.key_test_failure_tracebacks.value, False):
                 self.log.exception(e)
             tr_record.test_fail(e)
-            self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
             # Test skipped.
             test_signal = e
             tr_record.test_skip(e)
-            self._exec_procedure_func(self._on_skip, tr_record)
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
             test_signal = e
             tr_record.test_fail(e)
-            self._exec_procedure_func(self._on_fail, tr_record)
             raise e
         except signals.TestPass as e:
             # Explicit test pass.
             test_signal = e
             tr_record.test_pass(e)
-            self._exec_procedure_func(self._on_pass, tr_record)
         except Exception as e:
             test_signal = e
             self.log.error(traceback.format_exc())
             # Exception happened during test.
             tr_record.test_error(e)
-            self._exec_procedure_func(self._on_exception, tr_record)
-            self._exec_procedure_func(self._on_fail, tr_record)
         else:
             if verdict or (verdict is None):
                 # Test passed.
                 tr_record.test_pass()
-                self._exec_procedure_func(self._on_pass, tr_record)
                 return
             tr_record.test_fail()
-            self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            self.results.add_record(tr_record)
-            self.summary_writer.dump(tr_record.to_dict(),
-                                     records.TestSummaryEntryType.RECORD)
-            self.current_test_name = None
-            event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
+            tr_record.update_record()
+            try:
+                # Execute post-test procedures
+                result = tr_record.result
+                if result == records.TestResultEnums.TEST_RESULT_PASS:
+                    self._exec_procedure_func(self._on_pass, tr_record)
+                elif result == records.TestResultEnums.TEST_RESULT_FAIL:
+                    self._exec_procedure_func(self._on_fail, tr_record)
+                elif result == records.TestResultEnums.TEST_RESULT_SKIP:
+                    self._exec_procedure_func(self._on_skip, tr_record)
+                elif result == records.TestResultEnums.TEST_RESULT_ERROR:
+                    self._exec_procedure_func(self._on_exception, tr_record)
+                    self._exec_procedure_func(self._on_fail, tr_record)
+            finally:
+                self.results.add_record(tr_record)
+                self.summary_writer.dump(tr_record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
+                self.current_test_name = None
+                event_bus.post(
+                    TestCaseEndEvent(self, self.test_name, test_signal))
 
     def get_func_with_retry(self, func, attempts=2):
         """Returns a wrapped test method that re-runs after failure. Return test
