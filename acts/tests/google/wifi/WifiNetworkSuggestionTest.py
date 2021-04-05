@@ -71,7 +71,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         opt_param = [
             "open_network", "reference_networks", "hidden_networks", "radius_conf_2g",
             "radius_conf_5g", "ca_cert", "eap_identity", "eap_password", "passpoint_networks",
-            "altsubject_match"]
+            "domain_suffix_match"]
         self.unpack_userparams(opt_param_names=opt_param,)
 
         if "AccessPoint" in self.user_params:
@@ -507,7 +507,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             Ent.PASSWORD: self.eap_password,
             Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
-            Ent.ALTSUBJECT_MATCH: self.altsubject_match,
+            Ent.DOM_SUFFIX_MATCH: self.domain_suffix_match,
         }
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
