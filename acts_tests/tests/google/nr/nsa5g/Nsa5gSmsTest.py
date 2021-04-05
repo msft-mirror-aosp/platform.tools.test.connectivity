@@ -22,19 +22,21 @@ from acts.utils import rand_ascii_str
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_csfb
 from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mo
-from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mt
 from acts_contrib.test_utils.tel.tel_sms_utils import _long_sms_test_mo
+from acts_contrib.test_utils.tel.tel_sms_utils import test_sms_mo_in_call
 
 
 class Nsa5gSmsTest(TelephonyBaseTest):
@@ -103,6 +105,10 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not _sms_test_mo(self.log, ads):
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            ads[0].log.info("Failed to hang up call.!")
+            return False
+
         if not verify_5g_attach_for_both_devices(self.log, ads):
             return False
 
@@ -132,17 +138,9 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not provision_both_devices_for_5g(self.log, ads):
             return False
 
-        self.log.info("Begin In Call SMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
-            return False
-
-        if not _sms_test_mo(self.log, ads):
+        if not test_sms_mo_in_call(self.log,
+                                   ads,
+                                   caller_func=is_phone_in_call_volte):
             return False
 
         if not verify_5g_attach_for_both_devices(self.log, ads):
@@ -258,17 +256,9 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        self.log.info("Begin In Call SMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_iwlan,
-                verify_callee_func=None):
-            return False
-
-        return _sms_test_mo(self.log, ads)
+        return test_sms_mo_in_call(self.log,
+                                   ads,
+                                   caller_func=is_phone_in_call_iwlan)
 
 
     @test_tracker_info(uuid="784062e8-02a4-49ce-8fc1-5359ab40bbdd")
@@ -295,5 +285,35 @@ class Nsa5gSmsTest(TelephonyBaseTest):
 
         return _long_sms_test_mo(self.log, ads)
 
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_mt_in_call_csfb(self):
+        """ Test MO/MT SMS during a MO csfb call over 5G NSA.
+
+        Disable APM on both devices
+        Set up PhoneA/B are in CSFB mode.
+        Provision PhoneA/B in 5g NSA.
+        Make sure PhoneA/B is able to make/receive call.
+        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA,
+         receive SMS on PhoneB.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        if not disable_apm_mode_both_devices(self.log, ads):
+            return False
+
+        if not provision_both_devices_for_csfb(self.log, ads):
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not provision_both_devices_for_5g(self.log, ads):
+            return False
+
+        return test_sms_mo_in_call(self.log,
+                                   ads,
+                                   caller_func=is_phone_in_call_csfb)
 
     """ Tests End """
