@@ -648,6 +648,32 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         else:
             return True
 
+    def _check_capability(self, capability):
+        """ Verifies the Capabilities of the device before beginning
+              of the test.
+
+            Arguments:
+              capability: Function to be verified before beginning of the test.
+
+            Expected Results:
+              Verifies the capability.
+              Skips the test if not supported.
+
+            Returns:
+              None
+        """
+        func = getattr(self, capability)
+        try:
+            check_result = func()
+        except Exception as e:
+            self.dut.log.error("%s failed with %s", capability, e)
+            check_result = False
+        self.dut.log.info("%s is %s before tests start", capability,
+                          check_result)
+        if check_result:
+            self.default_testing_func_names.append(capability)
+        self.dut.log.info("To be tested: %s", self.default_testing_func_names)
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="4d9b425b-f804-45f4-8f47-0ba3f01a426b")
@@ -806,6 +832,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         """
         if CAPABILITY_WFC not in self.dut_capabilities:
             raise signals.TestSkip("WFC is not supported")
+        self._check_capability("_check_wfc_apm")
         if "_check_wfc_apm" not in self.default_testing_func_names:
             raise signals.TestSkip("WFC in airplane mode is not supported")
         func_names = ["_check_data", "_check_wfc_enabled"]
@@ -837,6 +864,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         if CAPABILITY_WFC not in self.dut_capabilities and (
                 WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes):
             raise signals.TestSkip("WFC_NONAPM is not supported")
+        self._check_capability("_check_wfc_nonapm")
         if "_check_wfc_nonapm" not in self.default_testing_func_names:
             raise signals.TestSkip("WFC in non-airplane mode is not working")
         func_names = ["_check_wfc_enabled"]
