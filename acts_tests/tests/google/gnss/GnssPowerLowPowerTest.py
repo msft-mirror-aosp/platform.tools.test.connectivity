@@ -16,38 +16,22 @@
 
 from acts import utils
 from acts_contrib.test_utils.power.PowerGTWGnssBaseTest import PowerGTWGnssBaseTest
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
 class GnssPowerLowPowerTest(PowerGTWGnssBaseTest):
     """Gnss Power Low Power Mode Test"""
 
-    def setup_class(self):
-        super().setup_class()
-        self.unpack_userparams(req_param_names=['interval'])
-
     # Test cases
-    def test_low_power_mode_DPO_on(self):
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(True)
+    def test_LPM_strong_cn_long(self):
         self.start_gnss_tracking_with_power_data(
-            mode='standalone', lowpower=True)
+            freq=self.interval, lowpower=True)
 
-    def test_low_power_mode_DPO_on_long_interval(self):
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(True)
+    def test_LPM_weak_cn_long(self):
+        self.set_attenuation(self.atten_level['weak_signal'])
         self.start_gnss_tracking_with_power_data(
-            mode='standalone', freq=self.interval, lowpower=True)
+            freq=self.interval, lowpower=True)
 
-    def test_low_power_mode_DPO_off(self):
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(False)
+    def test_LPM_no_cn_long(self):
+        self.set_attenuation(self.atten_level['no_signal'])
         self.start_gnss_tracking_with_power_data(
-            mode='standalone', lowpower=True)
-
-    def test_low_power_mode_DPO_off_long_interval(self):
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(False)
-        self.start_gnss_tracking_with_power_data(
-            mode='standalone', freq=self.interval, lowpower=True)
+            freq=self.interval, lowpower=True)

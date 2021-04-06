@@ -21,8 +21,7 @@ from acts_contrib.test_utils.power.PowerBaseTest import PowerBaseTest
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
-DEFAULT_WAIT_TIME = 120
-STANDALONE_WAIT_TIME = 1200
+DEFAULT_WAIT_TIME = 60
 DPO_NV_VALUE = '15DC'
 MDS_TEST_PACKAGE = 'com.google.mdstest'
 MDS_RUNNER = 'com.google.mdstest.instrument.ModemConfigInstrumentation'
@@ -36,20 +35,42 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
         self.ad = self.android_devices[0]
         req_params = [
             'wifi_network', 'test_location', 'qdsp6m_path',
-            'calibrate_target'
+            'calibrate_target', 'interval', 'meas_interval'
         ]
         self.unpack_userparams(req_param_names=req_params)
-        gutils.disable_xtra_throttle(self.ad)
+        self.set_xtra_data()
 
     def setup_test(self):
         super().setup_test()
+        # Enable DPO
+        self.enable_DPO(True)
         # Enable GNSS setting for GNSS standalone mode
         self.ad.adb.shell('settings put secure location_mode 3')
+        # Recover attenuation value to strong CN
+        self.set_attenuation(self.atten_level['strong_signal'])
 
     def teardown_test(self):
         begin_time = utils.get_current_epoch_time()
         self.ad.take_bug_report(self.test_name, begin_time)
         gutils.get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+
+    def set_xtra_data(self):
+        gutils.disable_xtra_throttle(self.ad)
+        self.turn_on_wifi_connection()
+        gutils.enable_gnss_verbose_logging(self.ad)
+        gutils.start_gnss_by_gtw_gpstool(self.ad, True, 'gnss')
+        time.sleep(30)
+        gutils.start_gnss_by_gtw_gpstool(self.ad, False, 'gnss')
+
+    def turn_on_wifi_connection(self):
+        """Turn on wifi connection."""
+        wutils.wifi_toggle_state(self.ad, True)
+        gutils.connect_to_wifi_network(self.ad, self.wifi_network)
+
+    def set_cell_only(self):
+        """Turn off wifi connection, enable cell service."""
+        wutils.wifi_toggle_state(self.ad, False)
+        utils.force_airplane_mode(self.ad, False)
 
     def baseline_test(self):
         """Baseline power measurement"""
@@ -69,29 +90,23 @@ class PowerGTWGnssBaseTest(PowerBaseTest):
             is_signal: default True, False for no Gnss signal test.
             freq: an integer to set location update frequency.
             lowpower: a boolean to set GNSS Low Power Mode.
-            mean: a boolean to set GNSS Measurement registeration.
+            meas: a boolean to set GNSS Measurement registeration.
         """
         self.ad.adb.shell('settings put secure location_mode 3')
-        gutils.clear_aiding_data_by_gtw_gpstool(self.ad)
         gutils.start_gnss_by_gtw_gpstool(self.ad, True, 'gnss', True, freq,
                                          lowpower, meas)
         self.ad.droid.goToSleepNow()
 
-        sv_collecting_time = DEFAULT_WAIT_TIME
-        if mode == 'standalone':
-            sv_collecting_time = STANDALONE_WAIT_TIME
-        self.ad.log.info('Wait %d seconds for %s mode' %
-                         (sv_collecting_time, mode))
-        time.sleep(sv_collecting_time)
+        self.ad.log.info('Collect SV data for %d seconds.' % DEFAULT_WAIT_TIME)
+        time.sleep(DEFAULT_WAIT_TIME)
 
         samples = self.collect_power_data()
         self.ad.log.info('TestResult AVG_Current %.2f' % self.avg_current)
         self.calibrate_avg_current(samples)
         self.ad.send_keycode('WAKEUP')
+
         gutils.start_gnss_by_gtw_gpstool(self.ad, False, 'gnss')
-        if is_signal:
-            gutils.parse_gtw_gpstool_log(
-                self.ad, self.test_location, type='gnss')
+        gutils.parse_gtw_gpstool_log(self.ad, self.test_location, type='gnss')
 
     def calibrate_avg_current(self, samples):
         """Calibrate average current by filtering AP wake up current with target
