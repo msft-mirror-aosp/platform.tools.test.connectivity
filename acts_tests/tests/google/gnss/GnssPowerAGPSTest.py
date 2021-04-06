@@ -16,64 +16,36 @@
 
 from acts import utils
 from acts_contrib.test_utils.power.PowerGTWGnssBaseTest import PowerGTWGnssBaseTest
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
 class GnssPowerAGPSTest(PowerGTWGnssBaseTest):
     """Gnss AGPS Power Test"""
 
-    def turn_on_wifi_connection(self):
-        """Turn on wifi connection."""
-        wutils.wifi_toggle_state(self.ad, True)
-        gutils.connect_to_wifi_network(self.ad, self.wifi_network)
-
-    def set_cell_only(self):
-        """Turn off wifi connection, enable cell service."""
-        wutils.wifi_toggle_state(self.ad, False)
-        utils.force_airplane_mode(self.ad, False)
-
     # Test cases
-    # Wifi only tests
-    def test_wifi_only_gps_power_baseline(self):
-        self.turn_on_wifi_connection()
-        self.baseline_test()
-
-    def test_wifi_only_gps_strong_signal(self):
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(True)
-        self.turn_on_wifi_connection()
-        self.start_gnss_tracking_with_power_data()
-
-    def test_wifi_only_gps_weak_signal(self):
-        self.set_attenuation(self.atten_level['weak_signal'])
-        self.enable_DPO(True)
-        self.turn_on_wifi_connection()
-        self.start_gnss_tracking_with_power_data()
-
-    def test_wifi_only_gps_no_signal(self):
-        self.set_attenuation(self.atten_level['no_signal'])
-        self.turn_on_wifi_connection()
-        self.start_gnss_tracking_with_power_data(is_signal=False)
-
     # Cell only tests
-    def test_cell_only_gps_power_baseline(self):
+    def test_cell_power_baseline(self):
         self.set_cell_only()
         self.baseline_test()
 
-    def test_cell_only_gps_strong_signal(self):
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(True)
+    def test_cell_strong_cn(self):
         self.set_cell_only()
         self.start_gnss_tracking_with_power_data()
 
-    def test_cell_only_gps_weak_signal(self):
+    def test_cell_weak_cn(self):
         self.set_attenuation(self.atten_level['weak_signal'])
-        self.enable_DPO(True)
         self.set_cell_only()
         self.start_gnss_tracking_with_power_data()
 
-    def test_cell_only_gps_no_signal(self):
+    def test_cell_strong_cn_long(self):
+        self.set_cell_only()
+        self.start_gnss_tracking_with_power_data()
+
+    def test_cell_weak_cn_long(self):
+        self.set_attenuation(self.atten_level['weak_signal'])
+        self.set_cell_only()
+        self.start_gnss_tracking_with_power_data()
+
+    def test_cell_no_signal(self):
         self.set_attenuation(self.atten_level['no_signal'])
         self.set_cell_only()
         self.start_gnss_tracking_with_power_data(is_signal=False)
