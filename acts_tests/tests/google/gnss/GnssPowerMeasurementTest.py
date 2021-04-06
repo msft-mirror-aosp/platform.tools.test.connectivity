@@ -16,34 +16,26 @@
 
 from acts import utils
 from acts_contrib.test_utils.power.PowerGTWGnssBaseTest import PowerGTWGnssBaseTest
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
-class GnssPowerLongIntervalTest(PowerGTWGnssBaseTest):
+class GnssPowerMeasurementTest(PowerGTWGnssBaseTest):
     """Gnss Power Long Interval Test"""
 
-    def setup_class(self):
-        super().setup_class()
-        self.unpack_userparams(req_param_names=['interval'])
-
     # Test cases
-    def test_long_interval_DPO_on(self):
-        self.enable_DPO(True)
+    def test_measurement_DPO(self):
         self.start_gnss_tracking_with_power_data(
-            mode='standalone', freq=self.interval)
+            mode='standalone', freq=self.meas_interval, meas=True)
 
-    def test_long_interval_DPO_on_measurement_on(self):
-        self.enable_DPO(True)
+    def test_measurement_NDPO(self):
+        self.enable_DPO(False)
+        self.start_gnss_tracking_with_power_data(
+            mode='standalone', freq=self.meas_interval, meas=True)
+
+    def test_measurement_DPO_long(self):
         self.start_gnss_tracking_with_power_data(
             mode='standalone', freq=self.interval, meas=True)
 
-    def test_long_interval_DPO_off(self):
-        self.enable_DPO(False)
-        self.start_gnss_tracking_with_power_data(
-            mode='standalone', freq=self.interval)
-
-    def test_long_interval_DPO_off_measurement_on(self):
+    def test_measurement_NDPO_long(self):
         self.enable_DPO(False)
         self.start_gnss_tracking_with_power_data(
             mode='standalone', freq=self.interval, meas=True)
