@@ -16,8 +16,6 @@
 
 from acts import utils
 from acts_contrib.test_utils.power.PowerGTWGnssBaseTest import PowerGTWGnssBaseTest
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
 class GnssPowerBasicTest(PowerGTWGnssBaseTest):
@@ -26,79 +24,36 @@ class GnssPowerBasicTest(PowerGTWGnssBaseTest):
     # Test cases
     # Standalone tests
     def test_standalone_gps_power_baseline(self):
-        """
-            1. Set DUT rockbottom.
-            2. Collect power data.
-        """
         self.baseline_test()
 
-    def test_standalone_DPO_on(self):
-        """
-            1. Attenuate signal to strong GNSS level.
-            2. Turn DPO on.
-            3. Open GPStool and tracking with DUT sleep.
-            4. Collect power data.
-        """
-        self.set_attenuation(self.atten_level['strong_signal'])
-        self.enable_DPO(True)
-        self.start_gnss_tracking_with_power_data(mode='standalone')
+    def test_standalone_DPO_strong_cn(self):
+        self.start_gnss_tracking_with_power_data()
 
-    def test_standalone_DPO_on_weak_signal(self):
-        """
-            1. Attenuate signal to strong GNSS level.
-            2. Turn DPO on.
-            3. Open GPStool and tracking with DUT sleep.
-            4. Collect power data.
-        """
-        self.set_attenuation(self.atten_level['weak_signal'])
-        self.enable_DPO(True)
-        self.start_gnss_tracking_with_power_data(mode='standalone')
-
-    def test_standalone_DPO_off(self):
-        """
-            1. Attenuate signal to strong GNSS level.
-            2. Turn DPO off.
-            3. Open GPStool and tracking with DUT sleep.
-            4. Collect power data.
-        """
-        self.set_attenuation(self.atten_level['strong_signal'])
+    def test_standalone_NDPO_strong_cn(self):
         self.enable_DPO(False)
-        self.start_gnss_tracking_with_power_data(mode='standalone')
+        self.start_gnss_tracking_with_power_data()
 
-    def test_standalone_DPO_off_weak_signal(self):
-        """
-            1. Attenuate signal to strong GNSS level.
-            2. Turn DPO off.
-            3. Open GPStool and tracking with DUT sleep.
-            4. Collect power data.
-        """
+    def test_standalone_DPO_weak_cn(self):
         self.set_attenuation(self.atten_level['weak_signal'])
-        self.enable_DPO(False)
-        self.start_gnss_tracking_with_power_data(mode='standalone')
+        self.start_gnss_tracking_with_power_data()
 
-    def test_standalone_no_signal(self):
-        """
-            1. Attenuate signal to strong GNSS level.
-            2. Turn DPO on.
-            3. Open GPStool and tracking with DUT sleep.
-            4. Collect power data.
-        """
+    def test_standalone_DPO_weakest_cn(self):
+        self.set_attenuation(self.atten_level['weakest_signal'])
+        self.start_gnss_tracking_with_power_data()
+
+    def test_standalone_no_cn(self):
         self.set_attenuation(self.atten_level['no_signal'])
-        self.enable_DPO(True)
-        self.start_gnss_tracking_with_power_data(mode='standalone')
+        self.start_gnss_tracking_with_power_data()
 
-    def test_partial_wake_lock(self):
-        """
-            1. Attenuate signal to strong GNSS level.
-            2. Trigger instrumentation to hold the partial wake lock.
-            3. Collect power data.
-        """
-        self.set_attenuation(self.atten_level['strong_signal'])
-        test_class = 'com.google.android.platform.powertests.IdleTestCase'
-        test_method = 'testPartialWakelock'
-        test_methods = {test_class: test_method}
-        options = {'IdleTestCase-testPartialWakelock': self.mon_duration}
-        instrument_cmd = gutils.build_instrumentation_call(
-            POWER_TEST_PACKAGE, DEFAULT_RUNNER, test_methods, options)
-        self.ad.adb.shell_nb(instrument_cmd)
-        self.baseline_test()
+    # Long Interval tests
+    def test_standalone_DPO_long_strong_cn(self):
+        self.start_gnss_tracking_with_power_data(freq=self.interval)
+
+    def test_standalone_NDPO_strong_cn_long(self):
+        self.enable_DPO(False)
+        self.start_gnss_tracking_with_power_data(freq=self.interval)
+
+    def test_standalone_DPO_weak_cn_long(self):
+        self.set_attenuation(self.atten_level['weak_signal'])
+        self.start_gnss_tracking_with_power_data(freq=self.interval)
+
