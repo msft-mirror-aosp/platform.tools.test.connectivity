@@ -2308,7 +2308,7 @@ def get_current_softap_info(ad, callbackId, least_one):
 
 
 
-def get_ssrdumps(ad, test_name=""):
+def get_ssrdumps(ad):
     """Pulls dumps in the ssrdump dir
     Args:
         ad: android device object.
@@ -2317,8 +2317,7 @@ def get_ssrdumps(ad, test_name=""):
     logs = ad.get_file_names("/data/vendor/ssrdump/")
     if logs:
         ad.log.info("Pulling ssrdumps %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
-                                "SSRDUMP_%s" % ad.serial)
+        log_path = os.path.join(ad.device_log_path, "SSRDUMPS_%s" % ad.serial)
         os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
     ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
@@ -2446,11 +2445,10 @@ def stop_cnss_diag(ad, pixel_models):
     ad.adb.shell("setprop %s false" % prop, ignore_status=True)
 
 
-def get_cnss_diag_log(ad, test_name=""):
+def get_cnss_diag_log(ad):
     """Pulls the cnss_diag logs in the wlan_logs dir
     Args:
         ad: android device object.
-        test_name: test case name
     """
     logs = ad.get_file_names("/data/vendor/wifi/cnss_diag/wlan_logs/")
     if logs:
