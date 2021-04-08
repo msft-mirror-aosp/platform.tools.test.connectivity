@@ -67,7 +67,7 @@ class PowerBaseTest(base_test.BaseTestClass):
     """
     def __init__(self, controllers):
 
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.power_result = BlackboxMetricLogger.for_test_case(
             metric_name='avg_power')
         self.start_meas_time = 0
@@ -115,6 +115,8 @@ class PowerBaseTest(base_test.BaseTestClass):
             raise RuntimeError('No power monitors available.')
 
     def setup_class(self):
+
+        super().setup_class()
 
         self.log = logging.getLogger()
         self.tests = self.get_existing_test_names()
@@ -197,6 +199,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         """Set up test specific parameters or configs.
 
         """
+        super().setup_test()
+
         # Reset result variables
         self.avg_current = 0
         self.samples = []
