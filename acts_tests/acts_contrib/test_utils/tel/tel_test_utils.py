@@ -5320,7 +5320,7 @@ def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
 
     try:
         current_mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
-        ad.log.info("Current WFC mode of sub ID: %s", current_mode)
+        ad.log.info("Current WFC mode of sub ID %s: %s", sub_id, current_mode)
     except Exception as e:
         ad.log.warning(e)
 
@@ -5328,12 +5328,15 @@ def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
         try:
             if not ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id):
                 if wfc_mode is WFC_MODE_DISABLED:
+                    ad.log.info("WFC is already disabled.")
                     return True
                 ad.log.info(
                     "WFC is disabled for sub ID %s. Enabling WFC...", sub_id)
                 ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, True)
 
             if wfc_mode is WFC_MODE_DISABLED:
+                ad.log.info(
+                    "WFC is enabled for sub ID %s. Disabling WFC...", sub_id)
                 ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, False)
                 return True
 

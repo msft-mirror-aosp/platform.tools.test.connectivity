@@ -858,9 +858,12 @@ def phone_setup_iwlan_for_subscription(log,
     if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
-    if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
-        ad.log.error("WFC is not enabled")
-        return False
+
+    if wfc_mode != WFC_MODE_DISABLED:
+        if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
+            ad.log.error("WFC is not enabled")
+            return False
+
     return True
 
 
