@@ -394,7 +394,9 @@ GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
 CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
-
+# SMS over wifi providers
+SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
+                           "dtag")
 """
 Begin shared constant define for both Python and Java
 """
