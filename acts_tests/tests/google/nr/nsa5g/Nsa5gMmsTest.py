@@ -22,11 +22,13 @@ import time
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import SMS_OVER_WIFI_PROVIDERS
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_5g_utils import connect_both_devices_to_wifi
 from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
@@ -34,15 +36,30 @@ from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_csfb
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt
 from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mo
+from acts_contrib.test_utils.tel.tel_mms_utils import test_mms_mo_in_call
 
 class Nsa5gMmsTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
         self.number_of_devices = 2
         self.message_lengths = (50, 160, 180)
+
+        is_roaming = False
+        for ad in self.android_devices:
+            ad.sms_over_wifi = False
+            # verizon supports sms over wifi. will add more carriers later
+            for sub in ad.telephony["subscription"].values():
+                if sub["operator"] in SMS_OVER_WIFI_PROVIDERS:
+                    ad.sms_over_wifi = True
+            if getattr(ad, 'roaming', False):
+                is_roaming = True
+        if is_roaming:
+            # roaming device does not allow message of length 180
+            self.message_lengths = (50, 160)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -400,5 +417,44 @@ class Nsa5gMmsTest(TelephonyBaseTest):
                               self.wifi_network_pass)
 
         return _mms_test_mt(self.log, ads)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_mt_in_call_csfb_wifi(self):
+        """ Test MO/MT MMS during a MO csfb call and devices connect to Wifi.
+
+        Disable APM on both devices
+        Set up PhoneA/PhoneB are in CSFB mode.
+        Provision PhoneA/B in 5g NSA.
+        Make sure PhoneA/B is able to make/receive call.
+        Connect PhoneA/B to Wifi.
+        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA,
+         receive MMS on B.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        if not disable_apm_mode_both_devices(self.log, ads):
+            return False
+
+        if not provision_both_devices_for_csfb(self.log, ads):
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not provision_both_devices_for_5g(self.log, ads):
+            return False
+
+        if not connect_both_devices_to_wifi(self.log,
+                                            ads,
+                                            self.wifi_network_ssid,
+                                            self.wifi_network_pass):
+            return False
+        if not test_mms_mo_in_call(self.log,
+                                   ads,
+                                   wifi=True,
+                                   caller_func=is_phone_in_call_csfb):
+            return False
 
     """ Tests End """
