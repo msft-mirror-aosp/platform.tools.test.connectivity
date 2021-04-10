@@ -33,6 +33,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
 
 
 def is_current_network_5g_nsa(ad, timeout=30):
@@ -95,6 +96,15 @@ def provision_both_devices_for_volte(log, ads):
              (phone_setup_volte, (log, ads[1]))]
     if not multithread_func(log, tasks):
         log.error("phone failed to set up in volte")
+        return False
+    return True
+
+
+def provision_both_devices_for_csfb(log, ads):
+    tasks = [(phone_setup_csfb, (log, ads[0])),
+             (phone_setup_csfb, (log, ads[1]))]
+    if not multithread_func(log, tasks):
+        log.error("Phone Failed to Set Up in csfb.")
         return False
     return True
 
