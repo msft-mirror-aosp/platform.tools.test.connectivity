@@ -27,6 +27,7 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import SMS_OVER_WIFI_PROVIDERS
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
@@ -67,11 +68,11 @@ from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt
 from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mo
 from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mt
+from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo_after_call_hangup
+from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt_after_call_hangup
+from acts_contrib.test_utils.tel.tel_mms_utils import test_mms_mo_in_call
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts.utils import rand_ascii_str
-
-SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
-                           "dtag")
 
 
 class TelLiveSmsTest(TelephonyBaseTest):
@@ -101,38 +102,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
-
-    def _mms_test_after_call_hangup(self, ads):
-        """Test MMS send out after call hang up.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        args = [
-            self.log, ads[0], ads[1], [("Test Message", "Basic Message Body",
-                                        None)]
-        ]
-        if get_operator_name(self.log, ads[0]) in ["spt", "Sprint"]:
-            args.append(30)
-        if not mms_send_receive_verify(*args):
-            self.log.info("MMS send in call is suspended.")
-            if not mms_receive_verify_after_call_hangup(*args):
-                self.log.error(
-                    "MMS is not send and received after call release.")
-                return False
-            else:
-                self.log.info("MMS is send and received after call release.")
-                return True
-        else:
-            self.log.info("MMS is send and received successfully in call.")
-            return True
-
-    def _mms_test_mo_after_call_hangup(self, ads):
-        return self._mms_test_after_call_hangup([ads[0], ads[1]])
-
-    def _mms_test_mt_after_call_hangup(self, ads):
-        return self._mms_test_after_call_hangup([ads[1], ads[0]])
 
     def _mo_sms_in_3g_call(self, ads):
         self.log.info("Begin In Call SMS Test.")
@@ -169,20 +138,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return True
 
     def _mo_mms_in_3g_call(self, ads, wifi=False):
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_3g,
-                verify_callee_func=None):
-            return False
-
-        if ads[0].sms_over_wifi and wifi:
-            return _mms_test_mo(self.log, ads)
-        else:
-            return self._mms_test_mo_after_call_hangup(ads)
+        return test_mms_mo_in_call(self.log, ads, wifi=wifi, caller_func=is_phone_in_call_3g)
 
     def _mt_mms_in_3g_call(self, ads, wifi=False):
         self.log.info("Begin In Call MMS Test.")
@@ -198,7 +154,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if ads[0].sms_over_wifi and wifi:
             return _mms_test_mt(self.log, ads)
         else:
-            return self._mms_test_mt_after_call_hangup(ads)
+            return _mms_test_mt_after_call_hangup(self.log, ads)
 
     def _mo_sms_in_2g_call(self, ads):
         self.log.info("Begin In Call SMS Test.")
@@ -235,20 +191,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return True
 
     def _mo_mms_in_2g_call(self, ads, wifi=False):
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_2g,
-                verify_callee_func=None):
-            return False
-
-        if ads[0].sms_over_wifi and wifi:
-            return _mms_test_mo(self.log, ads)
-        else:
-            return self._mms_test_mo_after_call_hangup(ads)
+        return test_mms_mo_in_call(self.log, ads, wifi=wifi, caller_func=is_phone_in_call_2g)
 
     def _mt_mms_in_2g_call(self, ads, wifi=False):
         self.log.info("Begin In Call MMS Test.")
@@ -264,7 +207,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if ads[0].sms_over_wifi and wifi:
             return _mms_test_mt(self.log, ads)
         else:
-            return self._mms_test_mt_after_call_hangup(ads)
+            return _mms_test_mt_after_call_hangup(self.log, ads)
 
     def _mo_sms_in_csfb_call(self, ads):
         self.log.info("Begin In Call SMS Test.")
@@ -301,20 +244,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return True
 
     def _mo_mms_in_csfb_call(self, ads, wifi=False):
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_csfb,
-                verify_callee_func=None):
-            return False
-
-        if ads[0].sms_over_wifi and wifi:
-            return _mms_test_mo(self.log, ads)
-        else:
-            return self._mms_test_mo_after_call_hangup(ads)
+        return test_mms_mo_in_call(self.log, ads, wifi, caller_func=is_phone_in_call_csfb)
 
     def _mt_mms_in_csfb_call(self, ads, wifi=False):
         self.log.info("Begin In Call MMS Test.")
@@ -330,7 +260,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if ads[0].sms_over_wifi and wifi:
             return _mms_test_mt(self.log, ads)
         else:
-            return self._mms_test_mt_after_call_hangup(ads)
+            return _mms_test_mt_after_call_hangup(self.log, ads)
 
     def _sms_in_collision_test(self, ads):
         for length in self.message_lengths:
