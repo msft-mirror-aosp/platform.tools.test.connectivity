@@ -153,15 +153,13 @@ class BoundedMetricsLoggerTest(TestCase):
 
         logger.end(self.event)
 
-        self.assertEqual(proto_metric_cls.call_count, 2)
+        self.assertEqual(proto_metric_cls.call_count, 1)
 
         proto_metric_cls.assert_has_calls(
-            [call(name='bounded_metric_some_metric_name',
-                  data=result),
-             call(name='bounded_metrics_bundle',
+            [call(name='bounded_metrics_bundle',
                   data=mock_bundle_cls.return_value)])
         self.publisher.publish.assert_called_once_with(
-            [proto_metric_cls.return_value, proto_metric_cls.return_value])
+            [proto_metric_cls.return_value])
 
 
 class BoundedMetricsLoggerIntegrationTest(TestCase):
@@ -216,13 +214,18 @@ class BoundedMetricsLoggerIntegrationTest(TestCase):
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
         published = self.__get_only_arg(args_list[0])[0]
-        self.assertEqual(published.name, 'bounded_metric_galaxies')
-        self.assertEqual(published.data.test_method, 'test_magnificent')
-        self.assertEqual(published.data.test_class, 'FantasticTest')
-        self.assertEqual(published.data.value, 1234)
-        self.assertEqual(published.data.lower_limit.value, -5)
-        self.assertEqual(published.data.upper_limit.value, 15)
-        self.assertEqual(published.data.unit, 'towels')
+        self.assertEqual(published.name, 'bounded_metrics_bundle')
+        self.assertEqual(len(published.data.bounded_metrics), 1)
+        self.assertEqual(published.data.bounded_metrics[0].test_method,
+                         'test_magnificent')
+        self.assertEqual(published.data.bounded_metrics[0].test_class,
+                         'FantasticTest')
+        self.assertEqual(published.data.bounded_metrics[0].value, 1234)
+        self.assertEqual(published.data.bounded_metrics[0].lower_limit.value,
+                         -5)
+        self.assertEqual(published.data.bounded_metrics[0].upper_limit.value,
+                         15)
+        self.assertEqual(published.data.bounded_metrics[0].unit, 'towels')
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
     def test_test_class_metric(self, publisher_cls):
@@ -251,31 +254,27 @@ class BoundedMetricsLoggerIntegrationTest(TestCase):
 
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
-        published1 = self.__get_only_arg(args_list[0])[0]
-        published2 = self.__get_only_arg(args_list[0])[1]
-        published3 = self.__get_only_arg(args_list[0])[2]
+        self.assertEqual(
+            len(self.__get_only_arg(args_list[0])[0].data.bounded_metrics), 3)
+        published = self.__get_only_arg(args_list[0])[0]
+        bundle = published.data
+        metric1 = bundle.bounded_metrics[0]
+        metric2 = bundle.bounded_metrics[1]
+        metric3 = bundle.bounded_metrics[2]
 
-        self.assertIn('bounded_metric_never_gonna_give_you_up',
-                      [published1.name, published2.name, published3.name])
-        self.assertIn('bounded_metric_never_gonna_let_you_down',
-                      [published1.name, published2.name, published3.name])
-        self.assertIn('bounded_metric_never_gonna_run_around_and_desert_you',
-                      [published1.name, published2.name, published3.name])
+        self.assertEqual('bounded_metrics_bundle', published.name)
 
-        self.assertEqual(published1.data.test_method, '')
-        self.assertEqual(published2.data.test_method, '')
-        self.assertEqual(published3.data.test_method, '')
+        self.assertEqual(metric1.test_method, '')
+        self.assertEqual(metric2.test_method, '')
+        self.assertEqual(metric3.test_method, '')
 
-        self.assertEqual(published1.data.test_class, 'RickAstleyTest')
-        self.assertEqual(published2.data.test_class, 'RickAstleyTest')
-        self.assertEqual(published3.data.test_class, 'RickAstleyTest')
+        self.assertEqual(metric1.test_class, 'RickAstleyTest')
+        self.assertEqual(metric2.test_class, 'RickAstleyTest')
+        self.assertEqual(metric3.test_class, 'RickAstleyTest')
 
-        self.assertIn(1, [published1.data.value, published2.data.value,
-                          published3.data.value])
-        self.assertIn(2, [published1.data.value, published2.data.value,
-                          published3.data.value])
-        self.assertIn(3, [published1.data.value, published2.data.value,
-                          published3.data.value])
+        self.assertIn(1, [metric1.value, metric2.value, metric3.value])
+        self.assertIn(2, [metric1.value, metric2.value, metric3.value])
+        self.assertIn(3, [metric1.value, metric2.value, metric3.value])
 
 
 if __name__ == '__main__':
