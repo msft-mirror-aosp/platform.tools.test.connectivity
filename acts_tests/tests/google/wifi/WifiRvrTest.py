@@ -107,6 +107,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                 asserts.assert_true(utils.force_airplane_mode(dev, True),
                                     'Can not turn on airplane mode.')
                 wutils.reset_wifi(dev)
+                wutils.wifi_toggle_state(dev, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
@@ -456,9 +457,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                      atten, curr_throughput, current_rssi['signal_poll_rssi'],
                      current_rssi['chain_0_rssi'],
                      current_rssi['chain_1_rssi']))
-            if curr_throughput == 0 and (
-                    current_rssi['signal_poll_rssi'] < -80
-                    or numpy.isnan(current_rssi['signal_poll_rssi'])):
+            if curr_throughput == 0:
                 zero_counter = zero_counter + 1
             else:
                 zero_counter = 0
@@ -780,6 +779,57 @@ class WifiRvr_SampleDFS_Test(WifiRvrTest):
             traffic_directions=['DL', 'UL'])
 
 
+class WifiRvr_SingleChain_TCP_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            channels=[
+                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
+                '6g213'
+            ],
+            modes=['bw20', 'bw40', 'bw80', 'bw160'],
+            traffic_types=['TCP'],
+            traffic_directions=['DL', 'UL'],
+            chains=[0, 1, '2x2'])
+
+    def setup_dut(self, testcase_params):
+        self.sta_dut = self.android_devices[0]
+        wputils.set_chain_mask(self.sta_dut, testcase_params['chain'])
+        WifiRvrTest.setup_dut(self, testcase_params)
+
+    def generate_test_cases(self, channels, modes, traffic_types,
+                            traffic_directions, chains):
+        """Function that auto-generates test cases for a test class."""
+        test_cases = []
+        allowed_configs = {
+            20: [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
+                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
+            ],
+            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
+            80: [36, 100, 149, '6g37', '6g117', '6g213'],
+            160: [36, '6g37', '6g117', '6g213']
+        }
+
+        for channel, mode, chain, traffic_type, traffic_direction in itertools.product(
+                channels, modes, chains, traffic_types, traffic_directions):
+            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
+            if channel not in allowed_configs[bandwidth]:
+                continue
+            test_name = 'test_rvr_{}_{}_ch{}_{}_ch{}'.format(
+                traffic_type, traffic_direction, channel, mode, chain)
+            test_params = collections.OrderedDict(
+                channel=channel,
+                mode=mode,
+                bandwidth=bandwidth,
+                traffic_type=traffic_type,
+                traffic_direction=traffic_direction,
+                chain=chain)
+            setattr(self, test_name, partial(self._test_rvr, test_params))
+            test_cases.append(test_name)
+        return test_cases
+
+
 # Over-the air version of RVR tests
 class WifiOtaRvrTest(WifiRvrTest):
     """Class to test over-the-air RvR
@@ -929,7 +979,7 @@ class WifiOtaRvr_StandardOrientation_Test(WifiOtaRvrTest):
         self.tests = self.generate_test_cases(
             [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37'],
             ['bw20', 'bw40', 'bw80', 'bw160'], list(range(0, 360, 45)),
-            ['TCP'], ['DL'])
+            ['TCP'], ['DL', 'UL'])
 
 
 class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
@@ -952,3 +1002,54 @@ class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
         self.tests = self.generate_test_cases(
             [6, 36, 40, 44, 48, 149, 153, 157, 161, '6g37'],
             ['bw20', 'bw40', 'bw80', 'bw160'], [0], ['TCP'], ['DL', 'UL'])
+
+
+class WifiOtaRvr_SingleChain_Test(WifiOtaRvrTest):
+    def __init__(self, controllers):
+        WifiOtaRvrTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases([6], ['bw20'],
+                                              list(range(0, 360, 45)), ['TCP'],
+                                              ['DL'], [0, 1])
+        self.tests.extend(
+            self.generate_test_cases([36, 149], ['bw80', 'bw160'],
+                                     list(range(0, 360, 45)), ['TCP'], ['DL'],
+                                     [0, 1, '2x2']))
+        self.tests.extend(
+            self.generate_test_cases(['6g37'], ['bw160'],
+                                     list(range(0, 360, 45)), ['TCP'], ['DL'],
+                                     [0, 1, '2x2']))
+
+    def setup_dut(self, testcase_params):
+        self.sta_dut = self.android_devices[0]
+        wputils.set_chain_mask(self.sta_dut, testcase_params['chain'])
+        WifiRvrTest.setup_dut(self, testcase_params)
+
+    def generate_test_cases(self, channels, modes, angles, traffic_types,
+                            directions, chains):
+        test_cases = []
+        allowed_configs = {
+            20: [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
+                116, 132, 140, 149, 153, 157, 161
+            ],
+            40: [36, 44, 100, 149, 157],
+            80: [36, 100, 149],
+            160: [36, '6g37', '6g117', '6g213']
+        }
+        for channel, mode, chain, angle, traffic_type, direction in itertools.product(
+                channels, modes, chains, angles, traffic_types, directions):
+            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
+            if channel not in allowed_configs[bandwidth]:
+                continue
+            testcase_name = 'test_rvr_{}_{}_ch{}_{}_ch{}_{}deg'.format(
+                traffic_type, direction, channel, mode, chain, angle)
+            test_params = collections.OrderedDict(channel=channel,
+                                                  mode=mode,
+                                                  bandwidth=bandwidth,
+                                                  chain=chain,
+                                                  traffic_type=traffic_type,
+                                                  traffic_direction=direction,
+                                                  orientation=angle)
+            setattr(self, testcase_name, partial(self._test_rvr, test_params))
+            test_cases.append(testcase_name)
+        return test_cases
