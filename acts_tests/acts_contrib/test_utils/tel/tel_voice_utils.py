@@ -106,7 +106,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa_for_subscription
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -1410,7 +1410,7 @@ def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa(ad):
+        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
             ad.log.error("Not in 5G NSA coverage.")
             return False
     else:
@@ -1495,7 +1495,7 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa(ad):
+        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
             ad.log.error("Not in 5G NSA coverage.")
             return False
     else:

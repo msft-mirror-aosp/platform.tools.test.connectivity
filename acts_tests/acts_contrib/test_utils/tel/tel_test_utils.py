@@ -6864,9 +6864,12 @@ def ensure_network_generation_for_subscription(
         return True
 
     if generation == GEN_5G:
-        if is_current_network_5g_nsa(ad):
+        if is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
             ad.log.info("Current network type is 5G NSA.")
             return True
+        else:
+            ad.log.error("Not in 5G NSA coverage for Sub %s.", sub_id)
+            return False
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
