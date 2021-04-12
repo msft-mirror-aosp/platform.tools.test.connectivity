@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import itertools
+import json
 import pprint
 import queue
 import time
@@ -29,7 +30,8 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.wifi.wifi_constants import COEX_BAND, COEX_CHANNEL, COEX_POWER_CAP_DBM
+from acts_contrib.test_utils.wifi.wifi_constants import\
+    COEX_BAND, COEX_CHANNEL, COEX_POWER_CAP_DBM, KEY_COEX_UNSAFE_CHANNELS, KEY_COEX_RESTRICTIONS
 
 WifiEnums = wutils.WifiEnums
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
@@ -1082,7 +1084,8 @@ class WifiManagerTest(WifiBaseTest):
         unchanged.
 
         Steps:
-        1. Create list of coex unsafe channels and restrictions
+        1. Register a coex callback and listen for the update event to get the current coex values.
+        2. Create list of coex unsafe channels and restrictions
 
             coex_unsafe_channels format:
                 [
@@ -1100,43 +1103,56 @@ class WifiManagerTest(WifiBaseTest):
                     (Optional) "SOFTAP",
                     (Optional) "WIFI_AWARE"
                 ]
-
-        2. Set these values as the active values
-        3. Compare the current values and see if they are the same as the provided values, or if the
-           default algorithm is enabled, see if they have not changed.
-        4. Restore the previous values if the test values were set.
+        3. Set these values as the active values and listen for the update event.
+        4. If the default algorithm is enabled, expect to not get the update event. If it is
+           disabled, compare the updated values and see if they are the same as the provided values.
+        5. Restore the previous values if the test values were set.
         """
-        test_unsafe_channels = sorted(self.coex_unsafe_channels,
-                                    key=self.coex_unsafe_channel_key)
-        test_restrictions = sorted(self.coex_restrictions)
-        prev_unsafe_channels = sorted(self.dut.droid.wifiGetCoexUnsafeChannels(),
-                                    key=self.coex_unsafe_channel_key)
-        prev_restrictions = sorted(self.dut.droid.wifiGetCoexRestrictions())
-        # Set the unsafe channels
-        default_algo_disabled = self.dut.droid.wifiSetCoexUnsafeChannels(
-            test_unsafe_channels, test_restrictions)
-        curr_unsafe_channels = sorted(self.dut.droid.wifiGetCoexUnsafeChannels(),
-                                    key=self.coex_unsafe_channel_key)
-        curr_restrictions = sorted(self.dut.droid.wifiGetCoexRestrictions())
+        asserts.skip_if(not self.dut.droid.isSdkAtLeastS(),
+                        "Require SDK at least S to use wifi coex apis.")
+        self.dut.ed.clear_all_events()
 
-        if default_algo_disabled:
-            # Reset the previous values
-            self.dut.droid.wifiSetCoexUnsafeChannels(prev_unsafe_channels, prev_restrictions)
-            # Default algorithm is disabled, so the set values should be returned
+        # Register a coex callback to start receiving coex events
+        self.dut.droid.wifiRegisterCoexCallback()
+        try:
+            # Wait for the immediate callback from registering and store the current values
+            event = self.dut.ed.pop_event("WifiManagerCoexCallback#onCoexUnsafeChannelsChanged", 5)
+        except queue.Empty:
+            asserts.fail("Coex callback event not received after registering.")
+        prev_unsafe_channels = sorted(json.loads(event["data"][KEY_COEX_UNSAFE_CHANNELS]),
+                                      key=self.coex_unsafe_channel_key)
+        prev_restrictions = sorted(json.loads(event["data"][KEY_COEX_RESTRICTIONS]))
+
+        # Set new values for coex unsafe channels
+        test_unsafe_channels = sorted(self.coex_unsafe_channels,
+                                      key=self.coex_unsafe_channel_key)
+        test_restrictions = sorted(self.coex_restrictions)
+        self.dut.droid.wifiSetCoexUnsafeChannels(test_unsafe_channels, test_restrictions)
+        try:
+            # Wait for the callback from setting the coex unsafe channels
+            event = self.dut.ed.pop_event("WifiManagerCoexCallback#onCoexUnsafeChannelsChanged", 5)
+            # Callback received. This should be expected only if default algo is disabled.
+            asserts.assert_false(self.dut.droid.wifiIsDefaultCoexAlgorithmEnabled(),
+                                "Default algo was enabled but Coex callback received after"
+                                " setCoexUnsafeChannels")
+            curr_unsafe_channels = sorted(json.loads(event["data"][KEY_COEX_UNSAFE_CHANNELS]),
+                                          key=self.coex_unsafe_channel_key)
+            curr_restrictions = sorted(json.loads(event["data"][KEY_COEX_RESTRICTIONS]))
+            # Compare the current values with the set values
             asserts.assert_true(curr_unsafe_channels == test_unsafe_channels,
                                 "default coex algorithm disabled but current unsafe channels "
-                                "does not match the set values")
+                                + str(curr_unsafe_channels)
+                                + " do not match the set values " + str(test_unsafe_channels))
             asserts.assert_true(curr_restrictions == test_restrictions,
                                 "default coex algorithm disabled but current restrictions "
-                                "does not match the set value")
+                                + str(curr_restrictions)
+                                + " do not match the set values " + str(test_restrictions))
             # Restore the previous values
             self.dut.droid.wifiSetCoexUnsafeChannels(prev_unsafe_channels, prev_restrictions)
-        else:
-            # Default algorithm is enabled, so the previous values should be returned
-            asserts.assert_true(curr_unsafe_channels == prev_unsafe_channels,
-                                "default coex algorithm enabled but current unsafe channels "
-                                "does not match the set values")
+        except queue.Empty:
+            # Callback not received. This should be expected only if the default algo is enabled.
+            asserts.assert_true(self.dut.droid.wifiIsDefaultCoexAlgorithmEnabled(),
+                                "Default algo was disabled but Coex callback not received after"
+                                " setCoexUnsafeChannels")
 
-            asserts.assert_true(curr_restrictions == prev_restrictions,
-                                "default coex algorithm enabled but current restriction "
-                                "does not match the previous value")
+        self.dut.droid.wifiUnregisterCoexCallback()

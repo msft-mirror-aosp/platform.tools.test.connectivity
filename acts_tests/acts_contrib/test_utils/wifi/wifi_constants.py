@@ -90,3 +90,7 @@ COEX_BAND_24_GHZ = "24_GHZ"
 COEX_BAND_5_GHZ = "5_GHZ"
 COEX_CHANNEL = "channel"
 COEX_POWER_CAP_DBM = "powerCapDbm"
+
+# Constants for bundle keys for CoexCallback#onCoexUnsafeChannelsChanged
+KEY_COEX_UNSAFE_CHANNELS = "KEY_COEX_UNSAFE_CHANNELS"
+KEY_COEX_RESTRICTIONS = "KEY_COEX_RESTRICTIONS"
