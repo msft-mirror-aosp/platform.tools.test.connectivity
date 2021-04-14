@@ -62,13 +62,17 @@ def create(configs):
             'name': 'NetgearRAX80AP',
             'package': 'netgear_rax80'
         },
+        ('Netgear', 'RAX120'): {
+            'name': 'NetgearRAX120AP',
+            'package': 'netgear_rax120'
+        },
         ('Netgear', 'RAX200'): {
             'name': 'NetgearRAX200AP',
             'package': 'netgear_rax200'
         },
-        ('Netgear', 'RAX120'): {
-            'name': 'NetgearRAX120AP',
-            'package': 'netgear_rax120'
+        ('Netgear', 'RAXE500'): {
+            'name': 'NetgearRAXE500AP',
+            'package': 'netgear_raxe500'
         },
         ('Brcm', 'Reference'): {
             'name': 'BrcmRefAP',
