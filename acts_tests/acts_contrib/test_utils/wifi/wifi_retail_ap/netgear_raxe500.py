@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import numpy
 import time
 from acts_contrib.test_utils.wifi.wifi_retail_ap import WifiRetailAP
 from acts_contrib.test_utils.wifi.wifi_retail_ap import BlockingBrowser
@@ -25,8 +26,8 @@ BROWSER_WAIT_LONG = 30
 BROWSER_WAIT_EXTRA_LONG = 60
 
 
-class NetgearRAX200AP(WifiRetailAP):
-    """Class that implements Netgear RAX200 AP.
+class NetgearRAXE500AP(WifiRetailAP):
+    """Class that implements Netgear RAXE500 AP.
 
     Since most of the class' implementation is shared with the R7000, this
     class inherits from NetgearR7000AP and simply redefines config parameters
@@ -62,14 +63,14 @@ class NetgearRAX200AP(WifiRetailAP):
                 ip_address=self.ap_settings['ip_address'],
                 port=self.ap_settings['port'])
         self.capabilities = {
-            'interfaces': ['2G', '5G_1', '5G_2'],
+            'interfaces': ['2G', '5G_1', '6G'],
             'channels': {
                 '2G': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-                '5G_1': [36, 40, 44, 48, 52, 56, 60, 64],
-                '5G_2': [
-                    100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
-                    149, 153, 157, 161, 165
-                ]
+                '5G_1': [
+                    36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116,
+                    120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165
+                ],
+                '6G': ['6g' + str(ch) for ch in numpy.arange(37, 222, 16)]
             },
             'modes': {
                 '2G': ['VHT20', 'VHT40', 'HE20', 'HE40'],
@@ -77,7 +78,7 @@ class NetgearRAX200AP(WifiRetailAP):
                     'VHT20', 'VHT40', 'VHT80', 'VHT160', 'HE20', 'HE40',
                     'HE80', 'HE160'
                 ],
-                '5G_2': [
+                '6G': [
                     'VHT20', 'VHT40', 'VHT80', 'VHT160', 'HE20', 'HE40',
                     'HE80', 'HE160'
                 ]
@@ -104,7 +105,7 @@ class NetgearRAX200AP(WifiRetailAP):
 
         self.bw_mode_text = {
             '2G': {
-                '11g': 'Up to 54 Mbps',
+                'g and b': 'Up to 54 Mbps',
                 'HE20': 'Up to 600 Mbps',
                 'HE40': 'Up to 1200 Mbps',
                 'VHT20': 'Up to 433 Mbps',
@@ -120,30 +121,30 @@ class NetgearRAX200AP(WifiRetailAP):
                 'VHT80': 'Up to 2165 Mbps',
                 'VHT160': 'Up to 4330 Mbps'
             },
-            '5G_2': {
+            '6G': {
                 'HE20': 'Up to 600 Mbps',
                 'HE40': 'Up to 1200 Mbps',
                 'HE80': 'Up to 2400 Mbps',
                 'HE160': 'Up to 4800 Mbps',
-                'VHT20': 'Up to 433 Mbps',
-                'VHT40': 'Up to 1000 Mbps',
-                'VHT80': 'Up to 2165 Mbps',
-                'VHT160': 'Up to 4330 Mbps'
+                'VHT20': 'Up to 600 Mbps',
+                'VHT40': 'Up to 1200 Mbps',
+                'VHT80': 'Up to 2400 Mbps',
+                'VHT160': 'Up to 4800 Mbps'
             }
         }
         self.bw_mode_values = {
             # first key is a boolean indicating if 11ax is enabled
             0: {
                 'g and b': '11g',
-                '145Mbps': 'VHT20',
-                '300Mbps': 'VHT40',
+                'HT20': 'VHT20',
+                'HT40': 'VHT40',
                 'HT80': 'VHT80',
                 'HT160': 'VHT160'
             },
             1: {
                 'g and b': '11g',
-                '145Mbps': 'HE20',
-                '300Mbps': 'HE40',
+                'HT20': 'HE20',
+                'HT40': 'HE40',
                 'HT80': 'HE80',
                 'HT160': 'HE160'
             }
@@ -154,23 +155,23 @@ class NetgearRAX200AP(WifiRetailAP):
             ('region', 'WRegion'), ('enable_ax', 'enable_he'),
             (('2G', 'status'), 'enable_ap'),
             (('5G_1', 'status'), 'enable_ap_an'),
-            (('5G_2', 'status'), 'enable_ap_an_2'), (('2G', 'ssid'), 'ssid'),
-            (('5G_1', 'ssid'), 'ssid_an'), (('5G_2', 'ssid'), 'ssid_an_2'),
+            (('6G', 'status'), 'enable_ap_an_2'), (('2G', 'ssid'), 'ssid'),
+            (('5G_1', 'ssid'), 'ssid_an'), (('6G', 'ssid'), 'ssid_an_2'),
             (('2G', 'channel'), 'w_channel'),
             (('5G_1', 'channel'), 'w_channel_an'),
-            (('5G_2', 'channel'), 'w_channel_an_2'),
+            (('6G', 'channel'), 'w_channel_an_2'),
             (('2G', 'bandwidth'), 'opmode'),
             (('5G_1', 'bandwidth'), 'opmode_an'),
-            (('5G_2', 'bandwidth'), 'opmode_an_2'),
+            (('6G', 'bandwidth'), 'opmode_an_2'),
             (('2G', 'power'), 'enable_tpc'),
             (('5G_1', 'power'), 'enable_tpc_an'),
-            (('5G_2', 'power'), 'enable_tpc_an_2'),
-            (('5G_2', 'security_type'), 'security_type_an_2'),
+            (('6G', 'power'), 'enable_tpc_an_2'),
+            (('6G', 'security_type'), 'security_type_an_2'),
             (('5G_1', 'security_type'), 'security_type_an'),
             (('2G', 'security_type'), 'security_type'),
             (('2G', 'password'), 'passphrase'),
             (('5G_1', 'password'), 'passphrase_an'),
-            (('5G_2', 'password'), 'passphrase_an_2')
+            (('6G', 'password'), 'passphrase_an_2')
         ])
 
         self.power_mode_values = {
@@ -214,6 +215,21 @@ class NetgearRAX200AP(WifiRetailAP):
                 setting_to_update.setdefault(other_network, {})
                 setting_to_update[other_network]['bandwidth'] = updated_mode
 
+        self.update_ap_settings(setting_to_update)
+
+    def set_channel(self, network, channel):
+        """Function that sets network channel.
+
+        Args:
+            network: string containing network identifier (2G, 5G_1, 5G_2)
+            channel: string or int containing channel
+        """
+        if channel not in self.capabilities['channels'][network]:
+            self.log.error('Ch{} is not supported on {} interface.'.format(
+                channel, network))
+        if isinstance(channel, str) and '6g' in channel:
+            channel = int(channel[2:])
+        setting_to_update = {network: {'channel': channel}}
         self.update_ap_settings(setting_to_update)
 
     def read_ap_settings(self):
