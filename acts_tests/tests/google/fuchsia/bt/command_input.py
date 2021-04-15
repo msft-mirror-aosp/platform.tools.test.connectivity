@@ -2361,6 +2361,35 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_new_call(self, line):
+        """
+        Description: Simulate a call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the simulated call
+            state: The state of the call. Must be one of "ringing", "waiting",
+                   "dialing", "alerting", "active", "held".
+
+        Usage:
+          Examples:
+            hfp_new_call <remote> <state>
+            hfp_new_call 14085555555 active
+            hfp_new_call 14085555555 held
+            hfp_new_call 14085555555 ringing
+            hfp_new_call 14085555555 alerting
+            hfp_new_call 14085555555 dialing
+        """
+        cmd = "Simulates a call"
+        try:
+            info = line.strip().split()
+            if len(info) != 2:
+                raise ValueError("Exactly two command line arguments required: <remote> <state>")
+            remote, state = info[0], info[1]
+            result = self.pri_dut.hfp_lib.newCall(remote, state)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_hfp_incoming_call(self, line):
         """
         Description: Simulate an incoming call on the call manager
@@ -2635,6 +2664,27 @@ class CommandInput(cmd.Cmd):
         try:
             value = line.strip() == "true"
             result = self.pri_dut.hfp_lib.setNrecSupport(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_battery_level(self, line):
+        """
+        Description: Sets the battery level reported by the call manager.
+
+        Input(s):
+            value: The integer battery level value. Must be 0-5 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_battery_level <value>
+            hfp_set_battery_level 0
+            hfp_set_battery_level 3
+        """
+        cmd = "Set the battery level reported by the call manager"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setBatteryLevel(value)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
