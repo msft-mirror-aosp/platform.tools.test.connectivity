@@ -39,7 +39,13 @@ MAX_WAIT_TIME_CALLEE_RINGING = 90
 # country code list
 COUNTRY_CODE_LIST = [
     "+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47", "+246", "+86",
-    "+850", "+81"
+    "+850", "+81", "+886"
+]
+
+# For carriers with specific MMI to set up call forwarding mCallForwarding in
+# TelephonyRegistry cannot reflect current network configuration.
+NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST = [
+    "Far EasTone",
 ]
 
 # default pin/password
@@ -393,8 +399,10 @@ GOOGLE_CBRS_CARRIER_ID = 2340
 GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
-CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit"]
-
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
+# SMS over wifi providers
+SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
+                           "dtag")
 """
 Begin shared constant define for both Python and Java
 """

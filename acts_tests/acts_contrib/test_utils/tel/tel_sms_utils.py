@@ -18,6 +18,8 @@
 import time
 from acts.utils import rand_ascii_str
 from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 
 
@@ -80,4 +82,37 @@ def _long_sms_test_mo(log, ads):
 def _long_sms_test_mt(log, ads):
     return _long_sms_test(log, [ads[1], ads[0]])
 
+
+def test_sms_mo_in_call(log, ads, caller_func=None, callee_func=None):
+    """Test MO SMS in call.
+
+        log: log object
+        ads: list of android objects, this list should have two ad.
+        caller_func: function to verify caller is in correct state while in-call.
+        callee_func: function to verify callee is in correct state while in-call.
+
+    Returns:
+        True if pass; False if fail.
+    """
+
+    log.info("Begin In Call SMS Test.")
+    if not call_setup_teardown(
+            log,
+            ads[0],
+            ads[1],
+            ad_hangup=None,
+            verify_caller_func=caller_func,
+            verify_callee_func=callee_func):
+        return False
+
+    sms_result = True
+    if not _sms_test_mo(log, ads):
+        log.error("SMS test fail.")
+        sms_result = False
+
+    if not hangup_call(log, ads[0]):
+        ads[0].log.info("Failed to hang up call!")
+        sms_result = False
+
+    return sms_result
 
