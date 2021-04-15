@@ -180,7 +180,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         self.dut.droid.wifiDisconnect();
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="64a6c35f-d45d-431f-83e8-7fcfaef943e2")
     def test_connect_to_2g_p2p_while_connected_to_5g_internet(self):
         """
         Initiates a connection to a peer to peer network via network request while
@@ -211,7 +211,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="aa8af713-5d97-4f05-8104-e697f0055d6e")
     def test_connect_to_2g_internet_while_connected_to_5g_p2p(self):
         """
         Initiates a connection to a peer to peer network via network request while
@@ -242,7 +242,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="64dd09a7-28f6-4000-b1a1-10302922641b")
     def test_connect_to_2g_internet_while_connected_to_2g_p2p(self):
         """
         Initiates a connection to a peer to peer network via network request while
@@ -273,7 +273,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="0c3df2f1-7311-4dd2-b0dc-1de4bd731495")
     def test_connect_to_5g_internet_while_connected_to_5g_p2p(self):
         """
         Initiates a connection to a peer to peer network via network request while
@@ -303,7 +303,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
 
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="be22f7f8-b761-4f40-8d10-ff802761cb8b")
     def test_connect_to_5g_dfs_internet_while_connected_to_5g_dfs_p2p(self):
         """
         Initiates a connection to a peer to peer network via network request while
@@ -333,7 +333,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
 
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="dc390b3f-2856-4c96-880b-9732e3dc228f")
     def test_connect_to_2g_internet_while_connected_to_2g_p2p_same_ssid(self):
         """
         Initiates a connection to a peer to peer network via network request while
@@ -364,7 +364,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
 
         self.ensure_both_connections_are_active_and_dont_disconnect()
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="033d324d-94e0-440e-9532-993bc2682269")
     def test_connect_to_5g_p2p_while_connected_to_5g_internet_same_ssid(self):
         """
         Initiates a connection to a peer to peer network via network request while
