@@ -94,6 +94,23 @@ class FuchsiaHfpLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def newCall(self, remote, state):
+        """Opens a new call channel and alerts the HFP peer.
+
+        Args:
+            remote: The number of the remote party.
+            state: The state of the call.
+
+        Returns:
+            Dictionary, call_id if success, error if error.
+        """
+        test_cmd = "hfp_facade.NewCall"
+        test_args = {"remote": remote, "state": state }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def initiateIncomingCall(self, remote):
         """Opens an incoming call channel and alerts the HFP peer.
 
@@ -312,6 +329,22 @@ class FuchsiaHfpLib(BaseLib):
             Dictionary, None if success, error if error.
         """
         test_cmd = "hfp_facade.SetNrecSupport"
+        test_args = {"value": value }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setBatteryLevel(self, value):
+        """Sets the battery level reported by the call manager.
+
+        Args:
+            value: The integer battery level value. Must be 0-5 inclusive.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetBatteryLevel"
         test_args = {"value": value }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
