@@ -13,15 +13,17 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
+import os
+import pandas as pd
 import acts_contrib.test_utils.bt.bt_test_utils as btutils
+import acts_contrib.test_utils.wifi.wifi_performance_test_utils as wifi_utils
 from acts import asserts
-from acts.signals import TestPass
 from acts_contrib.test_utils.bt import bt_constants
 from acts_contrib.test_utils.bt import BtEnum
 from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
 from acts_contrib.test_utils.bt.loggers import bluetooth_metric_logger as log
-from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
+from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
+from acts.signals import TestPass
 
 
 class BtA2dpRangeTest(A2dpBaseTest):
@@ -91,12 +93,45 @@ class BtA2dpRangeTest(A2dpBaseTest):
         del proto_dict["proto_ascii"]
         return proto_dict
 
+    def plot_graph(self, df):
+        """ Plotting A2DP DUT RSSI, remote RSSI and TX Power with Attenuation.
+
+        Args:
+            df: Summary of results contains attenuation, DUT RSSI, remote RSSI and Tx Power
+        """
+        self.plot = wifi_utils.BokehFigure(title='{}'.format(
+            self.current_test_name),
+                                           x_label='Pathloss (dBm)',
+                                           primary_y_label='RSSI (dBm)',
+                                           secondary_y_label='TX Power (dBm)',
+                                           axis_label_size='16pt')
+        self.plot.add_line(df.index,
+                           df['rssi_primary'],
+                           legend='DUT RSSI (dBm)',
+                           marker='circle_x')
+        self.plot.add_line(df.index,
+                           df['rssi_secondary'],
+                           legend='Remote RSSI (dBm)',
+                           marker='square_x')
+        self.plot.add_line(df.index,
+                           df['tx_power_level_master'],
+                           legend='DUT TX Power (dBm)',
+                           marker='hex',
+                           y_axis='secondary')
+
+        results_file_path = os.path.join(
+            self.log_path, '{}.html'.format(self.current_test_name))
+        self.plot.generate_figure()
+        wifi_utils.BokehFigure.save_figures([self.plot], results_file_path)
+
     def run_a2dp_to_max_range(self, codec_config):
         attenuation_range = range(self.attenuation_vector['start'],
                                   self.attenuation_vector['stop'] + 1,
                                   self.attenuation_vector['step'])
 
         data_points = []
+        self.file_output = os.path.join(
+            self.log_path, '{}.csv'.format(self.current_test_name))
 
         # Set Codec if needed
         current_codec = self.dut.droid.bluetoothA2dpGetCurrentCodecConfig()
@@ -123,27 +158,33 @@ class BtA2dpRangeTest(A2dpBaseTest):
             # Collect Metrics for dashboard
             data_point = {
                 'attenuation_db': int(self.attenuator.get_atten()),
-                'rssi_master': rssi_master[self.dut.serial],
+                'rssi_primary': rssi_master[self.dut.serial],
                 'tx_power_level_master': pwl_master[self.dut.serial],
-                'rssi_slave': rssi_slave[self.bt_device_controller.serial],
+                'rssi_secondary': rssi_slave[self.bt_device_controller.serial],
                 'total_harmonic_distortion_plus_noise_percent': thdns[0] * 100
             }
             data_points.append(data_point)
             self.log.info(data_point)
+            A2dpRange_df = pd.DataFrame(data_points)
+
             # Check thdn for glitches, stop if max range reached
             for thdn in thdns:
                 if thdn >= self.audio_params['thdn_threshold']:
                     self.log.info(
                         'Max range at attenuation {} dB'.format(atten))
-                    self.log.info(
-                        'master rssi {} dBm, master tx power level {}, '
-                        'slave rssi {} dBm'
-                        .format(rssi_master, pwl_master, rssi_slave))
+                    self.log.info('DUT rssi {} dBm, DUT tx power level {}, '
+                                  'Remote rssi {} dBm'.format(
+                                      rssi_master, pwl_master, rssi_slave))
                     proto_dict = self.generate_proto(data_points,
                                                      **codec_config)
+                    A2dpRange_df.to_csv(self.file_output, index=False)
+                    self.plot_graph(A2dpRange_df)
                     raise TestPass('Max range reached and move to next codec',
                                    extras=proto_dict)
-
+        # Save Data points to csv
+        A2dpRange_df.to_csv(self.file_output, index=False)
+        # Plot graph
+        self.plot_graph(A2dpRange_df)
         proto_dict = self.generate_proto(data_points, **codec_config)
         raise TestPass('Could not reach max range, need extra attenuation.',
                        extras=proto_dict)
