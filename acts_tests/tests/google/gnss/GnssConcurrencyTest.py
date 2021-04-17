@@ -39,7 +39,8 @@ class GnssConcurrencyTest(BaseTestClass):
         super().setup_class()
         self.ad = self.android_devices[0]
         req_params = [
-            "standalone_cs_criteria", "chre_tolerate_rate", "qdsp6m_path"
+            "standalone_cs_criteria", "chre_tolerate_rate", "qdsp6m_path",
+            "outlier_criteria", "max_outliers"
         ]
         self.unpack_userparams(req_param_names=req_params)
         gutils._init_device(self.ad)
@@ -115,30 +116,43 @@ class GnssConcurrencyTest(BaseTestClass):
             begin_time: test begin time.
             type: str for location request type.
             criteria: int for test criteria.
-        Return: List for the fail loops.
+        Return: List for the failure and outlier loops.
         """
-        result = []
-        fail_loop = []
-        search_results = self.ad.search_logcat(type, begin_time)
+        results = []
+        failures = []
+        outliers = []
+        search_results = self.ad.search_logcat(CONCURRENCY_TYPE[type],
+                                               begin_time)
         start_time = utils.epoch_to_human_time(begin_time)
         start_time = datetime.datetime.strptime(start_time,
                                                 "%m-%d-%Y %H:%M:%S ")
-        result.append(
+        results.append(
             (search_results[0]["datetime_obj"] - start_time).total_seconds())
-        for i in range(len(search_results) - 1):
-            timedelt = search_results[
-                i + 1]["datetime_obj"] - search_results[i]["datetime_obj"]
+        samples = len(search_results) - 1
+        for i in range(samples):
+            target = search_results[i + 1]
+            timedelt = target["datetime_obj"] - search_results[i]["datetime_obj"]
             timedelt_sec = timedelt.total_seconds()
-            result.append(timedelt_sec)
-            if timedelt_sec > criteria * self.chre_tolerate_rate:
-                fail_res = search_results[i + 1]
-                fail_loop.append(fail_res)
-                self.ad.log.error("Test fail at %s : %.2f sec" %
-                                  (fail_res["time_stamp"], timedelt_sec))
-                self.ad.log.error("Detail log: %r" % fail_res)
-        total_res = " ".join([str(res) for res in result])
-        self.ad.log.info("[%s]Overall Result: %s" % (type, total_res))
-        return fail_loop
+            results.append(timedelt_sec)
+            if timedelt_sec > (criteria *
+                               self.chre_tolerate_rate) + self.outlier_criteria:
+                failures.append(target)
+                self.ad.log.error("[Failure][%s]:%.2f sec" %
+                                  (target["time_stamp"], timedelt_sec))
+            elif timedelt_sec > criteria * self.chre_tolerate_rate:
+                outliers.append(target)
+                self.ad.log.info("[Outlier][%s]:%.2f sec" %
+                                 (target["time_stamp"], timedelt_sec))
+
+        res_summary = " ".join([str(res) for res in results])
+        self.ad.log.info("[%s]Overall Result: %s" % (type, res_summary))
+        self.ad.log.info("TestResult %s_samples %d" % (type, samples))
+        self.ad.log.info("TestResult %s_outliers %d" % (type, len(outliers)))
+        self.ad.log.info("TestResult %s_failures %d" % (type, len(failures)))
+        self.ad.log.info("TestResult %s_max_time %.2f" %
+                         (type, max(results[1:])))
+
+        return outliers, failures
 
     def execute_gnss_concurrency_test(self, criteria, test_duration):
         """ Execute GNSS concurrency test steps.
@@ -147,16 +161,21 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
-        fail_loop = {}
+        failures = {}
+        outliers = {}
         begin_time = self.run_concurrency_test(criteria["ap_location"],
                                                criteria["gnss"], test_duration)
         for type in CONCURRENCY_TYPE.keys():
-            fail_loop[type] = self.parse_concurrency_result(
-                begin_time, CONCURRENCY_TYPE[type], criteria[type])
+            self.ad.log.info("Starting process %s result" % type)
+            outliers[type], failures[type] = self.parse_concurrency_result(
+                begin_time, type, criteria[type])
         for type in CONCURRENCY_TYPE.keys():
-            asserts.assert_false(
-                len(fail_loop[type]),
-                "Test fail to reach criteria, please see above errors")
+            if len(failures[type]) > 0:
+                raise signals.TestFailure("Test exceeds criteria: %.2f" %
+                                          criteria[type])
+            elif len(outliers[type]) > self.max_outliers:
+                raise signals.TestFailure("Outliers excceds max amount: %d" %
+                                          len(outliers[type]))
 
     # Test Cases
     def test_gnss_concurrency_ct1(self):
