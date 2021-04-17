@@ -32,3 +32,8 @@ NO_SERVICE_TIME = 60
 # timer for wait back to in-service
 WAIT_FOR_SERVICE_TIME = 30
 
+VOICE_CALL = "voice"
+VOLTE_CALL = "volte"
+CSFB_CALL = "csfb"
+WFC_CALL = "wfc_call"
+
