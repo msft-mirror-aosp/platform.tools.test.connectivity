@@ -36,8 +36,9 @@ class WifiWpa3OweTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["owe_networks", "sae_networks"]
-        self.unpack_userparams(req_param_names=req_params,)
+        opt_params = ["owe_networks", "sae_networks", "wpa3_sae_gcmp_128",
+                      "wpa3_sae_gcmp_256"]
+        self.unpack_userparams(opt_param_names=opt_params)
         wutils.wifi_toggle_state(self.dut, True)
         if "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(owe_network=True,
@@ -93,3 +94,13 @@ class WifiWpa3OweTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
         wutils.toggle_wifi_off_and_on(self.dut)
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_wpa3_personal_gcmp_128(self):
+        """Test connect to WPA3 SAE GCMP 128."""
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_sae_gcmp_128)
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_wpa3_personal_gcmp_256(self):
+        """Test connect to WPA3 SAE GCMP 256."""
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_sae_gcmp_256)
