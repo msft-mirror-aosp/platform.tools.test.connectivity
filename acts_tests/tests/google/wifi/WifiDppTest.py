@@ -97,6 +97,8 @@ class WifiDppTest(WifiBaseTest):
     # constrain).
     utils.require_sl4a((self.dut,))
     utils.sync_device_time(self.dut)
+    for ad in self.android_devices:
+      wutils.wifi_test_device_init(ad)
 
     req_params = ["dpp_r1_test_only"]
     opt_param = ["wifi_psk_network", "wifi_sae_network"]
