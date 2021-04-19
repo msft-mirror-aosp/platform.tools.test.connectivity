@@ -35,7 +35,6 @@ class WifiWpa3OweTest(WifiBaseTest):
         super().setup_class()
 
         self.dut = self.android_devices[0]
-        wutils.wifi_test_device_init(self.dut)
         opt_params = ["owe_networks", "sae_networks"]
         req_params = ["wpa3_sae_gcmp_128", "wpa3_sae_gcmp_256", "wifi6_models"]
         self.unpack_userparams(opt_param_names=opt_params,
