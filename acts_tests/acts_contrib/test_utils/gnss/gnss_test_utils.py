@@ -268,7 +268,6 @@ def _init_device(ad):
     enable_compact_and_particle_fusion_log(ad)
     if check_chipset_vendor_by_qualcomm(ad):
         disable_xtra_throttle(ad)
-        set_gnss_qxdm_mask(ad, QXDM_MASKS)
     enable_supl_mode(ad)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     wutils.wifi_toggle_state(ad, False)
@@ -344,6 +343,9 @@ def clear_logd_gnss_qxdm_log(ad):
         'find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH,
         ignore_status=True)
     if check_chipset_vendor_by_qualcomm(ad):
+        diag_logs = (
+            "/sdcard/Android/data/com.android.pixellogger/files/logs/diag_logs")
+        ad.adb.shell("rm -rf %s" % diag_logs, ignore_status=True)
         output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
     else:
         output_path = ("/sdcard/Android/data/com.android.pixellogger/files"
@@ -371,14 +373,13 @@ def get_gnss_qxdm_log(ad, qdb_path):
     shutil.make_archive(gnss_log_path, "zip", gnss_log_path)
     shutil.rmtree(gnss_log_path)
     if check_chipset_vendor_by_qualcomm(ad):
-        output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs/.")
-        file_count = ad.adb.shell(
-            "find %s -type f -iname *.qmdl | wc -l" % output_path)
+        output_path = (
+            "/sdcard/Android/data/com.android.pixellogger/files/logs/diag_logs")
     else:
-        output_path = ("/sdcard/Android/data/com.android.pixellogger/files"
-                       "/logs/gps/")
-        file_count = ad.adb.shell(
-            "find %s -type f -iname *.zip | wc -l" % output_path)
+        output_path = (
+            "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/")
+    file_count = ad.adb.shell(
+        "find %s -type f -iname *.zip | wc -l" % output_path)
     if not int(file_count) == 0:
         qxdm_log_name = "QXDM_%s_%s" % (ad.model, ad.serial)
         qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
@@ -985,8 +986,8 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                         begin_time)
         if crash_result:
             raise signals.TestError("GPSTool crashed. Abort test.")
-        # wait 10 seconds to avoid logs not writing into logcat yet
-        time.sleep(10)
+        # wait 5 seconds to avoid logs not writing into logcat yet
+        time.sleep(5)
     return ttff_data
 
 
@@ -1595,21 +1596,38 @@ def lto_mode(ad, state):
     reboot(ad)
 
 
-def start_pixel_logger(ad):
+def start_pixel_logger(ad, max_log_size_mb=100, max_number_of_files=500):
     """adb to start pixel logger for GNSS logging.
 
     Args:
         ad: An AndroidDevice object.
+        max_log_size_mb: Determines when to create a new log file if current
+            one reaches the size limit.
+        max_number_of_files: Determines how many log files can be saved on DUT.
     """
     start_timeout_sec = 60
-    start_cmd = ("am startservice -a com.android.pixellogger."
-                 "service.logging.LoggingService.ACTION_START_LOGGING "
-                 "-e intent_logger brcm_gps")
+    default_gnss_cfg = "/vendor/etc/mdlog/DEFAULT+SECURITY+FULLDPL+GPS.cfg"
+    if check_chipset_vendor_by_qualcomm(ad):
+        start_cmd = ("am start-foreground-service -a com.android.pixellogger"
+                     ".service.logging.LoggingService.ACTION_START_LOGGING "
+                     "-e intent_key_cfg_path '%s' "
+                     "--ei intent_key_max_log_size_mb %d "
+                     "--ei intent_key_max_number_of_files %d" % (
+            default_gnss_cfg, max_log_size_mb, max_number_of_files))
+    else:
+        start_cmd = ("am startservice -a com.android.pixellogger."
+                     "service.logging.LoggingService.ACTION_START_LOGGING "
+                     "-e intent_logger brcm_gps")
     begin_time = get_current_epoch_time()
     ad.log.info("Start Pixel Logger.")
     ad.adb.shell(start_cmd)
     while get_current_epoch_time() - begin_time <= start_timeout_sec * 1000:
-        start_result = ad.search_logcat("startRecording", begin_time)
+        if not ad.is_adb_logcat_on:
+            ad.start_adb_logcat()
+        if check_chipset_vendor_by_qualcomm(ad):
+            start_result = ad.search_logcat("Start logging", begin_time)
+        else:
+            start_result = ad.search_logcat("startRecording", begin_time)
         if start_result:
             ad.log.info("Pixel Logger starts recording successfully.")
             break
@@ -1624,15 +1642,21 @@ def stop_pixel_logger(ad):
         ad: An AndroidDevice object.
     """
     stop_timeout_sec = 300
-    stop_cmd = ("am startservice -a com.android.pixellogger."
-                "service.logging.LoggingService.ACTION_STOP_LOGGING "
-                "-e intent_logger brcm_gps")
+    if check_chipset_vendor_by_qualcomm(ad):
+        stop_cmd = ("am start-foreground-service -a com.android.pixellogger"
+                    ".service.logging.LoggingService.ACTION_STOP_LOGGING")
+    else:
+        stop_cmd = ("am startservice -a com.android.pixellogger."
+                    "service.logging.LoggingService.ACTION_STOP_LOGGING "
+                    "-e intent_logger brcm_gps")
     begin_time = get_current_epoch_time()
     ad.log.info("Stop Pixel Logger.")
     ad.adb.shell(stop_cmd)
     while get_current_epoch_time() - begin_time <= stop_timeout_sec * 1000:
-        stop_result = ad.search_logcat("LoggingService: Stopping service",
-                                       begin_time)
+        if not ad.is_adb_logcat_on:
+            ad.start_adb_logcat()
+        stop_result = ad.search_logcat(
+            "LoggingService: Stopping service", begin_time)
         if stop_result:
             ad.log.info("Pixel Logger stops successfully.")
             break

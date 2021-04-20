@@ -100,7 +100,7 @@ class GnssFunctionTest(BaseTestClass):
                       "gnss_init_error_allowlist", "pixel_lab_location",
                       "legacy_wifi_xtra_cs_criteria", "legacy_projects",
                       "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
-                      "collect_logs"]
+                      "collect_logs", "dpo_threshold"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -117,6 +117,7 @@ class GnssFunctionTest(BaseTestClass):
         if self.collect_logs and \
             gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.flash_new_radio_or_mbn()
+            self.push_gnss_cfg()
         _init_device(self.ad)
 
     def setup_test(self):
@@ -131,10 +132,7 @@ class GnssFunctionTest(BaseTestClass):
 
     def teardown_test(self):
         if self.collect_logs:
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                stop_qxdm_logger(self.ad)
-            else:
-                gutils.stop_pixel_logger(self.ad)
+            gutils.stop_pixel_logger(self.ad)
             stop_adb_tcpdump(self.ad)
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
@@ -156,6 +154,18 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.take_bug_report(test_name, begin_time)
             get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
             get_tcpdump_log(self.ad, test_name, begin_time)
+
+    def push_gnss_cfg(self):
+        """Push required GNSS cfg file to DUT for PixelLogger to use as
+        default GNSS logging mask."""
+        gnss_cfg_path = "/vendor/etc/mdlog"
+        gnss_cfg_file = self.user_params.get("gnss_cfg")
+        if isinstance(gnss_cfg_file, list):
+            gnss_cfg_file = gnss_cfg_file[0]
+        os.system("chmod -R 777 %s" % gnss_cfg_file)
+        self.ad.log.info("GNSS Required CFG = %s" % gnss_cfg_file)
+        self.ad.log.info("Push %s to %s" % (gnss_cfg_file, gnss_cfg_path))
+        self.ad.push_system_file(gnss_cfg_file, gnss_cfg_path)
 
     def flash_new_radio_or_mbn(self):
         paths = {}
@@ -254,10 +264,7 @@ class GnssFunctionTest(BaseTestClass):
     def start_qxdm_and_tcpdump_log(self):
         """Start QXDM and adb tcpdump if collect_logs is True."""
         if self.collect_logs:
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                start_qxdm_logger(self.ad, get_current_epoch_time())
-            else:
-                gutils.start_pixel_logger(self.ad)
+            gutils.start_pixel_logger(self.ad)
             start_adb_tcpdump(self.ad)
 
     def supl_ttff_with_sim(self, mode, criteria):
@@ -385,14 +392,17 @@ class GnssFunctionTest(BaseTestClass):
         self.ad.log.info(dpo_results[-1]["log_message"])
         first_dpo_count = int(dpo_results[0]["log_message"].split()[-1])
         final_dpo_count = int(dpo_results[-1]["log_message"].split()[-1])
-        if final_dpo_count - first_dpo_count == 0:
-            raise signals.TestFailure(
-                "DPO can't be engaged in %d minutes test." % tracking_minutes)
-        dpo_engage_rate = "{percent:.2%}".format(
-            percent=(final_dpo_count - first_dpo_count)/(tracking_minutes*60))
+        dpo_rate = ((final_dpo_count - first_dpo_count)/(tracking_minutes * 60))
+        dpo_engage_rate = "{percent:.2%}".format(percent=dpo_rate)
         self.ad.log.info("DPO is ON for %d seconds during %d minutes test." % (
             final_dpo_count - first_dpo_count, tracking_minutes))
-        self.ad.log.info("TestResult DPO_Engage_Rate "+dpo_engage_rate)
+        self.ad.log.info("TestResult DPO_Engage_Rate " + dpo_engage_rate)
+        threshold = "{percent:.0%}".format(percent=self.dpo_threshold / 100)
+        asserts.assert_true(dpo_rate * 100 > self.dpo_threshold,
+                            "DPO only engaged %s in %d minutes test with "
+                            "threshold %s." % (dpo_engage_rate,
+                                               tracking_minutes,
+                                               threshold))
 
     @test_tracker_info(uuid="499d2091-640a-4735-9c58-de67370e4421")
     def test_gnss_init_error(self):
