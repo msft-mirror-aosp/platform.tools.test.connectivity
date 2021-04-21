@@ -58,6 +58,7 @@ from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_FRE
 from acts_contrib.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
+from acts_contrib.test_utils.tel.tel_defines import NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST
 from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
@@ -5896,12 +5897,12 @@ def is_volte_enabled(log, ad, sub_id=None):
         ad.log.info("IMS is not registered for sub ID %s.", sub_id)
         return False
     if not is_volte_available(log, ad, sub_id):
-        ad.log.info("IMS is registered for sub ID %s, IsVolteCallingAvailable \
-            is False", sub_id)
+        ad.log.info("IMS is registered for sub ID %s, IsVolteCallingAvailable "
+            "is False", sub_id)
         return False
     else:
-        ad.log.info("IMS is registered for sub ID %s, IsVolteCallingAvailable \
-            is True", sub_id)
+        ad.log.info("IMS is registered for sub ID %s, IsVolteCallingAvailable "
+            "is True", sub_id)
         return True
 
 
@@ -6809,9 +6810,23 @@ def ensure_network_generation_for_subscription(
         toggle_apm_after_setting=False):
     """Ensure ad's network is <network generation> for specified subscription ID.
 
-    Set preferred network generation to <generation>.
-    Toggle ON/OFF airplane mode if necessary.
-    Wait for ad in expected network type.
+        Set preferred network generation to <generation>.
+        Toggle ON/OFF airplane mode if necessary.
+        Wait for ad in expected network type.
+
+    Args:
+        log: log object.
+        ad: android device object.
+        sub_id: subscription id.
+        generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G, GEN_5G.
+        max_wait_time: the time to wait for NW selection.
+        voice_or_data: check voice network generation or data network generation
+            This parameter is optional. If voice_or_data is None, then if
+            either voice or data in expected generation, function will return True.
+        toggle_apm_after_setting: Cycle airplane mode if True, otherwise do nothing.
+
+    Returns:
+        True if success, False if fail.
     """
     ad.log.info(
         "RAT network type voice: %s, data: %s",
@@ -6849,9 +6864,12 @@ def ensure_network_generation_for_subscription(
         return True
 
     if generation == GEN_5G:
-        if is_current_network_5g_nsa(ad):
+        if is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
             ad.log.info("Current network type is 5G NSA.")
             return True
+        else:
+            ad.log.error("Not in 5G NSA coverage for Sub %s.", sub_id)
+            return False
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
@@ -9541,10 +9559,17 @@ def erase_call_forwarding_by_mmi(
     Returns:
         True by successful erasure. Otherwise False.
     """
-    res = get_call_forwarding_by_adb(log, ad,
-        call_forwarding_type=call_forwarding_type)
-    if res == "false":
-        return True
+    operator_name = get_operator_name(log, ad)
+
+    run_get_call_forwarding_by_adb = 1
+    if operator_name in NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST:
+        run_get_call_forwarding_by_adb = 0
+
+    if run_get_call_forwarding_by_adb:
+        res = get_call_forwarding_by_adb(log, ad,
+            call_forwarding_type=call_forwarding_type)
+        if res == "false":
+            return True
 
     user_config_profile = get_user_config_profile(ad)
     is_airplane_mode = user_config_profile["Airplane Mode"]
@@ -9556,8 +9581,6 @@ def erase_call_forwarding_by_mmi(
         if not toggle_airplane_mode(log, ad, False):
             ad.log.error("Failed to disable airplane mode.")
             return False
-
-    operator_name = get_operator_name(log, ad)
 
     code_dict = {
         "Verizon": {
@@ -9573,6 +9596,13 @@ def erase_call_forwarding_by_mmi(
             "not_answered": "730",
             "not_reachable": "720",
             "mmi": "*%s"
+        },
+        "Far EasTone": {
+            "unconditional": "142",
+            "busy": "143",
+            "not_answered": "144",
+            "not_reachable": "144",
+            "mmi": "*%s*2"
         },
         'Generic': {
             "unconditional": "21",
@@ -9592,12 +9622,13 @@ def erase_call_forwarding_by_mmi(
 
     result = False
     while retry >= 0:
-        res = get_call_forwarding_by_adb(
-            log, ad, call_forwarding_type=call_forwarding_type)
-        if res == "false":
-            ad.log.info("Call forwarding is already disabled.")
-            result = True
-            break
+        if run_get_call_forwarding_by_adb:
+            res = get_call_forwarding_by_adb(
+                log, ad, call_forwarding_type=call_forwarding_type)
+            if res == "false":
+                ad.log.info("Call forwarding is already disabled.")
+                result = True
+                break
 
         ad.log.info("Erasing and deactivating call forwarding %s..." %
             call_forwarding_type)
@@ -9613,16 +9644,20 @@ def erase_call_forwarding_by_mmi(
         time.sleep(5)
         ad.send_keycode("BACK")
 
-        res = get_call_forwarding_by_adb(
-            log, ad, call_forwarding_type=call_forwarding_type)
-        if res == "false" or res == "unknown":
+        if run_get_call_forwarding_by_adb:
+            res = get_call_forwarding_by_adb(
+                log, ad, call_forwarding_type=call_forwarding_type)
+            if res == "false" or res == "unknown":
+                result = True
+                break
+            else:
+                ad.log.error("Failed to erase and deactivate call forwarding by "
+                    "MMI code ##%s#." % code)
+                retry = retry - 1
+                time.sleep(30)
+        else:
             result = True
             break
-        else:
-            ad.log.error("Failed to erase and deactivate call forwarding by "
-                "MMI code ##%s#." % code)
-            retry = retry - 1
-            time.sleep(30)
 
     if is_airplane_mode:
         if not toggle_airplane_mode(log, ad, True):
@@ -9636,7 +9671,6 @@ def erase_call_forwarding_by_mmi(
                         ad.log.error("WFC is not enabled")
 
     return result
-
 
 def set_call_forwarding_by_mmi(
         log,
@@ -9686,6 +9720,13 @@ def set_call_forwarding_by_mmi(
             "not_reachable": "72",
             "mmi": "*%s%s"
         },
+        "Far EasTone": {
+            "unconditional": "142",
+            "busy": "143",
+            "not_answered": "144",
+            "not_reachable": "144",
+            "mmi": "*%s*%s"
+        },
         'Generic': {
             "unconditional": "21",
             "busy": "67",
@@ -9699,6 +9740,8 @@ def set_call_forwarding_by_mmi(
     if operator_name in code_dict:
         code = code_dict[operator_name][call_forwarding_type]
         mmi = code_dict[operator_name]["mmi"]
+        if "mmi_for_plus_sign" in code_dict[operator_name]:
+            mmi_for_plus_sign = code_dict[operator_name]["mmi_for_plus_sign"]
     else:
         code = code_dict['Generic'][call_forwarding_type]
         mmi = code_dict['Generic']["mmi"]
@@ -9719,6 +9762,13 @@ def set_call_forwarding_by_mmi(
         (forwarded_number_no_prefix, _) = _phone_number_remove_prefix(
             forwarded_number)
 
+        if operator_name == "Far EasTone":
+            forwarded_number_no_prefix = "0" + forwarded_number_no_prefix
+
+        run_get_call_forwarding_by_adb = 1
+        if operator_name in NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST:
+            run_get_call_forwarding_by_adb = 0
+
         _found_plus_sign = 0
         if re.search("^\+", forwarded_number):
             _found_plus_sign = 1
@@ -9732,7 +9782,11 @@ def set_call_forwarding_by_mmi(
             else:
                 ad.droid.telecomDialNumber(mmi_for_plus_sign % code)
                 ad.send_keycode("PLUS")
-                dial_phone_number(ad, forwarded_number + "#")
+
+                if "#" in mmi:
+                    dial_phone_number(ad, forwarded_number + "#")
+                else:
+                    dial_phone_number(ad, forwarded_number)
 
         time.sleep(3)
         ad.send_keycode("ENTER")
@@ -9742,6 +9796,9 @@ def set_call_forwarding_by_mmi(
         ad.send_keycode("BACK")
         time.sleep(5)
         ad.send_keycode("BACK")
+
+        if not run_get_call_forwarding_by_adb:
+            return True
 
         result = get_call_forwarding_by_adb(
             log, ad, call_forwarding_type=call_forwarding_type)

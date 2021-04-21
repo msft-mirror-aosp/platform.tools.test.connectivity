@@ -57,7 +57,8 @@ class GFTInOutBaseTest(TelephonyBaseTest):
         TelephonyBaseTest.teardown_test(self)
         begin_time = get_current_epoch_time()
         self._take_bug_report(self.test_name, begin_time)
-
+       for ad in self.android_devices:
+            ad.adb.shell("rm -rf /sdcard/Pictures/screenvideo_*", ignore_status=True)
 
     def check_network(self):
         """check service state of network
