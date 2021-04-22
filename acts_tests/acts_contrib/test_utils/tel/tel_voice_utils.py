@@ -1990,6 +1990,20 @@ def phone_setup_on_rat(
         else:
             return phone_setup_csfb_for_subscription(log, ad, sub_id, GEN_5G)
 
+    elif rat.lower() == '5g_wfc':
+        if only_return_fn:
+            return phone_setup_iwlan_for_subscription
+        else:
+            return phone_setup_iwlan_for_subscription(
+                log,
+                ad,
+                sub_id,
+                is_airplane_mode,
+                wfc_mode,
+                wifi_ssid,
+                wifi_pwd,
+                GEN_5G)
+
     elif rat.lower() == 'volte':
         if only_return_fn:
             return phone_setup_volte_for_subscription
