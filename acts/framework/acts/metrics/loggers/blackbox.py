@@ -107,6 +107,7 @@ class BlackboxMappedMetricLogger(MetricLogger):
         metric data, and sends them to the publisher.
         """
         metrics = []
+        bundle = acts_blackbox_pb2.ActsBlackboxMetricResultsBundle()
         for metric_name, metric_value in self._metric_map.items():
             if metric_value is None:
                 continue
@@ -114,10 +115,13 @@ class BlackboxMappedMetricLogger(MetricLogger):
             result.test_identifier = self._get_blackbox_identifier()
             result.metric_key = self._get_metric_key(metric_name)
             result.metric_value = metric_value
-
+            # TODO(b/182320010): Deprecate individual blackbox metrics once
+            # dependents are ready to parse bundles instead.
             metrics.append(
                 ProtoMetric(name='blackbox_%s' % metric_name, data=result))
+            bundle.acts_blackbox_metric_results.append(result)
 
+        metrics.append(ProtoMetric(name='blackbox_metrics_bundle', data=bundle))
         return self.publisher.publish(metrics)
 
 
