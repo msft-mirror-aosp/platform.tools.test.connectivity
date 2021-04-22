@@ -21,11 +21,11 @@ package acts.metrics.blackbox;
 option java_package = "com.android.acts.metrics.blackbox";
 
 message ActsBlackboxMetricResult {
-
   optional string test_identifier = 1;
-
   required string metric_key = 3;
-
   required double metric_value = 4;
+}
 
+message ActsBlackboxMetricResultsBundle {
+  repeated ActsBlackboxMetricResult acts_blackbox_metric_results = 1;
 }
