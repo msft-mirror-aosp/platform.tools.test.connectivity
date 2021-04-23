@@ -17,16 +17,16 @@
 import shutil
 import tempfile
 import unittest
-import warnings
 from unittest import TestCase
-
-from mobly.config_parser import TestRunConfig
-from mock import Mock
-from mock import patch
+import warnings
 
 from acts.base_test import BaseTestClass
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_runner import TestRunner
+from mobly.config_parser import TestRunConfig
+from mock import call
+from mock import Mock
+from mock import patch
 
 GET_CONTEXT_FOR_EVENT = 'acts.metrics.logger.get_context_for_event'
 PROTO_METRIC_PUBLISHER = 'acts.metrics.logger.ProtoMetricPublisher'
@@ -71,8 +71,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertIsNotNone(logger.publisher)
 
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
-    def test_end_populates_result(self, mock_acts_blackbox):
+    def test_end_populates_result(self, mock_acts_blackbox,
+                                  _mock_acts_blackbox_bundle):
         result = Mock()
         mock_acts_blackbox.return_value = result
 
@@ -90,9 +93,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertEqual(result.metric_value, logger.metric_value)
 
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
     def test_end_uses_metric_value_on_metric_value_not_none(
-            self, mock_acts_blackbox):
+        self, mock_acts_blackbox, _mock_acts_blackbox_bundle):
         result = Mock()
         expected_result = Mock()
         mock_acts_blackbox.return_value = result
@@ -107,8 +112,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertEqual(result.metric_value, expected_result)
 
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
-    def test_end_uses_custom_metric_key(self, mock_acts_blackbox):
+    def test_end_uses_custom_metric_key(self, mock_acts_blackbox,
+                                        _mock_acts_blackbox_bundle):
         result = Mock()
         mock_acts_blackbox.return_value = result
         metric_key = 'metric_key'
@@ -125,12 +133,17 @@ class BlackboxMetricLoggerTest(TestCase):
         expected_metric_key = '%s.%s' % (metric_key, self.TEST_METRIC_NAME)
         self.assertEqual(result.metric_key, expected_metric_key)
 
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
     @patch('acts.metrics.loggers.blackbox.ProtoMetric')
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
-    def test_end_does_publish(self, mock_acts_blackbox, proto_metric_cls):
+    def test_end_does_publish(self, mock_acts_blackbox, proto_metric_cls,
+                              mock_acts_blackbox_bundle):
         result = Mock()
         mock_acts_blackbox.return_value = result
+        result_bundle = Mock()
+        mock_acts_blackbox_bundle.return_value = result_bundle
         metric_key = 'metric_key'
 
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
@@ -142,14 +155,19 @@ class BlackboxMetricLoggerTest(TestCase):
 
         logger.end(self.event)
 
-        proto_metric_cls.assert_called_once_with(name=self.TEST_FILE_NAME,
-                                                 data=result)
+        proto_metric_cls.assert_has_calls([
+            call(name=self.TEST_FILE_NAME, data=result),
+            call(name='blackbox_metrics_bundle', data=result_bundle)])
+        self.assertEqual(2, proto_metric_cls.call_count,
+                         'expected exactly 2 calls')
+
         self.publisher.publish.assert_called_once_with(
-            [proto_metric_cls.return_value])
+            [proto_metric_cls.return_value, proto_metric_cls.return_value])
 
 
 class BlackboxMetricLoggerIntegrationTest(TestCase):
     """Integration tests for BlackboxMetricLogger."""
+
     def setUp(self):
         warnings.simplefilter('ignore', ResourceWarning)
 
@@ -183,7 +201,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
-                self.tests = ('test_case', )
+                self.tests = ('test_case',)
                 self.metric = BlackboxMetricLogger.for_test_case('my_metric')
 
             def test_case(self):
@@ -206,7 +224,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
-                self.tests = ('test_case', )
+                self.tests = ('test_case',)
                 self.metric_1 = (BlackboxMetricLogger.for_test_case(
                     'my_metric_1'))
                 self.metric_2 = (BlackboxMetricLogger.for_test_case(
@@ -240,7 +258,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
-                self.tests = ('test_case', )
+                self.tests = ('test_case',)
                 self.metrics = BlackboxMetricLogger.for_test_case(
                     'my_metric', metric_key='my_metric_key')
 
