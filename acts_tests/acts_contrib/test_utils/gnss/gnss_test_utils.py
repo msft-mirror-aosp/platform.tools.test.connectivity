@@ -25,6 +25,7 @@ import tempfile
 from collections import namedtuple
 
 from acts import utils
+from acts import asserts
 from acts import signals
 from acts.libs.proc import job
 from acts.controllers.android_device import list_adb_devices
@@ -337,7 +338,7 @@ def clear_logd_gnss_qxdm_log(ad):
         ad: An AndroidDevice object.
     """
     remount_device(ad)
-    ad.log.info("Clear Logd, GNSS and QXDM Log from previous test item.")
+    ad.log.info("Clear Logd, GNSS and PixelLogger Log from previous test item.")
     ad.adb.shell("rm -rf /data/misc/logd", ignore_status=True)
     ad.adb.shell(
         'find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH,
@@ -378,26 +379,22 @@ def get_gnss_qxdm_log(ad, qdb_path):
     else:
         output_path = (
             "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/")
-    file_count = ad.adb.shell(
-        "find %s -type f -iname *.zip | wc -l" % output_path)
-    if not int(file_count) == 0:
-        qxdm_log_name = "QXDM_%s_%s" % (ad.model, ad.serial)
-        qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
-        os.makedirs(qxdm_log_path, exist_ok=True)
-        ad.log.info("Pull QXDM Log %s to %s" % (output_path, qxdm_log_path))
-        ad.adb.pull("%s %s" % (output_path, qxdm_log_path),
-                    timeout=PULL_TIMEOUT, ignore_status=True)
+    qxdm_log_name = "PixelLogger_%s_%s" % (ad.model, ad.serial)
+    qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
+    os.makedirs(qxdm_log_path, exist_ok=True)
+    ad.log.info("Pull PixelLogger Log %s to %s" % (output_path,
+                                                   qxdm_log_path))
+    ad.adb.pull("%s %s" % (output_path, qxdm_log_path),
+                timeout=PULL_TIMEOUT, ignore_status=True)
+    if check_chipset_vendor_by_qualcomm(ad):
         for path in qdb_path:
             output = ad.adb.pull("%s %s" % (path, qxdm_log_path),
                                  timeout=PULL_TIMEOUT, ignore_status=True)
             if "No such file or directory" in output:
                 continue
             break
-        shutil.make_archive(qxdm_log_path, "zip", qxdm_log_path)
-        shutil.rmtree(qxdm_log_path)
-    else:
-        ad.log.error("QXDM file count is %d. There is no QXDM log on device."
-                     % int(file_count))
+    shutil.make_archive(qxdm_log_path, "zip", qxdm_log_path)
+    shutil.rmtree(qxdm_log_path)
 
 
 def set_mobile_data(ad, state):
@@ -540,6 +537,28 @@ def pull_package_apk(ad, package_name):
     return apk_path
 
 
+def pull_gnss_cfg_file(ad, file):
+    """Pull given gnss cfg file from device.
+
+    Args:
+        ad: An AndroidDevice object.
+        file: CFG file in device to pull.
+
+    Returns:
+        The temp path of pulled gnss cfg file in host.
+    """
+    ad.root_adb()
+    host_dest = tempfile.mkdtemp()
+    ad.pull_files(file, host_dest)
+    for path_key in os.listdir(host_dest):
+        if fnmatch.fnmatch(path_key, "*.cfg"):
+            gnss_cfg_file = os.path.join(host_dest, path_key)
+            break
+    else:
+        raise signals.TestError("No cfg file is found in %s" % host_dest)
+    return gnss_cfg_file
+
+
 def reinstall_package_apk(ad, package_name, apk_path):
     """Reinstall apk of given package_name.
 
@@ -591,10 +610,14 @@ def fastboot_factory_reset(ad):
     """
     status = True
     skip_setup_wizard = True
+    gnss_cfg_path = "/vendor/etc/mdlog"
+    default_gnss_cfg = "/vendor/etc/mdlog/DEFAULT+SECURITY+FULLDPL+GPS.cfg"
     sl4a_path = pull_package_apk(ad, SL4A_APK_NAME)
     gpstool_path = pull_package_apk(ad, "com.android.gpstool")
     mds_path = pull_package_apk(ad, "com.google.mdstest")
-    tutils.stop_qxdm_logger(ad)
+    if check_chipset_vendor_by_qualcomm(ad):
+        gnss_cfg_file = pull_gnss_cfg_file(ad, default_gnss_cfg)
+    stop_pixel_logger(ad)
     ad.stop_services()
     attempts = 3
     for i in range(1, attempts + 1):
@@ -618,6 +641,8 @@ def fastboot_factory_reset(ad):
             reinstall_package_apk(ad, SL4A_APK_NAME, sl4a_path)
             reinstall_package_apk(ad, "com.android.gpstool", gpstool_path)
             reinstall_package_apk(ad, "com.google.mdstest", mds_path)
+            if check_chipset_vendor_by_qualcomm(ad):
+                ad.push_system_file(gnss_cfg_file, gnss_cfg_path)
             time.sleep(10)
             break
         except Exception as e:
@@ -1605,6 +1630,7 @@ def start_pixel_logger(ad, max_log_size_mb=100, max_number_of_files=500):
             one reaches the size limit.
         max_number_of_files: Determines how many log files can be saved on DUT.
     """
+    retries = 3
     start_timeout_sec = 60
     default_gnss_cfg = "/vendor/etc/mdlog/DEFAULT+SECURITY+FULLDPL+GPS.cfg"
     if check_chipset_vendor_by_qualcomm(ad):
@@ -1618,21 +1644,24 @@ def start_pixel_logger(ad, max_log_size_mb=100, max_number_of_files=500):
         start_cmd = ("am startservice -a com.android.pixellogger."
                      "service.logging.LoggingService.ACTION_START_LOGGING "
                      "-e intent_logger brcm_gps")
-    begin_time = get_current_epoch_time()
-    ad.log.info("Start Pixel Logger.")
-    ad.adb.shell(start_cmd)
-    while get_current_epoch_time() - begin_time <= start_timeout_sec * 1000:
-        if not ad.is_adb_logcat_on:
-            ad.start_adb_logcat()
-        if check_chipset_vendor_by_qualcomm(ad):
-            start_result = ad.search_logcat("Start logging", begin_time)
-        else:
-            start_result = ad.search_logcat("startRecording", begin_time)
-        if start_result:
-            ad.log.info("Pixel Logger starts recording successfully.")
-            break
+    for attempt in range(retries):
+        begin_time = get_current_epoch_time()
+        ad.log.info("Start Pixel Logger. - Attempt %d" % (attempt + 1))
+        ad.adb.shell(start_cmd)
+        while get_current_epoch_time() - begin_time <= start_timeout_sec * 1000:
+            if not ad.is_adb_logcat_on:
+                ad.start_adb_logcat()
+            if check_chipset_vendor_by_qualcomm(ad):
+                start_result = ad.search_logcat("Start logging", begin_time)
+            else:
+                start_result = ad.search_logcat("startRecording", begin_time)
+            if start_result:
+                ad.log.info("Pixel Logger starts recording successfully.")
+                return True
+        ad.force_stop_apk("com.android.pixellogger")
     else:
-        ad.log.warn("Pixel Logger fails to start recording.")
+        ad.log.warn("Pixel Logger fails to start recording in %d seconds "
+                    "within %d attempts." % (start_timeout_sec, retries))
 
 
 def stop_pixel_logger(ad):
@@ -1641,6 +1670,7 @@ def stop_pixel_logger(ad):
     Args:
         ad: An AndroidDevice object.
     """
+    retries = 3
     stop_timeout_sec = 300
     if check_chipset_vendor_by_qualcomm(ad):
         stop_cmd = ("am start-foreground-service -a com.android.pixellogger"
@@ -1649,17 +1679,79 @@ def stop_pixel_logger(ad):
         stop_cmd = ("am startservice -a com.android.pixellogger."
                     "service.logging.LoggingService.ACTION_STOP_LOGGING "
                     "-e intent_logger brcm_gps")
-    begin_time = get_current_epoch_time()
-    ad.log.info("Stop Pixel Logger.")
-    ad.adb.shell(stop_cmd)
-    while get_current_epoch_time() - begin_time <= stop_timeout_sec * 1000:
-        if not ad.is_adb_logcat_on:
-            ad.start_adb_logcat()
-        stop_result = ad.search_logcat(
-            "LoggingService: Stopping service", begin_time)
-        if stop_result:
-            ad.log.info("Pixel Logger stops successfully.")
-            break
+    for attempt in range(retries):
+        begin_time = get_current_epoch_time()
+        ad.log.info("Stop Pixel Logger. - Attempt %d" % (attempt + 1))
+        ad.adb.shell(stop_cmd)
+        while get_current_epoch_time() - begin_time <= stop_timeout_sec * 1000:
+            if not ad.is_adb_logcat_on:
+                ad.start_adb_logcat()
+            stop_result = ad.search_logcat(
+                "LoggingService: Stopping service", begin_time)
+            if stop_result:
+                ad.log.info("Pixel Logger stops successfully.")
+                return True
+        ad.force_stop_apk("com.android.pixellogger")
     else:
-        ad.log.warn(
-            "Pixel Logger fails to stop in %d seconds." % stop_timeout_sec)
+        ad.log.warn("Pixel Logger fails to stop in %d seconds within %d "
+                    "attempts." % (stop_timeout_sec, retries))
+
+
+def launch_eecoexer(ad):
+    """adb to stop pixel logger for GNSS logging.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    launch_cmd = ("am start -a android.intent.action.MAIN -n"
+                  "com.google.eecoexer"
+                  "/.MainActivity")
+    ad.adb.shell(launch_cmd)
+    try:
+        ad.log.info("Launch EEcoexer.")
+    except Exception as e:
+        ad.log.error(e)
+        raise signals.TestError("Failed to launch EEcoexer.")
+
+
+def excute_eecoexer_function(ad, eecoexer_args):
+    """adb to stop pixel logger for GNSS logging.
+
+    Args:
+        ad: An AndroidDevice object.
+        eecoexer_args: EEcoexer function arguments
+    """
+    enqueue_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
+                   " --es sms_body ENQUEUE,{}".format(eecoexer_args))
+    exe_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
+               " --es sms_body EXECUTE")
+    ad.log.info("EEcoexer Add Enqueue: {}".format(eecoexer_args))
+    ad.adb.shell(enqueue_cmd)
+    ad.log.info("EEcoexer Excute.")
+    ad.adb.shell(exe_cmd)
+
+
+def restart_gps_daemons(ad):
+    """Restart GPS daemons by killing services of gpsd, lhd and scd.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    gps_daemons_list = ["gpsd", "lhd", "scd"]
+    ad.root_adb()
+    for service in gps_daemons_list:
+        begin_time = get_current_epoch_time()
+        time.sleep(3)
+        ad.log.info("Kill GPS daemon \"%s\"" % service)
+        ad.adb.shell("killall %s" % service)
+        # Wait 3 seconds for daemons and services to start.
+        time.sleep(3)
+        restart_services = ad.search_logcat("starting service", begin_time)
+        for restart_service in restart_services:
+            if service in restart_service["log_message"]:
+                ad.log.info(restart_service["log_message"])
+                ad.log.info(
+                    "GPS daemon \"%s\" restarts successfully." % service)
+                break
+        else:
+            raise signals.TestError("Unable to restart \"%s\"" % service)
