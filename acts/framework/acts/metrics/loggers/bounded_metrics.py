@@ -13,7 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+from acts.libs.proto.proto_utils import md5_proto
 from acts.metrics.core import ProtoMetric
 from acts.metrics.logger import MetricLogger
 
@@ -86,5 +86,9 @@ class BoundedMetricsLogger(MetricLogger):
                 continue
             bundle.bounded_metrics.append(bounded_metric)
 
+        # Since there could technically be more than one concurrent logger
+        # instance we add a hash for files to not override each other. We use a
+        # static hash for repeatability.
+        bundle_name = 'bounded_metrics_bundle.' + md5_proto(bundle)[0:8]
         return self.publisher.publish(
-            [ProtoMetric(name='bounded_metrics_bundle', data=bundle)])
+            [ProtoMetric(name=bundle_name, data=bundle)])

@@ -14,6 +14,7 @@
 
 from google.protobuf import descriptor_pb2
 from google.protobuf import text_format
+import hashlib
 
 
 def parse_proto_to_ascii(binary_proto_msg):
@@ -33,8 +34,14 @@ def to_descriptor_proto(proto):
     Args:
         proto: the original message.
     Returns:
-        The descriptor proto for the input meessage.
+        The descriptor proto for the input message.
     """
     descriptor_proto = descriptor_pb2.DescriptorProto()
     proto.DESCRIPTOR.CopyToProto(descriptor_proto)
     return descriptor_proto
+
+
+def md5_proto(proto):
+    """ Obtains an md5 checksum of a proto's content."""
+    encoded = parse_proto_to_ascii(proto).encode()
+    return hashlib.md5(encoded).hexdigest()
