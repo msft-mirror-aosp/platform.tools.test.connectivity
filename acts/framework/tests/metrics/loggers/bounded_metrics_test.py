@@ -30,8 +30,6 @@ from mock import patch
 from mock import PropertyMock
 
 GET_CONTEXT_FOR_EVENT = 'acts.metrics.logger.get_context_for_event'
-PROTO_METRIC_PUBLISHER = 'acts.metrics.logger.ProtoMetricPublisher'
-
 
 class BoundedMetricsLoggerTest(TestCase):
     """Unit tests for BoundedMetricsLogger."""
@@ -41,9 +39,8 @@ class BoundedMetricsLoggerTest(TestCase):
         self.context = Mock()
         self.publisher = Mock()
 
-    @patch(PROTO_METRIC_PUBLISHER)
     @patch(GET_CONTEXT_FOR_EVENT)
-    def test_init_with_event(self, get_context, publisher_cls):
+    def test_init_with_event(self, _get_context):
         logger = BoundedMetricsLogger(event=self.event)
 
         self.assertIsNotNone(logger.context)
@@ -51,7 +48,7 @@ class BoundedMetricsLoggerTest(TestCase):
 
     @patch(GET_CONTEXT_FOR_EVENT)
     @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
-    def test_add_generates_messages(self, mock_metric, get_context):
+    def test_add_generates_messages(self, mock_metric, _get_context):
         result = Mock()
         mock_metric.return_value = result
 
@@ -73,8 +70,9 @@ class BoundedMetricsLoggerTest(TestCase):
 
     @patch(GET_CONTEXT_FOR_EVENT)
     @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
-    def test_add_without_limits_does_not_populate_limits(self, mock_metric,
-                                                         get_context):
+    def test_add_without_limits_does_not_populate_limits(self,
+                                                         mock_metric,
+                                                         _get_context):
         result = Mock()
         mock_metric.return_value = result
 
@@ -98,7 +96,7 @@ class BoundedMetricsLoggerTest(TestCase):
     @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     def test_test_method_and_test_class_get_set_if_test_method_identifier(self,
                                                                           mock_metric,
-                                                                          get_context):
+                                                                          _get_context):
         result = Mock()
         test_method = PropertyMock()
         test_class = PropertyMock()
@@ -120,7 +118,7 @@ class BoundedMetricsLoggerTest(TestCase):
     @patch(GET_CONTEXT_FOR_EVENT)
     @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     def test_only_test_class_gets_set_if_not_test_identifier(self, mock_metric,
-                                                             get_context):
+                                                             _get_context):
         result = Mock()
         test_method = PropertyMock()
         test_class = PropertyMock()
@@ -137,14 +135,15 @@ class BoundedMetricsLoggerTest(TestCase):
         test_class.assert_called_with('BestClass')
         test_method.assert_not_called()
 
+    @patch(GET_CONTEXT_FOR_EVENT)
+    @patch('acts.metrics.loggers.bounded_metrics.md5_proto')
     @patch('acts.metrics.loggers.bounded_metrics.ProtoMetric')
     @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetricsBundle')
-    @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
-    @patch(GET_CONTEXT_FOR_EVENT)
-    def test_end_does_publish(self, get_context, mock_metric, mock_bundle_cls,
-                              proto_metric_cls):
+    def test_end_does_publish(self, mock_bundle_cls,
+                              proto_metric_cls, mock_md5_proto, _get_context):
         result = Mock()
         mock_bundle_cls.return_value = Mock()
+        mock_md5_proto.return_value = '123456'
 
         logger = BoundedMetricsLogger(self.event)
         logger.context = self.context
@@ -156,7 +155,7 @@ class BoundedMetricsLoggerTest(TestCase):
         self.assertEqual(proto_metric_cls.call_count, 1)
 
         proto_metric_cls.assert_has_calls(
-            [call(name='bounded_metrics_bundle',
+            [call(name='bounded_metrics_bundle.123456',
                   data=mock_bundle_cls.return_value)])
         self.publisher.publish.assert_called_once_with(
             [proto_metric_cls.return_value])
@@ -168,10 +167,9 @@ class BoundedMetricsLoggerIntegrationTest(TestCase):
     def setUp(self):
         warnings.simplefilter('ignore', ResourceWarning)
 
-    @patch('acts.test_runner.sys')
     @patch('acts.test_runner.utils')
     @patch('acts.test_runner.importlib')
-    def run_acts_test(self, test_class, importlib, utils, sys):
+    def run_acts_test(self, test_class, importlib, utils):
         test_run_config = TestRunConfig()
         test_run_config.testbed_name = 'SampleTestBed'
         test_run_config.log_path = tempfile.mkdtemp()
@@ -214,7 +212,7 @@ class BoundedMetricsLoggerIntegrationTest(TestCase):
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
         published = self.__get_only_arg(args_list[0])[0]
-        self.assertEqual(published.name, 'bounded_metrics_bundle')
+        self.assertIn('bounded_metrics_bundle', published.name)
         self.assertEqual(len(published.data.bounded_metrics), 1)
         self.assertEqual(published.data.bounded_metrics[0].test_method,
                          'test_magnificent')
@@ -262,7 +260,7 @@ class BoundedMetricsLoggerIntegrationTest(TestCase):
         metric2 = bundle.bounded_metrics[1]
         metric3 = bundle.bounded_metrics[2]
 
-        self.assertEqual('bounded_metrics_bundle', published.name)
+        self.assertIn('bounded_metrics_bundle', published.name)
 
         self.assertEqual(metric1.test_method, '')
         self.assertEqual(metric2.test_method, '')
