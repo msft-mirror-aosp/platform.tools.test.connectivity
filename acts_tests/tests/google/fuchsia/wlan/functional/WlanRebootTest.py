@@ -50,6 +50,7 @@ DUAL_IPV4_IPV6 = {IPV4: True, IPV6: True}
 IPV4_ONLY = {IPV4: True, IPV6: False}
 IPV6_ONLY = {IPV4: False, IPV6: True}
 INTERRUPTS = [True, False]
+DEFAULT_IPERF_TIMEOUT = 30
 
 DUT_NETWORK_CONNECTION_TIMEOUT = 60
 DUT_IP_ADDRESS_TIMEOUT = 15
@@ -365,7 +366,9 @@ class WlanRebootTest(WifiBaseTest):
             'Attempting to pass traffic from DUT to IPerf server (%s).' %
             iperf_server_ip_address)
         tx_file = iperf_client_on_dut.start(iperf_server_ip_address,
-                                            '-i 1 -t 3 -J', 'reboot_tx')
+                                            '-i 1 -t 3 -J',
+                                            'reboot_tx',
+                                            timeout=DEFAULT_IPERF_TIMEOUT)
         tx_results = iperf_server.IPerfResult(tx_file)
         if not tx_results.avg_receive_rate or tx_results.avg_receive_rate == 0:
             raise ConnectionError(
@@ -380,7 +383,9 @@ class WlanRebootTest(WifiBaseTest):
             'Attempting to pass traffic from IPerf server (%s) to DUT.' %
             iperf_server_ip_address)
         rx_file = iperf_client_on_dut.start(iperf_server_ip_address,
-                                            '-i 1 -t 3 -R -J', 'reboot_rx')
+                                            '-i 1 -t 3 -R -J',
+                                            'reboot_rx',
+                                            timeout=DEFAULT_IPERF_TIMEOUT)
         rx_results = iperf_server.IPerfResult(rx_file)
         if not rx_results.avg_receive_rate or rx_results.avg_receive_rate == 0:
             raise ConnectionError(
