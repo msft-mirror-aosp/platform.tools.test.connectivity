@@ -17,16 +17,16 @@
 import shutil
 import tempfile
 import unittest
-import warnings
 from unittest import TestCase
-
-from mobly.config_parser import TestRunConfig
-from mock import Mock
-from mock import patch
+import warnings
 
 from acts.base_test import BaseTestClass
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_runner import TestRunner
+from mobly.config_parser import TestRunConfig
+from mock import call
+from mock import Mock
+from mock import patch
 
 GET_CONTEXT_FOR_EVENT = 'acts.metrics.logger.get_context_for_event'
 PROTO_METRIC_PUBLISHER = 'acts.metrics.logger.ProtoMetricPublisher'
@@ -36,7 +36,6 @@ class BlackboxMetricLoggerTest(TestCase):
     """Unit tests for BlackboxMetricLogger."""
 
     TEST_METRIC_NAME = "metric_name"
-    TEST_FILE_NAME = "blackbox_metric_name"
 
     def setUp(self):
         self.event = Mock()
@@ -62,7 +61,7 @@ class BlackboxMetricLoggerTest(TestCase):
 
     @patch(PROTO_METRIC_PUBLISHER)
     @patch(GET_CONTEXT_FOR_EVENT)
-    def test_init_with_event(self, get_context, publisher_cls):
+    def test_init_with_event(self, _get_context, _publisher_cls):
         metric_name = Mock()
 
         logger = BlackboxMetricLogger(metric_name, event=self.event)
@@ -71,8 +70,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertIsNotNone(logger.publisher)
 
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
-    def test_end_populates_result(self, mock_acts_blackbox):
+    def test_end_populates_result(self, mock_acts_blackbox,
+                                  _mock_acts_blackbox_bundle):
         result = Mock()
         mock_acts_blackbox.return_value = result
 
@@ -90,9 +92,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertEqual(result.metric_value, logger.metric_value)
 
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
     def test_end_uses_metric_value_on_metric_value_not_none(
-            self, mock_acts_blackbox):
+        self, mock_acts_blackbox, _mock_acts_blackbox_bundle):
         result = Mock()
         expected_result = Mock()
         mock_acts_blackbox.return_value = result
@@ -107,8 +111,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertEqual(result.metric_value, expected_result)
 
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
            '.ActsBlackboxMetricResult')
-    def test_end_uses_custom_metric_key(self, mock_acts_blackbox):
+    def test_end_uses_custom_metric_key(self, mock_acts_blackbox,
+                                        _mock_acts_blackbox_bundle):
         result = Mock()
         mock_acts_blackbox.return_value = result
         metric_key = 'metric_key'
@@ -125,31 +132,38 @@ class BlackboxMetricLoggerTest(TestCase):
         expected_metric_key = '%s.%s' % (metric_key, self.TEST_METRIC_NAME)
         self.assertEqual(result.metric_key, expected_metric_key)
 
-    @patch('acts.metrics.loggers.blackbox.ProtoMetric')
     @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
-           '.ActsBlackboxMetricResult')
-    def test_end_does_publish(self, mock_acts_blackbox, proto_metric_cls):
-        result = Mock()
-        mock_acts_blackbox.return_value = result
-        metric_key = 'metric_key'
+           '.ActsBlackboxMetricResultsBundle')
+    @patch('acts.metrics.loggers.blackbox.ProtoMetric')
+    @patch('acts.metrics.loggers.blackbox.md5_proto')
+    def test_end_does_publish(self, mock_md5_proto,
+                              proto_metric_cls,
+                              mock_acts_blackbox_bundle):
+        result_bundle = Mock()
+        mock_acts_blackbox_bundle.return_value = result_bundle
+        mock_md5_proto.return_value = '<123456>'
 
-        logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
-                                      metric_key=metric_key)
+        logger = BlackboxMetricLogger(self.TEST_METRIC_NAME)
         logger.context = self.context
         logger.publisher = self.publisher
         logger._get_blackbox_identifier = self._get_blackbox_identifier
-        logger.metric_value = 'foo'
+        logger.metric_value = 42
 
         logger.end(self.event)
 
-        proto_metric_cls.assert_called_once_with(name=self.TEST_FILE_NAME,
-                                                 data=result)
+        self.assertEqual(1, proto_metric_cls.call_count,
+                         'expected exactly 1 call')
+        proto_metric_cls.assert_has_calls([
+            call(name='blackbox_metrics_bundle.<123456>',
+                 data=result_bundle)])
+
         self.publisher.publish.assert_called_once_with(
             [proto_metric_cls.return_value])
 
 
 class BlackboxMetricLoggerIntegrationTest(TestCase):
     """Integration tests for BlackboxMetricLogger."""
+
     def setUp(self):
         warnings.simplefilter('ignore', ResourceWarning)
 
@@ -183,7 +197,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
-                self.tests = ('test_case', )
+                self.tests = ('test_case',)
                 self.metric = BlackboxMetricLogger.for_test_case('my_metric')
 
             def test_case(self):
@@ -193,11 +207,13 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
 
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
-        metric = self.__get_only_arg(args_list[0])[0]
-        self.assertEqual(metric.name, 'blackbox_my_metric')
-        self.assertEqual(metric.data.test_identifier, 'MyTest#test_case')
-        self.assertEqual(metric.data.metric_key, 'MyTest#test_case.my_metric')
-        self.assertEqual(metric.data.metric_value, result)
+        published = self.__get_only_arg(args_list[0])[0]
+        bundle = published.data
+        metric = bundle.acts_blackbox_metric_results[0]
+        self.assertIn('blackbox_metrics_bundle', published.name)
+        self.assertEqual(metric.test_identifier, 'MyTest#test_case')
+        self.assertEqual(metric.metric_key, 'MyTest#test_case.my_metric')
+        self.assertEqual(metric.metric_value, result)
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
     def test_multiple_test_case_metrics(self, publisher_cls):
@@ -206,7 +222,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
-                self.tests = ('test_case', )
+                self.tests = ('test_case',)
                 self.metric_1 = (BlackboxMetricLogger.for_test_case(
                     'my_metric_1'))
                 self.metric_2 = (BlackboxMetricLogger.for_test_case(
@@ -220,18 +236,24 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
 
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 2)
-        metrics = [self.__get_only_arg(args)[0] for args in args_list]
-        self.assertEqual({metric.name
-                          for metric in metrics},
-                         {'blackbox_my_metric_1', 'blackbox_my_metric_2'})
-        self.assertEqual({metric.data.test_identifier
-                          for metric in metrics}, {'MyTest#test_case'})
-        self.assertEqual(
-            {metric.data.metric_key
-             for metric in metrics},
-            {'MyTest#test_case.my_metric_1', 'MyTest#test_case.my_metric_2'})
-        self.assertEqual({metric.data.metric_value
-                          for metric in metrics}, {result})
+        all_published = [self.__get_only_arg(args)[0] for args in args_list]
+        bundles = [published_instance.data for
+                   published_instance in all_published]
+
+        flattened_metrics = [metric for bundle in bundles for metric in
+                             bundle.acts_blackbox_metric_results]
+
+        self.assertEqual({metric.test_identifier
+                          for metric in
+                          flattened_metrics},
+                         {'MyTest#test_case'})
+        self.assertEqual({metric.metric_key
+                          for metric in flattened_metrics},
+                         {'MyTest#test_case.my_metric_1',
+                          'MyTest#test_case.my_metric_2'})
+        self.assertEqual({metric.metric_value
+                          for metric in
+                          flattened_metrics}, {result})
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
     def test_test_case_metric_with_custom_key(self, publisher_cls):
@@ -240,7 +262,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
-                self.tests = ('test_case', )
+                self.tests = ('test_case',)
                 self.metrics = BlackboxMetricLogger.for_test_case(
                     'my_metric', metric_key='my_metric_key')
 
@@ -251,8 +273,9 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
 
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
-        metric = self.__get_only_arg(args_list[0])[0]
-        self.assertEqual(metric.data.metric_key, 'my_metric_key.my_metric')
+        bundle = self.__get_only_arg(args_list[0])[0].data
+        self.assertEqual(bundle.acts_blackbox_metric_results[0].metric_key,
+                         'my_metric_key.my_metric')
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
     def test_test_class_metric(self, publisher_cls):
@@ -282,9 +305,10 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
 
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
-        metric = self.__get_only_arg(args_list[0])[0]
-        self.assertEqual(metric.data.metric_value, result_1 + result_2)
-        self.assertEqual(metric.data.test_identifier, MyTest.__name__)
+        bundle = self.__get_only_arg(args_list[0])[0].data
+        metric = bundle.acts_blackbox_metric_results[0]
+        self.assertEqual(metric.metric_value, result_1 + result_2)
+        self.assertEqual(metric.test_identifier, MyTest.__name__)
 
     def __get_only_arg(self, call_args):
         self.assertEqual(len(call_args[0]) + len(call_args[1]), 1)
