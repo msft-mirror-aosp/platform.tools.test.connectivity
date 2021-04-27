@@ -9468,7 +9468,7 @@ def load_scone_cat_data_from_file(ad, simulate_file_path, sub_id=None):
         try:
             radio_simulate_data = json.load(f)
         except Exception as e:
-            self.log.error("Exception error to load %s: %s", f, e)
+            ad.log.error("Exception error to load %s: %s", f, e)
             return False
 
     for item in radio_simulate_data:
@@ -10776,7 +10776,7 @@ def datetime_handle(ad, action, set_datetime_value='', get_year=False):
             try:
                 get_value = datetime_list[5]
             except Exception as e:
-                self.log.error("Fail to get year from datetime: %s. " \
+                ad.log.error("Fail to get year from datetime: %s. " \
                                 "Exception error: %s", datetime_list
                                 , str(e))
                 raise signals.TestSkip("Fail to get year from datetime" \
