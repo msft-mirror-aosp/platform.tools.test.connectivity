@@ -1718,7 +1718,8 @@ def test_wifi_tethering(log, provider,
         return False
 
     if pre_teardown_func:
-        pre_teardown_func()
+        if not pre_teardown_func():
+            return False
 
     return wifi_tethering_setup_teardown(
         log,
@@ -2007,3 +2008,77 @@ def test_wifi_cell_switching_in_call(log,
             ads[0].log.info("Audio is on call")
         hangup_call(log, ads[0])
         return result
+
+
+def verify_toggle_data_during_wifi_tethering(log,
+                                             provider,
+                                             clients,
+                                             new_gen=None):
+    """Verify toggle Data network during WiFi Tethering.
+    Args:
+        log: log object.
+        provider: android device object for provider.
+        clients: android device objects for clients.
+        new_gen: network generation.
+    Returns:
+        True if pass, otherwise False.
+
+    """
+    try:
+        ssid = rand_ascii_str(10)
+        if not test_wifi_tethering(log,
+                                   provider,
+                                   clients,
+                                   [clients[0]],
+                                   new_gen,
+                                   WIFI_CONFIG_APBAND_2G,
+                                   check_interval=10,
+                                   check_iteration=2,
+                                   do_cleanup=False,
+                                   ssid=ssid):
+            log.error("WiFi Tethering failed.")
+            return False
+        if not provider.droid.wifiIsApEnabled():
+            provider.log.error("Provider WiFi tethering stopped.")
+            return False
+
+        provider.log.info(
+            "Disable Data on Provider, verify no data on Client.")
+        provider.droid.telephonyToggleDataConnection(False)
+        time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+        if not verify_internet_connection(log, provider, expected_state=False):
+            provider.log.error("Disable data on provider failed.")
+            return False
+        if not provider.droid.wifiIsApEnabled():
+            provider.log.error("Provider WiFi tethering stopped.")
+            return False
+        if not check_is_wifi_connected(log, clients[0], ssid):
+            clients[0].log.error("Client WiFi is not connected")
+            return False
+
+        log.info(
+            "Enable Data on Provider, verify data available on Client.")
+        provider.droid.telephonyToggleDataConnection(True)
+        if not wait_for_cell_data_connection(log, provider,
+                                             True):
+            provider.log.error(
+                "Provider failed to enable data connection.")
+            return False
+        if not verify_internet_connection(log, provider):
+            provider.log.error(
+                "Provider internet connection check failed.")
+            return False
+        if not provider.droid.wifiIsApEnabled():
+            provider.log.error("Provider WiFi tethering stopped.")
+            return False
+
+        if not check_is_wifi_connected(log, clients[0], ssid) or (not verify_internet_connection(log, clients[0])):
+            clients[0].log.error("Client wifi connection check failed!")
+            return False
+
+    finally:
+        if not wifi_tethering_cleanup(log,
+                                      provider,
+                                      clients):
+            return False
+    return True
