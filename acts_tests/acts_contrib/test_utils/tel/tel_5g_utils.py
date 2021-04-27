@@ -21,6 +21,7 @@ import re
 from queue import Empty
 from acts.utils import rand_ascii_str
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_ONLY
 from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
@@ -66,28 +67,59 @@ def is_current_network_5g_nsa(ad, timeout=30):
     return None
 
 
-def provision_device_for_5g(log, ad):
-    # Mode Pref
-    set_preferred_mode_for_5g(ad)
+def provision_device_for_5g(log, ads, sa_5g=False):
+    """Provision Devices for 5G
 
-    # Attach nsa5g
-    if not is_current_network_5g_nsa(ad):
-        ad.log.error("Phone not attached on nsa 5g")
-        return False
+    Args:
+        log: Log object.
+        ads: android device object(s).
+        sa_5g: Check for provision on sa_5G or not
+
+    Returns:
+        True: Device(s) are provisioned on 5G
+        False: Device(s) are not provisioned on 5G
+    """
+    if sa_5g:
+        if not provision_device_for_5g_sa(log, ads):
+            return False
+    else:
+        if not provision_device_for_5g_nsa(log, ads):
+            return False
     return True
 
-def provision_both_devices_for_5g(log, ads):
-    # Mode Pref
-    tasks = [(set_preferred_mode_for_5g, [ad]) for ad in ads]
-    if not multithread_func(log, tasks):
-        log.error("failed to set preferred network mode on 5g")
-        return False
-    # Attach
-    tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
-    if not multithread_func(log, tasks):
-        log.error("phone not on 5g nsa")
-        return False
-    return True
+
+def provision_device_for_5g_nsa(log, ads):
+    """Provision Devices for 5G NSA
+
+    Args:
+        log: Log object.
+        ads: android device object(s).
+
+    Returns:
+        True: Device(s) are provisioned on 5G NSA
+        False: Device(s) are not provisioned on 5G NSA
+    """
+    if isinstance(ads, list):
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad]) for ad in ads]
+        if not multithread_func(log, tasks):
+            log.error("failed to set preferred network mode on 5g")
+            return False
+        # Attach
+        tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
+        if not multithread_func(log, tasks):
+            log.error("phone not on 5g nsa")
+            return False
+        return True
+    else:
+        # Mode Pref
+        set_preferred_mode_for_5g(ads)
+
+        # Attach nsa5g
+        if not is_current_network_5g_nsa(ads):
+            ads.log.error("Phone not attached on nsa 5g")
+            return False
+        return True
 
 
 def provision_both_devices_for_volte(log, ads):
@@ -105,15 +137,6 @@ def provision_both_devices_for_csfb(log, ads):
              (phone_setup_csfb, (log, ads[1]))]
     if not multithread_func(log, tasks):
         log.error("Phone Failed to Set Up in csfb.")
-        return False
-    return True
-
-
-def verify_5g_attach_for_both_devices(log, ads):
-    # Attach
-    tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
-    if not multithread_func(log, tasks):
-        log.error("phone not on 5g nsa")
         return False
     return True
 
@@ -175,6 +198,34 @@ def connect_both_devices_to_wifi(log,
     return True
 
 
+def verify_5g_attach_for_both_devices(log, ads, sa_5g=False):
+    """Verify the network is attached
+
+    Args:
+        log: Log object.
+        ads: android device object(s).
+        sa_5g: Check for verify data network type is on 5G SA or not
+
+    Returns:
+        True: Device(s) are attached on 5G
+        False: Device(s) are not attached on 5G NSA
+    """
+    if sa_5g:
+        # Attach
+        tasks = [(is_current_network_5g_sa, [ad]) for ad in ads]
+        if not multithread_func(log, tasks):
+            log.error("phone not on 5g sa")
+            return False
+        return True
+    else:
+        # Attach
+        tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
+        if not multithread_func(log, tasks):
+            log.error("phone not on 5g nsa")
+            return False
+        return True
+
+
 def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
     """Set Preferred Network Mode for 5G NSA
     Args:
@@ -189,5 +240,75 @@ def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
     return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
 
 
+def is_current_network_5g_sa(ad):
+    """Verifies 5G SA override network type
 
+    Args:
+        ad: android device object.
+
+    Returns:
+        True: if data is on 5g SA
+        False: if data is not on 5g SA
+    """
+    network_connected = ad.droid.telephonyGetCurrentDataNetworkType()
+    if network_connected == 'NR':
+        ad.log.debug("Network is currently connected to %s", network_connected)
+        return True
+    else:
+        ad.log.error("Network is currently connected to %s, Expected on NR", network_connected)
+        return False
+
+
+def provision_device_for_5g_sa(log, ads):
+    """Provision Devices for 5G SA
+
+    Args:
+        log: Log object.
+        ads: android device object(s).
+
+    Returns:
+        True: Device(s) are provisioned on 5G SA
+        False: Device(s) are not provisioned on 5G SA
+    """
+    if isinstance(ads, list):
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad, None, NETWORK_MODE_NR_ONLY]) for ad in ads]
+        if not multithread_func(log, tasks):
+            log.error("failed to set preferred network mode on 5g SA")
+            return False
+
+        tasks = [(is_current_network_5g_sa, [ad]) for ad in ads]
+        if not multithread_func(log, tasks):
+            log.error("phone not on 5g SA")
+            return False
+        return True
+    else:
+        # Mode Pref
+        set_preferred_mode_for_5g(ads, None, NETWORK_MODE_NR_ONLY)
+
+        if not is_current_network_5g_sa(ads):
+            ads.log.error("Phone not attached on SA 5g")
+            return False
+        return True
+
+
+def check_current_network_5g(ad, timeout=30, sa_5g=False):
+    """Verifies data network type is on 5G
+
+    Args:
+        ad: android device object.
+        timeout: max time to wait for event
+        sa_5g: Check for verify data network type is on 5G SA or not
+
+    Returns:
+        True: if data is on 5g
+        False: if data is not on 5g
+    """
+    if sa_5g:
+        if not is_current_network_5g_sa(ad):
+            return False
+    else:
+        if not is_current_network_5g_nsa(ad, timeout):
+            return False
+    return True
 
