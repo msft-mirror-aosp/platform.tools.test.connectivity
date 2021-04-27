@@ -28,7 +28,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
@@ -67,7 +67,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not _sms_test_mo(self.log, ads):
@@ -99,7 +99,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not _sms_test_mo(self.log, ads):
@@ -135,7 +135,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not test_sms_mo_in_call(self.log,
@@ -167,7 +167,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not provision_both_devices_for_wfc_cell_pref(self.log,
@@ -204,7 +204,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not provision_both_devices_for_wfc_wifi_pref(self.log,
@@ -245,7 +245,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not provision_both_devices_for_wfc_wifi_pref(self.log,
@@ -280,12 +280,13 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         return _long_sms_test_mo(self.log, ads)
 
 
+    @test_tracker_info(uuid="45dbd61a-6a90-473e-9cfa-03e2408d5f15")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mo_mt_in_call_csfb(self):
         """ Test MO/MT SMS during a MO csfb call over 5G NSA.
