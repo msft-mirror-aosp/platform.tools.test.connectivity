@@ -386,6 +386,7 @@ class WifiBaseTest(BaseTestClass):
             hidden=False,
             same_ssid=False,
             open_network=False,
+            wpa1_network=False,
             wpa_network=False,
             wep_network=False,
             ent_network=False,
@@ -436,6 +437,7 @@ class WifiBaseTest(BaseTestClass):
         channels_5g = [channel_5g, channel_5g_ap2]
 
         self.reference_networks = []
+        self.wpa1_networks = []
         self.wpa_networks = []
         self.wep_networks = []
         self.ent_networks = []
@@ -446,6 +448,17 @@ class WifiBaseTest(BaseTestClass):
         self.bssid_map = []
         for i in range(ap_count):
             network_list = []
+            if wpa1_network:
+                wpa1_dict = self.get_psk_network(mirror_ap,
+                                                 self.wpa1_networks,
+                                                 hidden, same_ssid,
+                                                 ssid_length_2g, ssid_length_5g,
+                                                 passphrase_length_2g,
+                                                 passphrase_length_5g)
+                wpa1_dict[hostapd_constants.BAND_2G]["security"] = "psk"
+                wpa1_dict[hostapd_constants.BAND_5G]["security"] = "psk"
+                self.wpa1_networks.append(wpa1_dict)
+                network_list.append(wpa1_dict)
             if wpa_network:
                 wpa_dict = self.get_psk_network(mirror_ap,
                                                 self.reference_networks,
