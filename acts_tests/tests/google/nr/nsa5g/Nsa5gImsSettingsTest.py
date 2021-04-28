@@ -34,7 +34,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import dumpsys_carrier_config
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
 from acts_contrib.test_utils.tel.tel_ims_utils import change_ims_setting
@@ -223,7 +222,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             return False
 
         ads = self.android_devices
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not change_ims_setting(log=self.log,
