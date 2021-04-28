@@ -229,7 +229,7 @@ class FuchsiaDevice:
             "take_bug_report_on_fail", False)
         self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self.config_country_code = fd_conf_data.get(
-            'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US)
+            'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US).upper()
         self._persistent_ssh_conn = None
 
         # Whether to use 'policy' or 'drivers' for WLAN connect/disconnect calls
@@ -1042,6 +1042,7 @@ class FuchsiaDevice:
         if self.ssh_config:
             # Country code can be None, from ACTS config.
             if desired_country_code:
+                desired_country_code = desired_country_code.upper()
                 response = self.regulatory_region_lib.setRegion(
                     desired_country_code)
                 if response.get('error'):
@@ -1051,13 +1052,13 @@ class FuchsiaDevice:
                 end_time = time.time() + FUCHSIA_COUNTRY_CODE_TIMEOUT
                 while time.time() < end_time:
                     ascii_cc = self.wlan_lib.wlanGetCountry(0).get('result')
-                    str_cc = ''.join(chr(c) for c in ascii_cc)
-                    if str_cc == desired_country_code:
+                    # Convert ascii_cc to string, then compare
+                    if ascii_cc and (''.join(chr(c) for c in ascii_cc).upper()
+                                     == desired_country_code):
                         self.log.debug('Country code successfully set to %s.' %
                                        desired_country_code)
                         return
-                    self.log.debug(
-                        'Country code is still set to %s. Retrying.' % str_cc)
+                    self.log.debug('Country code not yet updated. Retrying.')
                     time.sleep(1)
                 raise FuchsiaDeviceError('Country code never updated to %s' %
                                          desired_country_code)
