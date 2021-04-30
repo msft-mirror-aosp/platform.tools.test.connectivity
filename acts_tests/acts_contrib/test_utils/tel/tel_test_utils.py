@@ -210,6 +210,7 @@ log = logging
 STORY_LINE = "+19523521350"
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 voice_call_type = {}
+result_dict ={}
 
 class TelTestUtilsError(Exception):
     pass
@@ -1643,7 +1644,8 @@ def initiate_call(log,
                   incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
                   video=False,
                   voice_type_init=None,
-                  call_stats_check=False):
+                  call_stats_check=False,
+                  result_info=result_dict):
     """Make phone call from caller to callee.
 
     Args:
@@ -1683,6 +1685,7 @@ def initiate_call(log,
             phone_call_type = check_call_status(ad,
                                                 voice_type_init,
                                                 voice_type_in_call)
+            result_info["Call Stats"] = phone_call_type
             ad.log.debug("Voice Call Type: %s", phone_call_type)
 
     finally:
@@ -2335,7 +2338,8 @@ def call_setup_teardown(log,
                         video_state=None,
                         slot_id_callee=None,
                         voice_type_init=None,
-                        call_stats_check=False):
+                        call_stats_check=False,
+                        result_info=result_dict):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -2374,7 +2378,7 @@ def call_setup_teardown(log,
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state,
-        voice_type_init, call_stats_check)
+        voice_type_init, call_stats_check, result_info)
 
 
 def call_setup_teardown_for_subscription(
@@ -2391,7 +2395,8 @@ def call_setup_teardown_for_subscription(
         dialing_number_length=None,
         video_state=None,
         voice_type_init=None,
-        call_stats_check=False):
+        call_stats_check=False,
+        result_info=result_dict):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -2531,10 +2536,12 @@ def call_setup_teardown_for_subscription(
             phone_a_call_type = check_call_status(ad_caller,
                                                   voice_type_init[0],
                                                   voice_type_in_call[0])
+            result_info["Call Stats"] = phone_a_call_type
             ad_caller.log.debug("Voice Call Type: %s", phone_a_call_type)
             phone_b_call_type = check_call_status(ad_callee,
                                                   voice_type_init[1],
                                                   voice_type_in_call[1])
+            result_info["Call Stats"] = phone_b_call_type
             ad_callee.log.debug("Voice Call Type: %s", phone_b_call_type)
 
         elapsed_time = 0
