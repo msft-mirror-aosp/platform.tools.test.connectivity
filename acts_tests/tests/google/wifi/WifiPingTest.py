@@ -363,6 +363,9 @@ class WifiPingTest(base_test.BaseTestClass):
                     test_result['ping_results'].append(
                         self.DISCONNECTED_PING_RESULT)
                 break
+        # Set attenuator to 0 dB
+        for attenuator in self.attenuators:
+            attenuator.set_atten(0, strict=False, retry=True)
         if self.testbed_params['sniffer_enable']:
             self.sniffer.stop_capture()
         return test_result

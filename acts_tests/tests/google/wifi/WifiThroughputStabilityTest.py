@@ -316,6 +316,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         """
         # Configure AP
         self.setup_ap(testcase_params)
+        # Set attenuator to 0 dB
+        for attenuator in self.attenuators:
+            attenuator.set_atten(0, strict=False, retry=True)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
         # Wait before running the first wifi test
@@ -421,9 +424,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
 
         # Get attenuation for target RSSI
         if testcase_params['signal_level'] == 'low':
-            target_rssi = self.testclass_params['low_throughput_target']
+            target_rssi = self.testclass_params['low_throughput_rssi_target']
         else:
-            target_rssi = self.testclass_params['high_throughput_target']
+            target_rssi = self.testclass_params['high_throughput_rssi_target']
         target_atten = wputils.get_atten_for_target_rssi(
             target_rssi, self.attenuators, self.dut, self.remote_server)
 
@@ -613,9 +616,9 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
 
     def get_target_atten(self, testcase_params):
         if testcase_params['signal_level'] == 'high':
-            test_atten = self.testclass_params['default_atten_levels'][0]
+            test_atten = self.testclass_params['ota_atten_levels'][0]
         elif testcase_params['signal_level'] == 'low':
-            test_atten = self.testclass_params['default_atten_levels'][1]
+            test_atten = self.testclass_params['ota_atten_levels'][1]
         return test_atten
 
     def generate_test_cases(self, channels, modes, traffic_types,
