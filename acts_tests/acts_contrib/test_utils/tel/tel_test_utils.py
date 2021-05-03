@@ -10831,6 +10831,7 @@ def wait_for_call_end(
         ad_hangup,
         verify_caller_func,
         verify_callee_func,
+        call_begin_time,
         check_interval=5,
         tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
         wait_time_in_call=WAIT_TIME_IN_CALL):
@@ -10867,7 +10868,7 @@ def wait_for_call_end(
 
     if not tel_result_wrapper:
         for ad in (ad_caller, ad_callee):
-            last_call_drop_reason(ad, begin_time)
+            last_call_drop_reason(ad, call_begin_time)
             try:
                 if ad.droid.telecomIsInCall():
                     ad.log.info("In call. End now.")
@@ -10941,7 +10942,6 @@ def voice_call_in_collision_with_mt_sms_msim(
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
 
-    begin_time = get_current_epoch_time()
     if not verify_caller_func:
         verify_caller_func = is_phone_in_call
     if not verify_callee_func:
@@ -10987,7 +10987,7 @@ def voice_call_in_collision_with_mt_sms_msim(
             ad.log.info("Pre-exist CallId %s before making call", call_ids)
 
     ad_caller.ed.clear_events(EventCallStateChanged)
-    begin_time = get_device_epoch_time(ad)
+    call_begin_time = get_device_epoch_time(ad)
     ad_caller.droid.telephonyStartTrackingCallStateForSubscription(subid_caller)
 
     for text in array_message:
@@ -11021,7 +11021,7 @@ def voice_call_in_collision_with_mt_sms_msim(
                         event_tracking_started=True):
                     ad_caller.log.info(
                         "sub_id %s not in call offhook state", subid_caller)
-                    last_call_drop_reason(ad_caller, begin_time=begin_time)
+                    last_call_drop_reason(ad_caller, begin_time=call_begin_time)
 
                     ad_caller.log.error("Initiate call failed.")
                     tel_result_wrapper.result_value = CallResult(
@@ -11099,7 +11099,7 @@ def voice_call_in_collision_with_mt_sms_msim(
                 MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION, True)),
                 (wait_for_call_end,
                 (log, ad_caller, ad_callee, ad_hangup, verify_caller_func,
-                    verify_callee_func, 5, tel_result_wrapper,
+                    verify_callee_func, call_begin_time, 5, tel_result_wrapper,
                     WAIT_TIME_IN_CALL))]
 
             results = run_multithread_func(log, tasks)
