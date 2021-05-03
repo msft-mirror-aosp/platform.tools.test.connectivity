@@ -610,6 +610,7 @@ def fastboot_factory_reset(ad):
     """
     status = True
     skip_setup_wizard = True
+    gnss_cfg_file = ""
     gnss_cfg_path = "/vendor/etc/mdlog"
     default_gnss_cfg = "/vendor/etc/mdlog/DEFAULT+SECURITY+FULLDPL+GPS.cfg"
     sl4a_path = pull_package_apk(ad, SL4A_APK_NAME)
@@ -760,6 +761,7 @@ def process_gnss_by_gtw_gpstool(ad,
         start_gnss_by_gtw_gpstool(ad, state=False, type=type)
     raise signals.TestFailure("Fail to get %s location fixed within %d "
                               "attempts." % (type.upper(), retries))
+
 
 def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
     """Identify which TTFF mode for different test items.
@@ -1169,6 +1171,7 @@ def check_location_api(ad, retries):
     ad.log.error("GnssLocationProvider is unable to report location.")
     return False
 
+
 def check_network_location(ad, retries, location_type, criteria=30):
     """Verify if NLP reports location after requesting via GPSTool.
 
@@ -1559,7 +1562,7 @@ def build_instrumentation_call(package,
 
 
 def check_chipset_vendor_by_qualcomm(ad):
-    """Check if cipset vendor is by Qualcomm.
+    """Check if chipset vendor is by Qualcomm.
 
     Args:
         ad: An AndroidDevice object.
@@ -1634,16 +1637,19 @@ def start_pixel_logger(ad, max_log_size_mb=100, max_number_of_files=500):
     start_timeout_sec = 60
     default_gnss_cfg = "/vendor/etc/mdlog/DEFAULT+SECURITY+FULLDPL+GPS.cfg"
     if check_chipset_vendor_by_qualcomm(ad):
-        start_cmd = ("am start-foreground-service -a com.android.pixellogger"
-                     ".service.logging.LoggingService.ACTION_START_LOGGING "
+        start_cmd = ("am startservice -a com.android.pixellogger."
+                     "service.logging.LoggingService.ACTION_START_LOGGING "
                      "-e intent_key_cfg_path '%s' "
                      "--ei intent_key_max_log_size_mb %d "
-                     "--ei intent_key_max_number_of_files %d" % (
-            default_gnss_cfg, max_log_size_mb, max_number_of_files))
+                     "--ei intent_key_max_number_of_files %d" %
+                     (default_gnss_cfg, max_log_size_mb, max_number_of_files))
     else:
         start_cmd = ("am startservice -a com.android.pixellogger."
                      "service.logging.LoggingService.ACTION_START_LOGGING "
-                     "-e intent_logger brcm_gps")
+                     "-e intent_logger brcm_gps "
+                     "--ei intent_key_max_log_size_mb %d "
+                     "--ei intent_key_max_number_of_files %d" %
+                     (max_log_size_mb, max_number_of_files))
     for attempt in range(retries):
         begin_time = get_current_epoch_time()
         ad.log.info("Start Pixel Logger. - Attempt %d" % (attempt + 1))
@@ -1673,8 +1679,8 @@ def stop_pixel_logger(ad):
     retries = 3
     stop_timeout_sec = 300
     if check_chipset_vendor_by_qualcomm(ad):
-        stop_cmd = ("am start-foreground-service -a com.android.pixellogger"
-                    ".service.logging.LoggingService.ACTION_STOP_LOGGING")
+        stop_cmd = ("am startservice -a com.android.pixellogger."
+                    "service.logging.LoggingService.ACTION_STOP_LOGGING")
     else:
         stop_cmd = ("am startservice -a com.android.pixellogger."
                     "service.logging.LoggingService.ACTION_STOP_LOGGING "
