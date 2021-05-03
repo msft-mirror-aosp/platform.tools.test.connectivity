@@ -129,6 +129,16 @@ class ChannelSweepTest(WifiBaseTest):
                 self.log.warn(
                     'Missing iperf config. Throughput cannot be measured, so only '
                     'association will be tested.')
+        self.regulatory_results = "====CountryCode,Channel,Frequency,ChannelBandwith,Connected/Not-Connected====\n"
+
+    def teardown_class(self):
+        super().teardown_class()
+        output_path = context.get_current_context().get_base_output_path()
+        regulatory_save_path = '%s/ChannelSweepTest/%s' % (
+            output_path, "regulatory_results.txt")
+        f = open(regulatory_save_path, "w")
+        f.write(self.regulatory_results)
+        f.close()
 
     def setup_test(self):
         # TODO(fxb/46417): Uncomment when wlanClearCountry is implemented up any
@@ -756,6 +766,13 @@ _
              if should_associate else 'Device should NOT associate.'))
 
         associated = self.dut.associate(ssid)
+
+        regulatory_result_marker = "REGTRACKER: %s,%s,%s,%s,%s" % (
+            code, channel, '2.4' if channel < 36 else '5', channel_bandwidth,
+            'c' if associated else 'nc')
+        self.regulatory_results += regulatory_result_marker + "\n"
+        self.log.info(regulatory_result_marker)
+
         if associated == should_associate:
             asserts.explicit_pass(
                 'Device complied with %s regulatory requirement for channel %s '
