@@ -324,8 +324,10 @@ class NetgearRAX200AP(WifiRetailAP):
                         self.log.warning(
                             'Cannot select channel. Keeping AP default.')
                     try:
-                        alert = browser.get_alert()
-                        alert.accept()
+                        for idx in range(0, 2):
+                            alert = browser.get_alert()
+                            alert.accept()
+                            time.sleep(BROWSER_WAIT_SHORT)
                     except:
                         pass
             time.sleep(BROWSER_WAIT_SHORT)
