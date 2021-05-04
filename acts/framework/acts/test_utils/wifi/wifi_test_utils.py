@@ -131,7 +131,9 @@ class WifiEnums():
         WPA3_SAE = "WPA3_SAE"
 
     class CountryCode():
+        AUSTRALIA = "AU"
         CHINA = "CN"
+        GERMANY = "DE"
         JAPAN = "JP"
         UK = "GB"
         US = "US"
@@ -2617,3 +2619,11 @@ def set_softap_channel(dut, ap_iface='wlan1', cs_count=10, channel=2462):
 
     asserts.fail("Failed to switch hotspot channel")
 
+def get_wlan0_link(dut):
+    """ get wlan0 interface status"""
+    get_wlan0 = 'wpa_cli -iwlan0 -g@android:wpa_wlan0 IFNAME=wlan0 status'
+    out = dut.adb.shell(get_wlan0)
+    out = dict(re.findall(r'(\S+)=(".*?"|\S+)', out))
+    asserts.assert_true("ssid" in out,
+                        "Client doesn't connect to any network")
+    return out
