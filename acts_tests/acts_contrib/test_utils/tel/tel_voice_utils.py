@@ -853,6 +853,10 @@ def phone_setup_iwlan_for_subscription(log,
             ad.log.error("Failed to set to %s data.", nw_gen)
             return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
+
+    if not toggle_volte_for_subscription(log, ad, sub_id, new_state=True):
+        return False
+
     # check if WFC supported phones
     if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
     ):
