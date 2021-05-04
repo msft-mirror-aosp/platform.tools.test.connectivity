@@ -2689,6 +2689,108 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_set_last_dialed(self, line):
+        """
+        Description: Sets the last dialed number in the call manager.
+
+        Input(s):
+            number: The number of the remote party.
+
+        Usage:
+          Examples:
+            hfp_set_last_dialed <number>
+            hfp_set_last_dialed 14085555555
+        """
+        cmd = "Sets the last dialed number in the call manager."
+        try:
+            number = line.strip()
+            result = self.pri_dut.hfp_lib.setLastDialed(number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_clear_last_dialed(self, line):
+        """
+        Description: Clears the last dialed number in the call manager.
+
+        Usage:
+          Examples:
+            hfp_clear_last_dialed
+        """
+        cmd = "Clears the last dialed number in the call manager."
+        try:
+            result = self.pri_dut.hfp_lib.clearLastDialed()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_memory_location(self, line):
+        """
+        Description: Sets a memory location to point to a remote number.
+
+        Input(s):
+            location: The memory location at which to store the number.
+            number: The number of the remote party to be stored.
+
+        Usage:
+          Examples:
+            hfp_set_memory_location <location> <number>
+            hfp_set_memory_location 0 14085555555
+        """
+        cmd = "Sets a memory location to point to a remote number."
+        try:
+            info = line.strip().split()
+            if len(info) != 2:
+                raise ValueError("Exactly two command line arguments required: <location> <number>")
+            location, number = info[0], info[1]
+            result = self.pri_dut.hfp_lib.setMemoryLocation(location, number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_clear_memory_location(self, line):
+        """
+        Description: Sets a memory location to point to a remote number.
+
+        Input(s):
+            localtion: The memory location to clear.
+
+        Usage:
+          Examples:
+            hfp_clear_memory_location <location>
+            hfp_clear_memory_location 0
+        """
+        cmd = "Sets a memory location to point to a remote number."
+        try:
+            location = line.strip()
+            result = self.pri_dut.hfp_lib.clearMemoryLocation(location)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_dial_result(self, line):
+        """
+        Description: Sets the status result to be returned when the number is dialed.
+
+        Input(s):
+            number: The number of the remote party.
+            status: The status to be returned when an outgoing call is initiated to the number.
+
+        Usage:
+          Examples:
+            hfp_set_battery_level <value>
+        """
+        cmd = "Sets the status result to be returned when the number is dialed."
+        try:
+            info = line.strip().split()
+            if len(info) != 2:
+                raise ValueError("Exactly two command line arguments required: <number> <status>")
+            number, status = info[0], int(info[1])
+            result = self.pri_dut.hfp_lib.setDialResult(number, status)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_hfp_get_state(self, line):
         """
         Description: Get the call manager's complete state
