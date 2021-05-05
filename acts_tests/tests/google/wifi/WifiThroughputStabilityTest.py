@@ -615,10 +615,11 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             self.ota_chamber.step_stirrers(testcase_params['total_positions'])
 
     def get_target_atten(self, testcase_params):
+        band = wputils.CHANNEL_TO_BAND_MAP[testcase_params['channel']]
         if testcase_params['signal_level'] == 'high':
-            test_atten = self.testclass_params['ota_atten_levels'][0]
+            test_atten = self.testclass_params['ota_atten_levels'][band][0]
         elif testcase_params['signal_level'] == 'low':
-            test_atten = self.testclass_params['ota_atten_levels'][1]
+            test_atten = self.testclass_params['ota_atten_levels'][band][1]
         return test_atten
 
     def generate_test_cases(self, channels, modes, traffic_types,
@@ -635,8 +636,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         }
 
         test_cases = []
-        for channel, mode, position, traffic_type, signal_level, traffic_direction in itertools.product(
-                channels, modes, positions, traffic_types, signal_levels,
+        for channel, mode, signal_level, position, traffic_type, traffic_direction in itertools.product(
+                channels, modes, signal_levels, positions, traffic_types,
                 traffic_directions):
             bandwidth = int(''.join([x for x in mode if x.isdigit()]))
             if channel not in allowed_configs[bandwidth]:
