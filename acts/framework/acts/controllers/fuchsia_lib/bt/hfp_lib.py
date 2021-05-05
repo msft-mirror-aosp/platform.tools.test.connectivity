@@ -351,6 +351,87 @@ class FuchsiaHfpLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def setLastDialed(self, number):
+        """Sets the last dialed number in the call manager.
+
+        Args:
+            number: The number of the remote party.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetLastDialed"
+        test_args = {"number": number }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def clearLastDialed(self):
+        """Clears the last dialed number in the call manager.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.ClearLastDialed"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setMemoryLocation(self, location, number):
+        """Sets a memory location to point to a remote number.
+
+        Args:
+            location: The memory location at which to store the number.
+            number: The number of the remote party to be stored.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetMemoryLocation"
+        test_args = {"location": location, "number": number }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def clearMemoryLocation(self, location):
+        """Clear a memory location so that it no longer points to a remote
+        number.
+
+        Args:
+            localtion: The memory location to clear.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.ClearMemoryLocation"
+        test_args = {"location": location }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def setDialResult(self, number, status):
+        """Sets the status result to be returned when the number is dialed.
+
+        Args:
+            number: The number of the remote party.
+            status: The status to be returned when an outgoing call is
+                    initiated to the number.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetDialResult"
+        test_args = {"number": number, "status": status }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def getState(self):
         """Get the call manager's state.
 
