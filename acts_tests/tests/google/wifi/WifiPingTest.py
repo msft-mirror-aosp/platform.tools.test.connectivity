@@ -474,22 +474,11 @@ class WifiPingTest(base_test.BaseTestClass):
         """
         return self.testclass_params['range_atten_start']
 
-    def check_skip_conditions(self, testcase_params):
-        """Checks if test should be skipped."""
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('DUT battery level too low.')
-        if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
-                ):
-            asserts.skip('DUT does not support 6 GHz band.')
-        if not self.access_point.band_lookup_by_channel(
-                testcase_params['channel']):
-            asserts.skip('AP does not support requested channel.')
-
     def compile_test_params(self, testcase_params):
         # Check if test should be skipped.
-        self.check_skip_conditions(testcase_params)
+        wputils.check_skip_conditions(testcase_params, self.dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
 
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
@@ -561,11 +550,11 @@ class WifiPingTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
+                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
-            80: [36, 100, 149, '6g5', '6g117', '6g213'],
-            160: [36, '6g5', '6g117', '6g213']
+            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
+            80: [36, 100, 149, '6g37', '6g117', '6g213'],
+            160: [36, '6g37', '6g117', '6g213']
         }
 
         for channel, mode, chain, test_type in itertools.product(
@@ -593,7 +582,7 @@ class WifiPing_TwoChain_Test(WifiPingTest):
         self.tests = self.generate_test_cases(ap_power='standard',
                                               channels=[
                                                   1, 6, 11, 36, 40, 44, 48,
-                                                  149, 153, 157, 161, '6g5',
+                                                  149, 153, 157, 161, '6g37',
                                                   '6g117', '6g213'
                                               ],
                                               modes=['bw20', 'bw40', 'bw80'],
@@ -612,7 +601,7 @@ class WifiPing_PerChainRange_Test(WifiPingTest):
                                               chain_mask=['0', '1', '2x2'],
                                               channels=[
                                                   1, 6, 11, 36, 40, 44, 48,
-                                                  149, 153, 157, 161, '6g5',
+                                                  149, 153, 157, 161, '6g37',
                                                   '6g117', '6g213'
                                               ],
                                               modes=['bw20', 'bw40', 'bw80'],
@@ -804,7 +793,7 @@ class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
             ap_power='standard',
-            channels=[6, 36, 149, '6g5', '6g117', '6g213'],
+            channels=[6, 36, 149, '6g37', '6g117', '6g213'],
             modes=['bw20'],
             chamber_mode='orientation',
             positions=list(range(0, 360, 10)))
@@ -816,7 +805,7 @@ class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
         self.tests = self.generate_test_cases(ap_power='standard',
                                               channels=[
                                                   1, 6, 11, 36, 40, 44, 48,
-                                                  149, 153, 157, 161, '6g5',
+                                                  149, 153, 157, 161, '6g37',
                                                   '6g117', '6g213'
                                               ],
                                               modes=['bw20'],

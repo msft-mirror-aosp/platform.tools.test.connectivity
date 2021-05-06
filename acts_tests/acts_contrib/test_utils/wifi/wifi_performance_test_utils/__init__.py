@@ -20,9 +20,10 @@ import ipaddress
 import logging
 import re
 import time
+from acts import asserts
+from acts import utils
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
-from acts import utils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils import ping_utils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils import qcom_utils
@@ -105,11 +106,32 @@ def _serialize_value(value):
         return value
 
 
-# Miscellaneous Wifi Utilities
 def extract_sub_dict(full_dict, fields):
     sub_dict = collections.OrderedDict(
         (field, full_dict[field]) for field in fields)
     return sub_dict
+
+
+# Miscellaneous Wifi Utilities
+def check_skip_conditions(testcase_params,
+                          dut,
+                          access_point,
+                          ota_chamber=None):
+    """Checks if test should be skipped."""
+    # Check battery level before test
+    if not health_check(dut, 10):
+        asserts.skip('DUT battery level too low.')
+    if not access_point.band_lookup_by_channel(testcase_params['channel']):
+        asserts.skip('AP does not support requested channel.')
+    if ota_chamber and CHANNEL_TO_BAND_MAP[
+            testcase_params['channel']] not in ota_chamber.SUPPORTED_BANDS:
+        asserts.skip('OTA chamber does not support requested channel.')
+    country_code = get_country_code(dut)
+    if testcase_params[
+            'channel'] in CHANNELS_6GHz and country_code != 'WW' and not dut.droid.is6GhzBandSupported(
+            ):
+        asserts.skip(
+            'DUT does not support 6 GHz band in {}.'.format(country_code))
 
 
 def validate_network(dut, ssid):
@@ -623,6 +645,12 @@ def get_sw_signature(dut):
         bdf_signature: signature consisting of last three digits of bdf cksums
         fw_signature: floating point firmware version, i.e., major.minor
     """
+    pass
+
+
+@detect_wifi_decorator
+def get_country_code(dut):
+    """Function that returns the current wifi country code."""
     pass
 
 

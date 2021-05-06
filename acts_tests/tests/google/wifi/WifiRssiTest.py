@@ -614,19 +614,6 @@ class WifiRssiTest(base_test.BaseTestClass):
                       ) * atten_step_duration + MED_SLEEP
         return timeout
 
-    def check_skip_conditions(self, testcase_params):
-        """Checks if test should be skipped."""
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('DUT battery level too low.')
-        if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
-                ):
-            asserts.skip('DUT does not support 6 GHz band.')
-        if not self.access_point.band_lookup_by_channel(
-                testcase_params['channel']):
-            asserts.skip('AP does not support requested channel.')
-
     def compile_rssi_vs_atten_test_params(self, testcase_params):
         """Function to complete compiling test-specific parameters
 
@@ -680,8 +667,9 @@ class WifiRssiTest(base_test.BaseTestClass):
             testcase_params: dict containing test-specific parameters
         """
         # Check if test should be skipped.
-        self.check_skip_conditions(testcase_params)
-
+        wputils.check_skip_conditions(testcase_params, self.dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
         testcase_params.update(
             connected_measurements=int(
                 self.testclass_params['rssi_stability_duration'] /
@@ -715,7 +703,9 @@ class WifiRssiTest(base_test.BaseTestClass):
             testcase_params: dict containing test-specific parameters
         """
         # Check if test should be skipped.
-        self.check_skip_conditions(testcase_params)
+        wputils.check_skip_conditions(testcase_params, self.dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
 
         testcase_params.update(connected_measurements=int(
             1 / self.testclass_params['polling_frequency']),
@@ -826,11 +816,11 @@ class WifiRssiTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
+                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
-            80: [36, 100, 149, '6g5', '6g117', '6g213'],
-            160: [36, '6g5', '6g117', '6g213']
+            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
+            80: [36, 100, 149, '6g37', '6g117', '6g213'],
+            160: [36, '6g37', '6g117', '6g213']
         }
 
         for channel, mode, traffic_mode, test_type in itertools.product(
@@ -875,7 +865,7 @@ class WifiRssi_AllChannels_ActiveTraffic_Test(WifiRssiTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             ['test_rssi_stability', 'test_rssi_vs_atten'], [
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g5', '6g117',
+                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
                 '6g213'
             ], ['bw20', 'bw40', 'bw80', 'bw160'], ['ActiveTraffic'])
 
@@ -1008,7 +998,9 @@ class WifiOtaRssiTest(WifiRssiTest):
             testcase_params: dict containing test-specific parameters
         """
         # Check if test should be skipped.
-        self.check_skip_conditions(testcase_params)
+        wputils.check_skip_conditions(testcase_params, self.dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
 
         if 'rssi_over_orientation' in self.test_name:
             rssi_test_duration = self.testclass_params[
@@ -1063,11 +1055,11 @@ class WifiOtaRssiTest(WifiRssiTest):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
+                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
-            80: [36, 100, 149, '6g5', '6g117', '6g213'],
-            160: [36, '6g5', '6g117', '6g213']
+            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
+            80: [36, 100, 149, '6g37', '6g117', '6g213'],
+            160: [36, '6g37', '6g117', '6g213']
         }
 
         for (channel, mode, traffic, chamber_mode, orientation,
@@ -1097,7 +1089,7 @@ class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['test_rssi_vs_atten'],
-                                              [6, 36, 149, '6g5'], ['bw20'],
+                                              [6, 36, 149, '6g37'], ['bw20'],
                                               ['ActiveTraffic'],
                                               ['orientation'],
                                               list(range(0, 360, 45)))
@@ -1107,7 +1099,7 @@ class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_variation'],
-                                              [6, 36, 149, '6g5'], ['bw20'],
+                                              [6, 36, 149, '6g37'], ['bw20'],
                                               ['ActiveTraffic'],
                                               ['StirrersOn'], [0])
 
@@ -1116,7 +1108,7 @@ class WifiOtaRssi_TenDegree_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_over_orientation'],
-                                              [6, 36, 149, '6g5'], ['bw20'],
+                                              [6, 36, 149, '6g37'], ['bw20'],
                                               ['ActiveTraffic'],
                                               ['orientation'],
                                               list(range(0, 360, 10)))
