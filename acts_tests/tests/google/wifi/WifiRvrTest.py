@@ -63,6 +63,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
+        self.sta_dut = self.android_devices[0]
         req_params = [
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
             'RemoteServer', 'main_network'
@@ -513,7 +514,6 @@ class WifiRvrTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        self.sta_dut = self.android_devices[0]
         # Turn screen off to preserve battery
         if self.testbed_params.get('screen_on',
                                    False) or self.testclass_params.get(
@@ -586,19 +586,6 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.monitored_dut = self.sta_dut
         self.monitored_interface = None
 
-    def check_skip_conditions(self, testcase_params):
-        """Checks if test should be skipped."""
-        # Check battery level before test
-        if not wputils.health_check(self.android_devices[0], 10):
-            asserts.skip('DUT battery level too low.')
-        if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.android_devices[
-                    0].droid.is6GhzBandSupported():
-            asserts.skip('DUT does not support 6 GHz band.')
-        if not self.access_point.band_lookup_by_channel(
-                testcase_params['channel']):
-            asserts.skip('AP does not support requested channel.')
-
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
 
@@ -606,7 +593,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             testcase_params: dict containing test-specific parameters
         """
         # Check if test should be skipped based on parameters.
-        self.check_skip_conditions(testcase_params)
+        wputils.check_skip_conditions(testcase_params, self.sta_dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
 
         band = wputils.CHANNEL_TO_BAND_MAP[testcase_params['channel']]
         start_atten = self.testclass_params['atten_start'].get(band, 0)
@@ -681,11 +670,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161, '6g5', '6g117', '6g213'
+                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
             ],
-            40: [36, 44, 100, 149, 157, '6g5', '6g117', '6g213'],
-            80: [36, 100, 149, '6g5', '6g117', '6g213'],
-            160: [36, '6g5', '6g117', '6g213']
+            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
+            80: [36, 100, 149, '6g37', '6g117', '6g213'],
+            160: [36, '6g37', '6g117', '6g213']
         }
 
         for channel, mode, traffic_type, traffic_direction in itertools.product(
@@ -711,7 +700,7 @@ class WifiRvr_TCP_Test(WifiRvrTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             channels=[
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g5', '6g117',
+                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
                 '6g213'
             ],
             modes=['bw20', 'bw40', 'bw80', 'bw160'],
@@ -734,7 +723,7 @@ class WifiRvr_HE_TCP_Test(WifiRvrTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             channels=[
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g5', '6g117',
+                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
                 '6g213'
             ],
             modes=['HE20', 'HE40', 'HE80', 'HE160'],
@@ -746,7 +735,7 @@ class WifiRvr_SampleUDP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            channels=[6, 36, 149, '6g5'],
+            channels=[6, 36, 149, '6g37'],
             modes=['bw20', 'bw40', 'bw80', 'bw160'],
             traffic_types=['UDP'],
             traffic_directions=['DL', 'UL'])
@@ -767,7 +756,7 @@ class WifiRvr_HE_SampleUDP_Test(WifiRvrTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             channels=[6, 36, 149],
-            modes=['HE20', 'HE40', 'HE80', 'HE160', '6g5'],
+            modes=['HE20', 'HE40', 'HE80', 'HE160', '6g37'],
             traffic_types=['UDP'],
             traffic_directions=['DL', 'UL'])
 
@@ -905,7 +894,7 @@ class WifiOtaRvrTest(WifiRvrTest):
             ],
             40: [36, 44, 100, 149, 157],
             80: [36, 100, 149],
-            160: [36, '6g5', '6g117', '6g213']
+            160: [36, '6g37', '6g117', '6g213']
         }
         for channel, mode, angle, traffic_type, direction in itertools.product(
                 channels, modes, angles, traffic_types, directions):
@@ -929,7 +918,7 @@ class WifiOtaRvr_StandardOrientation_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
         WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g5'],
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37'],
             ['bw20', 'bw40', 'bw80', 'bw160'], list(range(0, 360, 45)),
             ['TCP'], ['DL'])
 
@@ -944,7 +933,7 @@ class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
             self.generate_test_cases([36, 149], ['bw80', 'bw160'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
         self.tests.extend(
-            self.generate_test_cases(['6g5'], ['bw160'],
+            self.generate_test_cases(['6g37'], ['bw160'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
 
 
@@ -952,5 +941,5 @@ class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
         WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [6, 36, 40, 44, 48, 149, 153, 157, 161, '6g5'],
+            [6, 36, 40, 44, 48, 149, 153, 157, 161, '6g37'],
             ['bw20', 'bw40', 'bw80', 'bw160'], [0], ['TCP'], ['DL', 'UL'])
