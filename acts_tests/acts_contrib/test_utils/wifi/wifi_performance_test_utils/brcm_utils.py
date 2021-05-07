@@ -24,32 +24,8 @@ import time
 
 SHORT_SLEEP = 1
 MED_SLEEP = 6
-#TEST_TIMEOUT = 10
-#STATION_DUMP = 'iw wlan0 station dump'
-#SCAN = 'wpa_cli scan'
-#SCAN_RESULTS = 'wpa_cli scan_results'
-#SIGNAL_POLL = 'wpa_cli signal_poll'
-#WPA_CLI_STATUS = 'wpa_cli status'
 DISCONNECTION_MESSAGE_BRCM = 'driver adapter not found'
-#CONST_3dB = 3.01029995664
 RSSI_ERROR_VAL = float('nan')
-
-#RTT_REGEX = re.compile(r'^\[(?P<timestamp>\S+)\] .*? time=(?P<rtt>\S+)')
-#LOSS_REGEX = re.compile(r'(?P<loss>\S+)% packet loss')
-#FW_REGEX = re.compile(r'FW:(?P<firmware>\S+) HW:')
-#CHANNELS_6GHz = ['6g{}'.format(4 * x + 1) for x in range(59)]
-#BAND_TO_CHANNEL_MAP = {
-#    '2.4GHz': list(range(1, 14)),
-#    'UNII-1': [36, 40, 44, 48],
-#    'UNII-2':
-#    [52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 140],
-#    'UNII-3': [149, 153, 157, 161, 165],
-#    '6GHz': CHANNELS_6GHz
-#}
-#CHANNEL_TO_BAND_MAP = {
-#    channel: band
-#    for band, channels in BAND_TO_CHANNEL_MAP.items() for channel in channels
-#}
 
 
 # Rssi Utilities
@@ -205,6 +181,16 @@ def get_sw_signature(dut):
         'fw_signature': fw_signature,
         'serial_hash': serial_hash
     }
+
+
+def get_country_code(dut):
+    try:
+        country_code = dut.adb.shell('wl country').split(' ')[0]
+    except:
+        country_code = 'XZ'
+    if country_code == 'XZ':
+        country_code = 'WW'
+    return country_code
 
 
 def push_config(dut, config_file):

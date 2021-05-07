@@ -16,10 +16,8 @@
 
 import collections
 import itertools
-import json
 import logging
 import os
-import time
 from acts import asserts
 from acts import base_test
 from acts import utils
@@ -227,6 +225,10 @@ class WifiTdlsRvrTest(WifiRvrTest):
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        for ad in self.android_devices:
+            wputils.check_skip_conditions(testcase_params, ad,
+                                          self.access_point)
+
         # Compile RvR parameters
         num_atten_steps = int((self.testclass_params['atten_stop'] -
                                self.testclass_params['atten_start']) /

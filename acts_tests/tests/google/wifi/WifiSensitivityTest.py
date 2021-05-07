@@ -486,23 +486,12 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             start_atten = max(start_atten, 0)
         return start_atten
 
-    def check_skip_conditions(self, testcase_params):
-        """Checks if test should be skipped."""
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('DUT battery level too low.')
-        if testcase_params[
-                'channel'] in wputils.CHANNELS_6GHz and not self.dut.droid.is6GhzBandSupported(
-                ):
-            asserts.skip('DUT does not support 6 GHz band.')
-        if not self.access_point.band_lookup_by_channel(
-                testcase_params['channel']):
-            asserts.skip('AP does not support requested channel.')
-
     def compile_test_params(self, testcase_params):
         """Function that generates test params based on the test name."""
         # Check if test should be skipped.
-        self.check_skip_conditions(testcase_params)
+        wputils.check_skip_conditions(testcase_params, self.dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
 
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
