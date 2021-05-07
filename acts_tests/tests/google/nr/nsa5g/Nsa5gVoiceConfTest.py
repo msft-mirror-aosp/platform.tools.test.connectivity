@@ -47,7 +47,7 @@ from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mt_mt_ad
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
     _three_phone_hangup_call_verify_call_state
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 
 
 class Nsa5gVoiceConfTest(TelephonyBaseTest):
