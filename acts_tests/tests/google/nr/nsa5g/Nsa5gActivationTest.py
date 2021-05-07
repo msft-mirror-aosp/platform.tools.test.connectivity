@@ -32,7 +32,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generati
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import set_preferred_mode_for_5g
 
 
 class Nsa5gActivationTest(TelephonyBaseTest):

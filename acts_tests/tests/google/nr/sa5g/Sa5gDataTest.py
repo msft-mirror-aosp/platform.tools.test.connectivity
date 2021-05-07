@@ -44,7 +44,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_sa
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 
 
 class Sa5gDataTest(TelephonyBaseTest):
