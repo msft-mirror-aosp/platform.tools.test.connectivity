@@ -2691,3 +2691,37 @@ def get_wlan0_link(dut):
     asserts.assert_true("ssid" in out,
                         "Client doesn't connect to any network")
     return out
+
+def verify_11ax_wifi_connection(ad, wifi6_supported_models, wifi6_ap):
+    """Verify 11ax for wifi connection.
+
+    Args:
+      ad: adndroid device object
+      wifi6_supported_models: device supporting 11ax.
+      wifi6_ap: if the AP supports 11ax.
+    """
+    if wifi6_ap and ad.model in wifi6_supported_models:
+        logging.info("Verifying 11ax. Model: %s" % ad.model)
+        asserts.assert_true(
+            ad.droid.wifiGetConnectionStandard() ==
+            wifi_constants.WIFI_STANDARD_11AX, "DUT did not connect to 11ax.")
+
+def verify_11ax_softap(dut, dut_client, wifi6_supported_models):
+    """Verify 11ax SoftAp if devices support it.
+
+    Check if both DUT and DUT client supports 11ax, then SoftAp turns on
+    with 11ax mode and DUT client can connect to it.
+
+    Args:
+      dut: Softap device.
+      dut_client: Client connecting to softap.
+      wifi6_supported_models: List of device models supporting 11ax.
+    """
+    if dut.model in wifi6_supported_models and dut_client.model in wifi6_supported_models:
+        logging.info(
+            "Verifying 11ax softap. DUT model: %s, DUT Client model: %s",
+            dut.model, dut_client.model)
+        asserts.assert_true(
+            dut_client.droid.wifiGetConnectionStandard() ==
+            wifi_constants.WIFI_STANDARD_11AX,
+            "DUT failed to start SoftAp in 11ax.")
