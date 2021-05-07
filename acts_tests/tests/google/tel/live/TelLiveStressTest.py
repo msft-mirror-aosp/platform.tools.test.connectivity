@@ -103,6 +103,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_dat
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_mms_data
+from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
@@ -194,6 +195,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                   "CALL_HANGUP_FAIL": 0,
                                   "CALL_ID_CLEANUP_FAIL": 0 }
         self.call_stats_check = self.user_params.get("call_stats_check", False)
+        self.nsa_5g_for_stress = self.user_params.get("nsa_5g_for_stress", False)
         return True
 
     def setup_test(self):
@@ -263,6 +265,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ad.log.error("Phone failed to enable VoLTE.")
                 return False
             ad.log.info("Phone VOLTE is enabled successfully.")
+            # TODO: b/186865335 Move 5G methods to NR directory
+            if self.nsa_5g_for_stress:
+                if not provision_device_for_5g(self.log, ad):
+                    ad.log.error("Phone failed to attach 5G NSA.")
+                    return False
+                ad.log.info("Phone 5G NSA VOLTE is enabled successfully.")
         return True
 
     def _setup_lte_volte_disabled(self):
@@ -471,7 +479,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.call_server_number,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
                 call_stats_check=self.call_stats_check,
-                voice_type_init=voice_type_init
+                voice_type_init=voice_type_init,
+                result_info = self.result_info,
+                nsa_5g_for_stress=self.nsa_5g_for_stress
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
@@ -485,7 +495,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
                 slot_id_callee=slot_id_callee,
                 call_stats_check=self.call_stats_check,
-                voice_type_init=voice_type_init)
+                voice_type_init=voice_type_init,
+                result_info = self.result_info,
+                nsa_5g_for_stress=self.nsa_5g_for_stress)
             self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:

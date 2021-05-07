@@ -17,6 +17,7 @@
 import pprint
 import random
 import time
+import acts.utils
 
 from acts import asserts
 from acts import signals
@@ -25,6 +26,7 @@ from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
+DEFAULT_TIMEOUT = 10
 
 # EAP Macros
 EAP = WifiEnums.Eap
@@ -64,6 +66,8 @@ class WifiEnterpriseTest(WifiBaseTest):
                 radius_conf_5g=self.radius_conf_5g,
                 ent_network_pwd=True,
                 radius_conf_pwd=self.radius_conf_pwd,
+                wpa_network=True,
+                ap_count=2,
             )
         elif "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(
@@ -72,10 +76,16 @@ class WifiEnterpriseTest(WifiBaseTest):
                 radius_conf_5g=self.radius_conf_5g,
                 ent_network_pwd=True,
                 radius_conf_pwd=self.radius_conf_pwd,
+                wpa_network=True,
+                ap_count=2,
             )
         self.ent_network_2g = self.ent_networks[0]["2g"]
         self.ent_network_5g = self.ent_networks[0]["5g"]
         self.ent_network_pwd = self.ent_networks_pwd[0]["2g"]
+        if hasattr(self, "reference_networks") and \
+            isinstance(self.reference_networks, list):
+              self.wpa_psk_2g = self.reference_networks[0]["2g"]
+              self.wpa_psk_5g = self.reference_networks[0]["5g"]
 
         # Default configs for EAP networks.
         self.config_peap0 = {
@@ -171,6 +181,8 @@ class WifiEnterpriseTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiStopTrackingStateChange()
+        # Turn off airplane mode
+        acts.utils.force_airplane_mode(self.dut, False)
 
     """Helper Functions"""
 
@@ -283,6 +295,49 @@ class WifiEnterpriseTest(WifiBaseTest):
         wutils.toggle_wifi_and_wait_for_reconnection(ad,
                                                      config,
                                                      num_of_tries=5)
+
+    def toggle_out_of_range_stress(self, stress_count=3):
+        """toggle_out_of_range_stress."""
+        current_network = self.dut.droid.wifiGetConnectionInfo()
+        self.log.info("Current network: {}".format(current_network))
+        for count in range(stress_count):
+            # move the DUT out of range
+            self.attenuators[0].set_atten(95)
+            self.attenuators[1].set_atten(95)
+            self.attenuators[2].set_atten(95)
+            self.attenuators[3].set_atten(95)
+            time.sleep(20)
+            try:
+                wutils.start_wifi_connection_scan(self.dut)
+                wifi_results = self.dut.droid.wifiGetScanResults()
+                self.log.debug("Scan result {}".format(wifi_results))
+                time.sleep(20)
+                current_network = self.dut.droid.wifiGetConnectionInfo()
+                self.log.info("Current network: {}".format(current_network))
+                asserts.assert_true(
+                    ('network_id' in current_network and
+                    current_network['network_id'] == -1),
+                    "Device is connected to network {}".format(current_network))
+                time.sleep(DEFAULT_TIMEOUT)
+            finally:
+                self.dut.droid.wifiLockRelease()
+            # move the DUT back in range
+            wutils.set_attns(self.attenuators, "default")
+            time.sleep(30)
+            try:
+                wutils.start_wifi_connection_scan(self.dut)
+                wifi_results = self.dut.droid.wifiGetScanResults()
+                self.log.debug("Scan result {}".format(wifi_results))
+                time.sleep(20)
+                current_network = self.dut.droid.wifiGetConnectionInfo()
+                self.log.info("Current network: {}".format(current_network))
+                asserts.assert_true(
+                    ('network_id' in current_network and
+                    current_network['network_id'] != -1),
+                    "Device is disconnected to network {}".format(current_network))
+                time.sleep(DEFAULT_TIMEOUT)
+            finally:
+                self.dut.droid.wifiLockRelease()
 
     """ Tests """
 
@@ -781,3 +836,145 @@ class WifiEnterpriseTest(WifiBaseTest):
         config = dict(self.config_passpoint_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
         self.eap_connect_toggle_wifi(config, self.dut)
+
+    # Airplane mode on with wifi connect tests
+    """ Test connecting to enterprise networks of different authentication
+        types after airplane mode on.
+
+        The authentication types tested are:
+            EAP-SIM
+            EAP-AKA
+            EAP-AKA_PRIME
+
+        Procedures:
+            For each enterprise wifi network
+            1. Turn on Airplane mode
+            2. Toggle wifi..
+            3. Ensure that the device connects to the enterprise network.
+
+        Expect:
+            Successful connection and Internet access through the enterprise
+            networks with Airplane mode on.
+    """
+
+    @test_tracker_info(uuid="54b96a6c-f366-421c-9a72-80d7ee8fac8f")
+    def test_eap_connect_with_config_sim_airplane_on(self):
+        self.log.info("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        time.sleep(DEFAULT_TIMEOUT)
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_connect(self.dut, self.config_sim)
+        self.log.info("Toggling Airplane mode OFF")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, False),
+            "Can not turn OFF airplane mode: %s" % self.dut.serial)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+          self.dut, self.config_sim[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="344f63f6-7c99-4507-8036-757f9f911d20")
+    def test_eap_connect_with_config_aka_airplane_on(self):
+        self.log.info("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        time.sleep(DEFAULT_TIMEOUT)
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_connect(self.dut, self.config_aka)
+        self.log.info("Toggling Airplane mode OFF")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, False),
+            "Can not turn OFF airplane mode: %s" % self.dut.serial)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+          self.dut, self.config_aka[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="5502b8c8-89d7-4ce9-afee-cae50e71f5f4")
+    def test_eap_connect_with_config_aka_prime_airplane_on(self):
+        self.log.info("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        time.sleep(DEFAULT_TIMEOUT)
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_connect(self.dut, self.config_aka_prime)
+        self.log.info("Toggling Airplane mode OFF")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, False),
+            "Can not turn OFF airplane mode: %s" % self.dut.serial)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+          self.dut, self.config_aka_prime[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="360a6fec-f4ee-4ecd-9b15-e836c977d6db")
+    def test_connect_eap_sim_network_out_of_range_back(self):
+        """Test connecting to enterprise networks to do out of range
+        then back in range 3 times
+         1. Connecting EAP-SIM network
+         2. Move DUT out of range then back in range 3 times
+         3. Check that device is connected to network.
+        """
+        wutils.wifi_connect(self.dut, self.config_sim)
+        self.toggle_out_of_range_stress()
+
+    @test_tracker_info(uuid="9fb71afb-5599-4ca1-b458-09752c40bb0d")
+    def test_eap_sim_network_out_of_range_back_airplane(self):
+        """Test connecting to enterprise networks with airplne mode on
+        to do out of range then back in range 3 times
+         1. Turn on airplane mode
+         2. Connecting EAP-SIM network
+         3. Move DUT out of range then back in range 3 times
+         4. Check that device is connected to network.
+        """
+        self.log.debug("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        time.sleep(DEFAULT_TIMEOUT)
+        self.log.debug("Toggling WiFi mode ON")
+        wutils.wifi_toggle_state(self.dut, True)
+        time.sleep(DEFAULT_TIMEOUT)
+        wutils.wifi_connect(self.dut, self.config_sim)
+        self.toggle_out_of_range_stress()
+
+    @test_tracker_info(uuid="9e899c55-1a62-498c-bbf1-e9472e42e84f")
+    def test_eap_sim_network_reboot(self):
+        """Test connecting to enterprise networks with airplne mode on
+        to do out of range then back in range 3 times
+         1. Connecting EAP-SIM network
+         3. Check that device is connected to network after reboot.
+        """
+        self.dut.droid.disableDevicePassword(self.device_password)
+        wutils.wifi_connect(self.dut, self.config_sim)
+        current_network = self.dut.droid.wifiGetConnectionInfo()
+        self.log.info("Current network: {}".format(current_network))
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+        self.check_connection(self.config_sim)
+
+    @test_tracker_info(uuid="8e7465fb-5b16-4abb-92d8-a2c79355e377")
+    def test_connect_to_EAP_SIM_network_switch_to_WPA2(self):
+        """Test connecting PSK's AP1 and one EAP AP2 network switch test
+        1. Connect to a PSK's AP1 before connect to EAP-SIM AP2 network.
+        2. Out of PSK's AP1 range.
+        3. Connect to EAP-SIM network, then in AP1 range to switch WPA2-PSK network.
+        """
+        attn1 = self.attenuators[0]
+        attn2 = self.attenuators[2]
+        if "OpenWrtAP" in self.user_params:
+            attn2 = self.attenuators[1]
+        ap1_network = self.config_sim
+        ap2_network = self.reference_networks[1]["2g"]
+        attn1.set_atten(0)
+        attn2.set_atten(0)
+        wutils.connect_to_wifi_network(self.dut, ap2_network)
+        #Enable EAP network signal
+        attn2.set_atten(95)
+        time.sleep(DEFAULT_TIMEOUT)
+        wutils.connect_to_wifi_network(self.dut, ap1_network)
+        current_network = self.dut.droid.wifiGetConnectionInfo()
+        self.log.info("Current network: {}".format(current_network))
+        #Enable SSID1 network signal
+        attn1.set_atten(95)
+        attn2.set_atten(0)
+        time.sleep(20)
+        self.check_connection(ap2_network)
