@@ -157,6 +157,12 @@ class WifiP2pRvrTest(WifiRvrTest):
             ad.droid.goToSleepNow()
             wputils.stop_wifi_logging(ad)
 
+    def on_exception(self, test_name, begin_time):
+        for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
+            ad.cat_adb_log(test_name, begin_time)
+            wutils.get_ssrdumps(ad)
+
     def compute_test_metrics(self, rvr_result):
         #Set test metrics
         rvr_result['metrics'] = {}
@@ -281,9 +287,11 @@ class WifiP2pRvrTest(WifiRvrTest):
                 False,
                 wpsSetup=wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC)
             if wp2putils.is_go(self.android_devices[0]):
+                self.log.info("DUT 1 is GO.")
                 self.go_dut = self.android_devices[0]
                 self.gc_dut = self.android_devices[1]
             elif wp2putils.is_go(self.android_devices[1]):
+                self.log.info("DUT 2 is GO.")
                 self.go_dut = self.android_devices[1]
                 self.gc_dut = self.android_devices[0]
         except Exception as e:

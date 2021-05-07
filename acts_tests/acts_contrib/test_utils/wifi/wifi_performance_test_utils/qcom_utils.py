@@ -26,7 +26,7 @@ from acts import asserts
 
 SHORT_SLEEP = 1
 MED_SLEEP = 6
-STATION_DUMP = 'iw wlan0 station dump'
+STATION_DUMP = 'iw {} station dump'
 SCAN = 'wpa_cli scan'
 SCAN_RESULTS = 'wpa_cli scan_results'
 SIGNAL_POLL = 'wpa_cli signal_poll'
@@ -47,7 +47,7 @@ def get_connected_rssi(dut,
                        first_measurement_delay=0,
                        disconnect_warning=True,
                        ignore_samples=0,
-                       interface=None):
+                       interface='wlan0'):
     # yapf: disable
     connected_rssi = collections.OrderedDict(
         [('time_stamp', []),
@@ -65,11 +65,8 @@ def get_connected_rssi(dut,
         connected_rssi['time_stamp'].append(measurement_start_time - t0)
         # Get signal poll RSSI
         try:
-            if interface is None:
-                status_output = dut.adb.shell(WPA_CLI_STATUS)
-            else:
-                status_output = dut.adb.shell(
-                    'wpa_cli -i {} status'.format(interface))
+            status_output = dut.adb.shell(
+                'wpa_cli -i {} status'.format(interface))
         except:
             status_output = ''
         match = re.search('bssid=.*', status_output)
@@ -89,11 +86,8 @@ def get_connected_rssi(dut,
         else:
             connected_rssi['ssid'].append('disconnected')
         try:
-            if interface is None:
-                signal_poll_output = dut.adb.shell(SIGNAL_POLL)
-            else:
-                signal_poll_output = dut.adb.shell(
-                    'wpa_cli -i {} signal_poll'.format(interface))
+            signal_poll_output = dut.adb.shell(
+                'wpa_cli -i {} signal_poll'.format(interface))
         except:
             signal_poll_output = ''
         match = re.search('FREQUENCY=.*', signal_poll_output)
@@ -122,10 +116,7 @@ def get_connected_rssi(dut,
 
         # Get per chain RSSI
         try:
-            if interface is None:
-                per_chain_rssi = dut.adb.shell(STATION_DUMP)
-            else:
-                per_chain_rssi = ''
+            per_chain_rssi = dut.adb.shell(STATION_DUMP.format(interface))
         except:
             per_chain_rssi = ''
         match = re.search('.*signal avg:.*', per_chain_rssi)

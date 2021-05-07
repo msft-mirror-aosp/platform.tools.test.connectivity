@@ -40,7 +40,7 @@ def get_connected_rssi(dut,
                        first_measurement_delay=0,
                        disconnect_warning=True,
                        ignore_samples=0,
-                       interface=None):
+                       interface='wlan0'):
     # yapf: disable
     connected_rssi = collections.OrderedDict(
         [('time_stamp', []),
@@ -58,14 +58,15 @@ def get_connected_rssi(dut,
         measurement_start_time = time.time()
         connected_rssi['time_stamp'].append(measurement_start_time - t0)
         # Get signal poll RSSI
-        status_output = dut.adb.shell('wl assoc')
-        match = re.search('BSSID:.*', status_output)
-
+        try:
+            status_output = dut.adb.shell(
+                'wpa_cli -i {} status'.format(interface))
+        except:
+            status_output = ''
+        match = re.search('bssid=.*', status_output)
         if match:
-            current_bssid = match.group(0).split('\t')[0]
-            current_bssid = current_bssid.split(' ')[1]
+            current_bssid = match.group(0).split('=')[1]
             connected_rssi['bssid'].append(current_bssid)
-
         else:
             current_bssid = 'disconnected'
             connected_rssi['bssid'].append(current_bssid)
@@ -73,36 +74,58 @@ def get_connected_rssi(dut,
                 logging.warning('WIFI DISCONNECT DETECTED!')
 
         previous_bssid = current_bssid
-        match = re.search('SSID:.*', status_output)
+        match = re.search('\s+ssid=.*', status_output)
         if match:
-            ssid = match.group(0).split(': ')[1]
+            ssid = match.group(0).split('=')[1]
             connected_rssi['ssid'].append(ssid)
         else:
             connected_rssi['ssid'].append('disconnected')
 
         #TODO: SEARCH MAP ; PICK CENTER CHANNEL
-        match = re.search('Primary channel:.*', status_output)
+        match = re.search('\s+freq=.*', status_output)
         if match:
-            frequency = int(match.group(0).split(':')[1])
+            frequency = int(match.group(0).split('=')[1])
             connected_rssi['frequency'].append(frequency)
         else:
             connected_rssi['frequency'].append(RSSI_ERROR_VAL)
 
-        try:
-            per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
-            per_chain_rssi = per_chain_rssi.split(' ')
-            chain_0_rssi = int(per_chain_rssi[1])
-            chain_1_rssi = int(per_chain_rssi[4])
-        except:
-            chain_0_rssi = RSSI_ERROR_VAL
-            chain_1_rssi = RSSI_ERROR_VAL
-        connected_rssi['chain_0_rssi']['data'].append(chain_0_rssi)
-        connected_rssi['chain_1_rssi']['data'].append(chain_1_rssi)
-        combined_rssi = math.pow(10, chain_0_rssi / 10) + math.pow(
-            10, chain_1_rssi / 10)
-        combined_rssi = 10 * math.log10(combined_rssi)
-        connected_rssi['signal_poll_rssi']['data'].append(combined_rssi)
-        connected_rssi['signal_poll_avg_rssi']['data'].append(combined_rssi)
+        if interface == 'wlan0':
+            try:
+                per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
+                per_chain_rssi = per_chain_rssi.split(' ')
+                chain_0_rssi = int(per_chain_rssi[1])
+                chain_1_rssi = int(per_chain_rssi[4])
+            except:
+                chain_0_rssi = RSSI_ERROR_VAL
+                chain_1_rssi = RSSI_ERROR_VAL
+            connected_rssi['chain_0_rssi']['data'].append(chain_0_rssi)
+            connected_rssi['chain_1_rssi']['data'].append(chain_1_rssi)
+            combined_rssi = math.pow(10, chain_0_rssi / 10) + math.pow(
+                10, chain_1_rssi / 10)
+            combined_rssi = 10 * math.log10(combined_rssi)
+            connected_rssi['signal_poll_rssi']['data'].append(combined_rssi)
+            connected_rssi['signal_poll_avg_rssi']['data'].append(
+                combined_rssi)
+        else:
+            try:
+                signal_poll_output = dut.adb.shell(
+                    'wpa_cli -i {} signal_poll'.format(interface))
+            except:
+                signal_poll_output = ''
+            match = re.search('RSSI=.*', signal_poll_output)
+            if match:
+                temp_rssi = int(match.group(0).split('=')[1])
+                if temp_rssi == -9999 or temp_rssi == 0:
+                    connected_rssi['signal_poll_rssi']['data'].append(
+                        RSSI_ERROR_VAL)
+                else:
+                    connected_rssi['signal_poll_rssi']['data'].append(
+                        temp_rssi)
+            else:
+                connected_rssi['signal_poll_rssi']['data'].append(
+                    RSSI_ERROR_VAL)
+            connected_rssi['chain_0_rssi']['data'].append(RSSI_ERROR_VAL)
+            connected_rssi['chain_1_rssi']['data'].append(RSSI_ERROR_VAL)
         measurement_elapsed_time = time.time() - measurement_start_time
         time.sleep(max(0, polling_frequency - measurement_elapsed_time))
 
