@@ -24,17 +24,21 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_cell_pref
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_wfc_wifi_pref
-from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_csfb
+from acts_contrib.test_utils.tel.tel_5g_test_utils import disable_apm_mode_both_devices
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_volte
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_wfc_cell_pref
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_wfc_wifi_pref
+from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_csfb
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mo
+from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mt
 from acts_contrib.test_utils.tel.tel_sms_utils import _long_sms_test_mo
 from acts_contrib.test_utils.tel.tel_sms_utils import test_sms_mo_in_call
 
@@ -77,6 +81,64 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
 
         self.log.info("PASS - SMS test over 5G NSA validated")
+        return True
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_general(self):
+        """Test MO SMS for 1 phone in 5g NSA. The other phone in any network
+
+        Provision PhoneA in 5g NSA
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _sms_test_mo(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MO SMS test over 5G NSA validated")
+        return True
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_general(self):
+        """Test MT SMS for 1 phone in 5g NSA. The other phone in any network
+
+        Provision PhoneA in 5g NSA
+        Send and Verify SMS from PhoneB to PhoneA
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _sms_test_mt(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MT SMS test over 5G NSA validated")
         return True
 
 

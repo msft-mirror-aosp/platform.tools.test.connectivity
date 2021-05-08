@@ -187,6 +187,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_out
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
@@ -1525,39 +1526,6 @@ def get_current_override_network_type(ad, timeout=30):
     finally:
         ad.droid.telephonyStopTrackingDisplayInfoChange()
     return -1
-
-
-def is_current_network_5g_nsa(ad, timeout=30):
-    """Verifies 5G NSA override network type
-
-    Args:
-        ad: android device object.
-        timeout: max time to wait for event
-
-    Returns:
-        True: if data is on 5g NSA
-        False: if data is not on 5g NSA
-    """
-    ad.ed.clear_events(EventDisplayInfoChanged)
-    ad.droid.telephonyStartTrackingDisplayInfoChange()
-    try:
-        event = ad.ed.wait_for_event(
-                EventDisplayInfoChanged,
-                is_event_match,
-                timeout=timeout,
-                field=DisplayInfoContainer.OVERRIDE,
-                value=OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA)
-        ad.log.info("Got expected event %s", event)
-        return True
-    except Empty:
-        ad.log.info("No event for display info change")
-        return False
-    finally:
-        ad.droid.telephonyStopTrackingDisplayInfoChange()
-    return None
-
-def is_current_network_5g_nsa_for_subscription(ad, timeout=30, sub_id=None):
-    return change_voice_subid_temporarily(ad, sub_id, is_current_network_5g_nsa, params=[ad, timeout])
 
 def disconnect_call_by_id(log, ad, call_id):
     """Disconnect call by call id.
@@ -7730,20 +7698,6 @@ def set_preferred_network_mode_pref(log,
             error_msg = "%s due to %s" % (error_msg, log_message)
     ad.log.error(error_msg)
     return False
-
-
-def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
-    """Set Preferred Network Mode for 5G NSA
-    Args:
-        ad: Android device object.
-        sub_id: Subscription ID.
-        mode: 5G Network Mode Type
-    """
-    if sub_id is None:
-        sub_id = ad.droid.subscriptionGetDefaultSubId()
-    if mode is None:
-        mode = NETWORK_MODE_NR_LTE_GSM_WCDMA
-    return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
 
 
 def set_preferred_subid_for_sms(log, ad, sub_id):
