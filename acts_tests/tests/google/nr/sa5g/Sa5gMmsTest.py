@@ -23,9 +23,9 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
-from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_test_utils import disable_apm_mode_both_devices
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo
 from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mo
 

@@ -102,8 +102,10 @@ def _serialize_value(value):
         return [_serialize_value(x) for x in value]
     elif isinstance(value, dict):
         return serialize_dict(value)
-    else:
+    elif type(value) in (float, int, bool, str):
         return value
+    else:
+        return "Non-serializable object"
 
 
 def extract_sub_dict(full_dict, fields):

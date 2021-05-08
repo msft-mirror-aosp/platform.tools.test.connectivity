@@ -148,7 +148,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             wutils.wifi_toggle_state(dev, False)
             dev.go_to_sleep()
 
-    def pass_fail_check(self, test_result_dict):
+    def pass_fail_check(self, test_result):
         """Check the test result and decide if it passed or failed.
 
         Checks the throughput stability test's PASS/FAIL criteria based on
@@ -158,11 +158,11 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             test_result_dict: dict containing attenuation, throughput and other
             meta data
         """
-        avg_throughput = test_result_dict['iperf_results']['avg_throughput']
-        min_throughput = test_result_dict['iperf_results']['min_throughput']
+        avg_throughput = test_result['iperf_summary']['avg_throughput']
+        min_throughput = test_result['iperf_summary']['min_throughput']
         std_dev_percent = (
-            test_result_dict['iperf_results']['std_deviation'] /
-            test_result_dict['iperf_results']['avg_throughput']) * 100
+            test_result['iperf_summary']['std_deviation'] /
+            test_result['iperf_summary']['avg_throughput']) * 100
         # Set blackbox metrics
         if self.publish_testcase_metrics:
             self.testcase_metric_logger.add_metric('avg_throughput',
@@ -178,13 +178,21 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         std_deviation_check = std_dev_percent < self.testclass_params[
             'std_deviation_threshold']
 
+        llstats = (
+            'TX MCS = {0} ({1:.1f}%). '
+            'RX MCS = {2} ({3:.1f}%)'.format(
+                test_result['llstats']['summary']['common_tx_mcs'],
+                test_result['llstats']['summary']['common_tx_mcs_freq'] * 100,
+                test_result['llstats']['summary']['common_rx_mcs'],
+                test_result['llstats']['summary']['common_rx_mcs_freq'] * 100))
+
         test_message = (
             'Atten: {0:.2f}dB, RSSI: {1:.2f}dB. '
             'Throughput (Mean: {2:.2f}, Std. Dev:{3:.2f}%, Min: {4:.2f} Mbps).'
-            'LLStats : {5}'.format(test_result_dict['attenuation'],
-                                   test_result_dict['rssi'], avg_throughput,
-                                   std_dev_percent, min_throughput,
-                                   test_result_dict['llstats']))
+            'LLStats : {5}'.format(
+                test_result['attenuation'],
+                test_result['rssi_result']['signal_poll_rssi']['mean'],
+                avg_throughput, std_dev_percent, min_throughput, llstats))
         if min_throughput_check and std_deviation_check:
             asserts.explicit_pass('Test Passed.' + test_message)
         asserts.fail('Test Failed. ' + test_message)
@@ -203,18 +211,6 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_name = self.current_test_name
         results_file_path = os.path.join(self.log_path,
                                          '{}.txt'.format(test_name))
-        test_result_dict = {}
-        test_result_dict['ap_settings'] = test_result['ap_settings'].copy()
-        test_result_dict['attenuation'] = test_result['attenuation']
-        test_result_dict['rssi'] = test_result['rssi_result'][
-            'signal_poll_rssi']['mean']
-        test_result_dict['llstats'] = (
-            'TX MCS = {0} ({1:.1f}%). '
-            'RX MCS = {2} ({3:.1f}%)'.format(
-                test_result['llstats']['summary']['common_tx_mcs'],
-                test_result['llstats']['summary']['common_tx_mcs_freq'] * 100,
-                test_result['llstats']['summary']['common_rx_mcs'],
-                test_result['llstats']['summary']['common_rx_mcs_freq'] * 100))
         if test_result['iperf_result'].instantaneous_rates:
             instantaneous_rates_Mbps = [
                 rate * 8 * (1.024**2)
@@ -225,16 +221,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 'iperf_result'].get_std_deviation(
                     self.testclass_params['iperf_ignored_interval']) * 8
         else:
-            instantaneous_rates_Mbps = float('nan')
+            instantaneous_rates_Mbps = [float('nan')]
             tput_standard_deviation = float('nan')
-        test_result_dict['iperf_results'] = {
+        test_result['iperf_summary'] = {
             'instantaneous_rates': instantaneous_rates_Mbps,
             'avg_throughput': numpy.mean(instantaneous_rates_Mbps),
             'std_deviation': tput_standard_deviation,
             'min_throughput': min(instantaneous_rates_Mbps)
         }
         with open(results_file_path, 'w') as results_file:
-            json.dump(test_result_dict, results_file)
+            json.dump(wputils.serialize_dict(test_result), results_file)
         # Plot and save
         figure = BokehFigure(test_name,
                              x_label='Time (s)',
@@ -247,7 +243,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         output_file_path = os.path.join(self.log_path,
                                         '{}.html'.format(test_name))
         figure.generate_figure(output_file_path)
-        return test_result_dict
+        return test_result
 
     def setup_ap(self, testcase_params):
         """Sets up the access point in the configuration required by the test.
@@ -541,12 +537,9 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
                 ]).items())
             test_data = channel_data.setdefault(
                 test_id, collections.OrderedDict(position=[], throughput=[]))
-            current_throughput = (numpy.mean(
-                test['iperf_result'].instantaneous_rates[
-                    self.testclass_params['iperf_ignored_interval']:-1])
-                                  ) * 8 * (1.024**2)
             test_data['position'].append(current_params['position'])
-            test_data['throughput'].append(current_throughput)
+            test_data['throughput'].append(
+                test['iperf_summary']['avg_throughput'])
 
         chamber_mode = self.testclass_results[0]['testcase_params'][
             'chamber_mode']
@@ -564,7 +557,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
                     test_id_dict['traffic_direction'], channel,
                     test_id_dict['mode'])
                 metric_name = metric_tag + '.avg_throughput'
-                metric_value = numpy.mean(test_data['throughput'])
+                metric_value = numpy.nanmean(test_data['throughput'])
                 self.testclass_metric_logger.add_metric(
                     metric_name, metric_value)
                 metric_name = metric_tag + '.min_throughput'
