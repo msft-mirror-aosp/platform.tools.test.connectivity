@@ -36,6 +36,7 @@ from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_wfc_wifi_pref
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_csfb
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mo
 from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mt
@@ -372,7 +373,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g_nsa(self.log, ads):
             return False
 
         return test_sms_mo_in_call(self.log,
