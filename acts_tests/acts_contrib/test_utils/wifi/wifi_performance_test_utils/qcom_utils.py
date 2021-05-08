@@ -217,6 +217,14 @@ def get_sw_signature(dut):
     }
 
 
+def get_country_code(dut):
+    country_code = dut.adb.shell('iw reg get | grep country | head -1')
+    country_code = country_code.split(':')[0].split(' ')[1]
+    if country_code == '00':
+        country_code = 'WW'
+    return country_code
+
+
 def push_config(dut, config_file):
     config_files_list = dut.adb.shell(
         'ls /vendor/firmware/bdwlan*').splitlines()
