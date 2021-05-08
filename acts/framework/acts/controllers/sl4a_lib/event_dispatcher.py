@@ -463,3 +463,16 @@ class EventDispatcher:
         self._lock.acquire()
         self._event_dict.clear()
         self._lock.release()
+
+    def is_event_match(self, event, field, value):
+        return self.is_event_match_for_list(event, field, [value])
+
+    def is_event_match_for_list(self, event, field, value_list):
+        try:
+            value_in_event = event['data'][field]
+        except KeyError:
+            return False
+        for value in value_list:
+            if value_in_event == value:
+                return True
+        return False
