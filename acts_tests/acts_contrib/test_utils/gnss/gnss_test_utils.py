@@ -1651,20 +1651,21 @@ def start_pixel_logger(ad, max_log_size_mb=100, max_number_of_files=500):
                      "--ei intent_key_max_number_of_files %d" %
                      (max_log_size_mb, max_number_of_files))
     for attempt in range(retries):
-        begin_time = get_current_epoch_time()
-        ad.log.info("Start Pixel Logger. - Attempt %d" % (attempt + 1))
+        begin_time = get_current_epoch_time() - 3000
+        ad.log.info("Start Pixel Logger - Attempt %d" % (attempt + 1))
         ad.adb.shell(start_cmd)
         while get_current_epoch_time() - begin_time <= start_timeout_sec * 1000:
             if not ad.is_adb_logcat_on:
                 ad.start_adb_logcat()
             if check_chipset_vendor_by_qualcomm(ad):
-                start_result = ad.search_logcat("Start logging", begin_time)
+                start_result = ad.search_logcat(
+                    "ModemLogger: Start logging", begin_time)
             else:
                 start_result = ad.search_logcat("startRecording", begin_time)
             if start_result:
                 ad.log.info("Pixel Logger starts recording successfully.")
                 return True
-        ad.force_stop_apk("com.android.pixellogger")
+        stop_pixel_logger(ad)
     else:
         ad.log.warn("Pixel Logger fails to start recording in %d seconds "
                     "within %d attempts." % (start_timeout_sec, retries))
@@ -1686,8 +1687,8 @@ def stop_pixel_logger(ad):
                     "service.logging.LoggingService.ACTION_STOP_LOGGING "
                     "-e intent_logger brcm_gps")
     for attempt in range(retries):
-        begin_time = get_current_epoch_time()
-        ad.log.info("Stop Pixel Logger. - Attempt %d" % (attempt + 1))
+        begin_time = get_current_epoch_time() - 3000
+        ad.log.info("Stop Pixel Logger - Attempt %d" % (attempt + 1))
         ad.adb.shell(stop_cmd)
         while get_current_epoch_time() - begin_time <= stop_timeout_sec * 1000:
             if not ad.is_adb_logcat_on:
