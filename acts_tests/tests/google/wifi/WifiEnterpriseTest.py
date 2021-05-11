@@ -339,6 +339,21 @@ class WifiEnterpriseTest(WifiBaseTest):
             finally:
                 self.dut.droid.wifiLockRelease()
 
+    def check_connection(self, network_bssid):
+        """Check current wifi connection networks.
+        Args:
+            network_bssid: Network bssid to which connection.
+        Returns:
+            True if connection to given network happen, else return False.
+        """
+        time.sleep(10)  #time for connection state to be updated
+        self.log.info("Check network for {}".format(network_bssid))
+        current_network = self.dut.droid.wifiGetConnectionInfo()
+        self.log.debug("Current network:  {}".format(current_network))
+        if WifiEnums.BSSID_KEY in current_network:
+            return current_network[WifiEnums.BSSID_KEY] == network_bssid
+        return False
+
     """ Tests """
 
     # EAP connect tests
