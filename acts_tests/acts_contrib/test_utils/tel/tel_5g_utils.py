@@ -19,24 +19,28 @@ from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
 
-def is_current_network_5g_nsa(ad, timeout=30):
+def is_current_network_5g_nsa(ad, nsa_mmwave=False, timeout=30):
     """Verifies 5G NSA override network type
     Args:
         ad: android device object.
-        timeout: max time to wait for event
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        timeout: max time to wait for event.
     Returns:
         True: if data is on nsa5g NSA
         False: if data is not on nsa5g NSA
     """
     ad.ed.clear_events(EventDisplayInfoChanged)
     ad.droid.telephonyStartTrackingDisplayInfoChange()
+    nsa_band = OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA
+    if nsa_mmwave:
+        nsa_band = OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_MMWAVE
     try:
         event = ad.ed.wait_for_event(
                 EventDisplayInfoChanged,
                 ad.ed.is_event_match,
                 timeout=timeout,
                 field=DisplayInfoContainer.OVERRIDE,
-                value=OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA)
+                value=nsa_band)
         ad.log.info("Got expected event %s", event)
         return True
     except Empty:
@@ -46,9 +50,20 @@ def is_current_network_5g_nsa(ad, timeout=30):
         ad.droid.telephonyStopTrackingDisplayInfoChange()
     return None
 
-def is_current_network_5g_nsa_for_subscription(ad, timeout=30, sub_id=None):
+
+def is_current_network_5g_nsa_for_subscription(ad, nsa_mmwave=False, timeout=30, sub_id=None):
+    """Verifies 5G NSA override network type for subscription id.
+    Args:
+        ad: android device object.
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        timeout: max time to wait for event.
+        sub_id: subscription id.
+    Returns:
+        True: if data is on nsa5g NSA
+        False: if data is not on nsa5g NSA
+    """
     if not sub_id:
-        return is_current_network_5g_nsa(ad)
+        return is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave)
 
     voice_sub_id_changed = False
     current_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
@@ -56,7 +71,7 @@ def is_current_network_5g_nsa_for_subscription(ad, timeout=30, sub_id=None):
         ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
         voice_sub_id_changed = True
 
-    result = is_current_network_5g_nsa(ad)
+    result = is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave)
 
     if voice_sub_id_changed:
         ad.droid.subscriptionSetDefaultVoiceSubId(current_sub_id)
