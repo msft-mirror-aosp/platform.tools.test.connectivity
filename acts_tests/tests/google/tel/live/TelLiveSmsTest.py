@@ -71,7 +71,7 @@ from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mt
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo_after_call_hangup
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt_after_call_hangup
 from acts_contrib.test_utils.tel.tel_mms_utils import test_mms_mo_in_call
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_volte
 from acts.utils import rand_ascii_str
 
 
