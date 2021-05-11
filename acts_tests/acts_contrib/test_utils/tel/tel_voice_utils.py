@@ -2023,11 +2023,23 @@ def phone_setup_on_rat(
         else:
             return phone_setup_csfb_for_subscription(log, ad, sub_id)
 
+    elif rat.lower() == '5g':
+        if only_return_fn:
+            return phone_setup_5g_for_subscription
+        else:
+            return phone_setup_5g_for_subscription(log, ad, sub_id)
+
     elif rat.lower() == '3g':
         if only_return_fn:
             return phone_setup_voice_3g_for_subscription
         else:
             return phone_setup_voice_3g_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return phone_setup_voice_2g_for_subscription
+        else:
+            return phone_setup_voice_2g_for_subscription(log, ad, sub_id)
 
     elif rat.lower() == 'wfc':
         if only_return_fn:
@@ -2041,6 +2053,11 @@ def phone_setup_on_rat(
                 wfc_mode,
                 wifi_ssid,
                 wifi_pwd)
+    elif rat.lower() == 'default':
+        if only_return_fn:
+            return ensure_phone_default_state
+        else:
+            return ensure_phone_default_state(log, ad)
     else:
         if only_return_fn:
             return phone_setup_voice_general_for_subscription
@@ -2066,7 +2083,13 @@ def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
         else:
             return is_phone_in_call_3g(log, ad)
 
-    elif rat.lower() == 'wfc':
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return is_phone_in_call_2g
+        else:
+            return is_phone_in_call_2g(log, ad)
+
+    elif rat.lower() == 'wfc' or rat.lower() == '5g_wfc':
         if only_return_fn:
             return is_phone_in_call_iwlan
         else:
