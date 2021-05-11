@@ -182,6 +182,74 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         return True
 
 
+    @test_tracker_info(uuid="e51f3dbb-bb16-4400-b2be-f9422f511087")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_volte(self):
+        """Test MO SMS with VoLTE on 5G NSA. The other phone in any network
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify PhoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _sms_test_mo(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MO VoLTE SMS test over 5G NSA validated")
+        return True
+
+
+    @test_tracker_info(uuid="5217d427-04a2-4b2b-9ed8-28951e71fc21")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_volte(self):
+        """Test MT SMS with VoLTE on 5G NSA. The other phone in any network
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Send and Verify SMS from PhoneB to PhoneA
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _sms_test_mt(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MT VoLTE SMS test over 5G NSA validated")
+        return True
+
+
     @test_tracker_info(uuid="49bfb4b3-a6ec-45d4-ad96-09282fb07d1d")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mo_mt_in_call_volte(self):
