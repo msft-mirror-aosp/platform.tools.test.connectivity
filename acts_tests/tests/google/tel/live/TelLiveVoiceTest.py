@@ -65,8 +65,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
-from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
