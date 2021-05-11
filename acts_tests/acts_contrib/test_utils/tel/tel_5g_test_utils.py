@@ -35,13 +35,15 @@ from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_sa
 
-def provision_device_for_5g(log, ads, sa_5g=False):
+
+def provision_device_for_5g(log, ads, sa_5g=False, nsa_mmwave=False):
     """Provision Devices for 5G
 
     Args:
         log: Log object.
         ads: android device object(s).
         sa_5g: Check for provision on sa_5G or not
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
 
     Returns:
         True: Device(s) are provisioned on 5G
@@ -51,17 +53,18 @@ def provision_device_for_5g(log, ads, sa_5g=False):
         if not provision_device_for_5g_sa(log, ads):
             return False
     else:
-        if not provision_device_for_5g_nsa(log, ads):
+        if not provision_device_for_5g_nsa(log, ads, nsa_mmwave=nsa_mmwave):
             return False
     return True
 
 
-def provision_device_for_5g_nsa(log, ads):
+def provision_device_for_5g_nsa(log, ads, nsa_mmwave=False):
     """Provision Devices for 5G NSA
 
     Args:
         log: Log object.
         ads: android device object(s).
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
 
     Returns:
         True: Device(s) are provisioned on 5G NSA
@@ -74,7 +77,7 @@ def provision_device_for_5g_nsa(log, ads):
             log.error("failed to set preferred network mode on 5g")
             return False
         # Attach
-        tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
+        tasks = [(is_current_network_5g_nsa, [ad, nsa_mmwave]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g nsa")
             return False
@@ -84,7 +87,7 @@ def provision_device_for_5g_nsa(log, ads):
         set_preferred_mode_for_5g(ads)
 
         # Attach nsa5g
-        if not is_current_network_5g_nsa(ads):
+        if not is_current_network_5g_nsa(ads, nsa_mmwave=nsa_mmwave):
             ads.log.error("Phone not attached on nsa 5g")
             return False
         return True
@@ -166,13 +169,14 @@ def connect_both_devices_to_wifi(log,
     return True
 
 
-def verify_5g_attach_for_both_devices(log, ads, sa_5g=False):
+def verify_5g_attach_for_both_devices(log, ads, sa_5g=False, nsa_mmwave=False):
     """Verify the network is attached
 
     Args:
         log: Log object.
         ads: android device object(s).
         sa_5g: Check for verify data network type is on 5G SA or not
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
 
     Returns:
         True: Device(s) are attached on 5G
@@ -187,7 +191,7 @@ def verify_5g_attach_for_both_devices(log, ads, sa_5g=False):
         return True
     else:
         # Attach
-        tasks = [(is_current_network_5g_nsa, [ad]) for ad in ads]
+        tasks = [(is_current_network_5g_nsa, [ad, nsa_mmwave]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g nsa")
             return False
@@ -241,13 +245,14 @@ def provision_device_for_5g_sa(log, ads):
         return True
 
 
-def check_current_network_5g(ad, timeout=30, sa_5g=False):
+def check_current_network_5g(ad, timeout=30, sa_5g=False, nsa_mmwave=False):
     """Verifies data network type is on 5G
 
     Args:
         ad: android device object.
         timeout: max time to wait for event
         sa_5g: Check for verify data network type is on 5G SA or not
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
 
     Returns:
         True: if data is on 5g
@@ -257,7 +262,7 @@ def check_current_network_5g(ad, timeout=30, sa_5g=False):
         if not is_current_network_5g_sa(ad):
             return False
     else:
-        if not is_current_network_5g_nsa(ad, timeout):
+        if not is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave, timeout=timeout):
             return False
     return True
 
