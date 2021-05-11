@@ -992,7 +992,9 @@ class WifiSoftApTest(WifiBaseTest):
         1. Get current softap configuration
         2. Update to Open Security configuration
         3. Update to WPA2_PSK configuration
-        4. Restore the configuration
+        4. Update to Multi-Channels, Mac Randomization off,
+           bridged_shutdown off, 11ax off configuration which are introduced in S.
+        5. Restore the configuration
       """
       # Backup config
       original_softap_config = self.dut.droid.wifiGetApConfiguration()
@@ -1009,6 +1011,13 @@ class WifiSoftApTest(WifiBaseTest):
           channel=0, max_clients=1, shutdown_timeout_enable=True,
           shutdown_timeout_millis=10000, client_control_enable=False,
           allowedList=["aa:bb:cc:dd:ee:ff"], blockedList=["11:22:33:44:55:66"])
+
+
+      wutils.save_wifi_soft_ap_config(self.dut, {"SSID":"ACTS_TEST"},
+          channel_frequencys=[2412,5745],
+          mac_randomization_setting = wifi_constants.SOFTAP_RANDOMIZATION_NONE,
+          bridged_opportunistic_shutdown_enabled=False,
+          ieee80211ax_enabled=False)
 
       # Restore config
       wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
