@@ -36,6 +36,7 @@ from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_wfc_wifi_pref
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_csfb
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mo
 from acts_contrib.test_utils.tel.tel_sms_utils import _sms_test_mt
@@ -84,6 +85,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         return True
 
 
+    @test_tracker_info(uuid="52b16764-0c9e-45c0-910f-a39d17c7cf7e")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mo_general(self):
         """Test MO SMS for 1 phone in 5g NSA. The other phone in any network
@@ -113,6 +115,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         return True
 
 
+    @test_tracker_info(uuid="e9b2494a-0e40-449c-b877-1e4ddc78c536")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mt_general(self):
         """Test MT SMS for 1 phone in 5g NSA. The other phone in any network
@@ -372,7 +375,7 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g_nsa(self.log, ads):
             return False
 
         return test_sms_mo_in_call(self.log,
