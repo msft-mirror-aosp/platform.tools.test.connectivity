@@ -22,14 +22,17 @@ from acts.utils import rand_ascii_str
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_5g_test_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_volte
@@ -518,5 +521,93 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         return test_sms_mo_in_call(self.log,
                                    ads,
                                    caller_func=is_phone_in_call_csfb)
+
+
+    @test_tracker_info(uuid="5997a618-efee-478f-8fa9-6cf8ba9cfc58")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_iwlan_apm_off(self):
+        """ Test MO SMS for 1 Phone in APM off, WiFi connected,
+        WFC WiFi Preferred mode.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM OFF
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify 5g NSA attach for PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+        if not toggle_airplane_mode(self.log, ads[0], False):
+            return False
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not phone_setup_iwlan(self.log,
+                                ads[0],
+                                False,
+                                WFC_MODE_WIFI_PREFERRED,
+                                self.wifi_network_ssid,
+                                self.wifi_network_pass):
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not _sms_test_mo(self.log, ads):
+            self.log.error("failed to send receive sms over 5g nsa")
+            return False
+        self.log.info("PASS - iwlan MO sms test over 5g nsa validated")
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+        return True
+
+
+    @test_tracker_info(uuid="352ca023-2cd1-4b08-877c-20c5d50cc265")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_iwlan_apm_off(self):
+        """ Test MT SMS for 1 Phone in APM off, WiFi connected,
+        WFC WiFi Preferred mode.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM OFF
+        Send and Verify SMS from PhoneB to PhoneA
+        Verify 5g NSA attach for PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+        if not toggle_airplane_mode(self.log, ads[0], False):
+            return False
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not phone_setup_iwlan(self.log,
+                                ads[0],
+                                False,
+                                WFC_MODE_WIFI_PREFERRED,
+                                self.wifi_network_ssid,
+                                self.wifi_network_pass):
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        if not _sms_test_mt(self.log, ads):
+            self.log.error("failed to send receive sms over 5g nsa")
+            return False
+        self.log.info("PASS - iwlan MT sms test over 5g nsa validated")
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+        return True
 
     """ Tests End """
