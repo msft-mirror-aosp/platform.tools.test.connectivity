@@ -81,6 +81,11 @@ class WifiEnums():
     # Used for SoftAp
     AP_BAND_KEY = "apBand"
     AP_CHANNEL_KEY = "apChannel"
+    AP_BANDS_KEY = "apBands"
+    AP_CHANNEL_FREQUENCYS_KEY = "apChannelFrequencies"
+    AP_MAC_RANDOMIZATION_SETTING_KEY = "MacRandomizationSetting"
+    AP_BRIDGED_OPPORTUNISTIC_SHUTDOWN_ENABLE_KEY = "BridgedModeOpportunisticShutdownEnabled"
+    AP_IEEE80211AX_ENABLED_KEY = "Ieee80211axEnabled"
     AP_MAXCLIENTS_KEY = "MaxNumberOfClients"
     AP_SHUTDOWNTIMEOUT_KEY = "ShutdownTimeoutMillis"
     AP_SHUTDOWNTIMEOUTENABLE_KEY = "AutoShutdownEnabled"
@@ -1012,7 +1017,12 @@ def save_wifi_soft_ap_config(ad,
                              shutdown_timeout_millis=None,
                              client_control_enable=None,
                              allowedList=None,
-                             blockedList=None):
+                             blockedList=None,
+                             bands=None,
+                             channel_frequencys=None,
+                             mac_randomization_setting=None,
+                             bridged_opportunistic_shutdown_enabled=None,
+                             ieee80211ax_enabled=None):
     """ Save a soft ap configuration and verified
     Args:
         ad: android_device to set soft ap configuration.
@@ -1028,30 +1038,49 @@ def save_wifi_soft_ap_config(ad,
         client_control_enable: specifies the client control enable or not.
         allowedList: specifies allowed clients list.
         blockedList: specifies blocked clients list.
+        bands: specifies the band list for the soft ap.
+        channel_frequencys: specifies the channel frequency list for soft ap.
+        mac_randomization_setting: specifies the mac randomization setting.
+        bridged_opportunistic_shutdown_enabled: specifies the opportunistic
+                shutdown enable or not.
+        ieee80211ax_enabled: specifies the ieee80211ax enable or not.
     """
     if security and password:
         wifi_config[WifiEnums.SECURITY] = security
         wifi_config[WifiEnums.PWD_KEY] = password
-    if band:
-        wifi_config[WifiEnums.AP_BAND_KEY] = band
-    if hidden:
+    if hidden is not None:
         wifi_config[WifiEnums.HIDDEN_KEY] = hidden
-    if channel and band:
-        wifi_config[WifiEnums.AP_BAND_KEY] = band
-        wifi_config[WifiEnums.AP_CHANNEL_KEY] = channel
-    if max_clients:
+    if max_clients is not None:
         wifi_config[WifiEnums.AP_MAXCLIENTS_KEY] = max_clients
-    if shutdown_timeout_enable:
+    if shutdown_timeout_enable is not None:
         wifi_config[
             WifiEnums.AP_SHUTDOWNTIMEOUTENABLE_KEY] = shutdown_timeout_enable
-    if shutdown_timeout_millis:
+    if shutdown_timeout_millis is not None:
         wifi_config[WifiEnums.AP_SHUTDOWNTIMEOUT_KEY] = shutdown_timeout_millis
-    if client_control_enable:
+    if client_control_enable is not None:
         wifi_config[WifiEnums.AP_CLIENTCONTROL_KEY] = client_control_enable
-    if allowedList:
+    if allowedList is not None:
         wifi_config[WifiEnums.AP_ALLOWEDLIST_KEY] = allowedList
-    if blockedList:
+    if blockedList is not None:
         wifi_config[WifiEnums.AP_BLOCKEDLIST_KEY] = blockedList
+    if mac_randomization_setting is not None:
+        wifi_config[WifiEnums.AP_MAC_RANDOMIZATION_SETTING_KEY
+                ] = mac_randomization_setting
+    if bridged_opportunistic_shutdown_enabled is not None:
+        wifi_config[WifiEnums.AP_BRIDGED_OPPORTUNISTIC_SHUTDOWN_ENABLE_KEY
+                ] = bridged_opportunistic_shutdown_enabled
+    if ieee80211ax_enabled is not None:
+       wifi_config[WifiEnums.AP_IEEE80211AX_ENABLED_KEY]= ieee80211ax_enabled
+    if channel_frequencys is not None:
+        wifi_config[WifiEnums.AP_CHANNEL_FREQUENCYS_KEY] = channel_frequencys
+    elif bands is not None:
+        wifi_config[WifiEnums.AP_BANDS_KEY] = bands
+    elif band is not None:
+        if channel is not None:
+            wifi_config[WifiEnums.AP_BAND_KEY] = band
+            wifi_config[WifiEnums.AP_CHANNEL_KEY] = channel
+        else:
+             wifi_config[WifiEnums.AP_BAND_KEY] = band
 
     if WifiEnums.AP_CHANNEL_KEY in wifi_config and wifi_config[
             WifiEnums.AP_CHANNEL_KEY] == 0:
@@ -1083,10 +1112,6 @@ def save_wifi_soft_ap_config(ad,
             wifi_ap[WifiEnums.HIDDEN_KEY] == wifi_config[WifiEnums.HIDDEN_KEY],
             "Hotspot hidden setting doesn't match")
 
-    if WifiEnums.AP_BAND_KEY in wifi_config:
-        asserts.assert_true(
-            wifi_ap[WifiEnums.AP_BAND_KEY] == wifi_config[
-                WifiEnums.AP_BAND_KEY], "Hotspot Band doesn't match")
     if WifiEnums.AP_CHANNEL_KEY in wifi_config:
         asserts.assert_true(
             wifi_ap[WifiEnums.AP_CHANNEL_KEY] == wifi_config[
@@ -1122,6 +1147,29 @@ def save_wifi_soft_ap_config(ad,
                 WifiEnums.AP_BLOCKEDLIST_KEY],
             "Hotspot Blocked List doesn't match")
 
+    if WifiEnums.AP_MAC_RANDOMIZATION_SETTING_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_MAC_RANDOMIZATION_SETTING_KEY] == wifi_config[
+                  WifiEnums.AP_MAC_RANDOMIZATION_SETTING_KEY],
+            "Hotspot Mac randomization setting doesn't match")
+
+    if WifiEnums.AP_BRIDGED_OPPORTUNISTIC_SHUTDOWN_ENABLE_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_BRIDGED_OPPORTUNISTIC_SHUTDOWN_ENABLE_KEY] == wifi_config[
+                  WifiEnums.AP_BRIDGED_OPPORTUNISTIC_SHUTDOWN_ENABLE_KEY],
+            "Hotspot bridged shutdown enable setting doesn't match")
+
+    if WifiEnums.AP_IEEE80211AX_ENABLED_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_IEEE80211AX_ENABLED_KEY] == wifi_config[
+                  WifiEnums.AP_IEEE80211AX_ENABLED_KEY],
+            "Hotspot 80211 AX enable setting doesn't match")
+
+    if WifiEnums.AP_CHANNEL_FREQUENCYS_KEY in wifi_config:
+        asserts.assert_true(
+            wifi_ap[WifiEnums.AP_CHANNEL_FREQUENCYS_KEY] == wifi_config[
+                  WifiEnums.AP_CHANNEL_FREQUENCYS_KEY],
+            "Hotspot channels setting doesn't match")
 
 def start_wifi_tethering_saved_config(ad):
     """ Turn on wifi hotspot with a config that is already saved """
@@ -2344,20 +2392,20 @@ def get_current_number_of_softap_clients(ad, callbackId):
     return num_of_clients
 
 
-def get_current_softap_info(ad, callbackId, least_one):
+def get_current_softap_info(ad, callbackId, need_to_wait):
     """pop up all of softap info changed event from queue.
     Args:
         callbackId: Id of the callback associated with registering.
-        least_one: Wait for the info callback event before pop all.
+        need_to_wait: Wait for the info callback event before pop all.
     Returns:
         Returns last updated information of softap.
     """
     eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
         callbackId) + wifi_constants.SOFTAP_INFO_CHANGED
-    ad.log.info("softap info dump from eventStr %s", eventStr)
+    ad.log.debug("softap info dump from eventStr %s", eventStr)
     frequency = 0
     bandwidth = 0
-    if (least_one):
+    if (need_to_wait):
         event = ad.ed.pop_event(eventStr, SHORT_TIMEOUT)
         frequency = event['data'][
             wifi_constants.SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
@@ -2376,6 +2424,61 @@ def get_current_softap_info(ad, callbackId, least_one):
                 bandwidth)
     return frequency, bandwidth
 
+def get_current_softap_infos(ad, callbackId, need_to_wait):
+    """pop up all of softap info list changed event from queue.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        need_to_wait: Wait for the info callback event before pop all.
+    Returns:
+        Returns last updated informations of softap.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+        callbackId) + wifi_constants.SOFTAP_INFOLIST_CHANGED
+    ad.log.debug("softap info dump from eventStr %s", eventStr)
+
+    if (need_to_wait):
+        event = ad.ed.pop_event(eventStr, SHORT_TIMEOUT)
+        infos = event['data']
+
+    events = ad.ed.pop_all(eventStr)
+    for event in events:
+        infos = event['data']
+
+    for info in infos:
+        frequency = info[
+            wifi_constants.SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
+        bandwidth = info[
+            wifi_constants.SOFTAP_INFO_BANDWIDTH_CALLBACK_KEY]
+        wifistandard = info[
+            wifi_constants.SOFTAP_INFO_WIFISTANDARD_CALLBACK_KEY]
+        bssid = info[
+            wifi_constants.SOFTAP_INFO_BSSID_CALLBACK_KEY]
+        ad.log.info(
+                "softap info, freq:%s, bw:%s, wifistandard:%s, bssid:%s",
+                frequency, bandwidth, wifistandard, bssid)
+
+    return infos
+
+def get_current_softap_capability(ad, callbackId, need_to_wait):
+    """pop up all of softap info list changed event from queue.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        need_to_wait: Wait for the info callback event before pop all.
+    Returns:
+        Returns last updated capability of softap.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_CAPABILITY_CHANGED
+    ad.log.debug("softap capability dump from eventStr %s", eventStr)
+    if (need_to_wait):
+        event = ad.ed.pop_event(eventStr, SHORT_TIMEOUT)
+        capability = event['data']
+
+    events = ad.ed.pop_all(eventStr)
+    for event in events:
+        capability = event['data']
+
+    return capability
 
 def get_ssrdumps(ad):
     """Pulls dumps in the ssrdump dir
