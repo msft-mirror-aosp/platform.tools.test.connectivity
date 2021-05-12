@@ -103,7 +103,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_dat
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_mms_data
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
