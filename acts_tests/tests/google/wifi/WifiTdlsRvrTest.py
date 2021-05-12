@@ -116,6 +116,12 @@ class WifiTdlsRvrTest(WifiRvrTest):
             wutils.reset_wifi(ad)
             wputils.stop_wifi_logging(ad)
 
+    def on_exception(self, test_name, begin_time):
+        for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
+            ad.cat_adb_log(test_name, begin_time)
+            wutils.get_ssrdumps(ad)
+
     def compute_test_metrics(self, rvr_result):
         #Set test metrics
         rvr_result['metrics'] = {}
