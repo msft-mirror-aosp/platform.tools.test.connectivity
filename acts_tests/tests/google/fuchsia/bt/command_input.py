@@ -2805,4 +2805,25 @@ class CommandInput(cmd.Cmd):
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_connection_behavior(self, line):
+        """
+        Description: Set the Service Level Connection (SLC) behavior when a new peer connects.
+
+        Input(s):
+            autoconnect: Enable/Disable autoconnection of SLC.
+
+        Usage:
+          Examples:
+            hfp_set_connection_behavior <autoconnect>
+            hfp_set_connection_behavior true
+            hfp_set_connection_behavior false
+        """
+        cmd = "Set the Service Level Connection (SLC) behavior"
+        try:
+            autoconnect = line.strip().lower() == "true"
+            result = self.pri_dut.hfp_lib.setConnectionBehavior(autoconnect)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
     """End HFP wrappers"""
