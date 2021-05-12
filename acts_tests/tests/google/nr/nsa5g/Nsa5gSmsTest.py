@@ -29,6 +29,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_5g_test_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_volte
@@ -181,6 +182,74 @@ class Nsa5gSmsTest(TelephonyBaseTest):
         return True
 
 
+    @test_tracker_info(uuid="e51f3dbb-bb16-4400-b2be-f9422f511087")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_volte(self):
+        """Test MO SMS with VoLTE on 5G NSA. The other phone in any network
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify PhoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _sms_test_mo(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MO VoLTE SMS test over 5G NSA validated")
+        return True
+
+
+    @test_tracker_info(uuid="5217d427-04a2-4b2b-9ed8-28951e71fc21")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_volte(self):
+        """Test MT SMS with VoLTE on 5G NSA. The other phone in any network
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Send and Verify SMS from PhoneB to PhoneA
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _sms_test_mt(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MT VoLTE SMS test over 5G NSA validated")
+        return True
+
+
     @test_tracker_info(uuid="49bfb4b3-a6ec-45d4-ad96-09282fb07d1d")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_sms_mo_mt_in_call_volte(self):
@@ -209,6 +278,74 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             return False
 
         if not verify_5g_attach_for_both_devices(self.log, ads):
+            return False
+        return True
+
+
+    @test_tracker_info(uuid="3d5c8f60-1eaa-4f4a-b539-c529fa36db91")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_in_call_volte(self):
+        """ Test MO SMS during a MO VoLTE call over 5G NSA.
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not test_sms_mo_in_call(self.log,
+                                   ads,
+                                   caller_func=is_phone_in_call_volte):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+        return True
+
+
+    @test_tracker_info(uuid="c71813f3-bb04-4115-8519-e23046349689")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_in_call_volte(self):
+        """ Test MT SMS during a MT VoLTE call over 5G NSA.
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Make a Voice call from PhoneB to PhoneA
+        Send and Verify SMS from PhoneB to PhoneA
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not test_sms_mo_in_call(self.log,
+                                   [ads[1], ads[0]],
+                                   callee_func=is_phone_in_call_volte):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
             return False
         return True
 
