@@ -142,6 +142,12 @@ class WifiAwareRvrTest(WifiRvrTest):
             wutils.reset_wifi(ad)
             wputils.stop_wifi_logging(ad)
 
+    def on_exception(self, test_name, begin_time):
+        for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
+            ad.cat_adb_log(test_name, begin_time)
+            wutils.get_ssrdumps(ad)
+
     def compute_test_metrics(self, rvr_result):
         #Set test metrics
         rvr_result['metrics'] = {}
@@ -271,9 +277,13 @@ class WifiAwareRvrTest(WifiRvrTest):
         ndp_config = self.android_devices[0].adb.shell(
             'cmd wifiaware native_cb get_channel_info')
         ndp_config = json.loads(ndp_config)
-        ndp_config = ndp_config[list(ndp_config.keys())[0]][0]
-        testcase_params['channel'] = wutils.WifiEnums.freq_to_channel[
-            ndp_config['channelFreq']]
+        ndp_config = ndp_config[list(ndp_config.keys())[0]]
+        if ndp_config:
+            testcase_params['channel'] = wutils.WifiEnums.freq_to_channel[
+                ndp_config[0]['channelFreq']]
+        else:
+            self.log.warning('Unknown NDP channel. Setting sniffer to Ch149')
+            testcase_params['channel'] = 149
         if testcase_params['channel'] < 13:
             testcase_params['mode'] = 'VHT20'
         else:
