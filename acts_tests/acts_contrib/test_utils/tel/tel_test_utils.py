@@ -3770,7 +3770,7 @@ def check_curl_availability(ad):
     return ad.curl_capable
 
 
-def start_youtube_video(ad, url="https://www.youtube.com/watch?v=pSJoP0LR8CQ"):
+def start_youtube_video(ad, url="vnd.youtube:watch?v=pSJoP0LR8CQ"):
     ad.log.info("Open an youtube video")
     for _ in range(3):
         ad.ensure_screen_on()
