@@ -26,6 +26,8 @@ from acts_contrib.test_utils.tel.tel_defines import SMS_OVER_WIFI_PROVIDERS
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -37,6 +39,7 @@ from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_wfc_wifi_pref
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_csfb
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mo
 from acts_contrib.test_utils.tel.tel_mms_utils import _mms_test_mt
 from acts_contrib.test_utils.tel.tel_mms_utils import _long_mms_test_mo
@@ -458,5 +461,63 @@ class Nsa5gMmsTest(TelephonyBaseTest):
                                    wifi=True,
                                    caller_func=is_phone_in_call_csfb):
             return False
+
+
+    @test_tracker_info(uuid="88bd6658-30fa-41b1-b5d9-0f9dadd83219")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_general(self):
+        """Test MO MMS for 1 phone in 5g NSA. The other phone in any network
+
+        Provision PhoneA in 5g NSA
+        Send and Verify MMS from PhoneA to PhoneB
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return Fals
+
+        if not _mms_test_mo(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MO mms test over 5g nsa validated")
+        return True
+
+
+    @test_tracker_info(uuid="11f2e2c8-bb63-43fa-b279-e7bb32f80596")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_general(self):
+        """Test MT MMS for 1 phone in 5g NSA. The other phone in any network
+
+        Provision PhoneA in 5g NSA
+        Send and Verify MMS from PhoneB to PhoneA
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        tasks = [(provision_device_for_5g, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            return False
+
+        if not _mms_test_mt(self.log, ads):
+            return False
+
+        if not is_current_network_5g_nsa(ads[0]):
+            return False
+
+        self.log.info("PASS - MT mms test over 5g nsa validated")
+        return True
 
     """ Tests End """
