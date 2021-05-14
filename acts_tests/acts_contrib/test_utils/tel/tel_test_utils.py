@@ -188,6 +188,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voic
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
@@ -3769,7 +3770,7 @@ def check_curl_availability(ad):
     return ad.curl_capable
 
 
-def start_youtube_video(ad, url="https://www.youtube.com/watch?v=pSJoP0LR8CQ"):
+def start_youtube_video(ad, url="vnd.youtube:watch?v=pSJoP0LR8CQ"):
     ad.log.info("Open an youtube video")
     for _ in range(3):
         ad.ensure_screen_on()
