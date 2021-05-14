@@ -1016,6 +1016,31 @@ class WifiManagerTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
+    @test_tracker_info(uuid="25e8dd62-ae9f-46f7-96aa-030fee95dfda")
+    def test_wifi_saved_network_reset(self):
+        """Verify DUT can reset Wi-Fi saved network list after add a network.
+
+        Steps:
+        1. Connect to a 2GHz network
+        2. Reset the Wi-Fi saved network
+        3. Verify the saved network has been clear
+        """
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
+        nId = self.dut.droid.wifiAddNetwork(self.open_network_2g)
+        asserts.assert_true(nId > -1, "Failed to add network.")
+        configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
+        self.log.debug(
+            ("Configured networks after adding: %s" % configured_networks))
+        wutils.assert_network_in_list({
+            WifiEnums.SSID_KEY: ssid
+        }, configured_networks)
+        self.dut.droid.wifiFactoryReset()
+        configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
+        for nw in configured_networks:
+            asserts.assert_true(
+                nw[WifiEnums.BSSID_KEY] != ssid,
+                "Found saved network %s in configured networks." % ssid)
+
     @test_tracker_info(uuid="402cfaa8-297f-4865-9e27-6bab6adca756")
     def test_reboot_wifi_and_bluetooth_on(self):
         """Toggle WiFi and bluetooth ON then reboot """
