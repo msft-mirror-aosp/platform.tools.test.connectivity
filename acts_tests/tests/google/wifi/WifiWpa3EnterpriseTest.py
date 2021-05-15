@@ -189,3 +189,25 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
       asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
     except:
       asserts.explicit_pass("Connection failed as expected.")
+
+  @test_tracker_info(uuid="")
+  def test_network_selection_status_for_wpa3_ent_wrong_domain_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa3072_client_cert,
+        Ent.PRIVATE_KEY_ID: self.rsa2048_client_key,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]+"_wrong"
+    }
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")
+    except:
+      asserts.assert_true(
+          self.dut.droid.wifiIsNetworkTemporaryDisabledForNetwork(config),
+          "WiFi network is not temporary disabled.")
+      asserts.explicit_pass(
+          "Connection failed with correct network selection status.")
