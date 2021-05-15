@@ -777,6 +777,7 @@ def wifi_forget_network(ad, net_ssid):
                                         SHORT_TIMEOUT)
             except Empty:
                 asserts.fail("Failed to remove network %s." % n)
+            break
 
 
 def wifi_test_device_init(ad):
