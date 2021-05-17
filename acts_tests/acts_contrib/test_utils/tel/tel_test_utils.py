@@ -11304,3 +11304,15 @@ def wait_for_log(ad, pattern, begin_time=None, end_time=None, max_wait_time=120)
         passed_time = (stop_time - start_time).total_seconds()
         if passed_time > max_wait_time:
             return
+
+
+def cycle_airplane_mode(ad):
+    """Turn on APM and then off."""
+    # APM toggle
+    if not toggle_airplane_mode(ad.log, ad, True):
+        ad.log.info("Failed to turn on airplane mode.")
+        return False
+    if not toggle_airplane_mode(ad.log, ad, False):
+        ad.log.info("Failed to turn off airplane mode.")
+        return False
+    return True
