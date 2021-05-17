@@ -48,13 +48,15 @@ class NonConcurrencyTest(AwareBaseTest):
     def run_aware_then_incompat_service(self, is_p2p):
         """Run test to validate that a running Aware session terminates when an
     Aware-incompatible service is started.
-    P2P: has same priority, will bring down Aware, then Aware will become available again.
-    SoftAp: has higher priority, will bring down Aware, Aware will keep unavailable.
+    P2P and SoftAp has same priority as Aware, will bring down all aware clients,
+    but Aware will keep available.
 
     Args:
       is_p2p: True for p2p, False for SoftAP
     """
         dut = self.android_devices[0]
+        p_config = autils.create_discovery_config(self.SERVICE_NAME,
+                                                  aconsts.PUBLISH_TYPE_UNSOLICITED)
 
         # start Aware
         id = dut.droid.wifiAwareAttach()
@@ -68,22 +70,25 @@ class NonConcurrencyTest(AwareBaseTest):
         else:
             wutils.start_wifi_tethering(dut, self.TETHER_SSID, password=None)
 
-        # expect an announcement about Aware non-availability
-        autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
+        # Will not make WiFi Aware unavailable
+        autils.fail_on_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
+        # Aware session has already been torn down, publish will fail.
+        dut.droid.wifiAwarePublish(id, p_config)
+        autils.wait_for_event(dut, aconsts.SESSION_CB_ON_SESSION_CONFIG_FAILED)
 
-        if is_p2p:
-            # P2P has same priority, aware will be available
-            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
-        else:
-            # SoftAp has higher priority, aware will keep unavailable
-            autils.fail_on_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
-            # local clean-up
-            wutils.stop_wifi_tethering(dut)
+        # P2P, SoftAp and Aware has same priority, aware will be available
+        autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+
+        # Start Aware again, publish should succeed.
+        id = dut.droid.wifiAwareAttach()
+        autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+        dut.droid.wifiAwarePublish(id, p_config)
+        autils.wait_for_event(dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
 
     def run_incompat_service_then_aware(self, is_p2p):
         """Validate that if an Aware-incompatible service is already up then try to start Aware.
-    P2P: has same priority, Aware can bring it down.
-    SoftAp: has higher priority, Aware will be unavailable, any Aware operation will fail.
+    P2P and SoftAp has same priority as Aware,  Aware can bring it down and start service
 
     Args:
       is_p2p: True for p2p, False for SoftAP
@@ -93,46 +98,22 @@ class NonConcurrencyTest(AwareBaseTest):
         # start other service
         if is_p2p:
             dut.droid.wifiP2pInitialize()
-            # expect no announcement about Aware non-availability
-            autils.fail_on_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
         else:
             wutils.start_wifi_tethering(dut, self.TETHER_SSID, password=None)
-            # expect an announcement about Aware non-availability
-            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
 
-        # Change Wifi state and location mode to check if aware became available. 
+        autils.fail_on_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
+
+        # Change Wifi state and location mode to check if aware became available.
         wutils.wifi_toggle_state(dut, False)
         utils.set_location_service(dut, False)
         wutils.wifi_toggle_state(dut, True)
         utils.set_location_service(dut, True)
 
-        if is_p2p:
-            # P2P has same priority, aware will be available
-            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
-            asserts.assert_true(dut.droid.wifiIsAwareAvailable(), "Aware should be available")
-        else:
-            # SoftAp has higher priority, aware will keep unavailable
-            autils.fail_on_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
-            asserts.assert_false(dut.droid.wifiIsAwareAvailable(),
-                                 "Aware is available (it shouldn't be)")
+        autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+        asserts.assert_true(dut.droid.wifiIsAwareAvailable(), "Aware should be available")
 
         dut.droid.wifiAwareAttach()
-        if is_p2p:
-            # P2P has same priority, Aware attach should success.
-            autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
-        else:
-            # SoftAp has higher priority, Aware attach should fail.
-            autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
-
-        if not is_p2p:
-            wutils.stop_wifi_tethering(dut)
-
-            # expect an announcement about Aware availability
-            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
-
-            # try starting Aware
-            dut.droid.wifiAwareAttach()
-            autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+        autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
 
     def run_aware_then_connect_to_new_ap(self):
         """Validate interaction of Wi-Fi Aware and infra (STA) association with randomized MAC
@@ -187,7 +168,8 @@ class NonConcurrencyTest(AwareBaseTest):
 
         # dut_ap stop softAp and start publish
         wutils.stop_wifi_tethering(dut_ap)
-        autils.wait_for_event(dut_ap, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+        if not dut_ap.droid.wifiIsAwareAvailable():
+            autils.wait_for_event(dut_ap, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
         s_id = dut_ap.droid.wifiAwareAttach()
         autils.wait_for_event(dut_ap, aconsts.EVENT_CB_ON_ATTACHED)
         s_disc_id = dut_ap.droid.wifiAwarePublish(s_id, s_config)
@@ -209,7 +191,7 @@ class NonConcurrencyTest(AwareBaseTest):
 
     @test_tracker_info(uuid="b7c84cbe-d744-440a-9279-a0133e88e8cb")
     def test_run_p2p_then_aware(self):
-        """Validate that if p2p is already up then any Aware operation fails"""
+        """Validate that a running p2p session terminates when Aware is started"""
         self.run_incompat_service_then_aware(is_p2p=True)
 
     @test_tracker_info(uuid="1e7b3a6d-575d-4911-80bb-6fcf1157ee9f")
@@ -219,7 +201,7 @@ class NonConcurrencyTest(AwareBaseTest):
 
     @test_tracker_info(uuid="82a0bd98-3022-4831-ac9e-d81f58c742d2")
     def test_run_softap_then_aware(self):
-        """Validate that if SoftAp is already up then any Aware operation fails"""
+        """Validate that a running softAp session terminates when Aware is started"""
         asserts.skip_if(
             self.android_devices[0].model not in self.dbs_supported_models,
             "Device %s doesn't support STA+AP." % self.android_devices[0].model)
