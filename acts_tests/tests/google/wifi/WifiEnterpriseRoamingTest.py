@@ -13,8 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
-
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -50,6 +48,7 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
             "eap_identity",
             "eap_password",
             "device_password",
+            "wifi6_models",
             "radius_conf_2g",
             "radius_conf_5g")
         self.unpack_userparams(req_params)
@@ -178,11 +177,17 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         wutils.set_attns_steps(
             self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
         wutils.connect_to_wifi_network(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         wutils.verify_wifi_connection_info(self.dut, expected_con_to_a)
         self.log.info("Roaming from %s to %s", self.bssid_a, self.bssid_b)
         self.trigger_roaming_and_validate("AP1_off_AP2_on", expected_con_to_b)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         self.log.info("Roaming from %s to %s", self.bssid_b, self.bssid_a)
         self.trigger_roaming_and_validate("AP1_on_AP2_off", expected_con_to_a)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     """ Tests Begin """
 
