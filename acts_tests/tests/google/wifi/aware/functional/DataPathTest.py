@@ -2179,6 +2179,14 @@ class DataPathTest(AwareBaseTest):
             len(self.android_devices) < 3,
             'A minimum of 3 devices is needed to run the test, have %d' % len(
                 self.android_devices))
+        asserts.skip_if(
+            self.android_devices[0]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2
+            or self.android_devices[1]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2
+            or self.android_devices[2]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2,
+            "DUTs do not support enough NDIs")
 
         duts = self.android_devices
         loop_len = len(duts)
