@@ -39,8 +39,8 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
     """
     def __init__(self, num_atten=0):
         super(AttenuatorInstrument, self).__init__(num_atten)
-        self._tnhelper = _tnhelper._TNHelper(tx_cmd_separator='\r\n',
-                                             rx_cmd_separator='\r\n',
+        self._tnhelper = _tnhelper._TNHelper(tx_cmd_separator='\n',
+                                             rx_cmd_separator='\n',
                                              prompt='')
         self.address = None
 
