@@ -20,6 +20,8 @@ import re
 import shutil
 import time
 
+from retry import retry
+
 from collections import namedtuple
 from enum import IntEnum
 from queue import Empty
@@ -2838,3 +2840,77 @@ def verify_11ax_softap(dut, dut_client, wifi6_supported_models):
             dut_client.droid.wifiGetConnectionStandard() ==
             wifi_constants.WIFI_STANDARD_11AX,
             "DUT failed to start SoftAp in 11ax.")
+
+def check_available_channels_in_bands_2_5(dut, country_code):
+    """Check if DUT is capable of enable BridgedAp.
+    #TODO: Find a way to make this function flexible by taking an argument.
+
+    Args:
+        country_code: country code, e.g., 'US', 'JP'.
+    Returns:
+        True: If DUT is capable of enable BridgedAp.
+        False: If DUT is not capable of enable BridgedAp.
+    """
+    set_wifi_country_code(dut, country_code)
+    country = dut.droid.wifiGetCountryCode()
+    dut.log.info("DUT current country code : {}".format(country))
+    # Wi-Fi ON and OFF to make sure country code take effet.
+    wifi_toggle_state(dut, True)
+    wifi_toggle_state(dut, False)
+
+    # Register SoftAp Callback and get SoftAp capability.
+    callbackId = dut.droid.registerSoftApCallback()
+    capability = get_current_softap_capability(dut, callbackId, True)
+    dut.droid.unregisterSoftApCallback(callbackId)
+
+    if capability[wifi_constants.
+                  SOFTAP_CAPABILITY_24GHZ_SUPPORTED_CHANNEL_LIST] and \
+        capability[wifi_constants.
+                   SOFTAP_CAPABILITY_5GHZ_SUPPORTED_CHANNEL_LIST]:
+        return True
+    return False
+
+
+@retry(tries=5, delay=2)
+def validate_ping_between_two_clients(dut1, dut2):
+    """Make 2 DUT ping each other.
+
+    Args:
+        dut1: An AndroidDevice object.
+        dut2: An AndroidDevice object.
+    """
+    # Get DUTs' IPv4 addresses.
+    dut1_ip = ""
+    dut2_ip = ""
+    try:
+        dut1_ip = dut1.droid.connectivityGetIPv4Addresses('wlan0')[0]
+    except IndexError as e:
+        dut1.log.info(
+            "{} has no Wi-Fi connection, cannot get IPv4 address."
+            .format(dut1.serial))
+    try:
+        dut2_ip = dut2.droid.connectivityGetIPv4Addresses('wlan0')[0]
+    except IndexError as e:
+        dut2.log.info(
+            "{} has no Wi-Fi connection, cannot get IPv4 address."
+            .format(dut2.serial))
+    # Test fail if not able to obtain two DUT's IPv4 addresses.
+    asserts.assert_true(dut1_ip and dut2_ip,
+                        "Ping failed because no DUT's IPv4 address")
+
+    dut1.log.info("{} IPv4 addresses : {}".format(dut1.serial, dut1_ip))
+    dut2.log.info("{} IPv4 addresses : {}".format(dut2.serial, dut2_ip))
+
+    # Two clients ping each other
+    dut1.log.info("{} ping {}".format(dut1_ip, dut2_ip))
+    asserts.assert_true(
+        utils.adb_shell_ping(dut1, count=10, dest_ip=dut2_ip,
+                             timeout=20),
+        "%s ping %s failed" % (dut1.serial, dut2_ip))
+
+    dut2.log.info("{} ping {}".format(dut2_ip, dut1_ip))
+    asserts.assert_true(
+        utils.adb_shell_ping(dut2, count=10, dest_ip=dut1_ip,
+                             timeout=20),
+        "%s ping %s failed" % (dut2.serial, dut1_ip))
+
