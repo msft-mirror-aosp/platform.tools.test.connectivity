@@ -64,12 +64,11 @@ from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voi
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_5g
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_both_devices_for_volte
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
-from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
-from acts_contrib.test_utils.tel.tel_5g_utils import verify_5g_attach_for_both_devices
-from acts_contrib.test_utils.tel.tel_5g_utils import disable_apm_mode_both_devices
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_volte
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import set_preferred_mode_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_5g_test_utils import disable_apm_mode_both_devices
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_data_transfer
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
@@ -115,7 +114,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         # VoLTE calls
@@ -196,7 +195,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not phone_setup_call_hold_unhold_test(self.log,
@@ -228,7 +227,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         if not provision_both_devices_for_volte(self.log, ads):
             return False
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not phone_setup_call_hold_unhold_test(self.log,
@@ -322,7 +321,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
 
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
 
         if not verify_5g_attach_for_both_devices(self.log, ads):
@@ -923,7 +922,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             data_usage = get_mobile_data_usage(ads[0], subscriber_id)
             set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
 
-            if not provision_both_devices_for_5g(self.log, ads):
+            if not provision_device_for_5g(self.log, ads):
                 self.log.error("Phone Failed to Set Up Properly.")
                 self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
                 raise signals.TestFailure("Failed",
@@ -960,7 +959,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         result = True
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
                 self.log.error("Phone Failed to Set Up Properly.")
                 self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
                 raise signals.TestFailure("Failed",
@@ -1175,7 +1174,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        if not provision_both_devices_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads):
             return False
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,

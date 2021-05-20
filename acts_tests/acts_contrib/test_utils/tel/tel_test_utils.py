@@ -187,6 +187,8 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_out
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
@@ -210,6 +212,7 @@ log = logging
 STORY_LINE = "+19523521350"
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 voice_call_type = {}
+result_dict ={}
 
 class TelTestUtilsError(Exception):
     pass
@@ -1525,39 +1528,6 @@ def get_current_override_network_type(ad, timeout=30):
         ad.droid.telephonyStopTrackingDisplayInfoChange()
     return -1
 
-
-def is_current_network_5g_nsa(ad, timeout=30):
-    """Verifies 5G NSA override network type
-
-    Args:
-        ad: android device object.
-        timeout: max time to wait for event
-
-    Returns:
-        True: if data is on 5g NSA
-        False: if data is not on 5g NSA
-    """
-    ad.ed.clear_events(EventDisplayInfoChanged)
-    ad.droid.telephonyStartTrackingDisplayInfoChange()
-    try:
-        event = ad.ed.wait_for_event(
-                EventDisplayInfoChanged,
-                is_event_match,
-                timeout=timeout,
-                field=DisplayInfoContainer.OVERRIDE,
-                value=OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA)
-        ad.log.info("Got expected event %s", event)
-        return True
-    except Empty:
-        ad.log.info("No event for display info change")
-        return False
-    finally:
-        ad.droid.telephonyStopTrackingDisplayInfoChange()
-    return None
-
-def is_current_network_5g_nsa_for_subscription(ad, timeout=30, sub_id=None):
-    return change_voice_subid_temporarily(ad, sub_id, is_current_network_5g_nsa, params=[ad, timeout])
-
 def disconnect_call_by_id(log, ad, call_id):
     """Disconnect call by call id.
     """
@@ -1643,7 +1613,9 @@ def initiate_call(log,
                   incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
                   video=False,
                   voice_type_init=None,
-                  call_stats_check=False):
+                  call_stats_check=False,
+                  result_info=result_dict,
+                  nsa_5g_for_stress=False):
     """Make phone call from caller to callee.
 
     Args:
@@ -1683,6 +1655,7 @@ def initiate_call(log,
             phone_call_type = check_call_status(ad,
                                                 voice_type_init,
                                                 voice_type_in_call)
+            result_info["Call Stats"] = phone_call_type
             ad.log.debug("Voice Call Type: %s", phone_call_type)
 
     finally:
@@ -1690,6 +1663,11 @@ def initiate_call(log,
             ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
             ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
+
+        if nsa_5g_for_stress:
+            if not is_current_network_5g_nsa(ad):
+                ad.log.error("Phone is not attached on 5G NSA")
+
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
             ad.droid.telecomShowInCallScreen()
         elif incall_ui_display == INCALL_UI_DISPLAY_BACKGROUND:
@@ -2335,7 +2313,9 @@ def call_setup_teardown(log,
                         video_state=None,
                         slot_id_callee=None,
                         voice_type_init=None,
-                        call_stats_check=False):
+                        call_stats_check=False,
+                        result_info=result_dict,
+                        nsa_5g_for_stress=False):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -2374,7 +2354,8 @@ def call_setup_teardown(log,
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state,
-        voice_type_init, call_stats_check)
+        voice_type_init, call_stats_check, result_info, nsa_5g_for_stress)
+
 
 
 def call_setup_teardown_for_subscription(
@@ -2391,7 +2372,9 @@ def call_setup_teardown_for_subscription(
         dialing_number_length=None,
         video_state=None,
         voice_type_init=None,
-        call_stats_check=False):
+        call_stats_check=False,
+        result_info=result_dict,
+        nsa_5g_for_stress=False):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -2531,10 +2514,12 @@ def call_setup_teardown_for_subscription(
             phone_a_call_type = check_call_status(ad_caller,
                                                   voice_type_init[0],
                                                   voice_type_in_call[0])
+            result_info["Call Stats"] = phone_a_call_type
             ad_caller.log.debug("Voice Call Type: %s", phone_a_call_type)
             phone_b_call_type = check_call_status(ad_callee,
                                                   voice_type_init[1],
                                                   voice_type_in_call[1])
+            result_info["Call Stats"] = phone_b_call_type
             ad_callee.log.debug("Voice Call Type: %s", phone_b_call_type)
 
         elapsed_time = 0
@@ -2580,6 +2565,12 @@ def call_setup_teardown_for_subscription(
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
+
+        if nsa_5g_for_stress:
+            for ad in (ad_caller, ad_callee):
+                if not is_current_network_5g_nsa(ad):
+                    ad.log.error("Phone not attached on 5G NSA")
+
         if ad_hangup or not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):
                 if not wait_for_call_id_clearing(
@@ -3779,7 +3770,7 @@ def check_curl_availability(ad):
     return ad.curl_capable
 
 
-def start_youtube_video(ad, url="https://www.youtube.com/watch?v=pSJoP0LR8CQ"):
+def start_youtube_video(ad, url="vnd.youtube:watch?v=pSJoP0LR8CQ"):
     ad.log.info("Open an youtube video")
     for _ in range(3):
         ad.ensure_screen_on()
@@ -5321,7 +5312,7 @@ def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
 
     try:
         current_mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
-        ad.log.info("Current WFC mode of sub ID: %s", current_mode)
+        ad.log.info("Current WFC mode of sub ID %s: %s", sub_id, current_mode)
     except Exception as e:
         ad.log.warning(e)
 
@@ -5329,12 +5320,15 @@ def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
         try:
             if not ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id):
                 if wfc_mode is WFC_MODE_DISABLED:
+                    ad.log.info("WFC is already disabled.")
                     return True
                 ad.log.info(
                     "WFC is disabled for sub ID %s. Enabling WFC...", sub_id)
                 ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, True)
 
             if wfc_mode is WFC_MODE_DISABLED:
+                ad.log.info(
+                    "WFC is enabled for sub ID %s. Disabling WFC...", sub_id)
                 ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, False)
                 return True
 
@@ -7707,20 +7701,6 @@ def set_preferred_network_mode_pref(log,
     return False
 
 
-def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
-    """Set Preferred Network Mode for 5G NSA
-    Args:
-        ad: Android device object.
-        sub_id: Subscription ID.
-        mode: 5G Network Mode Type
-    """
-    if sub_id is None:
-        sub_id = ad.droid.subscriptionGetDefaultSubId()
-    if mode is None:
-        mode = NETWORK_MODE_NR_LTE_GSM_WCDMA
-    return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
-
-
 def set_preferred_subid_for_sms(log, ad, sub_id):
     """set subscription id for SMS
 
@@ -9465,7 +9445,7 @@ def load_scone_cat_data_from_file(ad, simulate_file_path, sub_id=None):
         try:
             radio_simulate_data = json.load(f)
         except Exception as e:
-            self.log.error("Exception error to load %s: %s", f, e)
+            ad.log.error("Exception error to load %s: %s", f, e)
             return False
 
     for item in radio_simulate_data:
@@ -10773,7 +10753,7 @@ def datetime_handle(ad, action, set_datetime_value='', get_year=False):
             try:
                 get_value = datetime_list[5]
             except Exception as e:
-                self.log.error("Fail to get year from datetime: %s. " \
+                ad.log.error("Fail to get year from datetime: %s. " \
                                 "Exception error: %s", datetime_list
                                 , str(e))
                 raise signals.TestSkip("Fail to get year from datetime" \
@@ -10821,6 +10801,7 @@ def wait_for_call_end(
         ad_hangup,
         verify_caller_func,
         verify_callee_func,
+        call_begin_time,
         check_interval=5,
         tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
         wait_time_in_call=WAIT_TIME_IN_CALL):
@@ -10857,7 +10838,7 @@ def wait_for_call_end(
 
     if not tel_result_wrapper:
         for ad in (ad_caller, ad_callee):
-            last_call_drop_reason(ad, begin_time)
+            last_call_drop_reason(ad, call_begin_time)
             try:
                 if ad.droid.telecomIsInCall():
                     ad.log.info("In call. End now.")
@@ -10931,7 +10912,6 @@ def voice_call_in_collision_with_mt_sms_msim(
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
 
-    begin_time = get_current_epoch_time()
     if not verify_caller_func:
         verify_caller_func = is_phone_in_call
     if not verify_callee_func:
@@ -10977,7 +10957,7 @@ def voice_call_in_collision_with_mt_sms_msim(
             ad.log.info("Pre-exist CallId %s before making call", call_ids)
 
     ad_caller.ed.clear_events(EventCallStateChanged)
-    begin_time = get_device_epoch_time(ad)
+    call_begin_time = get_device_epoch_time(ad)
     ad_caller.droid.telephonyStartTrackingCallStateForSubscription(subid_caller)
 
     for text in array_message:
@@ -11011,7 +10991,7 @@ def voice_call_in_collision_with_mt_sms_msim(
                         event_tracking_started=True):
                     ad_caller.log.info(
                         "sub_id %s not in call offhook state", subid_caller)
-                    last_call_drop_reason(ad_caller, begin_time=begin_time)
+                    last_call_drop_reason(ad_caller, begin_time=call_begin_time)
 
                     ad_caller.log.error("Initiate call failed.")
                     tel_result_wrapper.result_value = CallResult(
@@ -11089,7 +11069,7 @@ def voice_call_in_collision_with_mt_sms_msim(
                 MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION, True)),
                 (wait_for_call_end,
                 (log, ad_caller, ad_callee, ad_hangup, verify_caller_func,
-                    verify_callee_func, 5, tel_result_wrapper,
+                    verify_callee_func, call_begin_time, 5, tel_result_wrapper,
                     WAIT_TIME_IN_CALL))]
 
             results = run_multithread_func(log, tasks)

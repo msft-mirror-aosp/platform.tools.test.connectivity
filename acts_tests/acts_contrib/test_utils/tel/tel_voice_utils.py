@@ -106,7 +106,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -788,7 +788,8 @@ def phone_setup_iwlan(log,
                       is_airplane_mode,
                       wfc_mode,
                       wifi_ssid=None,
-                      wifi_pwd=None):
+                      wifi_pwd=None,
+                      nw_gen=None):
     """Phone setup function for epdg call test.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -803,13 +804,15 @@ def phone_setup_iwlan(log,
         wifi_ssid: WiFi network SSID. This is optional.
             If wifi_ssid is None, then phone_setup_iwlan will not attempt to connect to wifi.
         wifi_pwd: WiFi network password. This is optional.
+        nw_gen: network type selection. This is optional.
+            GEN_4G for 4G, GEN_5G for 5G or None for doing nothing.
     Returns:
         True if success. False if fail.
     """
     return phone_setup_iwlan_for_subscription(log, ad,
                                               get_outgoing_voice_sub_id(ad),
                                               is_airplane_mode, wfc_mode,
-                                              wifi_ssid, wifi_pwd)
+                                              wifi_ssid, wifi_pwd, nw_gen)
 
 
 def phone_setup_iwlan_for_subscription(log,
@@ -818,7 +821,8 @@ def phone_setup_iwlan_for_subscription(log,
                                        is_airplane_mode,
                                        wfc_mode,
                                        wifi_ssid=None,
-                                       wifi_pwd=None):
+                                       wifi_pwd=None,
+                                       nw_gen=None):
     """Phone setup function for epdg call test for subscription id.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -834,13 +838,25 @@ def phone_setup_iwlan_for_subscription(log,
         wifi_ssid: WiFi network SSID. This is optional.
             If wifi_ssid is None, then phone_setup_iwlan will not attempt to connect to wifi.
         wifi_pwd: WiFi network password. This is optional.
+        nw_gen: network type selection. This is optional.
+            GEN_4G for 4G, GEN_5G for 5G or None for doing nothing.
     Returns:
         True if success. False if fail.
     """
     if not get_capability_for_subscription(ad, CAPABILITY_WFC, sub_id):
         ad.log.error("WFC is not supported, abort test.")
         raise signals.TestSkip("WFC is not supported, abort test.")
+
+    if nw_gen:
+        if not ensure_network_generation_for_subscription(
+                log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA):
+            ad.log.error("Failed to set to %s data.", nw_gen)
+            return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
+
+    if not toggle_volte_for_subscription(log, ad, sub_id, new_state=True):
+        return False
+
     # check if WFC supported phones
     if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
     ):
@@ -858,9 +874,12 @@ def phone_setup_iwlan_for_subscription(log,
     if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
-    if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
-        ad.log.error("WFC is not enabled")
-        return False
+
+    if wfc_mode != WFC_MODE_DISABLED:
+        if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
+            ad.log.error("WFC is not enabled")
+            return False
+
     return True
 
 
@@ -1977,6 +1996,20 @@ def phone_setup_on_rat(
             return phone_setup_csfb_for_subscription
         else:
             return phone_setup_csfb_for_subscription(log, ad, sub_id, GEN_5G)
+
+    elif rat.lower() == '5g_wfc':
+        if only_return_fn:
+            return phone_setup_iwlan_for_subscription
+        else:
+            return phone_setup_iwlan_for_subscription(
+                log,
+                ad,
+                sub_id,
+                is_airplane_mode,
+                wfc_mode,
+                wifi_ssid,
+                wifi_pwd,
+                GEN_5G)
 
     elif rat.lower() == 'volte':
         if only_return_fn:

@@ -51,9 +51,11 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_data_connectivity_mu
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
 from acts_contrib.test_utils.tel.tel_data_utils import verify_for_network_callback
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
+from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
-from acts_contrib.test_utils.tel.tel_5g_utils import set_preferred_mode_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import set_preferred_mode_for_5g
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 
@@ -456,5 +458,32 @@ class Nsa5gDataTest(TelephonyBaseTest):
 
         return test_wifi_connect_disconnect(self.log, self.provider, self.wifi_network_ssid, self.wifi_network_pass)
 
+    @test_tracker_info(uuid="4a61c7c9-f4ed-4e21-b04b-d7a81347b8aa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_airplane_mode(self):
+        """Test airplane mode basic on Phone and Live SIM on 5G NSA.
+
+        Ensure phone is on 5G NSA.
+        Ensure phone attach, data on, WiFi off and verify Internet.
+        Turn on airplane mode to make sure detach.
+        Turn off airplane mode to make sure attach.
+        Verify Internet connection.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0]):
+            return False
+        return airplane_mode_test(self.log, self.android_devices[0])
+
+    @test_tracker_info(uuid="091cde37-0bac-4399-83aa-cbd5a83b07a1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_reboot(self):
+        """Test 5G NSA service availability after reboot."""
+        if not provision_device_for_5g(self.log, self.android_devices[0]):
+            return False
+        if not verify_internet_connection(self.log, self.android_devices[0]):
+            return False
+        return reboot_test(self.log, self.android_devices[0])
 
     """ Tests End """
