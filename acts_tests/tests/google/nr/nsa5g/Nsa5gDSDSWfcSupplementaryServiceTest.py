@@ -322,3 +322,48 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
             0,
             callee_rat=['5g_wfc', 'general'],
             wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="f0b1c9ce-a386-4b25-8a44-8ca4897fc650")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_psim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_1(self):
+        return self._test_msim_volte_wfc_call_forwarding(
+            0,
+            1,
+            callee_rat=['5g_wfc', 'general'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="c952fe28-823d-412d-a3ac-797bd6e2dc09")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_psim_nsa_5g_volte_wfc_cellular_preferred_wifi_on_dds_0(self):
+        return self._test_msim_volte_wfc_call_forwarding(
+            0,
+            0,
+            callee_rat=["5g_volte", "general"],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="d9e58366-46ea-454a-a1b1-466ec91112ef")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_esim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_0(self):
+        return self._test_msim_volte_wfc_call_forwarding(
+            1,
+            0,
+            callee_rat=['general', '5g_wfc'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="18ce70a6-972c-4723-8e65-0c9814d14e76")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_esim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_1(self):
+        return self._test_msim_volte_wfc_call_forwarding(
+            1,
+            1,
+            callee_rat=['general', '5g_wfc'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="d843d4cd-c562-47f1-b35b-57a84896314e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_esim_nsa_5g_volte_wfc_cellular_preferred_wifi_on_dds_0(self):
+        return self._test_msim_volte_wfc_call_forwarding(
+            1,
+            0,
+            callee_rat=["general", "5g_volte"],
+            is_wifi_connected=True)
