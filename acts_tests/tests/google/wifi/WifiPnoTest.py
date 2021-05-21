@@ -16,7 +16,6 @@
 import time
 
 from acts import asserts
-from acts import base_test
 from acts.test_decorators import test_tracker_info
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -35,7 +34,7 @@ class WifiPnoTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["attn_vals", "pno_interval"]
+        req_params = ["attn_vals", "pno_interval", "wifi6_models"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -118,6 +117,8 @@ class WifiPnoTest(WifiBaseTest):
             wutils.verify_wifi_connection_info(self.dut, verify_con)
             self.log.info("Connected to %s successfully after PNO",
                           expected_ssid)
+            wutils.verify_11ax_wifi_connection(
+                self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         finally:
             pass
 

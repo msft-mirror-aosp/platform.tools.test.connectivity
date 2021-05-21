@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import pprint
-import random
 import time
 import acts.utils
 
@@ -48,12 +46,10 @@ class WifiEnterpriseTest(WifiBaseTest):
             for a in self.attenuators:
                 a.set_atten(0)
         required_userparam_names = (
-            "ca_cert", "client_cert", "client_key", "passpoint_ca_cert",
-            "passpoint_client_cert", "passpoint_client_key", "eap_identity",
+            "ca_cert", "client_cert", "client_key", "eap_identity",
             "eap_password", "invalid_ca_cert", "invalid_client_cert",
-            "invalid_client_key", "fqdn", "provider_friendly_name", "realm",
-            "device_password", "ping_addr", "radius_conf_2g", "radius_conf_5g",
-            "radius_conf_pwd")
+            "invalid_client_key", "device_password", "radius_conf_2g",
+            "radius_conf_5g", "radius_conf_pwd", "wifi6_models")
         self.unpack_userparams(required_userparam_names,
                                roaming_consortium_ids=None,
                                plmn=None,
@@ -137,29 +133,6 @@ class WifiEnterpriseTest(WifiBaseTest):
             WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
         }
 
-        # Base config for passpoint networks.
-        self.config_passpoint = {
-            Ent.FQDN: self.fqdn,
-            Ent.FRIENDLY_NAME: self.provider_friendly_name,
-            Ent.REALM: self.realm,
-            Ent.CA_CERT: self.passpoint_ca_cert
-        }
-        if self.plmn:
-            self.config_passpoint[Ent.PLMN] = self.plmn
-        if self.roaming_consortium_ids:
-            self.config_passpoint[
-                Ent.ROAMING_IDS] = self.roaming_consortium_ids
-
-        # Default configs for passpoint networks.
-        self.config_passpoint_tls = dict(self.config_tls)
-        self.config_passpoint_tls.update(self.config_passpoint)
-        self.config_passpoint_tls[Ent.CLIENT_CERT] = self.passpoint_client_cert
-        self.config_passpoint_tls[
-            Ent.PRIVATE_KEY_ID] = self.passpoint_client_key
-        del self.config_passpoint_tls[WifiEnums.SSID_KEY]
-        self.config_passpoint_ttls = dict(self.config_ttls)
-        self.config_passpoint_ttls.update(self.config_passpoint)
-        del self.config_passpoint_ttls[WifiEnums.SSID_KEY]
         # Set screen lock password so ConfigStore is unlocked.
         self.dut.droid.setDevicePassword(self.device_password)
 
@@ -254,29 +227,6 @@ class WifiEnterpriseTest(WifiBaseTest):
         }
         return self.gen_negative_configs(config, neg_params)
 
-    def gen_negative_passpoint_configs(self, config):
-        """Generates invalid configurations for different EAP authentication
-        types with passpoint support.
-
-        Args:
-            A valid network configration
-
-        Returns:
-            An invalid EAP configuration with passpoint fields.
-        """
-        neg_params = {
-            Ent.CLIENT_CERT: self.invalid_client_cert,
-            Ent.CA_CERT: self.invalid_ca_cert,
-            Ent.PRIVATE_KEY_ID: self.invalid_client_key,
-            Ent.IDENTITY: "fake_identity",
-            Ent.PASSWORD: "wrong_password",
-            Ent.FQDN: "fake_fqdn",
-            Ent.REALM: "where_no_one_has_gone_before",
-            Ent.PLMN: "fake_plmn",
-            Ent.ROAMING_IDS: [1234567890, 9876543210]
-        }
-        return self.gen_negative_configs(config, neg_params)
-
     def eap_connect_toggle_wifi(self, config, *args):
         """Connects to an enterprise network, toggles wifi state and ensures
         that the device reconnects.
@@ -292,9 +242,13 @@ class WifiEnterpriseTest(WifiBaseTest):
         """
         ad = args[0]
         wutils.wifi_connect(ad, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         wutils.toggle_wifi_and_wait_for_reconnection(ad,
                                                      config,
                                                      num_of_tries=5)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def toggle_out_of_range_stress(self, stress_count=3):
         """toggle_out_of_range_stress."""
@@ -378,40 +332,56 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="4e720cac-ea17-4de7-a540-8dc7c49f9713")
     def test_eap_connect_with_config_tls(self):
         wutils.wifi_connect(self.dut, self.config_tls)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="10e3a5e9-0018-4162-a9fa-b41500f13340")
     def test_eap_connect_with_config_pwd(self):
         wutils.wifi_connect(self.dut, self.config_pwd)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="b4513f78-a1c4-427f-bfc7-2a6b3da714b5")
     def test_eap_connect_with_config_sim(self):
         wutils.wifi_connect(self.dut, self.config_sim)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="7d390e30-cb67-4b55-bf00-567adad2d9b0")
     def test_eap_connect_with_config_aka(self):
         wutils.wifi_connect(self.dut, self.config_aka)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="742f921b-27c3-4b68-a3ca-88e64fe79c1d")
     def test_eap_connect_with_config_aka_prime(self):
         wutils.wifi_connect(self.dut, self.config_aka_prime)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="d34e30f3-6ef6-459f-b47a-e78ed90ce4c6")
     def test_eap_connect_with_config_ttls_none(self):
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.NONE.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="0dca3a15-472e-427c-8e06-4e38088ee973")
     def test_eap_connect_with_config_ttls_pap(self):
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="47c4b459-2cb1-4fc7-b4e7-82534e8e090e")
     def test_eap_connect_with_config_ttls_mschap(self):
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAP.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="fdb286c7-8069-481d-baf0-c5dd7a31ff03")
     def test_eap_connect_with_config_ttls_mschapv2(self):
@@ -419,12 +389,16 @@ class WifiEnterpriseTest(WifiBaseTest):
         config[
             WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="d9315962-7987-4ee7-905d-6972c78ce8a1")
     def test_eap_connect_with_config_ttls_gtc(self):
         config = dict(self.config_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="90a67bd3-30da-4daf-8ab0-d964d7ad19be")
     def test_eap_connect_with_config_peap0_mschapv2(self):
@@ -432,12 +406,16 @@ class WifiEnterpriseTest(WifiBaseTest):
         config[
             WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="3c451ba4-0c83-4eef-bc95-db4c21893008")
     def test_eap_connect_with_config_peap0_gtc(self):
         config = dict(self.config_peap0)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="6b45157d-0325-417a-af18-11af5d240d79")
     def test_eap_connect_with_config_peap1_mschapv2(self):
@@ -445,12 +423,16 @@ class WifiEnterpriseTest(WifiBaseTest):
         config[
             WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="1663decc-71ae-4f95-a027-8a6dbf9c337f")
     def test_eap_connect_with_config_peap1_gtc(self):
         config = dict(self.config_peap1)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
         wutils.wifi_connect(self.dut, config)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     # EAP connect negative tests
     """ Test connecting to enterprise networks.
@@ -663,206 +645,6 @@ class WifiEnterpriseTest(WifiBaseTest):
     @test_tracker_info(uuid="6da72fa0-b858-4475-9559-46fe052d0d64")
     def test_eap_connect_config_store_with_config_peap1_gtc(self):
         config = dict(self.config_peap1)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
-        self.eap_connect_toggle_wifi(config, self.dut)
-
-    # Removing 'test_' for all passpoint based testcases as we want to disable
-    # them. Adding the valid test cases to self.tests make them run in serial
-    # (TODO): gmoturu - Update the passpoint tests to test the valid scenario
-    # Passpoint connect tests
-    """ Test connecting to enterprise networks of different authentication
-        types with passpoint support.
-
-        The authentication types tested are:
-            EAP-TLS
-            EAP-TTLS with MSCHAPV2 as phase2.
-
-        Procedures:
-            For each enterprise wifi network
-            1. Connect to the network.
-            2. Send a GET request to a website and check response.
-
-        Expect:
-            Successful connection and Internet access through the enterprise
-            networks with passpoint support.
-    """
-
-    @test_tracker_info(uuid="0b942524-bde9-4fc6-ac6a-fef1c247cb8e")
-    def passpoint_connect_with_config_passpoint_tls(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        wutils.wifi_connect(self.dut, self.config_passpoint_tls)
-
-    @test_tracker_info(uuid="33a014aa-99e7-4612-b732-54fabf1bf922")
-    def passpoint_connect_with_config_passpoint_ttls_none(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.NONE.value
-        wutils.wifi_connect(self.dut, config)
-
-    @test_tracker_info(uuid="1aba8bf9-2b09-4956-b418-c3f4dadab330")
-    def passpoint_connect_with_config_passpoint_ttls_pap(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
-        wutils.wifi_connect(self.dut, config)
-
-    @test_tracker_info(uuid="cd978fc9-a393-4b1e-bba3-1efc52224500")
-    def passpoint_connect_with_config_passpoint_ttls_mschap(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAP.value
-        wutils.wifi_connect(self.dut, config)
-
-    @test_tracker_info(uuid="bc311ee7-ba64-4c76-a629-b916701bf6a5")
-    def passpoint_connect_with_config_passpoint_ttls_mschapv2(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[
-            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
-        wutils.wifi_connect(self.dut, config)
-
-    @test_tracker_info(uuid="357e5162-5081-4149-bedd-ef2c0f88b97e")
-    def passpoint_connect_with_config_passpoint_ttls_gtc(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
-        wutils.wifi_connect(self.dut, config)
-
-    # Passpoint connect negative tests
-    """ Test connecting to enterprise networks.
-
-        Procedures:
-            For each enterprise wifi network
-            1. Connect to the network with invalid credentials.
-
-        Expect:
-            Fail to establish connection.
-    """
-
-    @test_tracker_info(uuid="7b6b44a0-ff70-49b4-94ca-a98bedc18f92")
-    def passpoint_connect_negative_with_config_passpoint_tls(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = self.gen_negative_passpoint_configs(self.config_passpoint_tls)
-        self.eap_negative_connect_logic(config, self.dut)
-
-    @test_tracker_info(uuid="3dbde40a-e88c-4166-b932-163663a10a41")
-    def passpoint_connect_negative_with_config_passpoint_ttls_none(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.NONE.value
-        config = self.gen_negative_passpoint_configs(config)
-        self.eap_negative_connect_logic(config, self.dut)
-
-    @test_tracker_info(uuid="8ee22ad6-d561-4ca2-a808-9f372fce56b4")
-    def passpoint_connect_negative_with_config_passpoint_ttls_pap(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
-        config = self.gen_negative_passpoint_configs(config)
-        self.eap_negative_connect_logic(config, self.dut)
-
-    @test_tracker_info(uuid="db5cefe7-9cb8-47a6-8635-006c80b97012")
-    def passpoint_connect_negative_with_config_passpoint_ttls_mschap(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAP.value
-        config = self.gen_negative_passpoint_configs(config)
-        self.eap_negative_connect_logic(config, self.dut)
-
-    @test_tracker_info(uuid="8f49496e-80df-48ce-9c51-42f0c6b81aff")
-    def passpoint_connect_negative_with_config_passpoint_ttls_mschapv2(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[
-            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
-        config = self.gen_negative_passpoint_configs(config)
-        self.eap_negative_connect_logic(config, self.dut)
-
-    @test_tracker_info(uuid="6561508f-598e-408d-96b6-15b631664be6")
-    def passpoint_connect_negative_with_config_passpoint_ttls_gtc(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
-        config = self.gen_negative_passpoint_configs(config)
-        self.eap_negative_connect_logic(config, self.dut)
-
-    # Passpoint connect config store tests
-    """ Test connecting to enterprise networks of different authentication
-        types with passpoint support after wifi toggle.
-
-        The authentication types tested are:
-            EAP-TLS
-            EAP-TTLS with MSCHAPV2 as phase2.
-
-        Procedures:
-            For each enterprise wifi network
-            1. Connect to the network.
-            2. Send a GET request to a website and check response.
-            3. Toggle wifi.
-            4. Ensure that the device reconnects to the same network.
-
-        Expect:
-            Successful connection and Internet access through the enterprise
-            networks with passpoint support.
-    """
-
-    @test_tracker_info(uuid="5d5e6bb0-faea-4a6e-a6bc-c87de997a4fd")
-    def passpoint_connect_config_store_with_config_passpoint_tls(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        self.eap_connect_toggle_wifi(self.config_passpoint_tls, self.dut)
-
-    @test_tracker_info(uuid="0c80262d-23c1-439f-ad64-7b8ada5d1962")
-    def passpoint_connect_config_store_with_config_passpoint_ttls_none(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.NONE.value
-        self.eap_connect_toggle_wifi(config, self.dut)
-
-    @test_tracker_info(uuid="786e424c-b5a6-4fe9-a951-b3de16ebb6db")
-    def passpoint_connect_config_store_with_config_passpoint_ttls_pap(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
-        self.eap_connect_toggle_wifi(config, self.dut)
-
-    @test_tracker_info(uuid="22fd61bf-722a-4016-a778-fc33e94ed211")
-    def passpoint_connect_config_store_with_config_passpoint_ttls_mschap(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAP.value
-        self.eap_connect_toggle_wifi(config, self.dut)
-
-    @test_tracker_info(uuid="2abd348c-9c66-456b-88ad-55f971717620")
-    def passpoint_connect_config_store_with_config_passpoint_ttls_mschapv2(
-            self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
-        config[
-            WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
-        self.eap_connect_toggle_wifi(config, self.dut)
-
-    @test_tracker_info(uuid="043e8cdd-db95-4f03-b308-3c8cecf874b1")
-    def passpoint_connect_config_store_with_config_passpoint_ttls_gtc(self):
-        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
-                        "Passpoint is not supported on %s" % self.dut.model)
-        config = dict(self.config_passpoint_ttls)
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
         self.eap_connect_toggle_wifi(config, self.dut)
 
