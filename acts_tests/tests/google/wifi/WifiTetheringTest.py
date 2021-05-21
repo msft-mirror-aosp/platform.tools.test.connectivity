@@ -45,7 +45,7 @@ class WifiTetheringTest(WifiBaseTest):
         super().setup_class()
         self.hotspot_device = self.android_devices[0]
         self.tethered_devices = self.android_devices[1:]
-        req_params = ("url", "open_network")
+        req_params = ("url", "open_network", "wifi6_models")
         self.unpack_userparams(req_params)
         self.network = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                         "password": "pass_%s" % utils.rand_ascii_str(6)}
@@ -447,6 +447,9 @@ class WifiTetheringTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.tethered_devices[0],
                                        self.network,
                                        check_connectivity=True)
+        wutils.verify_11ax_softap(self.hotspot_device,
+                                  self.tethered_devices[0],
+                                  self.wifi6_models)
 
     @test_tracker_info(uuid="17e450f4-795f-4e67-adab-984940dffedc")
     def test_wifi_tethering_wpapsk_network_5g(self):
@@ -460,6 +463,9 @@ class WifiTetheringTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.tethered_devices[0],
                                        self.network,
                                        check_connectivity=True)
+        wutils.verify_11ax_softap(self.hotspot_device,
+                                  self.tethered_devices[0],
+                                  self.wifi6_models)
 
     @test_tracker_info(uuid="2bc344cb-0277-4f06-b6cc-65b3972086ed")
     def test_change_wifi_hotspot_ssid_when_hotspot_enabled(self):
@@ -482,6 +488,9 @@ class WifiTetheringTest(WifiBaseTest):
                 self.network[wutils.WifiEnums.SSID_KEY],
             "Configured wifi hotspot SSID did not match with the expected SSID")
         wutils.connect_to_wifi_network(self.tethered_devices[0], self.network)
+        wutils.verify_11ax_softap(self.hotspot_device,
+                                  self.tethered_devices[0],
+                                  self.wifi6_models)
 
         # update the wifi ap configuration with new ssid
         config = {wutils.WifiEnums.SSID_KEY: self.new_ssid}
@@ -498,6 +507,9 @@ class WifiTetheringTest(WifiBaseTest):
                        wutils.WifiEnums.PWD_KEY: \
                        self.network[wutils.WifiEnums.PWD_KEY]}
         wutils.connect_to_wifi_network(self.tethered_devices[0], new_network)
+        wutils.verify_11ax_softap(self.hotspot_device,
+                                  self.tethered_devices[0],
+                                  self.wifi6_models)
 
     @test_tracker_info(uuid="4cf7ab26-ca2d-46f6-9d3f-a935c7e04c97")
     def test_wifi_tethering_open_network_2g(self):
@@ -519,6 +531,9 @@ class WifiTetheringTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.tethered_devices[0],
                                        open_network,
                                        check_connectivity=True)
+        wutils.verify_11ax_softap(self.hotspot_device,
+                                  self.tethered_devices[0],
+                                  self.wifi6_models)
 
     @test_tracker_info(uuid="f407049b-1324-40ea-a8d1-f90587933310")
     def test_wifi_tethering_open_network_5g(self):
@@ -540,6 +555,9 @@ class WifiTetheringTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.tethered_devices[0],
                                        open_network,
                                        check_connectivity=True)
+        wutils.verify_11ax_softap(self.hotspot_device,
+                                  self.tethered_devices[0],
+                                  self.wifi6_models)
 
     @test_tracker_info(uuid="d964f2e6-0acb-417c-ada9-eb9fc5a470e4")
     def test_wifi_tethering_open_network_2g_stress(self):
