@@ -75,7 +75,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         """ Initializes the simulator for LTE simulation with carrier
         aggregation.
 
-        Loads a simple LTE simulation enviroment with 5 basestations.
+        Loads a simple LTE simulation environment with 5 basestations.
 
         Args:
             simulator: the cellular instrument controller
