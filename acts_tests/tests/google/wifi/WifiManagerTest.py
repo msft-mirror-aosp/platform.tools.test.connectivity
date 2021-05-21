@@ -71,7 +71,7 @@ class WifiManagerTest(WifiBaseTest):
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
             "wpa_networks", "wep_networks", "iperf_server_port",
-            "coex_unsafe_channels", "coex_restrictions"
+            "coex_unsafe_channels", "coex_restrictions", "wifi6_models"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -106,9 +106,8 @@ class WifiManagerTest(WifiBaseTest):
         self.turn_location_off_and_scan_toggle_off()
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
-        wutils.reset_wifi(self.dut)
-        if self.dut_client:
-            wutils.reset_wifi(self.dut_client)
+        for ad in self.android_devices:
+            wutils.reset_wifi(ad)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -242,6 +241,8 @@ class WifiManagerTest(WifiBaseTest):
                        (network_ssid, connect_ssid))
         if connect_ssid != network_ssid:
             return False
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         return True
 
     def run_iperf_client(self, params):
@@ -385,6 +386,8 @@ class WifiManagerTest(WifiBaseTest):
         if not reconnect:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling WiFi.")
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def helper_reconnect_toggle_airplane(self):
         """Connect to multiple networks, turn on/off Airplane moce, then
@@ -408,6 +411,8 @@ class WifiManagerTest(WifiBaseTest):
         if not reconnect:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling Airplane mode.")
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def helper_reboot_configstore_reconnect(self, lock_screen=False):
         """Connect to multiple networks, reboot then reconnect to previously
@@ -439,6 +444,8 @@ class WifiManagerTest(WifiBaseTest):
             raise signals.TestFailure(
                 "Device failed to reconnect to the correct"
                 " network after reboot.")
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def helper_toggle_wifi_reboot_configstore_reconnect(self):
         """Connect to multiple networks, disable WiFi, reboot, then
@@ -473,6 +480,8 @@ class WifiManagerTest(WifiBaseTest):
             msg = ("Device failed to reconnect to the correct network after"
                    " toggling WiFi and rebooting.")
             raise signals.TestFailure(msg)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def helper_toggle_airplane_reboot_configstore_reconnect(self):
         """Connect to multiple networks, enable Airplane mode, reboot, then
@@ -511,6 +520,8 @@ class WifiManagerTest(WifiBaseTest):
             msg = ("Device failed to reconnect to the correct network after"
                    " toggling Airplane mode and rebooting.")
             raise signals.TestFailure(msg)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def verify_traffic_between_devices(self,dest_device,src_device,num_of_tries=2):
         """Test the clients and DUT can ping each other.
@@ -862,16 +873,22 @@ class WifiManagerTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.connect_to_wifi_network(self.dut, self.wpapsk_5g)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="81eb7527-4c92-4422-897a-6b5f6445e84a")
     def test_config_store_with_wpapsk_2g(self):
         self.connect_to_wifi_network_toggle_wifi_and_run_iperf(
             (self.wpapsk_2g, self.dut))
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="8457903d-cb7e-4c89-bcea-7f59585ea6e0")
     def test_config_store_with_wpapsk_5g(self):
         self.connect_to_wifi_network_toggle_wifi_and_run_iperf(
             (self.wpapsk_5g, self.dut))
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="b9fbc13a-47b4-4f64-bd2c-e5a3cb24ab2f")
     def test_tdls_supported(self):
@@ -899,6 +916,8 @@ class WifiManagerTest(WifiBaseTest):
         """
         wutils.wifi_connect(self.dut, self.open_network_2g)
         self.get_energy_info()
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="2622c253-defc-4a35-93a6-ca9d29a8238c")
     def test_connect_to_wep_2g(self):
@@ -929,6 +948,8 @@ class WifiManagerTest(WifiBaseTest):
         2. Connect to the network and validate internet connection.
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="612c3c31-a4c5-4014-9a2d-3f4bcc20c0d7")
     def test_connect_to_wpa_5g(self):
@@ -939,6 +960,8 @@ class WifiManagerTest(WifiBaseTest):
         2. Connect to the network and validate internet connection.
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["5g"])
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="2a617fb4-1d8e-44e9-a500-a5456e1df83f")
     def test_connect_to_2g_can_be_pinged(self):
@@ -950,7 +973,11 @@ class WifiManagerTest(WifiBaseTest):
         3. Check DUT can be pinged by another device
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
+        wutils.verify_11ax_wifi_connection(
+            self.dut_client, self.wifi6_models, "wifi6_ap" in self.user_params)
         self.verify_traffic_between_devices(self.dut,self.dut_client)
 
     @test_tracker_info(uuid="94bdd657-649b-4a2c-89c3-3ec6ba18e08e")
@@ -963,7 +990,11 @@ class WifiManagerTest(WifiBaseTest):
         3. Check DUT can be pinged by another device
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["5g"])
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["5g"])
+        wutils.verify_11ax_wifi_connection(
+            self.dut_client, self.wifi6_models, "wifi6_ap" in self.user_params)
         self.verify_traffic_between_devices(self.dut,self.dut_client)
 
     @test_tracker_info(uuid="d87359aa-c4da-4554-b5de-8e3fa852a6b0")
@@ -1084,6 +1115,8 @@ class WifiManagerTest(WifiBaseTest):
         """
         network = self.open_network_5g
         wutils.connect_to_wifi_network(self.dut, network)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         info = self.dut.droid.wifiGetConnectionInfo()
         network_id = info[WifiEnums.NETID_KEY]
         self.dut.log.info("Disable auto join on network")
@@ -1095,6 +1128,8 @@ class WifiManagerTest(WifiBaseTest):
                                     assert_on_fail=False), "Device should not connect.")
         self.dut.droid.wifiEnableAutojoin(network_id, True)
         wutils.wait_for_connect(self.dut, network[WifiEnums.SSID_KEY], assert_on_fail=False)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def coex_unsafe_channel_key(self, unsafe_channel):
         if COEX_POWER_CAP_DBM in unsafe_channel:
