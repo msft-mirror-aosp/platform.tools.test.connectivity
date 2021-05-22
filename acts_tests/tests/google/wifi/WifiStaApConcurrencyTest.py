@@ -69,6 +69,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ad.droid.wifiEnableVerboseLogging(1)
 
         req_params = ["dbs_supported_models",
+                      "wifi6_models",
                       "iperf_server_address",
                       "iperf_server_port"]
         self.unpack_userparams(req_param_names=req_params,)
@@ -193,6 +194,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         for ad in self.android_devices[1:]:
             wutils.connect_to_wifi_network(
                 ad, config, check_connectivity=check_connectivity)
+            wutils.verify_11ax_softap(self.dut, ad, self.wifi6_models)
         return config
 
     def connect_to_wifi_network_and_start_softap(self, nw_params,
@@ -211,6 +213,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             softap_band: Band for the AP.
         """
         wutils.connect_to_wifi_network(self.dut, nw_params, hidden=hidden)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         softap_config = self.start_softap_and_verify(softap_band)
         self.run_iperf_client((nw_params, self.dut))
         self.run_iperf_client((softap_config, self.dut_client))
@@ -241,6 +245,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         softap_config = self.start_softap_and_verify(softap_band, False)
         wutils.connect_to_wifi_network(self.dut, nw_params)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         self.run_iperf_client((nw_params, self.dut))
         self.run_iperf_client((softap_config, self.dut_client))
 
