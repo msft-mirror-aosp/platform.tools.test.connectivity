@@ -57,7 +57,7 @@ class GsmSimulation(BaseSimulation):
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier GSM simulation.
 
-        Loads a simple LTE simulation enviroment with 1 basestation. It also
+        Loads a simple LTE simulation environment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
 
         Args:
