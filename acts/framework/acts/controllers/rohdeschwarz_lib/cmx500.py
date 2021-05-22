@@ -115,7 +115,7 @@ class Cmx500(abstract_inst.SocketInstrument):
 
         Args:
             state: the RRC state that is being waited for.
-            timeout: timeout for phone to be in connnected state.
+            timeout: timeout for phone to be in connected state.
 
         Raises:
             CmxError on time out.

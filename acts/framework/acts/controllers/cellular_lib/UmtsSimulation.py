@@ -92,7 +92,7 @@ class UmtsSimulation(BaseSimulation):
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the cellular simulator for a UMTS simulation.
 
-        Loads a simple UMTS simulation enviroment with 1 basestation. It also
+        Loads a simple UMTS simulation environment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
 
         Args:
