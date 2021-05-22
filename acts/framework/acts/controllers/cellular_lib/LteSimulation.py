@@ -96,7 +96,8 @@ class LteSimulation(BaseSimulation):
         'excellent': -75,
         'high': -110,
         'medium': -115,
-        'weak': -120
+        'weak': -120,
+        'disconnected': -170
     }
 
     # Transmitted output power for the phone (dBm)
@@ -395,7 +396,7 @@ class LteSimulation(BaseSimulation):
             transmission_mode: an instance of LteSimulation.TransmissionMode
                 indicating the required TM.
             scheduling_mode: an instance of LteSimulation.SchedulingMode
-                indicating wether to use Static or Dynamic scheduling.
+                indicating whether to use Static or Dynamic scheduling.
             dl_rbs: an integer indicating the number of downlink RBs
             ul_rbs: an integer indicating the number of uplink RBs
             dl_mcs: an integer indicating the MCS for the downlink signal
@@ -454,7 +455,7 @@ class LteSimulation(BaseSimulation):
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
 
-        Loads a simple LTE simulation enviroment with 1 basestation.
+        Loads a simple LTE simulation environment with 1 basestation.
 
         Args:
             simulator: a cellular simulator controller
@@ -861,7 +862,7 @@ class LteSimulation(BaseSimulation):
                 self.rsrp_to_signal_power
 
         Returns:
-            Dowlink calibration value and measured DL power. Note that the
+            Downlink calibration value and measured DL power. Note that the
             phone only reports RSRP of the primary chain
         """
 

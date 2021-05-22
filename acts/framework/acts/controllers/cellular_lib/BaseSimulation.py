@@ -59,11 +59,11 @@ class BaseSimulation(object):
     DEFAULT_ATTACH_RETRIES = 3
 
     # These two dictionaries allow to map from a string to a signal level and
-    # have to be overriden by the simulations inheriting from this class.
+    # have to be overridden by the simulations inheriting from this class.
     UPLINK_SIGNAL_LEVEL_DICTIONARY = {}
     DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {}
 
-    # Units for downlink signal level. This variable has to be overriden by
+    # Units for downlink signal level. This variable has to be overridden by
     # the simulations inheriting from this class.
     DOWNLINK_SIGNAL_LEVEL_UNITS = None
 
@@ -72,7 +72,7 @@ class BaseSimulation(object):
         base station parameters and should not interact with the instrument
         controller.
 
-        Atributes:
+        Attributes:
             output_power: a float indicating the required signal level at the
                 instrument's output.
             input_level: a float indicating the required signal level at the
@@ -598,7 +598,7 @@ class BaseSimulation(object):
                 reported signal level and bts. use None if no conversion is
                 needed.
         Returns:
-            Dowlink calibration value and measured DL power.
+            Downlink calibration value and measured DL power.
         """
 
         # Check if this parameter was set. Child classes may need to override
