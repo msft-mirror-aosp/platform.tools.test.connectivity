@@ -69,6 +69,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             ad.droid.wifiEnableVerboseLogging(1)
 
         req_params = ["dbs_supported_models",
+                      "wifi6_models",
                       "iperf_server_address",
                       "iperf_server_port"]
         self.unpack_userparams(req_param_names=req_params,)
@@ -107,7 +108,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
 
     ### Helper Functions ###
 
-    def configure_ap(self, channel_2g=None, channel_5g=None):
+    def configure_ap(self, hidden=False, channel_2g=None, channel_5g=None):
         """Configure and bring up AP on required channel.
 
         Args:
@@ -121,11 +122,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             channel_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(channel_2g=channel_2g,
-                                               channel_5g=channel_5g)
+                                               channel_5g=channel_5g,
+                                               hidden=hidden)
         elif "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(open_network=True,
                                                 channel_2g=channel_2g,
-                                                channel_5g=channel_5g)
+                                                channel_5g=channel_5g,
+                                                hidden=hidden)
         self.open_2g = self.open_network[0]["2g"]
         self.open_5g = self.open_network[0]["5g"]
 
@@ -191,9 +194,12 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         for ad in self.android_devices[1:]:
             wutils.connect_to_wifi_network(
                 ad, config, check_connectivity=check_connectivity)
+            wutils.verify_11ax_softap(self.dut, ad, self.wifi6_models)
         return config
 
-    def connect_to_wifi_network_and_start_softap(self, nw_params, softap_band):
+    def connect_to_wifi_network_and_start_softap(self, nw_params,
+                                                 softap_band,
+                                                 hidden=False):
         """Test concurrent wifi connection and softap.
 
         This helper method first makes a wifi connection and then starts SoftAp.
@@ -206,7 +212,9 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             nw_params: Params for network STA connection.
             softap_band: Band for the AP.
         """
-        wutils.connect_to_wifi_network(self.dut, nw_params)
+        wutils.connect_to_wifi_network(self.dut, nw_params, hidden=hidden)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         softap_config = self.start_softap_and_verify(softap_band)
         self.run_iperf_client((nw_params, self.dut))
         self.run_iperf_client((softap_config, self.dut_client))
@@ -237,6 +245,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         softap_config = self.start_softap_and_verify(softap_band, False)
         wutils.connect_to_wifi_network(self.dut, nw_params)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         self.run_iperf_client((nw_params, self.dut))
         self.run_iperf_client((softap_config, self.dut_client))
 
@@ -432,3 +442,18 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.open_2g, WIFI_CONFIG_APBAND_2G)
         self.softap_change_band(self.dut)
 
+    @test_tracker_info(uuid="d549a18e-73d9-45e7-b4df-b59446c4b833")
+    def test_wifi_connection_hidden_2g_softap_2G_to_softap_5g(self):
+        """Test connection to a hidden 2G network on Channel 1 and
+        followed by SoftAp on 2G, and switch SoftAp to 5G.
+        1. Connect to a hidden 2.4G Wi-Fi AP(channel 1)
+        2. DUT turn on 2.4G hotspot and client connect to DUT
+        3. Change AP Band of DUT Hotspot from 2.4GHz to 5GHz
+        Expected results: Both DUT and Hotspot client can access the Internet
+        """
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G, hidden=True)
+        self.connect_to_wifi_network_and_start_softap(
+            self.open_2g,
+            WIFI_CONFIG_APBAND_2G,
+            hidden=True)
+        self.softap_change_band(self.dut)
