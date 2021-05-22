@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
@@ -332,3 +333,36 @@ class WifiRoamingTest(WifiBaseTest):
             self.log.info("Re-configuring AP2 with correct password.")
             wutils.ap_setup(self, 1, self.access_points[1], network)
         self.roaming_from_AP1_and_AP2(network, network_fail)
+
+    @test_tracker_info(uuid="b6d73094-22bc-4460-9d55-ce34a0a6a8c9")
+    def test_roaming_fail_different_bssid(self):
+        """Verify devices is disconnect with difference bssid after roaming
+
+        Steps:
+            1. Configure 2 APs
+            2. Connect DUT to AP 1
+            3. Roam to AP2
+            4. Verify the bssid is difference and the device can't connect
+            5. Verify device is disconnect after roaming.
+        """
+        if "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2,
+                                                mirror_ap=True)
+        ap1_network = self.reference_networks[0]["2g"]
+        ap2_network = self.reference_networks[1]["2g"]
+        if "OpenWrtAP" in self.user_params:
+            ap1_network["bssid"] = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+            ap2_network["bssid"] = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+        wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
+        wutils.connect_to_wifi_network(self.dut, ap1_network)
+
+        # Initiate roaming with AP2
+        wutils.set_attns(self.attenuators, "AP1_off_AP2_on")
+        time.sleep(10)
+        try:
+            wutils.verify_wifi_connection_info(self.dut, ap2_network)
+        except:
+            self.log.info("Roaming failed to AP2 with incorrect BSSID")
+            wutils.wait_for_disconnect(self.dut)
+            self.log.info("Device is disconnect")
