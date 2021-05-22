@@ -65,7 +65,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
         self.dut_client.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
-        req_params = []
+        req_params = ["wifi6_models",]
         opt_param = ["iperf_server_address", "reference_networks",
                      "iperf_server_port", "pixel_models"]
         self.unpack_userparams(
@@ -158,7 +158,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
             if frequency > 0:
                 break
             time.sleep(1) # frequency not updated yet, try again after a delay
-
+        wutils.verify_11ax_softap(self.dut, self.dut_client, self.wifi6_models)
         return hostapd_constants.CHANNEL_MAP[frequency]
 
     def configure_ap(self, channel_2g=None, channel_5g=None):
@@ -199,6 +199,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
             return channel
         # Connect to the AP and start IPerf traffic, while we bring up softap.
         wutils.connect_to_wifi_network(self.dut_client, network)
+        wutils.verify_11ax_wifi_connection(
+            self.dut_client, self.wifi6_models, "wifi6_ap" in self.user_params)
         t = Thread(target=self.run_iperf_client,args=((network,self.dut_client),))
         t.setDaemon(True)
         t.start()
