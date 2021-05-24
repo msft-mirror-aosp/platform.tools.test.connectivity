@@ -13,12 +13,7 @@
 #   limitations under the License.
 
 import re
-import time
-
-from acts import signals
-from acts import utils
 from acts.controllers.openwrt_lib import network_const
-
 
 SERVICE_DNSMASQ = "dnsmasq"
 SERVICE_STUNNEL = "stunnel"
@@ -38,7 +33,6 @@ XL2TPD_CONFIG_PATH = "/etc/xl2tpd/xl2tpd.conf"
 XL2TPD_OPTION_CONFIG_PATH = "/etc/ppp/options.xl2tpd"
 FIREWALL_CUSTOM_OPTION_PATH = "/etc/firewall.user"
 PPP_CHAP_SECRET_PATH = "/etc/ppp/chap-secrets"
-TCPDUMP_DIR = "/tmp/tcpdump/"
 LOCALHOST = "192.168.1.1"
 DEFAULT_PACKAGE_INSTALL_TIMEOUT = 200
 
@@ -48,30 +42,26 @@ class NetworkSettings(object):
 
     Attributes:
         ssh: ssh connection object.
-        ssh_settings: ssh settings for AccessPoint.
-        service_manager: Object manage service configuration.
-        user: username for ssh.
+        service_manager: Object manage service configuration
         ip: ip address for AccessPoint.
         log: Logging object for AccessPoint.
         config: A list to store changes on network settings.
-        firewall_rules_list: A list of firewall rule name list.
+        firewall_rules_list: A list of firewall rule name list
         cleanup_map: A dict for compare oppo functions.
         l2tp: profile for vpn l2tp server.
     """
 
-    def __init__(self, ssh, ssh_settings, logger):
+    def __init__(self, ssh, ip, logger):
         """Initialize wireless settings.
 
         Args:
             ssh: ssh connection object.
-            ssh_settings: ssh settings for AccessPoint.
+            ip: ip address for AccessPoint.
             logger: Logging object for AccessPoint.
         """
         self.ssh = ssh
         self.service_manager = ServiceManager(ssh)
-        self.ssh_settings = ssh_settings
-        self.user = self.ssh_settings.username
-        self.ip = self.ssh_settings.hostname
+        self.ip = ip
         self.log = logger
         self.config = set()
         self.firewall_rules_list = []
@@ -81,8 +71,7 @@ class NetworkSettings(object):
             "setup_vpn_l2tp_server": self.remove_vpn_l2tp_server,
             "disable_ipv6": self.enable_ipv6,
             "setup_ipv6_bridge": self.remove_ipv6_bridge,
-            "ipv6_prefer_option": self.remove_ipv6_prefer_option,
-            "block_dns_response": self.unblock_dns_response
+            "ipv6_prefer_option": self.remove_ipv6_prefer_option
         }
         # This map contains cleanup functions to restore the configuration to
         # its default state. We write these keys to HISTORY_CONFIG_PATH prior to
@@ -90,7 +79,6 @@ class NetworkSettings(object):
         # This makes it easier to recover after an aborted test.
         self.update_firewall_rules_list()
         self.cleanup_network_settings()
-        self.clear_tcpdump()
 
     def cleanup_network_settings(self):
         """Reset all changes on Access point."""
@@ -413,11 +401,11 @@ class NetworkSettings(object):
             org: Organization name for generate cert keys.
         """
         self.l2tp = network_const.VpnL2tp(vpn_server_hostname,
-                                          vpn_server_address,
-                                          vpn_username,
-                                          vpn_password,
-                                          psk_secret,
-                                          server_name)
+                                           vpn_server_address,
+                                           vpn_username,
+                                           vpn_password,
+                                           psk_secret,
+                                           server_name)
 
         self.package_install(L2TP_PACKAGE)
         self.config.add("setup_vpn_l2tp_server")
@@ -755,80 +743,6 @@ class NetworkSettings(object):
         self.config.discard("ipv6_prefer_option")
         self.service_manager.need_restart(SERVICE_DNSMASQ)
         self.commit_changes()
-
-    def start_tcpdump(self, test_name, args="", interface="br-lan"):
-        """"Start tcpdump on OpenWrt.
-
-        Args:
-            test_name: Test name for create tcpdump file name.
-            args: Option args for tcpdump.
-            interface: Interface to logging.
-        Returns:
-            tcpdump_file_name: tcpdump file name on OpenWrt.
-            pid: tcpdump process id.
-        """
-        if not self.path_exists(TCPDUMP_DIR):
-            self.ssh.run("mkdir %s" % TCPDUMP_DIR)
-        tcpdump_file_name = "openwrt_%s_%s.pcap" % (test_name,
-                                                    time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime(time.time())))
-        tcpdump_file_path = "".join([TCPDUMP_DIR, tcpdump_file_name])
-        cmd = "tcpdump -i %s -s0 %s -w %s" % (interface, args, tcpdump_file_path)
-        self.ssh.run_async(cmd)
-        pid = self._get_tcpdump_pid(tcpdump_file_name)
-        if not pid:
-            raise signals.TestFailure("Fail to start tcpdump on OpenWrt.")
-        # Set delay to prevent tcpdump fail to capture target packet.
-        time.sleep(15)
-        return tcpdump_file_name
-
-    def stop_tcpdump(self, tcpdump_file_name, pull_dir=None):
-        """Stop tcpdump on OpenWrt and pull the pcap file.
-
-        Args:
-            tcpdump_file_name: tcpdump file name on OpenWrt.
-            pid: tcpdump process id.
-            pull_dir: Keep none if no need to pull.
-        Returns:
-            tcpdump abs_path on host.
-        """
-        # Set delay to prevent tcpdump fail to capture target packet.
-        time.sleep(15)
-        pid = self._get_tcpdump_pid(tcpdump_file_name)
-        self.ssh.run("kill -9 %s" % pid, ignore_status=True)
-        if self.path_exists(TCPDUMP_DIR) and pull_dir:
-            tcpdump_path = "".join([TCPDUMP_DIR, tcpdump_file_name])
-            tcpdump_remote_path = "/".join([pull_dir, tcpdump_file_name])
-            tcpdump_local_path = "%s@%s:%s" % (self.user, self.ip, tcpdump_path)
-            utils.exe_cmd("scp %s %s" % (tcpdump_local_path, tcpdump_remote_path))
-
-        if self._get_tcpdump_pid(tcpdump_file_name):
-            raise signals.TestFailure("Failed to stop tcpdump on OpenWrt.")
-        if self.file_exists(tcpdump_path):
-            self.ssh.run("rm -f %s" % tcpdump_path)
-        return tcpdump_remote_path if pull_dir else None
-
-    def clear_tcpdump(self):
-        self.ssh.run("killall tpcdump", ignore_status=True)
-        if self.ssh.run("pgrep tpcdump", ignore_status=True).stdout:
-            raise signals.TestFailure("Failed to clean up tcpdump process.")
-
-    def _get_tcpdump_pid(self, tcpdump_file_name):
-        """Check tcpdump process on OpenWrt."""
-        return self.ssh.run("pgrep -f %s" % (tcpdump_file_name), ignore_status=True).stdout
-
-    def block_dns_response(self):
-        self.config.add("block_dns_response")
-        iptable_rules = list(network_const.FIREWALL_RULES_DISABLE_DNS_RESPONSE)
-        self.add_custom_firewall_rules(iptable_rules)
-        self.service_manager.need_restart(SERVICE_FIREWALL)
-        self.commit_changes()
-
-    def unblock_dns_response(self):
-        self.config.discard("block_dns_response")
-        self.remove_custom_firewall_rules()
-        self.service_manager.need_restart(SERVICE_FIREWALL)
-        self.commit_changes()
-
 
 class ServiceManager(object):
     """Class for service on OpenWrt.
