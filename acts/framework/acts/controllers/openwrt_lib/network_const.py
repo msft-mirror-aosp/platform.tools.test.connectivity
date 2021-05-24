@@ -113,13 +113,6 @@ FIREWALL_RULES_FOR_L2TP = [
     "iptables -A INPUT -p udp -m policy --dir in --pol ipsec -m udp --dport 1701 -j ACCEPT"
 ]
 
-FIREWALL_RULES_DISABLE_DNS_RESPONSE = (
-    "iptables -I OUTPUT -p udp --sport 53 -j DROP",
-    "iptables -I OUTPUT -p tcp --sport 53 -j DROP",
-    "ip6tables -I OUTPUT -p udp --sport 53 -j DROP",
-    "ip6tables -I OUTPUT -p tcp --sport 53 -j DROP",
-)
-
 
 # Object for vpn profile
 class VpnL2tp(object):
