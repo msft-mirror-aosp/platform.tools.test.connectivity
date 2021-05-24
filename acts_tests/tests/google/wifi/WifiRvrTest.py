@@ -584,7 +584,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                         self.remote_server, sta_dut_ip, 'public')
         # Set DUT to monitor RSSI and LLStats on
         self.monitored_dut = self.sta_dut
-        self.monitored_interface = None
+        self.monitored_interface = 'wlan0'
 
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
