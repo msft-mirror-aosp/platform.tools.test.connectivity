@@ -104,7 +104,7 @@ class OpenWrtAP(object):
         lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
     self.network_setting = network_settings.NetworkSettings(
-        self.ssh, self.ssh_settings, self.log)
+        self.ssh, config["ssh_config"]["host"], self.log)
 
   def configure_ap(self, wifi_configs, channel_2g, channel_5g):
     """Configure AP with the required settings.
