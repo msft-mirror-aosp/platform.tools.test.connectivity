@@ -1565,7 +1565,7 @@ def call_epdg_to_epdg_wfc(log,
         if not multithread_func(log, tasks):
             log.error("Failed to turn off airplane mode")
             return False
-        if not provision_device_for_5g(log, ad, sa_5g):
+        if not provision_device_for_5g(log, ads, sa_5g):
             return False
 
     tasks = [(phone_setup_iwlan, (log, ads[0], apm_mode, wfc_mode,
