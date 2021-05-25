@@ -16,11 +16,13 @@
 import time
 from acts import asserts
 from acts import utils
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.net import connectivity_const as cconsts
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
+import os
 
 WifiEnums = wutils.WifiEnums
 
@@ -33,9 +35,18 @@ class WifiRoamingTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        wutils.wifi_test_device_init(self.dut)
         req_params = ["roaming_attn",]
         self.unpack_userparams(req_param_names=req_params,)
+        self.country_code = wutils.WifiEnums.CountryCode.US
+        if hasattr(self, "country_code_file"):
+            if isinstance(self.country_code_file, list):
+                self.country_code_file = self.country_code_file[0]
+            if not os.path.isfile(self.country_code_file):
+                self.country_code_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.country_code_file)
+            self.country_code = utils.load_config(
+                self.country_code_file)["country"]
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(ap_count=2)
@@ -59,8 +70,7 @@ class WifiRoamingTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
         wutils.set_attns(self.attenuators, "default")
         for ad in self.android_devices:
-            wutils.set_wifi_country_code(
-                    ad, wutils.WifiEnums.CountryCode.US)
+            wutils.set_wifi_country_code(ad, self.country_code)
         if "OpenWrtAP" in self.user_params:
             for ap in self.access_points:
                 ap.close()

@@ -39,7 +39,6 @@ class WifiEnterpriseTest(WifiBaseTest):
         self.enable_packet_log = True
 
         self.dut = self.android_devices[0]
-        wutils.wifi_test_device_init(self.dut)
         # If running in a setup with attenuators, set attenuation on all
         # channels to zero.
         if getattr(self, "attenuators", []):
