@@ -37,7 +37,6 @@ class WifiHiddenSSIDTest(WifiBaseTest):
         super().setup_class()
 
         self.dut = self.android_devices[0]
-        wutils.wifi_test_device_init(self.dut)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(hidden=True)

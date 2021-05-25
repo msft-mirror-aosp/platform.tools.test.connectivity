@@ -37,7 +37,6 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         super().setup_class()
 
         self.dut = self.android_devices[0]
-        wutils.wifi_test_device_init(self.dut)
         req_params = (
             "roaming_attn",
             # Expected time within which roaming should finish, in seconds.
