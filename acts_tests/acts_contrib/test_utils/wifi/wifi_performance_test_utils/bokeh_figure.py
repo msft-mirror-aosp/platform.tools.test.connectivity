@@ -122,7 +122,9 @@ class BokehFigure():
                 y_data_filtered.append(xy[1])
                 for key, value in hover_text.items():
                     hover_text_filtered.setdefault(key, [])
-                    hover_text_filtered[key].append(value[idx])
+                    hover_text_filtered[key].append(
+                        value[idx] if len(value)>idx else ''
+                        )
         return x_data_filtered, y_data_filtered, hover_text_filtered
 
     def add_line(self,
