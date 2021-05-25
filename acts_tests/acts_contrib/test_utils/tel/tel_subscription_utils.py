@@ -418,6 +418,34 @@ def set_dds_on_slot_1(ad):
         return False
 
 
+def set_dds_on_slot(ad, dds_slot):
+    """Switch DDS to given slot.
+
+    Args:
+        ad: android device object.
+        dds_slot: the slot which be set to DDS.
+
+    Returns:
+        True if success, False if fail.
+    """
+    sub_id = get_subid_from_slot_index(ad.log, ad, dds_slot)
+    if sub_id == INVALID_SUB_ID:
+        ad.log.warning("Invalid sub ID at slot %d", dds_slot)
+        return False
+    operator = get_operatorname_from_slot_index(ad, dds_slot)
+    if get_default_data_sub_id(ad) == sub_id:
+        ad.log.info("Current DDS is already on %s", operator)
+        return True
+    ad.log.info("Setting DDS on %s", operator)
+    set_subid_for_data(ad, sub_id)
+    ad.droid.telephonyToggleDataConnection(True)
+    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
+    if get_default_data_sub_id(ad) == sub_id:
+        return True
+    else:
+        return False
+
+
 def set_always_allow_mms_data(ad, sub_id, state=True):
     """Set always allow mms data on sub_id
 
