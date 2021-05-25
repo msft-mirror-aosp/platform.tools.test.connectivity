@@ -1428,8 +1428,8 @@ def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.error("Not in 5G NSA coverage.")
+        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.error("Not in 5G coverage.")
             return False
     else:
         if not wait_for_network_rat_for_subscription(
@@ -1513,8 +1513,8 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.error("Not in 5G NSA coverage.")
+        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.error("Not in 5G coverage.")
             return False
     else:
         if not wait_for_network_rat_for_subscription(

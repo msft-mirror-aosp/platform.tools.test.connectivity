@@ -95,3 +95,51 @@ def is_current_network_5g_sa(ad):
     else:
         ad.log.error("Network is currently connected to %s, Expected on NR", network_connected)
         return False
+
+def is_current_network_5g(ad, sa_or_nsa=None, mmwave=None):
+    """Verifies 5G override network type
+
+    Args:
+        ad: android device object
+        sa_or_nsa: 'sa' for 5G standalone, 'nsa' for 5G non-standalone and
+            None for 5G regardless of NSA or SA
+        mmwave: True for mmWave, False for sub-6 and None for no check
+
+    Returns:
+        True: if data is on 5G regardless of SA or NSA
+        False: if data is not on 5G refardless of SA or NSA
+    """
+    if sa_or_nsa == 'nsa':
+        return is_current_network_5g_nsa(ad, nsa_mmwave=mmwave)
+    elif sa_or_nsa == 'sa':
+        return is_current_network_5g_sa(ad)
+    else:
+        return is_current_network_5g_nsa(ad, nsa_mmwave=mmwave) or is_current_network_5g_sa(ad)
+
+def is_current_network_5g_for_subscription(ad, sub_id=None, sa_or_nsa=None, mmwave=None):
+    """Verifies 5G override network type for subscription id.
+    Args:
+        ad: android device object
+        sub_id: subscription id
+        sa_or_nsa: 'sa' for 5G standalone, 'nsa' for 5G non-standalone and
+            None for 5G regardless of NSA or SA
+        mmwave: True for mmWave, False for sub-6 and None for no check
+    Returns:
+        True: if data is on 5G regardless of NSA or SA.
+        False: if data is not on 5G regardless of NSA or SA.
+    """
+    if not sub_id:
+        return is_current_network_5g(ad, sa_or_nsa=sa_or_nsa, mmwave=mmwave)
+
+    voice_sub_id_changed = False
+    current_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+    if current_sub_id != sub_id:
+        ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
+        voice_sub_id_changed = True
+
+    result = is_current_network_5g(ad, sa_or_nsa=sa_or_nsa, mmwave=mmwave)
+
+    if voice_sub_id_changed:
+        ad.droid.subscriptionSetDefaultVoiceSubId(current_sub_id)
+
+    return result
