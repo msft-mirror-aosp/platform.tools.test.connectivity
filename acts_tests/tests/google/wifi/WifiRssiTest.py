@@ -621,7 +621,9 @@ class WifiRssiTest(base_test.BaseTestClass):
             testcase_params: dict containing test-specific parameters
         """
         # Check if test should be skipped.
-        self.check_skip_conditions(testcase_params)
+        wputils.check_skip_conditions(testcase_params, self.dut,
+                                      self.access_point,
+                                      getattr(self, 'ota_chamber', None))
 
         testcase_params.update(
             connected_measurements=self.

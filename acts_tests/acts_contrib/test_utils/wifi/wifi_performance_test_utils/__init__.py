@@ -62,12 +62,14 @@ def nonblocking(f):
 
 
 def detect_wifi_platform(dut):
-    ini_check = len(dut.get_file_names('/vendor/firmware/wlan/qca_cld/'))
-    if ini_check:
-        wifi_platform = 'qcom'
+    if hasattr(dut, 'wifi_platform'):
+        return dut.wifi_platform
+    qcom_check = len(dut.get_file_names('/vendor/firmware/wlan/qca_cld/'))
+    if qcom_check:
+        dut.wifi_platform = 'qcom'
     else:
-        wifi_platform = 'brcm'
-    return wifi_platform
+        dut.wifi_platform = 'brcm'
+    return dut.wifi_platform
 
 
 def detect_wifi_decorator(f):
@@ -589,7 +591,7 @@ def get_connected_rssi_nb(dut,
                           first_measurement_delay=0,
                           disconnect_warning=True,
                           ignore_samples=0,
-                          interface=None):
+                          interface='wlan0'):
     return get_connected_rssi(dut, num_measurements, polling_frequency,
                               first_measurement_delay, disconnect_warning,
                               ignore_samples, interface)
@@ -602,7 +604,7 @@ def get_connected_rssi(dut,
                        first_measurement_delay=0,
                        disconnect_warning=True,
                        ignore_samples=0,
-                       interface=None):
+                       interface='wlan0'):
     """Gets all RSSI values reported for the connected access point/BSSID.
 
     Args:
