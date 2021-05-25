@@ -60,11 +60,6 @@ class BokehFigure():
     ]
 
     TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
-    TOOLTIPS = [
-        ('index', '$index'),
-        ('(x,y)', '($x, $y)'),
-        ('info', '@hover_text'),
-    ]
 
     def __init__(self,
                  title=None,
@@ -100,7 +95,17 @@ class BokehFigure():
             title=self.fig_property['title'],
             tools=self.TOOLS,
             output_backend='webgl')
-        self.plot.hover.tooltips = self.TOOLTIPS
+        tooltips = [
+            ('index', '$index'),
+            ('(x,y)', '($x, $y)'),
+        ]
+        hover_set = []
+        for line in self.figure_data:
+            hover_set.extend(line['hover_text'].keys())
+        hover_set = set(hover_set)
+        for item in hover_set:
+            tooltips.append((item, '@{}'.format(item)))
+        self.plot.hover.tooltips = tooltips
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='width'))
         self.plot.add_tools(
@@ -110,12 +115,14 @@ class BokehFigure():
         """Function to remove NaN points from bokeh plots."""
         x_data_filtered = []
         y_data_filtered = []
-        hover_text_filtered = []
-        for x, y, hover in itertools.zip_longest(x_data, y_data, hover_text):
-            if not math.isnan(y):
-                x_data_filtered.append(x)
-                y_data_filtered.append(y)
-                hover_text_filtered.append(hover)
+        hover_text_filtered = {}
+        for idx, xy in enumerate(itertools.zip_longest(x_data, y_data)):
+            if not math.isnan(xy[1]):
+                x_data_filtered.append(xy[0])
+                y_data_filtered.append(xy[1])
+                for key, value in hover_text.items():
+                    hover_text_filtered.setdefault(key, [])
+                    hover_text_filtered[key].append(value[idx])
         return x_data_filtered, y_data_filtered, hover_text_filtered
 
     def add_line(self,
@@ -152,7 +159,9 @@ class BokehFigure():
         if style == 'dashed':
             style = [5, 5]
         if not hover_text:
-            hover_text = ['y={}'.format(y) for y in y_data]
+            hover_text = {'info': ['y={}'.format(y) for y in y_data]}
+        if isinstance(hover_text, list):
+            hover_text = {'info': hover_text}
         x_data_filter, y_data_filter, hover_text_filter = self._filter_line(
             x_data, y_data, hover_text)
         self.figure_data.append({
@@ -224,10 +233,10 @@ class BokehFigure():
         self.init_plot()
         two_axes = False
         for line in self.figure_data:
-            source = bokeh.models.ColumnDataSource(
-                data=dict(x=line['x_data'],
-                          y=line['y_data'],
-                          hover_text=line['hover_text']))
+            data_dict = {'x': line['x_data'], 'y': line['y_data']}
+            for key, value in line['hover_text'].items():
+                data_dict[key] = value
+            source = bokeh.models.ColumnDataSource(data=data_dict)
             if line['width'] > 0:
                 self.plot.line(x='x',
                                y='y',

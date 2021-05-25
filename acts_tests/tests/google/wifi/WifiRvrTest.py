@@ -285,14 +285,23 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.log.warning('ValueError: Golden file not found')
 
         # Generate graph annotatios
-        rvr_result['hover_text'] = [
-            'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
-                curr_llstats['summary']['common_tx_mcs'],
-                curr_llstats['summary']['common_tx_mcs_freq'] * 100,
-                curr_llstats['summary']['common_rx_mcs'],
-                curr_llstats['summary']['common_rx_mcs_freq'] * 100)
-            for curr_llstats in rvr_result['llstats']
-        ]
+        rvr_result['hover_text'] = {
+            'llstats': [
+                'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
+                    curr_llstats['summary']['common_tx_mcs'],
+                    curr_llstats['summary']['common_tx_mcs_freq'] * 100,
+                    curr_llstats['summary']['common_rx_mcs'],
+                    curr_llstats['summary']['common_rx_mcs_freq'] * 100)
+                for curr_llstats in rvr_result['llstats']
+            ],
+            'rssi': [
+                '{0:.2f} [{1:.2f},{2:.2f}]'.format(
+                    rssi['signal_poll_rssi'],
+                    rssi['chain_0_rssi'],
+                    rssi['chain_1_rssi'],
+                ) for rssi in rvr_result['rssi']
+            ]
+        }
         figure.add_line(rvr_result['total_attenuation'],
                         rvr_result['throughput_receive'],
                         'Test Results',
