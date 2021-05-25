@@ -66,7 +66,7 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
-class Nsa5gDsdsMessageTest(TelephonyBaseTest):
+class Nsa5gDSDSMessageTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
         self.message_lengths = (50, 160, 180)
