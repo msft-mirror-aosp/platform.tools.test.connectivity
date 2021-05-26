@@ -14,10 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import time
 
 from acts import asserts
 from acts import utils
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel import tel_test_utils as tel_utils
 from acts_contrib.test_utils.wifi import wifi_constants
@@ -63,9 +65,6 @@ class WifiSoftApTest(WifiBaseTest):
         utils.require_sl4a((self.dut, self.dut_client))
         utils.sync_device_time(self.dut)
         utils.sync_device_time(self.dut_client)
-        # Set country code explicitly to "US".
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
-        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
         # Enable verbose logging on the duts
         self.dut.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut.droid.wifiGetVerboseLoggingLevel(), 1,
@@ -82,11 +81,20 @@ class WifiSoftApTest(WifiBaseTest):
             self.AP_IFACE = 'wlan2'
         if len(self.android_devices) > 2:
             utils.sync_device_time(self.android_devices[2])
-            wutils.set_wifi_country_code(self.android_devices[2], wutils.WifiEnums.CountryCode.US)
             self.android_devices[2].droid.wifiEnableVerboseLogging(1)
             asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
                 "Failed to enable WiFi verbose logging on the client dut.")
             self.dut_client_2 = self.android_devices[2]
+        self.country_code = wutils.WifiEnums.CountryCode.US
+        if hasattr(self, "country_code_file"):
+            if isinstance(self.country_code_file, list):
+                self.country_code_file = self.country_code_file[0]
+            if not os.path.isfile(self.country_code_file):
+                self.country_code_file = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.country_code_file)
+            self.country_code = utils.load_config(
+                self.country_code_file)["country"]
 
     def teardown_class(self):
         if self.dut.droid.wifiIsApEnabled():
@@ -117,14 +125,12 @@ class WifiSoftApTest(WifiBaseTest):
                             "Can not turn off airplane mode: %s" % self.dut.serial)
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
         if "chan_13" in self.test_name and "OpenWrtAP" in self.user_params:
             self.access_points[0].close()
             self.configure_openwrt_ap_and_start(wpa_network=True)
             self.wifi_network = self.reference_networks[0]["2g"]
             for ad in self.android_devices:
-                wutils.set_wifi_country_code(
-                        ad, wutils.WifiEnums.CountryCode.US)
+                wutils.set_wifi_country_code(ad, self.country_code)
 
     """ Helper Functions """
     def create_softap_config(self):
