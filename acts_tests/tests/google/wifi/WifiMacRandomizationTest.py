@@ -579,6 +579,17 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(SHORT_TIMEOUT)
         network = self.wpapsk_5g
         rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
+        pcap_fname_bflink = '%s_%s.pcap' % \
+            (self.pcap_procs[hostapd_constants.BAND_5G][1],
+             hostapd_constants.BAND_5G.upper())
+        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        time.sleep(SHORT_TIMEOUT)
+        packets_bflink = rdpcap(pcap_fname_bflink)
+        self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets_bflink)
+        self.verify_mac_is_found_in_pcap(rand_mac, packets_bflink)
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, 'dual', self.test_name)
+        time.sleep(SHORT_TIMEOUT)
         wutils.send_link_probes(self.dut, 3, 3)
         pcap_fname = '%s_%s.pcap' % \
             (self.pcap_procs[hostapd_constants.BAND_5G][1],
@@ -587,7 +598,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(SHORT_TIMEOUT)
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
-        self.verify_mac_is_found_in_pcap(self.get_sta_mac_address(), packets)
+        self.verify_mac_is_found_in_pcap(rand_mac, packets)
 
     @test_tracker_info(uuid="1c2cc0fd-a340-40c4-b679-6acc5f526451")
     def test_check_mac_in_wifi_scan(self):
