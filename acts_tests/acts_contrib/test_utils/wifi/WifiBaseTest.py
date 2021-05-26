@@ -55,7 +55,7 @@ class WifiBaseTest(BaseTestClass):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
-        opt_param = ["pixel_models", "cnss_diag_file"]
+        opt_param = ["pixel_models", "cnss_diag_file", "country_code_file"]
         self.unpack_userparams(opt_param_names=opt_param)
         if hasattr(self, "cnss_diag_file"):
             if isinstance(self.cnss_diag_file, list):
@@ -68,6 +68,19 @@ class WifiBaseTest(BaseTestClass):
             self.packet_logger = self.packet_capture[0]
             self.packet_logger.configure_monitor_mode("2G", self.packet_log_2g)
             self.packet_logger.configure_monitor_mode("5G", self.packet_log_5g)
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                wutils.wifi_test_device_init(ad)
+                if hasattr(self, "country_code_file"):
+                    if isinstance(self.country_code_file, list):
+                        self.country_code_file = self.country_code_file[0]
+                    if not os.path.isfile(self.country_code_file):
+                        self.country_code_file = os.path.join(
+                            self.user_params[Config.key_config_path.value],
+                            self.country_code_file)
+                    self.country_code = utils.load_config(
+                        self.country_code_file)["country"]
+                    wutils.set_wifi_country_code(ad, self.country_code)
 
     def setup_test(self):
         if (hasattr(self, "android_devices")
