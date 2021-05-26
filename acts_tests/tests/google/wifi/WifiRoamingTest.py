@@ -16,6 +16,7 @@
 import time
 from acts import asserts
 from acts import utils
+from acts import signals
 from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.net import connectivity_const as cconsts
@@ -35,7 +36,7 @@ class WifiRoamingTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        req_params = ["roaming_attn",]
+        req_params = ["roaming_attn"]
         self.unpack_userparams(req_param_names=req_params,)
         self.country_code = wutils.WifiEnums.CountryCode.US
         if hasattr(self, "country_code_file"):
@@ -321,6 +322,51 @@ class WifiRoamingTest(WifiBaseTest):
 
     @test_tracker_info(uuid="3114d625-5cdd-4205-bb46-5a9d057dc80d")
     def test_roaming_fail_psk_2g(self):
+        """Verify roaming fail with mismatch passwords.
+
+        Steps:
+            DUT connect to AP1.
+            Change AP2's password.
+            DUT try roaming from AP1 to AP2 with mismatched password.
+            Change AP2's password back to original one.
+            DUT try roaming from AP1 to AP2 with matched passwords.
+        """
+        # Use OpenWrt as Wi-Fi AP when it's available in testbed.
+        if "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2,
+                                                mirror_ap=True)
+            self.openwrt1 = self.access_points[0]
+            self.openwrt2 = self.access_points[1]
+            ap1_network = self.reference_networks[0]["2g"]
+            ap2_network = self.reference_networks[1]["2g"]
+            # Get APs' BSSIDs.
+            ap1_bssid = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+            ap2_bssid = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+            # Make AP's configs.
+            ap1_network["bssid"] = ap1_bssid
+            ap2_network["bssid"] = ap2_bssid
+
+            # Change AP2 2G to password.
+            self.openwrt2.set_password(pwd_2g=utils.rand_ascii_str(8))
+
+            try:
+                # DUT roaming from AP1 to AP2 with mismatched passwords.
+                self.dut.log.info("Roaming via mismatched passwords to AP2 [{}]"
+                                  .format(ap2_bssid))
+                self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+            except:
+                self.dut.log.info("Failed roaming to AP2")
+                self.dut.log.info("Roaming via matched passwords to AP2 [{}]"
+                                  .format(ap1_bssid))
+                wutils.set_attns_steps(self.attenuators, "AP1_on_AP2_off",
+                                       self.roaming_attn)
+                self.openwrt2.set_password(pwd_2g=ap2_network["password"])
+                self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+            else:
+                raise signals.TestFailure("DUT unexpectedly connect to Wi-Fi.")
+
+        # Use Google OnHub as Wi-Fi AP to test when OpenWrt is no available.
         network = {'SSID':'test_roaming_fail', 'password':'roam123456@'}
         # AP2 network with incorrect password.
         network_fail = {'SSID':'test_roaming_fail', 'password':'roam123456@#$%^'}
