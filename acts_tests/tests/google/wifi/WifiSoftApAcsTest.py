@@ -50,14 +50,9 @@ class WifiSoftApAcsTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        wutils.wifi_test_device_init(self.dut)
-        wutils.wifi_test_device_init(self.dut_client)
         utils.require_sl4a((self.dut, self.dut_client))
         utils.sync_device_time(self.dut)
         utils.sync_device_time(self.dut_client)
-        # Set country code explicitly to "US".
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
-        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
         # Enable verbose logging on the duts
         self.dut.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut.droid.wifiGetVerboseLoggingLevel(), 1,
