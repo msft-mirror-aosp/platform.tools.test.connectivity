@@ -96,6 +96,8 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             strict_flag: if True, function raises an error when given out of
                 bounds attenuation values, if false, the function sets out of
                 bounds values to 0 or max_atten.
+            retry: if True, the function tries setting the attenuation again if
+                the attenuator is reachable but the first set attempt failed.
 
         Raises:
             InvalidOperationError if the telnet connection is not open.
@@ -122,6 +124,8 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
 
         Args:
             idx: The index of the attenuator.
+            retry: if True, the function tries to get the attenuation again if
+                the attenuator is reachable but the first set attempt failed.
 
         Raises:
             InvalidOperationError if the telnet connection is not open.
