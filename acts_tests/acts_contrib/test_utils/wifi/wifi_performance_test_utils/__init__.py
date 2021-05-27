@@ -130,12 +130,17 @@ def check_skip_conditions(testcase_params,
     if ota_chamber and CHANNEL_TO_BAND_MAP[
             testcase_params['channel']] not in ota_chamber.SUPPORTED_BANDS:
         asserts.skip('OTA chamber does not support requested channel.')
-    country_code = get_country_code(dut)
-    if testcase_params[
-            'channel'] in CHANNELS_6GHz and country_code != 'WW' and not dut.droid.is6GhzBandSupported(
-            ):
-        asserts.skip(
-            'DUT does not support 6 GHz band in {}.'.format(country_code))
+    # Check if 6GHz is supported by checking capabilities in the US.
+    if not dut.droid.wifiCheckState():
+        wutils.wifi_toggle_state(dut, True)
+    iw_list = dut.adb.shell('iw list')
+    supports_6ghz = '6135 MHz' in iw_list
+    supports_160mhz = 'Supported Channel Width: 160 MHz' in iw_list
+    if testcase_params.get('bandwidth', 20) == 160 and not supports_160mhz:
+        asserts.skip('DUT does not support 160 MHz networks.')
+    if testcase_params.get('channel',
+                           6) in CHANNELS_6GHz and not supports_6ghz:
+        asserts.skip('DUT does not support 6 GHz band.')
 
 
 def validate_network(dut, ssid):
