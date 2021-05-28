@@ -53,6 +53,7 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_lookup_tables import network_preference_for_generation
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -77,6 +78,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
+from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
@@ -107,6 +109,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscr
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -1985,6 +1988,51 @@ def phone_setup_on_rat(
         else:
             sub_id = get_outgoing_voice_sub_id(ad)
 
+    if get_default_data_sub_id(ad) != sub_id and '5g' in rat.lower():
+        ad.log.warning('Default data sub ID is NOT given sub ID %s.', sub_id)
+        network_preference = network_preference_for_generation(
+            GEN_5G,
+            ad.telephony["subscription"][sub_id]["operator"],
+            ad.telephony["subscription"][sub_id]["phone_type"])
+
+        ad.log.info("Network preference for %s is %s", GEN_5G,
+                    network_preference)
+
+        if not set_preferred_network_mode_pref(log, ad, sub_id,
+            network_preference):
+            return False
+
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            max_wait_time=30,
+            voice_or_data=NETWORK_SERVICE_DATA):
+
+            ad.log.warning('Non-DDS slot (sub ID: %s) cannot attach 5G network.', sub_id)
+            ad.log.info('Check if sub ID %s can attach LTE network.', sub_id)
+
+            if not wait_for_network_generation_for_subscription(
+                log,
+                ad,
+                sub_id,
+                GEN_4G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+                return False
+
+            if "volte" in rat.lower():
+                if not toggle_volte_for_subscription(log, ad, sub_id, True):
+                    return False
+                if not phone_idle_volte_for_subscription(log, ad, sub_id):
+                    return False
+            elif "csfb" in rat.lower():
+                if not toggle_volte_for_subscription(log, ad, sub_id, False):
+                    return False
+                if not phone_idle_csfb_for_subscription(log, ad, sub_id):
+                    return False
+            return True
+
     if rat.lower() == '5g_volte':
         if only_return_fn:
             return phone_setup_volte_for_subscription
@@ -2023,11 +2071,23 @@ def phone_setup_on_rat(
         else:
             return phone_setup_csfb_for_subscription(log, ad, sub_id)
 
+    elif rat.lower() == '5g':
+        if only_return_fn:
+            return phone_setup_5g_for_subscription
+        else:
+            return phone_setup_5g_for_subscription(log, ad, sub_id)
+
     elif rat.lower() == '3g':
         if only_return_fn:
             return phone_setup_voice_3g_for_subscription
         else:
             return phone_setup_voice_3g_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return phone_setup_voice_2g_for_subscription
+        else:
+            return phone_setup_voice_2g_for_subscription(log, ad, sub_id)
 
     elif rat.lower() == 'wfc':
         if only_return_fn:
@@ -2041,6 +2101,11 @@ def phone_setup_on_rat(
                 wfc_mode,
                 wifi_ssid,
                 wifi_pwd)
+    elif rat.lower() == 'default':
+        if only_return_fn:
+            return ensure_phone_default_state
+        else:
+            return ensure_phone_default_state(log, ad)
     else:
         if only_return_fn:
             return phone_setup_voice_general_for_subscription
