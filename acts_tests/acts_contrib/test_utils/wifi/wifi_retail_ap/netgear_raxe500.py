@@ -165,7 +165,6 @@ class NetgearRAXE500AP(WifiRetailAP):
             (('6G', 'bandwidth'), 'opmode_an_2'),
             (('2G', 'power'), 'enable_tpc'),
             (('5G_1', 'power'), 'enable_tpc_an'),
-            (('6G', 'power'), 'enable_tpc_an_2'),
             (('6G', 'security_type'), 'security_type_an_2'),
             (('5G_1', 'security_type'), 'security_type_an'),
             (('2G', 'security_type'), 'security_type'),
