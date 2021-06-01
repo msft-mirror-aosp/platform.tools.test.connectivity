@@ -1017,3 +1017,57 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
             is_airplane_mode=False,
             is_wifi_connected=True,
             reject_once=True)
+
+    @test_tracker_info(uuid="5dfb45b7-2706-418f-a5c1-2f8ca9602a29")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_conf_psim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_0(self):
+        return self._test_msim_volte_wfc_call_voice_conf(
+            0,
+            0,
+            host_rat=['5g_wfc', 'general'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="3b520d38-e1f4-46dd-90a7-90d91766e290")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_conf_psim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_1(self):
+        return self._test_msim_volte_wfc_call_voice_conf(
+            0,
+            1,
+            host_rat=['5g_wfc', 'general'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="f3f09280-bd34-46dc-b813-e017d671ddba")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_conf_psim_nsa_5g_volte_wfc_cellular_preferred_wifi_on_dds_0(self):
+        return self._test_msim_volte_wfc_call_voice_conf(
+            0,
+            0,
+            host_rat=["5g_volte", "general"],
+            is_wifi_connected=True)
+
+    @test_tracker_info(uuid="f157ba39-b4ae-464a-840a-56e94ba62736")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_conf_esim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_0(self):
+        return self._test_msim_volte_wfc_call_voice_conf(
+            1,
+            0,
+            host_rat=['general', '5g_wfc'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="872413fa-ae9c-4482-9e87-a3a4a2738bab")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_conf_esim_nsa_5g_volte_wfc_wifi_preferred_apm_off_dds_1(self):
+        return self._test_msim_volte_wfc_call_voice_conf(
+            1,
+            1,
+            host_rat=['general', '5g_wfc'],
+            wfc_mode=[WFC_MODE_WIFI_PREFERRED, WFC_MODE_WIFI_PREFERRED])
+
+    @test_tracker_info(uuid="18023ab7-fa96-4dda-a9ed-dd7562a0d185")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_conf_esim_nsa_5g_volte_wfc_cellular_preferred_wifi_on_dds_0(self):
+        return self._test_msim_volte_wfc_call_voice_conf(
+            1,
+            0,
+            host_rat=["general", "5g_volte"],
+            is_wifi_connected=True)
