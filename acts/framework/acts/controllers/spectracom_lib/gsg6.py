@@ -15,6 +15,7 @@
 #   limitations under the License.
 """Python module for Spectracom/Orolia GSG-6 GNSS simulator."""
 
+import time
 from acts.controllers import abstract_inst
 
 
@@ -88,6 +89,8 @@ class GSG6(abstract_inst.SocketInstrument):
         """Stop the running scenario."""
 
         self._send('SOUR:SCEN:CONT STOP')
+
+        time.sleep(10)
 
         self._logger.debug('Stopped running scenario')
 
