@@ -187,7 +187,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_out
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
@@ -6858,11 +6858,11 @@ def ensure_network_generation_for_subscription(
         return True
 
     if generation == GEN_5G:
-        if is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.info("Current network type is 5G NSA.")
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.info("Current network type is 5G.")
             return True
         else:
-            ad.log.error("Not in 5G NSA coverage for Sub %s.", sub_id)
+            ad.log.error("Not in 5G coverage for Sub %s.", sub_id)
             return False
 
     if is_droid_in_network_generation_for_subscription(
