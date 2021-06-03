@@ -354,6 +354,7 @@ CARRIER_NTT_DOCOMO = 'ntt_docomo'
 CARRIER_KDDI = 'kddi'
 CARRIER_RAKUTEN = 'rakuten'
 CARRIER_SBM = 'sbm'
+CARRIER_VZW = "Verizon"
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
