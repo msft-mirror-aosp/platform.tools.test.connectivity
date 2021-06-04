@@ -627,6 +627,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             testcase_params = collections.OrderedDict(
                 channel=channel,
                 mode=mode,
+                bandwidth=bandwidth,
                 traffic_type=traffic_type,
                 traffic_direction=traffic_direction,
                 signal_level=signal_level,

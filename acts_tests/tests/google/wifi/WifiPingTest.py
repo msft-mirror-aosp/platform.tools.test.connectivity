@@ -330,14 +330,20 @@ class WifiPingTest(base_test.BaseTestClass):
             curr_llstats = llstats_obj.llstats_incremental.copy()
             test_result['llstats'].append(curr_llstats)
             if current_ping_stats['connected']:
+                llstats_str = 'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
+                    curr_llstats['summary']['common_tx_mcs'],
+                    curr_llstats['summary']['common_tx_mcs_freq'] * 100,
+                    curr_llstats['summary']['common_rx_mcs'],
+                    curr_llstats['summary']['common_rx_mcs_freq'] * 100)
                 self.log.info(
                     'Attenuation = {0}dB\tPacket Loss = {1:.1f}%\t'
-                    'Avg RTT = {2:.2f}ms\tRSSI = {3:.2f} [{4},{5}]\t'.format(
-                        atten, current_ping_stats['packet_loss_percentage'],
-                        statistics.mean(current_ping_stats['rtt']),
-                        current_rssi['signal_poll_rssi']['mean'],
-                        current_rssi['chain_0_rssi']['mean'],
-                        current_rssi['chain_1_rssi']['mean']))
+                    'Avg RTT = {2:.2f}ms\tRSSI = {3:.1f} [{4:.1f},{5:.1f}]\t{6}\t'
+                    .format(atten,
+                            current_ping_stats['packet_loss_percentage'],
+                            statistics.mean(current_ping_stats['rtt']),
+                            current_rssi['signal_poll_rssi']['mean'],
+                            current_rssi['chain_0_rssi']['mean'],
+                            current_rssi['chain_1_rssi']['mean'], llstats_str))
                 if current_ping_stats['packet_loss_percentage'] == 100:
                     zero_counter = zero_counter + 1
                 else:
@@ -429,10 +435,21 @@ class WifiPingTest(base_test.BaseTestClass):
                 wputils.disable_beamforming(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
-            wutils.wifi_connect(self.dut,
-                                testcase_params['test_network'],
-                                num_of_tries=1,
-                                check_connectivity=True)
+            if self.testbed_params['sniffer_enable']:
+                self.sniffer.start_capture(
+                    network={'SSID': testcase_params['test_network']['SSID']},
+                    chan=testcase_params['channel'],
+                    bw=testcase_params['bandwidth'],
+                    duration=180)
+            try:
+                wutils.wifi_connect(self.dut,
+                                    testcase_params['test_network'],
+                                    num_of_tries=1,
+                                    check_connectivity=True)
+            finally:
+                if self.testbed_params['sniffer_enable']:
+                    self.sniffer.stop_capture(tag='connection_setup')
+
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if testcase_params['channel'] not in self.atten_dut_chain_map.keys():
             self.atten_dut_chain_map[testcase_params[
