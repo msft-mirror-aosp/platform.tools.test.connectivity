@@ -444,3 +444,19 @@ class FuchsiaHfpLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def setConnectionBehavior(self, autoconnect):
+        """Set the Service Level Connection behavior when a new peer connects.
+
+        Args:
+            autoconnect: Enable/Disable autoconnection of SLC.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hfp_facade.SetConnectionBehavior"
+        test_args = {"autoconnect": autoconnect }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
