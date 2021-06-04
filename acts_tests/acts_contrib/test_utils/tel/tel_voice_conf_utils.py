@@ -219,41 +219,41 @@ def _merge_ims_conference_call(log, ads, call_ab_id, call_ac_id):
                         ads[0].droid.telecomCallGetProperties(call_conf_id))
                 return None
 
-                if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
-                        .droid.telecomCallGetCapabilities(call_conf_id)):
-                    ads[0].log.error(
-                        "Conf call id %s capabilities wrong: %s", call_conf_id,
-                        ads[0].droid.telecomCallGetCapabilities(call_conf_id))
-                    return None
+            if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
+                    .droid.telecomCallGetCapabilities(call_conf_id)):
+                ads[0].log.error(
+                    "Conf call id %s capabilities wrong: %s", call_conf_id,
+                    ads[0].droid.telecomCallGetCapabilities(call_conf_id))
+                return None
 
-                if (call_ab_id in calls) or (call_ac_id in calls):
-                    log.error("Previous call ids should not in new call"
-                    " list after merge.")
-                    return None
-        else:
-            for call_id in calls:
-                if call_id != call_ab_id and call_id != call_ac_id:
-                    call_conf_id = call_id
-                    log.info("CEP not enabled.")
+            if (call_ab_id in calls) or (call_ac_id in calls):
+                log.error("Previous call ids should not in new call"
+                " list after merge.")
+                return None
+    else:
+        for call_id in calls:
+            if call_id != call_ab_id and call_id != call_ac_id:
+                call_conf_id = call_id
+                log.info("CEP not enabled.")
 
-        if not call_conf_id:
-            log.error("Merge call fail, no new conference call id.")
-            raise signals.TestFailure(
-                "Calls were not merged. Failed to merge calls.",
-                extras={"fail_reason": "Calls were not merged."
-                    " Failed to merge calls."})
-        if not verify_incall_state(log, [ads[0], ads[1], ads[2]], True):
-            return False
+    if not call_conf_id:
+        log.error("Merge call fail, no new conference call id.")
+        raise signals.TestFailure(
+            "Calls were not merged. Failed to merge calls.",
+            extras={"fail_reason": "Calls were not merged."
+                " Failed to merge calls."})
+    if not verify_incall_state(log, [ads[0], ads[1], ads[2]], True):
+        return False
 
-        # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(
-                call_conf_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error(
-                "Call_ID: %s, state: %s, expected: STATE_ACTIVE", call_conf_id,
-                ads[0].droid.telecomCallGetCallState(call_conf_id))
-            return None
+    # Check if Conf Call is currently active
+    if ads[0].droid.telecomCallGetCallState(
+            call_conf_id) != CALL_STATE_ACTIVE:
+        ads[0].log.error(
+            "Call_ID: %s, state: %s, expected: STATE_ACTIVE", call_conf_id,
+            ads[0].droid.telecomCallGetCallState(call_conf_id))
+        return None
 
-        return call_conf_id
+    return call_conf_id
 
 
 def _hangup_call(log, ad, device_description='Device'):
