@@ -856,10 +856,6 @@ def phone_setup_iwlan_for_subscription(log,
             ad.log.error("Failed to set to %s data.", nw_gen)
             return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
-
-    if not toggle_volte_for_subscription(log, ad, sub_id, new_state=True):
-        return False
-
     # check if WFC supported phones
     if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
     ):
@@ -1432,8 +1428,8 @@ def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.error("Not in 5G NSA coverage.")
+        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.error("Not in 5G coverage.")
             return False
     else:
         if not wait_for_network_rat_for_subscription(
@@ -1517,8 +1513,8 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.error("Not in 5G NSA coverage.")
+        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.error("Not in 5G coverage.")
             return False
     else:
         if not wait_for_network_rat_for_subscription(
