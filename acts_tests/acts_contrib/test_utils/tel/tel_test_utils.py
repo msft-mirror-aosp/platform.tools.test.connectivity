@@ -8066,7 +8066,7 @@ def start_qxdm_logger(ad, begin_time=None):
         seconds = None
         file_count = ad.adb.shell(
             "find %s -type f -iname *.qmdl | wc -l" % ad.qxdm_log_path)
-        if int(file_count) > 50:
+        if int(file_count) > 3:
             if begin_time:
                 # if begin_time specified, delete old qxdm logs modified
                 # 10 minutes before begin time
