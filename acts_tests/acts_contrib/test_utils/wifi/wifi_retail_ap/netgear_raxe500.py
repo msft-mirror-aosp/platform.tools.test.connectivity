@@ -16,6 +16,7 @@
 
 import collections
 import numpy
+import re
 import time
 from acts_contrib.test_utils.wifi.wifi_retail_ap import WifiRetailAP
 from acts_contrib.test_utils.wifi.wifi_retail_ap import BlockingBrowser
@@ -36,6 +37,7 @@ class NetgearRAXE500AP(WifiRetailAP):
         super().__init__(ap_settings)
         self.init_gui_data()
         # Read and update AP settings
+        self.read_ap_firmware()
         self.read_ap_settings()
         self.update_ap_settings(ap_settings)
 
@@ -57,6 +59,14 @@ class NetgearRAXE500AP(WifiRetailAP):
         self.config_page_advanced = (
             '{protocol}://{username}:{password}@'
             '{ip_address}:{port}/WLG_adv_tri_band2.htm').format(
+                protocol=self.ap_settings['protocol'],
+                username=self.ap_settings['admin_username'],
+                password=self.ap_settings['admin_password'],
+                ip_address=self.ap_settings['ip_address'],
+                port=self.ap_settings['port'])
+        self.firmware_page = (
+            '{protocol}://{username}:{password}@'
+            '{ip_address}:{port}/ADVANCED_home2_tri_band.htm').format(
                 protocol=self.ap_settings['protocol'],
                 username=self.ap_settings['admin_username'],
                 password=self.ap_settings['admin_password'],
@@ -230,6 +240,22 @@ class NetgearRAXE500AP(WifiRetailAP):
             channel = int(channel[2:])
         setting_to_update = {network: {'channel': channel}}
         self.update_ap_settings(setting_to_update)
+
+    def read_ap_firmware(self):
+        """Function to read ap settings."""
+        with BlockingBrowser(self.ap_settings['headless_browser'],
+                             900) as browser:
+
+            # Visit URL
+            browser.visit_persistent(self.firmware_page, BROWSER_WAIT_MED, 10)
+            firmware_regex = re.compile(
+                r'Firmware Version[\s\S]+V(?P<version>[0-9._]+)')
+            firmware_version = re.search(firmware_regex, browser.html)
+            if firmware_version:
+                self.ap_settings['firmware_version'] = firmware_version.group(
+                    'version')
+            else:
+                self.ap_settings['firmware_version'] = -1
 
     def read_ap_settings(self):
         """Function to read ap settings."""
