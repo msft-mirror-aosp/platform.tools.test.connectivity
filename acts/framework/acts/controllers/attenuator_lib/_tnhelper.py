@@ -117,10 +117,11 @@ class _TNHelper(object):
         match_idx, match_val, ret_text = self._tn.expect(
             [_ascii_string('\S+' + self.rx_cmd_separator)], 1)
 
+        logging.debug('Telnet Command: {}'.format(cmd_str))
+        logging.debug('Telnet Reply: ({},{},{})'.format(
+            match_idx, match_val, ret_text))
+
         if match_idx == -1:
-            logging.debug('Telnet Command: {}'.format(cmd_str))
-            logging.debug('Telnet Reply: ({},{},{})'.format(
-                match_idx, match_val, ret_text))
             self.diagnose_telnet()
             raise attenuator.InvalidDataError(
                 'Telnet command failed to return valid data')
