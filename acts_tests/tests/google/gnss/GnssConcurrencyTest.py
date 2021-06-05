@@ -44,6 +44,9 @@ class GnssConcurrencyTest(BaseTestClass):
         ]
         self.unpack_userparams(req_param_names=req_params)
         gutils._init_device(self.ad)
+        self.ad.adb.shell("setprop persist.vendor.radio.adb_log_on 0")
+        self.ad.adb.shell("sync")
+        gutils.reboot(self.ad)
 
     def setup_test(self):
         gutils.start_pixel_logger(self.ad)

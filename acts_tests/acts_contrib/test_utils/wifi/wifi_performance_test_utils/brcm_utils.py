@@ -253,12 +253,13 @@ class LinkLayerStats():
     LLSTATS_CMD = 'wl dump ampdu; wl counters;'
     LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
     MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
-    RX_REGEX = re.compile(r'RX HE\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+    RX_REGEX = re.compile(r'RX (?P<mode>\S+)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
                           '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
-    TX_REGEX = re.compile(r'TX HE\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+    TX_REGEX = re.compile(r'TX (?P<mode>\S+)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
                           '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
-    TX_PER_REGEX = re.compile(r'HE PER\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
-                              '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
+    TX_PER_REGEX = re.compile(
+        r'(?P<mode>\S+) PER\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
+        '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
     RX_FCS_REGEX = re.compile(
         r'rxbadfcs (?P<rx_bad_fcs>[0-9]*).+\n.+goodfcs (?P<rx_good_fcs>[0-9]*)'
     )
@@ -323,26 +324,34 @@ class LinkLayerStats():
             self.reset_stats()
             return collections.OrderedDict()
         # Find and process all matches for per stream stats
-        rx_match = re.search(self.RX_REGEX, llstats_output)
-        tx_match = re.search(self.TX_REGEX, llstats_output)
-        tx_per_match = re.search(self.TX_PER_REGEX, llstats_output)
-        for nss in [1, 2]:
-            rx_mcs_iter = re.finditer(self.MCS_REGEX, rx_match.group(nss))
-            tx_mcs_iter = re.finditer(self.MCS_REGEX, tx_match.group(nss))
-            tx_per_iter = re.finditer(self.MCS_REGEX, tx_per_match.group(nss))
-            for mcs, (rx_mcs_stats, tx_mcs_stats,
-                      tx_per_mcs_stats) in enumerate(
-                          zip(rx_mcs_iter, tx_mcs_iter, tx_per_iter)):
-                current_mcs = self.MCS_ID('11ax', nss, 0, mcs, 0)
-                current_stats = collections.OrderedDict(
-                    txmpdu=int(tx_mcs_stats.group('count')),
-                    rxmpdu=int(rx_mcs_stats.group('count')),
-                    mpdu_lost=0,
-                    retries=tx_per_mcs_stats.group('count'),
-                    retries_short=0,
-                    retries_long=0)
-                llstats_dict[self._mcs_id_to_string(
-                    current_mcs)] = current_stats
+        rx_match_iter = re.finditer(self.RX_REGEX, llstats_output)
+        tx_match_iter = re.finditer(self.TX_REGEX, llstats_output)
+        tx_per_match_iter = re.finditer(self.TX_PER_REGEX, llstats_output)
+        for rx_match, tx_match, tx_per_match in zip(rx_match_iter,
+                                                    tx_match_iter,
+                                                    tx_per_match_iter):
+            mode = rx_match.group('mode')
+            mode = 'HT' if mode == 'MCS' else mode
+            for nss in [1, 2]:
+                rx_mcs_iter = re.finditer(self.MCS_REGEX,
+                                          rx_match.group(nss + 1))
+                tx_mcs_iter = re.finditer(self.MCS_REGEX,
+                                          tx_match.group(nss + 1))
+                tx_per_iter = re.finditer(self.MCS_REGEX,
+                                          tx_per_match.group(nss + 1))
+                for mcs, (rx_mcs_stats, tx_mcs_stats,
+                          tx_per_mcs_stats) in enumerate(
+                              zip(rx_mcs_iter, tx_mcs_iter, tx_per_iter)):
+                    current_mcs = self.MCS_ID(mode, nss, 0, mcs, 0)
+                    current_stats = collections.OrderedDict(
+                        txmpdu=int(tx_mcs_stats.group('count')),
+                        rxmpdu=int(rx_mcs_stats.group('count')),
+                        mpdu_lost=0,
+                        retries=tx_per_mcs_stats.group('count'),
+                        retries_short=0,
+                        retries_long=0)
+                    llstats_dict[self._mcs_id_to_string(
+                        current_mcs)] = current_stats
         return llstats_dict
 
     def _parse_mpdu_stats(self, llstats_output):
