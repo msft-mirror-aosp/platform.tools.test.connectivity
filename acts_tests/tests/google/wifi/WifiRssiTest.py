@@ -643,14 +643,11 @@ class WifiRssiTest(base_test.BaseTestClass):
                 'BSSID', '00:00:00:00')
         ]
 
-        num_atten_steps = int((self.testclass_params['rssi_vs_atten_stop'] -
-                               self.testclass_params['rssi_vs_atten_start']) /
-                              self.testclass_params['rssi_vs_atten_step'])
-        testcase_params['rssi_atten_range'] = [
-            self.testclass_params['rssi_vs_atten_start'] +
-            x * self.testclass_params['rssi_vs_atten_step']
-            for x in range(0, num_atten_steps)
-        ]
+        testcase_params['rssi_atten_range'] = numpy.arange(
+            self.testclass_params['rssi_vs_atten_start'],
+            self.testclass_params['rssi_vs_atten_stop'],
+            self.testclass_params['rssi_vs_atten_step']).tolist()
+
         testcase_params['traffic_timeout'] = self.get_traffic_timeout(
             testcase_params)
 
@@ -1007,19 +1004,28 @@ class WifiOtaRssiTest(WifiRssiTest):
         if 'rssi_over_orientation' in self.test_name:
             rssi_test_duration = self.testclass_params[
                 'rssi_over_orientation_duration']
+            rssi_ota_test_attenuation = [
+                self.testclass_params['rssi_ota_test_attenuation']
+            ]
         elif 'rssi_variation' in self.test_name:
             rssi_test_duration = self.testclass_params[
                 'rssi_variation_duration']
-
-        testcase_params.update(
-            connected_measurements=int(
-                rssi_test_duration /
-                self.testclass_params['polling_frequency']),
-            scan_measurements=0,
-            first_measurement_delay=MED_SLEEP,
-            rssi_atten_range=[
+            rssi_ota_test_attenuation = [
                 self.testclass_params['rssi_ota_test_attenuation']
-            ])
+            ]
+        elif 'rssi_vs_atten' in self.test_name:
+            rssi_test_duration = self.testclass_params[
+                'rssi_over_orientation_duration']
+            rssi_ota_test_attenuation = numpy.arange(
+                self.testclass_params['rssi_vs_atten_start'],
+                self.testclass_params['rssi_vs_atten_stop'],
+                self.testclass_params['rssi_vs_atten_step']).tolist()
+
+        testcase_params.update(connected_measurements=int(
+            rssi_test_duration / self.testclass_params['polling_frequency']),
+                               scan_measurements=0,
+                               first_measurement_delay=MED_SLEEP,
+                               rssi_atten_range=rssi_ota_test_attenuation)
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         testcase_params['test_network'] = self.main_network[
@@ -1049,7 +1055,10 @@ class WifiOtaRssiTest(WifiRssiTest):
         self.testclass_results.append(rssi_result)
         self.plot_rssi_vs_time(rssi_result,
                                rssi_result['postprocessed_results'], 1)
-        self.plot_rssi_distribution(rssi_result['postprocessed_results'])
+        if 'rssi_vs_atten' in self.test_name:
+            self.plot_rssi_vs_attenuation(rssi_result['postprocessed_results'])
+        elif 'rssi_variation' in self.test_name:
+            self.plot_rssi_distribution(rssi_result['postprocessed_results'])
 
     def generate_test_cases(self, test_types, channels, modes, traffic_modes,
                             chamber_modes, orientations):
