@@ -2369,23 +2369,25 @@ class CommandInput(cmd.Cmd):
             remote: The number of the remote party on the simulated call
             state: The state of the call. Must be one of "ringing", "waiting",
                    "dialing", "alerting", "active", "held".
+            direction: The direction of the call. Must be one of "incoming", "outgoing".
 
         Usage:
           Examples:
-            hfp_new_call <remote> <state>
-            hfp_new_call 14085555555 active
-            hfp_new_call 14085555555 held
-            hfp_new_call 14085555555 ringing
-            hfp_new_call 14085555555 alerting
-            hfp_new_call 14085555555 dialing
+            hfp_new_call <remote> <state> <direction>
+            hfp_new_call 14085555555 active incoming
+            hfp_new_call 14085555555 held outgoing
+            hfp_new_call 14085555555 ringing incoming
+            hfp_new_call 14085555555 waiting incoming
+            hfp_new_call 14085555555 alerting outgoing
+            hfp_new_call 14085555555 dialing outgoing
         """
         cmd = "Simulates a call"
         try:
             info = line.strip().split()
-            if len(info) != 2:
-                raise ValueError("Exactly two command line arguments required: <remote> <state>")
-            remote, state = info[0], info[1]
-            result = self.pri_dut.hfp_lib.newCall(remote, state)
+            if len(info) != 3:
+                raise ValueError("Exactly three command line arguments required: <remote> <state> <direction>")
+            remote, state, direction = info[0], info[1], info[2]
+            result = self.pri_dut.hfp_lib.newCall(remote, state, direction)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -2802,6 +2804,27 @@ class CommandInput(cmd.Cmd):
         cmd = "Get the call manager's state"
         try:
             result = self.pri_dut.hfp_lib.getState()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_connection_behavior(self, line):
+        """
+        Description: Set the Service Level Connection (SLC) behavior when a new peer connects.
+
+        Input(s):
+            autoconnect: Enable/Disable autoconnection of SLC.
+
+        Usage:
+          Examples:
+            hfp_set_connection_behavior <autoconnect>
+            hfp_set_connection_behavior true
+            hfp_set_connection_behavior false
+        """
+        cmd = "Set the Service Level Connection (SLC) behavior"
+        try:
+            autoconnect = line.strip().lower() == "true"
+            result = self.pri_dut.hfp_lib.setConnectionBehavior(autoconnect)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
