@@ -305,6 +305,12 @@ class WifiEnums():
         WIFI_BAND_BOTH_WITH_DFS: ALL_5G_FREQUENCIES + ALL_2G_FREQUENCIES
     }
 
+    # TODO: add all of the band mapping.
+    softap_band_frequencies = {
+        WIFI_CONFIG_SOFTAP_BAND_2G: ALL_2G_FREQUENCIES,
+        WIFI_CONFIG_SOFTAP_BAND_5G: ALL_5G_FREQUENCIES
+    }
+
     # All Wifi frequencies to channels lookup.
     freq_to_channel = {
         2412: 1,
