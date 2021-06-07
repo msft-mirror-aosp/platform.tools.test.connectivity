@@ -2,7 +2,6 @@
 
 import re
 import time
-
 from acts import logger
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.openwrt_lib import network_settings
@@ -273,6 +272,38 @@ class OpenWrtAP(object):
         self.ssh.run(
             'uci set wireless.@wifi-iface[{}].encryption={}'.format(
                 i, encryption))
+
+    self.ssh.run("uci commit wireless")
+    self.ssh.run("wifi")
+
+  def set_password(self, pwd_5g=None, pwd_2g=None):
+    """Set password for individual interface.
+
+    Args:
+        pwd_5g: 8 ~ 63 chars, ascii letters and digits password for 5g network.
+        pwd_2g: 8 ~ 63 chars, ascii letters and digits password for 2g network.
+    """
+    if pwd_5g:
+      if len(pwd_5g) < 8 or len(pwd_5g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_5g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(3, pwd_5g))
+        self.log.info("Set 5G password to :{}".format(pwd_2g))
+
+    if pwd_2g:
+      if len(pwd_2g) < 8 or len(pwd_2g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_2g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(2, pwd_2g))
+        self.log.info("Set 2G password to :{}".format(pwd_2g))
 
     self.ssh.run("uci commit wireless")
     self.ssh.run("wifi")
