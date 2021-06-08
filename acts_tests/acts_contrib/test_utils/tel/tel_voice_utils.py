@@ -2127,7 +2127,13 @@ def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
         else:
             return is_phone_in_call_3g(log, ad)
 
-    elif rat.lower() == 'wfc':
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return is_phone_in_call_2g
+        else:
+            return is_phone_in_call_2g(log, ad)
+
+    elif rat.lower() == 'wfc' or rat.lower() == '5g_wfc':
         if only_return_fn:
             return is_phone_in_call_iwlan
         else:
