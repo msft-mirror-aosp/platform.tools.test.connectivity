@@ -2,7 +2,6 @@
 
 import re
 import time
-
 from acts import logger
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.openwrt_lib import network_settings
@@ -26,6 +25,7 @@ PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
 WAIT_TIME = 20
+DEFAULT_RADIOS = ("radio0", "radio1")
 
 
 def create(configs):
@@ -277,6 +277,38 @@ class OpenWrtAP(object):
     self.ssh.run("uci commit wireless")
     self.ssh.run("wifi")
 
+  def set_password(self, pwd_5g=None, pwd_2g=None):
+    """Set password for individual interface.
+
+    Args:
+        pwd_5g: 8 ~ 63 chars, ascii letters and digits password for 5g network.
+        pwd_2g: 8 ~ 63 chars, ascii letters and digits password for 2g network.
+    """
+    if pwd_5g:
+      if len(pwd_5g) < 8 or len(pwd_5g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_5g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(3, pwd_5g))
+        self.log.info("Set 5G password to :{}".format(pwd_2g))
+
+    if pwd_2g:
+      if len(pwd_2g) < 8 or len(pwd_2g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_2g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(2, pwd_2g))
+        self.log.info("Set 2G password to :{}".format(pwd_2g))
+
+    self.ssh.run("uci commit wireless")
+    self.ssh.run("wifi")
+
   def generate_wireless_configs(self, wifi_configs):
     """Generate wireless configs to configure.
 
@@ -446,6 +478,40 @@ class OpenWrtAP(object):
           del wifi_network["password"]
         return wifi_network
     return None
+
+  def get_wifi_status(self, radios=DEFAULT_RADIOS):
+    """Check if radios are up. Default are 2G and 5G bands.
+
+    Args:
+      radios: Wifi interfaces for check status.
+    Returns:
+      True if both radios are up. False if not.
+    """
+    status = True
+    for radio in radios:
+      str_output = self.ssh.run("wifi status %s" % radio).stdout
+      wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                              Loader=yaml.FullLoader)
+      status = wifi_status[radio]["up"] and status
+    return status
+
+  def verify_wifi_status(self, radios=DEFAULT_RADIOS, timeout=20):
+    """Ensure wifi interfaces are ready.
+
+    Args:
+      radios: Wifi interfaces for check status.
+      timeout: An integer that is the number of times to try
+               wait for interface ready.
+    Returns:
+      True if both radios are up. False if not.
+    """
+    start_time = time.time()
+    end_time = start_time + timeout
+    while time.time() < end_time:
+      if self.get_wifi_status(radios):
+        return True
+      time.sleep(1)
+    return False
 
   def close(self):
     """Reset wireless and network settings to default and stop AP."""
