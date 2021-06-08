@@ -44,7 +44,7 @@ IPSEC_L2TP_RSA = {
 
 # parmas for lx2tpd
 
-XL2TPD_CONF_GLOBAL = [
+XL2TPD_CONF_GLOBAL = (
     "[global]",
     "ipsec saref = no",
     "debug tunnel = no",
@@ -54,9 +54,9 @@ XL2TPD_CONF_GLOBAL = [
     "access control = no",
     "rand source = dev",
     "port = 1701",
-]
+)
 
-XL2TPD_CONF_INS = [
+XL2TPD_CONF_INS = (
     "[lns default]",
     "require authentication = yes",
     "pass peer = yes",
@@ -64,9 +64,9 @@ XL2TPD_CONF_INS = [
     "length bit = yes",
     "refuse pap = yes",
     "refuse chap = yes",
-]
+)
 
-XL2TPD_OPTION = [
+XL2TPD_OPTION = (
     "require-mschap-v2",
     "refuse-mschap",
     "ms-dns 8.8.8.8",
@@ -87,17 +87,17 @@ XL2TPD_OPTION = [
     "lcp-echo-interval 30",
     "lcp-echo-failure 4",
     "nomppe"
-]
+)
 
 # iptable rules for vpn_pptp
-FIREWALL_RULES_FOR_PPTP = [
+FIREWALL_RULES_FOR_PPTP = (
     "iptables -A input_rule -i ppp+ -j ACCEPT",
     "iptables -A output_rule -o ppp+ -j ACCEPT",
     "iptables -A forwarding_rule -i ppp+ -j ACCEPT"
-]
+)
 
 # iptable rules for vpn_l2tp
-FIREWALL_RULES_FOR_L2TP = [
+FIREWALL_RULES_FOR_L2TP = (
     "iptables -I INPUT  -m policy --dir in --pol ipsec --proto esp -j ACCEPT",
     "iptables -I FORWARD  -m policy --dir in --pol ipsec --proto esp -j ACCEPT",
     "iptables -I FORWARD  -m policy --dir out --pol ipsec --proto esp -j ACCEPT",
@@ -111,7 +111,7 @@ FIREWALL_RULES_FOR_L2TP = [
     "iptables -A INPUT -p udp --dport 500 -j ACCEPT",
     "iptables -A INPUT -p udp --dport 4500 -j ACCEPT",
     "iptables -A INPUT -p udp -m policy --dir in --pol ipsec -m udp --dport 1701 -j ACCEPT"
-]
+)
 
 
 # Object for vpn profile
