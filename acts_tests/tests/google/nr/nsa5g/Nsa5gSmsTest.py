@@ -445,4 +445,148 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             mt_rat='5g_csfb',
             msg_in_call=True)
 
+    @test_tracker_info(uuid="709d5322-3da3-4c77-9180-281bc54ad78e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_in_call_iwlan(self):
+        """ Test MO SMS for 1 Phone in APM, WiFi connected,
+        WFC WiFi Preferred mode.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM ON
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify SMS from PhoneA to PhoneB
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_wfc',
+            mt_rat='default',
+            msg_in_call=True,
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="6af38572-bbf7-4c11-8f0c-ab2f9b25ac49")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_in_call_iwlan(self):
+        """ Test MT SMS for 1 Phone in APM, WiFi connected,
+        WFC WiFi Preferred mode.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM ON
+        Make a Voice call from PhoneB to PhoneA
+        Send and Verify SMS from PhoneB to PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_wfc',
+            msg_in_call=True,
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="1437adb8-dfb0-49fb-8ecc-b456f60d7f64")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_long_message_mo(self):
+        """Test MO long SMS function for 1 phone in nsa 5G network.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Send SMS from PhoneA to PhoneB
+        Verify received message on PhoneB is correct
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g',
+            mt_rat='default',
+            long_msg=True)
+
+    @test_tracker_info(uuid="d34a4840-d1fa-46f1-885b-f67456225f50")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_long_message_mt(self):
+        """Test MT long SMS function for 1 phone in nsa 5G network.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Send SMS from PhoneB to PhoneA
+        Verify received message on PhoneA is correct
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g',
+            long_msg=True)
+
+    @test_tracker_info(uuid="84e40f15-1d02-44b0-8103-f25f73dae7a1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mo_in_call_csfb(self):
+        """ Test MO SMS during a MO csfb call over 5G NSA.
+
+        Disable APM on PhoneA
+        Set up PhoneA are in CSFB mode.
+        Provision PhoneA in 5g NSA.
+        Make sure PhoneA is able to make call.
+        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA,
+         receive SMS on PhoneB.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_csfb',
+            mt_rat='default',
+            msg_in_call=True)
+
+    @test_tracker_info(uuid="259ccd94-2d70-450e-adf4-949889096cce")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_mt_in_call_csfb(self):
+        """ Test MT SMS during a MT csfb call over 5G NSA.
+
+        Disable APM on PhoneA
+        Set up PhoneA are in CSFB mode.
+        Provision PhoneA in 5g NSA.
+        Make sure PhoneA is able to receive call.
+        Call from PhoneB to PhoneA, accept on PhoneA, send SMS on PhoneB,
+         receive SMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_csfb',
+            msg_in_call=True)
+
     """ Tests End """
