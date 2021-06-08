@@ -108,6 +108,10 @@ class WifiManagerTest(WifiBaseTest):
             wutils.stop_wifi_tethering(self.dut)
         for ad in self.android_devices:
             wutils.reset_wifi(ad)
+        self.log.debug("Toggling Airplane mode OFF")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, False),
+            "Can not turn airplane mode off: %s" % self.dut.serial)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -743,6 +747,36 @@ class WifiManagerTest(WifiBaseTest):
         """
         self.turn_location_on_and_scan_toggle_on()
         self.helper_reconnect_toggle_airplane()
+
+    @test_tracker_info(uuid="52b89a47-f260-4343-922d-fbeb4d8d2b63")
+    def test_reconnect_toggle_wifi_on_with_airplane_on(self):
+        """Connect to multiple networks, turn on airplane mode, turn on wifi,
+        then reconnect a previously connected network.
+
+        Steps:
+        1. Connect to a 2GHz network.
+        2. Connect to a 5GHz network.
+        3. Turn ON Airplane mode.
+        4. Turn ON WiFi.
+        5. Reconnect to the a previously connected network.
+        """
+        connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
+        connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
+        self.log.debug("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        self.log.debug("Toggling wifi ON")
+        wutils.wifi_toggle_state(self.dut, True)
+        time.sleep(DEFAULT_TIMEOUT)
+        reconnect_to = self.get_enabled_network(connect_2g_data,
+                                                connect_5g_data)
+        reconnect = self.connect_to_wifi_network_with_id(
+            reconnect_to[WifiEnums.NETID_KEY],
+            reconnect_to[WifiEnums.SSID_KEY])
+        if not reconnect:
+            raise signals.TestFailure("Device did not connect to the correct"
+                                      " network after toggling WiFi.")
 
     @test_tracker_info(uuid="3d041c12-05e2-46a7-ab9b-e3f60cc735db")
     def test_reboot_configstore_reconnect(self):
