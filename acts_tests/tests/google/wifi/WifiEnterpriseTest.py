@@ -155,6 +155,7 @@ class WifiEnterpriseTest(WifiBaseTest):
         self.dut.droid.wifiStopTrackingStateChange()
         # Turn off airplane mode
         acts.utils.force_airplane_mode(self.dut, False)
+        wutils.set_attns(self.attenuators, "default")
 
     """Helper Functions"""
 
