@@ -64,6 +64,7 @@ from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import Fuchs
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
+from acts.controllers.fuchsia_lib.lib_controllers.netstack_controller import NetstackController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
 from acts.libs.proc import job
@@ -234,6 +235,14 @@ class FuchsiaDevice:
             'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US).upper()
         self._persistent_ssh_conn = None
 
+        # WLAN interface info is populated inside configure_wlan
+        self.wlan_client_interfaces = {}
+        self.wlan_ap_interfaces = {}
+        self.wlan_client_test_interface_name = fd_conf_data.get(
+            'wlan_client_test_interface', None)
+        self.wlan_ap_test_interface_name = fd_conf_data.get(
+            'wlan_ap_test_interface', None)
+
         # Whether to use 'policy' or 'drivers' for WLAN connect/disconnect calls
         # If set to None, wlan is not configured.
         self.association_mechanism = None
@@ -387,6 +396,9 @@ class FuchsiaDevice:
                                                     self.test_counter,
                                                     self.client_id)
 
+        # Contains Netstack functions
+        self.netstack_controller = NetstackController(self)
+
         # Contains WLAN core functions
         self.wlan_controller = WlanController(self)
 
@@ -494,6 +506,13 @@ class FuchsiaDevice:
         """
         return self.client_id + "." + str(test_id)
 
+    def configure_netstack(self):
+        """Readies device for Netstack functionality, including initializing
+        facade connection."""
+        err = self.netstack_lib.init().get('error')
+        if err:
+            raise FuchsiaDeviceError('Failed to init netstack_lib: %s' % err)
+
     def configure_wlan(self,
                        association_mechanism=None,
                        preserve_saved_networks=None):
@@ -551,6 +570,9 @@ class FuchsiaDevice:
             # devices, not with unit tests.
             self.wlan_policy_controller._configure_wlan(
                 preserve_saved_networks)
+
+        # Retrieve WLAN client and AP interfaces
+        self.wlan_controller.update_wlan_interfaces()
 
     def deconfigure_wlan(self):
         """
