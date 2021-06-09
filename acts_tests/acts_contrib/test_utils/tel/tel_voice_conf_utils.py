@@ -266,7 +266,7 @@ def _hangup_call(log, ad, device_description='Device'):
 def _test_ims_conference_merge_drop_second_call_from_participant(
         log, ads, call_ab_id, call_ac_id):
     """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
-    (CEP enabled).
+    (supporting both cases of CEP enabled and disabled).
 
     PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneB.
     PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneC.
@@ -691,7 +691,6 @@ def _three_phone_call_mt_add_mt(log, ads, phone_setups, verify_funcs):
 
     return call_ab_id
 
-
 def _test_call_mt_mt_add_swap_x(log,
                                 ads,
                                 num_swaps,
@@ -812,4 +811,74 @@ def _get_expected_call_state(ad):
         return CALL_STATE_ACTIVE
     return CALL_STATE_HOLDING
 
+def _test_wcdma_conference_merge_drop(log, ads, call_ab_id, call_ac_id):
+    """Test conference merge and drop in WCDMA/CSFB_WCDMA call.
 
+    PhoneA in WCDMA (or CSFB_WCDMA) call with PhoneB.
+    PhoneA in WCDMA (or CSFB_WCDMA) call with PhoneC.
+    Merge calls to conference on PhoneA.
+    Hangup on PhoneC, check call continues between AB.
+    Hangup on PhoneB, check A ends.
+
+    Args:
+        call_ab_id: call id for call_AB on PhoneA.
+        call_ac_id: call id for call_AC on PhoneA.
+
+    Returns:
+        True if succeed;
+        False if failed.
+    """
+    log.info("Step4: Merge to Conf Call and verify Conf Call.")
+    ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
+    time.sleep(WAIT_TIME_IN_CALL)
+    calls = ads[0].droid.telecomCallGetCallIds()
+    ads[0].log.info("Calls in PhoneA %s", calls)
+    num_calls = num_active_calls(log, ads[0])
+    if num_calls != 3:
+        ads[0].log.error("Total number of call ids is not 3.")
+        if num_calls == 2:
+            if call_ab_id in calls and call_ac_id in calls:
+                ads[0].log.error("Calls were not merged."
+                    " Failed to merge calls.")
+                raise signals.TestFailure(
+                    "Calls were not merged. Failed to merge calls.",
+                    extras={"fail_reason": "Calls were not merged."
+                        " Failed to merge calls."})
+        return False
+    call_conf_id = None
+    for call_id in calls:
+        if call_id != call_ab_id and call_id != call_ac_id:
+            call_conf_id = call_id
+    if not call_conf_id:
+        log.error("Merge call fail, no new conference call id.")
+        return False
+    if not verify_incall_state(log, [ads[0], ads[1], ads[2]], True):
+        return False
+
+    if ads[0].droid.telecomCallGetCallState(
+            call_conf_id) != CALL_STATE_ACTIVE:
+        ads[0].log.error(
+            "Call_id: %s, state: %s, expected: STATE_ACTIVE", call_conf_id,
+            ads[0].droid.telecomCallGetCallState(call_conf_id))
+        return False
+
+    log.info("Step5: End call on PhoneC and verify call continues.")
+    if not _hangup_call(log, ads[2], "PhoneC"):
+        return False
+    time.sleep(WAIT_TIME_IN_CALL)
+    calls = ads[0].droid.telecomCallGetCallIds()
+    ads[0].log.info("Calls in PhoneA %s", calls)
+    if num_active_calls(log, ads[0]) != 1:
+        return False
+    if not verify_incall_state(log, [ads[0], ads[1]], True):
+        return False
+    if not verify_incall_state(log, [ads[2]], False):
+        return False
+
+    log.info("Step6: End call on PhoneB and verify PhoneA end.")
+    if not _hangup_call(log, ads[1], "PhoneB"):
+        return False
+    time.sleep(WAIT_TIME_IN_CALL)
+    if not verify_incall_state(log, [ads[0], ads[1], ads[2]], False):
+        return False
+    return True

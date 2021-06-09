@@ -108,7 +108,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
@@ -2127,7 +2127,13 @@ def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
         else:
             return is_phone_in_call_3g(log, ad)
 
-    elif rat.lower() == 'wfc':
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return is_phone_in_call_2g
+        else:
+            return is_phone_in_call_2g(log, ad)
+
+    elif rat.lower() == 'wfc' or rat.lower() == '5g_wfc':
         if only_return_fn:
             return is_phone_in_call_iwlan
         else:
