@@ -476,7 +476,7 @@ class NetworkSettings(object):
     def setup_xl2tpd(self, ip_range=20):
         """Setup xl2tpd config."""
         net_id, host_id = self.l2tp.address.rsplit(".", 1)
-        xl2tpd_conf = network_const.XL2TPD_CONF_GLOBAL
+        xl2tpd_conf = list(network_const.XL2TPD_CONF_GLOBAL)
         xl2tpd_conf.append("auth file = %s" % PPP_CHAP_SECRET_PATH)
         xl2tpd_conf.extend(network_const.XL2TPD_CONF_INS)
         xl2tpd_conf.append("ip range = %s.%s-%s.%s" %
@@ -487,7 +487,7 @@ class NetworkSettings(object):
         xl2tpd_conf.append("pppoptfile = %s" % XL2TPD_OPTION_CONFIG_PATH)
 
         self.create_config_file("\n".join(xl2tpd_conf), XL2TPD_CONFIG_PATH)
-        xl2tpd_option = network_const.XL2TPD_OPTION
+        xl2tpd_option = list(network_const.XL2TPD_OPTION)
         xl2tpd_option.append("name %s" % self.l2tp.name)
         self.create_config_file("\n".join(xl2tpd_option),
                                 XL2TPD_OPTION_CONFIG_PATH)
@@ -578,7 +578,7 @@ class NetworkSettings(object):
             self.ssh.run("uci set firewall.@rule[-1].src='wan'")
             self.ssh.run("uci set firewall.@rule[-1].proto='47'")
 
-        iptable_rules = network_const.FIREWALL_RULES_FOR_PPTP
+        iptable_rules = list(network_const.FIREWALL_RULES_FOR_PPTP)
         self.add_custom_firewall_rules(iptable_rules)
         self.service_manager.need_restart(SERVICE_FIREWALL)
 
@@ -621,7 +621,7 @@ class NetworkSettings(object):
             self.ssh.run("uci set firewall.@rule[-1].proto='ah'")
 
         net_id = self.l2tp.address.rsplit(".", 1)[0]
-        iptable_rules = network_const.FIREWALL_RULES_FOR_L2TP
+        iptable_rules = list(network_const.FIREWALL_RULES_FOR_L2TP)
         iptable_rules.append("iptables -A FORWARD -s %s.0/24"
                              "  -j ACCEPT" % net_id)
         iptable_rules.append("iptables -t nat -A POSTROUTING"
