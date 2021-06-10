@@ -45,7 +45,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contribtest_utils.tel.tel_test_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
 from acts_contrib.test_utils.tel.tel_ims_utils import change_ims_setting
 
 
