@@ -89,6 +89,7 @@ class MockChamber(OtaChamber):
         self.log = logger.create_tagged_trace_logger('OtaChamber|{}'.format(
             self.device_id))
         self.current_mode = None
+        self.SUPPORTED_BANDS = ['2.4GHz', 'UNII-1', 'UNII-2', 'UNII-3', '6GHz']
 
     def set_orientation(self, orientation):
         self.log.info('Setting orientation to {} degrees.'.format(orientation))
