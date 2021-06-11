@@ -345,4 +345,398 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             wifi_ssid=self.wifi_network_ssid,
             wifi_pwd=self.wifi_network_pass)
 
+    @test_tracker_info(uuid="a76e4adc-ce37-47d4-9925-4ebe175f7b9c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_volte(self):
+        """Test MO MMS for 1 phone with VoLTE on 5G NSA
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Send and Verify MMS from PhoneA to PhoneB
+        Verify PhoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_volte',
+            mt_rat='default',
+            msg_type='mms')
+
+    @test_tracker_info(uuid="c2282b01-e89f-49db-8925-79d38b63a373")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_volte(self):
+        """Test MT MMS for 1 phone with VoLTE on 5G NSA
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Send and Verify MMS from PhoneB to PhoneA
+        Verify PhoneA is still on 5g NSA
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_volte',
+            msg_type='mms')
+
+    @test_tracker_info(uuid="fd9bc699-940f-4a4a-abf1-31080e54ab56")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_in_call_volte(self):
+        """ Test MO MMS during a VoLTE call over 5G NSA.
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify MMS from PhoneA to PhoneB
+        Verify PhoneA is still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_volte',
+            mt_rat='default',
+            msg_type='mms',
+            msg_in_call=True)
+
+    @test_tracker_info(uuid="cfbae1e0-842a-470a-914a-a3a25a18dc81")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_in_call_volte(self):
+        """ Test MT MMS during a VoLTE call over 5G NSA.
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA
+        Make a Voice call from PhoneB to PhoneA
+        Send and Verify MMS from PhoneB to PhoneA
+        Verify PhoneA is still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_volte',
+            msg_type='mms',
+            msg_in_call=True)
+
+    @test_tracker_info(uuid="fc8a996b-04b5-40e0-be25-cbbabf4d7957")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_iwlan(self):
+        """ Test MO MMS text function for 1 phone in APM,
+        WiFi connected, WFC Cell Preferred mode.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Cell Pref with APM ON
+        Send and Verify MMS from PhoneA to PhoneB
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_wfc',
+            mt_rat='default',
+            msg_type='mms',
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="7f354997-38b5-49cd-8bee-12d0589e0380")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_iwlan(self):
+        """ Test MT MMS text function for 1 phone in APM,
+        WiFi connected, WFC Cell Preferred mode.
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Cell Pref with APM ON
+        Send and Verify MMS from PhoneB to PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_wfc',
+            msg_type='mms',
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="592ea897-cba1-4ab5-a4ed-54ac1f8d3039")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_iwlan_apm_off(self):
+        """ Test MO MMS, Phone in APM off, WiFi connected, WFC WiFi Pref Mode
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM OFF
+        Send and Verify MMS from PhoneA to PhoneB
+        Verify 5g NSA attach for PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_wfc',
+            mt_rat='default',
+            msg_type='mms',
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="3824205d-6a36-420f-a448-51ebb30948c2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_iwlan_apm_off(self):
+        """ Test MT MMS, Phone in APM off, WiFi connected, WFC WiFi Pref Mode
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM OFF
+        Send and Verify MMS from PhoneB to PhoneA
+        Verify 5g NSA attach for PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_wfc',
+            msg_type='mms',
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="91da5493-c810-4b1e-84f0-9d292a7b23eb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_in_call_iwlan(self):
+        """ Test MO MMS, Phone in APM, WiFi connected, WFC WiFi Pref mode
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM ON
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify MMS from PhoneA to PhoneB
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_wfc',
+            mt_rat='default',
+            msg_type='mms',
+            msg_in_call=True,
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="3e6a6700-1fcb-4db1-a757-e80801032605")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_in_call_iwlan(self):
+        """ Test MT MMS, Phone in APM, WiFi connected, WFC WiFi Pref mode
+
+        Disable APM on PhoneA
+        Provision PhoneA in 5g NSA
+        Provision PhoneA for WFC Wifi Pref with APM ON
+        Make a Voice call from PhoneB to PhoneA
+        Send and Verify MMS from PhoneB to PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_wfc',
+            msg_type='mms',
+            msg_in_call=True,
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="dc483cc-d7c7-4cdd-9500-4bfc4f1b5bab")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_in_call_volte_wifi(self):
+        """ Test MO MMS during VoLTE call and WiFi connected
+
+        Make sure PhoneA is in 5G NSA (with VoLTE).
+        Make sure PhoneA is able to make call.
+        Connect PhoneA to Wifi.
+        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
+        Make sure PhoneA is in 5G NSA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_volte',
+            mt_rat='default',
+            msg_type='mms',
+            msg_in_call=True,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="95472ce7-0947-4199-bb6a-8fbb189f3c5c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_in_call_volte_wifi(self):
+        """ Test MT MMS during VoLTE call and WiFi connected
+
+        Make sure PhoneA is in 5G NSA (with VoLTE).
+        Make sure PhoneA is able to receive call.
+        Connect PhoneA to Wifi.
+        Call from PhoneB to PhoneA, accept on PhoneA, send MMS on PhoneB.
+        Make sure PhoneA is in 5G NSA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_volte',
+            msg_type='mms',
+            msg_in_call=True,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="738e2d29-c82d-4a4a-9f4b-e8f8688151ee")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_long_message_mo(self):
+        """Test MO long MMS basic function for 1 phone in nsa 5G network.
+
+        Airplane mode is off. PhoneA in nsa 5G.
+        Send long MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g',
+            mt_rat='default',
+            msg_type='mms',
+            long_msg=True)
+
+    @test_tracker_info(uuid="68f4f0d6-b798-4d0b-9500-ce49f009b61a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_long_message_mt(self):
+        """Test MT long MMS basic function for 1 phone in nsa 5G network.
+
+        Airplane mode is off. PhoneA in nsa 5G.
+        Send long MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g',
+            msg_type='mms',
+            long_msg=True)
+
+    @test_tracker_info(uuid="a379fac4-1aa6-46e0-8cef-6d2452702e04")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mo_in_call_csfb_wifi(self):
+        """ Test MO MMS during a MO csfb call and device connects to Wifi.
+
+        Disable APM on PhoneA
+        Set up PhoneA in CSFB mode.
+        Provision PhoneA in 5g NSA.
+        Make sure PhoneA is able to make call.
+        Connect PhoneA to Wifi.
+        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA,
+         receive MMS on B.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[0],
+            self.android_devices[1],
+            mo_rat='5g_csfb',
+            mt_rat='default',
+            msg_type='mms',
+            msg_in_call=True,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="1a6543b1-b7d6-4260-8276-88aee649c4b2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mms_mt_in_call_csfb_wifi(self):
+        """ Test MT MMS during a MT csfb call and device connects to Wifi.
+
+        Disable APM on PhoneA
+        Set up PhoneA is CSFB mode.
+        Provision PhoneA in 5g NSA.
+        Make sure PhoneA is able to receive call.
+        Connect PhoneA to Wifi.
+        Call from PhoneB to PhoneA, accept on PhoneA, send MMS on PhoneB,
+         receive MMS on A.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(
+            self.log,
+            self.android_devices[1],
+            self.android_devices[0],
+            mo_rat='default',
+            mt_rat='5g_csfb',
+            msg_type='mms',
+            msg_in_call=True,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass)
+
     """ Tests End """
