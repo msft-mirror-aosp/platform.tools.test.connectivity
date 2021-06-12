@@ -152,7 +152,7 @@ def validate_network(dut, ssid):
     """
     current_network = dut.droid.wifiGetConnectionInfo()
     try:
-        connected = wutils.validate_connection(dut) is not None
+        connected = wutils.validate_connection(dut, wait_time=15) is not None
     except:
         connected = False
     if connected and current_network['SSID'] == ssid:
@@ -705,6 +705,17 @@ def push_firmware(dut, firmware_files):
 @detect_wifi_decorator
 def disable_beamforming(dut):
     """Function to disable beamforming."""
+    pass
+
+
+@detect_wifi_decorator
+def set_chain_mask(dut, chain_mask):
+    """Function to set DUT chain mask.
+
+    Args:
+        dut: android device
+        chain_mask: desired chain mask in [0, 1, '2x2']
+    """
     pass
 
 

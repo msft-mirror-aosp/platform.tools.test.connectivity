@@ -120,11 +120,11 @@ class BokehFigure():
             if not math.isnan(xy[1]):
                 x_data_filtered.append(xy[0])
                 y_data_filtered.append(xy[1])
-                for key, value in hover_text.items():
-                    hover_text_filtered.setdefault(key, [])
-                    hover_text_filtered[key].append(
-                        value[idx] if len(value)>idx else ''
-                        )
+                if hover_text:
+                    for key, value in hover_text.items():
+                        hover_text_filtered.setdefault(key, [])
+                        hover_text_filtered[key].append(
+                            value[idx] if len(value) > idx else '')
         return x_data_filtered, y_data_filtered, hover_text_filtered
 
     def add_line(self,
@@ -160,8 +160,6 @@ class BokehFigure():
                                 len(self.COLORS)]
         if style == 'dashed':
             style = [5, 5]
-        if not hover_text:
-            hover_text = {'info': ['y={}'.format(y) for y in y_data]}
         if isinstance(hover_text, list):
             hover_text = {'info': hover_text}
         x_data_filter, y_data_filter, hover_text_filter = self._filter_line(
@@ -209,8 +207,6 @@ class BokehFigure():
         if marker == None:
             marker = self.MARKERS[self.fig_property['num_lines'] %
                                   len(self.MARKERS)]
-        if not hover_text:
-            hover_text = ['y={}'.format(y) for y in y_data]
         self.figure_data.append({
             'x_data': x_data,
             'y_data': y_data,

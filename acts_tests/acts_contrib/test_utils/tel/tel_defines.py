@@ -700,6 +700,14 @@ PLMN_ADB_PROPERTY = "gsm.sim.operator.numeric"
 WAIT_TIME_FOR_ALERTS_TO_POPULATE = 60
 WAIT_TIME_FOR_UI = 5
 SCROLL_DOWN = "input swipe 300 900 300 300"
+WAIT_TIME_FOR_ALERT_TO_RECEIVE = 15
+DEFAULT_SOUND_TIME = 16
+DEFAULT_VIBRATION_TIME = 10
+DEFAULT_OFFSET = 1
+EXIT_ALERT_LIST = ["Got It", "OK", "Hide"]
+CMD_DND_OFF = "cmd notification set_dnd off"
+CMD_DND_ON = "cmd notification set_dnd on"
+DUMPSYS_VIBRATION = "dumpsys vibrator_manager | grep -i  com.google.android.cellbroadcastreceiver | tail -1"
 
 # Countries/Carriers for Compliance Testing
 BRAZIL = "brazil"
