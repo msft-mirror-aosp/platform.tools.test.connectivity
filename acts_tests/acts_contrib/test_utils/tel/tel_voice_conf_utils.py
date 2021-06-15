@@ -336,10 +336,19 @@ def _test_ims_conference_merge_drop_second_call_from_host(
     calls = ads[0].droid.telecomCallGetCallIds()
     calls.remove(call_conf_id)
 
+    if not calls:
+        raise signals.TestSkip('CEP is not supported. The test will be skipped.')
+
     log.info("Step5: Disconnect call A-C and verify call continues.")
     call_to_disconnect = None
     for call in calls:
-        if is_uri_equivalent(call_ac_uri, get_call_uri(ads[0], call)):
+        new_uri = get_call_uri(ads[0], call)
+        if not new_uri:
+            ads[0].log.warning('New URI should NOT be None.')
+            raise signals.TestSkip('Invalid URI is found on the host. The test will be skipped.')
+        else:
+            ads[0].log.info('URI for call ID %s: %s', call, new_uri)
+        if is_uri_equivalent(call_ac_uri, new_uri):
             call_to_disconnect = call
             calls.remove(call_to_disconnect)
             break
@@ -359,7 +368,13 @@ def _test_ims_conference_merge_drop_second_call_from_host(
     calls = ads[0].droid.telecomCallGetCallIds()
     call_to_disconnect = None
     for call in calls:
-        if is_uri_equivalent(call_ab_uri, get_call_uri(ads[0], call)):
+        new_uri = get_call_uri(ads[0], call)
+        if not new_uri:
+            ads[0].log.warning('New URI should NOT be None.')
+            raise signals.TestSkip('Invalid URI is found on the host. The test will be skipped.')
+        else:
+            ads[0].log.info('URI for call ID %s: %s', call, new_uri)
+        if is_uri_equivalent(call_ab_uri, new_uri):
             call_to_disconnect = call
             calls.remove(call_to_disconnect)
             break
@@ -444,10 +459,19 @@ def _test_ims_conference_merge_drop_first_call_from_host(
     calls = ads[0].droid.telecomCallGetCallIds()
     calls.remove(call_conf_id)
 
+    if not calls:
+        raise signals.TestSkip('CEP is not supported. The test will be skipped.')
+
     log.info("Step5: Disconnect call A-B and verify call continues.")
     call_to_disconnect = None
     for call in calls:
-        if is_uri_equivalent(call_ab_uri, get_call_uri(ads[0], call)):
+        new_uri = get_call_uri(ads[0], call)
+        if not new_uri:
+            ads[0].log.warning('New URI should NOT be None.')
+            raise signals.TestSkip('Invalid URI is found on the host. The test will be skipped.')
+        else:
+            ads[0].log.info('URI for call ID %s: %s', call, new_uri)
+        if is_uri_equivalent(call_ab_uri, new_uri):
             call_to_disconnect = call
             calls.remove(call_to_disconnect)
             break
@@ -467,7 +491,13 @@ def _test_ims_conference_merge_drop_first_call_from_host(
     calls = ads[0].droid.telecomCallGetCallIds()
     call_to_disconnect = None
     for call in calls:
-        if is_uri_equivalent(call_ac_uri, get_call_uri(ads[0], call)):
+        new_uri = get_call_uri(ads[0], call)
+        if not new_uri:
+            ads[0].log.warning('New URI should NOT be None.')
+            raise signals.TestSkip('Invalid URI is found on the host. The test will be skipped.')
+        else:
+            ads[0].log.info('URI for call ID %s: %s', call, new_uri)
+        if is_uri_equivalent(call_ac_uri, new_uri):
             call_to_disconnect = call
             calls.remove(call_to_disconnect)
             break
