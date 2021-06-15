@@ -77,12 +77,14 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             "Device %s does not support dual interfaces." % self.dut.model)
 
     def setup_test(self):
+        super().setup_test()
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
         self.turn_location_off_and_scan_toggle_off()
 
     def teardown_test(self):
+        super().teardown_test()
         # Prevent the stop wifi tethering failure to block ap close
         try:
             wutils.stop_wifi_tethering(self.dut)
@@ -101,11 +103,6 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         except KeyError as e:
             self.log.warn("There is no 'reference_network' or "
                           "'open_network' to delete")
-
-    def on_fail(self, test_name, begin_time):
-        for ad in self.android_devices:
-            ad.take_bug_report(test_name, begin_time)
-            ad.cat_adb_log(test_name, begin_time)
 
     ### Helper Functions ###
 
@@ -429,24 +426,3 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             self.open_2g, WIFI_CONFIG_APBAND_2G)
         self.softap_change_band(self.dut)
 
-    @test_tracker_info(uuid="96486473-58fb-407b-8912-eee0a33f311b")
-    def test_mobile_data_with_wifi_connection_2G_softap_2G_to_softap_5g(self):
-        """Enable Mobile Data then
-        test connection to 2G network followed by SoftAp on 2G,
-        and switch SoftAp to 5G."""
-        self.enable_mobile_data(self.dut)
-        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
-        self.connect_to_wifi_network_and_start_softap(
-            self.open_2g, WIFI_CONFIG_APBAND_2G)
-        self.softap_change_band(self.dut)
-
-    @test_tracker_info(uuid="34589851-93f9-4cd4-8cff-5286586a23c2")
-    def test_mobile_data_with_wifi_connection_5G_softap_2G_to_softap_5g(self):
-        """Enable Mobile Data then
-        test connection to 2G network followed by SoftAp on 2G,
-        and switch SoftAp to 5G."""
-        self.enable_mobile_data(self.dut)
-        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
-        self.connect_to_wifi_network_and_start_softap(
-            self.open_2g, WIFI_CONFIG_APBAND_2G)
-        self.softap_change_band(self.dut)
