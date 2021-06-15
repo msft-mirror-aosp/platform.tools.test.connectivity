@@ -54,7 +54,125 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         erase_call_forwarding(self.log, self.android_devices[0])
         set_call_waiting(self.log, self.android_devices[0], enable=1)
 
-    # psim 5g nsa volte & esim 4g volte
+    # psim 5g nsa volte & esim 5g nsa volte & dds slot 0
+    @test_tracker_info(uuid="d1a50121-a245-4e51-a6aa-7836878339aa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        """Call forwarding unconditional test on pSIM of the primary device.
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CFU on pSIM of the primary device.
+                2. Let the 2nd device call the pSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on pSIM of the primary device.
+                4. Let the 2nd device call the pSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            None,
+            0,
+            callee_rat=["5g_volte", "5g_volte"],
+            call_forwarding_type="unconditional")
+
+    @test_tracker_info(uuid="c268fee2-6f09-48c2-98d8-97cc06de0e61")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """Call forwarding unconditional test on eSIM of the primary device.
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CFU on eSIM of the primary device.
+                2. Let the 2nd device call the eSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on eSIM of the primary device.
+                4. Let the 2nd device call the eSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            None,
+            0,
+            callee_rat=["5g_volte", "5g_volte"],
+            call_forwarding_type="unconditional")
+
+    # psim 5g nsa volte & esim 5g nsa volte & dds slot 1
+    @test_tracker_info(uuid="df98b0d6-3643-4e01-b9c5-d41b40d95146")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """Call forwarding unconditional test on pSIM of the primary device.
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CFU on pSIM of the primary device.
+                2. Let the 2nd device call the pSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on pSIM of the primary device.
+                4. Let the 2nd device call the pSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            None,
+            1,
+            callee_rat=["5g_volte", "5g_volte"],
+            call_forwarding_type="unconditional")
+
+    @test_tracker_info(uuid="99a61d4e-f0fa-4f65-b3bd-67d2a90cdfe2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        """Call forwarding unconditional test on eSIM of the primary device.
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CFU on eSIM of the primary device.
+                2. Let the 2nd device call the eSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on eSIM of the primary device.
+                4. Let the 2nd device call the eSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            None,
+            1,
+            callee_rat=["5g_volte", "5g_volte"],
+            call_forwarding_type="unconditional")
+
+    # psim 5g nsa volte & esim 4g volte & dds slot 0
     @test_tracker_info(uuid="9fb2da2e-00f6-4d0f-a921-49786ffbb758")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_cfu_callee_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
@@ -113,7 +231,124 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             callee_rat=["5g_volte", "volte"],
             call_forwarding_type="unconditional")
 
-    # psim 4g volte & esim 5g nsa volte
+    # psim 5g nsa volte & esim 4g volte & dds slot 1
+    @test_tracker_info(uuid="e9ab2c2f-8b2c-4f26-879d-b872947ee3a1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        """Call forwarding unconditional test on pSIM of the primary device.
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CFU on pSIM of the primary device.
+                2. Let the 2nd device call the pSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on pSIM of the primary device.
+                4. Let the 2nd device call the pSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            None,
+            1,
+            callee_rat=["5g_volte", "volte"],
+            call_forwarding_type="unconditional")
+
+    @test_tracker_info(uuid="080e6cf2-7bb1-4ce8-9f15-c082cbb0fd8c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        """Call forwarding unconditional test on eSIM of the primary device.
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CFU on eSIM of the primary device.
+                2. Let the 2nd device call the eSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on eSIM of the primary device.
+                4. Let the 2nd device call the eSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            None,
+            1,
+            callee_rat=["5g_volte", "volte"],
+            call_forwarding_type="unconditional")
+
+    # psim 4g volte & esim 5g nsa volte & dds slot 0
+    @test_tracker_info(uuid="0da6f8e9-dfea-408b-91d9-e10fb6dad086")
+    def test_msim_cfu_callee_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        """Call forwarding unconditional test on pSIM of the primary device.
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CFU on pSIM of the primary device.
+                2. Let the 2nd device call the pSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on pSIM of the primary device.
+                4. Let the 2nd device call the pSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            None,
+            0,
+            callee_rat=["volte", "5g_volte"],
+            call_forwarding_type="unconditional")
+
+    @test_tracker_info(uuid="dadde63d-4a4d-4fe7-82bd-25ecff856900")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cfu_callee_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        """Call forwarding unconditional test on eSIM of the primary device.
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CFU on eSIM of the primary device.
+                2. Let the 2nd device call the eSIM of the primary device. The
+                   call should be forwarded to the 3rd device. Answer and then
+                   hang up the call.
+                3. Disable CFU on eSIM of the primary device.
+                4. Let the 2nd device call the eSIM of the primary device. The
+                   call should NOT be forwarded to the primary device. Answer
+                   and then hang up the call.
+                5. Disable and erase CFU on the primary device.
+        """
+        return msim_call_forwarding(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            None,
+            0,
+            callee_rat=["volte", "5g_volte"],
+            call_forwarding_type="unconditional")
+
+    # psim 4g volte & esim 5g nsa volte & dds slot 1
     @test_tracker_info(uuid="0e951ee2-4a38-4b97-8a79-f6b3c66bf4d5")
     def test_msim_cfu_callee_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
         """Call forwarding unconditional test on pSIM of the primary device.
@@ -171,7 +406,97 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             callee_rat=["volte", "5g_volte"],
             call_forwarding_type="unconditional")
 
-    # psim 5g nsa volte & esim 4g volte
+    # psim 5g nsa volte & esim 5g nsa volte & dds slot 0
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="edfbc065-7a1d-4ac8-94fe-58106bd5f0a0")
+    def test_msim_conf_call_host_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        """Conference call test on pSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0, None, None, 0, host_rat=["5g_volte", "5g_volte"])
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="fbae3ef2-6ecc-48fb-b21c-155b2b4fd5d6")
+    def test_msim_conf_call_host_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """Conference call test on eSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1, None, None, 0, host_rat=["5g_volte", "5g_volte"])
+
+    # psim 5g nsa volte & esim 5g nsa volte & dds slot 1
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="404b7bf8-0706-4d27-a1ff-231ea6d5c34b")
+    def test_msim_conf_call_host_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """Conference call test on pSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0, None, None, 1, host_rat=["5g_volte", "5g_volte"])
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="cd74af3e-ced5-4275-990c-0561bfeee81d")
+    def test_msim_conf_call_host_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        """Conference call test on eSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1, None, None, 1, host_rat=["5g_volte", "5g_volte"])
+
+    # psim 5g nsa volte & esim 4g volte & dds slot 0
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="ff107828-0b09-47fb-ba85-b0e13b89970f")
     def test_msim_conf_call_host_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
@@ -216,7 +541,97 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             self.android_devices,
             1, None, None, 0, host_rat=["5g_volte", "volte"])
 
-    # psim 4g volte & esim 5g nsa volte
+    # psim 5g nsa volte & esim 4g volte & dds slot 1
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="4aa8e15a-16b5-4173-b0d7-1a6cf00cf240")
+    def test_msim_conf_call_host_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        """Conference call test on pSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0, None, None, 1, host_rat=["5g_volte", "volte"])
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="82d9ca6c-8c3d-4a54-ae85-c3d52aab8bc4")
+    def test_msim_conf_call_host_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        """Conference call test on eSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1, None, None, 1, host_rat=["5g_volte", "volte"])
+
+    # psim 4g volte & esim 5g nsa volte & dds slot 0
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d8dc0e1b-bfad-4040-ab44-91b15160dd86")
+    def test_msim_conf_call_host_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        """Conference call test on pSIM of the primary device
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0, None, None, 0, host_rat=["volte", "5g_volte"])
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="8d8d1050-9e73-4ec9-a9dd-7f68ccd11483")
+    def test_msim_conf_call_host_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        """Conference call test on eSIM of the primary device
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Merge 2 active calls.
+        """
+        return msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1, None, None, 0, host_rat=["volte", "5g_volte"])
+
+    # psim 4g volte & esim 5g nsa volte & dds slot 1
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="8f46e57c-c7a2-49e9-9e4c-1f83ab67cd5e")
     def test_msim_conf_call_host_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
@@ -261,7 +676,185 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             self.android_devices,
             1, None, None, 1, host_rat=["volte", "5g_volte"])
 
-    # psim 5g nsa volte & esim 4g volte
+    # psim 5g nsa volte & esim 5g nsa volte & dds slot 0
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="1050ee12-d1aa-47c9-ad3a-589ad6c6b695")
+    def test_msim_cw_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        """Call waiting test on pSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on pSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            0,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False, disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            0,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="74ae2673-fefb-459c-a415-366a12477956")
+    def test_msim_cw_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """Call waiting test on eSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on eSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            0,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False, disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            0,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    # psim 5g nsa volte & esim 5g nsa volte & dds slot 1
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="73b26c81-8080-4df0-a491-875e1290b5aa")
+    def test_msim_cw_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """Call waiting test on pSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on pSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False, disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="32804d38-7def-4507-921d-f906d1cf9dfa")
+    def test_msim_cw_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        """Call waiting test on eSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on eSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False, disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "5g_volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    # psim 5g nsa volte & esim 4g volte & dds slot 0
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="753a8651-8230-4714-aa5c-32ed7e7d7c04")
     def test_msim_cw_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
@@ -292,7 +885,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             0,
             host_rat=["5g_volte", "volte"],
             merge=False, disable_cw=False):
-        	result = False
+            result = False
         if not msim_call_voice_conf(
             self.log,
             self.android_devices,
@@ -303,7 +896,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             host_rat=["5g_volte", "volte"],
             merge=False,
             disable_cw=True):
-        	result = False
+            result = False
         return result
 
     @TelephonyBaseTest.tel_test_wrap
@@ -350,7 +943,187 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         return result
 
-    # psim 4g volte & esim 5g nsa volte
+    # psim 5g nsa volte & esim 4g volte & dds slot 1
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="753a8651-8230-4714-aa5c-32ed7e7d7c04")
+    def test_msim_cw_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        """Call waiting test on pSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on pSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "volte"],
+            merge=False, disable_cw=False):
+        	result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "volte"],
+            merge=False,
+            disable_cw=True):
+        	result = False
+        return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="fc92c004-5862-4035-98b4-5ea3d3c2c5e9")
+    def test_msim_cw_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        """Call waiting test on eSIM of the primary device
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on eSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "volte"],
+            merge=False, disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            1,
+            host_rat=["5g_volte", "volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    # psim 4g volte & esim 5g nsa volte & dds slot 0
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="4c02fc60-b838-40a1-879f-675d8c4b91af")
+    def test_msim_cw_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        """Call waiting test on pSIM of the primary device
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on pSIM of the primary device.
+                2. Let the pSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the pSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on pSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            0,
+            host_rat=["volte", "5g_volte"],
+            merge=False,
+            disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            None,
+            0,
+            host_rat=["volte", "5g_volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="cbe58062-bd7f-48b5-aab1-84355a3fcf55")
+    def test_msim_cw_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        """Call waiting test on eSIM of the primary device
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Test steps:
+                1. Enable CW on eSIM of the primary device.
+                2. Let the eSIM of primary device call the 2nd device. Keep the
+                   call active.
+                3. Let the 3rd device call the eSIM of the primary device. Keep
+                   both calls active.
+                4. Swap the call twice.
+                5. Hang up 2 calls from the 2nd and 3rd devices.
+                6. Disable CW on eSIM of the primary device.
+                7. Repeat step 2 & 3. In the step 3 the primary device should
+                   not receive the incoming call.
+        """
+        result = True
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            0,
+            host_rat=["volte", "5g_volte"],
+            merge=False,
+            disable_cw=False):
+            result = False
+        if not msim_call_voice_conf(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            None,
+            0,
+            host_rat=["volte", "5g_volte"],
+            merge=False,
+            disable_cw=True):
+            result = False
+        return result
+
+    # psim 4g volte & esim 5g nsa volte & dds slot 1
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="80c7e356-9419-484f-9b34-65ca5544bc39")
     def test_msim_cw_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
