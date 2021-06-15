@@ -84,6 +84,7 @@ class GFTInOutBaseTest(TelephonyBaseTest):
             data_state = ad.droid.telephonyGetDataConnectionState()
             service_state = get_service_state_by_adb(ad.log,ad)
             sim_state = ad.droid.telephonyGetSimState()
+            wifi_info = ad.droid.wifiGetConnectionInfo()
             if ad.droid.wifiCheckState():
                 if wifi_info["supplicant_state"] == "completed":
                     ad.log.info("Wifi is connected=%s" %(wifi_info["SSID"]))
