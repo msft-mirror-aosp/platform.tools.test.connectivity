@@ -367,28 +367,29 @@ class WifiRoamingTest(WifiBaseTest):
                 raise signals.TestFailure("DUT unexpectedly connect to Wi-Fi.")
 
         # Use Google OnHub as Wi-Fi AP to test when OpenWrt is no available.
-        network = {'SSID':'test_roaming_fail', 'password':'roam123456@'}
-        # AP2 network with incorrect password.
-        network_fail = {'SSID':'test_roaming_fail', 'password':'roam123456@#$%^'}
-        # Setup AP1 with the correct password.
-        wutils.ap_setup(self, 0, self.access_points[0], network)
-        network_bssid = self.access_points[0].get_bssid_from_ssid(
+        if "AccessPoint" in self.user_params:
+            network = {'SSID':'test_roaming_fail', 'password':'roam123456@'}
+            # AP2 network with incorrect password.
+            network_fail = {'SSID':'test_roaming_fail', 'password':'roam123456@#$%^'}
+            # Setup AP1 with the correct password.
+            wutils.ap_setup(self, 0, self.access_points[0], network)
+            network_bssid = self.access_points[0].get_bssid_from_ssid(
                 network["SSID"], '2g')
-        # Setup AP2 with the incorrect password.
-        wutils.ap_setup(self, 1, self.access_points[1], network_fail)
-        network_fail_bssid = self.access_points[1].get_bssid_from_ssid(
+            # Setup AP2 with the incorrect password.
+            wutils.ap_setup(self, 1, self.access_points[1], network_fail)
+            network_fail_bssid = self.access_points[1].get_bssid_from_ssid(
                 network_fail["SSID"], '2g')
-        network['bssid'] = network_bssid
-        network_fail['bssid'] = network_fail_bssid
-        try:
-            # Initiate roaming with AP2 configured with incorrect password.
+            network['bssid'] = network_bssid
+            network_fail['bssid'] = network_fail_bssid
+            try:
+                # Initiate roaming with AP2 configured with incorrect password.
+                self.roaming_from_AP1_and_AP2(network, network_fail)
+            except:
+                self.log.info("Roaming failed to AP2 with incorrect password.")
+                # Re-configure AP2 after roaming failed, with correct password.
+                self.log.info("Re-configuring AP2 with correct password.")
+                wutils.ap_setup(self, 1, self.access_points[1], network)
             self.roaming_from_AP1_and_AP2(network, network_fail)
-        except:
-            self.log.info("Roaming failed to AP2 with incorrect password.")
-            # Re-configure AP2 after roaming failed, with correct password.
-            self.log.info("Re-configuring AP2 with correct password.")
-            wutils.ap_setup(self, 1, self.access_points[1], network)
-        self.roaming_from_AP1_and_AP2(network, network_fail)
 
     @test_tracker_info(uuid="b6d73094-22bc-4460-9d55-ce34a0a6a8c9")
     def test_roaming_fail_different_bssid(self):
