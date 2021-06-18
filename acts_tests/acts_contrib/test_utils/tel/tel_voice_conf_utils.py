@@ -23,21 +23,20 @@ from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_call_uri
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
-from acts_contrib.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts_contrib.test_utils.tel.tel_test_utils import is_uri_equivalent
+from acts_contrib.test_utils.tel.tel_test_utils import wait_and_reject_call_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
-
 
 def _three_phone_call_mo_add_mo(log, ads, phone_setups, verify_funcs):
     """Use 3 phones to make MO calls.
@@ -512,7 +511,12 @@ def _test_ims_conference_merge_drop_first_call_from_host(
     return True
 
 
-def _three_phone_call_mo_add_mt(log, ads, phone_setups, verify_funcs):
+def _three_phone_call_mo_add_mt(
+    log,
+    ads,
+    phone_setups,
+    verify_funcs,
+    reject_once=False):
     """Use 3 phones to make MO call and MT call.
 
     Call from PhoneA to PhoneB, accept on PhoneB.
@@ -525,6 +529,7 @@ def _three_phone_call_mo_add_mt(log, ads, phone_setups, verify_funcs):
             The list should have three objects.
         verify_funcs: list of phone call verify functions.
             The list should have three objects.
+        reject_once: True for rejecting the second call once.
 
     Returns:
         If success, return 'call_AB' id in PhoneA.
@@ -566,6 +571,30 @@ def _three_phone_call_mo_add_mt(log, ads, phone_setups, verify_funcs):
         call_ab_id = calls[0]
 
         log.info("Step2: Call From PhoneC to PhoneA.")
+        if reject_once:
+            log.info("Step2-1: Reject incoming call once.")
+            if not initiate_call(
+                log,
+                ads[2],
+                ads[0].telephony['subscription'][get_incoming_voice_sub_id(
+                    ads[0])]['phone_num']):
+                ads[2].log.error("Initiate call failed.")
+                raise _CallException("Failed to initiate call.")
+
+            if not wait_and_reject_call_for_subscription(
+                    log,
+                    ads[0],
+                    get_incoming_voice_sub_id(ads[0]),
+                    incoming_number= \
+                        ads[2].telephony['subscription'][
+                            get_incoming_voice_sub_id(
+                                ads[2])]['phone_num']):
+                ads[0].log.error("Reject call fail.")
+                raise _CallException("Failed to reject call.")
+
+            _hangup_call(log, ads[2], "PhoneC")
+            time.sleep(15)
+
         if not call_setup_teardown(
                 log,
                 ads[2],
@@ -809,7 +838,6 @@ def _three_phone_hangup_call_verify_call_state(
         True if no error happened. Otherwise False.
 
     """
-
     ad_hangup.log.info("Hangup, verify call continues.")
     if not _hangup_call(log, ad_hangup):
         ad_hangup.log.error("Phone fails to hang up")
