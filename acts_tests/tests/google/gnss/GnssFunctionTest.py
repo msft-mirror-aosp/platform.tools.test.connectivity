@@ -29,7 +29,6 @@ from acts_contrib.test_utils.tel import tel_test_utils as tutils
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import get_current_epoch_time
 from acts.utils import unzip_maintain_permissions
-from acts.utils import force_airplane_mode
 from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
@@ -138,12 +137,12 @@ class GnssFunctionTest(BaseTestClass):
                                        self.default_gnss_signal_attenuation)
         if check_call_state_connected_by_adb(self.ad):
             hangup_call(self.ad.log, self.ad)
-        if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
+        if self.ad.droid.connectivityCheckAirplaneMode():
             self.ad.log.info("Force airplane mode off")
-            force_airplane_mode(self.ad, False)
+            self.ad.droid.connectivityToggleAirplaneMode(False)
         if self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
-        if int(self.ad.adb.shell("settings get global mobile_data")) != 1:
+        if not self.ad.droid.telephonyIsDataEnabled():
             set_mobile_data(self.ad, True)
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
@@ -287,7 +286,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         self.start_qxdm_and_tcpdump_log()
         self.ad.log.info("Turn airplane mode on")
-        force_airplane_mode(self.ad, True)
+        self.ad.droid.connectivityToggleAirplaneMode(True)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def supl_ttff_weak_gnss_signal(self, mode, criteria):
@@ -337,7 +336,7 @@ class GnssFunctionTest(BaseTestClass):
         disable_supl_mode(self.ad)
         self.start_qxdm_and_tcpdump_log()
         self.ad.log.info("Turn airplane mode on")
-        force_airplane_mode(self.ad, True)
+        self.ad.droid.connectivityToggleAirplaneMode(True)
         wifi_toggle_state(self.ad, True)
         connect_to_wifi_network(
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
@@ -1171,7 +1170,7 @@ class GnssFunctionTest(BaseTestClass):
         disable_supl_mode(self.ad)
         self.start_qxdm_and_tcpdump_log()
         self.ad.log.info("Turn airplane mode on")
-        force_airplane_mode(self.ad, True)
+        self.ad.droid.connectivityToggleAirplaneMode(True)
         wifi_toggle_state(self.ad, True)
         connect_to_wifi_network(
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])

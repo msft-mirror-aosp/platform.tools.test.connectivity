@@ -120,7 +120,7 @@ def reboot(ad):
     ad.log.info("Reboot device to make changes take effect.")
     ad.reboot()
     ad.unlock_screen(password=None)
-    if not int(ad.adb.shell("settings get global mobile_data")) == 1:
+    if not ad.droid.telephonyIsDataEnabled():
         set_mobile_data(ad, True)
     utils.sync_device_time(ad)
 
@@ -406,19 +406,19 @@ def set_mobile_data(ad, state):
     """
     ad.root_adb()
     if state:
-        ad.log.info("Enable mobile data.")
-        ad.adb.shell("svc data enable")
+        ad.log.info("Enable mobile data via RPC call.")
+        ad.droid.telephonyToggleDataConnection(True)
     else:
-        ad.log.info("Disable mobile data.")
-        ad.adb.shell("svc data disable")
+        ad.log.info("Disable mobile data via RPC call.")
+        ad.droid.telephonyToggleDataConnection(False)
     time.sleep(5)
-    out = int(ad.adb.shell("settings get global mobile_data"))
-    if state and out == 1:
-        ad.log.info("Mobile data is enabled and set to %d" % out)
-    elif not state and out == 0:
-        ad.log.info("Mobile data is disabled and set to %d" % out)
+    ret_val = ad.droid.telephonyIsDataEnabled()
+    if state and ret_val:
+        ad.log.info("Mobile data is enabled and set to %s" % ret_val)
+    elif not state and not ret_val:
+        ad.log.info("Mobile data is disabled and set to %s" % ret_val)
     else:
-        ad.log.error("Mobile data is at unknown state and set to %d" % out)
+        ad.log.error("Mobile data is at unknown state and set to %s" % ret_val)
 
 
 def gnss_trigger_modem_ssr_by_adb(ad, dwelltime=60):
@@ -1503,8 +1503,8 @@ def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
                      % (ttff_mode, pe_criteria))
         raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
     else:
-        ad.log.info("All TTFF %s are within test criteria %f meters."
-                % (ttff_mode, pe_criteria))
+        ad.log.info("All TTFF %s are within test criteria %f meters." % (
+            ttff_mode, pe_criteria))
         return True
 
 
