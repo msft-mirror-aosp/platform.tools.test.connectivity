@@ -8011,11 +8011,6 @@ def set_qxdm_logger_command(ad, mask=None):
                                   (mask_path, output_path))
         return True
 
-def configure_sdm_logs(ad):
-    if not getattr(ad, "sdm_log", True): return
-     # Disable any modem logging already running
-    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
-    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
 
 
 def start_sdm_logger(ad):
@@ -8031,6 +8026,9 @@ def start_sdm_logger(ad):
         ad.adb.shell(
             "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
             (ad.sdm_log_path, seconds))
+    # Disable any modem logging already running
+    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
+    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
     ad.log.debug("start sdm logging")

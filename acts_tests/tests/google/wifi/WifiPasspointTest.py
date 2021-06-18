@@ -19,8 +19,9 @@ import pprint
 import queue
 import time
 
-import acts.base_test
+from acts_contrib.test_utils.net import ui_utils as uutils
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 from acts import asserts
@@ -49,7 +50,13 @@ TOGGLE = 2
 
 UNKNOWN_FQDN = "@#@@!00fffffx"
 
-class WifiPasspointTest(acts.base_test.BaseTestClass):
+# Constants for Boingo UI automator
+EDIT_TEXT_CLASS_NAME = "android.widget.EditText"
+PASSWORD_TEXT = "Password"
+PASSPOINT_BUTTON = "Get Passpoint"
+BOINGO_UI_TEXT = "Online Sign Up"
+
+class WifiPasspointTest(WifiBaseTest):
     """Tests for APIs in Android's WifiManager class.
 
     Test Bed Requirement:
@@ -89,11 +96,6 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         for config in passpoint_configs:
             wutils.delete_passpoint(self.dut, config)
         wutils.reset_wifi(self.dut)
-
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-
 
     """Helper Functions"""
 
