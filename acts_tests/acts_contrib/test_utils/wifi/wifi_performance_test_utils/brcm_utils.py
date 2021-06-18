@@ -16,6 +16,7 @@
 
 import collections
 import hashlib
+import itertools
 import logging
 import math
 import re
@@ -341,13 +342,19 @@ class LinkLayerStats():
                                           tx_per_match.group(nss + 1))
                 for mcs, (rx_mcs_stats, tx_mcs_stats,
                           tx_per_mcs_stats) in enumerate(
-                              zip(rx_mcs_iter, tx_mcs_iter, tx_per_iter)):
-                    current_mcs = self.MCS_ID(mode, nss, 0, mcs, 0)
+                              itertools.zip_longest(rx_mcs_iter, tx_mcs_iter,
+                                                    tx_per_iter)):
+                    current_mcs = self.MCS_ID(
+                        mode, nss, 0,
+                        mcs + int(8 * (mode == 'HT') * (nss - 1)), 0)
                     current_stats = collections.OrderedDict(
-                        txmpdu=int(tx_mcs_stats.group('count')),
-                        rxmpdu=int(rx_mcs_stats.group('count')),
+                        txmpdu=int(tx_mcs_stats.group('count'))
+                        if tx_mcs_stats else 0,
+                        rxmpdu=int(rx_mcs_stats.group('count'))
+                        if rx_mcs_stats else 0,
                         mpdu_lost=0,
-                        retries=tx_per_mcs_stats.group('count'),
+                        retries=tx_per_mcs_stats.group('count')
+                        if tx_per_mcs_stats else 0,
                         retries_short=0,
                         retries_long=0)
                     llstats_dict[self._mcs_id_to_string(
