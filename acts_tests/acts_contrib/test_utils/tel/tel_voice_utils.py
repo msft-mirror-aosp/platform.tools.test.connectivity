@@ -1125,10 +1125,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
             ad.log.error("Failed to set to 5G data.")
             return False
 
-    toggle_volte_for_subscription(log, ad, sub_id, False)
-
-    if not ensure_network_generation_for_subscription(
-            log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA):
+    if not toggle_volte_for_subscription(log, ad, sub_id, False):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
@@ -2018,15 +2015,18 @@ def phone_setup_on_rat(
                 return False
 
             if "volte" in rat.lower():
-                if not toggle_volte_for_subscription(log, ad, sub_id, True):
-                    return False
-                if not phone_idle_volte_for_subscription(log, ad, sub_id):
-                    return False
+                phone_setup_volte_for_subscription(log, ad, sub_id, None)
+            elif "wfc" in rat.lower():
+                return phone_setup_iwlan_for_subscription(
+                    log,
+                    ad,
+                    sub_id,
+                    is_airplane_mode,
+                    wfc_mode,
+                    wifi_ssid,
+                    wifi_pwd)
             elif "csfb" in rat.lower():
-                if not toggle_volte_for_subscription(log, ad, sub_id, False):
-                    return False
-                if not phone_idle_csfb_for_subscription(log, ad, sub_id):
-                    return False
+                return phone_setup_csfb_for_subscription(log, ad, sub_id, None)
             return True
 
     if rat.lower() == '5g_volte':
