@@ -151,7 +151,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.sdm_log = self.user_params.get("sdm_log", False)
         for ad in self.android_devices:
             setattr(ad, "sdm_log", self.sdm_log)
-            configure_sdm_logs(ad)
             ad.adb.shell("setprop nfc.debug_enable 1")
             if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")

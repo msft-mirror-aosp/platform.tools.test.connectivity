@@ -24,7 +24,6 @@ from acts import asserts
 from acts import utils
 from acts.keys import Config
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.net import arduino_test_utils as dutils
 from acts_contrib.test_utils.net import socket_test_utils as sutils
 from acts_contrib.test_utils.tel import tel_defines
 from acts_contrib.test_utils.tel import tel_test_utils as tel_utils
