@@ -9681,7 +9681,7 @@ def set_call_forwarding_by_mmi(
 
     if ad.droid.connectivityCheckAirplaneMode():
         ad.log.warning("%s is now in airplane mode.", ad.serial)
-        return False
+        return True
 
     operator_name = get_operator_name(log, ad)
 
