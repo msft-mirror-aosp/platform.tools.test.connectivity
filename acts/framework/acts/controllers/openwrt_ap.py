@@ -2,16 +2,16 @@
 
 import re
 import time
-import yaml
-
 from acts import logger
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.openwrt_lib import network_settings
 from acts.controllers.openwrt_lib import wireless_config
 from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+import yaml
 
-ACTS_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
+MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
 OPEN_SECURITY = "none"
 PSK1_SECURITY = 'psk'
@@ -24,6 +24,7 @@ ENABLE_RADIO = "0"
 PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
+WAIT_TIME = 20
 
 
 def create(configs):
@@ -89,10 +90,11 @@ class OpenWrtAP(object):
   """An AccessPoint controller.
 
   Attributes:
-    log: Logging object for AccessPoint.
     ssh: The ssh connection to the AP.
     ssh_settings: The ssh settings being used by the ssh connection.
+    log: Logging object for AccessPoint.
     wireless_setting: object holding wireless configuration.
+    network_setting: Object for network configuration
   """
 
   def __init__(self, config):
@@ -102,6 +104,8 @@ class OpenWrtAP(object):
     self.log = logger.create_logger(
         lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
+    self.network_setting = network_settings.NetworkSettings(
+        self.ssh, config["ssh_config"]["host"], self.log)
 
   def configure_ap(self, wifi_configs, channel_2g, channel_5g):
     """Configure AP with the required settings.
@@ -147,12 +151,24 @@ class OpenWrtAP(object):
   def start_ap(self):
     """Starts the AP with the settings in /etc/config/wireless."""
     self.ssh.run("wifi up")
-    time.sleep(9)  # wait for sometime for AP to come up
+    curr_time = time.time()
+    while time.time() < curr_time + WAIT_TIME:
+      if self.get_wifi_status():
+        return
+      time.sleep(3)
+    if not self.get_wifi_status():
+      raise ValueError("Failed to turn on WiFi on the AP.")
 
   def stop_ap(self):
     """Stops the AP."""
     self.ssh.run("wifi down")
-    time.sleep(9)  # wait for sometime for AP to go down
+    curr_time = time.time()
+    while time.time() < curr_time + WAIT_TIME:
+      if not self.get_wifi_status():
+        return
+      time.sleep(3)
+    if self.get_wifi_status():
+      raise ValueError("Failed to turn off WiFi on the AP.")
 
   def get_bssids_for_wifi_networks(self):
     """Get BSSIDs for wifi networks configured.
@@ -170,6 +186,21 @@ class OpenWrtAP(object):
         for ssid, ifname in ssid_ifname_map.items():
           bssid_map["2g"][ssid] = self.get_bssid(ifname)
     return bssid_map
+
+  def get_wifi_status(self):
+    """Check if radios are up for both 2G and 5G bands.
+
+    Returns:
+      True if both radios are up. False if not.
+    """
+    radios = ["radio0", "radio1"]
+    status = True
+    for radio in radios:
+      str_output = self.ssh.run("wifi status %s" % radio).stdout
+      wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                              Loader=yaml.FullLoader)
+      status = wifi_status[radio]["up"] and status
+    return status
 
   def get_ifnames_for_ssids(self, radio):
     """Get interfaces for wifi networks.
@@ -241,6 +272,38 @@ class OpenWrtAP(object):
         self.ssh.run(
             'uci set wireless.@wifi-iface[{}].encryption={}'.format(
                 i, encryption))
+
+    self.ssh.run("uci commit wireless")
+    self.ssh.run("wifi")
+
+  def set_password(self, pwd_5g=None, pwd_2g=None):
+    """Set password for individual interface.
+
+    Args:
+        pwd_5g: 8 ~ 63 chars, ascii letters and digits password for 5g network.
+        pwd_2g: 8 ~ 63 chars, ascii letters and digits password for 2g network.
+    """
+    if pwd_5g:
+      if len(pwd_5g) < 8 or len(pwd_5g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_5g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(3, pwd_5g))
+        self.log.info("Set 5G password to :{}".format(pwd_2g))
+
+    if pwd_2g:
+      if len(pwd_2g) < 8 or len(pwd_2g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_2g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(2, pwd_2g))
+        self.log.info("Set 2G password to :{}".format(pwd_2g))
 
     self.ssh.run("uci commit wireless")
     self.ssh.run("wifi")
@@ -389,12 +452,39 @@ class OpenWrtAP(object):
 
     return wireless_configs
 
+  def get_wifi_network(self, security=None, band=None):
+    """Return first match wifi interface's config.
+
+    Args:
+      security: psk2 or none
+      band: '2g' or '5g'
+
+    Returns:
+      A dict contains match wifi interface's config.
+    """
+
+    for wifi_iface in self.wireless_setting.wireless_configs:
+      match_list = []
+      wifi_network = wifi_iface.__dict__
+      if security:
+        match_list.append(security == wifi_network["security"])
+      if band:
+        match_list.append(band == wifi_network["band"])
+
+      if all(match_list):
+        wifi_network["SSID"] = wifi_network["ssid"]
+        if not wifi_network["password"]:
+          del wifi_network["password"]
+        return wifi_network
+    return None
+
   def close(self):
-    """Reset wireless settings to default and stop AP."""
+    """Reset wireless and network settings to default and stop AP."""
+    if self.network_setting.config:
+      self.network_setting.cleanup_network_settings()
     if self.wireless_setting:
       self.wireless_setting.cleanup_wireless_settings()
 
   def close_ssh(self):
     """Close SSH connection to AP."""
     self.ssh.close()
-
