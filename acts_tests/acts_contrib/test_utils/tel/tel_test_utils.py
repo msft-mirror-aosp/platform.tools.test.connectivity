@@ -8796,7 +8796,7 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
     adb_radio_version_output = ad.adb.getprop("gsm.version.baseband")
     ad.log.info("adb getprop gsm.version.baseband = %s",
                 adb_radio_version_output)
-    if adb_radio_version_output != fastboot_radio_version_output:
+    if not fastboot_radio_version_output in adb_radio_version_output:
         msg = ("fastboot radio version output %s does not match with adb"
                " radio version output %s" % (fastboot_radio_version_output,
                                              adb_radio_version_output))
