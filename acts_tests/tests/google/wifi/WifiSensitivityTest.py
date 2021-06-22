@@ -896,8 +896,10 @@ class WifiOtaSensitivity_TenDegree_Test(WifiOtaSensitivityTest):
         requested_channels = [6, 36, 149]
         requested_rates = [
             self.RateTuple(8, 1, 86.7),
+            self.RateTuple(6, 1, 65),
             self.RateTuple(2, 1, 21.7),
             self.RateTuple(8, 2, 173.3),
+            self.RateTuple(6, 2, 130.3),
             self.RateTuple(2, 2, 43.3)
         ]
         self.tests = self.generate_test_cases(requested_channels,
