@@ -1133,7 +1133,7 @@ class AndroidDevice:
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
             # Zip Folder
-            shutil.make_archive(qxdm_log_path, "zip", qxdm_log_path)
+            utils.zip_directory('%s.zip' % qxdm_log_path, qxdm_log_path)
             shutil.rmtree(qxdm_log_path)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
