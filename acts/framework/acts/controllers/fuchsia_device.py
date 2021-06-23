@@ -729,6 +729,7 @@ class FuchsiaDevice:
             pre_reboot_association_mechanism = self.association_mechanism
             # Prevent configure_wlan from thinking it needs to deconfigure first
             self.association_mechanism = None
+            self.configure_netstack()
             self.configure_wlan(
                 association_mechanism=pre_reboot_association_mechanism,
                 preserve_saved_networks=False)
