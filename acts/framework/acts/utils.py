@@ -969,6 +969,20 @@ def adb_shell_ping(ad,
         ad.log.warning("Ping Test to %s failed with exception %s", dest_ip, e)
         return False
 
+def zip_directory(zip_name, src_dir):
+    """Compress a directory to a .zip file.
+
+    This implementation is thread-safe.
+
+    Args:
+        zip_name: str, name of the generated archive
+        src_dir: str, path to the source directory
+    """
+    with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zip:
+        for root, dirs, files in os.walk(src_dir):
+            for file in files:
+                path = os.path.join(root, file)
+                zip.write(path, os.path.relpath(path, src_dir))
 
 def unzip_maintain_permissions(zip_path, extract_location):
     """Unzip a .zip file while maintaining permissions.
