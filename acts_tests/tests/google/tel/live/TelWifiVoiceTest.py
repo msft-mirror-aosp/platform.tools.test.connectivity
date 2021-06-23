@@ -22,6 +22,7 @@ from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_atten_utils import set_rssi
+from acts_contrib.test_utils.tel.tel_defines import ATTEN_MIN_VALUE
 from acts_contrib.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
 from acts_contrib.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
@@ -122,7 +123,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         self.attens = {}
         for atten in self.attenuators:
             self.attens[atten.path] = atten
-            atten.set_atten(atten.get_max_atten())  # Default all attens to max
+            atten.set_atten(ATTEN_MIN_VALUE)  # Default all attens to min
 
         self.log.info("WFC phone: <{}> <{}>".format(
             self.android_devices[0].serial,
@@ -207,13 +208,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         super().teardown_test()
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+                 MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+                 MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+                 MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+                 MIN_RSSI_RESERVED_VALUE)
         return True
 
     def _wfc_call_sequence(self, ads, mo_mt, initial_wifi_cellular_setup_func,
