@@ -1299,20 +1299,35 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
         ad: An AndroidDevice object.
         extra_msg: Extra message before or after the change.
     """
+    mpss_version = ""
+    brcm_gps_version = ""
+    brcm_sensorhub_version = ""
     try:
         build_version = ad.adb.getprop("ro.build.id")
         baseband_version = ad.adb.getprop("gsm.version.baseband")
         gms_version = ad.adb.shell(
             "dumpsys package com.google.android.gms | grep versionName"
         ).split("\n")[0].split("=")[1]
-        mpss_version = ad.adb.shell("cat /sys/devices/soc0/images | grep MPSS "
-                                    "| cut -d ':' -f 3")
+        if check_chipset_vendor_by_qualcomm(ad):
+            mpss_version = ad.adb.shell(
+                "cat /sys/devices/soc0/images | grep MPSS | cut -d ':' -f 3")
+        else:
+            brcm_gps_version = ad.adb.shell("cat /data/vendor/gps/chip.info")
+            sensorhub_version = ad.adb.shell(
+                "cat /vendor/firmware/SensorHub.patch | grep ChangeList")
+            brcm_sensorhub_version = re.compile(
+                r'<ChangeList=(\w+)>').search(sensorhub_version).group(1)
         if not extra_msg:
             ad.log.info("TestResult Build_Version %s" % build_version)
             ad.log.info("TestResult Baseband_Version %s" % baseband_version)
             ad.log.info(
                 "TestResult GMS_Version %s" % gms_version.replace(" ", ""))
-            ad.log.info("TestResult MPSS_Version %s" % mpss_version)
+            if check_chipset_vendor_by_qualcomm(ad):
+                ad.log.info("TestResult MPSS_Version %s" % mpss_version)
+            else:
+                ad.log.info("TestResult GPS_Version %s" % brcm_gps_version)
+                ad.log.info(
+                    "TestResult SensorHub_Version %s" % brcm_sensorhub_version)
         else:
             ad.log.info(
                 "%s, Baseband_Version = %s" % (extra_msg, baseband_version))
