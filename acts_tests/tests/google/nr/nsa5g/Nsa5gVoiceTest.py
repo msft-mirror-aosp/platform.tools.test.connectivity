@@ -39,6 +39,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import \
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
@@ -87,6 +88,15 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         self.long_call_duration = self.user_params.get(
             "long_call_duration",
             TOTAL_LONG_CALL_DURATION)
+
+        self.dialer_util = self.user_params.get("dialer_apk", None)
+        if isinstance(self.dialer_util, list):
+            self.dialer_util = self.dialer_util[0]
+
+        if self.dialer_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_dialer_apk(ad, self.dialer_util)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
