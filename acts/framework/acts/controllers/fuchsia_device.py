@@ -384,8 +384,9 @@ class FuchsiaDevice:
 
         # Grab commands from FuchsiaHardwarePowerStatecontrolLib
         self.hardware_power_statecontrol_lib = (
-            FuchsiaHardwarePowerStatecontrolLib(
-                self.address, self.test_counter, self.client_id))
+            FuchsiaHardwarePowerStatecontrolLib(self.address,
+                                                self.test_counter,
+                                                self.client_id))
 
         # Grab commands from FuchsiaHwinfoLib
         self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
@@ -430,8 +431,9 @@ class FuchsiaDevice:
 
         # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
         self.wlan_deprecated_configuration_lib = (
-            FuchsiaWlanDeprecatedConfigurationLib(
-                self.address, self.test_counter, self.client_id))
+            FuchsiaWlanDeprecatedConfigurationLib(self.address,
+                                                  self.test_counter,
+                                                  self.client_id))
 
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
@@ -588,6 +590,7 @@ class FuchsiaDevice:
                 preserve_saved_networks)
 
         # Retrieve WLAN client and AP interfaces
+        self.configure_netstack()
         self.wlan_controller.update_wlan_interfaces()
 
     def deconfigure_wlan(self):
@@ -691,8 +694,9 @@ class FuchsiaDevice:
                     self.log.debug('Device is still pingable. Retrying.')
                 else:
                     if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
-                        self.log.info('Restoring power to FuchsiaDevice (%s)...' %
-                                      self.ip)
+                        self.log.info(
+                            'Restoring power to FuchsiaDevice (%s)...' %
+                            self.ip)
                         device_pdu.on(str(device_pdu_port))
                     break
             else:
@@ -766,7 +770,6 @@ class FuchsiaDevice:
             pre_reboot_association_mechanism = self.association_mechanism
             # Prevent configure_wlan from thinking it needs to deconfigure first
             self.association_mechanism = None
-            self.configure_netstack()
             self.configure_wlan(
                 association_mechanism=pre_reboot_association_mechanism,
                 preserve_saved_networks=False)
