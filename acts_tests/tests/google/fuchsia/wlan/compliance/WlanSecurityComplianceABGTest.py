@@ -16,6 +16,7 @@
 import re
 
 from acts import asserts
+from acts import utils
 from functools import wraps
 
 from acts.controllers.access_point import setup_ap
@@ -24,8 +25,9 @@ from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+
 AP_11ABG_PROFILE_NAME = 'whirlwind_11ag_legacy'
+SSID_LENGTH_DEFAULT = 15
 
 
 def create_security_profile(test_func):
@@ -147,6 +149,7 @@ def create_security_profile(test_func):
                                          wpa2_cipher=wpa2_cipher)
         self.client_password = password
         self.target_security = target_security
+        self.ssid = utils.rand_ascii_str(SSID_LENGTH_DEFAULT)
         return test_func(self, *args, *kwargs)
 
     return security_profile_generator
@@ -174,13 +177,8 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             self.dut = create_wlan_device(self.android_devices[0])
 
         self.access_point = self.access_points[0]
-        # TODO(fxb/67582): Remove this function logic, since its only used to
-        # generate random SSIDs, not the network security itself.
-        secure_network = self.get_psk_network(False, [],
-                                              ssid_length_2g=15,
-                                              ssid_length_5g=15)
-        self.secure_network_2g = secure_network['2g']
-        self.secure_network_5g = secure_network['5g']
+
+        self.ssid = None
         self.security_profile = None
         self.client_password = None
 
@@ -212,14 +210,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -229,14 +227,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -246,14 +244,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -263,14 +261,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -280,14 +278,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -297,14 +295,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -314,14 +312,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -331,14 +329,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -348,13 +346,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -364,13 +362,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -380,13 +378,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -396,13 +394,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -412,13 +410,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -429,13 +427,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -445,13 +443,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -461,13 +459,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -477,13 +475,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -493,14 +491,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -510,14 +508,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -527,14 +525,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -544,14 +542,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -561,14 +559,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -578,14 +576,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -595,7 +593,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -603,7 +601,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -614,7 +612,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -622,7 +620,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -633,7 +631,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -641,7 +639,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -652,7 +650,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -660,7 +658,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -671,14 +669,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -689,14 +687,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -707,14 +705,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -724,13 +722,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -740,13 +738,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -756,13 +754,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -772,13 +770,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -788,13 +786,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -805,13 +803,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -821,13 +819,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -837,13 +835,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -853,13 +851,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -869,14 +867,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -886,14 +884,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -903,14 +901,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -920,14 +918,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -937,14 +935,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -954,14 +952,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -972,7 +970,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -980,7 +978,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -991,7 +989,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -999,7 +997,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1010,7 +1008,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -1018,7 +1016,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1030,14 +1028,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1048,14 +1046,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1066,14 +1064,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1084,14 +1082,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1101,14 +1099,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1118,14 +1116,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1135,14 +1133,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1152,14 +1150,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1169,14 +1167,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1187,14 +1185,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1204,14 +1202,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1221,14 +1219,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1239,14 +1237,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1256,7 +1254,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1264,7 +1262,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1274,7 +1272,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1282,7 +1280,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1292,7 +1290,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1300,7 +1298,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1310,7 +1308,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1318,7 +1316,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1328,7 +1326,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1336,7 +1334,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1346,7 +1344,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1354,7 +1352,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1365,7 +1363,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -1374,7 +1372,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1385,7 +1383,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -1394,7 +1392,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1405,7 +1403,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -1414,7 +1412,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1426,7 +1424,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
@@ -1434,7 +1432,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1445,7 +1443,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
@@ -1453,7 +1451,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1464,7 +1462,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
@@ -1472,7 +1470,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1483,7 +1481,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
@@ -1491,7 +1489,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1501,13 +1499,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1517,13 +1515,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1533,13 +1531,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1549,13 +1547,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1565,13 +1563,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1582,13 +1580,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1598,13 +1596,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1614,13 +1612,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1631,13 +1629,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1647,14 +1645,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1664,14 +1662,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1681,14 +1679,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1698,14 +1696,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1715,14 +1713,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1732,14 +1730,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1750,7 +1748,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -1758,7 +1756,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1769,7 +1767,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -1777,7 +1775,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1788,7 +1786,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -1796,7 +1794,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1808,14 +1806,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1826,14 +1824,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1844,14 +1842,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1862,14 +1860,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1879,13 +1877,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1895,13 +1893,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1911,13 +1909,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1928,13 +1926,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1944,14 +1942,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1961,14 +1959,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1978,14 +1976,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -1995,14 +1993,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2013,7 +2011,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -2021,7 +2019,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2032,7 +2030,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2040,7 +2038,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2051,7 +2049,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2059,7 +2057,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2070,7 +2068,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -2078,7 +2076,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2089,14 +2087,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2107,14 +2105,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2125,14 +2123,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2142,13 +2140,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2158,13 +2156,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2175,13 +2173,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2192,13 +2190,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2208,14 +2206,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2226,14 +2224,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2243,14 +2241,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2261,14 +2259,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2279,7 +2277,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -2287,7 +2285,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2298,7 +2296,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2306,7 +2304,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2317,7 +2315,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2325,7 +2323,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2336,7 +2334,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -2344,7 +2342,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2355,14 +2353,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2373,14 +2371,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2391,14 +2389,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2408,14 +2406,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2425,14 +2423,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2443,14 +2441,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2461,14 +2459,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2478,7 +2476,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -2486,7 +2484,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2497,7 +2495,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -2505,7 +2503,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2515,7 +2513,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -2523,7 +2521,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2534,7 +2532,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -2542,7 +2540,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2553,7 +2551,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -2562,7 +2560,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2573,7 +2571,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2582,7 +2580,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2593,7 +2591,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2602,7 +2600,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2613,7 +2611,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -2622,7 +2620,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2633,7 +2631,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
@@ -2641,7 +2639,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2652,7 +2650,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
@@ -2660,7 +2658,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2671,7 +2669,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
@@ -2679,7 +2677,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2689,13 +2687,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2705,13 +2703,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2722,13 +2720,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2739,13 +2737,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2755,14 +2753,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2773,14 +2771,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2790,14 +2788,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2808,14 +2806,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2826,7 +2824,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -2834,7 +2832,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2845,7 +2843,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2853,7 +2851,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2864,7 +2862,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -2872,7 +2870,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2883,7 +2881,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -2891,7 +2889,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2902,14 +2900,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2920,14 +2918,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2938,14 +2936,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2955,14 +2953,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2973,14 +2971,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -2991,14 +2989,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3009,14 +3007,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3027,7 +3025,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -3035,7 +3033,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3046,7 +3044,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -3054,7 +3052,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3065,7 +3063,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -3073,7 +3071,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3084,7 +3082,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -3092,7 +3090,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3103,7 +3101,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -3112,7 +3110,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3123,7 +3121,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -3132,7 +3130,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3143,7 +3141,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -3152,7 +3150,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3163,7 +3161,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -3172,7 +3170,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3183,7 +3181,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
@@ -3191,7 +3189,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3202,7 +3200,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
@@ -3210,7 +3208,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3221,7 +3219,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-                 ssid=self.secure_network_5g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
@@ -3229,7 +3227,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_5g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3239,14 +3237,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3256,14 +3254,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3273,14 +3271,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3290,14 +3288,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3307,14 +3305,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3324,14 +3322,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3341,14 +3339,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3358,14 +3356,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False,
                  additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3375,13 +3373,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3391,13 +3389,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3407,13 +3405,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3423,13 +3421,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3439,13 +3437,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3456,13 +3454,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3472,13 +3470,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3488,13 +3486,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3504,13 +3502,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3520,14 +3518,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3537,14 +3535,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3554,14 +3552,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3571,14 +3569,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3588,14 +3586,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3605,14 +3603,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3623,7 +3621,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -3631,7 +3629,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3642,7 +3640,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -3650,7 +3648,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3661,7 +3659,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -3669,7 +3667,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3681,14 +3679,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3699,14 +3697,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3717,14 +3715,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3735,14 +3733,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3752,13 +3750,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3768,13 +3766,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3784,13 +3782,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3800,13 +3798,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3816,13 +3814,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3833,13 +3831,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3849,13 +3847,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3865,13 +3863,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3881,13 +3879,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3897,14 +3895,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3914,14 +3912,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3931,14 +3929,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3948,14 +3946,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3965,14 +3963,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -3982,14 +3980,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4000,7 +3998,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -4008,7 +4006,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4019,7 +4017,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -4027,7 +4025,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4038,7 +4036,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -4046,7 +4044,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4058,14 +4056,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4076,14 +4074,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4094,14 +4092,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4112,14 +4110,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4129,14 +4127,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4146,14 +4144,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4163,14 +4161,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4181,14 +4179,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4199,14 +4197,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4217,14 +4215,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4234,14 +4232,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4251,14 +4249,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4269,14 +4267,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4286,7 +4284,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4294,7 +4292,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4304,7 +4302,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4312,7 +4310,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4322,7 +4320,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4330,7 +4328,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4340,7 +4338,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4348,7 +4346,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4358,7 +4356,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4366,7 +4364,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4376,7 +4374,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4384,7 +4382,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4395,7 +4393,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -4404,7 +4402,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4415,7 +4413,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -4424,7 +4422,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4435,7 +4433,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -4444,7 +4442,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4456,7 +4454,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
@@ -4464,7 +4462,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4475,7 +4473,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
@@ -4483,7 +4481,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4494,7 +4492,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
@@ -4502,7 +4500,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4513,7 +4511,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
@@ -4521,7 +4519,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4531,13 +4529,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4547,13 +4545,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4563,13 +4561,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4580,13 +4578,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4597,13 +4595,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4614,13 +4612,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4630,13 +4628,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4646,13 +4644,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4663,13 +4661,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4679,14 +4677,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4696,14 +4694,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4713,14 +4711,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4730,14 +4728,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4747,14 +4745,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4764,14 +4762,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4782,7 +4780,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -4790,7 +4788,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4801,7 +4799,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -4809,7 +4807,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4820,7 +4818,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -4828,7 +4826,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4839,7 +4837,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  force_wmm=True,
                  additional_ap_parameters=hostapd_constants.
                  WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
@@ -4847,7 +4845,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4858,14 +4856,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4876,14 +4874,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4894,14 +4892,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4911,13 +4909,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4927,13 +4925,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4943,13 +4941,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4960,13 +4958,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4976,14 +4974,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -4993,14 +4991,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5010,14 +5008,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5027,14 +5025,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5045,7 +5043,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -5053,7 +5051,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5064,7 +5062,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5072,7 +5070,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5083,7 +5081,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5091,7 +5089,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5103,14 +5101,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5121,14 +5119,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5139,14 +5137,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5157,14 +5155,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5174,13 +5172,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5190,13 +5188,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5207,13 +5205,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5224,13 +5222,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5240,14 +5238,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5258,14 +5256,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5275,14 +5273,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5293,14 +5291,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5311,7 +5309,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -5319,7 +5317,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5330,7 +5328,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5338,7 +5336,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5349,7 +5347,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5357,7 +5355,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5369,14 +5367,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5387,14 +5385,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5405,14 +5403,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5423,14 +5421,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5440,14 +5438,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5457,14 +5455,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5475,14 +5473,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5493,14 +5491,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5510,7 +5508,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -5518,7 +5516,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5529,7 +5527,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -5537,7 +5535,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5547,7 +5545,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -5555,7 +5553,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5566,7 +5564,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -5574,7 +5572,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5585,7 +5583,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -5594,7 +5592,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5605,7 +5603,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5614,7 +5612,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5625,7 +5623,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5634,7 +5632,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5646,7 +5644,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
@@ -5654,7 +5652,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5665,7 +5663,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
@@ -5673,7 +5671,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5684,7 +5682,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
@@ -5692,7 +5690,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5703,7 +5701,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
@@ -5711,7 +5709,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5721,13 +5719,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5737,13 +5735,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5754,13 +5752,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5771,13 +5769,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5787,14 +5785,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5805,14 +5803,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  frag_threshold=430,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5822,14 +5820,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5840,14 +5838,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5858,7 +5856,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  rts_threshold=256,
@@ -5866,7 +5864,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5877,7 +5875,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5885,7 +5883,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5896,7 +5894,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -5904,7 +5902,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5916,14 +5914,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5934,14 +5932,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5952,14 +5950,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5970,14 +5968,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -5987,14 +5985,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6005,14 +6003,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6023,14 +6021,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6041,14 +6039,14 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6059,7 +6057,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -6067,7 +6065,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6078,7 +6076,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -6086,7 +6084,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6097,7 +6095,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -6105,7 +6103,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6116,7 +6114,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -6124,7 +6122,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6135,7 +6133,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  pmf_support=hostapd_constants.PMF_SUPPORT_REQUIRED,
                  password=self.client_password,
@@ -6144,7 +6142,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6155,7 +6153,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.HIGH_DTIM,
                  beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -6164,7 +6162,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6175,7 +6173,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  dtim_period=hostapd_constants.LOW_DTIM,
                  beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
                  security=self.security_profile,
@@ -6184,7 +6182,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6196,7 +6194,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             access_point=self.access_point,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
+            ssid=self.ssid,
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
@@ -6204,7 +6202,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
             password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6215,7 +6213,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['correct_length_beacon'],
                  security=self.security_profile,
@@ -6223,7 +6221,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6234,7 +6232,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['zero_length_beacon_without_data'],
                  security=self.security_profile,
@@ -6242,7 +6240,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6253,7 +6251,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  additional_ap_parameters=hostapd_constants.
                  VENDOR_IE['simliar_to_wpa'],
                  security=self.security_profile,
@@ -6261,7 +6259,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
                  password=self.client_password)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6271,13 +6269,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6287,13 +6285,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6303,13 +6301,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6319,13 +6317,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6335,13 +6333,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6352,13 +6350,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6368,13 +6366,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6384,13 +6382,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6400,13 +6398,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6416,13 +6414,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')
@@ -6432,13 +6430,13 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
         setup_ap(access_point=self.access_point,
                  profile_name=AP_11ABG_PROFILE_NAME,
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 ssid=self.secure_network_2g['SSID'],
+                 ssid=self.ssid,
                  security=self.security_profile,
                  password=self.client_password,
                  force_wmm=False)
 
         asserts.assert_true(
-            self.dut.associate(self.secure_network_2g['SSID'],
+            self.dut.associate(self.ssid,
                                target_security=self.target_security,
                                target_pwd=self.client_password),
             'Failed to associate.')

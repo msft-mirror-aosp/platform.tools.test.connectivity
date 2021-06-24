@@ -50,13 +50,14 @@ from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_con
 from acts_contrib.test_utils.tel.tel_data_utils import verify_wifi_tethering_when_reboot
 from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_connection_then_reboot
 from acts_contrib.test_utils.tel.tel_data_utils import verify_internet_connection_in_doze_mode
+from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_data_during_wifi_tethering
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_5g_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
@@ -171,6 +172,28 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
             wifi_reset(self.log, self.clients[0])
         return True
 
+    @test_tracker_info(uuid="3fa61282-eb08-469e-8d7a-1c790556e09c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_wifi_tethering_toggle_data(self):
+        """WiFi Tethering test: Toggle Data during active WiFi Tethering from 5G NSA
+
+        1. DUT is on 5G NSA, DUT data connection is on and idle.
+        2. DUT start 2.4G WiFi Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Disable Data on DUT, verify PhoneB still connected to WiFi, but no Internet access.
+        6. Enable Data on DUT, verify PhoneB still connected to WiFi and have Internet access.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not verify_toggle_data_during_wifi_tethering(self.log,
+                                                        self.provider,
+                                                        self.clients,
+                                                        new_gen=RAT_5G):
+            return False
+        return True
 
     @test_tracker_info(uuid="2be31ba7-f69c-410b-86d1-daaeda892533")
     @TelephonyBaseTest.tel_test_wrap
@@ -202,7 +225,7 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
             False otherwise.
         """
         def precondition():
-            ensure_phones_default_state(self.log, self.android_devices)
+            return ensure_phones_default_state(self.log, self.android_devices)
 
         def test_case():
             return test_wifi_tethering(self.log,
@@ -967,10 +990,10 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
 
         # Ensure provider connecting to wifi network and then reboot.
         def setup_provider_internet_connect_then_reboot():
-            setup_device_internet_connection_then_reboot(self.log,
-                                                         self.provider,
-                                                         self.wifi_network_ssid,
-                                                         self.wifi_network_pass)
+            return setup_device_internet_connection_then_reboot(self.log,
+                                                                self.provider,
+                                                                self.wifi_network_ssid,
+                                                                self.wifi_network_pass)
         return test_wifi_tethering(self.log,
                                    self.provider,
                                    self.clients,
@@ -1021,6 +1044,45 @@ class Nsa5gTetheringTest(TelephonyBaseTest):
                                           self.provider,
                                           [self.clients[0]]):
                 return False
+        return True
+
+    @test_tracker_info(uuid="260c63d0-4398-4794-bb3e-1ff3db542ab5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_wifi_tethering_disable_resume_wifi(self):
+        """WiFi Tethering test: WiFI connected to 2.4G network,
+        start (LTE) 2.4G WiFi tethering, then stop tethering over 5G NSA
+
+        1. DUT in data connected, idle. WiFi connected to 2.4G Network
+        2. DUT start 2.4G WiFi Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Disable WiFi Tethering on DUT.
+        6. Verify DUT automatically connect to previous WiFI network
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        # Ensure provider connecting to wifi network.
+        def setup_provider_internet_connection():
+            return setup_device_internet_connection(self.log,
+                                                    self.provider,
+                                                    self.wifi_network_ssid,
+                                                    self.wifi_network_pass)
+
+        if not test_wifi_tethering(self.log,
+                                   self.provider,
+                                   self.clients,
+                                   [self.clients[0]],
+                                   RAT_5G,
+                                   WIFI_CONFIG_APBAND_2G,
+                                   check_interval=10,
+                                   check_iteration=2,
+                                   pre_teardown_func=setup_provider_internet_connection):
+            return False
+
+        if not wait_and_verify_device_internet_connection(self.log, self.provider):
+            return False
         return True
 
     """ Tests End """

@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import re
+import shutil
 import socket
 import time
 from builtins import open
@@ -1123,12 +1124,17 @@ class AndroidDevice:
             qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
             os.makedirs(qxdm_log_path, exist_ok=True)
+
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
+
             self.adb.pull(
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
+            # Zip Folder
+            utils.zip_directory('%s.zip' % qxdm_log_path, qxdm_log_path)
+            shutil.rmtree(qxdm_log_path)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):

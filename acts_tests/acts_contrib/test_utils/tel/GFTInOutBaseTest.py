@@ -13,9 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-
-
 import sys
 import collections
 import random
@@ -26,13 +23,25 @@ import logging
 import subprocess
 import math
 import re
-
-from acts.base_test import BaseTestClass
-from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts import asserts
+from acts.test_decorators import test_info
 from acts.test_decorators import test_tracker_info
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
-
+from acts.base_test import BaseTestClass
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
+from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
+from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
+from acts_contrib.test_utils.tel.gft_inout_utils import get_voice_call_type
+from acts_contrib.test_utils.tel.gft_inout_utils import verify_data_connection
+from acts_contrib.test_utils.tel.gft_inout_utils import check_network_service
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_AREA
@@ -41,53 +50,61 @@ from acts_contrib.test_utils.tel.gft_inout_defines import WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_TIME
 from acts_contrib.test_utils.tel.gft_inout_defines import WAIT_FOR_SERVICE_TIME
-
 CELLULAR_PORT = 0
 WIFI_PORT = 1
 UNKNOWN = "UNKNOWN"
 
+
 class GFTInOutBaseTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
+        self.my_error_msg = ""
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
+        self.my_error_msg = ""
 
     def teardown_test(self):
         TelephonyBaseTest.teardown_test(self)
         begin_time = get_current_epoch_time()
-        self._take_bug_report(self.test_name, begin_time)
-
+        for ad in self.android_devices:
+            hangup_call(self.log, ad)
+        get_screen_shot_logs(self.android_devices)
+        for ad in self.android_devices:
+            ad.adb.shell("rm -rf /sdcard/Pictures/screenvideo_*", ignore_status=True)
 
     def check_network(self):
         """check service state of network
-
         Returns:
             return True if android_devices are in service else return false
         """
         for ad in self.android_devices:
             network_type_voice = ad.droid.telephonyGetCurrentVoiceNetworkType()
             network_type_data = ad.droid.telephonyGetCurrentDataNetworkType()
+            data_state = ad.droid.telephonyGetDataConnectionState()
+            service_state = get_service_state_by_adb(ad.log,ad)
             sim_state = ad.droid.telephonyGetSimState()
             wifi_info = ad.droid.wifiGetConnectionInfo()
-            if wifi_info["supplicant_state"] == "completed":
-                ad.log.info("Wifi is connected to %s" %(wifi_info["SSID"]))
+            if ad.droid.wifiCheckState():
+                if wifi_info["supplicant_state"] == "completed":
+                    ad.log.info("Wifi is connected=%s" %(wifi_info["SSID"]))
+                else:
+                    ad.log.info("wifi_info =%s" %(wifi_info))
             else:
-                ad.log.info("wifi_info =%s" %(wifi_info))
+                ad.log.info("Wifi state is down.")
+            ad.log.info("data_state=%s" %(data_state))
             ad.log.info("sim_state=%s" %(sim_state))
             ad.log.info("networkType_voice=%s" %(network_type_voice))
             ad.log.info("network_type_data=%s" %(network_type_data))
-
+            ad.log.info("service_state=%s" %(service_state))
             if network_type_voice == UNKNOWN:
                 return False
         return True
 
     def adjust_cellular_signal(self, power):
         """Sets the attenuation value of cellular port
-
         Args:
              power: power level for attenuator to be set
-
         Returns:
             return True if ceullular port is set
         """
@@ -96,14 +113,13 @@ class GFTInOutBaseTest(TelephonyBaseTest):
             self.attenuators[CELLULAR_PORT].set_atten(power)
             return True
         else:
+            self.log.info("Attenuator is set to False in config file")
             return False
 
     def adjust_wifi_signal(self, power):
         """Sets the attenuation value of wifi port
-
         Args:
              power: power level for attenuator to be set
-
         Returns:
             return True if wifi port is set
         """
@@ -112,14 +128,15 @@ class GFTInOutBaseTest(TelephonyBaseTest):
             self.attenuators[WIFI_PORT].set_atten(power)
             self.attenuators[2].set_atten(power)
             self.attenuators[3].set_atten(power)
+        else:
+            self.log.info("Attenuator is set to False in config file")
+            return False
         return True
 
     def adjust_attens(self, power):
         """Sets the attenuation value of all attenuators in the group
-
         Args:
              power: power level for attenuator to be set
-
         Returns:
             return True if all ports are set
         """
@@ -136,11 +153,9 @@ class GFTInOutBaseTest(TelephonyBaseTest):
 
     def adjust_atten(self, port , power):
         """Sets the attenuation value of given port
-
         Args:
             port: port of attenuator
             power: power level for attenuator to be set
-
         Returns:
             return True if given port is set
         """
@@ -154,11 +169,9 @@ class GFTInOutBaseTest(TelephonyBaseTest):
 
     def adjust_atten_slowly(self, adjust_level, move_to, step=9 , step_time=5):
         """adjust attenuator slowly
-
         Args:
             port: port of attenuator
             power: power level for attenuator to be set
-
         Returns:
             return True if given port is set
         """
@@ -205,3 +218,38 @@ class GFTInOutBaseTest(TelephonyBaseTest):
                 self.check_network()
         return True
 
+    def verify_device_status(self, ad, call_type=None, end_call=True, talk_time=30):
+        """verfiy device status includes network service, data connection and voice call
+        Args:
+            ad: android device
+            call_type: WFC call, VOLTE call. CSFB call, voice call
+            end_call: hangup call after voice call flag
+            talk_time: in call duration in sec
+        Returns:
+            return True if given port is set
+        """
+        test_result = True
+        tasks = [(check_network_service, (ad, )) for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            log_screen_shot(ad, "check_network_service_fail")
+            test_result = False
+        tasks = [(verify_data_connection, (ad, )) for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            log_screen_shot(ad, "verify_data_connection_fail")
+            test_result = False
+        if call_type != None:
+            tasks = [(mo_voice_call, (self.log, ad, call_type, end_call, talk_time))
+                for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            log_screen_shot(ad, "verify_voice_call_fail")
+            test_result = False
+        return test_result
+
+    def _on_fail(self, error_msg=""):
+        """ operation on fail
+
+        Args:
+            error_msg: error message to be written to log
+
+        """
+        self.log.info(error_msg)

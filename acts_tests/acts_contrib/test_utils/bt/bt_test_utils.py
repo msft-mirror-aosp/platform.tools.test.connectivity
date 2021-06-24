@@ -219,7 +219,7 @@ def connect_phone_to_headset(android,
         method. False otherwise.
     """
     headset_mac_address = headset.mac_address
-    connected = is_a2dp_src_device_connected(android, headset_mac_address)
+    connected = android.droid.audioIsBluetoothA2dpOn()
     log.info('Devices connected before pair attempt: %s' % connected)
     if not connected:
         # Turn on headset and initiate pairing mode.
@@ -247,7 +247,7 @@ def connect_phone_to_headset(android,
         log.info('Waiting for connection...')
         time.sleep(connection_check_period)
         # Check for connection.
-        connected = is_a2dp_src_device_connected(android, headset_mac_address)
+        connected = android.droid.audioIsBluetoothA2dpOn()
     log.info('Devices connected after pair attempt: %s' % connected)
     return connected
 

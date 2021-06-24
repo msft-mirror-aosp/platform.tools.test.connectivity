@@ -64,6 +64,7 @@ from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import Fuchs
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
+from acts.controllers.fuchsia_lib.lib_controllers.netstack_controller import NetstackController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
 from acts.libs.proc import job
@@ -114,7 +115,9 @@ FUCHSIA_REBOOT_TYPE_SOFT = 'soft'
 FUCHSIA_REBOOT_TYPE_HARD = 'hard'
 
 FUCHSIA_DEFAULT_CONNECT_TIMEOUT = 60
-FUCHSIA_DEFAULT_COMMAND_TIMEOUT = 3600
+FUCHSIA_DEFAULT_COMMAND_TIMEOUT = 60
+
+FUCHSIA_DEFAULT_CLEAN_UP_COMMAND_TIMEOUT = 15
 
 FUCHSIA_COUNTRY_CODE_TIMEOUT = 15
 FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
@@ -229,8 +232,16 @@ class FuchsiaDevice:
             "take_bug_report_on_fail", False)
         self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self.config_country_code = fd_conf_data.get(
-            'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US)
+            'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US).upper()
         self._persistent_ssh_conn = None
+
+        # WLAN interface info is populated inside configure_wlan
+        self.wlan_client_interfaces = {}
+        self.wlan_ap_interfaces = {}
+        self.wlan_client_test_interface_name = fd_conf_data.get(
+            'wlan_client_test_interface', None)
+        self.wlan_ap_test_interface_name = fd_conf_data.get(
+            'wlan_ap_test_interface', None)
 
         # Whether to use 'policy' or 'drivers' for WLAN connect/disconnect calls
         # If set to None, wlan is not configured.
@@ -385,6 +396,9 @@ class FuchsiaDevice:
                                                     self.test_counter,
                                                     self.client_id)
 
+        # Contains Netstack functions
+        self.netstack_controller = NetstackController(self)
+
         # Contains WLAN core functions
         self.wlan_controller = WlanController(self)
 
@@ -475,7 +489,11 @@ class FuchsiaDevice:
                 cmd,
                 timeout=timeout,
                 skip_status_code_check=skip_status_code_check)
-            if not skip_status_code_check and result.stderr:
+
+            if isinstance(result, Exception):
+                raise result
+
+            elif not skip_status_code_check and result.stderr:
                 raise FuchsiaDeviceError(
                     'Error when running command "%s": %s' %
                     (cmd, result.stderr))
@@ -487,6 +505,13 @@ class FuchsiaDevice:
             test_id: string, unique identifier of test command
         """
         return self.client_id + "." + str(test_id)
+
+    def configure_netstack(self):
+        """Readies device for Netstack functionality, including initializing
+        facade connection."""
+        err = self.netstack_lib.init().get('error')
+        if err:
+            raise FuchsiaDeviceError('Failed to init netstack_lib: %s' % err)
 
     def configure_wlan(self,
                        association_mechanism=None,
@@ -546,6 +571,9 @@ class FuchsiaDevice:
             self.wlan_policy_controller._configure_wlan(
                 preserve_saved_networks)
 
+        # Retrieve WLAN client and AP interfaces
+        self.wlan_controller.update_wlan_interfaces()
+
     def deconfigure_wlan(self):
         """
         Stops WLAN functionality (if it has been started). Used to allow
@@ -604,30 +632,21 @@ class FuchsiaDevice:
                         timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
                         skip_status_code_check=True)
             else:
-                self.log.info('Initializing reboot of FuchsiaDevice (%s)'
-                              ' with SL4F.' % self.ip)
                 self.log.info('Calling SL4F reboot command.')
                 with utils.SuppressLogOutput():
-                    if self.log_process:
-                        self.log_process.stop()
                     self.hardware_power_statecontrol_lib.suspendReboot(
                         timeout=3)
-                    if self._persistent_ssh_conn:
-                        self._persistent_ssh_conn.close()
-                        self._persistent_ssh_conn = None
+                    self.clean_up_services()
         elif reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Power cycling FuchsiaDevice (%s)' % self.ip)
             device_pdu, device_pdu_port = pdu.get_pdu_port_for_device(
                 self.device_pdu_config, testbed_pdus)
             with utils.SuppressLogOutput():
-                if self.log_process:
-                    self.log_process.stop()
-                if self._persistent_ssh_conn:
-                    self._persistent_ssh_conn.close()
-                    self._persistent_ssh_conn = None
+                self.clean_up_services()
             self.log.info('Killing power to FuchsiaDevice (%s)...' % self.ip)
             device_pdu.off(str(device_pdu_port))
-
+        else:
+            raise ValueError('Invalid reboot type: %s' % reboot_type)
         # Wait for unreachable
         self.log.info('Verifying device is unreachable.')
         timeout = time.time() + unreachable_timeout
@@ -682,7 +701,6 @@ class FuchsiaDevice:
         self.log.info(
             'Restarting log process and reinitiating SL4F on FuchsiaDevice %s'
             % self.ip)
-        self.log_process.start()
         self.start_services()
 
         # Verify SL4F is up.
@@ -711,6 +729,7 @@ class FuchsiaDevice:
             pre_reboot_association_mechanism = self.association_mechanism
             # Prevent configure_wlan from thinking it needs to deconfigure first
             self.association_mechanism = None
+            self.configure_netstack()
             self.configure_wlan(
                 association_mechanism=pre_reboot_association_mechanism,
                 preserve_saved_networks=False)
@@ -860,15 +879,24 @@ class FuchsiaDevice:
         """Cleans up the FuchsiaDevice object, releases any resources it
         claimed, and restores saved networks is applicable. For reboots, use
         clean_up_services only.
+
+        Note: Any exceptions thrown in this method must be caught and handled,
+        ensuring that clean_up_services is run. Otherwise, the syslog listening
+        thread will never join and will leave tests hanging.
         """
-        # If and only if wlan is configured using the policy layer
+        # If and only if wlan is configured, and using the policy layer
         if self.association_mechanism == 'policy':
-            self.wlan_policy_controller._clean_up()
+            try:
+                self.wlan_policy_controller._clean_up()
+            except Exception as err:
+                self.log.warning('Unable to clean up WLAN Policy layer: %s' %
+                                 err)
         try:
             self.run_commands_from_config(self.teardown_commands)
-        except FuchsiaDeviceError:
-            self.log.warning('Failed to run teardown_commands.')
+        except Exception as err:
+            self.log.warning('Failed to run teardown_commands: %s' % err)
 
+        # This MUST be run, otherwise syslog threads will never join.
         self.clean_up_services()
 
     def clean_up_services(self):
@@ -887,7 +915,10 @@ class FuchsiaDevice:
         })
 
         try:
-            response = requests.get(url=self.cleanup_address, data=data).json()
+            response = requests.get(
+                url=self.cleanup_address,
+                data=data,
+                timeout=FUCHSIA_DEFAULT_CLEAN_UP_COMMAND_TIMEOUT).json()
             self.log.debug(response)
         except Exception as err:
             self.log.exception("Cleanup request failed with %s:" % err)
@@ -1042,6 +1073,7 @@ class FuchsiaDevice:
         if self.ssh_config:
             # Country code can be None, from ACTS config.
             if desired_country_code:
+                desired_country_code = desired_country_code.upper()
                 response = self.regulatory_region_lib.setRegion(
                     desired_country_code)
                 if response.get('error'):
@@ -1051,13 +1083,13 @@ class FuchsiaDevice:
                 end_time = time.time() + FUCHSIA_COUNTRY_CODE_TIMEOUT
                 while time.time() < end_time:
                     ascii_cc = self.wlan_lib.wlanGetCountry(0).get('result')
-                    str_cc = ''.join(chr(c) for c in ascii_cc)
-                    if str_cc == desired_country_code:
+                    # Convert ascii_cc to string, then compare
+                    if ascii_cc and (''.join(chr(c) for c in ascii_cc).upper()
+                                     == desired_country_code):
                         self.log.debug('Country code successfully set to %s.' %
                                        desired_country_code)
                         return
-                    self.log.debug(
-                        'Country code is still set to %s. Retrying.' % str_cc)
+                    self.log.debug('Country code not yet updated. Retrying.')
                     time.sleep(1)
                 raise FuchsiaDeviceError('Country code never updated to %s' %
                                          desired_country_code)

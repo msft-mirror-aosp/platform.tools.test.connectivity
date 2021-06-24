@@ -2361,6 +2361,37 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_new_call(self, line):
+        """
+        Description: Simulate a call on the call manager
+
+        Input(s):
+            remote: The number of the remote party on the simulated call
+            state: The state of the call. Must be one of "ringing", "waiting",
+                   "dialing", "alerting", "active", "held".
+            direction: The direction of the call. Must be one of "incoming", "outgoing".
+
+        Usage:
+          Examples:
+            hfp_new_call <remote> <state> <direction>
+            hfp_new_call 14085555555 active incoming
+            hfp_new_call 14085555555 held outgoing
+            hfp_new_call 14085555555 ringing incoming
+            hfp_new_call 14085555555 waiting incoming
+            hfp_new_call 14085555555 alerting outgoing
+            hfp_new_call 14085555555 dialing outgoing
+        """
+        cmd = "Simulates a call"
+        try:
+            info = line.strip().split()
+            if len(info) != 3:
+                raise ValueError("Exactly three command line arguments required: <remote> <state> <direction>")
+            remote, state, direction = info[0], info[1], info[2]
+            result = self.pri_dut.hfp_lib.newCall(remote, state, direction)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_hfp_incoming_call(self, line):
         """
         Description: Simulate an incoming call on the call manager
@@ -2639,6 +2670,129 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_set_battery_level(self, line):
+        """
+        Description: Sets the battery level reported by the call manager.
+
+        Input(s):
+            value: The integer battery level value. Must be 0-5 inclusive.
+
+        Usage:
+          Examples:
+            hfp_set_battery_level <value>
+            hfp_set_battery_level 0
+            hfp_set_battery_level 3
+        """
+        cmd = "Set the battery level reported by the call manager"
+        try:
+            value = int(line.strip())
+            result = self.pri_dut.hfp_lib.setBatteryLevel(value)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_last_dialed(self, line):
+        """
+        Description: Sets the last dialed number in the call manager.
+
+        Input(s):
+            number: The number of the remote party.
+
+        Usage:
+          Examples:
+            hfp_set_last_dialed <number>
+            hfp_set_last_dialed 14085555555
+        """
+        cmd = "Sets the last dialed number in the call manager."
+        try:
+            number = line.strip()
+            result = self.pri_dut.hfp_lib.setLastDialed(number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_clear_last_dialed(self, line):
+        """
+        Description: Clears the last dialed number in the call manager.
+
+        Usage:
+          Examples:
+            hfp_clear_last_dialed
+        """
+        cmd = "Clears the last dialed number in the call manager."
+        try:
+            result = self.pri_dut.hfp_lib.clearLastDialed()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_memory_location(self, line):
+        """
+        Description: Sets a memory location to point to a remote number.
+
+        Input(s):
+            location: The memory location at which to store the number.
+            number: The number of the remote party to be stored.
+
+        Usage:
+          Examples:
+            hfp_set_memory_location <location> <number>
+            hfp_set_memory_location 0 14085555555
+        """
+        cmd = "Sets a memory location to point to a remote number."
+        try:
+            info = line.strip().split()
+            if len(info) != 2:
+                raise ValueError("Exactly two command line arguments required: <location> <number>")
+            location, number = info[0], info[1]
+            result = self.pri_dut.hfp_lib.setMemoryLocation(location, number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_clear_memory_location(self, line):
+        """
+        Description: Sets a memory location to point to a remote number.
+
+        Input(s):
+            localtion: The memory location to clear.
+
+        Usage:
+          Examples:
+            hfp_clear_memory_location <location>
+            hfp_clear_memory_location 0
+        """
+        cmd = "Sets a memory location to point to a remote number."
+        try:
+            location = line.strip()
+            result = self.pri_dut.hfp_lib.clearMemoryLocation(location)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_dial_result(self, line):
+        """
+        Description: Sets the status result to be returned when the number is dialed.
+
+        Input(s):
+            number: The number of the remote party.
+            status: The status to be returned when an outgoing call is initiated to the number.
+
+        Usage:
+          Examples:
+            hfp_set_battery_level <value>
+        """
+        cmd = "Sets the status result to be returned when the number is dialed."
+        try:
+            info = line.strip().split()
+            if len(info) != 2:
+                raise ValueError("Exactly two command line arguments required: <number> <status>")
+            number, status = info[0], int(info[1])
+            result = self.pri_dut.hfp_lib.setDialResult(number, status)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_hfp_get_state(self, line):
         """
         Description: Get the call manager's complete state
@@ -2650,6 +2804,27 @@ class CommandInput(cmd.Cmd):
         cmd = "Get the call manager's state"
         try:
             result = self.pri_dut.hfp_lib.getState()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_hfp_set_connection_behavior(self, line):
+        """
+        Description: Set the Service Level Connection (SLC) behavior when a new peer connects.
+
+        Input(s):
+            autoconnect: Enable/Disable autoconnection of SLC.
+
+        Usage:
+          Examples:
+            hfp_set_connection_behavior <autoconnect>
+            hfp_set_connection_behavior true
+            hfp_set_connection_behavior false
+        """
+        cmd = "Set the Service Level Connection (SLC) behavior"
+        try:
+            autoconnect = line.strip().lower() == "true"
+            result = self.pri_dut.hfp_lib.setConnectionBehavior(autoconnect)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))

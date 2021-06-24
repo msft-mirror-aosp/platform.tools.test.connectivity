@@ -57,6 +57,7 @@ AC_CAPABILITIES_DEFAULT = [
 
 DEFAULT_MIN_THROUGHPUT = 0
 DEFAULT_MAX_STD_DEV = 1
+DEFAULT_IPERF_TIMEOUT = 30
 
 DEFAULT_TIME_TO_WAIT_FOR_IP_ADDR = 30
 GRAPH_CIRCLE_SIZE = 10
@@ -128,6 +129,16 @@ class ChannelSweepTest(WifiBaseTest):
                 self.log.warn(
                     'Missing iperf config. Throughput cannot be measured, so only '
                     'association will be tested.')
+        self.regulatory_results = "====CountryCode,Channel,Frequency,ChannelBandwith,Connected/Not-Connected====\n"
+
+    def teardown_class(self):
+        super().teardown_class()
+        output_path = context.get_current_context().get_base_output_path()
+        regulatory_save_path = '%s/ChannelSweepTest/%s' % (
+            output_path, "regulatory_results.txt")
+        f = open(regulatory_save_path, "w")
+        f.write(self.regulatory_results)
+        f.close()
 
     def setup_test(self):
         # TODO(fxb/46417): Uncomment when wlanClearCountry is implemented up any
@@ -334,13 +345,19 @@ class ChannelSweepTest(WifiBaseTest):
                 'Running IPerf traffic from server (%s) to dut (%s).' %
                 (iperf_server_address, iperf_client_address))
             iperf_results_file = self.iperf_client.start(
-                iperf_server_address, '-i 1 -t 10 -R -J', 'channel_sweep_rx')
+                iperf_server_address,
+                '-i 1 -t 10 -R -J',
+                'channel_sweep_rx',
+                timeout=DEFAULT_IPERF_TIMEOUT)
         else:
             self.log.info(
                 'Running IPerf traffic from dut (%s) to server (%s).' %
                 (iperf_client_address, iperf_server_address))
             iperf_results_file = self.iperf_client.start(
-                iperf_server_address, '-i 1 -t 10 -J', 'channel_sweep_tx')
+                iperf_server_address,
+                '-i 1 -t 10 -J',
+                'channel_sweep_tx',
+                timeout=DEFAULT_IPERF_TIMEOUT)
         if iperf_results_file:
             iperf_results = IPerfResult(
                 iperf_results_file, reporting_speed_units=MEGABITS_PER_SECOND)
@@ -657,7 +674,8 @@ class ChannelSweepTest(WifiBaseTest):
             base_message = (
                 'Actual throughput (on channel: %s, channel bandwidth: '
                 '%s, security: %s)' % (channel, channel_bandwidth, security))
-            if (tx_throughput < min_tx_throughput
+            if (not tx_throughput or not rx_throughput
+                    or tx_throughput < min_tx_throughput
                     or rx_throughput < min_rx_throughput):
                 asserts.fail('%s below the minimum threshold.' % base_message)
             asserts.explicit_pass('%s above the minimum threshold.' %
@@ -748,6 +766,13 @@ _
              if should_associate else 'Device should NOT associate.'))
 
         associated = self.dut.associate(ssid)
+
+        regulatory_result_marker = "REGTRACKER: %s,%s,%s,%s,%s" % (
+            code, channel, '2.4' if channel < 36 else '5', channel_bandwidth,
+            'c' if associated else 'nc')
+        self.regulatory_results += regulatory_result_marker + "\n"
+        self.log.info(regulatory_result_marker)
+
         if associated == should_associate:
             asserts.explicit_pass(
                 'Device complied with %s regulatory requirement for channel %s '

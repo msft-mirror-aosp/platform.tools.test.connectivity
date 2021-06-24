@@ -39,7 +39,13 @@ MAX_WAIT_TIME_CALLEE_RINGING = 90
 # country code list
 COUNTRY_CODE_LIST = [
     "+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47", "+246", "+86",
-    "+850", "+81"
+    "+850", "+81", "+886"
+]
+
+# For carriers with specific MMI to set up call forwarding mCallForwarding in
+# TelephonyRegistry cannot reflect current network configuration.
+NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST = [
+    "Far EasTone",
 ]
 
 # default pin/password
@@ -348,6 +354,10 @@ CARRIER_NTT_DOCOMO = 'ntt_docomo'
 CARRIER_KDDI = 'kddi'
 CARRIER_RAKUTEN = 'rakuten'
 CARRIER_SBM = 'sbm'
+CARRIER_VZW = "Verizon"
+CARRIER_SKT = 'skt'
+CARRIER_KT = 'kt'
+CARRIER_LG_UPLUS = 'lg_uplus'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
@@ -394,7 +404,9 @@ GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
 CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
-
+# SMS over wifi providers
+SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
+                           "dtag")
 """
 Begin shared constant define for both Python and Java
 """
@@ -675,6 +687,58 @@ NETWORK_MODE_NR_LTE_TDSCDMA_GSM = "NETWORK_MODE_NR_LTE_TDSCDMA_GSM"
 NETWORK_MODE_NR_LTE_TDSCDMA_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_WCDMA"
 NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
+
+# Constants for APP Package Name
+YOUTUBE_PACKAGE_NAME = "com.google.android.youtube"
+
+# Constants for CellBroadcast module test
+CARRIER_TEST_CONF_XML_PATH = "/data/user_de/0/com.android.phone/files/"
+MAIN_ACTIVITY = "android.intent.action.MAIN"
+CBR_PACKAGE = "com.google.android.cellbroadcastreceiver"
+CBR_ACTIVITY = "com.android.cellbroadcastreceiver.CellBroadcastSettings"
+CBR_TEST_APK = "com.android.cellbroadcastreceiver.tests"
+MCC_MNC = "mccmnc"
+IMSI = "imsi"
+PLMN_ADB_PROPERTY = "gsm.sim.operator.numeric"
+WAIT_TIME_FOR_ALERTS_TO_POPULATE = 60
+WAIT_TIME_FOR_UI = 5
+SCROLL_DOWN = "input swipe 300 900 300 300"
+WAIT_TIME_FOR_ALERT_TO_RECEIVE = 15
+DEFAULT_SOUND_TIME = 16
+DEFAULT_VIBRATION_TIME = 10
+DEFAULT_OFFSET = 1
+EXIT_ALERT_LIST = ["Got It", "OK", "Hide"]
+CMD_DND_OFF = "cmd notification set_dnd off"
+CMD_DND_ON = "cmd notification set_dnd on"
+DUMPSYS_VIBRATION = "dumpsys vibrator_manager | grep -i  com.google.android.cellbroadcastreceiver | tail -1"
+
+# Countries/Carriers for Compliance Testing
+BRAZIL = "brazil"
+CANADA = "canada"
+CHILE = "chile"
+COLUMBIA = "columbia"
+EQUADOR = "equador"
+ESTONIA = "estonia"
+GREECE = "greece"
+HONGKONG = "hongkong"
+ISRAEL = "israel"
+ITALY = "italy"
+JAPAN_KDDI = "japan_kddi"
+JAPAN_SOFTBANK = "japan_softbank"
+KOREA = "korea"
+LATVIA = "latvia"
+LITHUANIA = "lithuania"
+NETHERLANDS = "netherlands"
+NEWZEALAND = "newzealand"
+OMAN = "oman"
+PERU = "peru"
+PUERTORICO = "puertorico"
+ROMANIA = "romania"
+SAUDIARABIA = "saudiarabia"
+SOUTHAFRICA = "southafrica"
+TAIWAN = "taiwan"
+UAE = "uae"
+UK = "uk"
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
