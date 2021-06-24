@@ -355,6 +355,9 @@ CARRIER_KDDI = 'kddi'
 CARRIER_RAKUTEN = 'rakuten'
 CARRIER_SBM = 'sbm'
 CARRIER_VZW = "Verizon"
+CARRIER_SKT = 'skt'
+CARRIER_KT = 'kt'
+CARRIER_LG_UPLUS = 'lg_uplus'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
