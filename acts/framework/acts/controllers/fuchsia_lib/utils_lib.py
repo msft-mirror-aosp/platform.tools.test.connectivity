@@ -15,15 +15,20 @@
 #   limitations under the License.
 
 import backoff
+import itertools
 import os
 import logging
 import paramiko
+import shutil
 import socket
+import tarfile
 import time
+import usbinfo
 
 from acts import utils
 from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
 from acts.libs.proc import job
+from acts.utils import get_fuchsia_mdns_ipv6_address
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 # paramiko-ng will throw INFO messages when things get disconnect or cannot
@@ -31,6 +36,10 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 # either retrying and/or throwing an exception for the appropriate case.
 # Therefore, in order to reduce confusion in the logs the log level is set to
 # WARNING.
+
+MDNS_LOOKUP_RETRY_MAX = 3
+FASTBOOT_TIMEOUT = 10
+AFTER_FLASH_BOOT_TIME = 30
 
 
 def get_private_key(ip_address, ssh_config):
@@ -82,6 +91,7 @@ def create_ssh_connection(ip_address,
         ip_address: IP address of ssh server.
         ssh_username: Username for ssh server.
         ssh_config: ssh_config location for the ssh server.
+        ssh_port: port for the ssh server.
         connect_timeout: Timeout value for connecting to ssh_server.
         auth_timeout: Timeout value to wait for authentication.
         banner_timeout: Timeout to wait for ssh banner.
@@ -177,3 +187,153 @@ class SshResults:
     @property
     def exit_status(self):
         return self._exit_status
+
+
+def flash(fuchsia_device):
+    """A function to flash, not pave, a fuchsia_device
+
+    Args:
+        fuchsia_device: An ACTS fuchsia_device
+
+    Returns:
+        True if successful.
+    """
+    if not fuchsia_device.authorized_file:
+        raise ValueError('A ssh authorized_file must be present in the '
+                         'ACTS config to flash fuchsia_devices.')
+    # This is the product type from the fx set command.
+    # Do 'fx list-products' to see options in Fuchsia source tree.
+    if not fuchsia_device.product_type:
+        raise ValueError('A product type must be specified to flash '
+                         'fuchsia_devices.')
+    # This is the board type from the fx set command.
+    # Do 'fx list-boards' to see options in Fuchsia source tree.
+    if not fuchsia_device.board_type:
+        raise ValueError('A board type must be specified to flash '
+                         'fuchsia_devices.')
+    if not fuchsia_device.build_number:
+        fuchsia_device.build_number = 'LATEST'
+    if not fuchsia_device.server_path:
+        fuchsia_device.server_path = 'gs://fuchsia-sdk/development/'
+    if (utils.is_valid_ipv4_address(fuchsia_device.orig_ip)
+            or utils.is_valid_ipv6_address(fuchsia_device.orig_ip)):
+        raise ValueError('The fuchsia_device ip must be the mDNS name to be '
+                         'able to flash.')
+    time_counter = 0
+    while time_counter < FASTBOOT_TIMEOUT:
+        logging.info('Checking to see if fuchsia_device(%s) SN: %s is in '
+                     'fastboot.' % (fuchsia_device.orig_ip,
+                                    fuchsia_device.serial_number))
+        for usb_device in usbinfo.usbinfo():
+            if (usb_device['iSerialNumber'] == fuchsia_device.serial_number and
+                    usb_device['iProduct'] == 'USB_download_gadget'):
+                logging.info('fuchsia_device(%s) SN: %s is in fastboot.' %
+                             (fuchsia_device.orig_ip,
+                              fuchsia_device.serial_number))
+                time_counter = FASTBOOT_TIMEOUT
+        time_counter = time_counter + 1
+        if time_counter == FASTBOOT_TIMEOUT:
+            for fail_usb_device in usbinfo.usbinfo():
+                logging.debug(fail_usb_device)
+            raise TimeoutError('fuchsia_device(%s) SN: %s '
+                               'never went into fastboot' %
+                               (fuchsia_device.orig_ip,
+                                fuchsia_device.serial_number))
+        time.sleep(1)
+
+    if not fuchsia_device.specific_image:
+        file_download_needed = True
+        if 'LATEST' in fuchsia_device.build_number:
+            gsutil_process = job.run('gsutil ls %s'
+                                     % fuchsia_device.server_path).stdout
+            build_list = list(
+                # filter out builds that are not part of branches
+                filter(None, gsutil_process.replace(
+                    fuchsia_device.server_path, '').replace(
+                    '/', '').split('\n')))
+            if 'LATEST_F' in fuchsia_device.build_number:
+                build_number = fuchsia_device.build_number.split(
+                    'LATEST_F', 1)[1]
+                build_list = [x for x in build_list if x.startswith(
+                    '%s.' % build_number)]
+            elif fuchsia_device.build_number == 'LATEST':
+                build_list = [x for x in build_list if '.' in x]
+            if build_list:
+                fuchsia_device.build_number = build_list[-1]
+            else:
+                raise FileNotFoundError('No build(%s) on the found on %s.' % (
+                    fuchsia_device.build_number, fuchsia_device.server_path))
+        image_front_string = fuchsia_device.product_type
+        if fuchsia_device.build_type:
+            image_front_string = '%s_%s' % (image_front_string,
+                                            fuchsia_device.build_type)
+        full_image_string = '%s.%s-release.tgz' % (image_front_string,
+                                                   fuchsia_device.board_type)
+        file_to_download = '%s%s/images/%s' % (fuchsia_device.server_path,
+                                               fuchsia_device.build_number,
+                                               full_image_string)
+    elif 'gs://' in fuchsia_device.specific_image:
+        file_download_needed = True
+        file_to_download = fuchsia_device.specific_image
+    elif tarfile.is_tarfile(fuchsia_device.specific_image):
+        file_download_needed = False
+        file_to_download = fuchsia_device.specific_image
+    else:
+        raise ValueError('A suitable build could not be found.')
+    tmp_path = '/tmp/%s_%s' % (str(int(time.time()*10000)),
+                               fuchsia_device.board_type)
+    os.mkdir(tmp_path)
+    if file_download_needed:
+        job.run('gsutil cp %s %s' % (file_to_download, tmp_path))
+        logging.info('Downloading %s to %s' % (file_to_download, tmp_path))
+        image_tgz = os.path.basename(file_to_download)
+    else:
+        job.run('cp %s %s' % (fuchsia_device.specific_image, tmp_path))
+        logging.info('Copying %s to %s' % (file_to_download, tmp_path))
+        image_tgz = os.path.basename(fuchsia_device.specific_image)
+
+    job.run('tar xfvz %s/%s -C %s' % (tmp_path, image_tgz, tmp_path))
+    os.chdir(tmp_path)
+    all_files = []
+    for root, _dirs, files in itertools.islice(os.walk(tmp_path), 1, None):
+        for filename in files:
+            all_files.append(os.path.join(root, filename))
+    for filename in all_files:
+        shutil.move(filename, tmp_path)
+    logging.info('Flashing fuchsia_device(%s) with %s/%s.' % (
+        fuchsia_device.orig_ip, tmp_path, image_tgz))
+    flash_output = job.run('bash flash.sh --ssh-key=%s -s %s' % (
+        fuchsia_device.authorized_file, fuchsia_device.serial_number),
+                           timeout=90)
+    logging.debug(flash_output.stderr)
+    try:
+        os.rmdir(tmp_path)
+    except Exception:
+        job.run('rm -fr %s' % tmp_path)
+    logging.info('Waiting %s seconds for device'
+                 ' to come back up after flashing.' % AFTER_FLASH_BOOT_TIME)
+    time.sleep(AFTER_FLASH_BOOT_TIME)
+    logging.info('Updating device to new IP addresses.')
+    mdns_ip = None
+    for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
+        mdns_ip = get_fuchsia_mdns_ipv6_address(fuchsia_device.orig_ip)
+        if mdns_ip:
+            break
+        else:
+            time.sleep(1)
+    if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
+        logging.info('IP for fuchsia_device(%s) changed from %s to %s' % (
+            fuchsia_device.orig_ip,
+            fuchsia_device.ip,
+            mdns_ip))
+        fuchsia_device.ip = mdns_ip
+        fuchsia_device.address = "http://[{}]:{}".format(
+            fuchsia_device.ip, fuchsia_device.sl4f_port)
+        fuchsia_device.init_address = fuchsia_device.address + "/init"
+        fuchsia_device.cleanup_address = fuchsia_device.address + "/cleanup"
+        fuchsia_device.print_address = fuchsia_device.address + "/print_clients"
+        fuchsia_device.init_libraries()
+    else:
+        raise ValueError('Invalid IP: %s after flashing.' %
+                         fuchsia_device.orig_ip)
+    return True
