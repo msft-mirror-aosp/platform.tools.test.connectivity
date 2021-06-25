@@ -542,6 +542,17 @@ class WifiManagerTest(WifiBaseTest):
         else:
             asserts.fail("Ping to %s from %s failed" % (src_device.serial, dest_device))
 
+    def ping_public_gateway_ip(self):
+        """Ping 8.8.8.8"""
+        try:
+            ping_result = self.dut.adb.shell('ping -w 5 8.8.8.8')
+            if '0%' in ping_result:
+                self.dut.log.info('Ping success')
+            return True
+        except:
+            self.dut.log.error('Faild to ping public gateway 8.8.8.8')
+            return False
+
     """Tests"""
 
     @test_tracker_info(uuid="525fc5e3-afba-4bfd-9a02-5834119e3c66")
@@ -777,6 +788,31 @@ class WifiManagerTest(WifiBaseTest):
         if not reconnect:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling WiFi.")
+
+    @test_tracker_info(uuid="2dddc734-e9f6-4d30-9c2d-4368e721a350")
+    def test_verify_airplane_mode_on_with_wifi_disabled(self):
+        """Connect to multiple networks, turn on airplane mode, turn off Wi-Fi,
+        then make sure there is no internet.
+
+        Steps:
+        1. Connect to a 2GHz network.
+        2. Connect to a 5GHz network.
+        3. Turn ON Airplane mode.
+        4. Turn OFF WiFi.
+        5. Ping to make sure there is no internet
+        """
+        connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
+        connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
+        self.log.debug("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        self.log.debug("Toggling Wi-Fi OFF")
+        wutils.wifi_toggle_state(self.dut, False)
+        time.sleep(DEFAULT_TIMEOUT)
+        if self.ping_public_gateway_ip():
+            raise signals.TestFailure("Device has internet after"
+                                             " toggling WiFi off.")
 
     @test_tracker_info(uuid="3d041c12-05e2-46a7-ab9b-e3f60cc735db")
     def test_reboot_configstore_reconnect(self):
