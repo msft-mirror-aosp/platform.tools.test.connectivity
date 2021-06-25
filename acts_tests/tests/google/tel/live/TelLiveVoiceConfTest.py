@@ -36,6 +36,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import call_reject
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
@@ -89,6 +90,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                 "Conference call is not supported, abort test.")
             raise signals.TestAbortClass(
                 "Conference call is not supported, abort test.")
+
+        self.dialer_util = self.user_params.get("dialer_apk", None)
+        if isinstance(self.dialer_util, list):
+            self.dialer_util = self.dialer_util[0]
+
+        if self.dialer_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_dialer_apk(ad, self.dialer_util)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
