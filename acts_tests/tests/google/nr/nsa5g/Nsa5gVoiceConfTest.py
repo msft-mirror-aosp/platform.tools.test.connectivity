@@ -29,6 +29,7 @@ from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
@@ -65,6 +66,15 @@ class Nsa5gVoiceConfTest(TelephonyBaseTest):
                 "Conference call is not supported, abort test.")
             raise signals.TestAbortClass(
                 "Conference call is not supported, abort test.")
+
+        self.dialer_util = self.user_params.get("dialer_apk", None)
+        if isinstance(self.dialer_util, list):
+            self.dialer_util = self.dialer_util[0]
+
+        if self.dialer_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_dialer_apk(ad, self.dialer_util)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
