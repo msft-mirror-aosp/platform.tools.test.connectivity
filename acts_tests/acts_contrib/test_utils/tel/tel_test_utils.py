@@ -9141,6 +9141,26 @@ def add_whitelisted_account(ad, user_account,user_password, retries=3):
     return False
 
 
+def install_dialer_apk(ad, dialer_util):
+    """Install dialer.apk to specific device.
+
+    Args:
+        ad: android device object.
+        dialer_util: path of dialer.apk
+
+    Returns:
+        True if success, False if fail.
+    """
+    ad.log.info("Install dialer_util %s", dialer_util)
+    ad.adb.install("-r -g %s" % self.dialer_util,
+        timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.dialer"):
+        ad.log.info("com.google.android.dialer is not installed")
+        return False
+    return True
+
+
 def install_googleaccountutil_apk(ad, account_util):
     ad.log.info("Install account_util %s", account_util)
     ad.ensure_screen_on()
