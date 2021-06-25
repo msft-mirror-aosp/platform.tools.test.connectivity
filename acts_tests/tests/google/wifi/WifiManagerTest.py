@@ -918,7 +918,7 @@ class WifiManagerTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         self.helper_toggle_airplane_reboot_configstore_reconnect()
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="342c13cb-6508-4942-bee3-07c5d20d92a5")
     def test_reboot_configstore_reconnect_with_screen_lock(self):
         """Verify device can re-connect to configured networks after reboot.
 
@@ -930,7 +930,7 @@ class WifiManagerTest(WifiBaseTest):
         """
         self.helper_reboot_configstore_reconnect(lock_screen=True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7e6050d9-79b1-4726-80cf-686bb99b8945")
     def test_connect_to_5g_after_reboot_without_unlock(self):
         """Connect to 5g network afer reboot without unlock.
 
@@ -1207,6 +1207,7 @@ class WifiManagerTest(WifiBaseTest):
                     unsafe_channel[COEX_POWER_CAP_DBM])
         return (unsafe_channel[COEX_BAND], unsafe_channel[COEX_CHANNEL])
 
+    @test_tracker_info(uuid="78558b30-3792-4a1f-bb56-34bbbbce6ac8")
     def test_set_get_coex_unsafe_channels(self):
         """
         Set the unsafe channels to avoid for coex, then retrieve the active values and compare to
