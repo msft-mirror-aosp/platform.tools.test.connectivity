@@ -165,7 +165,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             if test_data_browsing_success_using_sl4a(ad.log, ad):
-                ad.log.info("Call test PASS in iteration %d", iteration + 1)
+                ad.log.info("Data Browsing test PASS in iteration %d",
+                            iteration + 1)
                 return True
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ad.log.info("Data Browsing test FAIL for all 3 iterations")
@@ -192,7 +193,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             if test_data_browsing_success_using_sl4a(ad.log, ad):
-                ad.log.info("Call test PASS in iteration %d", iteration + 1)
+                ad.log.info("Data Browsing test PASS in iteration %d",
+                            iteration + 1)
                 wifi_toggle_state(ad.log, ad, False)
                 return True
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
