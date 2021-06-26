@@ -322,7 +322,6 @@ class FuchsiaWlanDevice(WlanDevice):
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
         self.identifier = fuchsia_device.ip
-        self.device.configure_netstack()
         self.device.configure_wlan()
 
     def wifi_toggle_state(self, state):

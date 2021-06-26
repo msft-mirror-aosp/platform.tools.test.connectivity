@@ -44,6 +44,7 @@ install_requires = [
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
     'dlipower',
+    'usbinfo',
     'zeroconf'
 ]
 
