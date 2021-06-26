@@ -70,6 +70,10 @@ class BokehFigure():
                  width=1100,
                  title_size='15pt',
                  axis_label_size='12pt',
+                 legend_label_size='12pt',
+                 axis_tick_label_size='12pt',
+                 x_axis_type='auto',
+                 sizing_mode='scale_both',
                  json_file=None):
         if json_file:
             self.load_from_json(json_file)
@@ -84,16 +88,21 @@ class BokehFigure():
                 'height': height,
                 'width': width,
                 'title_size': title_size,
-                'axis_label_size': axis_label_size
+                'axis_label_size': axis_label_size,
+                'legend_label_size': legend_label_size,
+                'axis_tick_label_size': axis_tick_label_size,
+                'x_axis_type': x_axis_type,
+                'sizing_mode': sizing_mode
             }
 
     def init_plot(self):
         self.plot = bokeh.plotting.figure(
-            sizing_mode='scale_both',
+            sizing_mode=self.fig_property['sizing_mode'],
             plot_width=self.fig_property['width'],
             plot_height=self.fig_property['height'],
             title=self.fig_property['title'],
             tools=self.TOOLS,
+            x_axis_type=self.fig_property['x_axis_type'],
             output_backend='webgl')
         tooltips = [
             ('index', '$index'),
@@ -274,10 +283,14 @@ class BokehFigure():
         self.plot.x_range.range_padding = 0
         self.plot.xaxis[0].axis_label_text_font_size = self.fig_property[
             'axis_label_size']
+        self.plot.xaxis.major_label_text_font_size = self.fig_property[
+            'axis_tick_label_size']
         #y-axis formatting
         self.plot.yaxis[0].axis_label = self.fig_property['primary_y_label']
         self.plot.yaxis[0].axis_label_text_font_size = self.fig_property[
             'axis_label_size']
+        self.plot.yaxis.major_label_text_font_size = self.fig_property[
+            'axis_tick_label_size']
         self.plot.y_range = bokeh.models.DataRange1d(names=['default'])
         if two_axes and 'secondary' not in self.plot.extra_y_ranges:
             self.plot.extra_y_ranges = {
@@ -293,6 +306,8 @@ class BokehFigure():
         self.plot.legend.location = 'top_right'
         self.plot.legend.click_policy = 'hide'
         self.plot.title.text_font_size = self.fig_property['title_size']
+        self.plot.legend.label_text_font_size = self.fig_property[
+            'legend_label_size']
 
         if output_file is not None:
             self.save_figure(output_file, save_json)
