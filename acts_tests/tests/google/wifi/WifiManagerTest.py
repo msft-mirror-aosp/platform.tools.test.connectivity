@@ -542,6 +542,17 @@ class WifiManagerTest(WifiBaseTest):
         else:
             asserts.fail("Ping to %s from %s failed" % (src_device.serial, dest_device))
 
+    def ping_public_gateway_ip(self):
+        """Ping 8.8.8.8"""
+        try:
+            ping_result = self.dut.adb.shell('ping -w 5 8.8.8.8')
+            if '0%' in ping_result:
+                self.dut.log.info('Ping success')
+            return True
+        except:
+            self.dut.log.error('Faild to ping public gateway 8.8.8.8')
+            return False
+
     """Tests"""
 
     @test_tracker_info(uuid="525fc5e3-afba-4bfd-9a02-5834119e3c66")
@@ -778,6 +789,31 @@ class WifiManagerTest(WifiBaseTest):
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling WiFi.")
 
+    @test_tracker_info(uuid="2dddc734-e9f6-4d30-9c2d-4368e721a350")
+    def test_verify_airplane_mode_on_with_wifi_disabled(self):
+        """Connect to multiple networks, turn on airplane mode, turn off Wi-Fi,
+        then make sure there is no internet.
+
+        Steps:
+        1. Connect to a 2GHz network.
+        2. Connect to a 5GHz network.
+        3. Turn ON Airplane mode.
+        4. Turn OFF WiFi.
+        5. Ping to make sure there is no internet
+        """
+        connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
+        connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
+        self.log.debug("Toggling Airplane mode ON")
+        asserts.assert_true(
+            acts.utils.force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        self.log.debug("Toggling Wi-Fi OFF")
+        wutils.wifi_toggle_state(self.dut, False)
+        time.sleep(DEFAULT_TIMEOUT)
+        if self.ping_public_gateway_ip():
+            raise signals.TestFailure("Device has internet after"
+                                             " toggling WiFi off.")
+
     @test_tracker_info(uuid="3d041c12-05e2-46a7-ab9b-e3f60cc735db")
     def test_reboot_configstore_reconnect(self):
         """Connect to multiple networks, reboot then reconnect to previously
@@ -882,7 +918,7 @@ class WifiManagerTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         self.helper_toggle_airplane_reboot_configstore_reconnect()
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="342c13cb-6508-4942-bee3-07c5d20d92a5")
     def test_reboot_configstore_reconnect_with_screen_lock(self):
         """Verify device can re-connect to configured networks after reboot.
 
@@ -894,7 +930,7 @@ class WifiManagerTest(WifiBaseTest):
         """
         self.helper_reboot_configstore_reconnect(lock_screen=True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7e6050d9-79b1-4726-80cf-686bb99b8945")
     def test_connect_to_5g_after_reboot_without_unlock(self):
         """Connect to 5g network afer reboot without unlock.
 
@@ -1171,6 +1207,7 @@ class WifiManagerTest(WifiBaseTest):
                     unsafe_channel[COEX_POWER_CAP_DBM])
         return (unsafe_channel[COEX_BAND], unsafe_channel[COEX_CHANNEL])
 
+    @test_tracker_info(uuid="78558b30-3792-4a1f-bb56-34bbbbce6ac8")
     def test_set_get_coex_unsafe_channels(self):
         """
         Set the unsafe channels to avoid for coex, then retrieve the active values and compare to
