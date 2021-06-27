@@ -16,21 +16,24 @@
 import os
 import pandas as pd
 import acts_contrib.test_utils.bt.bt_test_utils as btutils
-import acts_contrib.test_utils.wifi.wifi_performance_test_utils as wifi_utils
+import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
 from acts import asserts
 from acts_contrib.test_utils.bt import bt_constants
 from acts_contrib.test_utils.bt import BtEnum
 from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
 from acts_contrib.test_utils.bt.loggers import bluetooth_metric_logger as log
 from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
-from acts.signals import TestPass
+from acts.signals import TestPass, TestError
 
+INIT_ATTEN = 0
 
 class BtA2dpRangeTest(A2dpBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
         self.bt_logger = log.BluetoothMetricLogger.for_test_case()
-        req_params = ['attenuation_vector', 'codecs']
+        req_params = [
+            'attenuation_vector', 'codecs'
+        ]
         #'attenuation_vector' is a dict containing: start, stop and step of
         #attenuation changes
         #'codecs' is a list containing all codecs required in the tests
@@ -40,15 +43,32 @@ class BtA2dpRangeTest(A2dpBaseTest):
 
     def setup_class(self):
         super().setup_class()
+        opt_params = ['gain_mismatch', 'dual_chain']
+        self.unpack_userparams(opt_params)
         # Enable BQR on all android devices
         btutils.enable_bqr(self.android_devices)
+        if hasattr(self, 'dual_chain') and self.dual_chain == 1:
+            self.atten_c0 = self.attenuators[0]
+            self.atten_c1 = self.attenuators[1]
+            self.atten_c0.set_atten(INIT_ATTEN)
+            self.atten_c1.set_atten(INIT_ATTEN)
+
+    def teardown_class(self):
+        super().teardown_class()
+        if hasattr(self, 'atten_c0') and hasattr(self, 'atten_c1'):
+            self.atten_c0.set_atten(INIT_ATTEN)
+            self.atten_c1.set_atten(INIT_ATTEN)
 
     def generate_test_case(self, codec_config):
         def test_case_fn():
             self.run_a2dp_to_max_range(codec_config)
 
-        test_case_name = 'test_bt_a2dp_range_codec_{}'.format(
-            codec_config['codec_type'])
+        if hasattr(self, 'dual_chain') and self.dual_chain == 1:
+            test_case_name = 'test_dual_bt_a2dp_range_codec_{}_gainmimatch_{}dB'.format(
+                codec_config['codec_type'], self.gain_mismatch)
+        else:
+            test_case_name = 'test_bt_a2dp_range_codec_{}'.format(
+                codec_config['codec_type'])
         setattr(self, test_case_name, test_case_fn)
 
     def generate_proto(self, data_points, codec_type, sample_rate,
@@ -99,12 +119,16 @@ class BtA2dpRangeTest(A2dpBaseTest):
         Args:
             df: Summary of results contains attenuation, DUT RSSI, remote RSSI and Tx Power
         """
-        self.plot = wifi_utils.BokehFigure(title='{}'.format(
+        self.plot = bokeh_figure.BokehFigure(title='{}'.format(
             self.current_test_name),
                                            x_label='Pathloss (dBm)',
                                            primary_y_label='RSSI (dBm)',
                                            secondary_y_label='TX Power (dBm)',
-                                           axis_label_size='16pt')
+                                           axis_label_size='16pt',
+                                           legend_label_size='16pt',
+                                           axis_tick_label_size='16pt',
+                                           sizing_mode='stretch_both'
+                                           )
         self.plot.add_line(df.index,
                            df['rssi_primary'],
                            legend='DUT RSSI (dBm)',
@@ -122,7 +146,27 @@ class BtA2dpRangeTest(A2dpBaseTest):
         results_file_path = os.path.join(
             self.log_path, '{}.html'.format(self.current_test_name))
         self.plot.generate_figure()
-        wifi_utils.BokehFigure.save_figures([self.plot], results_file_path)
+        bokeh_figure.BokehFigure.save_figures([self.plot], results_file_path)
+
+    def set_test_atten(self, atten):
+        """Set the attenuation(s) for current test condition.
+
+        """
+        if hasattr(self, 'dual_chain'):
+            ramp_attenuation(self.atten_c0,
+                             atten,
+                             attenuation_step_max=2,
+                             time_wait_in_between=1)
+            self.log.info('Set Chain 0 attenuation to %d dB', atten)
+            ramp_attenuation(self.atten_c1,
+                             atten + self.gain_mismatch,
+                             attenuation_step_max=2,
+                             time_wait_in_between=1)
+            self.log.info('Set Chain 1 attenuation to %d dB',
+                          atten + self.gain_mismatch)
+        else:
+            ramp_attenuation(self.attenuator, atten)
+            self.log.info('Set attenuation to %d dB', atten)
 
     def run_a2dp_to_max_range(self, codec_config):
         attenuation_range = range(self.attenuation_vector['start'],
@@ -146,21 +190,31 @@ class BtA2dpRangeTest(A2dpBaseTest):
 
         #loop RSSI with the same codec setting
         for atten in attenuation_range:
-            ramp_attenuation(self.attenuator, atten)
-            self.log.info('Set attenuation to %d dB', atten)
+            self.set_test_atten(atten)
 
             tag = 'codec_{}_attenuation_{}dB_'.format(
                 codec_config['codec_type'], atten)
             recorded_file = self.play_and_record_audio(
                 self.audio_params['duration'])
-            [rssi_master, pwl_master, rssi_slave] = self._get_bt_link_metrics()
             thdns = self.run_thdn_analysis(recorded_file, tag)
             # Collect Metrics for dashboard
+            try:
+                [rssi_master, pwl_master,
+                 rssi_slave] = self._get_bt_link_metrics()
+                rssi_primary = rssi_master[self.dut.serial]
+                tx_power_level_master = pwl_master[self.dut.serial]
+                rssi_secondary = rssi_slave[self.bt_device_controller.serial]
+            except ZeroDivisionError:
+                self.log.warning('BT connection might be lost')
+                rssi_primary = -127
+                tx_power_level_master = -127
+                rssi_secondary = -127
+
             data_point = {
                 'attenuation_db': int(self.attenuator.get_atten()),
-                'rssi_primary': rssi_master[self.dut.serial],
-                'tx_power_level_master': pwl_master[self.dut.serial],
-                'rssi_secondary': rssi_slave[self.bt_device_controller.serial],
+                'rssi_primary': rssi_primary,
+                'tx_power_level_master': tx_power_level_master,
+                'rssi_secondary': rssi_secondary,
                 'total_harmonic_distortion_plus_noise_percent': thdns[0] * 100
             }
             data_points.append(data_point)
@@ -168,6 +222,8 @@ class BtA2dpRangeTest(A2dpBaseTest):
             A2dpRange_df = pd.DataFrame(data_points)
 
             # Check thdn for glitches, stop if max range reached
+            if thdns[0] == 0:
+                raise TestError('Music play/recording is not working properly')
             for thdn in thdns:
                 if thdn >= self.audio_params['thdn_threshold']:
                     self.log.info(
