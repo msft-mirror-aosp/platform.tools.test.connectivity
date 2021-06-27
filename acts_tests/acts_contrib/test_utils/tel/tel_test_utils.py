@@ -9152,8 +9152,7 @@ def install_dialer_apk(ad, dialer_util):
         True if success, False if fail.
     """
     ad.log.info("Install dialer_util %s", dialer_util)
-    ad.adb.install("-r -g %s" % self.dialer_util,
-        timeout=300, ignore_status=True)
+    ad.adb.install("-r -g %s" % dialer_util, timeout=300, ignore_status=True)
     time.sleep(3)
     if not ad.is_apk_installed("com.google.android.dialer"):
         ad.log.info("com.google.android.dialer is not installed")
