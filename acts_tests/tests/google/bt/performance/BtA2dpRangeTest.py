@@ -22,7 +22,7 @@ from acts_contrib.test_utils.bt import bt_constants
 from acts_contrib.test_utils.bt import BtEnum
 from acts_contrib.test_utils.bt.A2dpBaseTest import A2dpBaseTest
 from acts_contrib.test_utils.bt.loggers import bluetooth_metric_logger as log
-from acts.test_utils.power.PowerBTBaseTest import ramp_attenuation
+from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
 from acts.signals import TestPass
 
 
