@@ -50,7 +50,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return not message_test(
+        return message_test(
             self.log,
             self.android_devices[0],
             self.android_devices[1],
@@ -71,7 +71,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return not message_test(
+        return message_test(
             self.log,
             self.android_devices[0],
             self.android_devices[1],
@@ -92,7 +92,7 @@ class Nsa5gMmsTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return not message_test(
+        return message_test(
             self.log,
             self.android_devices[1],
             self.android_devices[0],
