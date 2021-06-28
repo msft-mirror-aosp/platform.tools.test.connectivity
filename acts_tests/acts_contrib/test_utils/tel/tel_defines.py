@@ -707,18 +707,20 @@ WAIT_TIME_FOR_ALERT_TO_RECEIVE = 15
 DEFAULT_SOUND_TIME = 16
 DEFAULT_VIBRATION_TIME = 10
 DEFAULT_OFFSET = 1
-EXIT_ALERT_LIST = ["Got It", "OK", "Hide"]
+EXIT_ALERT_LIST = ["Got It", "OK", "Hide", "TO CLOSE"]
 CMD_DND_OFF = "cmd notification set_dnd off"
 CMD_DND_ON = "cmd notification set_dnd on"
 DUMPSYS_VIBRATION = "dumpsys vibrator_manager | grep -i  com.google.android.cellbroadcastreceiver | tail -1"
 
 # Countries/Carriers for Compliance Testing
+AUSTRALIA = "australia"
 BRAZIL = "brazil"
 CANADA = "canada"
 CHILE = "chile"
 COLUMBIA = "columbia"
-EQUADOR = "equador"
+ECUADOR = "ecuador"
 ESTONIA = "estonia"
+FRANCE = "france"
 GREECE = "greece"
 HONGKONG = "hongkong"
 ISRAEL = "israel"
@@ -739,6 +741,9 @@ SOUTHAFRICA = "southafrica"
 TAIWAN = "taiwan"
 UAE = "uae"
 UK = "uk"
+US_ATT = "us_att"
+US_TMO = "us_tmo"
+US_VZW = "us_vzw"
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
