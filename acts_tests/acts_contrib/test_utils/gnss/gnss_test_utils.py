@@ -88,6 +88,11 @@ LONGTERM_PSDS_SERVER_3="http://"
 NORMAL_PSDS_SERVER="http://"
 REALTIME_PSDS_SERVER="http://"
 """
+DISABLE_LTO_FILE_CONTENTS_R = """\
+XTRA_SERVER_1="http://"
+XTRA_SERVER_2="http://"
+XTRA_SERVER_3="http://"
+"""
 
 
 class GnssTestUtilsError(Exception):
@@ -120,7 +125,7 @@ def reboot(ad):
     ad.log.info("Reboot device to make changes take effect.")
     ad.reboot()
     ad.unlock_screen(password=None)
-    if not ad.droid.telephonyIsDataEnabled():
+    if not is_mobile_data_on(ad):
         set_mobile_data(ad, True)
     utils.sync_device_time(ad)
 
@@ -210,7 +215,9 @@ def enable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Enable SUPL mode.")
     ad.adb.shell("echo -e '\nSUPL_MODE=1' >> /etc/gps_debug.conf")
-    if not check_chipset_vendor_by_qualcomm(ad):
+    if is_device_wearable(ad):
+        lto_mode_wearable(ad, True)
+    elif not check_chipset_vendor_by_qualcomm(ad):
         lto_mode(ad, True)
     else:
         reboot(ad)
@@ -225,7 +232,9 @@ def disable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Disable SUPL mode.")
     ad.adb.shell("echo -e '\nSUPL_MODE=0' >> /etc/gps_debug.conf")
-    if not check_chipset_vendor_by_qualcomm(ad):
+    if is_device_wearable(ad):
+        lto_mode_wearable(ad, True)
+    elif not check_chipset_vendor_by_qualcomm(ad):
         lto_mode(ad, True)
     else:
         reboot(ad)
@@ -238,7 +247,9 @@ def kill_xtra_daemon(ad):
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    if check_chipset_vendor_by_qualcomm(ad):
+    if is_device_wearable(ad):
+        lto_mode_wearable(ad, False)
+    elif check_chipset_vendor_by_qualcomm(ad):
         ad.log.info("Disable XTRA-daemon until next reboot.")
         ad.adb.shell("killall xtra-daemon", ignore_status=True)
     else:
@@ -279,6 +290,8 @@ def _init_device(ad):
     disable_private_dns_mode(ad)
     reboot(ad)
     init_gtw_gpstool(ad)
+    if not is_mobile_data_on(ad):
+        set_mobile_data(ad, True)
 
 
 def connect_to_wifi_network(ad, network):
@@ -406,13 +419,21 @@ def set_mobile_data(ad, state):
     """
     ad.root_adb()
     if state:
-        ad.log.info("Enable mobile data via RPC call.")
-        ad.droid.telephonyToggleDataConnection(True)
+        if is_device_wearable(ad):
+            ad.log.info("Enable wearable mobile data.")
+            ad.adb.shell("settings put global cell_on 1")
+        else:
+            ad.log.info("Enable mobile data via RPC call.")
+            ad.droid.telephonyToggleDataConnection(True)
     else:
-        ad.log.info("Disable mobile data via RPC call.")
-        ad.droid.telephonyToggleDataConnection(False)
+        if is_device_wearable(ad):
+            ad.log.info("Disable wearable mobile data.")
+            ad.adb.shell("settings put global cell_on 0")
+        else:
+            ad.log.info("Disable mobile data via RPC call.")
+            ad.droid.telephonyToggleDataConnection(False)
     time.sleep(5)
-    ret_val = ad.droid.telephonyIsDataEnabled()
+    ret_val = is_mobile_data_on(ad)
     if state and ret_val:
         ad.log.info("Mobile data is enabled and set to %s" % ret_val)
     elif not state and not ret_val:
@@ -1523,7 +1544,6 @@ def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
         return True
 
 
-
 def check_adblog_functionality(ad):
     """Restart adb logcat if system can't write logs into file after checking
     adblog file size.
@@ -1640,6 +1660,76 @@ def lto_mode(ad, state):
                      DISABLE_LTO_FILE_CONTENTS)
         ad.log.info("LTO/RTO/RTI disabled")
     reboot(ad)
+
+
+def lto_mode_wearable(ad, state):
+    """Enable or Disable LTO mode for wearable in Android R release.
+
+    Args:
+        ad: An AndroidDevice object.
+        state: True to enable. False to disable.
+    """
+    rto_enable = '    RtoEnable="true"\n'
+    rto_disable = '    RtoEnable="false"\n'
+    rti_enable = '    RtiEnable="true"\n'
+    rti_disable = '    RtiEnable="false"\n'
+    sync_lto_enable = '    HttpDirectSyncLto="true"\n'
+    sync_lto_disable = '    HttpDirectSyncLto="false"\n'
+    server_list = ["XTRA_SERVER_1", "XTRA_SERVER_2", "XTRA_SERVER_3"]
+    delete_lto_file(ad)
+    tmp_path = tempfile.mkdtemp()
+    ad.pull_files("/vendor/etc/gnss/gps.xml", tmp_path)
+    gps_xml_path = os.path.join(tmp_path, "gps.xml")
+    gps_xml_file = open(gps_xml_path, "r")
+    lines = gps_xml_file.readlines()
+    gps_xml_file.close()
+    fout = open(gps_xml_path, "w")
+    for line in lines:
+        if state:
+            if rto_disable in line:
+                line = line.replace(line, rto_enable)
+                ad.log.info("RTO enabled")
+            elif rti_disable in line:
+                line = line.replace(line, rti_enable)
+                ad.log.info("RTI enabled")
+            elif sync_lto_disable in line:
+                line = line.replace(line, sync_lto_enable)
+                ad.log.info("LTO sync enabled")
+        else:
+            if rto_enable in line:
+                line = line.replace(line, rto_disable)
+                ad.log.info("RTO disabled")
+            elif rti_enable in line:
+                line = line.replace(line, rti_disable)
+                ad.log.info("RTI disabled")
+            elif sync_lto_enable in line:
+                line = line.replace(line, sync_lto_disable)
+                ad.log.info("LTO sync disabled")
+        fout.write(line)
+    fout.close()
+    ad.push_system_file(gps_xml_path, "/vendor/etc/gnss/gps.xml")
+    ad.log.info("Push back modified gps.xml")
+    xtra_tmp_path = tempfile.mkdtemp()
+    ad.pull_files("/etc/gps_debug.conf", xtra_tmp_path)
+    gps_conf_path = os.path.join(xtra_tmp_path, "gps_debug.conf")
+    gps_conf_file = open(gps_conf_path, "r")
+    lines = gps_conf_file.readlines()
+    gps_conf_file.close()
+    fout = open(gps_conf_path, "w")
+    if state:
+        for line in lines:
+            for server in server_list:
+                if server in line:
+                    line = line.replace(line, "")
+            fout.write(line)
+        fout.close()
+        ad.push_system_file(gps_conf_path, "/etc/gps_debug.conf")
+        ad.log.info("Push back modified gps_debug.conf")
+        ad.log.info("LTO/RTO/RTI enabled")
+    else:
+        ad.adb.shell(
+            "echo %r >> /etc/gps_debug.conf" % DISABLE_LTO_FILE_CONTENTS_R)
+        ad.log.info("LTO/RTO/RTI disabled")
 
 
 def start_pixel_logger(ad, max_log_size_mb=100, max_number_of_files=500):
@@ -1782,3 +1872,28 @@ def restart_gps_daemons(ad):
                 break
         else:
             raise signals.TestError("Unable to restart \"%s\"" % service)
+
+
+def is_device_wearable(ad):
+    """Check device is wearable project or not.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    package = ad.adb.getprop("ro.cw.home_package_names")
+    ad.log.debug("[ro.cw.home_package_names]: [%s]" % package)
+    return "wearable" in package
+
+
+def is_mobile_data_on(ad):
+    """Check if mobile data of device is on.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    if is_device_wearable(ad):
+        cell_on = ad.adb.shell("settings get global cell_on")
+        ad.log.debug("Current mobile status is %s" % cell_on)
+        return "1" in cell_on
+    else:
+        return ad.droid.telephonyIsDataEnabled()

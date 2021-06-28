@@ -72,6 +72,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 from acts_contrib.test_utils.gnss.gnss_test_utils import enable_supl_mode
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import grant_location_permission
+from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
 from acts_contrib.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_test_utils import get_tcpdump_log
@@ -142,7 +143,7 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.droid.connectivityToggleAirplaneMode(False)
         if self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
-        if not self.ad.droid.telephonyIsDataEnabled():
+        if not is_mobile_data_on(self.ad):
             set_mobile_data(self.ad, True)
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
@@ -1282,11 +1283,14 @@ class GnssFunctionTest(BaseTestClass):
         start_gnss_by_gtw_gpstool(self.ad, False)
         for test_loop in range(1, 11):
             reboot(self.ad)
+            self.start_qxdm_and_tcpdump_log()
             test_result = process_gnss_by_gtw_gpstool(
                 self.ad, self.supl_hs_criteria, clear_data=False)
             start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
             overall_test_result.append(test_result)
+            gutils.stop_pixel_logger(self.ad)
+            stop_adb_tcpdump(self.ad)
         pass_rate = overall_test_result.count(True)/len(overall_test_result)
         self.ad.log.info("TestResult Pass_rate %s" % format(pass_rate, ".0%"))
         asserts.assert_true(all(overall_test_result),
