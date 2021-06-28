@@ -46,10 +46,12 @@ class A2dpBaseTest(BluetoothBaseTest):
         super().setup_class()
         self.dut = self.android_devices[0]
         req_params = ['audio_params', 'music_files']
+        opt_params = ['bugreport']
         #'audio_params' is a dict, contains the audio device type, audio streaming
         #settings such as volumn, duration, audio recording parameters such as
         #channel, sampling rate/width, and thdn parameters for audio processing
         self.unpack_userparams(req_params)
+        self.unpack_userparams(opt_params)
         # Find music file and push it to the dut
         music_src = self.music_files[0]
         music_dest = PHONE_MUSIC_FILE_DIRECTORY
@@ -112,6 +114,11 @@ class A2dpBaseTest(BluetoothBaseTest):
         self.bt_device.reset()
         self.bt_device.power_off()
         btutils.disable_bluetooth(self.dut.droid)
+
+    def on_pass(self, test_name, begin_time):
+
+        if hasattr(self, 'bugreport') and self.bugreport == 1:
+            self._take_bug_report(test_name, begin_time)
 
     def play_and_record_audio(self, duration):
         """Play and record audio for a set duration.
