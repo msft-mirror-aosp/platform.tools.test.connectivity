@@ -34,9 +34,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
@@ -45,14 +42,20 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
+from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
+from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_ims_utils import change_ims_setting
 
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_UNKNOWN
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
+
+from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_CONNECTED
+from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_DISCONNECTED
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_EMERGENCY_ONLY
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_IN_SERVICE
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_UNKNOWN
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_OUT_OF_SERVICE
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_POWER_OFF
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_ABSENT
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_LOADED
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
@@ -66,8 +69,7 @@ from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
 
 
-
-def check_no_service_time(ad, timeout=30):
+def check_no_service_time(ad, timeout=60):
     """ check device is no service or not
 
         Args:
@@ -77,16 +79,19 @@ def check_no_service_time(ad, timeout=30):
         Returns:
             True if pass; False if fail.
     """
+
     for i in range (timeout):
         service_state = get_service_state_by_adb(ad.log,ad)
         if service_state != SERVICE_STATE_IN_SERVICE:
-            ad.log.info("device becomes no/limited service in %s sec and service_state=%s" %(i+1, service_state))
+            ad.log.info("device becomes no/limited service in %s sec and service_state=%s"
+                %(i+1, service_state))
             get_telephony_signal_strength(ad)
             return True
         time.sleep(1)
     get_telephony_signal_strength(ad)
     check_network_service(ad)
-    ad.log.info("device does not become no/limited service in %s sec and service_state=%s" %(timeout, service_state))
+    ad.log.info("device does not become no/limited service in %s sec and service_state=%s"
+        %(timeout, service_state))
     return False
 
 def check_back_to_service_time(ad, timeout=30):
@@ -107,12 +112,14 @@ def check_back_to_service_time(ad, timeout=30):
                 ad.log.info("Skip check_back_to_service_time. Device is in-service and service_state=%s" %(service_state))
                 return True
             else:
-                ad.log.info("device is back to service in %s sec and service_state=%s" %(i+1, service_state))
+                ad.log.info("device is back to service in %s sec and service_state=%s"
+                    %(i+1, service_state))
                 get_telephony_signal_strength(ad)
                 return True
         time.sleep(1)
     get_telephony_signal_strength(ad)
-    ad.log.info("device is not back in service in %s sec and service_state=%s" %(timeout, service_state))
+    ad.log.info("device is not back in service in %s sec and service_state=%s"
+        %(timeout, service_state))
     return False
 
 def check_network_service(ad):
@@ -135,6 +142,7 @@ def check_network_service(ad):
     if service_state == SERVICE_STATE_OUT_OF_SERVICE:
         return False
     return True
+
 
 def mo_voice_call(log, ad, call_type, end_call=True, talk_time=15):
     """ MO voice call and check call type.
@@ -165,8 +173,9 @@ def mo_voice_call(log, ad, call_type, end_call=True, talk_time=15):
         ad.log.error("initiate_call fail")
         return False
 
-    time.sleep(talk_time)
+    time.sleep(10)
     if end_call:
+        time.sleep(talk_time)
         if is_phone_in_call(log, ad):
             ad.log.info("end voice call")
             if not hangup_call(log, ad):
@@ -240,15 +249,52 @@ def get_voice_call_type(ad):
     return "UNKNOWN"
 
 def verify_data_connection(ad):
+    """ verify data connection
+
+        Args:
+            ad: android device
+
+        Returns:
+            True if pass; False if fail.
+    """
     data_state = ad.droid.telephonyGetDataConnectionState()
+    wifi_info = ad.droid.wifiGetConnectionInfo()
+    if wifi_info["supplicant_state"] == "completed":
+        ad.log.info("Wifi is connected=%s" %(wifi_info["SSID"]))
     if data_state != DATA_STATE_CONNECTED:
-        ad.log.error("data is not connected. data_state=%s" %(data_state))
+        ad.log.info("data is not connected. data_state=%s" %(data_state))
         return False
     else:
-        #Verify internet connection by ping test and http connection
         if not verify_internet_connection(ad.log, ad, retries=3):
             data_state = ad.droid.telephonyGetDataConnectionState()
-            ad.log.error("verify_internet_connection fail. data_state=%s" %(data_state))
+            network_type_data = ad.droid.telephonyGetCurrentDataNetworkType()
+            ad.log.error("verify_internet fail. data_state=%s, network_type_data=%s"
+            %(data_state, network_type_data))
             return False
-        ad.log.info("verify_data_connection pass")
-        return True
+    ad.log.info("verify_data_connection pass")
+    return True
+
+
+def check_ims_state(ad):
+    """ check current ism state
+
+        Args:
+            ad: android device
+
+        Returns:
+            ims state
+    """
+    r1 = is_ims_registered(ad.log, ad)
+    r2 = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform()
+    r3 = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+    r4 = ad.droid.telephonyIsVolteAvailable()
+    ad.log.info("telephonyIsImsRegistered=%s" %(r1))
+    ad.log.info("imsIsEnhanced4gLteModeSettingEnabledByPlatform=%s" %(r2))
+    ad.log.info("imsIsEnhanced4gLteModeSettingEnabledByUser=%s" %(r3))
+    ad.log.info("telephonyIsVolteAvailable=%s" %(r4))
+    return r1
+
+
+
+
+

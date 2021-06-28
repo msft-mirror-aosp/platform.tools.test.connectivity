@@ -187,7 +187,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_out
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
@@ -3623,13 +3623,20 @@ def phone_number_formatter(input_string, formatter=None):
     # make sure input_string is 10 digital
     # Remove white spaces, dashes, dots
     input_string = input_string.replace(" ", "").replace("-", "").replace(
-        ".", "").lstrip("0")
-    if not formatter:
-        return input_string
-    # Remove +81 and add 0 for Japan Carriers only.
-    if (len(input_string) == 13 and input_string[0:3] == "+81"):
+        ".", "")
+
+    # Remove a country code with '+' sign and add 0 for Japan/Korea Carriers.
+    if (len(input_string) == 13
+            and (input_string[0:3] == "+81" or input_string[0:3] == "+82")):
         input_string = "0" + input_string[3:]
         return input_string
+
+    if not formatter:
+        return input_string
+
+    # Remove leading 0 for the phone with area code started with 0
+    input_string = input_string.lstrip("0")
+
     # Remove "1"  or "+1"from front
     if (len(input_string) == PHONE_NUMBER_STRING_FORMAT_11_DIGIT
             and input_string[0] == "1"):
@@ -6858,11 +6865,11 @@ def ensure_network_generation_for_subscription(
         return True
 
     if generation == GEN_5G:
-        if is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.info("Current network type is 5G NSA.")
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.info("Current network type is 5G.")
             return True
         else:
-            ad.log.error("Not in 5G NSA coverage for Sub %s.", sub_id)
+            ad.log.error("Not in 5G coverage for Sub %s.", sub_id)
             return False
 
     if is_droid_in_network_generation_for_subscription(
@@ -8011,11 +8018,6 @@ def set_qxdm_logger_command(ad, mask=None):
                                   (mask_path, output_path))
         return True
 
-def configure_sdm_logs(ad):
-    if not getattr(ad, "sdm_log", True): return
-     # Disable any modem logging already running
-    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
-    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
 
 
 def start_sdm_logger(ad):
@@ -8031,6 +8033,9 @@ def start_sdm_logger(ad):
         ad.adb.shell(
             "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
             (ad.sdm_log_path, seconds))
+    # Disable any modem logging already running
+    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
+    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
     ad.log.debug("start sdm logging")
@@ -8066,7 +8071,7 @@ def start_qxdm_logger(ad, begin_time=None):
         seconds = None
         file_count = ad.adb.shell(
             "find %s -type f -iname *.qmdl | wc -l" % ad.qxdm_log_path)
-        if int(file_count) > 50:
+        if int(file_count) > 3:
             if begin_time:
                 # if begin_time specified, delete old qxdm logs modified
                 # 10 minutes before begin time
@@ -9136,6 +9141,25 @@ def add_whitelisted_account(ad, user_account,user_password, retries=3):
     return False
 
 
+def install_dialer_apk(ad, dialer_util):
+    """Install dialer.apk to specific device.
+
+    Args:
+        ad: android device object.
+        dialer_util: path of dialer.apk
+
+    Returns:
+        True if success, False if fail.
+    """
+    ad.log.info("Install dialer_util %s", dialer_util)
+    ad.adb.install("-r -g %s" % dialer_util, timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.dialer"):
+        ad.log.info("com.google.android.dialer is not installed")
+        return False
+    return True
+
+
 def install_googleaccountutil_apk(ad, account_util):
     ad.log.info("Install account_util %s", account_util)
     ad.ensure_screen_on()
@@ -9683,7 +9707,7 @@ def set_call_forwarding_by_mmi(
 
     if ad.droid.connectivityCheckAirplaneMode():
         ad.log.warning("%s is now in airplane mode.", ad.serial)
-        return False
+        return True
 
     operator_name = get_operator_name(log, ad)
 

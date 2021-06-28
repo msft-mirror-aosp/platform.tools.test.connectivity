@@ -64,8 +64,10 @@ from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import Fuchs
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
+from acts.controllers.fuchsia_lib.lib_controllers.netstack_controller import NetstackController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
+from acts.controllers.fuchsia_lib.utils_lib import flash
 from acts.libs.proc import job
 from acts.utils import get_fuchsia_mdns_ipv6_address
 
@@ -111,6 +113,7 @@ CHANNEL_OPEN_TIMEOUT = 5
 FUCHSIA_GET_VERSION_CMD = 'cat /config/build-info/version'
 
 FUCHSIA_REBOOT_TYPE_SOFT = 'soft'
+FUCHSIA_REBOOT_TYPE_SOFT_AND_FLASH = 'flash'
 FUCHSIA_REBOOT_TYPE_HARD = 'hard'
 
 FUCHSIA_DEFAULT_CONNECT_TIMEOUT = 60
@@ -211,9 +214,18 @@ class FuchsiaDevice:
         if "ip" not in fd_conf_data:
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
         self.ip = fd_conf_data["ip"]
+        self.orig_ip = fd_conf_data["ip"]
         self.sl4f_port = fd_conf_data.get("sl4f_port", 80)
         self.ssh_port = fd_conf_data.get("ssh_port", 22)
         self.ssh_config = fd_conf_data.get("ssh_config", None)
+        self.authorized_file = fd_conf_data.get("authorized_file_loc", None)
+        self.serial_number = fd_conf_data.get("serial_number", None)
+        self.product_type = fd_conf_data.get("product_type", None)
+        self.board_type = fd_conf_data.get("board_type", None)
+        self.build_number = fd_conf_data.get("build_number", None)
+        self.build_type = fd_conf_data.get("build_type", None)
+        self.server_path = fd_conf_data.get("server_path", None)
+        self.specific_image = fd_conf_data.get("specific_image", None)
 
         # Instead of the input ssh_config, a new config with
         # proper ControlPath values is set and written to
@@ -233,6 +245,14 @@ class FuchsiaDevice:
         self.config_country_code = fd_conf_data.get(
             'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US).upper()
         self._persistent_ssh_conn = None
+
+        # WLAN interface info is populated inside configure_wlan
+        self.wlan_client_interfaces = {}
+        self.wlan_ap_interfaces = {}
+        self.wlan_client_test_interface_name = fd_conf_data.get(
+            'wlan_client_test_interface', None)
+        self.wlan_ap_test_interface_name = fd_conf_data.get(
+            'wlan_ap_test_interface', None)
 
         # Whether to use 'policy' or 'drivers' for WLAN connect/disconnect calls
         # If set to None, wlan is not configured.
@@ -265,7 +285,7 @@ class FuchsiaDevice:
                 raise ValueError('Invalid IP: %s' % self.ip)
 
         self.log = acts_logger.create_tagged_trace_logger(
-            "FuchsiaDevice | %s" % self.ip)
+            "FuchsiaDevice | %s" % self.orig_ip)
 
         self.init_address = self.address + "/init"
         self.cleanup_address = self.address + "/cleanup"
@@ -284,6 +304,43 @@ class FuchsiaDevice:
             self.log_path, "fuchsialog_%s_debug.txt" % self.serial)
         self.log_process = None
 
+        self.init_libraries()
+
+        self.skip_sl4f = False
+        # Start sl4f on device
+        self.start_services(skip_sl4f=self.skip_sl4f)
+        # Init server
+        self.init_server_connection()
+
+        self.setup_commands = fd_conf_data.get('setup_commands', [])
+        self.teardown_commands = fd_conf_data.get('teardown_commands', [])
+
+        try:
+            self.run_commands_from_config(self.setup_commands)
+        except FuchsiaDeviceError:
+            # Prevent a threading error, since controller isn't fully up yet.
+            self.clean_up()
+            raise FuchsiaDeviceError('Failed to run setup commands.')
+
+    def _set_control_path_config(self, old_config, new_config):
+        """Given an input ssh_config, write to a new config with
+        proper ControlPath values in place.
+
+        Args:
+            old_config: string, path to the input config
+            new_config: string, path to store the new config
+        """
+        ssh_config_copy = ""
+
+        with open(old_config, 'r') as file:
+            ssh_config_copy = re.sub('(\sControlPath\s.*)',
+                                     CONTROL_PATH_REPLACE_VALUE,
+                                     file.read(),
+                                     flags=re.M)
+        with open(new_config, 'w') as file:
+            file.write(ssh_config_copy)
+
+    def init_libraries(self):
         # Grab commands from FuchsiaAudioLib
         self.audio_lib = FuchsiaAudioLib(self.address, self.test_counter,
                                          self.client_id)
@@ -326,8 +383,10 @@ class FuchsiaDevice:
                                        self.client_id)
 
         # Grab commands from FuchsiaHardwarePowerStatecontrolLib
-        self.hardware_power_statecontrol_lib = FuchsiaHardwarePowerStatecontrolLib(
-            self.address, self.test_counter, self.client_id)
+        self.hardware_power_statecontrol_lib = (
+            FuchsiaHardwarePowerStatecontrolLib(self.address,
+                                                self.test_counter,
+                                                self.client_id))
 
         # Grab commands from FuchsiaHwinfoLib
         self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
@@ -371,8 +430,10 @@ class FuchsiaDevice:
                                              self.client_id)
 
         # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
-        self.wlan_deprecated_configuration_lib = FuchsiaWlanDeprecatedConfigurationLib(
-            self.address, self.test_counter, self.client_id)
+        self.wlan_deprecated_configuration_lib = (
+            FuchsiaWlanDeprecatedConfigurationLib(self.address,
+                                                  self.test_counter,
+                                                  self.client_id))
 
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
@@ -387,45 +448,14 @@ class FuchsiaDevice:
                                                     self.test_counter,
                                                     self.client_id)
 
+        # Contains Netstack functions
+        self.netstack_controller = NetstackController(self)
+
         # Contains WLAN core functions
         self.wlan_controller = WlanController(self)
 
         # Contains WLAN policy functions like save_network, remove_network, etc
         self.wlan_policy_controller = WlanPolicyController(self)
-
-        self.skip_sl4f = False
-        # Start sl4f on device
-        self.start_services(skip_sl4f=self.skip_sl4f)
-        # Init server
-        self.init_server_connection()
-
-        self.setup_commands = fd_conf_data.get('setup_commands', [])
-        self.teardown_commands = fd_conf_data.get('teardown_commands', [])
-
-        try:
-            self.run_commands_from_config(self.setup_commands)
-        except FuchsiaDeviceError:
-            # Prevent a threading error, since controller isn't fully up yet.
-            self.clean_up()
-            raise FuchsiaDeviceError('Failed to run setup commands.')
-
-    def _set_control_path_config(self, old_config, new_config):
-        """Given an input ssh_config, write to a new config with
-        proper ControlPath values in place.
-
-        Args:
-            old_config: string, path to the input config
-            new_config: string, path to store the new config
-        """
-        ssh_config_copy = ""
-
-        with open(old_config, 'r') as file:
-            ssh_config_copy = re.sub('(\sControlPath\s.*)',
-                                     CONTROL_PATH_REPLACE_VALUE,
-                                     file.read(),
-                                     flags=re.M)
-        with open(new_config, 'w') as file:
-            file.write(ssh_config_copy)
 
     @backoff.on_exception(
         backoff.constant,
@@ -494,6 +524,13 @@ class FuchsiaDevice:
         """
         return self.client_id + "." + str(test_id)
 
+    def configure_netstack(self):
+        """Readies device for Netstack functionality, including initializing
+        facade connection."""
+        err = self.netstack_lib.init().get('error')
+        if err:
+            raise FuchsiaDeviceError('Failed to init netstack_lib: %s' % err)
+
     def configure_wlan(self,
                        association_mechanism=None,
                        preserve_saved_networks=None):
@@ -552,6 +589,10 @@ class FuchsiaDevice:
             self.wlan_policy_controller._configure_wlan(
                 preserve_saved_networks)
 
+        # Retrieve WLAN client and AP interfaces
+        self.configure_netstack()
+        self.wlan_controller.update_wlan_interfaces()
+
     def deconfigure_wlan(self):
         """
         Stops WLAN functionality (if it has been started). Used to allow
@@ -599,6 +640,7 @@ class FuchsiaDevice:
             ConnectionError, if device fails to become unreachable, fails to
                 come back up, or if SL4F does not setup correctly.
         """
+        skip_unreachable_check = False
         # Call Reboot
         if reboot_type == FUCHSIA_REBOOT_TYPE_SOFT:
             if use_ssh:
@@ -615,6 +657,24 @@ class FuchsiaDevice:
                     self.hardware_power_statecontrol_lib.suspendReboot(
                         timeout=3)
                     self.clean_up_services()
+        elif reboot_type == FUCHSIA_REBOOT_TYPE_SOFT_AND_FLASH:
+            if use_ssh:
+                self.log.info('Sending reboot command via SSH to '
+                              'get into bootloader.')
+                with utils.SuppressLogOutput():
+                    self.clean_up_services()
+                    # Sending this command will put the device in fastboot
+                    # but it does not guarantee the device will be in fastboot
+                    # after this command.  There is no check so if there is an
+                    # expectation of the device being in fastboot, then some
+                    # other check needs to be done.
+                    self.send_command_ssh(
+                        'dm rb',
+                        timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
+                        skip_status_code_check=True)
+            ## Todo: Add elif for SL4F if implemented in SL4F
+            flash(self)
+            skip_unreachable_check = True
         elif reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Power cycling FuchsiaDevice (%s)' % self.ip)
             device_pdu, device_pdu_port = pdu.get_pdu_port_for_device(
@@ -625,24 +685,27 @@ class FuchsiaDevice:
             device_pdu.off(str(device_pdu_port))
         else:
             raise ValueError('Invalid reboot type: %s' % reboot_type)
-        # Wait for unreachable
-        self.log.info('Verifying device is unreachable.')
-        timeout = time.time() + unreachable_timeout
-        while (time.time() < timeout):
-            if utils.can_ping(job, self.ip):
-                self.log.debug('Device is still pingable. Retrying.')
+        if not skip_unreachable_check:
+            # Wait for unreachable
+            self.log.info('Verifying device is unreachable.')
+            timeout = time.time() + unreachable_timeout
+            while (time.time() < timeout):
+                if utils.can_ping(job, self.ip):
+                    self.log.debug('Device is still pingable. Retrying.')
+                else:
+                    if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
+                        self.log.info(
+                            'Restoring power to FuchsiaDevice (%s)...' %
+                            self.ip)
+                        device_pdu.on(str(device_pdu_port))
+                    break
             else:
-                if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
-                    self.log.info('Restoring power to FuchsiaDevice (%s)...' %
-                                  self.ip)
-                    device_pdu.on(str(device_pdu_port))
-                break
-        else:
-            self.log.info('Device failed to go offline. Reintializing Sl4F.')
-            self.start_services()
-            self.init_server_connection()
-            raise ConnectionError('Device never went down.')
-        self.log.info('Device is unreachable as expected.')
+                self.log.info('Device failed to go offline. Reintializing '
+                              'SL4F.')
+                self.start_services()
+                self.init_server_connection()
+                raise ConnectionError('Device never went down.')
+            self.log.info('Device is unreachable as expected.')
         if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Restoring power to FuchsiaDevice (%s)...' % self.ip)
             device_pdu.on(str(device_pdu_port))

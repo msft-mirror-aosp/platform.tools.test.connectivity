@@ -33,6 +33,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts_contrib.test_utils.tel.tel_test_utils import start_sdm_loggers
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -237,7 +238,10 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             if not iteration_result:
                 self._take_bug_report("%s_CallNo_%s" % (self.test_name, i),
                                       begin_time)
-                start_qxdm_loggers(self.log, self.android_devices)
+                if self.sdm_log:
+                    start_sdm_loggers(self.log, self.android_devices)
+                else:
+                    start_qxdm_loggers(self.log, self.android_devices)
 
             if self.sleep_time_between_test_iterations:
                 self.caller.droid.goToSleepNow()

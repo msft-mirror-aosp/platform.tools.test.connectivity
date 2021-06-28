@@ -29,6 +29,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_cell_switching_in_call
+from acts_contrib.test_utils.tel.tel_defines import CARRIER_VZW
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts_contrib.test_utils.tel.tel_defines import GEN_2G
@@ -54,6 +55,7 @@ from acts.utils import adb_shell_ping
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
@@ -109,6 +111,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.call_server_number = self.user_params.get(
                 "call_server_number", STORY_LINE)
         self.tel_logger = TelephonyMetricLogger.for_test_case()
+        self.dialer_util = self.user_params.get("dialer_apk", None)
+        if isinstance(self.dialer_util, list):
+            self.dialer_util = self.dialer_util[0]
+
+        if self.dialer_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_dialer_apk(ad, self.dialer_util)
+
+    def get_carrier_name(self, ad):
+        return ad.adb.getprop("gsm.sim.operator.alpha")
 
 
     """ Tests Begin """
@@ -3430,8 +3443,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3456,8 +3474,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3803,8 +3826,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3828,8 +3856,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(

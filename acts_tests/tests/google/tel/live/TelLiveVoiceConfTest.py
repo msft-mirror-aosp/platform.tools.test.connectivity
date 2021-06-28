@@ -36,6 +36,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import call_reject
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
@@ -76,7 +77,7 @@ from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_m
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mt
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mt_add_mt
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_hangup_call_verify_call_state
-
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_wcdma_conference_merge_drop
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
     def setup_class(self):
@@ -89,6 +90,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                 "Conference call is not supported, abort test.")
             raise signals.TestAbortClass(
                 "Conference call is not supported, abort test.")
+
+        self.dialer_util = self.user_params.get("dialer_apk", None)
+        if isinstance(self.dialer_util, list):
+            self.dialer_util = self.dialer_util[0]
+
+        if self.dialer_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_dialer_apk(ad, self.dialer_util)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
@@ -437,78 +447,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         return True
 
-
-    def _test_wcdma_conference_merge_drop(self, call_ab_id, call_ac_id):
-        """Test conference merge and drop in WCDMA/CSFB_WCDMA call.
-
-        PhoneA in WCDMA (or CSFB_WCDMA) call with PhoneB.
-        PhoneA in WCDMA (or CSFB_WCDMA) call with PhoneC.
-        Merge calls to conference on PhoneA.
-        Hangup on PhoneC, check call continues between AB.
-        Hangup on PhoneB, check A ends.
-
-        Args:
-            call_ab_id: call id for call_AB on PhoneA.
-            call_ac_id: call id for call_AC on PhoneA.
-
-        Returns:
-            True if succeed;
-            False if failed.
-        """
-        ads = self.android_devices
-
-        self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
-        ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        calls = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", calls)
-        if num_active_calls(self.log, ads[0]) != 3:
-            ads[0].log.error("Total number of call ids is not 3.")
-            return False
-        call_conf_id = None
-        for call_id in calls:
-            if call_id != call_ab_id and call_id != call_ac_id:
-                call_conf_id = call_id
-        if not call_conf_id:
-            self.log.error("Merge call fail, no new conference call id.")
-            return False
-        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
-            return False
-
-        # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(
-                call_conf_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error(
-                "Call_id: %s, state: %s, expected: STATE_ACTIVE", call_conf_id,
-                ads[0].droid.telecomCallGetCallState(call_conf_id))
-            return False
-
-        self.log.info("Step5: End call on PhoneC and verify call continues.")
-        if not _hangup_call(self.log, ads[2], "PhoneC"):
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-        calls = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", calls)
-        if num_active_calls(self.log, ads[0]) != 1:
-            return False
-        if not verify_incall_state(self.log, [ads[0], ads[1]], True):
-            return False
-        if not verify_incall_state(self.log, [ads[2]], False):
-            return False
-
-        self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        if not _hangup_call(self.log, ads[1], "PhoneB"):
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
-            return False
-        return True
-
-
-
     """ Tests Begin """
-
-
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="3cd45972-3862-4956-9504-7fefacdd5ca6")
     def test_wcdma_mo_mo_add_merge_drop(self):
@@ -537,7 +476,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -568,7 +507,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6641,7 +6580,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6671,7 +6610,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6700,7 +6639,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6730,7 +6669,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6759,7 +6698,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6789,7 +6728,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6819,7 +6758,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6849,7 +6788,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6878,7 +6817,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6908,7 +6847,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+        return _test_wcdma_conference_merge_drop(self.log, ads, call_ab_id, call_ac_id)
 
 
     @TelephonyBaseTest.tel_test_wrap

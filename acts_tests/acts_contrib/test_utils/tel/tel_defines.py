@@ -354,6 +354,10 @@ CARRIER_NTT_DOCOMO = 'ntt_docomo'
 CARRIER_KDDI = 'kddi'
 CARRIER_RAKUTEN = 'rakuten'
 CARRIER_SBM = 'sbm'
+CARRIER_VZW = "Verizon"
+CARRIER_SKT = 'skt'
+CARRIER_KT = 'kt'
+CARRIER_LG_UPLUS = 'lg_uplus'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
@@ -699,14 +703,24 @@ PLMN_ADB_PROPERTY = "gsm.sim.operator.numeric"
 WAIT_TIME_FOR_ALERTS_TO_POPULATE = 60
 WAIT_TIME_FOR_UI = 5
 SCROLL_DOWN = "input swipe 300 900 300 300"
+WAIT_TIME_FOR_ALERT_TO_RECEIVE = 15
+DEFAULT_SOUND_TIME = 16
+DEFAULT_VIBRATION_TIME = 10
+DEFAULT_OFFSET = 1
+EXIT_ALERT_LIST = ["Got It", "OK", "Hide", "TO CLOSE"]
+CMD_DND_OFF = "cmd notification set_dnd off"
+CMD_DND_ON = "cmd notification set_dnd on"
+DUMPSYS_VIBRATION = "dumpsys vibrator_manager | grep -i  com.google.android.cellbroadcastreceiver | tail -1"
 
 # Countries/Carriers for Compliance Testing
+AUSTRALIA = "australia"
 BRAZIL = "brazil"
 CANADA = "canada"
 CHILE = "chile"
 COLUMBIA = "columbia"
-EQUADOR = "equador"
+ECUADOR = "ecuador"
 ESTONIA = "estonia"
+FRANCE = "france"
 GREECE = "greece"
 HONGKONG = "hongkong"
 ISRAEL = "israel"
@@ -727,6 +741,9 @@ SOUTHAFRICA = "southafrica"
 TAIWAN = "taiwan"
 UAE = "uae"
 UK = "uk"
+US_ATT = "us_att"
+US_TMO = "us_tmo"
+US_VZW = "us_vzw"
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
