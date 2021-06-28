@@ -44,7 +44,7 @@ class WifiCrashStressTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        req_params = ["dbs_supported_models", "stress_count"]
+        req_params = ["sta_sta_supported_models", "dbs_supported_models", "stress_count"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -59,6 +59,8 @@ class WifiCrashStressTest(WifiBaseTest):
         self.ap_iface = 'wlan0'
         if self.dut.model in self.dbs_supported_models:
             self.ap_iface = 'wlan1'
+        if self.dut.model in self.sta_sta_supported_models:
+            self.ap_iface = 'wlan2'
 
     def setup_test(self):
         super().setup_test()
