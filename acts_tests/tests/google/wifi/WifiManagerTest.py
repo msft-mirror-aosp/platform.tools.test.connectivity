@@ -431,6 +431,7 @@ class WifiManagerTest(WifiBaseTest):
 
         """
         network_list = self.connect_multiple_networks(self.dut)
+        network_list = self.dut.droid.wifiGetConfiguredNetworks()
         self.dut.reboot()
         time.sleep(DEFAULT_TIMEOUT)
         self.check_configstore_networks(network_list)
@@ -469,6 +470,7 @@ class WifiManagerTest(WifiBaseTest):
         self.log.debug("Toggling wifi OFF")
         wutils.wifi_toggle_state(self.dut, False)
         time.sleep(DEFAULT_TIMEOUT)
+        network_list = self.dut.droid.wifiGetConfiguredNetworks()
         self.dut.reboot()
         time.sleep(DEFAULT_TIMEOUT)
         self.log.debug("Toggling wifi ON")
@@ -507,6 +509,7 @@ class WifiManagerTest(WifiBaseTest):
             acts.utils.force_airplane_mode(self.dut, True),
             "Can not turn on airplane mode on: %s" % self.dut.serial)
         time.sleep(DEFAULT_TIMEOUT)
+        network_list = self.dut.droid.wifiGetConfiguredNetworks()
         self.dut.reboot()
         time.sleep(DEFAULT_TIMEOUT)
         self.log.debug("Toggling Airplane mode OFF")
