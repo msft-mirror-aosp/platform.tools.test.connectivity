@@ -856,6 +856,12 @@ def phone_setup_iwlan_for_subscription(log,
             ad.log.error("Failed to set to %s data.", nw_gen)
             return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
+
+    # Pause at least for 4 seconds is necessary after airplane mode was turned
+    # on due to the mechanism of deferring Wi-Fi (b/191481736)
+    if is_airplane_mode:
+        time.sleep(5)
+
     # check if WFC supported phones
     if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
     ):
