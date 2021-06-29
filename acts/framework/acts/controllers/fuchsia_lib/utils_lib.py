@@ -38,7 +38,7 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 # WARNING.
 
 MDNS_LOOKUP_RETRY_MAX = 3
-FASTBOOT_TIMEOUT = 20
+FASTBOOT_TIMEOUT = 60
 AFTER_FLASH_BOOT_TIME = 30
 
 
