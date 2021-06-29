@@ -38,7 +38,7 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 # WARNING.
 
 MDNS_LOOKUP_RETRY_MAX = 3
-FASTBOOT_TIMEOUT = 10
+FASTBOOT_TIMEOUT = 20
 AFTER_FLASH_BOOT_TIME = 30
 
 
@@ -222,8 +222,11 @@ def flash(fuchsia_device):
     time_counter = 0
     while time_counter < FASTBOOT_TIMEOUT:
         logging.info('Checking to see if fuchsia_device(%s) SN: %s is in '
-                     'fastboot.' % (fuchsia_device.orig_ip,
-                                    fuchsia_device.serial_number))
+                     'fastboot. (Attempt #%s Timeout: %s)' %
+                     (fuchsia_device.orig_ip,
+                      fuchsia_device.serial_number,
+                      str(time_counter + 1),
+                      FASTBOOT_TIMEOUT))
         for usb_device in usbinfo.usbinfo():
             if (usb_device['iSerialNumber'] == fuchsia_device.serial_number and
                     usb_device['iProduct'] == 'USB_download_gadget'):
