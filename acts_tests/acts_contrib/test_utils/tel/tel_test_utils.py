@@ -6332,7 +6332,6 @@ def sms_send_receive_verify_for_subscription(
     phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
 
     for ad in (ad_tx, ad_rx):
-        ad.send_keycode("BACK")
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
