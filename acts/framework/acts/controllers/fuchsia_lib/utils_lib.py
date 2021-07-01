@@ -38,7 +38,7 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 # WARNING.
 
 MDNS_LOOKUP_RETRY_MAX = 3
-FASTBOOT_TIMEOUT = 60
+FASTBOOT_TIMEOUT = 30
 AFTER_FLASH_BOOT_TIME = 30
 
 
@@ -305,10 +305,13 @@ def flash(fuchsia_device):
         shutil.move(filename, tmp_path)
     logging.info('Flashing fuchsia_device(%s) with %s/%s.' % (
         fuchsia_device.orig_ip, tmp_path, image_tgz))
-    flash_output = job.run('bash flash.sh --ssh-key=%s -s %s' % (
-        fuchsia_device.authorized_file, fuchsia_device.serial_number),
-                           timeout=90)
-    logging.debug(flash_output.stderr)
+    try:
+        flash_output = job.run('bash flash.sh --ssh-key=%s -s %s' % (
+            fuchsia_device.authorized_file, fuchsia_device.serial_number),
+                               timeout=120)
+        logging.debug(flash_output.stderr)
+    except job.TimeoutError as err:
+        raise TimeoutError(err)
     try:
         os.rmdir(tmp_path)
     except Exception:
