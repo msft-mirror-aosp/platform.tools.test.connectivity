@@ -17,6 +17,8 @@
 Script for to flash Fuchsia devices using the built in flashing tool for
 fuchsia_devices.
 """
+import time
+
 from acts import signals
 from acts.base_test import BaseTestClass
 
@@ -34,11 +36,34 @@ class FlashTest(BaseTestClass):
             raise signals.TestAbortClass("err_str")
 
     def test_flash_devices(self):
+        flash_retry_max = 3
+        flash_counter = 0
         for fuchsia_device in self.fuchsia_devices:
-            fuchsia_device.reboot(reboot_type='flash',
-                                  use_ssh=True,
-                                  unreachable_timeout=120,
-                                  ping_timeout=120)
-        self.log.info("All of your fuchsia_devices have been flashed.")
+            while flash_counter < flash_retry_max:
+                try:
+                    fuchsia_device.reboot(reboot_type='flash',
+                                          use_ssh=True,
+                                          unreachable_timeout=120,
+                                          ping_timeout=120)
+                    flash_counter = flash_retry_max
+                except TimeoutError as err:
+                    if fuchsia_device.device_pdu_config:
+                        self.log.info('Flashing timed out.'
+                                      '  Hard rebooting fuchsia_device(%s)'
+                                      ' and retrying.'
+                                      % fuchsia_device.orig_ip)
+                        fuchsia_device.reboot(reboot_type='hard',
+                                              testbed_pdus=self.pdu_devices)
+                        flash_counter = flash_counter + 1
+                        if flash_counter == flash_retry_max:
+                            raise err
+                        time.sleep(1)
+                    else:
+                        raise err
+                self.log.info("fuchsia_device(%s) has been flashed."
+                              % fuchsia_device.orig_ip)
+            flash_counter = 0
+
+
         return True
 
