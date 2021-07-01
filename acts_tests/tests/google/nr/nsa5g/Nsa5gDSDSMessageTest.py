@@ -17,9 +17,10 @@
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
-from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -410,6 +411,390 @@ class Nsa5gDSDSMessageTest(TelephonyBaseTest):
     @test_tracker_info(uuid="5f0f4174-548d-43ab-b520-5e2211fdaacc")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_mms_mt_esim_5g_nsa_volte_psim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 1, mt_rat=["volte", "5g_volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="09cd2c80-5c94-4b97-badd-b9d23712cbad")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 0, mo_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="deed7037-932e-4c08-bbf0-989144a51193")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 0, mt_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="14fe5ef1-e6aa-4615-887a-ac26043c2dfc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 1, mo_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="1f07d373-dc81-42f4-a5c5-461304f1e7bf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 1, mt_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="a9f066d3-a5db-4319-a5c9-f7a20f84cd6e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 0, mo_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="688485af-cdc7-43b7-af01-baf6bc695b70")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 0, mt_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="7fef6173-1f37-45d3-be94-60fea340444c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 1, mo_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="71b15942-6c8f-41b3-8dc9-5a1dea64aad4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 1, mt_rat=["5g_volte", "5g_volte"], msg="SMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="6cbc50e7-e135-405d-bf69-ab074d345d80")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 0, mo_rat=["5g_volte", "volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="d976560a-1ea1-421a-9c2d-906cbfb7654e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 0, mt_rat=["5g_volte", "volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="0e3a10b2-2351-49a2-9282-99aae1372bf0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 1, mo_rat=["5g_volte", "volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="e713c430-0bfa-4d25-91f3-1b6fec84b3a5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 1, mt_rat=["5g_volte", "volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="770bec4d-c1c9-4936-8683-3fb796827eba")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_esim_4g_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 0, mo_rat=["5g_volte", "volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="3f34328b-9295-4740-a48b-3ffadbab3fb5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_esim_4g_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 0, mt_rat=["5g_volte", "volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="eeaeb58a-7566-498e-a4d1-ce1cbd82f362")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 1, mo_rat=["5g_volte", "volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="7550ef0b-b0d3-4932-95d3-119abdad53ad")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 1, mt_rat=["5g_volte", "volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="6dd693f4-6c61-4048-9027-02c17874dbd0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 0, mo_rat=["volte", "5g_volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="976d5c30-63af-4e49-952e-2cd4147b7c8d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 0, mt_rat=["volte", "5g_volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="b2c94d26-c806-417d-a751-618491dce246")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 1, mo_rat=["volte", "5g_volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="02739364-2848-4242-bb6e-41a03ec358ed")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 1, mt_rat=["volte", "5g_volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="811880fd-c422-4548-8dfb-cddbfb1dc6c0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 0, mo_rat=["volte", "5g_volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="9e02ade7-c2b6-4b7e-ab15-b42c119f4141")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 0, mt_rat=["volte", "5g_volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="ba2ce2de-a0a6-4abe-adb8-110541e60cb1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mo_esim_5g_nsa_volte_psim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 1, mo_rat=["volte", "5g_volte"], msg="SMS", direction="mo")
+
+    @test_tracker_info(uuid="46e1397c-7296-4aac-8e0f-7049d04427bc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_sms_mt_esim_5g_nsa_volte_psim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 1, mt_rat=["volte", "5g_volte"], msg="SMS", direction="mt")
+
+    @test_tracker_info(uuid="181c1ac9-625e-450d-b566-834e20ecd59d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 0, mo_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="b37aceed-7f67-4ae3-aba8-0f94d24d81e2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 0, mt_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="0fb13f48-bfd7-4019-8a33-e229677b3357")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 1, mo_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="016369fa-3420-45f5-9ed2-3776816f4e4b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_psim_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 1, mt_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="65fdbecf-9ea5-4881-9e99-4a1ed90b76cc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 0, mo_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="3e6b4bcf-30cd-4502-8811-2a5a7a9142a5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 0, mt_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="a49b7a91-8811-403b-b8ed-ac0edad69c2c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 1, mo_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mo", streaming=True)
+
+    @test_tracker_info(uuid="961db859-ad50-4b13-8555-e523843d3e0c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_esim_5g_nsa_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 1, mt_rat=["5g_volte", "5g_volte"], msg="MMS", direction="mt", streaming=True)
+
+    @test_tracker_info(uuid="398fea0a-4ef4-4a6d-bea0-76ab0b2e2c34")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 0, mo_rat=["5g_volte", "volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="06503954-caff-47ba-8ed3-7793fca4e94a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_psim_5g_nsa_volte_esim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 0, mt_rat=["5g_volte", "volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="bc43d539-7bbd-4b12-b88a-ecf0229f1ed5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 1, mo_rat=["5g_volte", "volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="d558a53b-396e-4a9e-aec1-929f41f8ad2a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_psim_5g_nsa_volte_esim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 1, mt_rat=["5g_volte", "volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="74afcd0a-e121-4028-99c6-48cad25b18b8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_esim_4g_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 0, mo_rat=["5g_volte", "volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="5042ec42-f1b3-466a-8e06-6e1c3de2dffb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_esim_4g_volte_psim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 0, mt_rat=["5g_volte", "volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="6f286c93-004b-4360-9afa-78f15a0a5549")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 1, mo_rat=["5g_volte", "volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="0313548b-653b-44ea-bb63-76b69b67e456")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_esim_4g_volte_psim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 1, mt_rat=["5g_volte", "volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="4c1e4667-2b0d-4f4d-a419-c349ef767dbc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 0, mo_rat=["volte", "5g_volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="f82650db-d0d9-4990-a3c6-b918eabeddc6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_psim_4g_volte_esim_5g_nsa_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 0, mt_rat=["volte", "5g_volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="76dca39c-8ead-435b-8b5f-8b167946a18e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            0, None, 1, mo_rat=["volte", "5g_volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="29d8ffec-be68-4d12-b2ad-b2e8f95347c1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_psim_4g_volte_esim_5g_nsa_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 0, 1, mt_rat=["volte", "5g_volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="625bc42e-c9c7-442e-8464-72aab6055ef8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 0, mo_rat=["volte", "5g_volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="18f852da-0877-4624-bbcd-d59a168780dc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_esim_5g_nsa_volte_psim_4g_volte_dds_0(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            None, 1, 0, mt_rat=["volte", "5g_volte"], msg="MMS", direction="mt")
+
+    @test_tracker_info(uuid="cac044ec-176d-4eef-885d-ba419ab634eb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mo_esim_5g_nsa_volte_psim_4g_volte_dds_1(self):
+        return dsds_message_test(
+            self.log,
+            self.android_devices,
+            1, None, 1, mo_rat=["volte", "5g_volte"], msg="MMS", direction="mo")
+
+    @test_tracker_info(uuid="245ee61e-f768-403c-9005-7eed90deedd7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_youtube_and_mms_mt_esim_5g_nsa_volte_psim_4g_volte_dds_1(self):
         return dsds_message_test(
             self.log,
             self.android_devices,

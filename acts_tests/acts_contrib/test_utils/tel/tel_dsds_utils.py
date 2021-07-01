@@ -25,6 +25,7 @@ from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
@@ -52,6 +53,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import set_call_forwarding_by_mm
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_waiting
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
@@ -219,6 +221,7 @@ def dsds_message_test(
         mo_rat=["", ""],
         mt_rat=["", ""],
         direction="mo",
+        streaming=False,
         expected_result=True):
     """Make MO/MT SMS/MMS at specific slot in specific RAT with DDS at
     specific slot.
@@ -237,7 +240,9 @@ def dsds_message_test(
         mo_rat: RAT for both slots of MO device
         mt_rat: RAT for both slots of MT device
         direction: "mo" or "mt"
-        expected_result: True of False
+        streaming: True for playing Youtube before send/receive SMS/MMS and
+            False on the contrary.
+        expected_result: True or False
 
     Returns:
         TestFailure if failed.
@@ -323,10 +328,17 @@ def dsds_message_test(
     if not multithread_func(log, tasks):
         log.error("Phone Failed to Set Up Properly.")
         return False
-
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    log.info("Step 4: Send %s.", msg)
 
+    if streaming:
+        log.info("Step 4: Start Youtube streaming.")
+        if not start_youtube_video(ads[0]):
+            log.warning("Fail to bring up youtube video")
+        time.sleep(10)
+    else:
+        log.info("Step 4: Skip Youtube streaming.")
+
+    log.info("Step 5: Send %s.", msg)
     if msg == "MMS":
         for ad, current_data_sub_id, current_msg_sub_id in [
             [ ads[0],
@@ -350,6 +362,8 @@ def dsds_message_test(
         log_messaging_screen_shot(ad_mo, test_name="%s_tx" % msg)
         log_messaging_screen_shot(ad_mt, test_name="%s_rx" % msg)
 
+    if streaming:
+        ads[0].force_stop_apk(YOUTUBE_PACKAGE_NAME)
     return result
 
 def erase_call_forwarding(log, ad):
