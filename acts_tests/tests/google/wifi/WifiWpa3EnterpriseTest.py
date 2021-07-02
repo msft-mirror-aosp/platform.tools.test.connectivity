@@ -190,7 +190,7 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     except:
       asserts.explicit_pass("Connection failed as expected.")
 
-  @test_tracker_info(uuid="")
+  @test_tracker_info(uuid="9ad5fd82-f115-42c3-b8e8-520144485ea1")
   def test_network_selection_status_for_wpa3_ent_wrong_domain_rsa_cert(self):
     config = {
         Ent.EAP: int(EAP.TLS),
