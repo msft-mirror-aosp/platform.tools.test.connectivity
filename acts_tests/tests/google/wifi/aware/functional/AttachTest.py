@@ -151,7 +151,7 @@ class AttachTest(AwareBaseTest):
         utils.force_airplane_mode(dut, True)
         # APM has a race condition between tear down the NAN Iface and change the Wifi State.
         try:
-            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+            dut.ed.pop_event(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE, autils.EVENT_TIMEOUT)
         except queue.Empty:
             dut.log.info('Wifi State changes before Interface is torn down')
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
