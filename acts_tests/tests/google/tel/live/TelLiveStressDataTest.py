@@ -33,11 +33,12 @@ class TelLiveStressDataTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.iperf_server_address = self.user_params.get("iperf_server",
                                                          '0.0.0.0')
-        self.iperf_srv_tcp_port = self.user_params.get("iperf_server_tcp_port",
-                                                       0)
-        self.iperf_srv_udp_port = self.user_params.get("iperf_server_udp_port",
-                                                       0)
-        self.test_duration = self.user_params.get("data_stress_duration", 60)
+        self.iperf_srv_tcp_port = int(
+            self.user_params.get("iperf_server_tcp_port", 0))
+        self.iperf_srv_udp_port = int(
+            self.user_params.get("iperf_server_udp_port", 0))
+        self.test_duration = int(
+            self.user_params.get("data_stress_duration", 60))
         self.throughput_iteration = int(
             self.user_params.get("throughput_iteration", 10))
         self.sleep_time_between_iperf_iterations = int(

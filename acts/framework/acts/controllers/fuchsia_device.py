@@ -677,6 +677,9 @@ class FuchsiaDevice:
             skip_unreachable_check = True
         elif reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Power cycling FuchsiaDevice (%s)' % self.ip)
+            if not testbed_pdus:
+                raise AttributeError('Testbed PDUs must be supplied '
+                                     'to hard reboot a fuchsia_device.')
             device_pdu, device_pdu_port = pdu.get_pdu_port_for_device(
                 self.device_pdu_config, testbed_pdus)
             with utils.SuppressLogOutput():

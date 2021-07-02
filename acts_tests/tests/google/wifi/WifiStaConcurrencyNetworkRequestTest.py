@@ -52,7 +52,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["sta_concurrency_supported_models"]
+        req_params = ["sta_concurrency_supported_models", "wifi6_models"]
         opt_param = [
             "open_network", "reference_networks"
         ]
@@ -135,11 +135,15 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
             20,
             (cconsts.NETWORK_CB_KEY_ID, self.internet_request_key),
             (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_AVAILABLE))
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def connect_to_p2p_and_wait_for_on_available(self, network):
         self.p2p_key = wutils.wifi_connect_using_network_request(self.dut,
                                                                  network,
                                                                  network)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     def ensure_both_connections_are_active(self):
         self.dut.log.info("Ensuring both connections are active")
@@ -177,8 +181,36 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
                     self.p2p_key),
                 "Failed to release the p2p request")
             self.p2p_key = None
-        self.dut.droid.wifiDisconnect();
+        self.dut.droid.wifiDisconnect()
 
+    def configure_ap(self,
+                     channel_2g=None,
+                     channel_5g=None,
+                     channel_2g_ap2=None,
+                     channel_5g_ap2=None,
+                     mirror_ap=False,
+                     ap_count=1):
+        """Configure ap based on test requirements."""
+        if ap_count==1:
+            self.configure_openwrt_ap_and_start(
+                wpa_network=True,
+                channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
+                channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
+                ap_count=1)
+        elif ap_count == 2 and channel_2g_ap2:
+            self.configure_openwrt_ap_and_start(
+                wpa_network=True,
+                channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
+                channel_2g_ap2=WIFI_NETWORK_AP_CHANNEL_2G_2,
+                mirror_ap=mirror_ap,
+                ap_count=2)
+        elif ap_count == 2 and channel_5g_ap2:
+            self.configure_openwrt_ap_and_start(
+                wpa_network=True,
+                channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
+                channel_5g_ap2=WIFI_NETWORK_AP_CHANNEL_5G_2,
+                mirror_ap=mirror_ap,
+                ap_count=2)
 
     @test_tracker_info(uuid="64a6c35f-d45d-431f-83e8-7fcfaef943e2")
     def test_connect_to_2g_p2p_while_connected_to_5g_internet(self):
@@ -197,8 +229,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
             channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
             ap_count=1)
@@ -228,8 +259,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
             channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
             ap_count=1)
@@ -259,8 +289,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
             channel_2g_ap2=WIFI_NETWORK_AP_CHANNEL_2G_2,
             ap_count=2)
@@ -290,8 +319,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
             channel_5g_ap2=WIFI_NETWORK_AP_CHANNEL_5G_2,
             ap_count=2)
@@ -320,8 +348,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS_1,
             channel_5g_ap2=WIFI_NETWORK_AP_CHANNEL_5G_DFS_2,
             ap_count=2)
@@ -350,8 +377,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_2g=WIFI_NETWORK_AP_CHANNEL_2G_1,
             channel_2g_ap2=WIFI_NETWORK_AP_CHANNEL_2G_2,
             mirror_ap=True,
@@ -381,8 +407,7 @@ class WifiStaConcurrencyNetworkRequestTest(WifiBaseTest):
         7. Ensure that the device remains connected to both the networks.
         8. Disconnect both connections.
         """
-        self.configure_openwrt_ap_and_start(
-            wpa_network=True,
+        self.configure_ap(
             channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_1,
             channel_5g_ap2=WIFI_NETWORK_AP_CHANNEL_5G_2,
             mirror_ap=True,
