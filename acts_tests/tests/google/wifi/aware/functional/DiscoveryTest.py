@@ -1330,7 +1330,7 @@ class DiscoveryTest(AwareBaseTest):
 
         s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b1894ce3-8692-478b-a96f-db2797e22caa")
     def test_service_discovery_on_service_lost_unsolicited_passive(self):
         """
         Test service discovery lost with unsolicited publish and passive subscribe
@@ -1338,7 +1338,7 @@ class DiscoveryTest(AwareBaseTest):
         self.run_service_discovery_on_service_lost(aconsts.PUBLISH_TYPE_UNSOLICITED,
                                                    aconsts.SUBSCRIBE_TYPE_PASSIVE)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4470d897-223a-4f9f-b21f-4061943137dd")
     def test_service_discovery_on_service_lost_solicited_active(self):
         """
         Test service discovery lost with solicited publish and active subscribe
