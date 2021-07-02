@@ -150,7 +150,7 @@ class WifiPnoTest(WifiBaseTest):
     """ Tests Begin """
 
     @test_tracker_info(uuid="33d3cae4-5fa7-4e90-b9e2-5d3747bba64c")
-    def test_simple_pno_connection_to_2g(self):
+    def test_simple_pno_connection_5g_to_2g(self):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
@@ -164,7 +164,7 @@ class WifiPnoTest(WifiBaseTest):
         self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
 
     @test_tracker_info(uuid="39b945a1-830f-4f11-9e6a-9e9641066a96")
-    def test_simple_pno_connection_to_5g(self):
+    def test_simple_pno_connection_2g_to_5g(self):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
