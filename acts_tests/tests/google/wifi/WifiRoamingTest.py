@@ -261,7 +261,7 @@ class WifiRoamingTest(WifiBaseTest):
             ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
         self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="521269cb-5d2c-46e6-bc01-a03bd148ce28")
     def test_soft_2g_ap_channel_when_roam_to_chan_13(self):
         """Verify softAp 2G channel when after roaming to network on channel 13.
 
