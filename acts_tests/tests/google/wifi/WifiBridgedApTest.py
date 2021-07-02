@@ -367,7 +367,7 @@ class WifiBridgedApTest(WifiBaseTest):
         # Restore config
         wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
 
-    @test_tracker_info(uuid="0325ee58-ed8e-489e-9dee-55740406f896")
+    @test_tracker_info(uuid="9a5d4ca9-67fc-412c-8114-01c43c34a76d")
     def test_bridged_ap_5g_2g_and_sta_5g_non_dfs(self):
         """Test 5G scc when BridgedAp enabled and 5G STA.
 
