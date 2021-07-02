@@ -1108,36 +1108,42 @@ class WifiDppTest(WifiBaseTest):
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, use_mac=True, r2_auth_error=True)
 
+  @test_tracker_info(uuid="608c8d47-b9ed-4668-a438-cf5035d27818")
   @WifiBaseTest.wifi_test_wrap
   def test_dpp_as_responder_enrollee_with_psk_passphrase_curve_prime256v1(self):
     self.start_dpp_as_responder_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_PRIME256V1)
 
+  @test_tracker_info(uuid="51d47a54-e19e-4513-b6e8-161e786db0b0")
   @WifiBaseTest.wifi_test_wrap
   def test_dpp_as_responder_enrollee_with_sae_curve_prime256v1(self):
     self.start_dpp_as_responder_enrollee(
         security=self.DPP_TEST_SECURITY_SAE,
         curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_PRIME256V1)
 
+  @test_tracker_info(uuid="f4ede61b-2cee-4ff0-b9d6-3dca9245021b")
   @WifiBaseTest.wifi_test_wrap
   def test_dpp_as_responder_enrollee_with_psk_passphrase_curve_secp384r1(self):
     self.start_dpp_as_responder_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP384R1)
 
+  @test_tracker_info(uuid="57855cba-9cf2-4837-ae77-3dc78bf8b3b5")
   @WifiBaseTest.wifi_test_wrap
   def test_dpp_as_responder_enrollee_with_sae_curve_secp384r1(self):
     self.start_dpp_as_responder_enrollee(
         security=self.DPP_TEST_SECURITY_SAE,
         curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP384R1)
 
+  @test_tracker_info(uuid="eb9c22a0-f17e-4985-b1b0-fdd3871d29b7")
   @WifiBaseTest.wifi_test_wrap
   def test_dpp_as_responder_enrollee_with_psk_passphrase_curve_secp521r1(self):
     self.start_dpp_as_responder_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         curve=self.DPP_TEST_CRYPTOGRAPHY_CURVE_SECP521R1)
 
+  @test_tracker_info(uuid="2677e549-a37a-42f6-8fab-c9a68fcf15f9")
   @WifiBaseTest.wifi_test_wrap
   def test_dpp_as_responder_enrollee_with_sae_curve_secp521r1(self):
     self.start_dpp_as_responder_enrollee(
