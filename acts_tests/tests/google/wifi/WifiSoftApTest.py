@@ -398,7 +398,7 @@ class WifiSoftApTest(WifiBaseTest):
         """
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_AUTO, True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="25996696-e9c8-4cd3-816a-44536166e69f")
     def test_full_tether_startup_wpa3(self):
         """Test full startup of softap in default band and wpa3 security.
 
@@ -410,7 +410,7 @@ class WifiSoftApTest(WifiBaseTest):
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="65ecdd4b-857e-4bda-87e7-3db578cee7aa")
     def test_full_tether_startup_2G_wpa3(self):
         """Test full startup of softap in 2G band and wpa3 security.
 
@@ -423,7 +423,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_2G, security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="dbc788dc-bf11-48aa-b88f-c2ee767cd13d")
     def test_full_tether_startup_5G_wpa3(self):
         """Test full startup of softap in 5G band and wpa3 security.
 
@@ -436,7 +436,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_5G, security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1192c522-824a-4a79-a6cd-bd63b7d19e82")
     def test_full_tether_startup_auto_wpa3(self):
         """Test full startup of softap in auto band and wpa3 security.
 
@@ -449,7 +449,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_AUTO, security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="120d2dcb-ded6-40d3-854c-366c200c8deb")
     def test_full_tether_startup_hidden_wpa3(self):
         """Test full startup of hidden softap in default band and wpa3 security.
 
@@ -461,7 +461,7 @@ class WifiSoftApTest(WifiBaseTest):
                         "DUT does not support WPA3 softAp")
         self.validate_full_tether_startup(security=WPA3_SAE_SOFTAP, hidden=True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="82fc2329-480b-4cab-bf9d-e1c397673e4a")
     def test_full_tether_startup_2G_hidden_wpa3(self):
         """Test full startup of hidden softap in 2G band and wpa3 security.
 
@@ -474,7 +474,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_2G, True, security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="0da2958e-de0b-4567-aff1-d4ba5439eb4e")
     def test_full_tether_startup_5G_hidden_wpa3(self):
         """Test full startup of hidden softap in 5G band and wpa3 security.
 
@@ -487,7 +487,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_5G, True, security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1412f928-e89b-4e84-8ad0-1b14e936b239")
     def test_full_tether_startup_auto_hidden_wpa3(self):
         """Test full startup of hidden softap in auto band and wpa3 security.
 
@@ -500,7 +500,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_AUTO, True, security=WPA3_SAE_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e1433f7e-57f6-4475-822c-754d77817bbc")
     def test_full_tether_startup_wpa2_wpa3(self):
         """Test full startup of softap in default band and wpa2/wpa3 security.
 
@@ -512,7 +512,7 @@ class WifiSoftApTest(WifiBaseTest):
                         "DUT does not support WPA2/WPA3 softAp")
         self.validate_full_tether_startup(security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="8f55209f-0b9a-4600-a416-84d075c349af")
     def test_full_tether_startup_2G_wpa2_wpa3(self):
         """Test full startup of softap in 2G band and wpa2/wpa3 security.
 
@@ -525,7 +525,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_2G, security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3d54b7c5-cc34-473f-b484-fc3bf1773a90")
     def test_full_tether_startup_5G_wpa2_wpa3(self):
         """Test full startup of softap in 5G band and wpa2/wpa3 security.
 
@@ -538,7 +538,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_5G, security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f07bedd2-d768-497d-8922-2e5fe1cd9365")
     def test_full_tether_startup_auto_wpa2_wpa3(self):
         """Test full startup of softap in auto band and wpa2/wpa3 security.
 
@@ -551,7 +551,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_AUTO, security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="9a54f97f-eaca-4a64-ad20-f9e52f8b16a1")
     def test_full_tether_startup_2G_hidden_wpa2_wpa3(self):
         """Test full startup of hidden softap in 2G band and wpa2/wpa3.
 
@@ -564,7 +564,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_2G, True, security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1baef45f-c6c9-46bc-8227-1aacf410e60d")
     def test_full_tether_startup_5G_hidden_wpa2_wpa3(self):
         """Test full startup of hidden softap in 5G band and wpa2/wpa3 security.
 
@@ -577,7 +577,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_5G, True, security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1976ac84-f967-4961-bdb9-4fcfe297fe22")
     def test_full_tether_startup_auto_hidden_wpa2_wpa3(self):
         """Test full startup of hidden softap in auto band and wpa2/wpa3.
 
@@ -590,7 +590,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_full_tether_startup(
             WIFI_CONFIG_APBAND_AUTO, True, security=WPA3_SAE_TRANSITION_SOFTAP)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="dd4c79dc-169f-4d8f-a700-95ba2923af35")
     def test_softap_wpa3_2g_after_reboot(self):
         """Test full startup of softap in 2G band, wpa3 security after reboot.
 
@@ -604,7 +604,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_2G, WPA3_SAE_SOFTAP, False)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="02f080d8-91e7-4363-a291-da3c87e74758")
     def test_softap_wpa3_5g_after_reboot(self):
         """Test full startup of softap in 5G band, wpa3 security after reboot.
 
@@ -618,7 +618,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_5G, WPA3_SAE_SOFTAP, False)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="2224f94e-88e8-4ebf-bbab-f78ab24cefda")
     def test_softap_wpa2_wpa3_2g_after_reboot(self):
         """Test softap in 2G band, wpa2/wpa3 security after reboot.
 
@@ -632,7 +632,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_2G, WPA3_SAE_TRANSITION_SOFTAP, False)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="320643e2-9e13-4c8c-a2cb-1903b6bd3741")
     def test_softap_wpa2_wpa3_5g_after_reboot(self):
         """Test softap in 5G band, wpa2/wpa3 security after reboot.
 
@@ -646,7 +646,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_5G, WPA3_SAE_TRANSITION_SOFTAP, False)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="52005efc-45a2-41df-acd1-5fd551e88a3c")
     def test_softap_wpa3_2g_hidden_after_reboot(self):
         """Test hidden softap in 2G band, wpa3 security after reboot.
 
@@ -660,7 +660,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_2G, WPA3_SAE_SOFTAP, True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="78e07c03-f628-482d-b78b-84bdfba0bfaf")
     def test_softap_wpa3_5g_hidden_after_reboot(self):
         """Test hidden softap in 5G band, wpa3 security after reboot.
 
@@ -674,7 +674,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_5G, WPA3_SAE_SOFTAP, True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="749ba522-dd1f-459a-81bd-957943201c32")
     def test_softap_wpa2_wpa3_2g_hidden_after_reboot(self):
         """Test hidden softap in 2G band, wpa2/wpa3 security after reboot.
 
@@ -688,7 +688,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.validate_softap_after_reboot(
             WIFI_CONFIG_APBAND_2G, WPA3_SAE_TRANSITION_SOFTAP, True)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="638f1456-8556-448d-8cad-63e6b72337ca")
     def test_softap_wpa2_wpa3_5g_hidden_after_reboot(self):
         """Test hidden softap in 5G band, wpa2/wpa3 security after reboot.
 
@@ -1228,7 +1228,7 @@ class WifiSoftApTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.dut_client, wifi_network)
         wutils.verify_11ax_softap(self.dut, self.dut_client, self.wifi6_models)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="dbcd653c-ec65-400f-a6ce-77bb13add473")
     def test_softp_2g_channel_when_connected_to_chan_13(self):
         """Verify softAp 2G channel when connected to network on channel 13.
 
