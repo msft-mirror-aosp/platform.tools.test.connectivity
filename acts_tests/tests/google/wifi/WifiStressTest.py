@@ -335,6 +335,7 @@ class WifiStressTest(WifiBaseTest):
         raise signals.TestPass(details="", extras={"Total Hours":"%d" %
             self.stress_hours, "Seconds Run":"%d" %total_time})
 
+    @test_tracker_info(uuid="591d257d-9477-4a89-a220-5715c93a76a7")
     def test_stress_youtube_5g(self):
         """Test to connect to network and play various youtube videos.
 
