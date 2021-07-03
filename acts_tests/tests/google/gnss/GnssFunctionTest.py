@@ -98,7 +98,6 @@ class GnssFunctionTest(BaseTestClass):
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_allowlist", "pixel_lab_location",
-                      "legacy_wifi_xtra_cs_criteria", "legacy_projects",
                       "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold"]
         self.unpack_userparams(req_param_names=req_params)
@@ -110,10 +109,6 @@ class GnssFunctionTest(BaseTestClass):
         self.ttff_mode = {"cs": "Cold Start",
                           "ws": "Warm Start",
                           "hs": "Hot Start"}
-        if self.ad.model in self.legacy_projects:
-            self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
-        else:
-            self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
         if self.collect_logs and \
             gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.flash_new_radio_or_mbn()
@@ -1052,9 +1047,9 @@ class GnssFunctionTest(BaseTestClass):
 
         Expected Results:
             XTRA/LTO TTFF Cold Start results should be within
-            wifi_xtra_cs_criteria.
+            xtra_cs_criteria.
         """
-        self.xtra_ttff_wifi("cs", self.wifi_xtra_cs_criteria)
+        self.xtra_ttff_wifi("cs", self.xtra_cs_criteria)
 
     @test_tracker_info(uuid="f6e79b31-99d5-49ca-974f-4543957ea449")
     def test_xtra_ttff_ws_wifi(self):

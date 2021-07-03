@@ -450,7 +450,7 @@ class WifiEnterpriseTest(WifiBaseTest):
         config = self.gen_negative_eap_configs(self.config_tls)
         self.eap_negative_connect_logic(config, self.dut)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b7fb8517-5d52-468e-890a-40ea24129bf1")
     def test_network_selection_status_wpa2_eap_tls_invalid_cert(self):
         config = self.gen_negative_eap_configs(self.config_tls)
         try:
