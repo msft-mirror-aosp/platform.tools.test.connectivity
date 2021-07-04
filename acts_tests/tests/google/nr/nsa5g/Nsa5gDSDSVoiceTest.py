@@ -18,6 +18,8 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
+from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_voice_call_test
+from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_data_call_test
 
 class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
     def setup_class(self):
@@ -439,3 +441,399 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
             1,
             mt_rat=["volte", "5g_volte"],
             call_direction="mt")
+
+    @test_tracker_info(uuid="f94d5fd2-79ac-426a-9a0d-1ba72e070b19")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_volte_psim_5g_nsa_volte_disable_psim(self):
+        """Disable/enable pSIM with MO voice call
+        Test step:
+            1. Set the RAT to 5G at both slots.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a MO voice call.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["5g_volte", "5g_volte"],
+            call_direction="mo")
+
+    @test_tracker_info(uuid="3b58146a-72d2-4544-b50b-f685d10da20a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_volte_psim_5g_nsa_volte_disable_psim(self):
+        """Disable/enable pSIM with MT voice call
+        Test step:
+            1. Set the RAT to 5G at both slots.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a MT voice call.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["5g_volte", "5g_volte"],
+            call_direction="mt")
+
+    @test_tracker_info(uuid="6b7fde1b-d51a-49df-b7d4-bf5e3d091895")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_data_esim_5g_nsa_volte_psim_5g_nsa_volte_disable_psim(self):
+        """Disable/enable pSIM with data call
+        Test step:
+            1. Set the RAT to 5G at both slots.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a data call by http download.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_data_call_test(
+            self.log,
+            self.android_devices[0],
+            0,
+            rat=["5g_volte", "5g_volte"])
+
+    @test_tracker_info(uuid="dc490360-66b6-4796-a649-73bb09ce0cc1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_volte_esim_5g_nsa_volte_disable_esim(self):
+        """Disable/enable eSIM with MO voice call
+        Test step:
+            1. Set the RAT to 5G at both slots.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a MO voice call.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["5g_volte", "5g_volte"],
+            call_direction="mo")
+
+    @test_tracker_info(uuid="63f57c95-75be-4a51-83c6-609356bb301b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_volte_esim_5g_nsa_volte_disable_esim(self):
+        """Disable/enable eSIM with MT voice call
+        Test step:
+            1. Set the RAT to 5G at both slots.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a MT voice call.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["5g_volte", "5g_volte"],
+            call_direction="mt")
+
+    @test_tracker_info(uuid="7ad9e84a-dfa0-44e2-adde-390ae521b50b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_data_psim_5g_nsa_volte_esim_5g_nsa_volte_disable_esim(self):
+        """Disable/enable eSIM with data call
+        Test step:
+            1. Set the RAT to 5G at both slots.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a data call by http download.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_data_call_test(
+            self.log,
+            self.android_devices[0],
+            1,
+            rat=["5g_volte", "5g_volte"])
+
+    @test_tracker_info(uuid="b1b02578-6e75-4a96-b3f3-c724fafbae2a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_volte_psim_4g_volte_disable_psim(self):
+        """Disable/enable pSIM with MO voice call
+        Test step:
+            1. Set the RAT to LTE at slot 0 and 5G at slot 1.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a MO voice call.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["volte", "5g_volte"],
+            call_direction="mo")
+
+    @test_tracker_info(uuid="15bb2fdd-ec38-47dc-a2f0-3251c8d19e3c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_volte_psim_4g_volte_disable_psim(self):
+        """Disable/enable pSIM with MT voice call
+        Test step:
+            1. Set the RAT to LTE at slot 0 and 5G at slot 1.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a MT voice call.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["volte", "5g_volte"],
+            call_direction="mt")
+
+    @test_tracker_info(uuid="37d5e72b-723f-4a26-87e9-cf54726476a6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_data_esim_5g_nsa_volte_psim_4g_volte_disable_psim(self):
+        """Disable/enable pSIM with data call
+        Test step:
+            1. Set the RAT to LTE at slot 0 and 5G at slot 1.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a data call by http download.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_data_call_test(
+            self.log,
+            self.android_devices[0],
+            0,
+            rat=["volte", "5g_volte"])
+
+    @test_tracker_info(uuid="bc0dea98-cfe7-4cdd-8dd9-84eda4212fd4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_4g_volte_esim_5g_nsa_volte_disable_esim(self):
+        """Disable/enable eSIM with MO voice call
+        Test step:
+            1. Set the RAT to LTE at slot 0 and 5G at slot 1.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a MO voice call.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["volte", "5g_volte"],
+            call_direction="mo")
+
+    @test_tracker_info(uuid="cfb8b670-6049-46fd-88ff-b9565ab2b582")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_4g_volte_esim_5g_nsa_volte_disable_esim(self):
+        """Disable/enable eSIM with MT voice call
+        Test step:
+            1. Set the RAT to LTE at slot 0 and 5G at slot 1.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a MT voice call.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["volte", "5g_volte"],
+            call_direction="mt")
+
+    @test_tracker_info(uuid="e2a18907-d9a4-491b-82c4-11ca86fc7129")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_data_psim_4g_volte_esim_5g_nsa_volte_disable_esim(self):
+        """Disable/enable eSIM with data call
+        Test step:
+            1. Set the RAT to LTE at slot 0 and 5G at slot 1.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a data call by http download.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_data_call_test(
+            self.log,
+            self.android_devices[0],
+            1,
+            rat=["volte", "5g_volte"])
+
+    @test_tracker_info(uuid="13220595-9774-4f62-b1fb-3b6b98b51df3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_4g_volte_psim_5g_nsa_volte_disable_psim(self):
+        """Disable/enable pSIM with MO voice call
+        Test step:
+            1. Set the RAT to 5G at slot 0 and LTE at slot 1.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a MO voice call.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["5g_volte", "volte"],
+            call_direction="mo")
+
+    @test_tracker_info(uuid="57e3e643-26a9-4e32-ac55-a0f7e4a72148")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_4g_volte_psim_5g_nsa_volte_disable_psim(self):
+        """Disable/enable pSIM with MT voice call
+        Test step:
+            1. Set the RAT to 5G at slot 0 and LTE at slot 1.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a MT voice call.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["5g_volte", "volte"],
+            call_direction="mt")
+
+    @test_tracker_info(uuid="3d809e0d-e75e-4ccd-af38-80d465d14eb7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_data_esim_4g_volte_psim_5g_nsa_volte_disable_psim(self):
+        """Disable/enable pSIM with data call
+        Test step:
+            1. Set the RAT to 5G at slot 0 and LTE at slot 1.
+            2. Disable pSIM.
+            3. Switch DDS to eSIM.
+            4. Verify RAT at slot 1 (eSIM) and also internet connection.
+            5. Make a data call by http download.
+            6. Enable pSIM.
+            7. Switch DDS to pSIM.
+            8. Verify RAT at slot 0 (pSIM) and also internet connection.
+        """
+        return enable_slot_after_data_call_test(
+            self.log,
+            self.android_devices[0],
+            0,
+            rat=["5g_volte", "volte"])
+
+    @test_tracker_info(uuid="c54ab348-367f-43c9-9aae-fa2c3d3badec")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_volte_esim_4g_volte_disable_esim(self):
+        """Disable/enable eSIM with MO voice call
+        Test step:
+            1. Set the RAT to 5G at slot 0 and LTE at slot 1.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a MO voice call.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["5g_volte", "volte"],
+            call_direction="mo")
+
+    @test_tracker_info(uuid="db8e5cdc-c34f-48d4-8ebe-2a71e03c159f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_volte_esim_4g_volte_disable_esim(self):
+        """Disable/enable eSIM with MT voice call
+        Test step:
+            1. Set the RAT to 5G at slot 0 and LTE at slot 1.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a MT voice call.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["5g_volte", "volte"],
+            call_direction="mt")
+
+    @test_tracker_info(uuid="a271d5f2-4449-4961-8417-14943fa96144")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_data_psim_5g_nsa_volte_esim_4g_volte_disable_esim(self):
+        """Disable/enable eSIM with data call
+        Test step:
+            1. Set the RAT to 5G at slot 0 and LTE at slot 1.
+            2. Disable eSIM.
+            3. Switch DDS to pSIM.
+            4. Verify RAT at slot 0 (pSIM) and also internet connection.
+            5. Make a data call by http download.
+            6. Enable eSIM.
+            7. Switch DDS to eSIM.
+            8. Verify RAT at slot 1 (eSIM) and also internet connection.
+        """
+        return enable_slot_after_data_call_test(
+            self.log,
+            self.android_devices[0],
+            1,
+            rat=["5g_volte", "volte"])
