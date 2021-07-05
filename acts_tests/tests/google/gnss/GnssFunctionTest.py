@@ -378,26 +378,12 @@ class GnssFunctionTest(BaseTestClass):
                                       type="gnss",
                                       testtime=tracking_minutes,
                                       meas_flag=True)
-        dpo_results = self.ad.search_logcat("HardwareClockDiscontinuityCount",
-                                            dpo_begin_time)
-        if not dpo_results:
-            raise signals.TestError(
-                "No \"HardwareClockDiscontinuityCount\" is found in logs.")
-        self.ad.log.info(dpo_results[0]["log_message"])
-        self.ad.log.info(dpo_results[-1]["log_message"])
-        first_dpo_count = int(dpo_results[0]["log_message"].split()[-1])
-        final_dpo_count = int(dpo_results[-1]["log_message"].split()[-1])
-        dpo_rate = ((final_dpo_count - first_dpo_count)/(tracking_minutes * 60))
-        dpo_engage_rate = "{percent:.2%}".format(percent=dpo_rate)
-        self.ad.log.info("DPO is ON for %d seconds during %d minutes test." % (
-            final_dpo_count - first_dpo_count, tracking_minutes))
-        self.ad.log.info("TestResult DPO_Engage_Rate " + dpo_engage_rate)
-        threshold = "{percent:.0%}".format(percent=self.dpo_threshold / 100)
-        asserts.assert_true(dpo_rate * 100 > self.dpo_threshold,
-                            "DPO only engaged %s in %d minutes test with "
-                            "threshold %s." % (dpo_engage_rate,
-                                               tracking_minutes,
-                                               threshold))
+        if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            gutils.check_dpo_rate_via_gnss_meas(self.ad,
+                                                dpo_begin_time,
+                                                self.dpo_threshold)
+        else:
+            gutils.check_dpo_rate_via_brcm_log(self.ad, self.dpo_threshold)
 
     @test_tracker_info(uuid="499d2091-640a-4735-9c58-de67370e4421")
     def test_gnss_init_error(self):
