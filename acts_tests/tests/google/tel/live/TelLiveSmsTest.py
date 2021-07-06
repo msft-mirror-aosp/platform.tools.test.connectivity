@@ -41,6 +41,7 @@ from acts.utils import rand_ascii_str
 class TelLiveSmsTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        self.message_lengths = (50, 160, 180)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
