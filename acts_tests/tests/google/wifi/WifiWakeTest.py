@@ -224,7 +224,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
 
         self.ap_a_on()
         self.do_location_scan(
@@ -268,7 +268,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
 
         self.ap_a_on()
         self.do_location_scan(
@@ -336,7 +336,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
         self.ap_a_on()
         self.do_location_scan(
             SCANS_REQUIRED_TO_FIND_SSID, self.ap_a[wutils.WifiEnums.SSID_KEY])
@@ -404,7 +404,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
 
         self.ap_a_on()
         self.ap_b_on()
