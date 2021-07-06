@@ -47,12 +47,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     def _get_wfc_mode(self, ad):
         # Verizon doesn't supports wfc mode as WFC_MODE_WIFI_PREFERRED
-        carrier = ad.adb.getprop("gsm.sim.operator.alpha")
+        carrier = ad.adb.getprop("gsm.sim.operator.alpha")
         if carrier == CARRIER_VZW:
             wfc = WFC_MODE_CELLULAR_PREFERRED
-        else:
-            wfc = WFC_MODE_WIFI_PREFERRED
-        return wfc
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
+        return wfc
 
     def _sms_in_collision_test(self, ads):
         for length in self.message_lengths:
