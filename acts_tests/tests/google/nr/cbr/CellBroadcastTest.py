@@ -36,9 +36,11 @@ from acts_contrib.test_utils.tel.tel_defines import PERU
 from acts_contrib.test_utils.tel.tel_defines import KOREA
 from acts_contrib.test_utils.tel.tel_defines import TAIWAN
 from acts_contrib.test_utils.tel.tel_defines import CANADA
+from acts_contrib.test_utils.tel.tel_defines import AUSTRALIA
 from acts_contrib.test_utils.tel.tel_defines import BRAZIL
 from acts_contrib.test_utils.tel.tel_defines import COLUMBIA
-from acts_contrib.test_utils.tel.tel_defines import EQUADOR
+from acts_contrib.test_utils.tel.tel_defines import ECUADOR
+from acts_contrib.test_utils.tel.tel_defines import FRANCE
 from acts_contrib.test_utils.tel.tel_defines import PUERTORICO
 from acts_contrib.test_utils.tel.tel_defines import NETHERLANDS
 from acts_contrib.test_utils.tel.tel_defines import ROMANIA
@@ -49,6 +51,9 @@ from acts_contrib.test_utils.tel.tel_defines import GREECE
 from acts_contrib.test_utils.tel.tel_defines import ITALY
 from acts_contrib.test_utils.tel.tel_defines import SOUTHAFRICA
 from acts_contrib.test_utils.tel.tel_defines import UK
+from acts_contrib.test_utils.tel.tel_defines import US_VZW
+from acts_contrib.test_utils.tel.tel_defines import US_ATT
+from acts_contrib.test_utils.tel.tel_defines import US_TMO
 from acts_contrib.test_utils.tel.tel_defines import ISRAEL
 from acts_contrib.test_utils.tel.tel_defines import OMAN
 from acts_contrib.test_utils.tel.tel_defines import JAPAN_SOFTBANK
@@ -436,6 +441,36 @@ class CellBroadcastTest(TelephonyBaseTest):
         return self._settings_test_flow(UAE)
 
 
+    @test_tracker_info(uuid="ac4639ca-b77e-4200-b3f0-9079e2783f60")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_australia(self):
+        """ Verifies Wireless Emergency Alert settings for Australia
+
+        configures the device to Australia
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(AUSTRALIA)
+
+
+    @test_tracker_info(uuid="d0255023-d9bb-45c5-bede-446d720e619a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_france(self):
+        """ Verifies Wireless Emergency Alert settings for France
+
+        configures the device to France
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(FRANCE)
+
+
     @test_tracker_info(uuid="fd461335-21c0-470c-aca7-74c8ebb67711")
     @TelephonyBaseTest.tel_test_wrap
     def test_default_alert_settings_japan_kddi(self):
@@ -588,17 +623,17 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2ebfc05b-3512-4eff-9c09-5d8f49fe0b5e")
     @TelephonyBaseTest.tel_test_wrap
-    def test_default_alert_settings_equador(self):
-        """ Verifies Wireless Emergency Alert settings for Equador
+    def test_default_alert_settings_ecuador(self):
+        """ Verifies Wireless Emergency Alert settings for Ecuador
 
-        configures the device to Equador
+        configures the device to Ecuador
         verifies alert names and its default values
         toggles the alert twice if available
 
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._settings_test_flow(EQUADOR)
+        return self._settings_test_flow(ECUADOR)
 
 
     @test_tracker_info(uuid="96628975-a23f-47f7-ab18-1aa7a7dc08b5")
@@ -811,6 +846,68 @@ class CellBroadcastTest(TelephonyBaseTest):
         return self._settings_test_flow(SAUDIARABIA)
 
 
+    @test_tracker_info(uuid="a5f232c4-e0fa-4ce6-aa00-c838f0d86272")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_att(self):
+        """ Verifies Wireless Emergency Alert settings for US ATT
+
+        configures the device to US ATT
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(US_ATT)
+
+
+    @test_tracker_info(uuid="a712c136-8ce9-4bc2-9dda-05ecdd11e8ad")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_tmo(self):
+        """ Verifies Wireless Emergency Alert settings for US TMO
+
+        configures the device to US TMO
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(US_TMO)
+
+
+    @test_tracker_info(uuid="20403705-f627-42d7-9dc2-4e820273a622")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_vzw(self):
+        """ Verifies Wireless Emergency Alert settings for US VZW
+
+        configures the device to US VZW
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(US_VZW)
+
+
+    @test_tracker_info(uuid="f3a99475-a23f-427c-a371-d2a46d357d75")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_australia(self):
+        """ Verifies Wireless Emergency Alerts for AUSTRALIA
+
+        configures the device to AUSTRALIA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(AUSTRALIA)
+
+
     @test_tracker_info(uuid="73c98624-2935-46ea-bf7c-43c431177ebd")
     @TelephonyBaseTest.tel_test_wrap
     def test_send_receive_alerts_brazil(self):
@@ -881,10 +978,10 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2378b651-2097-48e6-b409-885bde9f4586")
     @TelephonyBaseTest.tel_test_wrap
-    def test_send_receive_alerts_equador(self):
-        """ Verifies Wireless Emergency Alerts for EQUADOR
+    def test_send_receive_alerts_ecuador(self):
+        """ Verifies Wireless Emergency Alerts for ECUADOR
 
-        configures the device to EQUADOR
+        configures the device to ECUADOR
         send alerts across all channels,
         verify if alert is received correctly
         verify sound and vibration timing
@@ -893,7 +990,7 @@ class CellBroadcastTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._send_receive_test_flow(EQUADOR)
+        return self._send_receive_test_flow(ECUADOR)
 
 
     @test_tracker_info(uuid="46d6c612-21df-476e-a41b-3baa621b52f0")
@@ -911,6 +1008,23 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._send_receive_test_flow(ESTONIA)
+
+
+    @test_tracker_info(uuid="6de32af0-9545-4143-b327-146e4d0af28c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_france(self):
+        """ Verifies Wireless Emergency Alerts for FRANCE
+
+        configures the device to FRANCE
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(FRANCE)
 
 
     @test_tracker_info(uuid="9c5826db-0457-4c6f-9d06-6973b5f77e3f")
@@ -1251,3 +1365,54 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._send_receive_test_flow(UK)
+
+
+    @test_tracker_info(uuid="b3e73b61-6232-44f0-9507-9954387ab25b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_us_att(self):
+        """ Verifies Wireless Emergency Alerts for US ATT
+
+        configures the device to US ATT
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(US_ATT)
+
+
+    @test_tracker_info(uuid="f993d21d-c240-4196-8015-ea8f5967fdb3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_us_tmo(self):
+        """ Verifies Wireless Emergency Alerts for US TMO
+
+        configures the device to US TMO
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(US_TMO)
+
+
+    @test_tracker_info(uuid="173293f2-4876-4891-ad2c-2b0d5269b2e0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_us_vzw(self):
+        """ Verifies Wireless Emergency Alerts for US Verizon
+
+        configures the device to US Verizon
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(US_VZW)

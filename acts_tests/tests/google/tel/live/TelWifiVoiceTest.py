@@ -3206,16 +3206,20 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         # Increase LTE RSRP to MAX_RSSI_RESERVED_VALUE
         time.sleep(30)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+        if not set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MAX_RSSI_RESERVED_VALUE):
+            return False
+        if not set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MAX_RSSI_RESERVED_VALUE):
+            return False
         time.sleep(30)
         # Decrease WiFi RSSI to MIN_RSSI_RESERVED_VALUE
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 MIN_RSSI_RESERVED_VALUE, 5, 1)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 MIN_RSSI_RESERVED_VALUE, 5, 1)
+        if not set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1):
+            return False
+        if not set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1):
+            return False
         # Make sure phone hand-out, not drop call
         if not self._phone_wait_for_not_wfc():
             self.log.error("Phone should hand out to LTE.")
@@ -3258,8 +3262,10 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Increase Cellular RSSI to MAX_RSSI_RESERVED_VALUE
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         """
-        self._decrease_cellular_rssi_check_phone_hand_out()
-        self._increase_lte_decrease_wifi_rssi_check_phone_hand_out()
+        if not self._decrease_cellular_rssi_check_phone_hand_out():
+            return False
+        if not self._increase_lte_decrease_wifi_rssi_check_phone_hand_out():
+            return False
 
         return True
 
@@ -3529,10 +3535,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         time.sleep(60)
         # Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 MIN_RSSI_RESERVED_VALUE, 5, 1)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 MIN_RSSI_RESERVED_VALUE, 5, 1)
+        if not set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1):
+            return False
+        if not set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1):
+            return False
         # Make sure phone hand-out to iWLAN, not drop call
         if not self._phone_wait_for_wfc():
             self.log.error("Phone should hand out to iWLAN.")

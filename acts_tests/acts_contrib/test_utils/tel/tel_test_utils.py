@@ -6332,7 +6332,6 @@ def sms_send_receive_verify_for_subscription(
     phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
 
     for ad in (ad_tx, ad_rx):
-        ad.send_keycode("BACK")
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
@@ -6518,7 +6517,6 @@ def mms_send_receive_verify_for_subscription(
     toggle_enforce = False
 
     for ad in (ad_tx, ad_rx):
-        ad.send_keycode("BACK")
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
             toggle_enforce = True
@@ -9152,8 +9150,7 @@ def install_dialer_apk(ad, dialer_util):
         True if success, False if fail.
     """
     ad.log.info("Install dialer_util %s", dialer_util)
-    ad.adb.install("-r -g %s" % self.dialer_util,
-        timeout=300, ignore_status=True)
+    ad.adb.install("-r -g %s" % dialer_util, timeout=300, ignore_status=True)
     time.sleep(3)
     if not ad.is_apk_installed("com.google.android.dialer"):
         ad.log.info("com.google.android.dialer is not installed")
