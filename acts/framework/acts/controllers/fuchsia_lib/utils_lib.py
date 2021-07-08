@@ -262,7 +262,7 @@ def flash(fuchsia_device):
             elif fuchsia_device.build_number == 'LATEST':
                 build_list = [x for x in build_list if '.' in x]
             if build_list:
-                fuchsia_device.build_number = build_list[-1]
+                fuchsia_device.build_number = build_list[-2]
             else:
                 raise FileNotFoundError('No build(%s) on the found on %s.' % (
                     fuchsia_device.build_number, fuchsia_device.server_path))
