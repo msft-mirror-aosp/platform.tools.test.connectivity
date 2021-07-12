@@ -788,7 +788,13 @@ def process_gnss_by_gtw_gpstool(ad,
                               "attempts." % (type.upper(), retries))
 
 
-def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
+def start_ttff_by_gtw_gpstool(ad,
+                              ttff_mode,
+                              iteration,
+                              aid_data=False,
+                              raninterval=False,
+                              mininterval=10,
+                              maxinterval=40):
     """Identify which TTFF mode for different test items.
 
     Args:
@@ -796,6 +802,9 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
         ttff_mode: TTFF Test mode for current test item.
         iteration: Iteration of TTFF cycles.
         aid_data: Boolean for identify aid_data existed or not
+        raninterval: Boolean for identify random interval of TTFF in enable or not.
+        mininterval: Minimum value of random interval pool. The unit is second.
+        maxinterval: Maximum value of random interval pool. The unit is second.
     """
     begin_time = get_current_epoch_time()
     if (ttff_mode == "hs" or ttff_mode == "ws") and not aid_data:
@@ -805,8 +814,12 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
         ad.log.info("Start TTFF Cold Start...")
         time.sleep(3)
     for i in range(1, 4):
-        ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
-                     "--es ttff %s --es cycle %d" % (ttff_mode, iteration))
+        ad.adb.shell(
+            "am broadcast -a com.android.gpstool.ttff_action "
+            "--es ttff {} --es cycle {}  --ez raninterval {} "
+            "--ei mininterval {} --ei maxinterval {}"
+            .format(ttff_mode, iteration, raninterval, mininterval,
+                    maxinterval))
         time.sleep(1)
         if ad.search_logcat("act=com.android.gpstool.start_test_action",
                             begin_time):
