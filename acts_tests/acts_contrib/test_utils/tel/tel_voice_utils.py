@@ -2281,3 +2281,62 @@ def _test_call_long_duration(log, ads, dut_incall_check_func, total_duration):
         ads[0],
         verify_caller_func=dut_incall_check_func,
         wait_time_in_call=total_duration)
+
+def wait_for_network_idle(
+    log,
+    ad,
+    rat,
+    sub_id):
+    """Wait for attaching to network with assigned RAT and IMS/WFC registration
+
+    This function can be used right after network service recovery after turning
+    off airplane mode or switching DDS. It will ensure DUT has attached to the
+    network with assigned RAT, and VoLTE/WFC has been ready.
+
+    Args:
+        log: log object
+        ad: Android object
+        rat: following RAT are supported:
+            - 5g_volte
+            - 5g_csfb
+            - 5g_wfc
+            - volte (LTE)
+            - csfb (LTE)
+            - wfc (LTE)
+
+    Returns:
+        True or False
+    """
+    if rat.lower() == '5g_volte':
+        if not phone_idle_volte_for_subscription(log, ad, sub_id, GEN_5G):
+            return False
+    elif rat.lower() == '5g_csfb':
+        if not phone_idle_csfb_for_subscription(log, ad, sub_id, GEN_5G):
+            return False
+    elif rat.lower() == '5g_wfc':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
+        if not wait_for_wfc_enabled(log, ad):
+            return False
+    elif rat.lower() == 'volte':
+        if not phone_idle_volte_for_subscription(log, ad, sub_id, GEN_4G):
+            return False
+    elif rat.lower() == 'csfb':
+        if not phone_idle_csfb_for_subscription(log, ad, sub_id, GEN_4G):
+            return False
+    elif rat.lower() == 'wfc':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
+        if not wait_for_wfc_enabled(log, ad):
+            return False
+    return True
