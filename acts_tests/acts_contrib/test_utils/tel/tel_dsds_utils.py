@@ -16,6 +16,7 @@
 
 import re
 import time
+from datetime import datetime, timedelta
 
 from acts import signals
 from acts.utils import rand_ascii_str
@@ -33,11 +34,10 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voic
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import erase_call_forwarding_by_mmi
@@ -49,6 +49,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
+from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
+from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_forwarding_by_mmi
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_waiting
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
@@ -66,6 +68,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
 from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_forwarding_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_waiting_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_network_idle
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_second_call_from_participant
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_wcdma_conference_merge_drop
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mt
@@ -365,6 +368,351 @@ def dsds_message_test(
     if streaming:
         ads[0].force_stop_apk(YOUTUBE_PACKAGE_NAME)
     return result
+
+def enable_slot_after_voice_call_test(
+        log,
+        ads,
+        mo_slot,
+        mt_slot,
+        disabled_slot,
+        mo_rat=["", ""],
+        mt_rat=["", ""],
+        call_direction="mo"):
+    """Disable/enable pSIM or eSIM with voice call
+
+    Test step:
+    1. Get sub IDs of specific slots of both MO and MT devices.
+    2. Set up phones in desired RAT.
+    3. Disable assigned slot.
+    4. Switch DDS to the other slot.
+    5. Verify RAT and HTTP connection after DDS switch.
+    6. Make voice call.
+    7. Enable assigned slot.
+    8. Switch DDS to the assigned slot.
+    9. Verify RAT and HTTP connection after DDS switch.
+
+    Args:
+        log: logger object
+        ads: list of android devices
+        mo_slot: Slot making MO call (0 or 1)
+        mt_slot: Slot receiving MT call (0 or 1)
+        disabled_slot: slot to be disabled/enabled
+        mo_rat: RAT for both slots of MO device
+        mt_rat: RAT for both slots of MT device
+        call_direction: "mo" or "mt"
+
+    Returns:
+        TestFailure if failed.
+    """
+    if call_direction == "mo":
+        ad_mo = ads[0]
+        ad_mt = ads[1]
+    else:
+        ad_mo = ads[1]
+        ad_mt = ads[0]
+
+    if mo_slot is not None:
+        mo_sub_id = get_subid_from_slot_index(log, ad_mo, mo_slot)
+        if mo_sub_id == INVALID_SUB_ID:
+            ad_mo.log.warning("Failed to get sub ID at slot %s.", mo_slot)
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Failed to get sub ID at slot %s." % mo_slot})
+        mo_other_sub_id = get_subid_from_slot_index(
+            log, ad_mo, 1-mo_slot)
+        set_voice_sub_id(ad_mo, mo_sub_id)
+    else:
+        _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
+        if mo_sub_id == INVALID_SUB_ID:
+            ad_mo.log.warning("Failed to get sub ID at slot %s.", mo_slot)
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Failed to get sub ID at slot %s." % mo_slot})
+        mo_slot = "auto"
+        set_voice_sub_id(ad_mo, mo_sub_id)
+    ad_mo.log.info("Sub ID for outgoing call at slot %s: %s",
+        mo_slot, get_outgoing_voice_sub_id(ad_mo))
+
+    if mt_slot is not None:
+        mt_sub_id = get_subid_from_slot_index(log, ad_mt, mt_slot)
+        if mt_sub_id == INVALID_SUB_ID:
+            ad_mt.log.warning("Failed to get sub ID at slot %s.", mt_slot)
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Failed to get sub ID at slot %s." % mt_slot})
+        mt_other_sub_id = get_subid_from_slot_index(
+            log, ad_mt, 1-mt_slot)
+        set_voice_sub_id(ad_mt, mt_sub_id)
+    else:
+        _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
+        if mt_sub_id == INVALID_SUB_ID:
+            ad_mt.log.warning("Failed to get sub ID at slot %s.", mt_slot)
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Failed to get sub ID at slot %s." % mt_slot})
+        mt_slot = "auto"
+        set_voice_sub_id(ad_mt, mt_sub_id)
+    ad_mt.log.info("Sub ID for incoming call at slot %s: %s", mt_slot,
+        get_incoming_voice_sub_id(ad_mt))
+
+    if mo_slot == 0 or mo_slot == 1:
+        phone_setup_on_rat(log, ad_mo, mo_rat[1-mo_slot], mo_other_sub_id)
+        mo_phone_setup_func_argv = (log, ad_mo, mo_rat[mo_slot], mo_sub_id)
+        is_mo_in_call = is_phone_in_call_on_rat(
+            log, ad_mo, mo_rat[mo_slot], only_return_fn=True)
+    else:
+        mo_phone_setup_func_argv = (log, ad_mo, 'general')
+        is_mo_in_call = is_phone_in_call_on_rat(
+            log, ad_mo, 'general', only_return_fn=True)
+
+    if mt_slot == 0 or mt_slot == 1:
+        phone_setup_on_rat(log, ad_mt, mt_rat[1-mt_slot], mt_other_sub_id)
+        mt_phone_setup_func_argv = (log, ad_mt, mt_rat[mt_slot], mt_sub_id)
+        is_mt_in_call = is_phone_in_call_on_rat(
+            log, ad_mt, mt_rat[mt_slot], only_return_fn=True)
+    else:
+        mt_phone_setup_func_argv = (log, ad_mt, 'general')
+        is_mt_in_call = is_phone_in_call_on_rat(
+            log, ad_mt, 'general', only_return_fn=True)
+
+    log.info("Step 1: Set up phones in desired RAT.")
+    tasks = [(phone_setup_on_rat, mo_phone_setup_func_argv),
+                (phone_setup_on_rat, mt_phone_setup_func_argv)]
+    if not multithread_func(log, tasks):
+        log.error("Phone Failed to Set Up Properly.")
+        tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+    log.info("Step 2: Disable slot %s.", disabled_slot)
+    if not power_off_sim(ads[0], disabled_slot):
+        raise signals.TestFailure(
+            "Failed",
+            extras={
+                "fail_reason": "Failed to disable slot %s." % disabled_slot})
+
+    log.info("Step 3: Switch DDS.")
+    if not set_dds_on_slot(ads[0], 1-disabled_slot):
+        log.error(
+            "Failed to set DDS at slot %s on %s.",
+            (1-disabled_slot, ads[0].serial))
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to set DDS at slot %s on %s." % (
+                1-disabled_slot, ads[0].serial)})
+
+    log.info("Step 4: Verify RAT and HTTP connection after DDS switch.")
+    if mo_slot == 0 or mo_slot == 1:
+        if not wait_for_network_idle(
+            log, ad_mo, mo_rat[1-disabled_slot], mo_sub_id):
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Idle state does not match the given "
+                    "RAT %s." % mo_rat[1-disabled_slot]})
+
+    if mt_slot == 0 or mt_slot == 1:
+        if not wait_for_network_idle(
+            log, ad_mt, mt_rat[1-disabled_slot], mt_sub_id):
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Idle state does not match the given "
+                    "RAT %s." % mt_rat[1-disabled_slot]})
+
+    if not verify_http_connection(log, ads[0]):
+        log.error("Failed to verify http connection.")
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to verify http connection."})
+    else:
+        log.info("Verify http connection successfully.")
+
+    log.info("Step 5: Make voice call.")
+    result = two_phone_call_msim_for_slot(
+        log,
+        ad_mo,
+        get_slot_index_from_subid(log, ad_mo, mo_sub_id),
+        None,
+        is_mo_in_call,
+        ad_mt,
+        get_slot_index_from_subid(log, ad_mt, mt_sub_id),
+        None,
+        is_mt_in_call)
+
+    tel_logger.set_result(result.result_value)
+
+    if not result:
+        log.error(
+            "Failed to make MO call from %s slot %s to %s slot %s",
+                ad_mo.serial, mo_slot, ad_mt.serial, mt_slot)
+        raise signals.TestFailure("Failed",
+            extras={"fail_reason": str(result.result_value)})
+
+    log.info("Step 6: Enable slot %s.", disabled_slot)
+    if not power_on_sim(ads[0], disabled_slot):
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to enable slot %s." % disabled_slot})
+
+    log.info("Step 7: Switch DDS to slot %s.", disabled_slot)
+    if not set_dds_on_slot(ads[0], disabled_slot):
+        log.error(
+            "Failed to set DDS at slot %s on %s.",(disabled_slot, ads[0].serial))
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to set DDS at slot %s on %s." % (
+                disabled_slot, ads[0].serial)})
+
+    log.info("Step 8: Verify RAT and HTTP connection after DDS switch.")
+    if mo_slot == 0 or mo_slot == 1:
+        if not wait_for_network_idle(
+            log, ad_mo, mo_rat[disabled_slot], mo_other_sub_id):
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Idle state does not match the given "
+                    "RAT %s." % mo_rat[mo_slot]})
+
+    if mt_slot == 0 or mt_slot == 1:
+        if not wait_for_network_idle(
+            log, ad_mt, mt_rat[disabled_slot], mt_other_sub_id):
+            raise signals.TestFailure(
+                "Failed",
+                extras={"fail_reason": "Idle state does not match the given "
+                "RAT %s." % mt_rat[mt_slot]})
+
+    if not verify_http_connection(log, ads[0]):
+        log.error("Failed to verify http connection.")
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to verify http connection."})
+    else:
+        log.info("Verify http connection successfully.")
+
+def enable_slot_after_data_call_test(
+        log,
+        ad,
+        disabled_slot,
+        rat=["", ""]):
+    """Disable/enable pSIM or eSIM with data call
+
+    Test step:
+    1. Get sub IDs of specific slots of both MO and MT devices.
+    2. Set up phones in desired RAT.
+    3. Disable assigned slot.
+    4. Switch DDS to the other slot.
+    5. Verify RAT and HTTP connection after DDS switch.
+    6. Make a data call by http download.
+    7. Enable assigned slot.
+    8. Switch DDS to the assigned slot.
+    9. Verify RAT and HTTP connection after DDS switch.
+
+    Args:
+        log: logger object
+        ads: list of android devices
+        disabled_slot: slot to be disabled/enabled
+        mo_rat: RAT for both slots of MO device
+        mt_rat: RAT for both slots of MT device
+
+    Returns:
+        TestFailure if failed.
+    """
+    data_sub_id = get_subid_from_slot_index(log, ad, 1-disabled_slot)
+    if data_sub_id == INVALID_SUB_ID:
+        ad.log.warning("Failed to get sub ID at slot %s.", 1-disabled_slot)
+        raise signals.TestFailure(
+            "Failed",
+            extras={
+                "fail_reason": "Failed to get sub ID at slot %s." % (
+                    1-disabled_slot)})
+    other_sub_id = get_subid_from_slot_index(log, ad, disabled_slot)
+
+    log.info("Step 1: Set up phones in desired RAT.")
+    if not phone_setup_on_rat(log, ad, rat[1-disabled_slot], data_sub_id):
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+    if not phone_setup_on_rat(log, ad, rat[disabled_slot], other_sub_id):
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+    log.info("Step 2: Disable slot %s.", disabled_slot)
+    if not power_off_sim(ad, disabled_slot):
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to disable slot %s." % disabled_slot})
+
+    log.info("Step 3: Switch DDS.")
+    if not set_dds_on_slot(ad, 1-disabled_slot):
+        log.error(
+            "Failed to set DDS at slot %s on %s.",(1-disabled_slot, ad.serial))
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to set DDS at slot %s on %s." % (
+                1-disabled_slot, ad.serial)})
+
+    log.info("Step 4: Verify RAT and HTTP connection after DDS switch.")
+    if not wait_for_network_idle(log, ad, rat[1-disabled_slot], data_sub_id):
+        raise signals.TestFailure(
+            "Failed",
+            extras={
+                "fail_reason": "Idle state does not match the given "
+                "RAT %s." % rat[1-disabled_slot]})
+
+    if not verify_http_connection(log, ad):
+        log.error("Failed to verify http connection.")
+        raise signals.TestFailure("Failed",
+            extras={"fail_reason": "Failed to verify http connection."})
+    else:
+        log.info("Verify http connection successfully.")
+
+    duration = 30
+    start_time = datetime.now()
+    while datetime.now() - start_time <= timedelta(seconds=duration):
+        if not active_file_download_test(
+            log, ad, file_name='20MB', method='sl4a'):
+            raise signals.TestFailure(
+                "Failed",
+                extras={"fail_reason": "Failed to download by sl4a."})
+
+    log.info("Step 6: Enable slot %s.", disabled_slot)
+    if not power_on_sim(ad, disabled_slot):
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to enable slot %s." % disabled_slot})
+
+    log.info("Step 7: Switch DDS to slot %s.", disabled_slot)
+    if not set_dds_on_slot(ad, disabled_slot):
+        log.error(
+            "Failed to set DDS at slot %s on %s.",(disabled_slot, ad.serial))
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to set DDS at slot %s on %s." % (
+                disabled_slot, ad.serial)})
+
+    log.info("Step 8: Verify RAT and HTTP connection after DDS switch.")
+    if not wait_for_network_idle(log, ad, rat[disabled_slot], other_sub_id):
+        raise signals.TestFailure(
+            "Failed",
+            extras={
+                "fail_reason": "Idle state does not match the given "
+                "RAT %s." % rat[disabled_slot]})
+
+    if not verify_http_connection(log, ad):
+        log.error("Failed to verify http connection.")
+        raise signals.TestFailure(
+            "Failed",
+            extras={"fail_reason": "Failed to verify http connection."})
+    else:
+        log.info("Verify http connection successfully.")
 
 def erase_call_forwarding(log, ad):
     slot0_sub_id = get_subid_from_slot_index(log, ad, 0)
