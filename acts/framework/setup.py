@@ -31,6 +31,7 @@ install_requires = [
     'mock==3.0.5',
     'pyserial',
     'pyyaml>=5.1',
+    'pynacl==1.4.0',
     'protobuf>=3.14.0',
     'retry',
     'requests',
