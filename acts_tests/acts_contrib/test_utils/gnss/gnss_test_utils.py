@@ -390,10 +390,11 @@ def get_gnss_qxdm_log(ad, qdb_path):
     shutil.rmtree(gnss_log_path, ignore_errors=True)
     if check_chipset_vendor_by_qualcomm(ad):
         output_path = (
-            "/sdcard/Android/data/com.android.pixellogger/files/logs/diag_logs")
+            "/sdcard/Android/data/com.android.pixellogger/files/logs/"
+            "diag_logs/.")
     else:
         output_path = (
-            "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/")
+            "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/.")
     qxdm_log_name = "PixelLogger_%s_%s" % (ad.model, ad.serial)
     qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
     os.makedirs(qxdm_log_path, exist_ok=True)
@@ -1793,7 +1794,8 @@ def stop_pixel_logger(ad):
         ad: An AndroidDevice object.
     """
     retries = 3
-    stop_timeout_sec = 300
+    stop_timeout_sec = 60
+    zip_timeout_sec = 30
     if check_chipset_vendor_by_qualcomm(ad):
         stop_cmd = ("am startservice -a com.android.pixellogger."
                     "service.logging.LoggingService.ACTION_STOP_LOGGING")
@@ -1812,7 +1814,17 @@ def stop_pixel_logger(ad):
                 "LoggingService: Stopping service", begin_time)
             if stop_result:
                 ad.log.info("Pixel Logger stops successfully.")
-                return True
+                zip_end_time = time.time() + zip_timeout_sec
+                while time.time() < zip_end_time:
+                    zip_file_created = ad.search_logcat(
+                        "FileUtil: Zip file has been created", begin_time)
+                    if zip_file_created:
+                        ad.log.info("Pixel Logger created zip file "
+                                    "successfully.")
+                        return True
+                else:
+                    ad.log.warn("Pixel Logger failed to create zip file.")
+                    return False
         ad.force_stop_apk("com.android.pixellogger")
     else:
         ad.log.warn("Pixel Logger fails to stop in %d seconds within %d "
@@ -1985,21 +1997,33 @@ def parse_brcm_nmea_log(ad, nmea_pattern):
     tmp_log_path = tempfile.mkdtemp()
     ad.pull_files(pixellogger_path, tmp_log_path)
     for path_key in os.listdir(tmp_log_path):
+        zip_path = posixpath.join(tmp_log_path, path_key)
         if path_key.endswith(".zip"):
-            zip_path = posixpath.join(tmp_log_path, path_key)
+            ad.log.info("Processing zip file: {}".format(zip_path))
+            with zipfile.ZipFile(zip_path, "r") as zip_file:
+                zip_file.extractall(tmp_log_path)
+                gl_logs = zip_file.namelist()
+            break
+        elif os.path.isdir(zip_path):
+            ad.log.info("BRCM logs didn't zip properly. Log path is directory.")
+            tmp_log_path = zip_path
+            gl_logs = os.listdir(tmp_log_path)
+            ad.log.info("Processing BRCM log files: {}".format(gl_logs))
             break
     else:
-        raise signals.TestError("No zip file is found from PixelLogger.")
-    with zipfile.ZipFile(zip_path, "r") as zip_file:
-        zip_file.extractall(tmp_log_path)
-        gl_logs = zip_file.namelist()
+        raise signals.TestError(
+            "No BRCM logs found in {}".format(os.listdir(tmp_log_path)))
     gl_logs = [log for log in gl_logs
                if log.startswith("gl") and log.endswith(".log")]
     for file in gl_logs:
         nmea_log_path = posixpath.join(tmp_log_path, file)
+        ad.log.info("Parsing log pattern of \"%s\" in %s" % (nmea_pattern,
+                                                             nmea_log_path))
         brcm_log = open(nmea_log_path, "r", encoding="UTF-8", errors="ignore")
         lines = brcm_log.readlines()
-        brcm_log_list = [line for line in lines if nmea_pattern in line]
+        for line in lines:
+            if nmea_pattern in line:
+                brcm_log_list.append(line)
     shutil.rmtree(tmp_log_path, ignore_errors=True)
     return brcm_log_list
 
