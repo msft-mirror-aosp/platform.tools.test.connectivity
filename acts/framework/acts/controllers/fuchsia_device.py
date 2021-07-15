@@ -220,6 +220,7 @@ class FuchsiaDevice:
         self.ssh_config = fd_conf_data.get("ssh_config", None)
         self.authorized_file = fd_conf_data.get("authorized_file_loc", None)
         self.serial_number = fd_conf_data.get("serial_number", None)
+        self.device_type = fd_conf_data.get("device_type", None)
         self.product_type = fd_conf_data.get("product_type", None)
         self.board_type = fd_conf_data.get("board_type", None)
         self.build_number = fd_conf_data.get("build_number", None)
@@ -824,6 +825,21 @@ class FuchsiaDevice:
                     ssh_conn.close()
         return command_result
 
+    def version(self,
+                timeout=FUCHSIA_DEFAULT_COMMAND_TIMEOUT):
+        """Returns the version of Fuchsia running on the device.
+
+        Args:
+            timeout: (int) Seconds to wait for command to run.
+
+        Returns:
+            A string containing the Fuchsia version number.
+            For example, "5.20210713.2.1".
+        """
+        return self.send_command_ssh(
+            FUCHSIA_GET_VERSION_CMD,
+            timeout=timeout).stdout
+
     def ping(self,
              dest_ip,
              count=3,
@@ -1174,10 +1190,8 @@ class FuchsiaDevice:
 
             out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
             full_out_path = os.path.join(self.log_path, out_name)
-            fuchsia_version = self.send_command_ssh(
-                FUCHSIA_GET_VERSION_CMD).stdout
             fw_file = open(full_out_path, 'w')
-            fw_file.write('%s\n' % fuchsia_version)
+            fw_file.write('%s\n' % self.version())
             fw_file.close()
 
     def stop_services(self):

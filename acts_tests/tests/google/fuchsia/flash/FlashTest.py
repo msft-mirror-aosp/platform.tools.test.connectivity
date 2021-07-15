@@ -14,13 +14,16 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """
-Script for to flash Fuchsia devices using the built in flashing tool for
+Script for to flash Fuchsia devices and reports the DUT's version of Fuchsia in
+the Sponge test result properties. Uses the built in flashing tool for
 fuchsia_devices.
 """
 import time
+import logging
 
 from acts import signals
 from acts.base_test import BaseTestClass
+from acts.utils import get_device, get_device_version
 
 
 class FlashTest(BaseTestClass):
@@ -34,6 +37,16 @@ class FlashTest(BaseTestClass):
             self.log.info(success_str)
         else:
             raise signals.TestAbortClass("err_str")
+
+    def teardown_class(self):
+        dut = get_device(self.fuchsia_devices, 'DUT')
+        self.record_data({
+            'sponge_properties': {
+                'DUT_VERSION': dut.version()
+            }
+        })
+
+        return super().teardown_class()
 
     def test_flash_devices(self):
         flash_retry_max = 3
@@ -64,6 +77,13 @@ class FlashTest(BaseTestClass):
                               % fuchsia_device.orig_ip)
             flash_counter = 0
 
-
         return True
 
+    def test_report_dut_version(self):
+        """Empty test to ensure the version of the DUT is reported in the Sponge
+        results in the case when flashing the device is not necessary.
+
+        Useful for when flashing the device is not necessary; specify ACTS to
+        only run this test from the test class.
+        """
+        pass
