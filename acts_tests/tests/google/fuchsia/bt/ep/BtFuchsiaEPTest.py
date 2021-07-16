@@ -242,9 +242,15 @@ class BtFuchsiaEPTest(BaseTestClass):
         input_capabilities = "NONE"
         output_capabilities = "NONE"
         self.pri_dut.avdtp_lib.init()
-        self.pri_dut.control_daemon("bt-avrcp.cmx", "start")
+        try:
+            self.pri_dut.control_daemon("bt-avrcp.cml", "start")
+        except Exception:
+            self.pri_dut.control_daemon("bt-avrcp.cmx", "start")
         self.sec_dut.avdtp_lib.init(initiator_delay=2000)
-        self.sec_dut.control_daemon("bt-avrcp-target.cmx", "start")
+        try:
+            self.sec_dut.control_daemon("bt-avrcp-target.cml", "start")
+        except Exception:
+            self.sec_dut.control_daemon("bt-avrcp-target.cmx", "start")
         self.pri_dut.bts_lib.acceptPairing(input_capabilities,
                                            output_capabilities)
 
