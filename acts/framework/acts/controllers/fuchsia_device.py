@@ -1006,7 +1006,7 @@ class FuchsiaDevice:
             process_name: the name of the process to start or stop
             action: specify whether to start or stop a process
         """
-        if not process_name[-4:] == '.cmx':
+        if not (process_name[-4:] == '.cmx' or process_name[-4:] == '.cml'):
             process_name = '%s.cmx' % process_name
         unable_to_connect_msg = None
         process_state = False
