@@ -319,7 +319,7 @@ class ConcurrentActionsTest(unittest.TestCase):
         raise exception_type
 
     def test_run_concurrent_actions_no_raise_returns_proper_return_values(
-        self):
+            self):
         """Tests run_concurrent_actions_no_raise returns in the correct order.
 
         Each function passed into run_concurrent_actions_no_raise returns the
@@ -562,6 +562,35 @@ class IpAddressUtilTest(unittest.TestCase):
             utils.get_interface_ip_addresses(
                 FuchsiaDevice({'ip': '192.168.1.1'}), 'wlan1'),
             CORRECT_EMPTY_IP_LIST)
+
+
+class GetDeviceTest(unittest.TestCase):
+
+    class TestDevice:
+        def __init__(self, id, device_type=None) -> None:
+            self.id = id
+            if device_type:
+                self.device_type = device_type
+
+    def test_get_device_none(self):
+        devices = []
+        self.assertRaises(ValueError, utils.get_device, devices, 'DUT')
+
+    def test_get_device_default_one(self):
+        devices = [self.TestDevice(0)]
+        self.assertEqual(utils.get_device(devices, 'DUT').id, 0)
+
+    def test_get_device_default_many(self):
+        devices = [self.TestDevice(0), self.TestDevice(1)]
+        self.assertEqual(utils.get_device(devices, 'DUT').id, 0)
+
+    def test_get_device_specified_one(self):
+        devices = [self.TestDevice(0), self.TestDevice(1, 'DUT')]
+        self.assertEqual(utils.get_device(devices, 'DUT').id, 1)
+
+    def test_get_device_specified_many(self):
+        devices = [self.TestDevice(0, 'DUT'), self.TestDevice(1, 'DUT')]
+        self.assertRaises(ValueError, utils.get_device, devices, 'DUT')
 
 
 if __name__ == '__main__':
