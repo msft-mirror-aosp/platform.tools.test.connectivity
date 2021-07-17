@@ -1808,3 +1808,43 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
             del zeroconf
     logging.error('Unable to get ip address for %s' % device_mdns_name)
     return None
+
+
+def get_device(devices, device_type):
+    """Finds a unique device with the specified "device_type" attribute from a
+    list. If none is found, defaults to the first device in the list.
+
+    Example:
+        get_device(android_devices, device_type="DUT")
+        get_device(fuchsia_devices, device_type="DUT")
+        get_device(android_devices + fuchsia_devices, device_type="DUT")
+
+    Args:
+        devices: A list of device controller objects.
+        device_type: (string) Type of device to find, specified by the
+            "device_type" attribute.
+
+    Returns:
+        The matching device controller object, or the first device in the list
+        if not found.
+
+    Raises:
+        ValueError is raised if none or more than one device is
+        matched.
+    """
+    if not devices:
+        raise ValueError('No devices available')
+
+    matches = [d for d in devices if
+               hasattr(d, 'device_type') and d.device_type == device_type]
+
+    if len(matches) == 0:
+        # No DUT is specified, use the first device declared.
+        return devices[0]
+    if len(matches) > 1:
+        # Specifing multiple devices with the same "device_type" is a
+        # configuration error.
+        raise ValueError(
+            'More than one device matching "device_type" == "{}"'.format(device_type))
+
+    return matches[0]
