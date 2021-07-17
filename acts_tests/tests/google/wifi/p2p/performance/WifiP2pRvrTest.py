@@ -55,7 +55,7 @@ class WifiP2pRvrTest(WifiRvrTest):
         common to all tests in this class.
         """
         req_params = ['p2p_rvr_test_params', 'testbed_params']
-        opt_params = ['RetailAccessPoints', 'ap_networks', 'OTASniffer']
+        opt_params = ['RetailAccessPoints', 'ap_networks', 'OTASniffer', 'uuid_list']
         self.unpack_userparams(req_params, opt_params)
         if hasattr(self, 'RetailAccessPoints'):
             self.access_points = retail_ap.create(self.RetailAccessPoints)
@@ -483,7 +483,12 @@ class WifiP2pRvrTest(WifiRvrTest):
                 traffic_type=traffic_type,
                 traffic_direction=traffic_direction,
                 concurrency_state=concurrency_state)
-            setattr(self, test_name, partial(self._test_p2p_rvr, test_params))
+            test_class=self.__class__.__name__
+            if hasattr(self, "uuid_list") and test_name in self.uuid_list[test_class]:
+                test_case = test_tracker_info(uuid=self.uuid_list[test_class][test_name])(partial(self._test_p2p_rvr, test_params))
+            else:
+                test_case = partial(self._test_p2p_rvr, test_params)
+            setattr(self, test_name, test_case)
             test_cases.append(test_name)
         return test_cases
 
