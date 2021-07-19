@@ -19,11 +19,10 @@ the Sponge test result properties. Uses the built in flashing tool for
 fuchsia_devices.
 """
 import time
-import logging
 
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.utils import get_device, get_device_version
+from acts.utils import get_device
 
 
 class FlashTest(BaseTestClass):
