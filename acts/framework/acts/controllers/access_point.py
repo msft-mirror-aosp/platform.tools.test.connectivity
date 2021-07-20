@@ -357,7 +357,7 @@ class AccessPoint(object):
         interface_ip = ipaddress.ip_interface(
             '%s/%s' % (subnet.router, subnet.network.netmask))
         if setup_bridge is True:
-            bridge_interface_name = 'br_lan'
+            bridge_interface_name = 'eth_test'
             self.create_bridge(bridge_interface_name, [interface, self.lan])
             self._ip_cmd.set_ipv4_address(bridge_interface_name, interface_ip)
         else:
@@ -451,6 +451,9 @@ class AccessPoint(object):
         for interface in interfaces:
             self.ssh.run('brctl addif {bridge_name} {interface}'.format(
                 bridge_name=bridge_name, interface=interface))
+
+        self.ssh.run(
+            'ip link set {bridge_name} up'.format(bridge_name=bridge_name))
 
     def remove_bridge(self, bridge_name):
         """Removes the specified bridge

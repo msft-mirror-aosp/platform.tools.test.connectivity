@@ -320,10 +320,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                             iperf_server_ip_addresses['ipv6_private_local'][0])
                     else:
                         self.check_if_has_private_local_ipv6_address = False
-                        iperf_server_ip_address = (
-                            '%s%%%s' %
-                            (iperf_server_ip_addresses['ipv6_link_local'][0],
-                             self.dut_iperf_client.test_interface))
+
                     if self.check_if_has_private_local_ipv6_address:
                         if not dut_ip_addresses['ipv6_private_local']:
                             self.log.warn('Unable to get IPv6 address at '
