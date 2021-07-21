@@ -28,9 +28,11 @@ SERVICE_FIREWALL = "firewall"
 SERVICE_IPSEC = "ipsec"
 SERVICE_XL2TPD = "xl2tpd"
 SERVICE_ODHCPD = "odhcpd"
+SERVICE_NODOGSPLASH = "nodogsplash"
 PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
 L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
 NAT6_PACKAGE = "ip6tables kmod-ipt-nat6"
+CAPTIVE_PORTAL_PACKAGE = "nodogsplash"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
@@ -82,7 +84,8 @@ class NetworkSettings(object):
             "disable_ipv6": self.enable_ipv6,
             "setup_ipv6_bridge": self.remove_ipv6_bridge,
             "ipv6_prefer_option": self.remove_ipv6_prefer_option,
-            "block_dns_response": self.unblock_dns_response
+            "block_dns_response": self.unblock_dns_response,
+            "setup_captive_portal": self.remove_cpative_portal
         }
         # This map contains cleanup functions to restore the configuration to
         # its default state. We write these keys to HISTORY_CONFIG_PATH prior to
@@ -827,6 +830,17 @@ class NetworkSettings(object):
         self.config.discard("block_dns_response")
         self.remove_custom_firewall_rules()
         self.service_manager.need_restart(SERVICE_FIREWALL)
+        self.commit_changes()
+
+    def setup_captive_portal(self):
+        self.package_install(CAPTIVE_PORTAL_PACKAGE)
+        self.config.add("setup_captive_portal")
+        self.service_manager.need_restart(SERVICE_NODOGSPLASH)
+        self.commit_changes()
+
+    def remove_cpative_portal(self):
+        self.package_remove(CAPTIVE_PORTAL_PACKAGE)
+        self.config.discard("setup_captive_portal")
         self.commit_changes()
 
 
