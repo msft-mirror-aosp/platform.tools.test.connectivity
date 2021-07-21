@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2016 - Google
+#   Copyright 2021 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -2081,4 +2081,48 @@ def verify_toggle_data_during_wifi_tethering(log,
                                       provider,
                                       clients):
             return False
+    return True
+
+def deactivate_and_verify_cellular_data(log, ad):
+    """Toggle off cellular data and ensure there is no internet connection.
+
+    Args:
+        ad: Android object
+
+    Returns:
+        True if cellular data is deactivated successfully. Otherwise False.
+    """
+    ad.log.info('Deactivating cellular data......')
+    ad.droid.telephonyToggleDataConnection(False)
+
+    if not wait_for_cell_data_connection(log, ad, False):
+        ad.log.error("Failed to deactivate cell data connection.")
+        return False
+
+    if not verify_internet_connection(log, ad, expected_state=False):
+        ad.log.error("Internet connection is still available.")
+        return False
+
+    return True
+
+def activate_and_verify_cellular_data(log, ad):
+    """Toggle on cellular data and ensure there is internet connection.
+
+    Args:
+        ad: Android object
+
+    Returns:
+        True if cellular data is activated successfully. Otherwise False.
+    """
+    ad.log.info('Activating cellular data......')
+    ad.droid.telephonyToggleDataConnection(True)
+
+    if not wait_for_cell_data_connection(log, ad, True):
+        ad.log.error("Failed to activate data connection.")
+        return False
+
+    if not verify_internet_connection(log, ad, retries=3):
+        ad.log.error("Internet connection is NOT available.")
+        return False
+
     return True
