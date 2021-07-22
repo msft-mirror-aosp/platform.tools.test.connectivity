@@ -189,7 +189,8 @@ class LabTtffTestBase(BaseTestClass):
         begin_time = gutils.get_current_epoch_time()
         gutils.start_ttff_by_gtw_gpstool(self.dut,
                                          ttff_mode=mode,
-                                         iteration=self.ttff_iteration)
+                                         iteration=self.ttff_iteration,
+                                         raninterval=True)
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.dut, begin_time,
                                                        self.simulator_location)
 

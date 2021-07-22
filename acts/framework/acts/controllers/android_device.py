@@ -59,6 +59,7 @@ CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
 DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
+DEFAULT_SCREENSHOT_PATH = "/sdcard/Pictures/screencap"
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
@@ -1562,6 +1563,21 @@ class AndroidDevice:
                 self.send_keycode_number_pad(number)
             self.send_keycode("ENTER")
             self.send_keycode("BACK")
+
+    @record_api_usage
+    def screenshot(self, name=""):
+        """Take a screenshot on the device.
+
+        Args:
+            name: additional information of screenshot on the file name.
+        """
+        if name:
+            file_name = "%s_%s" % (DEFAULT_SCREENSHOT_PATH, name)
+        file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
+        try:
+            self.adb.shell("screencap -p %s" % file_name)
+        except:
+            self.log.error("Fail to log screenshot to %s", file_name)
 
     @record_api_usage
     def exit_setup_wizard(self):
