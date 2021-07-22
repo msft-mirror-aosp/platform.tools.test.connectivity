@@ -325,3 +325,11 @@ class NetgearR7500AP(WifiRetailAP):
                         config_item = iframe.find_by_name(value).first
                         self.ap_settings[key[0]][key[1]] = int(
                             config_item.checked)
+
+
+class NetgearR7500NAAP(NetgearR7500AP):
+    """Class that implements Netgear R7500 NA AP."""
+    def init_gui_data(self):
+        """Function to initialize data used while interacting with web GUI"""
+        super().init_gui_data()
+        self.region_map['10'] = 'North America'

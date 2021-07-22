@@ -1021,12 +1021,12 @@ class WifiSoftApTest(WifiBaseTest):
           shutdown_timeout_millis=10000, client_control_enable=False,
           allowedList=["aa:bb:cc:dd:ee:ff"], blockedList=["11:22:33:44:55:66"])
 
-
-      wutils.save_wifi_soft_ap_config(self.dut, {"SSID":"ACTS_TEST"},
-          channel_frequencys=[2412,5745],
-          mac_randomization_setting = wifi_constants.SOFTAP_RANDOMIZATION_NONE,
-          bridged_opportunistic_shutdown_enabled=False,
-          ieee80211ax_enabled=False)
+      if self.dut.droid.isSdkAtLeastS():
+          wutils.save_wifi_soft_ap_config(self.dut, {"SSID":"ACTS_TEST"},
+              channel_frequencys=[2412,5745],
+              mac_randomization_setting = wifi_constants.SOFTAP_RANDOMIZATION_NONE,
+              bridged_opportunistic_shutdown_enabled=False,
+              ieee80211ax_enabled=False)
 
       # Restore config
       wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
