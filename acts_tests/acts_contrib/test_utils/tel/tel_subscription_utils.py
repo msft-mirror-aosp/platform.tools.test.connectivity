@@ -577,3 +577,19 @@ def get_subid_on_same_network_of_host_ad(ads, host_sub_id=None, type="voice"):
                         p2_mnc = mnc
 
     return host_sub_id, p1_sub_id, p2_sub_id
+
+def get_slot_index_from_data_sub_id(ad):
+    """Get slot index from given sub ID for data
+
+    Args:
+        ad: Android object
+
+    Returns:
+        0 for pSIM or 1 for eSIM. Otherwise -1 will be returned.
+    """
+    data_sub_id = get_default_data_sub_id(ad)
+    sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    for info in sub_info:
+        if info['subscriptionId'] == data_sub_id:
+            return info['simSlotIndex']
+    return INVALID_SUB_ID

@@ -45,6 +45,7 @@ def is_current_network_5g_nsa(ad, nsa_mmwave=False, timeout=30):
         return True
     except Empty:
         ad.log.info("No event for display info change")
+        ad.screenshot("5g_nsa_icon_checking")
         return False
     finally:
         ad.droid.telephonyStopTrackingDisplayInfoChange()
@@ -94,6 +95,7 @@ def is_current_network_5g_sa(ad):
         return True
     else:
         ad.log.error("Network is currently connected to %s, Expected on NR", network_connected)
+        ad.screenshot("5g_sa_icon_checking")
         return False
 
 def is_current_network_5g(ad, sa_or_nsa=None, mmwave=None):
