@@ -1695,7 +1695,7 @@ def ping(comm_channel,
 
 def can_ping(comm_channel,
              dest_ip,
-             count=1,
+             count=3,
              interval=1000,
              timeout=1000,
              size=56,

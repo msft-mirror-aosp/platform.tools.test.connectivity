@@ -19,11 +19,12 @@ the Sponge test result properties. Uses the built in flashing tool for
 fuchsia_devices.
 """
 import time
-import logging
+
+import acts.libs.proc.job as job
 
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.utils import get_device, get_device_version
+from acts.utils import get_device
 
 
 class FlashTest(BaseTestClass):
@@ -59,7 +60,7 @@ class FlashTest(BaseTestClass):
                                           unreachable_timeout=120,
                                           ping_timeout=120)
                     flash_counter = flash_retry_max
-                except TimeoutError as err:
+                except (TimeoutError,job.TimeoutError) as err:
                     if fuchsia_device.device_pdu_config:
                         self.log.info('Flashing timed out.'
                                       '  Hard rebooting fuchsia_device(%s)'
