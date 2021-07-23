@@ -178,7 +178,9 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import rat_families_for_netwo
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id, get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
@@ -8887,6 +8889,101 @@ def wait_for_state(state_check_func,
             return True
         time.sleep(checking_interval)
         max_wait_time -= checking_interval
+    return False
+
+
+def power_off_sim_by_adb(ad, sim_slot_id,
+                         timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
+    """Disable pSIM/eSIM SUB by adb command.
+
+    Args:
+        ad: android device object.
+        sim_slot_id: slot 0 or slot 1.
+        timeout: wait time for state change.
+
+    Returns:
+        True if success, False otherwise.
+    """
+    release_version =  int(ad.adb.getprop("ro.build.version.release"))
+    if sim_slot_id == 0 and release_version < 12:
+        ad.log.error(
+            "The disable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+        raise signals.TestSkip(
+            "The disable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+    try:
+        if sim_slot_id:
+            ad.adb.shell("am broadcast -a android.telephony.euicc.action."
+                "TEST_PROFILE -n com.google.android.euicc/com.android.euicc."
+                "receiver.ProfileTestReceiver --es 'operation' 'switch' --ei "
+                "'subscriptionId' -1")
+        else:
+            sub_id = get_subid_by_adb(ad, sim_slot_id)
+            # The command only support for Android S. (b/159605922)
+            ad.adb.shell(
+                "cmd phone disable-physical-subscription %d" % sub_id)
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    while timeout > 0:
+        if get_subid_by_adb(ad, sim_slot_id) == INVALID_SUB_ID:
+            return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    sim_state = ad.adb.getprop("gsm.sim.state").split(",")
+    ad.log.warning("Fail to power off SIM slot %d, sim_state=%s",
+        sim_slot_id, sim_state[sim_slot_id])
+    return False
+
+
+def power_on_sim_by_adb(ad, sim_slot_id,
+                         timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
+    """Enable pSIM/eSIM SUB by adb command.
+
+    Args:
+        ad: android device object.
+        sim_slot_id: slot 0 or slot 1.
+        timeout: wait time for state change.
+
+    Returns:
+        True if success, False otherwise.
+    """
+    release_version =  int(ad.adb.getprop("ro.build.version.release"))
+    if sim_slot_id == 0 and release_version < 12:
+        ad.log.error(
+            "The enable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+        raise signals.TestSkip(
+            "The enable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+    try:
+        output = ad.adb.shell(
+            "dumpsys isub | grep addSubInfoRecord | grep slotIndex=%d" %
+            sim_slot_id)
+        pattern = re.compile(r"subId=(\d+)")
+        sub_id = pattern.findall(output)
+        sub_id = int(sub_id[-1]) if sub_id else INVALID_SUB_ID
+        if sim_slot_id:
+            ad.adb.shell("am broadcast -a android.telephony.euicc.action."
+                "TEST_PROFILE -n com.google.android.euicc/com.android.euicc."
+                "receiver.ProfileTestReceiver --es 'operation' 'switch' --ei "
+                "'subscriptionId' %d" % sub_id)
+        else:
+            # The command only support for Android S or higher. (b/159605922)
+            ad.adb.shell(
+                "cmd phone enable-physical-subscription %d" % sub_id)
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    while timeout > 0:
+        if get_subid_by_adb(ad, sim_slot_id) != INVALID_SUB_ID:
+            return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    sim_state = ad.adb.getprop("gsm.sim.state").split(",")
+    ad.log.warning("Fail to power on SIM slot %d, sim_state=%s",
+        sim_slot_id, sim_state[sim_slot_id])
     return False
 
 
