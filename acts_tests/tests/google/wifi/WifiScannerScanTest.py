@@ -74,7 +74,8 @@ class WifiScannerScanTest(WifiBaseTest):
         super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("run_extended_test", "ping_addr", "dbs_supported_models")
+        req_params = ("run_extended_test", "ping_addr", "dbs_supported_models",
+                      "support_addition_channel")
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -99,7 +100,7 @@ class WifiScannerScanTest(WifiBaseTest):
             "reportEvents": wutils.WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL
         }
         self.log.debug("Run extended test: {}".format(self.run_extended_test))
-        self.wifi_chs = wutils.WifiChannelUS(self.dut.model)
+        self.wifi_chs = wutils.WifiChannelUS(self.dut.model, self.support_addition_channel)
         self.attenuators = wutils.group_attenuators(self.attenuators)
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
