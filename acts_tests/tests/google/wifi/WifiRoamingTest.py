@@ -362,12 +362,16 @@ class WifiRoamingTest(WifiBaseTest):
                 wutils.set_attns_steps(self.attenuators, "AP1_on_AP2_off",
                                        self.roaming_attn)
                 self.openwrt2.set_password(pwd_2g=ap2_network["password"])
+                self.dut.log.info("Toggling wifi OFF.")
+                wutils.wifi_toggle_state(self.dut, False)
+                self.dut.log.info("Toggling wifi ON.")
+                wutils.wifi_toggle_state(self.dut, True)
                 self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
             else:
                 raise signals.TestFailure("DUT unexpectedly connect to Wi-Fi.")
 
         # Use Google OnHub as Wi-Fi AP to test when OpenWrt is no available.
-        if "AccessPoint" in self.user_params:
+        elif "AccessPoint" in self.user_params:
             network = {'SSID':'test_roaming_fail', 'password':'roam123456@'}
             # AP2 network with incorrect password.
             network_fail = {'SSID':'test_roaming_fail', 'password':'roam123456@#$%^'}
