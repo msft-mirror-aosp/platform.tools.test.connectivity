@@ -60,9 +60,9 @@ class FlashTest(BaseTestClass):
                                           unreachable_timeout=120,
                                           ping_timeout=120)
                     flash_counter = flash_retry_max
-                except (TimeoutError,job.TimeoutError) as err:
+                except Exception as err:
                     if fuchsia_device.device_pdu_config:
-                        self.log.info('Flashing timed out.'
+                        self.log.info('Flashing failed.'
                                       '  Hard rebooting fuchsia_device(%s)'
                                       ' and retrying.'
                                       % fuchsia_device.orig_ip)

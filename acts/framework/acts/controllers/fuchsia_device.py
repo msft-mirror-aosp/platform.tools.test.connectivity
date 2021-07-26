@@ -659,22 +659,9 @@ class FuchsiaDevice:
                         timeout=3)
                     self.clean_up_services()
         elif reboot_type == FUCHSIA_REBOOT_TYPE_SOFT_AND_FLASH:
-            if use_ssh:
-                self.log.info('Sending reboot command via SSH to '
-                              'get into bootloader.')
-                with utils.SuppressLogOutput():
-                    self.clean_up_services()
-                    # Sending this command will put the device in fastboot
-                    # but it does not guarantee the device will be in fastboot
-                    # after this command.  There is no check so if there is an
-                    # expectation of the device being in fastboot, then some
-                    # other check needs to be done.
-                    self.send_command_ssh(
-                        'dm rb',
-                        timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
-                        skip_status_code_check=True)
-            ## Todo: Add elif for SL4F if implemented in SL4F
-            flash(self)
+            flash(self,
+                  use_ssh,
+                  FUCHSIA_RECONNECT_AFTER_REBOOT_TIME)
             skip_unreachable_check = True
         elif reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Power cycling FuchsiaDevice (%s)' % self.ip)
