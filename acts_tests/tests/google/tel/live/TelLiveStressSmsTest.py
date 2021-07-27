@@ -25,6 +25,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils \
 from acts_contrib.test_utils.tel.tel_subscription_utils \
     import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_voice_utils \
@@ -45,6 +46,15 @@ class TelLiveStressSmsTest(TelephonyBaseTest):
             self.user_params.get("short_sms_ims_cycle", 1)
         self.long_sms_ims_cycle = \
             self.user_params.get("long_sms_ims_cycle", 1)
+
+        self.message_util = self.user_params.get("message_apk", None)
+        if isinstance(self.message_util, list):
+            self.message_util = self.message_util[0]
+
+        if self.message_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_message_apk(ad, self.message_util)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
