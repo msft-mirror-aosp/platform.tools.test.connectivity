@@ -1839,7 +1839,8 @@ def get_device(devices, device_type):
                hasattr(d, 'device_type') and d.device_type == device_type]
 
     if len(matches) == 0:
-        # No DUT is specified, use the first device declared.
+        # No matches for the specified "device_type", use the first device
+        # declared.
         return devices[0]
     if len(matches) > 1:
         # Specifing multiple devices with the same "device_type" is a
