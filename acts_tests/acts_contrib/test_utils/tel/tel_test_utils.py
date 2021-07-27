@@ -6987,6 +6987,15 @@ def wait_for_network_generation_for_subscription(
         generation,
         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None):
+
+    if generation == GEN_5G:
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.info("Current network type is 5G.")
+            return True
+        else:
+            ad.log.error("Not in 5G coverage for Sub %s.", sub_id)
+            return False
+
     return _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_wait_time,
         is_droid_in_network_generation_for_subscription, generation,
