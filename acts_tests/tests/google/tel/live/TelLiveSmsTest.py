@@ -30,6 +30,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_stat
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
+from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
@@ -42,6 +43,15 @@ class TelLiveSmsTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
         self.message_lengths = (50, 160, 180)
+
+        self.message_util = self.user_params.get("message_apk", None)
+        if isinstance(self.message_util, list):
+            self.message_util = self.message_util[0]
+
+        if self.message_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_message_apk(ad, self.message_util)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
