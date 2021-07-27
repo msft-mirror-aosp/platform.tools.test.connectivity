@@ -9264,6 +9264,25 @@ def install_dialer_apk(ad, dialer_util):
     return True
 
 
+def install_message_apk(ad, message_util):
+    """Install message.apk to specific device.
+
+    Args:
+        ad: android device object.
+        message_util: path of message.apk
+
+    Returns:
+        True if success, False if fail.
+    """
+    ad.log.info("Install message_util %s", message_util)
+    ad.adb.install("-r -g %s" % message_util, timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.apps.messaging"):
+        ad.log.info("com.google.android.apps.messaging is not installed")
+        return False
+    return True
+
+
 def install_googleaccountutil_apk(ad, account_util):
     ad.log.info("Install account_util %s", account_util)
     ad.ensure_screen_on()
