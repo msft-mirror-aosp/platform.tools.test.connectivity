@@ -2297,9 +2297,11 @@ def wait_for_network_idle(
         log: log object
         ad: Android object
         rat: following RAT are supported:
+            - 5g
             - 5g_volte
             - 5g_csfb
             - 5g_wfc
+            - 4g (LTE)
             - volte (LTE)
             - csfb (LTE)
             - wfc (LTE)
@@ -2307,6 +2309,48 @@ def wait_for_network_idle(
     Returns:
         True or False
     """
+    if get_default_data_sub_id(ad) != sub_id and '5g' in rat.lower():
+        ad.log.warning('Default data sub ID is NOT given sub ID %s.', sub_id)
+        network_preference = network_preference_for_generation(
+            GEN_5G,
+            ad.telephony["subscription"][sub_id]["operator"],
+            ad.telephony["subscription"][sub_id]["phone_type"])
+
+        ad.log.info("Network preference for %s is %s", GEN_5G,
+                    network_preference)
+
+        if not set_preferred_network_mode_pref(log, ad, sub_id,
+            network_preference):
+            return False
+
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            max_wait_time=30,
+            voice_or_data=NETWORK_SERVICE_DATA):
+
+            ad.log.warning('Non-DDS slot (sub ID: %s) cannot attach 5G network.', sub_id)
+            ad.log.info('Check if sub ID %s can attach LTE network.', sub_id)
+
+            if not wait_for_network_generation_for_subscription(
+                log,
+                ad,
+                sub_id,
+                GEN_4G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+                return False
+
+            if rat.lower() == '5g':
+                rat = '4g'
+            elif rat.lower() == '5g_volte':
+                rat = 'volte'
+            elif rat.lower() == '5g_wfc':
+                rat = 'wfc'
+            elif rat.lower() == '5g_csfb':
+                rat = 'csfb'
+
     if rat.lower() == '5g_volte':
         if not phone_idle_volte_for_subscription(log, ad, sub_id, GEN_5G):
             return False
@@ -2323,6 +2367,14 @@ def wait_for_network_idle(
             return False
         if not wait_for_wfc_enabled(log, ad):
             return False
+    elif rat.lower() == '5g':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
     elif rat.lower() == 'volte':
         if not phone_idle_volte_for_subscription(log, ad, sub_id, GEN_4G):
             return False
@@ -2338,5 +2390,13 @@ def wait_for_network_idle(
             voice_or_data=NETWORK_SERVICE_DATA):
             return False
         if not wait_for_wfc_enabled(log, ad):
+            return False
+    elif rat.lower() == '4g':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
             return False
     return True
