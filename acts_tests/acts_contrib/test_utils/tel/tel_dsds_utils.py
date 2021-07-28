@@ -61,6 +61,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscripti
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_reject_call_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
@@ -84,7 +85,15 @@ def dsds_voice_call_test(
         dds,
         mo_rat=["", ""],
         mt_rat=["", ""],
-        call_direction="mo"):
+        call_direction="mo",
+        is_airplane_mode=False,
+        wfc_mode=[
+            WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_CELLULAR_PREFERRED],
+        wifi_network_ssid=None,
+        wifi_network_pass=None,
+        turn_off_wifi_in_the_end=False,
+        turn_off_airplane_mode_in_the_end=False):
     """Make MO/MT voice call at specific slot in specific RAT with DDS at
     specific slot.
 
@@ -94,6 +103,9 @@ def dsds_voice_call_test(
     3. Check HTTP connection after DDS switch.
     4. Set up phones in desired RAT.
     5. Make voice call.
+    6. Turn off airplane mode if necessary.
+    7. Turn off Wi-Fi if necessary.
+    8. Verify RAT and HTTP connection.
 
     Args:
         log: logger object
@@ -104,10 +116,22 @@ def dsds_voice_call_test(
         mo_rat: RAT for both slots of MO device
         mt_rat: RAT for both slots of MT device
         call_direction: "mo" or "mt"
+        is_airplane_mode: True or False for WFC setup
+        wfc_mode: Cellular preferred or Wi-Fi preferred.
+        wifi_network_ssid: SSID of Wi-Fi AP
+        wifi_network_pass: Password of Wi-Fi AP SSID
+        turn_off_wifi_in_the_end: True to turn off Wi-Fi and False not to turn
+            off Wi-Fi in the end of the function.
+        turn_off_airplane_mode_in_the_end: True to turn off airplane mode and
+            False not to turn off airplane mode in the end of the function.
 
     Returns:
         TestFailure if failed.
     """
+    if not toggle_airplane_mode(log, ads[0], False):
+        ads[0].log.error("Failed to disable airplane mode.")
+        return False
+
     if call_direction == "mo":
         ad_mo = ads[0]
         ad_mt = ads[1]
@@ -164,9 +188,28 @@ def dsds_voice_call_test(
     else:
         log.info("Verify http connection successfully.")
 
+    log.info("Step 3: Set up phones in desired RAT.")
     if mo_slot == 0 or mo_slot == 1:
-        phone_setup_on_rat(log, ad_mo, mo_rat[1-mo_slot], mo_other_sub_id)
-        mo_phone_setup_func_argv = (log, ad_mo, mo_rat[mo_slot], mo_sub_id)
+        phone_setup_on_rat(
+            log,
+            ad_mo,
+            mo_rat[1-mo_slot],
+            mo_other_sub_id,
+            is_airplane_mode,
+            wfc_mode[1-mo_slot],
+            wifi_network_ssid,
+            wifi_network_pass)
+
+        mo_phone_setup_func_argv = (
+            log,
+            ad_mo,
+            mo_rat[mo_slot],
+            mo_sub_id,
+            is_airplane_mode,
+            wfc_mode[mo_slot],
+            wifi_network_ssid,
+            wifi_network_pass)
+
         is_mo_in_call = is_phone_in_call_on_rat(
             log, ad_mo, mo_rat[mo_slot], only_return_fn=True)
     else:
@@ -175,8 +218,26 @@ def dsds_voice_call_test(
             log, ad_mo, 'general', only_return_fn=True)
 
     if mt_slot == 0 or mt_slot == 1:
-        phone_setup_on_rat(log, ad_mt, mt_rat[1-mt_slot], mt_other_sub_id)
-        mt_phone_setup_func_argv = (log, ad_mt, mt_rat[mt_slot], mt_sub_id)
+        phone_setup_on_rat(
+            log,
+            ad_mt,
+            mt_rat[1-mt_slot],
+            mt_other_sub_id,
+            is_airplane_mode,
+            wfc_mode[1-mt_slot],
+            wifi_network_ssid,
+            wifi_network_pass)
+
+        mt_phone_setup_func_argv = (
+            log,
+            ad_mt,
+            mt_rat[mt_slot],
+            mt_sub_id,
+            is_airplane_mode,
+            wfc_mode[mt_slot],
+            wifi_network_ssid,
+            wifi_network_pass)
+
         is_mt_in_call = is_phone_in_call_on_rat(
             log, ad_mt, mt_rat[mt_slot], only_return_fn=True)
     else:
@@ -184,7 +245,6 @@ def dsds_voice_call_test(
         is_mt_in_call = is_phone_in_call_on_rat(
             log, ad_mt, 'general', only_return_fn=True)
 
-    log.info("Step 3: Set up phones in desired RAT.")
     tasks = [(phone_setup_on_rat, mo_phone_setup_func_argv),
                 (phone_setup_on_rat, mt_phone_setup_func_argv)]
     if not multithread_func(log, tasks):
@@ -213,6 +273,43 @@ def dsds_voice_call_test(
                 ad_mo.serial, mo_slot, ad_mt.serial, mt_slot)
         raise signals.TestFailure("Failed",
             extras={"fail_reason": str(result.result_value)})
+
+    log.info("Step 5: Verify RAT and HTTP connection.")
+    if call_direction == "mo":
+        rat_list = [mo_rat[mo_slot], mo_rat[1-mo_slot]]
+        sub_id_list = [mo_sub_id, mo_other_sub_id]
+    else:
+        rat_list = [mt_rat[mt_slot], mt_rat[1-mt_slot]]
+        sub_id_list = [mt_sub_id, mt_other_sub_id]
+
+    # For the tese cases related to WFC in which airplane mode will be turned
+    # off in the end.
+    if turn_off_airplane_mode_in_the_end:
+        log.info("Step 5-1: Turning off airplane mode......")
+        if not toggle_airplane_mode(log, ads[0], False):
+            ads[0].log.error('Failed to toggle off airplane mode.')
+
+    # For the tese cases related to WFC in which Wi-Fi will be turned off in the
+    # end.
+    if turn_off_wifi_in_the_end:
+        log.info("Step 5-2: Turning off Wi-Fi......")
+        if not wifi_toggle_state(log, ads[0], False):
+            ads[0].log.error('Failed to toggle off Wi-Fi.')
+            return False
+
+        for index, value in enumerate(rat_list):
+            if value == '5g_wfc':
+                rat_list[index] = '5g'
+            elif value == 'wfc':
+                rat_list[index] = '4g'
+
+    for rat, sub_id in zip(rat_list, sub_id_list):
+        if not wait_for_network_idle(log, ads[0], rat, sub_id):
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Idle state of sub ID %s does not match the "
+                    "given RAT %s." % (sub_id, rat)})
 
 def dsds_message_test(
         log,
