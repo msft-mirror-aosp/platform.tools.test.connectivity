@@ -80,7 +80,7 @@ class GnssConcurrencyTest(BaseTestClass):
         else:
             raise signals.TestError("Failed to load CHRE nanoapp")
 
-    def enable_gnss_concurrency(self, freq):
+    def enable_chre(self, freq):
         """ Enable or disable gnss concurrency via nanoapp.
 
         Args:
@@ -94,31 +94,13 @@ class GnssConcurrencyTest(BaseTestClass):
             if "ap" not in type:
                 self.ad.adb.shell(" ".join([cmd, type, option]))
 
-    def run_concurrency_test(self, ap_freq, chre_freq, test_time):
-        """ Run the concurrency test with specific sequence.
-
-        Args:
-            ap_freq: int for AP side location request frequency.
-            chre_freq: int forCHRE side location request frequency.
-            test_time: int for test duration.
-        Return: test begin time.
-        """
-        gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        begin_time = utils.get_current_epoch_time()
-        gutils.start_gnss_by_gtw_gpstool(self.ad, True, freq=ap_freq)
-        self.enable_gnss_concurrency(chre_freq)
-        time.sleep(test_time)
-        self.enable_gnss_concurrency(0)
-        gutils.start_gnss_by_gtw_gpstool(self.ad, False)
-        return begin_time
-
     def parse_concurrency_result(self, begin_time, type, criteria):
         """ Parse the test result with given time and criteria.
 
         Args:
             begin_time: test begin time.
             type: str for location request type.
-            criteria: int for test criteria.
+            criteria: dictionary for test criteria.
         Return: List for the failure and outlier loops.
         """
         results = []
@@ -157,51 +139,105 @@ class GnssConcurrencyTest(BaseTestClass):
 
         return outliers, failures
 
-    def execute_gnss_concurrency_test(self, criteria, test_duration):
+    def run_gnss_concurrency_test(self, criteria, test_duration):
         """ Execute GNSS concurrency test steps.
 
         Args:
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
-        failures = {}
+        gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
+        begin_time = utils.get_current_epoch_time()
+        self.ad.log.info("Tests Start at %s" %
+                         utils.epoch_to_human_time(begin_time))
+        gutils.start_gnss_by_gtw_gpstool(
+            self.ad, True, freq=criteria["ap_location"])
+        self.enable_chre(criteria["gnss"])
+        time.sleep(test_duration)
+        self.enable_chre(0)
+        gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+        self.validate_chre_test_result(begin_time, criteria, test_duration)
+
+    def run_chre_only_test(self, criteria, test_duration):
+        """ Execute CHRE only test steps.
+
+        Args:
+            criteria: int for test criteria.
+            test_duration: int for test duration.
+        """
+        begin_time = utils.get_current_epoch_time()
+        self.ad.log.info("Tests Start at %s" %
+                         utils.epoch_to_human_time(begin_time))
+        self.enable_chre(criteria["gnss"])
+        time.sleep(test_duration)
+        self.enable_chre(0)
+        self.validate_chre_test_result(begin_time, criteria, test_duration)
+
+    def validate_chre_test_result(self, begin_time, criteria, test_duration):
+        """ Validate GNSS concurrency/CHRE test results.
+
+        Args:
+            begin_time: epoc of test begin time
+            criteria: int for test criteria.
+            test_duration: int for test duration.
+        """
         outliers = {}
-        begin_time = self.run_concurrency_test(criteria["ap_location"],
-                                               criteria["gnss"], test_duration)
-        for type in CONCURRENCY_TYPE.keys():
+        failures = {}
+        failure_log = ""
+        for type in criteria.keys():
             self.ad.log.info("Starting process %s result" % type)
             outliers[type], failures[type] = self.parse_concurrency_result(
                 begin_time, type, criteria[type])
-        for type in CONCURRENCY_TYPE.keys():
             if len(failures[type]) > 0:
-                raise signals.TestFailure("Test exceeds criteria: %.2f" %
-                                          criteria[type])
-            elif len(outliers[type]) > self.max_outliers:
-                raise signals.TestFailure("Outliers excceds max amount: %d" %
-                                          len(outliers[type]))
+                failure_log += "[%s] Test exceeds criteria: %.2f\n" % (
+                    type, criteria[type])
+            if len(outliers[type]) > self.max_outliers:
+                failure_log += "[%s] Outliers excceds max amount: %d\n" % (
+                    type, len(outliers[type]))
 
-    # Test Cases
+        if failure_log:
+            raise signals.TestFailure(failure_log)
+
+    # Concurrency Test Cases
+    @test_tracker_info(uuid="9b0daebf-461e-4005-9773-d5d10aaeaaa4")
     def test_gnss_concurrency_ct1(self):
         test_duration = 15
         criteria = {"ap_location": 1, "gnss": 1, "gnss_meas": 1}
-        self.execute_gnss_concurrency_test(criteria, test_duration)
+        self.run_gnss_concurrency_test(criteria, test_duration)
 
+    @test_tracker_info(uuid="f423db2f-12a0-4858-b66f-99e7ca6010c3")
     def test_gnss_concurrency_ct2(self):
         test_duration = 30
         criteria = {"ap_location": 1, "gnss": 8, "gnss_meas": 8}
-        self.execute_gnss_concurrency_test(criteria, test_duration)
+        self.run_gnss_concurrency_test(criteria, test_duration)
 
+    @test_tracker_info(uuid="f72d2df0-f70a-4a11-9f68-2a38f6974454")
     def test_gnss_concurrency_ct3(self):
         test_duration = 60
         criteria = {"ap_location": 15, "gnss": 8, "gnss_meas": 8}
-        self.execute_gnss_concurrency_test(criteria, test_duration)
+        self.run_gnss_concurrency_test(criteria, test_duration)
 
+    @test_tracker_info(uuid="8e5563fd-afcd-40d3-9392-7fc0d10f49da")
     def test_gnss_concurrency_aoc1(self):
         test_duration = 120
         criteria = {"ap_location": 61, "gnss": 1, "gnss_meas": 1}
-        self.execute_gnss_concurrency_test(criteria, test_duration)
+        self.run_gnss_concurrency_test(criteria, test_duration)
 
+    @test_tracker_info(uuid="fb258565-6ac8-4bf7-a554-01d63fc4ef54")
     def test_gnss_concurrency_aoc2(self):
         test_duration = 120
         criteria = {"ap_location": 61, "gnss": 10, "gnss_meas": 10}
-        self.execute_gnss_concurrency_test(criteria, test_duration)
+        self.run_gnss_concurrency_test(criteria, test_duration)
+
+    # CHRE Only Test Cases
+    @test_tracker_info(uuid="cb85fa60-9f1a-4957-b5e3-0f2e5db70b47")
+    def test_gnss_chre1(self):
+        test_duration = 15
+        criteria = {"gnss": 1, "gnss_meas": 1}
+        self.run_chre_only_test(criteria, test_duration)
+
+    @test_tracker_info(uuid="6ab17866-0d0e-4d9e-b3af-441d9db0e324")
+    def test_gnss_chre2(self):
+        test_duration = 30
+        criteria = {"gnss": 8, "gnss_meas": 8}
+        self.run_chre_only_test(criteria, test_duration)
