@@ -16,6 +16,8 @@
 
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
 from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_voice_call_test
@@ -837,3 +839,1227 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
             self.android_devices[0],
             1,
             rat=["5g_volte", "volte"])
+
+    @test_tracker_info(uuid="f86faed8-5259-4e5d-9e49-40618ad41670")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_wifi_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            0,
+            mo_rat=["5g_wfc", "5g_volte"],
+            call_direction="mo",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="1e13a8be-7ddd-4177-89cb-720d305d766e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_wifi_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            0,
+            mt_rat=["5g_wfc", "5g_volte"],
+            call_direction="mt",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="d32696a1-6e6d-48ca-8612-06e24645cfc6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_wifi_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["5g_volte", "5g_wfc"],
+            call_direction="mo",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="9ed35291-ae87-469a-a12f-8df2c17daa6e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_wifi_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["5g_volte", "5g_wfc"],
+            call_direction="mt",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="a44352d0-8ded-4e42-bd77-59c9f5801954")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_wifi_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["5g_wfc", "5g_volte"],
+            call_direction="mo",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="6e99a297-6deb-4674-90e1-1f703971501a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_wifi_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["5g_wfc", "5g_volte"],
+            call_direction="mt",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="119f71a5-9d5d-4c66-b958-684672a95a87")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_wifi_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            1,
+            mo_rat=["5g_volte", "5g_wfc"],
+            call_direction="mo",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="55e651d2-4112-4fe9-a70d-f448287b078b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_wifi_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            1,
+            mt_rat=["5g_volte", "5g_wfc"],
+            call_direction="mt",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="10ce825e-8ed8-4bc8-a70f-e0822d391066")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_4g_wfc_wifi_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 4G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            0,
+            mo_rat=["wfc", "5g_volte"],
+            call_direction="mo",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="39cb207c-10e5-4f6a-8ee4-0f26634070cb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_4g_wfc_wifi_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 4G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            0,
+            mt_rat=["wfc", "5g_volte"],
+            call_direction="mt",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="a2245d31-c3ca-42bf-a6ca-72f3d3dc32e9")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_wifi_preferred_psim_4g_volte_dds_0(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["volte", "5g_wfc"],
+            call_direction="mo",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="2d683601-b604-4dba-b5b8-8aec86d70f95")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_wifi_preferred_psim_4g_volte_dds_0(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["volte", "5g_wfc"],
+            call_direction="mt",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="7c79782e-e273-43a4-9176-48a7b5a8cb85")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_4g_wfc_wifi_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 4G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["wfc", "5g_volte"],
+            call_direction="mo",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="1b9c6b37-2345-46af-a6eb-48ebd962c953")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_4g_wfc_wifi_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 4G WFC in Wi-Fi preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["wfc", "5g_volte"],
+            call_direction="mt",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="ce37ebda-f83b-4482-9214-74e82e04ae7f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_wifi_preferred_psim_4g_volte_dds_1(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            1,
+            mo_rat=["volte", "5g_wfc"],
+            call_direction="mo",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="3ba071ba-bf6f-4c27-ae82-557dabb60291")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_wifi_preferred_psim_4g_volte_dds_1(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in Wi-Fi preferred mode
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            1,
+            mt_rat=["volte", "5g_wfc"],
+            call_direction="mt",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="1385939f-272e-4ba7-ba5d-de1bff60ad01")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_wifi_preferred_esim_4g_volte_dds_0(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            0,
+            mo_rat=["5g_wfc", "volte"],
+            call_direction="mo",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="79d24164-bbcc-49c6-a538-99b39b65749b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_wifi_preferred_esim_4g_volte_dds_0(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            0,
+            mt_rat=["5g_wfc", "volte"],
+            call_direction="mt",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="837186d2-fe35-4d4a-900d-0bc5b71829b7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_4g_wfc_wifi_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in Wi-Fi preferred mode
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["5g_volte", "wfc"],
+            call_direction="mo",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="ace4d07a-07ba-4868-bfa1-c82a81bce4c9")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_4g_wfc_wifi_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in Wi-Fi preferred mode
+            - DDS at pSIM (slot 0)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["5g_volte", "wfc"],
+            call_direction="mt",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="17306fd2-842e-47d9-bd83-e5a34fce1d5a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_wifi_preferred_esim_4g_volte_dds_1(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["5g_wfc", "volte"],
+            call_direction="mo",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="352b0f73-f89a-45cf-9810-147e8a1b1522")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_wifi_preferred_esim_4g_volte_dds_1(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in Wi-Fi preferred mode
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["5g_wfc", "volte"],
+            call_direction="mt",
+            wfc_mode = [WFC_MODE_WIFI_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="4a574fee-dc59-45a6-99a6-18098053adf3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_4g_wfc_wifi_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in Wi-Fi preferred mode
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            1,
+            mo_rat=["5g_volte", "wfc"],
+            call_direction="mo",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="c70a2aa8-5567-4f74-9a2c-a24214d6af74")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_4g_wfc_wifi_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in Wi-Fi preferred mode
+            - DDS at eSIM (slot 1)
+
+            Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            1,
+            mt_rat=["5g_volte", "wfc"],
+            call_direction="mt",
+            wfc_mode = [None, WFC_MODE_WIFI_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True)
+
+    @test_tracker_info(uuid="1f5f9721-0dbb-443d-b54f-2e4acdc2e1a6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_cellular_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            0,
+            mo_rat=["5g_wfc", "5g_volte"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="00723b82-3fa5-4263-b56f-a27ba76f24bd")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_cellular_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            0,
+            mt_rat=["5g_wfc", "5g_volte"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="5d024b1c-e345-45e8-9759-9f8729799a05")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_cellular_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["5g_volte", "5g_wfc"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="9627755c-3dea-4296-8140-eac0037c4f17")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_cellular_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["5g_volte", "5g_wfc"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="aeddb446-8ec1-4692-9b6c-417aa89205eb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_cellular_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["5g_wfc", "5g_volte"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="4e56a128-0706-4f48-a031-93c77faa5e5a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_cellular_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["5g_wfc", "5g_volte"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="8adbe013-4f93-4778-8f82-f7db3be8c318")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_cellular_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            1,
+            mo_rat=["5g_volte", "5g_wfc"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="75fe4f90-8945-4886-92ad-29d0d536163d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_cellular_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            1,
+            mt_rat=["5g_volte", "5g_wfc"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="25716018-d4cc-4b62-ac00-77d34b3920e1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_4g_wfc_cellular_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 4G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            0,
+            mo_rat=["wfc", "5g_volte"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="ae7a19bb-f257-4853-83ff-25dd70696d76")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_4g_wfc_cellular_preferred_esim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 4G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            0,
+            mt_rat=["wfc", "5g_volte"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="c498a7fc-8c5d-4b5d-bd9e-47bd77032765")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_cellular_preferred_psim_4g_volte_dds_0(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["volte", "5g_wfc"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="ce7b23af-41f1-4977-a140-6e1a456487dc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_cellular_preferred_psim_4g_volte_dds_0(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["volte", "5g_wfc"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="808fab1e-1fe7-406a-b479-8e9e6a5c2ef5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_4g_wfc_cellular_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 4G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["wfc", "5g_volte"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="4b0f73a8-a508-4e77-aca2-0155b54b4e2c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_4g_wfc_cellular_preferred_esim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 4G WFC in cellular preferred mode
+            - eSIM 5G NSA VoLTE
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["wfc", "5g_volte"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="4a73fdb3-abf3-4094-9317-74b758991c0a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_5g_nsa_wfc_cellular_preferred_psim_4g_volte_dds_1(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            1,
+            mo_rat=["volte", "5g_wfc"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="5247d0dc-2d60-4760-8c27-a9b358992849")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_5g_nsa_wfc_cellular_preferred_psim_4g_volte_dds_1(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G WFC in cellular preferred mode
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            1,
+            mt_rat=["volte", "5g_wfc"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="df037a28-c130-4d00-ba2e-28723af26128")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_cellular_preferred_esim_4g_volte_dds_0(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            0,
+            mo_rat=["5g_wfc", "volte"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="900a7a74-064b-43df-b40a-8257ea9a1598")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_cellular_preferred_esim_4g_volte_dds_0(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            0,
+            mt_rat=["5g_wfc", "volte"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="08057239-a1de-42e5-8ff2-560d6a7a7e35")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_4g_wfc_cellular_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in cellular preferred mode
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            0,
+            mo_rat=["5g_volte", "wfc"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="edd15dd4-4abe-4de0-905e-6dd2aebf2697")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_4g_wfc_cellular_preferred_psim_5g_nsa_volte_dds_0(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in cellular preferred mode
+            - DDS at pSIM (slot 0)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            0,
+            mt_rat=["5g_volte", "wfc"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="c230b98b-fbe2-4fc5-b0a0-cc91c5613ade")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mo_5g_nsa_wfc_cellular_preferred_esim_4g_volte_dds_1(self):
+        """ A MO vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            0,
+            None,
+            1,
+            mo_rat=["5g_wfc", "volte"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="1e0eb29c-4850-4f42-b83f-d831305eeaa7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_psim_mt_5g_nsa_wfc_cellular_preferred_esim_4g_volte_dds_1(self):
+        """ A MT vowifi call at pSIM, where
+            - pSIM 5G WFC in cellular preferred mode
+            - eSIM 4G VoLTE
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the pSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            0,
+            1,
+            mt_rat=["5g_wfc", "volte"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [WFC_MODE_CELLULAR_PREFERRED, None],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="2fd7d04f-1ce7-40d0-86f1-ebf042dfad8b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mo_4g_wfc_cellular_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MO vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in cellular preferred mode
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            1,
+            None,
+            1,
+            mo_rat=["5g_volte", "wfc"],
+            call_direction="mo",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="fd3bace9-f9ce-4870-8818-74f9b1605716")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_esim_mt_4g_wfc_cellular_preferred_psim_5g_nsa_volte_dds_1(self):
+        """ A MT vowifi call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G WFC in cellular preferred mode
+            - DDS at eSIM (slot 1)
+            - Airplane mode
+
+            Airplane mode and Wi-Fi will be turned off in the end to ensure the eSIM will attach to
+            the network with assigned RAT successfully.
+        """
+        return dsds_voice_call_test(
+            self.log,
+            self.android_devices,
+            None,
+            1,
+            1,
+            mt_rat=["5g_volte", "wfc"],
+            call_direction="mt",
+            is_airplane_mode=True,
+            wfc_mode = [None, WFC_MODE_CELLULAR_PREFERRED],
+            wifi_network_ssid=self.wifi_network_ssid,
+            wifi_network_pass=self.wifi_network_pass,
+            turn_off_wifi_in_the_end=True,
+            turn_off_airplane_mode_in_the_end=True)
