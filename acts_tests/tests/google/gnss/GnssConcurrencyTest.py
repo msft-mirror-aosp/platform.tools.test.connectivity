@@ -101,7 +101,7 @@ class GnssConcurrencyTest(BaseTestClass):
             begin_time: test begin time.
             type: str for location request type.
             criteria: dictionary for test criteria.
-        Return: List for the failure and outlier loops.
+        Return: List for the failure and outlier loops and results.
         """
         results = []
         failures = []
@@ -137,7 +137,7 @@ class GnssConcurrencyTest(BaseTestClass):
         self.ad.log.info("TestResult %s_max_time %.2f" %
                          (type, max(results[1:])))
 
-        return outliers, failures
+        return outliers, failures, results
 
     def run_gnss_concurrency_test(self, criteria, test_duration):
         """ Execute GNSS concurrency test steps.
@@ -146,7 +146,6 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
-        gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         begin_time = utils.get_current_epoch_time()
         self.ad.log.info("Tests Start at %s" %
                          utils.epoch_to_human_time(begin_time))
@@ -181,13 +180,17 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
+        results = {}
         outliers = {}
         failures = {}
         failure_log = ""
         for type in criteria.keys():
             self.ad.log.info("Starting process %s result" % type)
-            outliers[type], failures[type] = self.parse_concurrency_result(
-                begin_time, type, criteria[type])
+            outliers[type], failures[type], results[
+                type] = self.parse_concurrency_result(begin_time, type,
+                                                      criteria[type])
+            if not results[type]:
+                failure_log += "[%s] Fail to find location report.\n" % type
             if len(failures[type]) > 0:
                 failure_log += "[%s] Test exceeds criteria: %.2f\n" % (
                     type, criteria[type])
