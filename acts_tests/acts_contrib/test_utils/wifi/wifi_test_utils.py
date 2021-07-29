@@ -478,11 +478,16 @@ class WifiChannelUS(WifiChannelBase):
         5700, 5745, 5805
     ]
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, support_addition_channel=[]):
+        if model in support_addition_channel:
+            self.ALL_2G_FREQUENCIES = [
+                2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457,
+                2462, 2467, 2472
+                ]
         self.DFS_5G_FREQUENCIES = [
             5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620,
             5640, 5660, 5680, 5700, 5720
-        ]
+            ]
         self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
 
 
