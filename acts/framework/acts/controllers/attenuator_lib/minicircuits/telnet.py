@@ -84,7 +84,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         """
         self._tnhelper.close()
 
-    def set_atten(self, idx, value, strict_flag=True):
+    def set_atten(self, idx, value, strict_flag=True, retry=False):
         """This function sets the attenuation of an attenuator given its index
         in the instrument.
 
@@ -115,9 +115,9 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
-        self._tnhelper.cmd('CHAN:%s:SETATT:%s' % (idx + 1, value))
+        self._tnhelper.cmd('CHAN:%s:SETATT:%s' % (idx + 1, value), retry=retry)
 
-    def get_atten(self, idx):
+    def get_atten(self, idx, retry=False):
         """Returns the current attenuation of the attenuator at the given index.
 
         Args:
@@ -137,8 +137,9 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
                              idx)
 
         if self.num_atten == 1:
-            atten_val_str = self._tnhelper.cmd(':ATT?')
+            atten_val_str = self._tnhelper.cmd(':ATT?', retry=retry)
         else:
-            atten_val_str = self._tnhelper.cmd('CHAN:%s:ATT?' % (idx + 1))
+            atten_val_str = self._tnhelper.cmd('CHAN:%s:ATT?' % (idx + 1),
+                                               retry=retry)
         atten_val = float(atten_val_str)
         return atten_val
