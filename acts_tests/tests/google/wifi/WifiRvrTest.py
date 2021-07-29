@@ -373,7 +373,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     asserts.skip('DUT health check failed. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
-                attenuator.set_atten(atten, strict=False)
+                attenuator.set_atten(atten, strict=False, retry=True)
             # Refresh link layer stats
             llstats_obj.update_stats()
             # Setup sniffer
@@ -453,7 +453,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     (len(testcase_params['atten_range']) - len(throughput)))
                 break
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False)
+            attenuator.set_atten(0, strict=False, retry=True)
         # Compile test result and meta data
         rvr_result = collections.OrderedDict()
         rvr_result['test_name'] = self.current_test_name
@@ -512,8 +512,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
-            wutils.reset_wifi(self.sta_dut)
-            wutils.set_wifi_country_code(self.sta_dut,
+            wutils.wifi_toggle_state(self.dut, False)
+            wutils.set_wifi_country_code(self.dut,
+                                         self.testclass_params['country_code'])
+            wutils.wifi_toggle_state(self.dut, True)
+            wutils.reset_wifi(self.dut)
+            wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
             if self.testbed_params['sniffer_enable']:
                 self.sniffer.start_capture(
@@ -540,7 +544,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False)
+            attenuator.set_atten(0, strict=False, retry=True)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
         # Wait before running the first wifi test
