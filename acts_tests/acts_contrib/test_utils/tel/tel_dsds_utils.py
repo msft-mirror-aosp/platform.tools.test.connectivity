@@ -77,6 +77,7 @@ from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_m
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 tel_logger = TelephonyMetricLogger.for_test_case()
 
+
 def dsds_voice_call_test(
         log,
         ads,
@@ -311,6 +312,7 @@ def dsds_voice_call_test(
                     "fail_reason": "Idle state of sub ID %s does not match the "
                     "given RAT %s." % (sub_id, rat)})
 
+
 def dsds_message_test(
         log,
         ads,
@@ -465,6 +467,250 @@ def dsds_message_test(
     if streaming:
         ads[0].force_stop_apk(YOUTUBE_PACKAGE_NAME)
     return result
+
+
+def dds_switch_during_data_transfer_test(
+        log,
+        ads,
+        nw_rat=["volte", "volte"],
+        call_slot=0,
+        call_direction=None,
+        call_or_sms_or_mms="call",
+        streaming=True,
+        is_airplane_mode=False,
+        wfc_mode=[WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_CELLULAR_PREFERRED],
+        wifi_network_ssid=None,
+        wifi_network_pass=None):
+    """Switch DDS and make voice call(VoLTE/WFC/CS call)/SMS/MMS together with
+    Youtube playing after each DDS switch at specific slot in specific RAT.
+
+    Test step:
+        1. Get sub ID of each slot of the primary device.
+        2. Set up phones in desired RAT.
+        3. Switch DDS to slot 0.
+        4. Check HTTP connection after DDS switch.
+        5. Play Youtube.
+        6. Make voice call (VoLTE/WFC/CS call)/SMS/MMS
+        7. Switch DDS to slot 1 and repeat step 4-6.
+        8. Switch DDS to slot 0 again and repeat step 4-6.
+
+    Args:
+        log: logger object
+        ads: list of android devices
+        nw_rat: RAT for both slots of the primary device
+        call_slot: Slot for making voice call
+        call_direction: "mo" or "mt" or None to stoping making call.
+        call_or_sms_or_mms: Voice call or SMS or MMS
+        streaming: True for playing Youtube after DDS switch and False on the contrary.
+        is_airplane_mode: True or False for WFC setup
+        wfc_mode: Cellular preferred or Wi-Fi preferred.
+        wifi_network_ssid: SSID of Wi-Fi AP
+        wifi_network_pass: Password of Wi-Fi AP SSID
+
+    Returns:
+        TestFailure if failed.
+    """
+    ad = ads[0]
+    slot_0_subid = get_subid_from_slot_index(log, ad, 0)
+    slot_1_subid = get_subid_from_slot_index(log, ad, 1)
+
+    if slot_0_subid == INVALID_SUB_ID or slot_1_subid == INVALID_SUB_ID:
+        ad.log.error("Not all slots have valid sub ID.")
+        raise signals.TestFailure("Failed",
+            extras={"fail_reason": "Not all slots have valid sub ID"})
+
+    ad.log.info(
+        "Step 0: Set up phone in desired RAT (slot 0: %s, slot 1: %s)",
+        nw_rat[0], nw_rat[1])
+
+    if not phone_setup_on_rat(
+        log,
+        ad,
+        nw_rat[0],
+        slot_0_subid,
+        is_airplane_mode,
+        wfc_mode[0],
+        wifi_network_ssid,
+        wifi_network_pass):
+        log.error("Phone Failed to Set Up Properly.")
+        tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+        raise signals.TestFailure("Failed",
+            extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+    if not phone_setup_on_rat(
+        log,
+        ad,
+        nw_rat[1],
+        slot_1_subid,
+        is_airplane_mode,
+        wfc_mode[1],
+        wifi_network_ssid,
+        wifi_network_pass):
+        log.error("Phone Failed to Set Up Properly.")
+        tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+        raise signals.TestFailure("Failed",
+            extras={"fail_reason": "Phone Failed to Set Up Properly."})
+
+    is_slot0_in_call = is_phone_in_call_on_rat(
+        log, ad, nw_rat[0], True)
+    is_slot1_in_call = is_phone_in_call_on_rat(
+        log, ad, nw_rat[1], True)
+
+    for attempt in range(3):
+        if attempt != 0:
+            ad.log.info("Repeat step 1 to 4.")
+
+        ad.log.info("Step 1: Switch DDS.")
+        if attempt % 2 == 0:
+            set_dds_on_slot(ad, 0)
+        else:
+            set_dds_on_slot(ad, 1)
+
+        ad.log.info("Step 2: Check HTTP connection after DDS switch.")
+        if not verify_http_connection(log, ad):
+            ad.log.error("Failed to verify http connection.")
+            return False
+        else:
+            ad.log.info("Verify http connection successfully.")
+
+        if streaming:
+            ad.log.info("Step 3: Start Youtube streaming.")
+            if not start_youtube_video(ad):
+                ad.log.warning("Fail to bring up youtube video")
+            time.sleep(10)
+        else:
+            ad.log.info("Step 3: Skip Youtube streaming.")
+
+        if not call_direction:
+            return True
+        else:
+            expected_result = True
+            if call_direction == "mo":
+                ad_mo = ads[0]
+                ad_mt = ads[1]
+                phone_setup_on_rat(log, ad_mt, 'general')
+                mo_sub_id = get_subid_from_slot_index(log, ad, call_slot)
+                if call_or_sms_or_mms == "call":
+                    set_voice_sub_id(ad_mo, mo_sub_id)
+                    _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                        ads)
+
+                    if call_slot == 0:
+                        is_mo_in_call = is_slot0_in_call
+                    elif call_slot == 1:
+                        is_mo_in_call = is_slot1_in_call
+                    is_mt_in_call = None
+
+                elif call_or_sms_or_mms == "sms":
+                    set_message_subid(ad_mo, mo_sub_id)
+                    _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                        ads, type="sms")
+                    set_message_subid(ad_mt, mt_sub_id)
+
+                elif call_or_sms_or_mms == "mms":
+                    current_data_sub_id = get_default_data_sub_id(ad_mo)
+                    if mo_sub_id != current_data_sub_id:
+                        ad_mo.log.warning(
+                            "Current data sub ID (%s) does not match"
+                            " message sub ID (%s). MMS should NOT be sent.",
+                            current_data_sub_id, mo_sub_id)
+                        expected_result = False
+                    set_message_subid(ad_mo, mo_sub_id)
+                    _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                        ads, type="sms")
+                    set_message_subid(ad_mt, mt_sub_id)
+                    set_subid_for_data(ad_mt, mt_sub_id)
+                    ad_mt.droid.telephonyToggleDataConnection(True)
+
+            elif call_direction == "mt":
+                ad_mo = ads[1]
+                ad_mt = ads[0]
+                phone_setup_on_rat(log, ad_mo, 'general')
+                mt_sub_id = get_subid_from_slot_index(log, ad, call_slot)
+                if call_or_sms_or_mms == "call":
+                    set_voice_sub_id(ad_mt, mt_sub_id)
+                    _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                        ads)
+
+                    if call_slot == 0:
+                        is_mt_in_call = is_slot0_in_call
+                    elif call_slot == 1:
+                        is_mt_in_call = is_slot1_in_call
+                    is_mo_in_call = None
+
+                elif call_or_sms_or_mms == "sms":
+                    set_message_subid(ad_mt, mt_sub_id)
+                    _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                        ads, type="sms")
+                    set_message_subid(ad_mo, mo_sub_id)
+
+                elif call_or_sms_or_mms == "mms":
+                    current_data_sub_id = get_default_data_sub_id(ad_mt)
+                    if mt_sub_id != current_data_sub_id:
+                        ad_mt.log.warning(
+                            "Current data sub ID (%s) does not match"
+                            " message sub ID (%s). MMS should NOT be"
+                            " received.", current_data_sub_id, mt_sub_id)
+                        expected_result = False
+                    set_message_subid(ad_mt, mt_sub_id)
+                    _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(
+                        ads, type="sms")
+                    set_message_subid(ad_mo, mo_sub_id)
+                    set_subid_for_data(ad_mo, mo_sub_id)
+                    ad_mo.droid.telephonyToggleDataConnection(True)
+
+            if call_or_sms_or_mms == "call":
+                log.info("Step 4: Make voice call.")
+                mo_slot = get_slot_index_from_subid(
+                    log, ad_mo, mo_sub_id)
+                mt_slot = get_slot_index_from_subid(
+                    log, ad_mt, mt_sub_id)
+                result = two_phone_call_msim_for_slot(
+                    log,
+                    ad_mo,
+                    mo_slot,
+                    None,
+                    is_mo_in_call,
+                    ad_mt,
+                    mt_slot,
+                    None,
+                    is_mt_in_call)
+                tel_logger.set_result(result.result_value)
+
+                if not result:
+                    log.error(
+                        "Failed to make MO call from %s slot %s to %s"
+                        " slot %s", ad_mo.serial, mo_slot, ad_mt.serial,
+                        mt_slot)
+                    raise signals.TestFailure("Failed",
+                        extras={"fail_reason": str(result.result_value)})
+            else:
+                log.info("Step 4: Send %s.", call_or_sms_or_mms)
+                if call_or_sms_or_mms == "sms":
+                    result = msim_message_test(
+                        ad_mo,
+                        ad_mt,
+                        mo_sub_id,
+                        mt_sub_id,
+                        msg=call_or_sms_or_mms.upper())
+                elif call_or_sms_or_mms == "mms":
+                    result = msim_message_test(
+                        ad_mo,
+                        ad_mt,
+                        mo_sub_id,
+                        mt_sub_id,
+                        msg=call_or_sms_or_mms.upper(),
+                        expected_result=expected_result)
+                if not result:
+                    log_messaging_screen_shot(
+                        ad_mo, test_name="%s_tx" % call_or_sms_or_mms)
+                    log_messaging_screen_shot(
+                        ad_mt, test_name="%s_rx" % call_or_sms_or_mms)
+                    return False
+        if streaming:
+            ad.force_stop_apk(YOUTUBE_PACKAGE_NAME)
+    return True
+
 
 def enable_slot_after_voice_call_test(
         log,
@@ -692,6 +938,7 @@ def enable_slot_after_voice_call_test(
     else:
         log.info("Verify http connection successfully.")
 
+
 def enable_slot_after_data_call_test(
         log,
         ad,
@@ -811,6 +1058,7 @@ def enable_slot_after_data_call_test(
     else:
         log.info("Verify http connection successfully.")
 
+
 def erase_call_forwarding(log, ad):
     slot0_sub_id = get_subid_from_slot_index(log, ad, 0)
     slot1_sub_id = get_subid_from_slot_index(log, ad, 1)
@@ -820,6 +1068,7 @@ def erase_call_forwarding(log, ad):
         get_operator_name(log, ad, sub_id)
         erase_call_forwarding_by_mmi(log, ad)
     set_voice_sub_id(ad, current_voice_sub_id)
+
 
 def three_way_calling_mo_and_mt_with_hangup_once(
     log,
@@ -922,6 +1171,7 @@ def three_way_calling_mo_and_mt_with_hangup_once(
 
     return call_ab_id
 
+
 def msim_message_test(
     log,
     ad_mo,
@@ -986,6 +1236,7 @@ def msim_message_test(
         log.info("%s test of body lengths %s succeeded",
                         msg, message_lengths)
     return True
+
 
 def msim_call_forwarding(
         log,
@@ -1256,6 +1507,7 @@ def msim_call_forwarding(
 
     return result
 
+
 def msim_call_voice_conf(
         log,
         ads,
@@ -1484,6 +1736,7 @@ def msim_call_voice_conf(
             return _test_wcdma_conference_merge_drop(
                 log, ads, call_ab_id, call_ac_id)
 
+
 def msim_volte_wfc_call_forwarding(
         log,
         ads,
@@ -1677,6 +1930,7 @@ def msim_volte_wfc_call_forwarding(
             callee_slot,
             ad_forwarded_callee.serial)
     return result
+
 
 def msim_volte_wfc_call_voice_conf(
         log,
