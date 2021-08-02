@@ -5863,7 +5863,7 @@ def wait_for_ims_registered(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
     return _wait_for_droid_in_state(log, ad, max_time, is_ims_registered)
 
 
-def is_volte_available(log, ad, sub_id):
+def is_volte_available(log, ad, sub_id=None):
     """Return True if VoLTE is available.
 
     Args:
