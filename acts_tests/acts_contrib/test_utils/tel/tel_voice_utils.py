@@ -857,7 +857,7 @@ def phone_setup_iwlan_for_subscription(log,
     if nw_gen:
         if not ensure_network_generation_for_subscription(
                 log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA,
-                sa_or_nsa=sa_or_nsa, mmwave=mmwave)):
+                sa_or_nsa=sa_or_nsa, mmwave=mmwave):
             ad.log.error("Failed to set to %s data.", nw_gen)
             return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
