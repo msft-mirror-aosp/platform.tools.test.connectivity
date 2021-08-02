@@ -84,7 +84,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         """
         self._tnhelper.close()
 
-    def set_atten(self, idx, value, strict_flag=True, retry=False):
+    def set_atten(self, idx, value, strict=True, retry=False):
         """This function sets the attenuation of an attenuator given its index
         in the instrument.
 
@@ -93,11 +93,10 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
                 an instrument. For instruments that only have one channel, this
                 is ignored by the device.
             value: A floating point value for nominal attenuation to be set.
-            strict_flag: if True, function raises an error when given out of
+            strict: if True, function raises an error when given out of
                 bounds attenuation values, if false, the function sets out of
                 bounds values to 0 or max_atten.
-            retry: if True, the function tries setting the attenuation again if
-                the attenuator is reachable but the first set attempt failed.
+            retry: if True, command will be retried if possible
 
         Raises:
             InvalidOperationError if the telnet connection is not open.
@@ -113,7 +112,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise IndexError('Attenuator index out of range!', self.num_atten,
                              idx)
 
-        if value > self.max_atten and strict_flag:
+        if value > self.max_atten and strict:
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
@@ -124,8 +123,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
 
         Args:
             idx: The index of the attenuator.
-            retry: if True, the function tries to get the attenuation again if
-                the attenuator is reachable but the first set attempt failed.
+            retry: if True, command will be retried if possible
 
         Raises:
             InvalidOperationError if the telnet connection is not open.
