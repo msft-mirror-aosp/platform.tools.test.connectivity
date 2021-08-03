@@ -240,7 +240,22 @@ class WifiAutoUpdateTest(WifiBaseTest):
             networks: List of network dicts.
         """
         network_info = self.dut.droid.wifiGetConfiguredNetworks()
-        if len(network_info) != len(networks):
+        """
+            b/189285598, the network id of a network might be changed after \
+            reboot because the network sequence is not stable on \
+            backup/restore. This test should find the correct network against
+            the desired SSID before connecting to the network after reboot.
+            Start from Android S.
+        """
+        network_info_ssid = list()
+        for i in network_info:
+            network_info_ssid.append(i['SSID'])
+        network_info_ssid_list = set(network_info_ssid)
+        networks_ssid= list()
+        for i in networks:
+            networks_ssid.append(i['SSID'])
+        networks_ssid_list = set(networks_ssid)
+        if len(network_info_ssid_list) != len(networks_ssid_list):
             msg = (
                 "Number of configured networks before and after Auto-update "
                 "don't match. \nBefore reboot = %s \n After reboot = %s" %
