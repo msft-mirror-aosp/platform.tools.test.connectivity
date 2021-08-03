@@ -822,6 +822,9 @@ class FuchsiaDevice:
         Returns:
             A string containing the Fuchsia version number.
             For example, "5.20210713.2.1".
+
+        Raises:
+            DeviceOffline: If SSH to the device fails.
         """
         return self.send_command_ssh(
             FUCHSIA_GET_VERSION_CMD,
