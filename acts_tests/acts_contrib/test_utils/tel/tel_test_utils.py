@@ -108,6 +108,7 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import RAT_1XRTT
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
+from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
