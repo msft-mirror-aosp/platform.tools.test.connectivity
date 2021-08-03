@@ -24,6 +24,7 @@ import acts.libs.proc.job as job
 
 from acts import signals
 from acts.base_test import BaseTestClass
+from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
 from acts.utils import get_device
 
 
@@ -40,12 +41,17 @@ class FlashTest(BaseTestClass):
             raise signals.TestAbortClass("err_str")
 
     def teardown_class(self):
-        dut = get_device(self.fuchsia_devices, 'DUT')
-        self.record_data({
-            'sponge_properties': {
-                'DUT_VERSION': dut.version()
-            }
-        })
+        try:
+            dut = get_device(self.fuchsia_devices, 'DUT')
+            self.record_data({
+                'sponge_properties': {
+                    'DUT_VERSION': dut.version()
+                }
+            })
+        except ValueError as err:
+            self.log.warn("Failed to determine DUT: %s" % err)
+        except DeviceOffline as err:
+            self.log.warn("Failed to get DUT's version: %s" % err)
 
         return super().teardown_class()
 
