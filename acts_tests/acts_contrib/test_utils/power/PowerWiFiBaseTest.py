@@ -49,7 +49,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.iperf_server = self.iperf_servers[0]
         if self.iperf_duration:
             self.mon_duration = self.iperf_duration - self.mon_offset - IPERF_TAIL
-            self.create_monsoon_info()
+            self.mon_info = self.create_monsoon_info()
 
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
