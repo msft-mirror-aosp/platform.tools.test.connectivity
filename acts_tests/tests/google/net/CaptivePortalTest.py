@@ -17,7 +17,6 @@ import time
 
 from acts import asserts
 from acts.controllers.openwrt_ap import MOBLY_CONTROLLER_CONFIG_NAME as OPENWRT
-from acts import base_test
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.net import connectivity_const as cconst
 from acts_contrib.test_utils.net import connectivity_test_utils as cutils
@@ -85,7 +84,11 @@ class CaptivePortalTest(WifiBaseTest):
             uutils.has_element(self.dut, text="Network & internet"),
             "Failed to find 'Network & internet' icon")
         uutils.wait_and_click(self.dut, text="Network & internet")
-        uutils.wait_and_click(self.dut, text="Internet")
+        android_version = self.dut.adb.getprop("ro.build.version.release")
+        if int(android_version) < 12:
+            uutils.wait_and_click(self.dut, text="Wi‑Fi")
+        else:
+            uutils.wait_and_click(self.dut, text="Internet")
 
     def _verify_captive_portal(self, network, click_accept=ACCEPT_CONTINUE):
         """Connect to captive portal network using uicd workflow.
