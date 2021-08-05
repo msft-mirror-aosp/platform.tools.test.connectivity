@@ -108,6 +108,7 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import RAT_1XRTT
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
+from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
@@ -5863,7 +5864,7 @@ def wait_for_ims_registered(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
     return _wait_for_droid_in_state(log, ad, max_time, is_ims_registered)
 
 
-def is_volte_available(log, ad, sub_id):
+def is_volte_available(log, ad, sub_id=None):
     """Return True if VoLTE is available.
 
     Args:
@@ -6789,7 +6790,9 @@ def ensure_network_generation(log,
                               generation,
                               max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                               voice_or_data=None,
-                              toggle_apm_after_setting=False):
+                              toggle_apm_after_setting=False,
+                              sa_or_nsa=None,
+                              mmwave=None):
     """Ensure ad's network is <network generation> for default subscription ID.
 
     Set preferred network generation to <generation>.
@@ -6798,7 +6801,7 @@ def ensure_network_generation(log,
     """
     return ensure_network_generation_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), generation,
-        max_wait_time, voice_or_data, toggle_apm_after_setting)
+        max_wait_time, voice_or_data, toggle_apm_after_setting, sa_or_nsa, mmwave)
 
 
 def ensure_network_generation_for_subscription(
@@ -6808,7 +6811,9 @@ def ensure_network_generation_for_subscription(
         generation,
         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None,
-        toggle_apm_after_setting=False):
+        toggle_apm_after_setting=False,
+        sa_or_nsa=None,
+        mmwave=None):
     """Ensure ad's network is <network generation> for specified subscription ID.
 
         Set preferred network generation to <generation>.
@@ -6825,6 +6830,8 @@ def ensure_network_generation_for_subscription(
             This parameter is optional. If voice_or_data is None, then if
             either voice or data in expected generation, function will return True.
         toggle_apm_after_setting: Cycle airplane mode if True, otherwise do nothing.
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if success, False if fail.
@@ -6864,8 +6871,9 @@ def ensure_network_generation_for_subscription(
         ad.log.info("MSIM - Non DDS, ignore data RAT")
         return True
 
-    if generation == GEN_5G:
-        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+    if (generation == GEN_5G) or (generation == RAT_5G):
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id,
+                                        sa_or_nsa=sa_or_nsa, mmwave=mmwave):
             ad.log.info("Current network type is 5G.")
             return True
         else:

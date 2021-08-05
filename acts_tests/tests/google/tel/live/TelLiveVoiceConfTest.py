@@ -11354,12 +11354,58 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f4990e20-4a40-4238-9a2a-a75d9be3d354")
+    def test_volte_call_forwarding_unconditional(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="unconditional")
+
+
+    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="26b85c3f-5a38-465a-a6e3-dfd03c6ea315")
     def test_call_forwarding_busy(self):
 
         ads = self.android_devices
 
         tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="busy")
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="26b85c3f-5a38-465a-a6e3-dfd03c6ea315")
+    def test_volte_call_forwarding_busy(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
@@ -11400,12 +11446,58 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="96638a39-efe2-40e2-afb6-6a97f87c4af5")
+    def test_volte_call_forwarding_not_answered(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="not_answered")
+
+
+    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a13e586a-3345-49d8-9e84-ca33bd3fbd7d")
     def test_call_forwarding_not_reachable(self):
 
         ads = self.android_devices
 
         tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="not_reachable")
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a13e586a-3345-49d8-9e84-ca33bd3fbd7d")
+    def test_volte_call_forwarding_not_reachable(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
@@ -11431,6 +11523,50 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=1)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="e9a6027b-7dd1-4dca-a700-e4d42c9c947d")
+    def test_volte_call_waiting_scenario_1(self):
+        """Tests that the call waiting function is workable by scenario 1.
+
+        Initial Condition:
+            (1) Network Type:
+                - DUT: LTE, VoLTE ON.
+                - Caller1: LTE/3G.
+
+        Execution Criteria:
+            (1) Enable call waiting on DUT.
+            (2) Let caller1 make the first MO call to DUT and let DUT answer the
+            call.
+            (3) Let caller2 make the second MO call to DUT. Do NOT answer the
+            call and keep the call alerting.
+            (4) End the first call by caller1.
+            (5) Let DUT answer the second call.
+            (6) End the second call by caller2.
+
+        Pass Criteria:
+            (2)(5) All the call can be made/answered correctly.
+            (4)(6) All the call can be released correctly.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
