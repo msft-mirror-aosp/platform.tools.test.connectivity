@@ -9021,7 +9021,8 @@ def power_off_sim(ad, sim_slot_id=None,
         return False
     while timeout > 0:
         sim_state = verify_func(*verify_args)
-        if sim_state in (SIM_STATE_UNKNOWN, SIM_STATE_ABSENT):
+        if sim_state in (
+            SIM_STATE_UNKNOWN, SIM_STATE_ABSENT, SIM_STATE_NOT_READY):
             ad.log.info("SIM slot is powered off, SIM state is %s", sim_state)
             return True
         timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
