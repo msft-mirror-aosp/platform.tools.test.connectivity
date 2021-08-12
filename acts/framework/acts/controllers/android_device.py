@@ -685,11 +685,11 @@ class AndroidDevice:
                 except (IndexError, ValueError) as e:
                     # Possible ValueError from string to int cast.
                     # Possible IndexError from split.
-                    self.log.warn(
+                    self.log.warning(
                         'Command \"%s\" returned output line: '
                         '\"%s\".\nError: %s', cmd, out, e)
             except Exception as e:
-                self.log.warn(
+                self.log.warning(
                     'Device fails to check if %s running with \"%s\"\n'
                     'Exception %s', package_name, cmd, e)
         self.log.debug("apk %s is not running", package_name)
@@ -852,7 +852,7 @@ class AndroidDevice:
         save the logcat in a file.
         """
         if self.is_adb_logcat_on:
-            self.log.warn(
+            self.log.warning(
                 'Android device %s already has a running adb logcat thread. ' %
                 self.serial)
             return
@@ -873,7 +873,7 @@ class AndroidDevice:
         """Stops the adb logcat collection subprocess.
         """
         if not self.is_adb_logcat_on:
-            self.log.warn(
+            self.log.warning(
                 'Android device %s does not have an ongoing adb logcat ' %
                 self.serial)
             return
@@ -899,6 +899,29 @@ class AndroidDevice:
             return result.group(1)
         else:
             None
+
+    @record_api_usage
+    def get_apk_version(self, package_name):
+        """Get the version of the given apk.
+
+        Args:
+            package_name: Name of the package, e.g., com.android.phone.
+
+        Returns:
+            Version of the given apk.
+        """
+        try:
+            output = self.adb.shell("dumpsys package %s | grep versionName" %
+                                    package_name)
+            pattern = re.compile(r"versionName=(\S+)", re.I)
+            result = pattern.findall(output)
+            if result:
+                return result[0]
+        except Exception as e:
+            self.log.warning("Fail to get the version of package %s: %s",
+                             package_name, e)
+        self.log.debug("apk %s is not found", package_name)
+        return None
 
     def is_apk_installed(self, package_name):
         """Check if the given apk is already installed.
@@ -943,7 +966,7 @@ class AndroidDevice:
                     self.log.info("apk %s is running", package_name)
                     return True
             except Exception as e:
-                self.log.warn(
+                self.log.warning(
                     "Device fails to check is %s running by %s "
                     "Exception %s", package_name, cmd, e)
                 continue
@@ -966,7 +989,7 @@ class AndroidDevice:
             self.adb.shell(
                 'am force-stop %s' % package_name, ignore_status=True)
         except Exception as e:
-            self.log.warn("Fail to stop package %s: %s", package_name, e)
+            self.log.warning("Fail to stop package %s: %s", package_name, e)
 
     def stop_sl4a(self):
         # TODO(markdr): Move this into sl4a_manager.
