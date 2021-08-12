@@ -19,6 +19,7 @@ import itertools
 import os
 import logging
 import paramiko
+import psutil
 import shutil
 import socket
 import tarfile
@@ -40,6 +41,8 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 MDNS_LOOKUP_RETRY_MAX = 3
 FASTBOOT_TIMEOUT = 30
 AFTER_FLASH_BOOT_TIME = 30
+WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC = 360
+PROCESS_CHECK_WAIT_TIME_SEC = 30
 
 
 def get_private_key(ip_address, ssh_config):
@@ -325,6 +328,17 @@ def flash(fuchsia_device,
                                 fuchsia_device.serial_number))
         time.sleep(1)
 
+    end_time = time.time() + WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC
+    # Attempt to wait for existing flashing process to finish
+    while time.time() < end_time:
+        flash_process_found = False
+        for proc in psutil.process_iter():
+            if "bash" in proc.name() and "flash.sh" in proc.cmdline():
+                logging.info("Waiting for existing flash.sh process to complete.")
+                time.sleep(PROCESS_CHECK_WAIT_TIME_SEC)
+                flash_process_found = True
+        if not flash_process_found:
+            break
     logging.info('Flashing fuchsia_device(%s) with %s/%s.' % (
         fuchsia_device.orig_ip, tmp_path, image_tgz))
     try:
