@@ -53,7 +53,6 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_SING
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import configure_sdm_logs
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
@@ -197,6 +196,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                   "CALL_ID_CLEANUP_FAIL": 0 }
         self.call_stats_check = self.user_params.get("call_stats_check", False)
         self.nsa_5g_for_stress = self.user_params.get("nsa_5g_for_stress", False)
+        self.nr_type = self.user_params.get("nr_type", 'nsa')
         return True
 
     def setup_test(self):
@@ -482,7 +482,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info,
-                nsa_5g_for_stress=self.nsa_5g_for_stress
+                nw_gen_5g=self.nsa_5g_for_stress,
+                nr_type= self.nr_type
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
@@ -498,7 +499,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info,
-                nsa_5g_for_stress=self.nsa_5g_for_stress)
+                nsa_5g_for_stress=self.nsa_5g_for_stress,
+                nr_type= self.nr_type)
             self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
