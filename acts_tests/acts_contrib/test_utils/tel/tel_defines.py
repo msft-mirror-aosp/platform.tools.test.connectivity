@@ -711,6 +711,10 @@ EXIT_ALERT_LIST = ["Got It", "OK", "Hide", "TO CLOSE"]
 CMD_DND_OFF = "cmd notification set_dnd off"
 CMD_DND_ON = "cmd notification set_dnd on"
 DUMPSYS_VIBRATION = "dumpsys vibrator_manager | grep -i  com.google.android.cellbroadcastreceiver | tail -1"
+DEFAULT_ALERT_TYPE = "popup"
+EXPAND_NOTIFICATION_BAR = "cmd statusbar expand-notifications"
+COLLAPSE_NOTIFICATION_BAR = "cmd statusbar collapse"
+CLEAR_NOTIFICATION_BAR = "service call notification 1"
 
 # Countries/Carriers for Compliance Testing
 AUSTRALIA = "australia"
