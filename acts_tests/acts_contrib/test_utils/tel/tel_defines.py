@@ -689,6 +689,8 @@ NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
 
 # Constants for APP Package Name
+DIALER_PACKAGE_NAME = "com.google.android.dialer"
+MESSAGE_PACKAGE_NAME = "com.google.android.apps.messaging"
 YOUTUBE_PACKAGE_NAME = "com.google.android.youtube"
 
 # Constants for CellBroadcast module test
