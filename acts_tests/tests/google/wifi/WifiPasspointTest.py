@@ -23,19 +23,16 @@ from acts_contrib.test_utils.net import ui_utils as uutils
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
-
+import WifiManagerTest
 from acts import asserts
 from acts import signals
-from acts.libs.uicd.uicd_cli import UicdCli
-from acts.libs.uicd.uicd_cli import UicdError
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
-from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums
 
-DEFAULT_TIMEOUT = 10
+DEFAULT_TIMEOUT = 15
 OSU_TEST_TIMEOUT = 300
 
 # Constants for providers.
@@ -66,36 +63,37 @@ class WifiPasspointTest(WifiBaseTest):
     """
 
     def setup_class(self):
+        super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["passpoint_networks", "uicd_workflows", "uicd_zip"]
-        opt_param = []
-        self.unpack_userparams(
-            req_param_names=req_params, opt_param_names=opt_param)
-        self.unpack_userparams(req_params)
+        req_params = ["passpoint_networks",
+                      "boingo_username",
+                      "boingo_password",]
+        self.unpack_userparams(req_param_names=req_params,)
         asserts.assert_true(
             len(self.passpoint_networks) > 0,
             "Need at least one Passpoint network.")
         wutils.wifi_toggle_state(self.dut, True)
         self.unknown_fqdn = UNKNOWN_FQDN
-        # Setup Uicd cli object for UI interation.
-        self.ui = UicdCli(self.uicd_zip[0], self.uicd_workflows)
-        self.passpoint_workflow = "passpoint-login_%s" % self.dut.model
 
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.dut.unlock_screen()
+        self.dut.adb.shell("input keyevent KEYCODE_HOME")
 
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         passpoint_configs = self.dut.droid.getPasspointConfigs()
         for config in passpoint_configs:
             wutils.delete_passpoint(self.dut, config)
         wutils.reset_wifi(self.dut)
+
 
     """Helper Functions"""
 
@@ -148,6 +146,39 @@ class WifiPasspointTest(WifiBaseTest):
             raise signals.TestFailure("Failed to delete Passpoint configuration"
                                       " with FQDN = %s" % passpoint_config[0])
 
+    def ui_automator_boingo(self):
+        """Run UI automator for boingo passpoint."""
+        # Verify the boingo login page shows
+        asserts.assert_true(
+            uutils.has_element(self.dut, text=BOINGO_UI_TEXT),
+            "Failed to launch boingohotspot login page")
+
+        # Go to the bottom of the page
+        for _ in range(3):
+            self.dut.adb.shell("input swipe 300 900 300 300")
+
+        # Enter username & password
+        screen_dump = uutils.get_screen_dump_xml(self.dut)
+        nodes = screen_dump.getElementsByTagName("node")
+        index = 0
+        for node in nodes:
+            if uutils.match_node(node, class_name="android.widget.EditText"):
+                x, y = eval(node.attributes["bounds"].value.split("][")[0][1:])
+                self.dut.adb.shell("input tap %s %s" % (x, y))
+                if index == 0:
+                    self.dut.adb.shell("input text %s" % self.boingo_username)
+                    index += 1
+                else:
+                    self.dut.adb.shell("input text %s" % self.boingo_password)
+                    break
+                self.dut.adb.shell("input keyevent 111")
+        self.dut.adb.shell("input keyevent 111")  # collapse keyboard
+        self.dut.adb.shell("input swipe 300 900 300 750")  # swipe up to show text
+
+        # Login
+        uutils.wait_and_click(self.dut, text=PASSPOINT_BUTTON)
+        time.sleep(DEFAULT_TIMEOUT)
+
     def start_subscription_provisioning(self, state):
         """Start subscription provisioning with a default provider."""
 
@@ -185,7 +216,8 @@ class WifiPasspointTest(WifiBaseTest):
                     "Passpoint Provisioning status %s" % dut_event['data'][
                         'status'])
                 if int(dut_event['data']['status']) == 7:
-                    self.ui.run(self.dut.serial, self.passpoint_workflow)
+                    time.sleep(DEFAULT_TIMEOUT)
+                    self.ui_automator_boingo()
         # Clear all previous events.
         self.dut.ed.clear_all_events()
 
@@ -199,7 +231,7 @@ class WifiPasspointTest(WifiBaseTest):
                                           "expected_ssids"])
         # Delete the Passpoint profile.
         self.get_configured_passpoint_and_delete()
-        wutils.wait_for_disconnect(self.dut)
+        wutils.wait_for_disconnect(self.dut, timeout=15)
 
 
     """Tests"""
@@ -293,6 +325,22 @@ class WifiPasspointTest(WifiBaseTest):
             raise signals.TestFailure("Failed because an unknown FQDN"
                                       " was successfully deleted.")
 
+    @test_tracker_info(uuid="ac71344f-e5d9-4e70-b15d-8ce24a4b3744")
+    def test_global_reach_passpoint(self):
+        """Test connection to global reach passpoint.
+
+        Steps:
+          1. Install global reach passpoint profile.
+          2. Verify connection to the global reach wifi network.
+          3. Delete passpoint and verify device disconnects.
+        """
+        passpoint_config = self.passpoint_networks[GLOBAL_RE]
+        self.install_passpoint_profile(passpoint_config)
+        ssid = passpoint_config[WifiEnums.SSID_KEY]
+        self.check_passpoint_connection(ssid)
+        self.get_configured_passpoint_and_delete()
+        wutils.wait_for_disconnect(self.dut)
+
 
     @test_tracker_info(uuid="bf03c03a-e649-4e2b-a557-1f791bd98951")
     def test_passpoint_failover(self):
@@ -362,7 +410,6 @@ class WifiPasspointTest(WifiBaseTest):
 
 
     @test_tracker_info(uuid="e3e826d2-7c39-4c37-ab3f-81992d5aa0e8")
-    @WifiBaseTest.wifi_test_wrap
     def test_att_passpoint_network(self):
         """Add a AT&T Passpoint network and verify device connects to it.
 
@@ -376,8 +423,8 @@ class WifiPasspointTest(WifiBaseTest):
         """
         carriers = ["att"]
         operator = get_operator_name(self.log, self.dut)
-        asserts.skip_if(operator not in carriers,
-                        "Device %s does not have a ATT sim" % self.dut.model)
+        if operator not in carriers:
+            self.log.warn("Device %s does not have a ATT sim" % self.dut.model)
 
         passpoint_config = self.passpoint_networks[ATT]
         self.install_passpoint_profile(passpoint_config)

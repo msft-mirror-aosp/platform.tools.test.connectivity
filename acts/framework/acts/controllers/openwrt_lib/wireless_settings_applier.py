@@ -9,6 +9,7 @@ from acts.controllers.openwrt_lib.network_settings import ServiceManager
 
 LEASE_FILE = "/tmp/dhcp.leases"
 OPEN_SECURITY = "none"
+PSK1_SECURITY = "psk"
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
@@ -53,6 +54,14 @@ class WirelessSettingsApplier(object):
     # set channels for 2G and 5G bands
     self.ssh.run("uci set wireless.radio1.channel='%s'" % self.channel_2g)
     self.ssh.run("uci set wireless.radio0.channel='%s'" % self.channel_5g)
+    if self.channel_5g == 165:
+      self.ssh.run("uci set wireless.radio0.htmode='VHT20'")
+    elif self.channel_5g == 132 or self.channel_5g == 136:
+      self.ssh.run("iw reg set ZA")
+      self.ssh.run("uci set wireless.radio0.htmode='VHT40'")
+
+    if self.channel_2g == 13:
+      self.ssh.run("iw reg set AU")
 
     # disable default OpenWrt SSID
     self.ssh.run("uci set wireless.default_radio1.disabled='%s'" %
@@ -98,7 +107,8 @@ class WirelessSettingsApplier(object):
                    (config.name, config.ssid))
       self.ssh.run("uci set wireless.%s.encryption='%s'" %
                    (config.name, config.security))
-      if config.security == PSK_SECURITY or config.security == SAE_SECURITY:
+      if config.security == PSK_SECURITY or config.security == SAE_SECURITY\
+              or config.security == PSK1_SECURITY:
         self.ssh.run("uci set wireless.%s.key='%s'" %
                      (config.name, config.password))
       elif config.security == WEP_SECURITY:
@@ -128,6 +138,8 @@ class WirelessSettingsApplier(object):
     self.ssh.run("wifi down")
     self.ssh.run("rm -f /etc/config/wireless")
     self.ssh.run("wifi config")
+    if self.channel_5g == 132:
+      self.ssh.run("iw reg set US")
     self.ssh.run("cp %s.tmp %s" % (LEASE_FILE, LEASE_FILE))
     self.service_manager.restart(SERVICE_DNSMASQ)
     time.sleep(9)

@@ -47,33 +47,26 @@ class WifiLinkProbeTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
-        self.configure_packet_capture()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True)
 
         asserts.assert_true(len(self.reference_networks) > 0,
                             "Need at least one reference network with psk.")
         self.attenuators = wutils.group_attenuators(self.attenuators)
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         wutils.wifi_toggle_state(self.dut, True)
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
-        self.pcap_procs = wutils.start_pcap(
-            self.packet_capture, 'dual', self.test_name)
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-
-    def on_pass(self, test_name, begin_time):
-        wutils.stop_pcap(self.packet_capture, self.pcap_procs, True)
-
-    def on_fail(self, test_name, begin_time):
-        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:

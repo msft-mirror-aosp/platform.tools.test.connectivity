@@ -117,7 +117,7 @@ class DataPathTest(AwareBaseTest):
             p2_config = self.create_config(ptype)
             if not pub_on_both_same:
                 p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = (
-                    p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] + "-XYZXYZ")
+                        p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] + "-XYZXYZ")
             s_dut.droid.wifiAwarePublish(s_id, p2_config)
             autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
@@ -178,11 +178,11 @@ class DataPathTest(AwareBaseTest):
     """
         (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
          peer_id_on_pub) = self.set_up_discovery(
-             ptype,
-             stype,
-             use_peer_id,
-             pub_on_both=pub_on_both,
-             pub_on_both_same=pub_on_both_same)
+            ptype,
+            stype,
+            use_peer_id,
+            pub_on_both=pub_on_both,
+            pub_on_both_same=pub_on_both_same)
 
         passphrase = None
         pmk = None
@@ -481,8 +481,8 @@ class DataPathTest(AwareBaseTest):
     """
         (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
          peer_id_on_pub) = self.set_up_discovery(
-             aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE,
-             True)
+            aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE,
+            True)
 
         if pub_mismatch:
             peer_id_on_pub = peer_id_on_pub - 1
@@ -1733,61 +1733,6 @@ class DataPathTest(AwareBaseTest):
 
     #######################################
 
-    @test_tracker_info(uuid="2f10a9df-7fbd-490d-a238-3523f47ab54c")
-    @WifiBaseTest.wifi_test_wrap
-    def test_ib_responder_any_usage(self):
-        """Verify that configuring an in-band (Aware discovery) Responder to receive
-    an NDP request from any peer is not permitted by current API level. Override
-    API check to validate that possible (i.e. that failure at current API level
-    is due to an API check and not some underlying failure).
-    """
-
-        # configure all devices to override API check and allow a Responder from ANY
-        for ad in self.android_devices:
-            autils.configure_ndp_allow_any_override(ad, True)
-        self.run_ib_data_path_test(
-            ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
-            stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
-            encr_type=self.ENCR_TYPE_OPEN,
-            use_peer_id=False)
-
-        # configure all devices to respect API check - i.e. disallow a Responder
-        # from ANY
-        for ad in self.android_devices:
-            autils.configure_ndp_allow_any_override(ad, False)
-        self.run_ib_data_path_test(
-            ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
-            stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
-            encr_type=self.ENCR_TYPE_OPEN,
-            use_peer_id=False,
-            expect_failure=True)
-
-    @test_tracker_info(uuid="5889cd41-0a72-4b7b-ab82-5b9168b9b5b8")
-    @WifiBaseTest.wifi_test_wrap
-    def test_oob_responder_any_usage(self):
-        """Verify that configuring an out-of-band (Aware discovery) Responder to
-    receive an NDP request from any peer is not permitted by current API level.
-    Override API check to validate that possible (i.e. that failure at current
-    API level is due to an API check and not some underlying failure).
-    """
-
-        # configure all devices to override API check and allow a Responder from ANY
-        for ad in self.android_devices:
-            autils.configure_ndp_allow_any_override(ad, True)
-        self.run_oob_data_path_test(
-            encr_type=self.ENCR_TYPE_OPEN, use_peer_id=False)
-
-        # configure all devices to respect API check - i.e. disallow a Responder
-        # from ANY
-        for ad in self.android_devices:
-            autils.configure_ndp_allow_any_override(ad, False)
-        self.run_oob_data_path_test(
-            encr_type=self.ENCR_TYPE_OPEN,
-            use_peer_id=False,
-            expect_failure=True)
-
-    #######################################
-
     def run_multiple_regulatory_domains(self, use_ib, init_domain,
                                         resp_domain):
         """Verify that a data-path setup with two conflicting regulatory domains
@@ -1807,12 +1752,12 @@ class DataPathTest(AwareBaseTest):
         if use_ib:
             (resp_req_key, init_req_key, resp_aware_if, init_aware_if,
              resp_ipv6, init_ipv6) = autils.create_ib_ndp(
-                 resp_dut, init_dut,
-                 autils.create_discovery_config(
-                     "GoogleTestXyz", aconsts.PUBLISH_TYPE_UNSOLICITED),
-                 autils.create_discovery_config(
-                     "GoogleTestXyz", aconsts.SUBSCRIBE_TYPE_PASSIVE),
-                 self.device_startup_offset)
+                resp_dut, init_dut,
+                autils.create_discovery_config(
+                    "GoogleTestXyz", aconsts.PUBLISH_TYPE_UNSOLICITED),
+                autils.create_discovery_config(
+                    "GoogleTestXyz", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                self.device_startup_offset)
         else:
             (init_req_key, resp_req_key, init_aware_if, resp_aware_if,
              init_ipv6, resp_ipv6) = autils.create_oob_ndp(init_dut, resp_dut)
@@ -1906,9 +1851,8 @@ class DataPathTest(AwareBaseTest):
                 "DUTs do not support enough NDIs")
 
         (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
-         peer_id_on_pub_null) = self.set_up_discovery(
-             aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE,
-             False)
+         peer_id_on_pub) = self.set_up_discovery(
+            aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE, True)
 
         p_id2, p_mac = autils.attach_with_identity(p_dut)
         s_id2, s_mac = autils.attach_with_identity(s_dut)
@@ -1936,11 +1880,10 @@ class DataPathTest(AwareBaseTest):
             # request in-band network (to completion)
             p_req_key = self.request_network(
                 p_dut,
-                p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, None))
+                p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub))
             s_req_key = self.request_network(
                 s_dut,
-                s_dut.droid.wifiAwareCreateNetworkSpecifier(
-                    s_disc_id, peer_id_on_sub))
+                s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id, peer_id_on_sub))
 
             # Publisher & Subscriber: wait for network formation
             p_net_event_nc = autils.wait_for_event_with_keys(
@@ -2019,11 +1962,10 @@ class DataPathTest(AwareBaseTest):
             # request in-band network (to completion)
             p_req_key = self.request_network(
                 p_dut,
-                p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, None))
+                p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub))
             s_req_key = self.request_network(
                 s_dut,
-                s_dut.droid.wifiAwareCreateNetworkSpecifier(
-                    s_disc_id, peer_id_on_sub))
+                s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id, peer_id_on_sub))
 
             # Publisher & Subscriber: wait for network formation
             p_net_event_nc = autils.wait_for_event_with_keys(
@@ -2092,10 +2034,10 @@ class DataPathTest(AwareBaseTest):
                 resp_interface, "NDP interfaces don't match on Sub/other")
 
             asserts.assert_equal(pub_ipv6, resp_ipv6
-                                 if inits_on_same_dut else init_ipv6,
+            if inits_on_same_dut else init_ipv6,
                                  "NDP IPv6 don't match on Pub/other")
             asserts.assert_equal(sub_ipv6, init_ipv6
-                                 if inits_on_same_dut else resp_ipv6,
+            if inits_on_same_dut else resp_ipv6,
                                  "NDP IPv6 don't match on Sub/other")
         else:
             asserts.assert_false(
@@ -2237,6 +2179,14 @@ class DataPathTest(AwareBaseTest):
             len(self.android_devices) < 3,
             'A minimum of 3 devices is needed to run the test, have %d' % len(
                 self.android_devices))
+        asserts.skip_if(
+            self.android_devices[0]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2
+            or self.android_devices[1]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2
+            or self.android_devices[2]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2,
+            "DUTs do not support enough NDIs")
 
         duts = self.android_devices
         loop_len = len(duts)
@@ -2271,8 +2221,8 @@ class DataPathTest(AwareBaseTest):
 
             (init_req_key, resp_req_key, init_aware_if, resp_aware_if,
              init_ipv6, resp_ipv6) = autils.create_oob_ndp_on_sessions(
-                 duts[i], duts[peer_device], ids[i], macs[i], ids[peer_device],
-                 macs[peer_device])
+                duts[i], duts[peer_device], ids[i], macs[i], ids[peer_device],
+                macs[peer_device])
 
             reqs[i].append(init_req_key)
             reqs[peer_device].append(resp_req_key)
@@ -2296,3 +2246,110 @@ class DataPathTest(AwareBaseTest):
                 "ifs": ifs,
                 "ipv6s": ipv6s
             })
+
+    @test_tracker_info(uuid="88cd288f-71ad-40fe-94d7-34e60fb6c962")
+    def test_ndp_initiate_from_both_sides_with_accepts_any_responder(self):
+        """Validate when two device both try to initiate a connection to each other, both NDP can be
+        formed.
+
+        1. Device A and B both publish and file accept any request.
+        2. Device A and B both subscribe to the peer
+        3. When get a discovery match file a network request to the peer
+        4. Wait for NDP setup finish.
+        """
+        asserts.skip_if(
+            self.android_devices[0]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2
+            or self.android_devices[1]
+            .aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES] < 2,
+            "DUTs do not support enough NDIs.")
+        ptype = aconsts.PUBLISH_TYPE_UNSOLICITED
+        stype = aconsts.SUBSCRIBE_TYPE_PASSIVE
+        dut1 = self.android_devices[0]
+        dut2 = self.android_devices[1]
+
+        # Publisher+Subscriber: attach and wait for confirmation
+        dut1_id = dut1.droid.wifiAwareAttach()
+        autils.wait_for_event(dut1, aconsts.EVENT_CB_ON_ATTACHED)
+        time.sleep(self.device_startup_offset)
+        dut2_id = dut2.droid.wifiAwareAttach()
+        autils.wait_for_event(dut2, aconsts.EVENT_CB_ON_ATTACHED)
+
+        # Publisher: start publish and wait for confirmation
+        dut1_p_disc_id = dut1.droid.wifiAwarePublish(dut1_id, self.create_config(ptype))
+        autils.wait_for_event(dut1, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+        dut2_p_disc_id = dut2.droid.wifiAwarePublish(dut2_id, self.create_config(ptype))
+        autils.wait_for_event(dut2, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+        # Publisher: file an accept any NetworkRequest
+        dut1_p_req_key = self.request_network(
+            dut1,
+            dut1.droid.wifiAwareCreateNetworkSpecifier(
+                dut1_p_disc_id, None, self.PASSPHRASE, None))
+
+        dut2_p_req_key = self.request_network(
+            dut2,
+            dut2.droid.wifiAwareCreateNetworkSpecifier(
+                dut2_p_disc_id, None, self.PASSPHRASE, None))
+
+        # Subscriber: start subscribe and wait for discovery match
+        dut2_s_disc_id = dut2.droid.wifiAwareSubscribe(dut2_id, self.create_config(stype))
+        autils.wait_for_event(dut2, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+
+        dut1_s_disc_id = dut1.droid.wifiAwareSubscribe(dut1_id, self.create_config(stype))
+        autils.wait_for_event(dut1, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+
+        discovery_event = autils.wait_for_event(
+            dut2, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+        dut2_peer_id_on_sub = discovery_event["data"][
+            aconsts.SESSION_CB_KEY_PEER_ID]
+
+        discovery_event = autils.wait_for_event(
+            dut1, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+        dut1_peer_id_on_sub = discovery_event["data"][
+            aconsts.SESSION_CB_KEY_PEER_ID]
+
+        # Subscriber: file a NetworkRequest with peer Id
+        dut2_s_req_key = self.request_network(
+            dut2,
+            dut2.droid.wifiAwareCreateNetworkSpecifier(
+                dut2_s_disc_id, dut2_peer_id_on_sub, self.PASSPHRASE, None))
+
+        # Avoid publisher and subscriber requests are handled in the same NDP
+        time.sleep(1)
+
+        dut1_s_req_key = self.request_network(
+            dut1,
+            dut1.droid.wifiAwareCreateNetworkSpecifier(
+                dut1_s_disc_id, dut1_peer_id_on_sub, self.PASSPHRASE, None))
+
+        # Publisher+Subscriber: wait and check the network callback.
+        autils.wait_for_event_with_keys(
+            dut1, cconsts.EVENT_NETWORK_CALLBACK,
+            autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, dut1_p_req_key))
+
+        autils.wait_for_event_with_keys(
+            dut2, cconsts.EVENT_NETWORK_CALLBACK,
+            autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, dut2_s_req_key))
+
+        autils.wait_for_event_with_keys(
+            dut2, cconsts.EVENT_NETWORK_CALLBACK,
+            autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, dut2_p_req_key))
+
+        autils.wait_for_event_with_keys(
+            dut1, cconsts.EVENT_NETWORK_CALLBACK,
+            autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, dut1_s_req_key))
+
