@@ -726,8 +726,13 @@ def reset_wifi(ad):
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
+    removed = []
     for n in networks:
-        ad.droid.wifiForgetNetwork(n['networkId'])
+        if n['networkId'] not in removed:
+            ad.droid.wifiForgetNetwork(n['networkId'])
+            removed.append(n['networkId'])
+        else:
+            continue
         try:
             event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                     SHORT_TIMEOUT)
@@ -782,9 +787,11 @@ def wifi_forget_network(ad, net_ssid):
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
+    removed = []
     for n in networks:
-        if net_ssid in n[WifiEnums.SSID_KEY]:
+        if net_ssid in n[WifiEnums.SSID_KEY] and n['networkId'] not in removed:
             ad.droid.wifiForgetNetwork(n['networkId'])
+            removed.append(n['networkId'])
             try:
                 event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                         SHORT_TIMEOUT)
