@@ -59,6 +59,7 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_FRE
 from acts_contrib.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts_contrib.test_utils.tel.tel_defines import NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST
+from acts_contrib.test_utils.tel.tel_defines import DIALER_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
@@ -90,6 +91,7 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COU
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
+from acts_contrib.test_utils.tel.tel_defines import MESSAGE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
@@ -9267,9 +9269,12 @@ def install_dialer_apk(ad, dialer_util):
     ad.log.info("Install dialer_util %s", dialer_util)
     ad.adb.install("-r -g %s" % dialer_util, timeout=300, ignore_status=True)
     time.sleep(3)
-    if not ad.is_apk_installed("com.google.android.dialer"):
-        ad.log.info("com.google.android.dialer is not installed")
+    if not ad.is_apk_installed(DIALER_PACKAGE_NAME):
+        ad.log.info("%s is not installed", DIALER_PACKAGE_NAME)
         return False
+    if ad.get_apk_version(DIALER_PACKAGE_NAME):
+        ad.log.info("Current version of %s: %s", DIALER_PACKAGE_NAME,
+                    ad.get_apk_version(DIALER_PACKAGE_NAME))
     return True
 
 
@@ -9286,9 +9291,12 @@ def install_message_apk(ad, message_util):
     ad.log.info("Install message_util %s", message_util)
     ad.adb.install("-r -g %s" % message_util, timeout=300, ignore_status=True)
     time.sleep(3)
-    if not ad.is_apk_installed("com.google.android.apps.messaging"):
-        ad.log.info("com.google.android.apps.messaging is not installed")
+    if not ad.is_apk_installed(MESSAGE_PACKAGE_NAME):
+        ad.log.info("%s is not installed", MESSAGE_PACKAGE_NAME)
         return False
+    if ad.get_apk_version(MESSAGE_PACKAGE_NAME):
+        ad.log.info("Current version of %s: %s", MESSAGE_PACKAGE_NAME,
+                    ad.get_apk_version(MESSAGE_PACKAGE_NAME))
     return True
 
 
