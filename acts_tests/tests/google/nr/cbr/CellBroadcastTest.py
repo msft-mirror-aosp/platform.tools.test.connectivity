@@ -90,6 +90,7 @@ class CellBroadcastTest(TelephonyBaseTest):
         self.emergency_alert_settings_conf = self.user_params.get("emergency_alert_settings")
         self.emergency_alert_channels_conf = self.user_params.get("emergency_alert_channels")
         self.verify_vibration = self.user_params.get("verify_vibration", True)
+        self._disable_vibration_check_for_11()
         self.verify_sound = self.user_params.get("verify_sound", True)
         self.region_plmn_dict = load_config(self.region_plmn_list_conf)
         self.emergency_alert_settings_dict = load_config(self.emergency_alert_settings_conf)
@@ -122,6 +123,9 @@ class CellBroadcastTest(TelephonyBaseTest):
             ad.log.info("device not in %s region", region.upper())
             return False
 
+    def _disable_vibration_check_for_11(self):
+        if self.android_devices[0].adb.getprop("ro.build.version.release") in ("11", "R"):
+            self.verify_vibration = False
 
     def _get_toggle_value(self, ad, alert_text=None):
         node = uutils.wait_and_get_xml_node(ad, timeout=30, text=alert_text)
