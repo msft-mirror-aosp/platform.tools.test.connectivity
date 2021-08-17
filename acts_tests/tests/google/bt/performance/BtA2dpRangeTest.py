@@ -27,13 +27,12 @@ from acts.signals import TestPass, TestError
 
 INIT_ATTEN = 0
 
+
 class BtA2dpRangeTest(A2dpBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
         self.bt_logger = log.BluetoothMetricLogger.for_test_case()
-        req_params = [
-            'attenuation_vector', 'codecs'
-        ]
+        req_params = ['attenuation_vector', 'codecs']
         #'attenuation_vector' is a dict containing: start, stop and step of
         #attenuation changes
         #'codecs' is a list containing all codecs required in the tests
@@ -44,7 +43,7 @@ class BtA2dpRangeTest(A2dpBaseTest):
     def setup_class(self):
         super().setup_class()
         opt_params = ['gain_mismatch', 'dual_chain']
-        self.unpack_userparams(opt_params)
+        self.unpack_userparams(opt_params, dual_chain=None, gain_mismatch=None)
         # Enable BQR on all android devices
         btutils.enable_bqr(self.android_devices)
         if hasattr(self, 'dual_chain') and self.dual_chain == 1:
@@ -119,16 +118,15 @@ class BtA2dpRangeTest(A2dpBaseTest):
         Args:
             df: Summary of results contains attenuation, DUT RSSI, remote RSSI and Tx Power
         """
-        self.plot = bokeh_figure.BokehFigure(title='{}'.format(
-            self.current_test_name),
-                                           x_label='Pathloss (dBm)',
-                                           primary_y_label='RSSI (dBm)',
-                                           secondary_y_label='TX Power (dBm)',
-                                           axis_label_size='16pt',
-                                           legend_label_size='16pt',
-                                           axis_tick_label_size='16pt',
-                                           sizing_mode='stretch_both'
-                                           )
+        self.plot = bokeh_figure.BokehFigure(
+            title='{}'.format(self.current_test_name),
+            x_label='Pathloss (dBm)',
+            primary_y_label='RSSI (dBm)',
+            secondary_y_label='TX Power (dBm)',
+            axis_label_size='16pt',
+            legend_label_size='16pt',
+            axis_tick_label_size='16pt',
+            sizing_mode='stretch_both')
         self.plot.add_line(df.index,
                            df['rssi_primary'],
                            legend='DUT RSSI (dBm)',
@@ -152,7 +150,7 @@ class BtA2dpRangeTest(A2dpBaseTest):
         """Set the attenuation(s) for current test condition.
 
         """
-        if hasattr(self, 'dual_chain'):
+        if hasattr(self, 'dual_chain') and self.dual_chain == 1:
             ramp_attenuation(self.atten_c0,
                              atten,
                              attenuation_step_max=2,
