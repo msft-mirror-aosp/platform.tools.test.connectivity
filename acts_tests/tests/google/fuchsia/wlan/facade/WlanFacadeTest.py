@@ -19,6 +19,7 @@ Script for verifying that we can invoke methods of the WlanFacade.
 """
 from acts.base_test import BaseTestClass
 from acts import asserts, signals
+import array
 
 
 class WlanFacadeTest(BaseTestClass):
@@ -28,6 +29,9 @@ class WlanFacadeTest(BaseTestClass):
             raise signals.TestAbortClass(
                 "Sorry, please try verifying FuchsiaDevice is in your "
                 "config file and try again.")
+
+        for fd in self.fuchsia_devices:
+            fd.configure_wlan()
 
     def on_fail(self, test_name, begin_time):
         for fd in self.fuchsia_devices:
@@ -67,4 +71,20 @@ class WlanFacadeTest(BaseTestClass):
         country_string = str(array.array('b', country_bytes),
                              encoding='us-ascii')
         self.log.info('Got country %s (%s)', country_string, country_bytes)
+        return True
+
+    def test_get_dev_path(self):
+        wlan_lib = self.fuchsia_devices[0].wlan_lib
+
+        result = wlan_lib.wlanPhyIdList()
+        error = result['error']
+        asserts.assert_true(error is None, error)
+        phy_id = result['result'][0]
+
+        result = wlan_lib.wlanGetDevPath(phy_id)
+        error = result['error']
+        asserts.assert_true(error is None, error)
+
+        dev_path = result['result']
+        self.log.info('Got device path: %s', dev_path)
         return True

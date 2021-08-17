@@ -220,6 +220,7 @@ class FuchsiaDevice:
         self.ssh_config = fd_conf_data.get("ssh_config", None)
         self.authorized_file = fd_conf_data.get("authorized_file_loc", None)
         self.serial_number = fd_conf_data.get("serial_number", None)
+        self.device_type = fd_conf_data.get("device_type", None)
         self.product_type = fd_conf_data.get("product_type", None)
         self.board_type = fd_conf_data.get("board_type", None)
         self.build_number = fd_conf_data.get("build_number", None)
@@ -658,22 +659,9 @@ class FuchsiaDevice:
                         timeout=3)
                     self.clean_up_services()
         elif reboot_type == FUCHSIA_REBOOT_TYPE_SOFT_AND_FLASH:
-            if use_ssh:
-                self.log.info('Sending reboot command via SSH to '
-                              'get into bootloader.')
-                with utils.SuppressLogOutput():
-                    self.clean_up_services()
-                    # Sending this command will put the device in fastboot
-                    # but it does not guarantee the device will be in fastboot
-                    # after this command.  There is no check so if there is an
-                    # expectation of the device being in fastboot, then some
-                    # other check needs to be done.
-                    self.send_command_ssh(
-                        'dm rb',
-                        timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
-                        skip_status_code_check=True)
-            ## Todo: Add elif for SL4F if implemented in SL4F
-            flash(self)
+            flash(self,
+                  use_ssh,
+                  FUCHSIA_RECONNECT_AFTER_REBOOT_TIME)
             skip_unreachable_check = True
         elif reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Power cycling FuchsiaDevice (%s)' % self.ip)
@@ -823,6 +811,24 @@ class FuchsiaDevice:
                 if ssh_conn is not None:
                     ssh_conn.close()
         return command_result
+
+    def version(self,
+                timeout=FUCHSIA_DEFAULT_COMMAND_TIMEOUT):
+        """Returns the version of Fuchsia running on the device.
+
+        Args:
+            timeout: (int) Seconds to wait for command to run.
+
+        Returns:
+            A string containing the Fuchsia version number.
+            For example, "5.20210713.2.1".
+
+        Raises:
+            DeviceOffline: If SSH to the device fails.
+        """
+        return self.send_command_ssh(
+            FUCHSIA_GET_VERSION_CMD,
+            timeout=timeout).stdout
 
     def ping(self,
              dest_ip,
@@ -1006,7 +1012,7 @@ class FuchsiaDevice:
             process_name: the name of the process to start or stop
             action: specify whether to start or stop a process
         """
-        if not process_name[-4:] == '.cmx':
+        if not (process_name[-4:] == '.cmx' or process_name[-4:] == '.cml'):
             process_name = '%s.cmx' % process_name
         unable_to_connect_msg = None
         process_state = False
@@ -1174,10 +1180,8 @@ class FuchsiaDevice:
 
             out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
             full_out_path = os.path.join(self.log_path, out_name)
-            fuchsia_version = self.send_command_ssh(
-                FUCHSIA_GET_VERSION_CMD).stdout
             fw_file = open(full_out_path, 'w')
-            fw_file.write('%s\n' % fuchsia_version)
+            fw_file.write('%s\n' % self.version())
             fw_file.close()
 
     def stop_services(self):

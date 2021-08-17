@@ -28,9 +28,11 @@ SERVICE_FIREWALL = "firewall"
 SERVICE_IPSEC = "ipsec"
 SERVICE_XL2TPD = "xl2tpd"
 SERVICE_ODHCPD = "odhcpd"
+SERVICE_NODOGSPLASH = "nodogsplash"
 PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
 L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
 NAT6_PACKAGE = "ip6tables kmod-ipt-nat6"
+CAPTIVE_PORTAL_PACKAGE = "nodogsplash"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
@@ -82,7 +84,8 @@ class NetworkSettings(object):
             "disable_ipv6": self.enable_ipv6,
             "setup_ipv6_bridge": self.remove_ipv6_bridge,
             "ipv6_prefer_option": self.remove_ipv6_prefer_option,
-            "block_dns_response": self.unblock_dns_response
+            "block_dns_response": self.unblock_dns_response,
+            "setup_captive_portal": self.remove_cpative_portal
         }
         # This map contains cleanup functions to restore the configuration to
         # its default state. We write these keys to HISTORY_CONFIG_PATH prior to
@@ -432,6 +435,8 @@ class NetworkSettings(object):
         self.setup_ppp_secret()
         # /etc/config/firewall & /etc/firewall.user
         self.setup_firewall_rules_for_l2tp()
+        # setup vpn server local ip
+        self.setup_vpn_local_ip()
         # generate cert and key for rsa
         self.generate_vpn_cert_keys(country, org)
         # restart service
@@ -444,6 +449,7 @@ class NetworkSettings(object):
         """Remove l2tp vpn server on OpenWrt."""
         self.config.discard("setup_vpn_l2tp_server")
         self.restore_firewall_rules_for_l2tp()
+        self.remove_vpn_local_ip()
         self.service_manager.need_restart(SERVICE_IPSEC)
         self.service_manager.need_restart(SERVICE_XL2TPD)
         self.service_manager.need_restart(SERVICE_FIREWALL)
@@ -467,22 +473,29 @@ class NetworkSettings(object):
 
     def setup_ipsec(self):
         """Setup ipsec config."""
-        def load_config(data):
+        def load_ipsec_config(data, rightsourceip=False):
             for i in data.keys():
                 config.append(i)
                 for j in data[i].keys():
                     config.append("\t %s=%s" % (j, data[i][j]))
+                if rightsourceip:
+                    config.append("\t rightsourceip=%s.16/26" % self.l2tp.address.rsplit(".", 1)[0])
                 config.append("")
 
         config = []
-        load_config(network_const.IPSEC_CONF)
-        load_config(network_const.IPSEC_L2TP_PSK)
-        load_config(network_const.IPSEC_L2TP_RSA)
+        load_ipsec_config(network_const.IPSEC_CONF)
+        load_ipsec_config(network_const.IPSEC_L2TP_PSK)
+        load_ipsec_config(network_const.IPSEC_L2TP_RSA)
+        load_ipsec_config(network_const.IPSEC_HYBRID_RSA, True)
+        load_ipsec_config(network_const.IPSEC_XAUTH_PSK, True)
+        load_ipsec_config(network_const.IPSEC_XAUTH_RSA, True)
         self.create_config_file("\n".join(config), "/etc/ipsec.conf")
 
         ipsec_secret = []
         ipsec_secret.append(r": PSK \"%s\"" % self.l2tp.psk_secret)
         ipsec_secret.append(r": RSA \"%s\"" % "serverKey.der")
+        ipsec_secret.append(r"%s : XAUTH \"%s\"" % (self.l2tp.username,
+                                                    self.l2tp.password))
         self.create_config_file("\n".join(ipsec_secret), "/etc/ipsec.secrets")
 
     def setup_xl2tpd(self, ip_range=20):
@@ -686,6 +699,24 @@ class NetworkSettings(object):
         """Disable pptp service."""
         self.package_remove(PPTP_PACKAGE)
 
+    def setup_vpn_local_ip(self):
+        """Setup VPN Server local ip on OpenWrt for client ping verify."""
+        self.ssh.run("uci set network.lan2=interface")
+        self.ssh.run("uci set network.lan2.type=bridge")
+        self.ssh.run("uci set network.lan2.ifname=eth1.2")
+        self.ssh.run("uci set network.lan2.proto=static")
+        self.ssh.run("uci set network.lan2.ipaddr=\"%s\"" % self.l2tp.address)
+        self.ssh.run("uci set network.lan2.netmask=255.255.255.0")
+        self.ssh.run("uci set network.lan2=interface")
+        self.service_manager.reload(SERVICE_NETWORK)
+        self.commit_changes()
+
+    def remove_vpn_local_ip(self):
+        """Discard vpn local ip on OpenWrt."""
+        self.ssh.run("uci delete network.lan2")
+        self.service_manager.reload(SERVICE_NETWORK)
+        self.commit_changes()
+
     def enable_ipv6(self):
         """Enable ipv6 on OpenWrt."""
         self.ssh.run("uci set network.lan.ipv6=1")
@@ -786,7 +817,6 @@ class NetworkSettings(object):
 
         Args:
             tcpdump_file_name: tcpdump file name on OpenWrt.
-            pid: tcpdump process id.
             pull_dir: Keep none if no need to pull.
         Returns:
             tcpdump abs_path on host.
@@ -827,6 +857,17 @@ class NetworkSettings(object):
         self.config.discard("block_dns_response")
         self.remove_custom_firewall_rules()
         self.service_manager.need_restart(SERVICE_FIREWALL)
+        self.commit_changes()
+
+    def setup_captive_portal(self):
+        self.package_install(CAPTIVE_PORTAL_PACKAGE)
+        self.config.add("setup_captive_portal")
+        self.service_manager.need_restart(SERVICE_NODOGSPLASH)
+        self.commit_changes()
+
+    def remove_cpative_portal(self):
+        self.package_remove(CAPTIVE_PORTAL_PACKAGE)
+        self.config.discard("setup_captive_portal")
         self.commit_changes()
 
 

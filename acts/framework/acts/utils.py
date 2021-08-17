@@ -969,6 +969,7 @@ def adb_shell_ping(ad,
         ad.log.warning("Ping Test to %s failed with exception %s", dest_ip, e)
         return False
 
+
 def zip_directory(zip_name, src_dir):
     """Compress a directory to a .zip file.
 
@@ -983,6 +984,7 @@ def zip_directory(zip_name, src_dir):
             for file in files:
                 path = os.path.join(root, file)
                 zip.write(path, os.path.relpath(path, src_dir))
+
 
 def unzip_maintain_permissions(zip_path, extract_location):
     """Unzip a .zip file while maintaining permissions.
@@ -1300,6 +1302,7 @@ class SuppressLogOutput(object):
     """Context manager used to suppress all logging output for the specified
     logger and level(s).
     """
+
     def __init__(self, logger=logging.getLogger(), log_levels=None):
         """Create a SuppressLogOutput context manager
 
@@ -1332,6 +1335,7 @@ class BlockingTimer(object):
     """Context manager used to block until a specified amount of time has
      elapsed.
      """
+
     def __init__(self, secs):
         """Initializes a BlockingTimer
 
@@ -1511,14 +1515,6 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
     all_ips_and_interfaces = comm_channel.run(
         '(ip -o -4 addr show; ip -o -6 addr show) | '
         'awk \'{print $2" "$4}\'').stdout
-    #ipv4_addresses = comm_channel.run(
-    #    'ip -o -4 addr show| awk \'{print $2": "$4}\'').stdout
-    #ipv6_addresses = comm_channel._ssh_session.run(
-    #    'ip -o -6 addr show| awk \'{print $2": "$4}\'').stdout
-    #if desired_ip_address in ipv4_addresses:
-    #    ip_addresses_to_search = ipv4_addresses
-    #elif desired_ip_address in ipv6_addresses:
-    #    ip_addresses_to_search = ipv6_addresses
     for ip_address_and_interface in all_ips_and_interfaces.split('\n'):
         if desired_ip_address in ip_address_and_interface:
             return ip_address_and_interface.split()[1][:-1]
@@ -1695,7 +1691,7 @@ def ping(comm_channel,
 
 def can_ping(comm_channel,
              dest_ip,
-             count=1,
+             count=3,
              interval=1000,
              timeout=1000,
              size=56,
@@ -1808,3 +1804,44 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
             del zeroconf
     logging.error('Unable to get ip address for %s' % device_mdns_name)
     return None
+
+
+def get_device(devices, device_type):
+    """Finds a unique device with the specified "device_type" attribute from a
+    list. If none is found, defaults to the first device in the list.
+
+    Example:
+        get_device(android_devices, device_type="DUT")
+        get_device(fuchsia_devices, device_type="DUT")
+        get_device(android_devices + fuchsia_devices, device_type="DUT")
+
+    Args:
+        devices: A list of device controller objects.
+        device_type: (string) Type of device to find, specified by the
+            "device_type" attribute.
+
+    Returns:
+        The matching device controller object, or the first device in the list
+        if not found.
+
+    Raises:
+        ValueError is raised if none or more than one device is
+        matched.
+    """
+    if not devices:
+        raise ValueError('No devices available')
+
+    matches = [d for d in devices if
+               hasattr(d, 'device_type') and d.device_type == device_type]
+
+    if len(matches) == 0:
+        # No matches for the specified "device_type", use the first device
+        # declared.
+        return devices[0]
+    if len(matches) > 1:
+        # Specifing multiple devices with the same "device_type" is a
+        # configuration error.
+        raise ValueError(
+            'More than one device matching "device_type" == "{}"'.format(device_type))
+
+    return matches[0]

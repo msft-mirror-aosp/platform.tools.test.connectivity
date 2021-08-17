@@ -16,14 +16,16 @@
 
 # This is test util for subscription setup.
 # It will be deleted once we have better solution for subscription ids.
-from future import standard_library
-standard_library.install_aliases()
+import re
+import time
+
 from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
+from future import standard_library
 
-import time
+standard_library.install_aliases()
 
 
 def initial_set_up_for_subid_infomation(log, ad):
@@ -155,6 +157,28 @@ def get_incoming_message_sub_id(ad):
         return ad.incoming_message_sub_id
     else:
         return ad.droid.subscriptionGetDefaultSmsSubId()
+
+
+def get_subid_by_adb(ad, sim_slot_index):
+    """Get the subscription ID for a SIM at a particular slot via adb command.
+
+    Args:
+        ad: android device object.
+        sim_slot_index: slot 0 or slot 1.
+
+    Returns:
+        Subscription ID.
+    """
+    try:
+        output = ad.adb.shell("dumpsys isub | grep subIds")
+        pattern = re.compile(r"sSlotIndexToSubId\[%d\]:\s*subIds=%d=\[(\d)\]" %
+            (sim_slot_index, sim_slot_index))
+        sub_id = pattern.findall(output)
+    except Exception as e:
+        error_msg = "%s due to %s" % ("Failed to get the subid", e)
+        ad.log.error(error_msg)
+        return INVALID_SUB_ID
+    return int(sub_id[0]) if sub_id else INVALID_SUB_ID
 
 
 def get_subid_from_slot_index(log, ad, sim_slot_index):
@@ -553,3 +577,19 @@ def get_subid_on_same_network_of_host_ad(ads, host_sub_id=None, type="voice"):
                         p2_mnc = mnc
 
     return host_sub_id, p1_sub_id, p2_sub_id
+
+def get_slot_index_from_data_sub_id(ad):
+    """Get slot index from given sub ID for data
+
+    Args:
+        ad: Android object
+
+    Returns:
+        0 for pSIM or 1 for eSIM. Otherwise -1 will be returned.
+    """
+    data_sub_id = get_default_data_sub_id(ad)
+    sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    for info in sub_info:
+        if info['subscriptionId'] == data_sub_id:
+            return info['simSlotIndex']
+    return INVALID_SUB_ID

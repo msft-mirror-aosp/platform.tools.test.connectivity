@@ -397,7 +397,6 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             error_msg = " data transfer fail. "
             self.my_error_msg +=  error_msg
             self.log.info(error_msg)
-            return False
         return self._check_after_no_service()
 
     def _in_out_service_pdp_off(self, idle_time):
@@ -637,7 +636,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 return False
 
             self.log.info("CSFB call in service area")
-            tasks = [(mo_voice_call, (self.log, ad, CSFB_CALL, true, 30))
+            tasks = [(mo_voice_call, (self.log, ad, CSFB_CALL, True, 30))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 self._on_fail("csfb_call_fail, ")

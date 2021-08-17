@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2016 - Google
+#   Copyright 2021 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -287,7 +287,13 @@ def tethering_check_internet_connection(log, provider, client_list,
     return False
 
 
-def wifi_cell_switching(log, ad, nw_gen, wifi_network_ssid=None, wifi_network_pass=None, sa_5g=False):
+def wifi_cell_switching(log,
+                        ad,
+                        nw_gen,
+                        wifi_network_ssid=None,
+                        wifi_network_pass=None,
+                        sa_5g=False,
+                        nsa_mmwave=False):
     """Test data connection network switching when phone on <nw_gen>.
 
     Ensure phone is on <nw_gen>
@@ -303,13 +309,14 @@ def wifi_cell_switching(log, ad, nw_gen, wifi_network_ssid=None, wifi_network_pa
         wifi_network_ssid: ssid for live wifi network.
         wifi_network_pass: password for live wifi network.
         nw_gen: network generation the phone should be camped on.
+        nsa_mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if pass.
     """
     try:
         if nw_gen == GEN_5G:
-            if not provision_device_for_5g(log, ad, sa_5g):
+            if not provision_device_for_5g(log, ad, sa_5g, nsa_mmwave):
                 return False
         elif nw_gen:
             if not ensure_network_generation_for_subscription(
@@ -443,7 +450,7 @@ def airplane_mode_test(log, ad, wifi_ssid=None, retries=3):
         toggle_airplane_mode(log, ad, False)
 
 
-def data_connectivity_single_bearer(log, ad, nw_gen=None, sa_5g=False):
+def data_connectivity_single_bearer(log, ad, nw_gen=None, sa_5g=False, nsa_mmwave=False):
     """Test data connection: single-bearer (no voice).
 
     Turn off airplane mode, enable Cellular Data.
@@ -456,6 +463,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, sa_5g=False):
         log: log object.
         ad: android object.
         nw_gen: network generation the phone should on.
+        nsa_mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if success.
@@ -467,7 +475,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, sa_5g=False):
         wait_time = 2 * wait_time
 
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, ad, sa_5g):
+        if not provision_device_for_5g(log, ad, sa_5g, nsa_mmwave):
             return False
     elif nw_gen:
         if not ensure_network_generation_for_subscription(
@@ -512,7 +520,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, sa_5g=False):
             return False
 
         if nw_gen == GEN_5G:
-            if not check_current_network_5g(ad, sa_5g):
+            if not check_current_network_5g(ad, sa_5g=sa_5g, nsa_mmwave=nsa_mmwave):
                 return False
         else:
             if not is_droid_in_network_generation_for_subscription(
@@ -995,13 +1003,20 @@ def test_internet_connection(log, provider, clients,
     return True
 
 
-def test_setup_tethering(log, provider, clients, network_generation=None, sa_5g=False):
+def test_setup_tethering(log,
+                        provider,
+                        clients,
+                        network_generation=None,
+                        sa_5g=False,
+                        nsa_mmwave=False):
     """Pre setup steps for WiFi tethering test.
 
     Ensure all ads are idle.
     Ensure tethering provider:
         turn off APM, turn off WiFI, turn on Data.
         have Internet connection, no active ongoing WiFi tethering.
+    sa_5g: True if nw_gen is sa 5G
+    nsa_mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if success.
@@ -1012,7 +1027,7 @@ def test_setup_tethering(log, provider, clients, network_generation=None, sa_5g=
     ensure_phones_idle(log, clients)
     wifi_toggle_state(log, provider, False)
     if network_generation == RAT_5G:
-        if not provision_device_for_5g(log, provider, sa_5g):
+        if not provision_device_for_5g(log, provider, sa_5g, nsa_mmwave):
             return False
     elif network_generation:
         if not ensure_network_generation(
@@ -1688,7 +1703,9 @@ def test_wifi_tethering(log, provider,
                         do_cleanup=True,
                         ssid=None,
                         password=None,
-                        pre_teardown_func=None):
+                        pre_teardown_func=None,
+                        sa_5g=False,
+                        nsa_mmwave=False):
     """WiFi Tethering test
     Args:
         log: log object.
@@ -1711,9 +1728,11 @@ def test_wifi_tethering(log, provider,
             This is optional. Default value is None.
             If it's None, a random string will be generated.
         pre_teardown_func: execute custom actions between tethering setup adn teardown.
+        sa_5g: True if nw_gen is sa 5G
+        nsa_mmwave: True if nw_gen is nsa 5g mmwave.
 
     """
-    if not test_setup_tethering(log, provider, clients, nw_gen):
+    if not test_setup_tethering(log, provider, clients, nw_gen, sa_5g, nsa_mmwave):
         log.error("Verify %s Internet access failed.", nw_gen)
         return False
 
@@ -2013,13 +2032,17 @@ def test_wifi_cell_switching_in_call(log,
 def verify_toggle_data_during_wifi_tethering(log,
                                              provider,
                                              clients,
-                                             new_gen=None):
+                                             new_gen=None,
+                                             sa_5g=False,
+                                             nsa_mmwave=False):
     """Verify toggle Data network during WiFi Tethering.
     Args:
         log: log object.
         provider: android device object for provider.
         clients: android device objects for clients.
         new_gen: network generation.
+        sa_5g: True if nw_gen is sa 5G
+        nsa_mmwave: True if nw_gen is nsa 5g mmwave.
     Returns:
         True if pass, otherwise False.
 
@@ -2035,7 +2058,9 @@ def verify_toggle_data_during_wifi_tethering(log,
                                    check_interval=10,
                                    check_iteration=2,
                                    do_cleanup=False,
-                                   ssid=ssid):
+                                   ssid=ssid,
+                                   sa_5g=sa_5g,
+                                   nsa_mmwave=nsa_mmwave):
             log.error("WiFi Tethering failed.")
             return False
         if not provider.droid.wifiIsApEnabled():
@@ -2081,4 +2106,48 @@ def verify_toggle_data_during_wifi_tethering(log,
                                       provider,
                                       clients):
             return False
+    return True
+
+def deactivate_and_verify_cellular_data(log, ad):
+    """Toggle off cellular data and ensure there is no internet connection.
+
+    Args:
+        ad: Android object
+
+    Returns:
+        True if cellular data is deactivated successfully. Otherwise False.
+    """
+    ad.log.info('Deactivating cellular data......')
+    ad.droid.telephonyToggleDataConnection(False)
+
+    if not wait_for_cell_data_connection(log, ad, False):
+        ad.log.error("Failed to deactivate cell data connection.")
+        return False
+
+    if not verify_internet_connection(log, ad, expected_state=False):
+        ad.log.error("Internet connection is still available.")
+        return False
+
+    return True
+
+def activate_and_verify_cellular_data(log, ad):
+    """Toggle on cellular data and ensure there is internet connection.
+
+    Args:
+        ad: Android object
+
+    Returns:
+        True if cellular data is activated successfully. Otherwise False.
+    """
+    ad.log.info('Activating cellular data......')
+    ad.droid.telephonyToggleDataConnection(True)
+
+    if not wait_for_cell_data_connection(log, ad, True):
+        ad.log.error("Failed to activate data connection.")
+        return False
+
+    if not verify_internet_connection(log, ad, retries=3):
+        ad.log.error("Internet connection is NOT available.")
+        return False
+
     return True

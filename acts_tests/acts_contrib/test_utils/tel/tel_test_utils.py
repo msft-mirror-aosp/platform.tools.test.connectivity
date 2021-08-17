@@ -59,6 +59,7 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_FRE
 from acts_contrib.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts_contrib.test_utils.tel.tel_defines import NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST
+from acts_contrib.test_utils.tel.tel_defines import DIALER_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
@@ -90,6 +91,7 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COU
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
+from acts_contrib.test_utils.tel.tel_defines import MESSAGE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
@@ -108,6 +110,7 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import RAT_1XRTT
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
+from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
@@ -178,7 +181,9 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import rat_families_for_netwo
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id, get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
@@ -5861,7 +5866,7 @@ def wait_for_ims_registered(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
     return _wait_for_droid_in_state(log, ad, max_time, is_ims_registered)
 
 
-def is_volte_available(log, ad, sub_id):
+def is_volte_available(log, ad, sub_id=None):
     """Return True if VoLTE is available.
 
     Args:
@@ -6787,7 +6792,9 @@ def ensure_network_generation(log,
                               generation,
                               max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                               voice_or_data=None,
-                              toggle_apm_after_setting=False):
+                              toggle_apm_after_setting=False,
+                              sa_or_nsa=None,
+                              mmwave=None):
     """Ensure ad's network is <network generation> for default subscription ID.
 
     Set preferred network generation to <generation>.
@@ -6796,7 +6803,7 @@ def ensure_network_generation(log,
     """
     return ensure_network_generation_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), generation,
-        max_wait_time, voice_or_data, toggle_apm_after_setting)
+        max_wait_time, voice_or_data, toggle_apm_after_setting, sa_or_nsa, mmwave)
 
 
 def ensure_network_generation_for_subscription(
@@ -6806,7 +6813,9 @@ def ensure_network_generation_for_subscription(
         generation,
         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None,
-        toggle_apm_after_setting=False):
+        toggle_apm_after_setting=False,
+        sa_or_nsa=None,
+        mmwave=None):
     """Ensure ad's network is <network generation> for specified subscription ID.
 
         Set preferred network generation to <generation>.
@@ -6823,6 +6832,8 @@ def ensure_network_generation_for_subscription(
             This parameter is optional. If voice_or_data is None, then if
             either voice or data in expected generation, function will return True.
         toggle_apm_after_setting: Cycle airplane mode if True, otherwise do nothing.
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if success, False if fail.
@@ -6862,8 +6873,9 @@ def ensure_network_generation_for_subscription(
         ad.log.info("MSIM - Non DDS, ignore data RAT")
         return True
 
-    if generation == GEN_5G:
-        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+    if (generation == GEN_5G) or (generation == RAT_5G):
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id,
+                                        sa_or_nsa=sa_or_nsa, mmwave=mmwave):
             ad.log.info("Current network type is 5G.")
             return True
         else:
@@ -6985,6 +6997,15 @@ def wait_for_network_generation_for_subscription(
         generation,
         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None):
+
+    if generation == GEN_5G:
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.info("Current network type is 5G.")
+            return True
+        else:
+            ad.log.error("Not in 5G coverage for Sub %s.", sub_id)
+            return False
+
     return _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_wait_time,
         is_droid_in_network_generation_for_subscription, generation,
@@ -8890,6 +8911,101 @@ def wait_for_state(state_check_func,
     return False
 
 
+def power_off_sim_by_adb(ad, sim_slot_id,
+                         timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
+    """Disable pSIM/eSIM SUB by adb command.
+
+    Args:
+        ad: android device object.
+        sim_slot_id: slot 0 or slot 1.
+        timeout: wait time for state change.
+
+    Returns:
+        True if success, False otherwise.
+    """
+    release_version =  int(ad.adb.getprop("ro.build.version.release"))
+    if sim_slot_id == 0 and release_version < 12:
+        ad.log.error(
+            "The disable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+        raise signals.TestSkip(
+            "The disable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+    try:
+        if sim_slot_id:
+            ad.adb.shell("am broadcast -a android.telephony.euicc.action."
+                "TEST_PROFILE -n com.google.android.euicc/com.android.euicc."
+                "receiver.ProfileTestReceiver --es 'operation' 'switch' --ei "
+                "'subscriptionId' -1")
+        else:
+            sub_id = get_subid_by_adb(ad, sim_slot_id)
+            # The command only support for Android S. (b/159605922)
+            ad.adb.shell(
+                "cmd phone disable-physical-subscription %d" % sub_id)
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    while timeout > 0:
+        if get_subid_by_adb(ad, sim_slot_id) == INVALID_SUB_ID:
+            return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    sim_state = ad.adb.getprop("gsm.sim.state").split(",")
+    ad.log.warning("Fail to power off SIM slot %d, sim_state=%s",
+        sim_slot_id, sim_state[sim_slot_id])
+    return False
+
+
+def power_on_sim_by_adb(ad, sim_slot_id,
+                         timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
+    """Enable pSIM/eSIM SUB by adb command.
+
+    Args:
+        ad: android device object.
+        sim_slot_id: slot 0 or slot 1.
+        timeout: wait time for state change.
+
+    Returns:
+        True if success, False otherwise.
+    """
+    release_version =  int(ad.adb.getprop("ro.build.version.release"))
+    if sim_slot_id == 0 and release_version < 12:
+        ad.log.error(
+            "The enable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+        raise signals.TestSkip(
+            "The enable pSIM SUB command only support for Android S or higher "
+            "version, abort test.")
+    try:
+        output = ad.adb.shell(
+            "dumpsys isub | grep addSubInfoRecord | grep slotIndex=%d" %
+            sim_slot_id)
+        pattern = re.compile(r"subId=(\d+)")
+        sub_id = pattern.findall(output)
+        sub_id = int(sub_id[-1]) if sub_id else INVALID_SUB_ID
+        if sim_slot_id:
+            ad.adb.shell("am broadcast -a android.telephony.euicc.action."
+                "TEST_PROFILE -n com.google.android.euicc/com.android.euicc."
+                "receiver.ProfileTestReceiver --es 'operation' 'switch' --ei "
+                "'subscriptionId' %d" % sub_id)
+        else:
+            # The command only support for Android S or higher. (b/159605922)
+            ad.adb.shell(
+                "cmd phone enable-physical-subscription %d" % sub_id)
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    while timeout > 0:
+        if get_subid_by_adb(ad, sim_slot_id) != INVALID_SUB_ID:
+            return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    sim_state = ad.adb.getprop("gsm.sim.state").split(",")
+    ad.log.warning("Fail to power on SIM slot %d, sim_state=%s",
+        sim_slot_id, sim_state[sim_slot_id])
+    return False
+
+
 def power_off_sim(ad, sim_slot_id=None,
                   timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
     try:
@@ -8907,7 +9023,8 @@ def power_off_sim(ad, sim_slot_id=None,
         return False
     while timeout > 0:
         sim_state = verify_func(*verify_args)
-        if sim_state in (SIM_STATE_UNKNOWN, SIM_STATE_ABSENT):
+        if sim_state in (
+            SIM_STATE_UNKNOWN, SIM_STATE_ABSENT, SIM_STATE_NOT_READY):
             ad.log.info("SIM slot is powered off, SIM state is %s", sim_state)
             return True
         timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
@@ -9152,9 +9269,34 @@ def install_dialer_apk(ad, dialer_util):
     ad.log.info("Install dialer_util %s", dialer_util)
     ad.adb.install("-r -g %s" % dialer_util, timeout=300, ignore_status=True)
     time.sleep(3)
-    if not ad.is_apk_installed("com.google.android.dialer"):
-        ad.log.info("com.google.android.dialer is not installed")
+    if not ad.is_apk_installed(DIALER_PACKAGE_NAME):
+        ad.log.info("%s is not installed", DIALER_PACKAGE_NAME)
         return False
+    if ad.get_apk_version(DIALER_PACKAGE_NAME):
+        ad.log.info("Current version of %s: %s", DIALER_PACKAGE_NAME,
+                    ad.get_apk_version(DIALER_PACKAGE_NAME))
+    return True
+
+
+def install_message_apk(ad, message_util):
+    """Install message.apk to specific device.
+
+    Args:
+        ad: android device object.
+        message_util: path of message.apk
+
+    Returns:
+        True if success, False if fail.
+    """
+    ad.log.info("Install message_util %s", message_util)
+    ad.adb.install("-r -g %s" % message_util, timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed(MESSAGE_PACKAGE_NAME):
+        ad.log.info("%s is not installed", MESSAGE_PACKAGE_NAME)
+        return False
+    if ad.get_apk_version(MESSAGE_PACKAGE_NAME):
+        ad.log.info("Current version of %s: %s", MESSAGE_PACKAGE_NAME,
+                    ad.get_apk_version(MESSAGE_PACKAGE_NAME))
     return True
 
 

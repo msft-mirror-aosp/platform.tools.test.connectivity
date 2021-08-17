@@ -19,6 +19,7 @@ import itertools
 import os
 import logging
 import paramiko
+import psutil
 import shutil
 import socket
 import tarfile
@@ -40,6 +41,8 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 MDNS_LOOKUP_RETRY_MAX = 3
 FASTBOOT_TIMEOUT = 30
 AFTER_FLASH_BOOT_TIME = 30
+WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC = 360
+PROCESS_CHECK_WAIT_TIME_SEC = 30
 
 
 def get_private_key(ip_address, ssh_config):
@@ -189,7 +192,9 @@ class SshResults:
         return self._exit_status
 
 
-def flash(fuchsia_device):
+def flash(fuchsia_device,
+          use_ssh=False,
+          fuchsia_reconnect_after_reboot_time = 5):
     """A function to flash, not pave, a fuchsia_device
 
     Args:
@@ -219,30 +224,6 @@ def flash(fuchsia_device):
             or utils.is_valid_ipv6_address(fuchsia_device.orig_ip)):
         raise ValueError('The fuchsia_device ip must be the mDNS name to be '
                          'able to flash.')
-    time_counter = 0
-    while time_counter < FASTBOOT_TIMEOUT:
-        logging.info('Checking to see if fuchsia_device(%s) SN: %s is in '
-                     'fastboot. (Attempt #%s Timeout: %s)' %
-                     (fuchsia_device.orig_ip,
-                      fuchsia_device.serial_number,
-                      str(time_counter + 1),
-                      FASTBOOT_TIMEOUT))
-        for usb_device in usbinfo.usbinfo():
-            if (usb_device['iSerialNumber'] == fuchsia_device.serial_number and
-                    usb_device['iProduct'] == 'USB_download_gadget'):
-                logging.info('fuchsia_device(%s) SN: %s is in fastboot.' %
-                             (fuchsia_device.orig_ip,
-                              fuchsia_device.serial_number))
-                time_counter = FASTBOOT_TIMEOUT
-        time_counter = time_counter + 1
-        if time_counter == FASTBOOT_TIMEOUT:
-            for fail_usb_device in usbinfo.usbinfo():
-                logging.debug(fail_usb_device)
-            raise TimeoutError('fuchsia_device(%s) SN: %s '
-                               'never went into fastboot' %
-                               (fuchsia_device.orig_ip,
-                                fuchsia_device.serial_number))
-        time.sleep(1)
 
     if not fuchsia_device.specific_image:
         file_download_needed = True
@@ -303,6 +284,61 @@ def flash(fuchsia_device):
             all_files.append(os.path.join(root, filename))
     for filename in all_files:
         shutil.move(filename, tmp_path)
+
+    if use_ssh:
+        logging.info('Sending reboot command via SSH to '
+                     'get into bootloader.')
+        with utils.SuppressLogOutput():
+            fuchsia_device.clean_up_services()
+            # Sending this command will put the device in fastboot
+            # but it does not guarantee the device will be in fastboot
+            # after this command.  There is no check so if there is an
+            # expectation of the device being in fastboot, then some
+            # other check needs to be done.
+            fuchsia_device.send_command_ssh(
+                'dm rb',
+                timeout=fuchsia_reconnect_after_reboot_time,
+                skip_status_code_check=True)
+    else:
+        pass
+        ## Todo: Add elif for SL4F if implemented in SL4F
+
+    time_counter = 0
+    while time_counter < FASTBOOT_TIMEOUT:
+        logging.info('Checking to see if fuchsia_device(%s) SN: %s is in '
+                     'fastboot. (Attempt #%s Timeout: %s)' %
+                     (fuchsia_device.orig_ip,
+                      fuchsia_device.serial_number,
+                      str(time_counter + 1),
+                      FASTBOOT_TIMEOUT))
+        for usb_device in usbinfo.usbinfo():
+            if (usb_device['iSerialNumber'] == fuchsia_device.serial_number and
+                usb_device['iProduct'] == 'USB_download_gadget'):
+                logging.info('fuchsia_device(%s) SN: %s is in fastboot.' %
+                             (fuchsia_device.orig_ip,
+                              fuchsia_device.serial_number))
+                time_counter = FASTBOOT_TIMEOUT
+        time_counter = time_counter + 1
+        if time_counter == FASTBOOT_TIMEOUT:
+            for fail_usb_device in usbinfo.usbinfo():
+                logging.debug(fail_usb_device)
+            raise TimeoutError('fuchsia_device(%s) SN: %s '
+                               'never went into fastboot' %
+                               (fuchsia_device.orig_ip,
+                                fuchsia_device.serial_number))
+        time.sleep(1)
+
+    end_time = time.time() + WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC
+    # Attempt to wait for existing flashing process to finish
+    while time.time() < end_time:
+        flash_process_found = False
+        for proc in psutil.process_iter():
+            if "bash" in proc.name() and "flash.sh" in proc.cmdline():
+                logging.info("Waiting for existing flash.sh process to complete.")
+                time.sleep(PROCESS_CHECK_WAIT_TIME_SEC)
+                flash_process_found = True
+        if not flash_process_found:
+            break
     logging.info('Flashing fuchsia_device(%s) with %s/%s.' % (
         fuchsia_device.orig_ip, tmp_path, image_tgz))
     try:
