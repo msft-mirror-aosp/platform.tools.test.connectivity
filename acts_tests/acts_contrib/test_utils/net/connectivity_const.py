@@ -42,6 +42,7 @@ NETWORK_CB_KEY_INTERFACE_NAME = "interfaceName"
 NETWORK_CB_KEY_CREATE_TS = "creation_timestamp"
 NETWORK_CB_KEY_CURRENT_TS = "current_timestamp"
 NETWORK_CB_KEY_NETWORK_SPECIFIER = "network_specifier"
+NETWORK_CB_KEY_TRANSPORT_INFO = "transport_info"
 
 # Constants for VPN connection status
 VPN_STATE_DISCONNECTED = 0
@@ -57,6 +58,14 @@ VPN_TIMEOUT = 30
 # Connectiivty Manager constants
 TYPE_MOBILE = 0
 TYPE_WIFI = 1
+
+# Network request related constants.
+NETWORK_CAP_TRANSPORT_WIFI = TYPE_WIFI
+NETWORK_CAP_CAPABILITY_INTERNET = 12
+
+# Network request related keys.
+NETWORK_CAP_TRANSPORT_TYPE_KEY = "TransportType"
+NETWORK_CAP_CAPABILITY_KEY = "Capability"
 
 # Multipath preference constants
 MULTIPATH_PREFERENCE_NONE = 0

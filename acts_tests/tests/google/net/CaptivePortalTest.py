@@ -29,6 +29,8 @@ IFACE = "InterfaceName"
 TIME_OUT = 20
 WLAN = "wlan0"
 ACCEPT_CONTINUE = "Accept and Continue"
+CONNECTED = "Connected"
+SIGN_IN_NOTIFICATION = "Sign in to network"
 
 
 class CaptivePortalTest(WifiBaseTest):
@@ -90,6 +92,19 @@ class CaptivePortalTest(WifiBaseTest):
         else:
             uutils.wait_and_click(self.dut, text="Internet")
 
+    def _verify_sign_in_notification(self):
+        """Verify sign in notification shows for captive portal."""
+        curr_time = time.time()
+        while time.time() < curr_time + TIME_OUT:
+            time.sleep(3) # wait for sometime before checking the notification
+            screen_dump = uutils.get_screen_dump_xml(self.dut)
+            nodes = screen_dump.getElementsByTagName('node')
+            for node in nodes:
+                if SIGN_IN_NOTIFICATION in node.getAttribute(
+                    'text') or CONNECTED in node.getAttribute('text'):
+                  return
+        asserts.fail("Failed to get sign in notification")
+
     def _verify_captive_portal(self, network, click_accept=ACCEPT_CONTINUE):
         """Connect to captive portal network using uicd workflow.
 
@@ -107,6 +122,7 @@ class CaptivePortalTest(WifiBaseTest):
             self.dut, network, check_connectivity=False)
 
         # run ui automator
+        self._verify_sign_in_notification()
         uutils.wait_and_click(self.dut, text="%s" % network["SSID"])
         if uutils.has_element(self.dut, text="%s" % click_accept):
             uutils.wait_and_click(self.dut, text="%s" % click_accept)
@@ -114,11 +130,11 @@ class CaptivePortalTest(WifiBaseTest):
         # wait for sometime for captive portal connection to go through
         curr_time = time.time()
         while time.time() < curr_time + TIME_OUT:
+            time.sleep(3) # wait for sometime for AP to send DHCP info
             link_prop = self.dut.droid.connectivityGetActiveLinkProperties()
             self.log.debug("Link properties %s" % link_prop)
             if link_prop and link_prop[IFACE] == WLAN:
                 break
-            time.sleep(2)
 
         # verify connectivity
         asserts.assert_true(

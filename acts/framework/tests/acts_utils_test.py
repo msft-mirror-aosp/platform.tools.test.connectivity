@@ -177,7 +177,6 @@ FUCHSIA_INIT_NETSTACK = ('acts.controllers.fuchsia_lib.netstack.'
 
 class ByPassSetupWizardTests(unittest.TestCase):
     """This test class for unit testing acts.utils.bypass_setup_wizard."""
-
     def test_start_standing_subproc(self):
         with self.assertRaisesRegex(utils.ActsUtilsError,
                                     'Process .* has terminated'):
@@ -311,7 +310,6 @@ class BypassSetupWizardReturn:
 
 class ConcurrentActionsTest(unittest.TestCase):
     """Tests acts.utils.run_concurrent_actions and related functions."""
-
     @staticmethod
     def function_returns_passed_in_arg(arg):
         return arg
@@ -395,7 +393,6 @@ class ConcurrentActionsTest(unittest.TestCase):
 
 class SuppressLogOutputTest(unittest.TestCase):
     """Tests SuppressLogOutput"""
-
     def test_suppress_log_output(self):
         """Tests that the SuppressLogOutput context manager removes handlers
         of the specified levels upon entry and re-adds handlers upon exit.
@@ -418,7 +415,6 @@ class SuppressLogOutputTest(unittest.TestCase):
 
 
 class IpAddressUtilTest(unittest.TestCase):
-
     def test_positive_ipv4_normal_address(self):
         ip_address = "192.168.1.123"
         self.assertTrue(utils.is_valid_ipv4_address(ip_address))

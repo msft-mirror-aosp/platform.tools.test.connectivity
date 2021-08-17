@@ -244,3 +244,27 @@ def wait_and_click(device, duration_ms=None, **kwargs):
     args = 'input swipe %s %s %s %s %s' % \
         (str(x), str(y), str(x), str(y), str(duration_ms))
   device.adb.shell(args)
+
+def wait_and_input_text(device, input_text, duration_ms=None, **kwargs):
+  """Wait for a UI element text field that can accept text entry.
+
+  This function located a UI element using wait_and_click. Once the element is
+  clicked, the text is input into the text field.
+
+  Args:
+    device: AndroidDevice, Mobly's Android controller object.
+    input_text: Text string to be entered in to the text field.
+    duration_ms: duration in milliseconds.
+    **kwargs: A set of `key=value` parameters that identifies a UI element.
+  """
+  wait_and_click(device, duration_ms, **kwargs)
+  # Replace special characters.
+  # The command "input text <string>" requires special treatment for
+  # characters ' ' and '&'.  They need to be escaped. for example:
+  #    "hello world!!&" needs to transform to "hello\ world!!\&"
+  special_chars = ' &'
+  for c in special_chars:
+    input_text = input_text.replace(c, '\\%s' % c)
+  input_text = "'" + input_text + "'"
+  args = 'input text %s' % input_text
+  device.adb.shell(args)

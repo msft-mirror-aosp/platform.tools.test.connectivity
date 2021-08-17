@@ -55,7 +55,7 @@ class WifiBaseTest(BaseTestClass):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
-        opt_param = ["pixel_models", "cnss_diag_file"]
+        opt_param = ["pixel_models", "cnss_diag_file", "country_code_file"]
         self.unpack_userparams(opt_param_names=opt_param)
         if hasattr(self, "cnss_diag_file"):
             if isinstance(self.cnss_diag_file, list):
@@ -68,6 +68,19 @@ class WifiBaseTest(BaseTestClass):
             self.packet_logger = self.packet_capture[0]
             self.packet_logger.configure_monitor_mode("2G", self.packet_log_2g)
             self.packet_logger.configure_monitor_mode("5G", self.packet_log_5g)
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                wutils.wifi_test_device_init(ad)
+                if hasattr(self, "country_code_file"):
+                    if isinstance(self.country_code_file, list):
+                        self.country_code_file = self.country_code_file[0]
+                    if not os.path.isfile(self.country_code_file):
+                        self.country_code_file = os.path.join(
+                            self.user_params[Config.key_config_path.value],
+                            self.country_code_file)
+                    self.country_code = utils.load_config(
+                        self.country_code_file)["country"]
+                    wutils.set_wifi_country_code(ad, self.country_code)
 
     def setup_test(self):
         if (hasattr(self, "android_devices")
@@ -376,6 +389,8 @@ class WifiBaseTest(BaseTestClass):
             self,
             channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             channel_2g=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            channel_5g_ap2=None,
+            channel_2g_ap2=None,
             ssid_length_2g=hostapd_constants.AP_SSID_LENGTH_2G,
             passphrase_length_2g=hostapd_constants.AP_PASSPHRASE_LENGTH_2G,
             ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G,
@@ -384,6 +399,7 @@ class WifiBaseTest(BaseTestClass):
             hidden=False,
             same_ssid=False,
             open_network=False,
+            wpa1_network=False,
             wpa_network=False,
             wep_network=False,
             ent_network=False,
@@ -399,6 +415,8 @@ class WifiBaseTest(BaseTestClass):
         Args:
             channel_5g: 5G channel to configure.
             channel_2g: 2G channel to configure.
+            channel_5g_ap2: 5G channel to configure on AP2.
+            channel_2g_ap2: 2G channel to configure on AP2.
             ssid_length_2g: Int, number of characters to use for 2G SSID.
             passphrase_length_2g: Int, length of password for 2G network.
             ssid_length_5g: Int, number of characters to use for 5G SSID.
@@ -418,8 +436,21 @@ class WifiBaseTest(BaseTestClass):
         """
         if mirror_ap and ap_count == 1:
             raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
+        if (channel_5g_ap2 or channel_2g_ap2) and ap_count == 1:
+            raise ValueError(
+                "ap_count cannot be 1 if channels of AP2 are provided.")
+        # we are creating a channel list for 2G and 5G bands. The list is of
+        # size 2 and this is based on the assumption that each testbed will have
+        # at most 2 APs.
+        if not channel_5g_ap2:
+            channel_5g_ap2 = channel_5g
+        if not channel_2g_ap2:
+            channel_2g_ap2 = channel_2g
+        channels_2g = [channel_2g, channel_2g_ap2]
+        channels_5g = [channel_5g, channel_5g_ap2]
 
         self.reference_networks = []
+        self.wpa1_networks = []
         self.wpa_networks = []
         self.wep_networks = []
         self.ent_networks = []
@@ -430,6 +461,17 @@ class WifiBaseTest(BaseTestClass):
         self.bssid_map = []
         for i in range(ap_count):
             network_list = []
+            if wpa1_network:
+                wpa1_dict = self.get_psk_network(mirror_ap,
+                                                 self.wpa1_networks,
+                                                 hidden, same_ssid,
+                                                 ssid_length_2g, ssid_length_5g,
+                                                 passphrase_length_2g,
+                                                 passphrase_length_5g)
+                wpa1_dict[hostapd_constants.BAND_2G]["security"] = "psk"
+                wpa1_dict[hostapd_constants.BAND_5G]["security"] = "psk"
+                self.wpa1_networks.append(wpa1_dict)
+                network_list.append(wpa1_dict)
             if wpa_network:
                 wpa_dict = self.get_psk_network(mirror_ap,
                                                 self.reference_networks,
@@ -491,14 +533,15 @@ class WifiBaseTest(BaseTestClass):
                 sae_dict[hostapd_constants.BAND_2G]["security"] = "sae"
                 sae_dict[hostapd_constants.BAND_5G]["security"] = "sae"
                 network_list.append(sae_dict)
-            self.access_points[i].configure_ap(network_list, channel_2g,
-                                               channel_5g)
+            self.access_points[i].configure_ap(network_list, channels_2g[i],
+                                               channels_5g[i])
             self.access_points[i].start_ap()
             self.bssid_map.append(
                 self.access_points[i].get_bssids_for_wifi_networks())
             if mirror_ap:
                 self.access_points[i + 1].configure_ap(network_list,
-                                                       channel_2g, channel_5g)
+                                                       channels_2g[i+1],
+                                                       channels_5g[i+1])
                 self.access_points[i + 1].start_ap()
                 self.bssid_map.append(
                     self.access_points[i + 1].get_bssids_for_wifi_networks())

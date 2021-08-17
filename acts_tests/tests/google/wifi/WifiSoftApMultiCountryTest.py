@@ -14,8 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import queue
+
+
 import logging
+import queue
 import random
 import time
 import re
@@ -37,6 +39,7 @@ from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.controllers.ap_lib.hostapd_constants import CHANNEL_MAP
 
 
+
 WifiEnums = wutils.WifiEnums
 
 class WifiSoftApMultiCountryTest(WifiBaseTest):
@@ -46,7 +49,7 @@ class WifiSoftApMultiCountryTest(WifiBaseTest):
         self.basetest_name = (
                 "test_full_tether_startup_auto_one_client_ping_softap_multicountry",
                 "test_full_tether_startup_2G_one_client_ping_softap_multicountry",
-                "test_full_tether_startup_5G_one_client_ping_softap_multicountry")
+                "test_full_tether_startup_5G_one_client_ping_softap_multicountry",)
         self.generate_tests()
 
     def generate_testcase(self, basetest_name, country):
@@ -58,7 +61,6 @@ class WifiSoftApMultiCountryTest(WifiBaseTest):
         """
         base_test = getattr(self, basetest_name)
         test_tracker_uuid = ""
-
         testcase_name = 'test_%s_%s' % (basetest_name, country)
         test_case = test_tracker_info(uuid=test_tracker_uuid)(
             lambda: base_test(country))
@@ -143,6 +145,7 @@ class WifiSoftApMultiCountryTest(WifiBaseTest):
         self.pcap_procs = wutils.start_pcap(
             self.packet_capture, band, self.test_name)
         time.sleep(5)
+
 
     """ Helper Functions """
     def create_softap_config(self):
@@ -246,6 +249,7 @@ class WifiSoftApMultiCountryTest(WifiBaseTest):
         if hasattr(self, 'packet_capture'):
             wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
 
+
     @test_tracker_info(uuid="ae4629e6-08d5-4b51-ac34-6c2485f54df5")
     def test_full_tether_startup_5G_one_client_ping_softap_multicountry(self, country):
         """(AP) 1 Device can connect to 2G hotspot
@@ -261,6 +265,7 @@ class WifiSoftApMultiCountryTest(WifiBaseTest):
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, test_ping=True)
         if hasattr(self, 'packet_capture'):
             wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+
 
     @test_tracker_info(uuid="84a10203-cb02-433c-92a7-e8aa2348cc02")
     def test_full_tether_startup_auto_one_client_ping_softap_multicountry(self, country):
@@ -278,6 +283,7 @@ class WifiSoftApMultiCountryTest(WifiBaseTest):
             WIFI_CONFIG_APBAND_AUTO, test_ping=True)
         if hasattr(self, 'packet_capture'):
             wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+
 
     """ Tests End """
 

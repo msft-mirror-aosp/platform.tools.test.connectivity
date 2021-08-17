@@ -53,7 +53,6 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_SING
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import configure_sdm_logs
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription

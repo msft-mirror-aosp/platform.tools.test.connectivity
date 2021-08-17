@@ -13,7 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import queue
 import time
 
 from acts import asserts
@@ -149,6 +149,11 @@ class AttachTest(AwareBaseTest):
 
         # enable airplane mode
         utils.force_airplane_mode(dut, True)
+        # APM has a race condition between tear down the NAN Iface and change the Wifi State.
+        try:
+            dut.ed.pop_event(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE, autils.EVENT_TIMEOUT)
+        except queue.Empty:
+            dut.log.info('Wifi State changes before Interface is torn down')
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
 
         # wait a few seconds and disable airplane mode

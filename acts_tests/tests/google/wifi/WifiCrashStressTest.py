@@ -33,6 +33,10 @@ class WifiCrashStressTest(WifiBaseTest):
     * One Wi-Fi network visible to the device.
     """
 
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
+
     def setup_class(self):
         super().setup_class()
 
@@ -40,15 +44,15 @@ class WifiCrashStressTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        if not self.dut.is_apk_installed("com.google.mdstest"):
-            raise signals.TestAbortClass("mdstest is not installed")
-        req_params = ["dbs_supported_models", "stress_count"]
+        req_params = ["sta_sta_supported_models", "dbs_supported_models", "stress_count"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -57,8 +61,11 @@ class WifiCrashStressTest(WifiBaseTest):
         self.ap_iface = 'wlan0'
         if self.dut.model in self.dbs_supported_models:
             self.ap_iface = 'wlan1'
+        if self.dut.model in self.sta_sta_supported_models:
+            self.ap_iface = 'wlan2'
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         wutils.wifi_toggle_state(self.dut, True)
@@ -67,6 +74,7 @@ class WifiCrashStressTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut_client, True)
 
     def teardown_test(self):
+        super().teardown_test()
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
         self.dut.droid.wakeLockRelease()
@@ -76,12 +84,6 @@ class WifiCrashStressTest(WifiBaseTest):
         self.dut_client.droid.goToSleepNow()
         wutils.reset_wifi(self.dut_client)
 
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
-        self.dut_client.take_bug_report(test_name, begin_time)
-        self.dut_client.cat_adb_log(test_name, begin_time)
-
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
@@ -89,15 +91,8 @@ class WifiCrashStressTest(WifiBaseTest):
     """Helper Functions"""
     def trigger_wifi_firmware_crash(self, ad, timeout=15):
         pre_timestamp = ad.adb.getprop("vendor.debug.ssrdump.timestamp")
-        ad.adb.shell(
-            "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
-        # Legacy pixels use persist.sys.modem.diag.mdlog.
-        ad.adb.shell(
-            "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
         disable_qxdm_logger(ad)
-        cmd = ('am instrument -w -e request "4b 25 03 b0 00" '
-               '"com.google.mdstest/com.google.mdstest.instrument.'
-               'ModemCommandInstrumentation"')
+        cmd = ('wlanSSR')
         ad.log.info("Crash wifi firmware by %s", cmd)
         ad.adb.shell(cmd, ignore_status=True)
         time.sleep(timeout)  # sleep time for firmware restart
