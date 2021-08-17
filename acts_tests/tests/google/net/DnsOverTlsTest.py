@@ -37,6 +37,7 @@ from scapy.all import UDP
 RST = 0x04
 SSID = wutils.WifiEnums.SSID_KEY
 
+
 class DnsOverTlsTest(WifiBaseTest):
     """Tests for DNS-over-TLS."""
 
@@ -48,17 +49,23 @@ class DnsOverTlsTest(WifiBaseTest):
             self.dut_b = self.android_devices[1]
         for ad in self.android_devices:
             ad.droid.setPrivateDnsMode(True)
-            nutils.verify_lte_data_and_tethering_supported(ad)
+            if OPENWRT in self.user_params:
+                nutils.verify_lte_data_and_tethering_supported(ad)
             set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
         req_params = ("ping_hosts",)
-        opt_params = ("ipv4_only_network", "ipv4_ipv6_network", "dns_name")
+        opt_params = ("ipv4_only_network", "ipv4_ipv6_network",
+                      "dns_name", "configure_OpenWrt", "wifi_network")
         self.unpack_userparams(req_param_names=req_params,
                                opt_param_names=opt_params)
 
         if OPENWRT in self.user_params:
             self.openwrt = self.access_points[0]
+            if hasattr(self, "configure_OpenWrt") and self.configure_OpenWrt == "skip":
+                self.dut.log.info("Skip configure Wifi interface due to config setup.")
+            else:
+                self.configure_openwrt_ap_and_start(wpa_network=True)
+                self.wifi_network = self.openwrt.get_wifi_network()
             self.private_dns_servers = [self.dns_name]
-            self.configure_openwrt_ap_and_start(wpa_network=True)
             self.openwrt.network_setting.setup_dns_server(self.dns_name)
         else:
             self.private_dns_servers = [cconst.DNS_GOOGLE,
