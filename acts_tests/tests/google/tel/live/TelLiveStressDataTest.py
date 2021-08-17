@@ -33,14 +33,14 @@ class TelLiveStressDataTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.iperf_server_address = self.user_params.get("iperf_server",
                                                          '0.0.0.0')
-        self.iperf_srv_tcp_port = int(
-            self.user_params.get("iperf_server_tcp_port", 0))
-        self.iperf_srv_udp_port = int(
-            self.user_params.get("iperf_server_udp_port", 0))
-        self.test_duration = int(
-            self.user_params.get("data_stress_duration", 60))
-        self.throughput_iteration = int(
-            self.user_params.get("throughput_iteration", 10))
+        self.iperf_tcp_port = int(
+            self.user_params.get("iperf_tcp_port", 0))
+        self.iperf_udp_port = int(
+            self.user_params.get("iperf_udp_port", 0))
+        self.iperf_duration = int(
+            self.user_params.get("iperf_duration", 60))
+        self.iperf_iteration = int(
+            self.user_params.get("iperf_iteration", 10))
         self.sleep_time_between_iperf_iterations = int(
             self.user_params.get("sleep_time_between_iperf_iterations", 2))
 
@@ -54,9 +54,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
             True if success, False if fail.
         """
         fail_count = collections.defaultdict(int)
-        for i in range(1, self.throughput_iteration + 1):
+        for i in range(1, self.iperf_iteration + 1):
             msg = "Stress Throughput Test %s Iteration: <%s> / <%s>" % (
-                self.test_name, i, self.throughput_iteration)
+                self.test_name, i, self.iperf_iteration)
             begin_time = get_current_epoch_time()
             self.log.info(msg)
             iteration_result = True
@@ -64,9 +64,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
                 if not iperf_test_by_adb(self.log,
                                          self.ad,
                                          self.iperf_server_address,
-                                         self.iperf_srv_tcp_port,
+                                         self.iperf_tcp_port,
                                          False,
-                                         self.test_duration):
+                                         self.iperf_duration):
                     fail_count["upload"] += 1
                     iteration_result = False
                     self.log.error("%s upload failure.", msg)
@@ -74,9 +74,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
                 if not iperf_udp_test_by_adb(self.log,
                                              self.ad,
                                              self.iperf_server_address,
-                                             self.iperf_srv_udp_port,
+                                             self.iperf_udp_port,
                                              False,
-                                             self.test_duration):
+                                             self.iperf_duration):
                     fail_count["upload"] += 1
                     iteration_result = False
                     self.log.error("%s upload failure.", msg)
@@ -95,7 +95,7 @@ class TelLiveStressDataTest(TelephonyBaseTest):
             if count:
                 self.log.error("%s: %s %s failures in %s iterations",
                                self.test_name, count, failure,
-                               self.throughput_iteration)
+                               self.iperf_iteration)
                 test_result = False
         return test_result
 
@@ -109,9 +109,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
             True if success, False if fail.
         """
         fail_count = collections.defaultdict(int)
-        for i in range(1, self.throughput_iteration + 1):
+        for i in range(1, self.iperf_iteration + 1):
             msg = "Stress Throughput Test %s Iteration: <%s> / <%s>" % (
-                self.test_name, i, self.throughput_iteration)
+                self.test_name, i, self.iperf_iteration)
             begin_time = get_current_epoch_time()
             self.log.info(msg)
             iteration_result = True
@@ -119,9 +119,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
                 if not iperf_test_by_adb(self.log,
                                          self.ad,
                                          self.iperf_server_address,
-                                         self.iperf_srv_tcp_port,
+                                         self.iperf_tcp_port,
                                          True,
-                                         self.test_duration):
+                                         self.iperf_duration):
                     fail_count["download"] += 1
                     iteration_result = False
                     self.log.error("%s download failure.", msg)
@@ -129,9 +129,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
                 if not iperf_udp_test_by_adb(self.log,
                                              self.ad,
                                              self.iperf_server_address,
-                                             self.iperf_srv_udp_port,
+                                             self.iperf_udp_port,
                                              True,
-                                             self.test_duration):
+                                             self.iperf_duration):
                     fail_count["download"] += 1
                     iteration_result = False
                     self.log.error("%s download failure.", msg)
@@ -150,7 +150,7 @@ class TelLiveStressDataTest(TelephonyBaseTest):
             if count:
                 self.log.error("%s: %s %s failures in %s iterations",
                                self.test_name, count, failure,
-                               self.throughput_iteration)
+                               self.iperf_iteration)
                 test_result = False
         return test_result
 
@@ -160,9 +160,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
         return iperf_test_by_adb(self.log,
                                  self.ad,
                                  self.iperf_server_address,
-                                 self.iperf_srv_tcp_port,
+                                 self.iperf_tcp_port,
                                  False,
-                                 self.test_duration)
+                                 self.iperf_duration)
 
     @test_tracker_info(uuid="af9805f8-6ed5-4e05-823e-d88dcef45637")
     @TelephonyBaseTest.tel_test_wrap
@@ -170,9 +170,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
         return iperf_test_by_adb(self.log,
                                  self.ad,
                                  self.iperf_server_address,
-                                 self.iperf_srv_tcp_port,
+                                 self.iperf_tcp_port,
                                  True,
-                                 self.test_duration)
+                                 self.iperf_duration)
 
     @test_tracker_info(uuid="55bf5e09-dc7b-40bc-843f-31fed076ffe4")
     @TelephonyBaseTest.tel_test_wrap
@@ -180,9 +180,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
         return iperf_udp_test_by_adb(self.log,
                                      self.ad,
                                      self.iperf_server_address,
-                                     self.iperf_srv_udp_port,
+                                     self.iperf_udp_port,
                                      False,
-                                     self.test_duration)
+                                     self.iperf_duration)
 
     @test_tracker_info(uuid="02ae88b2-d597-45df-ab5a-d701d1125a0f")
     @TelephonyBaseTest.tel_test_wrap
@@ -190,9 +190,9 @@ class TelLiveStressDataTest(TelephonyBaseTest):
         return iperf_udp_test_by_adb(self.log,
                                      self.ad,
                                      self.iperf_server_address,
-                                     self.iperf_srv_udp_port,
+                                     self.iperf_udp_port,
                                      True,
-                                     self.test_duration)
+                                     self.iperf_duration)
 
     @test_tracker_info(uuid="79aaa7ec-5046-4ffe-b27a-ca93e404e9e0")
     @TelephonyBaseTest.tel_test_wrap
