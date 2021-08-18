@@ -51,7 +51,7 @@ class A2dpBaseTest(BluetoothBaseTest):
         #settings such as volumn, duration, audio recording parameters such as
         #channel, sampling rate/width, and thdn parameters for audio processing
         self.unpack_userparams(req_params)
-        self.unpack_userparams(opt_params)
+        self.unpack_userparams(opt_params, bugreport=None)
         # Find music file and push it to the dut
         music_src = self.music_files[0]
         music_dest = PHONE_MUSIC_FILE_DIRECTORY
