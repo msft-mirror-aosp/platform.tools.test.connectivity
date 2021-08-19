@@ -152,9 +152,12 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
         tag = ''
         if self.iperf_duration:
             throughput = self.process_iperf_results()
-            plot_title = '{}_{}_{}_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
-                self.test_name, self.dut.model,
-                self.dut.build_info['build_id'], self.RSSI, throughput)
+            plot_title = ('{0}_{1}_{2}_RSSI_{3:d}dBm_Throughput_{4:.2f}'
+                          'Mbps'.format(self.test_name,
+                                        self.dut.model,
+                                        self.dut.build_info['build_id'],
+                                        self.RSSI,
+                                        throughput))
             plot_utils.current_waveform_plot(samples, self.mon_voltage,
                                              self.mon_info.data_path,
                                              plot_title)
