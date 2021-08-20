@@ -692,6 +692,7 @@ NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_C
 DIALER_PACKAGE_NAME = "com.google.android.dialer"
 MESSAGE_PACKAGE_NAME = "com.google.android.apps.messaging"
 YOUTUBE_PACKAGE_NAME = "com.google.android.youtube"
+SL4A_PACKAGE_NAME = "com.googlecode.android_scripting"
 
 # Constants for CellBroadcast module test
 CARRIER_TEST_CONF_XML_PATH = "/data/user_de/0/com.android.phone/files/"
