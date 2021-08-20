@@ -64,9 +64,12 @@ class Nsa5gDataTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
         self.iperf_server_ip = self.user_params.get("iperf_server", '0.0.0.0')
-        self.iperf_tcp_port = self.user_params.get("iperf_tcp_port", 0)
-        self.iperf_udp_port = self.user_params.get("iperf_udp_port", 0)
-        self.iperf_duration = self.user_params.get("iperf_duration", 60)
+        self.iperf_tcp_port = int(
+            self.user_params.get("iperf_tcp_port", 0))
+        self.iperf_udp_port = int(
+            self.user_params.get("iperf_udp_port", 0))
+        self.iperf_duration = int(
+            self.user_params.get("iperf_duration", 60))
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
