@@ -102,12 +102,12 @@ class WifiWpa3OweTest(WifiBaseTest):
         wutils.verify_11ax_wifi_connection(
             self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b1502202-10c3-4834-a899-5023947fb21d")
     def test_connect_to_wpa3_personal_gcmp_128(self):
         """Test connect to WPA3 SAE GCMP 128."""
         wutils.connect_to_wifi_network(self.dut, self.wpa3_sae_gcmp_128)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4d8c3c63-75bf-4131-bb07-fe3f6020389c")
     def test_connect_to_wpa3_personal_gcmp_256(self):
         """Test connect to WPA3 SAE GCMP 256."""
         wutils.connect_to_wifi_network(self.dut, self.wpa3_sae_gcmp_256)

@@ -325,8 +325,7 @@ class WifiPasspointTest(WifiBaseTest):
             raise signals.TestFailure("Failed because an unknown FQDN"
                                       " was successfully deleted.")
 
-
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ac71344f-e5d9-4e70-b15d-8ce24a4b3744")
     def test_global_reach_passpoint(self):
         """Test connection to global reach passpoint.
 
