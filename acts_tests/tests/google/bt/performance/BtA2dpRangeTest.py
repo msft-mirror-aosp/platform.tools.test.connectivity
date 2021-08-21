@@ -29,6 +29,7 @@ INIT_ATTEN = 0
 
 
 class BtA2dpRangeTest(A2dpBaseTest):
+
     def __init__(self, configs):
         super().__init__(configs)
         self.bt_logger = log.BluetoothMetricLogger.for_test_case()
@@ -59,6 +60,7 @@ class BtA2dpRangeTest(A2dpBaseTest):
             self.atten_c1.set_atten(INIT_ATTEN)
 
     def generate_test_case(self, codec_config):
+
         def test_case_fn():
             self.run_a2dp_to_max_range(codec_config)
 
@@ -88,8 +90,7 @@ class BtA2dpRangeTest(A2dpBaseTest):
         """
 
         # Populate protobuf
-        test_case_proto = self.bt_logger.proto_module.BluetoothAudioTestResult(
-        )
+        test_case_proto = self.bt_logger.proto_module.BluetoothAudioTestResult()
 
         for data_point in data_points:
             audio_data_proto = test_case_proto.data_points.add()
@@ -118,6 +119,7 @@ class BtA2dpRangeTest(A2dpBaseTest):
         Args:
             df: Summary of results contains attenuation, DUT RSSI, remote RSSI and Tx Power
         """
+
         self.plot = bokeh_figure.BokehFigure(
             title='{}'.format(self.current_test_name),
             x_label='Pathloss (dBm)',
@@ -127,6 +129,7 @@ class BtA2dpRangeTest(A2dpBaseTest):
             legend_label_size='16pt',
             axis_tick_label_size='16pt',
             sizing_mode='stretch_both')
+
         self.plot.add_line(df.index,
                            df['rssi_primary'],
                            legend='DUT RSSI (dBm)',
@@ -172,8 +175,8 @@ class BtA2dpRangeTest(A2dpBaseTest):
                                   self.attenuation_vector['step'])
 
         data_points = []
-        self.file_output = os.path.join(
-            self.log_path, '{}.csv'.format(self.current_test_name))
+        self.file_output = os.path.join(self.log_path,
+                                        '{}.csv'.format(self.current_test_name))
 
         # Set Codec if needed
         current_codec = self.dut.droid.bluetoothA2dpGetCurrentCodecConfig()
@@ -195,25 +198,36 @@ class BtA2dpRangeTest(A2dpBaseTest):
             recorded_file = self.play_and_record_audio(
                 self.audio_params['duration'])
             thdns = self.run_thdn_analysis(recorded_file, tag)
+
             # Collect Metrics for dashboard
-            try:
-                [rssi_master, pwl_master,
-                 rssi_slave] = self._get_bt_link_metrics()
-                rssi_primary = rssi_master[self.dut.serial]
-                tx_power_level_master = pwl_master[self.dut.serial]
-                rssi_secondary = rssi_slave[self.bt_device_controller.serial]
-            except ZeroDivisionError:
-                self.log.warning('BT connection might be lost')
-                rssi_primary = -127
-                tx_power_level_master = -127
-                rssi_secondary = -127
+            [
+                rssi_master, pwl_master, rssi_c0_master, rssi_c1_master,
+                txpw_c0_master, txpw_c1_master, bftx_master, divtx_master
+            ], [rssi_slave] = self._get_bt_link_metrics(tag)
 
             data_point = {
-                'attenuation_db': int(self.attenuator.get_atten()),
-                'rssi_primary': rssi_primary,
-                'tx_power_level_master': tx_power_level_master,
-                'rssi_secondary': rssi_secondary,
-                'total_harmonic_distortion_plus_noise_percent': thdns[0] * 100
+                'attenuation_db':
+                    int(self.attenuator.get_atten()),
+                'rssi_primary':
+                    rssi_master.get(self.dut.serial, -127),
+                'tx_power_level_master':
+                    pwl_master.get(self.dut.serial, -127),
+                'rssi_secondary':
+                    rssi_slave.get(self.bt_device_controller.serial, -127),
+                'rssi_c0_dut':
+                    rssi_c0_master.get(self.dut.serial, -127),
+                'rssi_c1_dut':
+                    rssi_c1_master.get(self.dut.serial, -127),
+                'txpw_c0_dut':
+                    txpw_c0_master.get(self.dut.serial, -127),
+                'txpw_c1_dut':
+                    txpw_c1_master.get(self.dut.serial, -127),
+                'bftx_state':
+                    bftx_master.get(self.dut.serial, -127),
+                'divtx_state':
+                    divtx_master.get(self.dut.serial, -127),
+                'total_harmonic_distortion_plus_noise_percent':
+                    thdns[0] * 100
             }
             data_points.append(data_point)
             self.log.info(data_point)

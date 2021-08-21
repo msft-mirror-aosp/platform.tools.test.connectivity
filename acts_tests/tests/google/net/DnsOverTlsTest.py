@@ -49,7 +49,7 @@ class DnsOverTlsTest(WifiBaseTest):
             self.dut_b = self.android_devices[1]
         for ad in self.android_devices:
             ad.droid.setPrivateDnsMode(True)
-            if OPENWRT in self.user_params:
+            if OPENWRT not in self.user_params:
                 nutils.verify_lte_data_and_tethering_supported(ad)
             set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
         req_params = ("ping_hosts",)
