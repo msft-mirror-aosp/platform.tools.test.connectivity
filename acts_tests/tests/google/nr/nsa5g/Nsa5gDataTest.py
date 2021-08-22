@@ -64,9 +64,12 @@ class Nsa5gDataTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
         self.iperf_server_ip = self.user_params.get("iperf_server", '0.0.0.0')
-        self.iperf_tcp_port = self.user_params.get("iperf_tcp_port", 0)
-        self.iperf_udp_port = self.user_params.get("iperf_udp_port", 0)
-        self.iperf_duration = self.user_params.get("iperf_duration", 60)
+        self.iperf_tcp_port = int(
+            self.user_params.get("iperf_tcp_port", 0))
+        self.iperf_udp_port = int(
+            self.user_params.get("iperf_udp_port", 0))
+        self.iperf_duration = int(
+            self.user_params.get("iperf_duration", 60))
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -334,20 +337,6 @@ class Nsa5gDataTest(TelephonyBaseTest):
             ad.log.error(e)
             return False
 
-
-    @test_tracker_info(uuid="cd1429e8-94d7-44de-ae48-68cf42f3246b")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa_browsing(self):
-        ad = self.android_devices[0]
-        ad.log.info("Connect to NR and verify internet connection.")
-        if not provision_device_for_5g(ad.log, ad):
-            return False
-        if not verify_internet_connection(ad.log, ad):
-            return False
-
-        return browsing_test(ad.log, ad)
-
-
     @test_tracker_info(uuid="7179f0f1-f0ca-4496-8f4a-7eebc616a41a")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_wifi_switching(self):
@@ -393,7 +382,7 @@ class Nsa5gDataTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="e88b226e-3842-4c45-a33e-d4fee7d8f6f0")
     @TelephonyBaseTest.tel_test_wrap
-    def test_5g_nsa(self):
+    def test_5g_nsa_data_connectivity(self):
         """Test data connection in nsa5g.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.

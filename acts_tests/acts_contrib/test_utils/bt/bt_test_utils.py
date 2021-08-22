@@ -219,7 +219,7 @@ def connect_phone_to_headset(android,
         method. False otherwise.
     """
     headset_mac_address = headset.mac_address
-    connected = is_a2dp_src_device_connected(android, headset_mac_address)
+    connected = android.droid.audioIsBluetoothA2dpOn()
     log.info('Devices connected before pair attempt: %s' % connected)
     if not connected:
         # Turn on headset and initiate pairing mode.
@@ -247,7 +247,7 @@ def connect_phone_to_headset(android,
         log.info('Waiting for connection...')
         time.sleep(connection_check_period)
         # Check for connection.
-        connected = is_a2dp_src_device_connected(android, headset_mac_address)
+        connected = android.droid.audioIsBluetoothA2dpOn()
     log.info('Devices connected after pair attempt: %s' % connected)
     return connected
 
@@ -763,21 +763,19 @@ def get_bt_metric(ad_list, duration=1, tag="bt_metric", processed=True):
                         bqr_metric.append(m)
             metrics_dict[metric][ad.serial] = bqr_metric
 
-        # Ensures back-compatibility for vsp_txpl enabled DUTs
-        if metrics_dict["vsp_txpl"][ad.serial]:
-            metrics_dict["pwlv"][ad.serial] = metrics_dict["vsp_txpl"][
-                ad.serial]
-
         # Formatting the raw data
         metrics_dict["rssi"][ad.serial] = [
             (-1) * int(x) for x in metrics_dict["rssi"][ad.serial]
         ]
         metrics_dict["pwlv"][ad.serial] = [
-            int(x, 16) for x in metrics_dict["pwlv"][ad.serial]
+            int(x, 16) if '0x' in x else int(x, 10) for x in metrics_dict["pwlv"][ad.serial]
         ]
 
         # Processing formatted data if processing is required
         if processed:
+            metrics_dict["rssi"][ad.serial] = [
+            x for x in metrics_dict["rssi"][ad.serial] if x !=0 and x != -127
+            ]
             # Computes the average RSSI
             metrics_dict["rssi"][ad.serial] = round(
                 sum(metrics_dict["rssi"][ad.serial]) /

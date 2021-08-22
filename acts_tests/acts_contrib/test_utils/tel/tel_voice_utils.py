@@ -53,6 +53,7 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_lookup_tables import network_preference_for_generation
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -77,6 +78,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
+from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
@@ -106,7 +108,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -822,7 +825,9 @@ def phone_setup_iwlan_for_subscription(log,
                                        wfc_mode,
                                        wifi_ssid=None,
                                        wifi_pwd=None,
-                                       nw_gen=None):
+                                       nw_gen=None,
+                                       sa_or_nsa=None,
+                                       mmwave=None):
     """Phone setup function for epdg call test for subscription id.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -840,6 +845,8 @@ def phone_setup_iwlan_for_subscription(log,
         wifi_pwd: WiFi network password. This is optional.
         nw_gen: network type selection. This is optional.
             GEN_4G for 4G, GEN_5G for 5G or None for doing nothing.
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave
     Returns:
         True if success. False if fail.
     """
@@ -849,13 +856,16 @@ def phone_setup_iwlan_for_subscription(log,
 
     if nw_gen:
         if not ensure_network_generation_for_subscription(
-                log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA):
+                log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA,
+                sa_or_nsa=sa_or_nsa, mmwave=mmwave):
             ad.log.error("Failed to set to %s data.", nw_gen)
             return False
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
 
-    if not toggle_volte_for_subscription(log, ad, sub_id, new_state=True):
-        return False
+    # Pause at least for 4 seconds is necessary after airplane mode was turned
+    # on due to the mechanism of deferring Wi-Fi (b/191481736)
+    if is_airplane_mode:
+        time.sleep(5)
 
     # check if WFC supported phones
     if wfc_mode != WFC_MODE_DISABLED and not ad.droid.imsIsWfcEnabledByPlatform(
@@ -934,7 +944,8 @@ def phone_setup_iwlan_cellular_preferred(log,
     return True
 
 
-def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
+def phone_setup_data_for_subscription(log, ad, sub_id, network_generation,
+                                        sa_or_nsa=None, mmwave=None):
     """Setup Phone <sub_id> Data to <network_generation>
 
     Args:
@@ -942,6 +953,8 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
         ad: android device object
         sub_id: subscription id
         network_generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G, GEN_5G
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if success, False if fail.
@@ -956,7 +969,9 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
             ad,
             sub_id,
             network_generation,
-            voice_or_data=NETWORK_SERVICE_DATA):
+            voice_or_data=NETWORK_SERVICE_DATA,
+            sa_or_nsa=sa_or_nsa,
+            mmwave=mmwave):
         get_telephony_signal_strength(ad)
         return False
     return True
@@ -976,18 +991,21 @@ def phone_setup_5g(log, ad):
                                            get_default_data_sub_id(ad))
 
 
-def phone_setup_5g_for_subscription(log, ad, sub_id):
+def phone_setup_5g_for_subscription(log, ad, sub_id, sa_or_nsa=None, mmwave=None):
     """Setup Phone <sub_id> Data to 5G.
 
     Args:
         log: log object
         ad: android device object
         sub_id: subscription id
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave
 
     Returns:
         True if success, False if fail.
     """
-    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_5G)
+    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_5G,
+                                        sa_or_nsa=sa_or_nsa, mmwave=mmwave)
 
 
 def phone_setup_4g(log, ad):
@@ -1126,10 +1144,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
             ad.log.error("Failed to set to 5G data.")
             return False
 
-    toggle_volte_for_subscription(log, ad, sub_id, False)
-
-    if not ensure_network_generation_for_subscription(
-            log, ad, sub_id, nw_gen, voice_or_data=NETWORK_SERVICE_DATA):
+    if not toggle_volte_for_subscription(log, ad, sub_id, False):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
@@ -1157,13 +1172,16 @@ def phone_setup_volte(log, ad, nw_gen=GEN_4G):
     return phone_setup_volte_for_subscription(log, ad,
                                         get_outgoing_voice_sub_id(ad), nw_gen)
 
-def phone_setup_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
+def phone_setup_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G,
+                                        sa_or_nsa=None, mmwave=None):
     """Setup VoLTE enable for subscription id.
     Args:
         log: log object
         ad: android device object.
         sub_id: subscription id.
         nw_gen: GEN_4G or GEN_5G
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True: if VoLTE is enabled successfully.
@@ -1179,7 +1197,8 @@ def phone_setup_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
             ad.log.error("Failed to set to 4G data.")
             return False
     elif nw_gen == GEN_5G:
-        if not phone_setup_5g_for_subscription(log, ad, sub_id):
+        if not phone_setup_5g_for_subscription(log, ad, sub_id,
+                                        sa_or_nsa=sa_or_nsa, mmwave=mmwave):
             ad.log.error("Failed to set to 5G data.")
             return False
     operator_name = get_operator_name(log, ad, sub_id)
@@ -1190,7 +1209,8 @@ def phone_setup_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
             ad.log.error("Enhanced 4G LTE setting is not available")
             return False
         toggle_volte_for_subscription(log, ad, sub_id, True)
-    return phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen)
+    return phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen,
+                                        sa_or_nsa=sa_or_nsa, mmwave=mmwave)
 
 
 def phone_setup_voice_3g(log, ad):
@@ -1421,16 +1441,20 @@ def phone_idle_volte(log, ad):
                                              get_outgoing_voice_sub_id(ad))
 
 
-def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
+def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G,
+                                    sa_or_nsa=None, mmwave=None):
     """Return if phone is idle for VoLTE call test for subscription id.
     Args:
         ad: Android device object.
         sub_id: subscription id.
-        nw_gen: GEN_4G or GEN_5G
+        nw_gen: GEN_4G or GEN_5G.
+        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
+        mmwave: True if nw_gen is nsa 5g mmwave.
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.error("Not in 5G NSA coverage.")
+        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id,
+                                            sa_or_nsa=sa_or_nsa, mmwave=mmwave):
+            ad.log.error("Not in 5G coverage.")
             return False
     else:
         if not wait_for_network_rat_for_subscription(
@@ -1514,8 +1538,8 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G):
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_nsa_for_subscription(ad, sub_id=sub_id):
-            ad.log.error("Not in 5G NSA coverage.")
+        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+            ad.log.error("Not in 5G coverage.")
             return False
     else:
         if not wait_for_network_rat_for_subscription(
@@ -1985,11 +2009,66 @@ def phone_setup_on_rat(
         else:
             sub_id = get_outgoing_voice_sub_id(ad)
 
+    if get_default_data_sub_id(ad) != sub_id and '5g' in rat.lower():
+        ad.log.warning('Default data sub ID is NOT given sub ID %s.', sub_id)
+        network_preference = network_preference_for_generation(
+            GEN_5G,
+            ad.telephony["subscription"][sub_id]["operator"],
+            ad.telephony["subscription"][sub_id]["phone_type"])
+
+        ad.log.info("Network preference for %s is %s", GEN_5G,
+                    network_preference)
+
+        if not set_preferred_network_mode_pref(log, ad, sub_id,
+            network_preference):
+            return False
+
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            max_wait_time=30,
+            voice_or_data=NETWORK_SERVICE_DATA):
+
+            ad.log.warning('Non-DDS slot (sub ID: %s) cannot attach 5G network.', sub_id)
+            ad.log.info('Check if sub ID %s can attach LTE network.', sub_id)
+
+            if not wait_for_network_generation_for_subscription(
+                log,
+                ad,
+                sub_id,
+                GEN_4G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+                return False
+
+            if "volte" in rat.lower():
+                phone_setup_volte_for_subscription(log, ad, sub_id, None)
+            elif "wfc" in rat.lower():
+                return phone_setup_iwlan_for_subscription(
+                    log,
+                    ad,
+                    sub_id,
+                    is_airplane_mode,
+                    wfc_mode,
+                    wifi_ssid,
+                    wifi_pwd)
+            elif "csfb" in rat.lower():
+                return phone_setup_csfb_for_subscription(log, ad, sub_id, None)
+            return True
+
     if rat.lower() == '5g_volte':
         if only_return_fn:
             return phone_setup_volte_for_subscription
         else:
             return phone_setup_volte_for_subscription(log, ad, sub_id, GEN_5G)
+
+    elif rat.lower() == '5g_nsa_mmw_volte':
+        if only_return_fn:
+            return phone_setup_volte_for_subscription
+        else:
+            return phone_setup_volte_for_subscription(log, ad, sub_id, GEN_5G,
+                                                    sa_or_nsa='nsa', mmwave=True)
 
     elif rat.lower() == '5g_csfb':
         if only_return_fn:
@@ -2011,6 +2090,22 @@ def phone_setup_on_rat(
                 wifi_pwd,
                 GEN_5G)
 
+    elif rat.lower() == '5g_nsa_mmw_wfc':
+        if only_return_fn:
+            return phone_setup_iwlan_for_subscription
+        else:
+            return phone_setup_iwlan_for_subscription(
+                log,
+                ad,
+                sub_id,
+                is_airplane_mode,
+                wfc_mode,
+                wifi_ssid,
+                wifi_pwd,
+                GEN_5G,
+                sa_or_nsa='nsa',
+                mmwave=True)
+
     elif rat.lower() == 'volte':
         if only_return_fn:
             return phone_setup_volte_for_subscription
@@ -2023,11 +2118,30 @@ def phone_setup_on_rat(
         else:
             return phone_setup_csfb_for_subscription(log, ad, sub_id)
 
+    elif rat.lower() == '5g':
+        if only_return_fn:
+            return phone_setup_5g_for_subscription
+        else:
+            return phone_setup_5g_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == '5g_nsa_mmwave':
+        if only_return_fn:
+            return phone_setup_5g_for_subscription
+        else:
+            return phone_setup_5g_for_subscription(log, ad, sub_id,
+                                            sa_or_nsa='nsa', mmwave=True)
+
     elif rat.lower() == '3g':
         if only_return_fn:
             return phone_setup_voice_3g_for_subscription
         else:
             return phone_setup_voice_3g_for_subscription(log, ad, sub_id)
+
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return phone_setup_voice_2g_for_subscription
+        else:
+            return phone_setup_voice_2g_for_subscription(log, ad, sub_id)
 
     elif rat.lower() == 'wfc':
         if only_return_fn:
@@ -2041,6 +2155,11 @@ def phone_setup_on_rat(
                 wfc_mode,
                 wifi_ssid,
                 wifi_pwd)
+    elif rat.lower() == 'default':
+        if only_return_fn:
+            return ensure_phone_default_state
+        else:
+            return ensure_phone_default_state(log, ad)
     else:
         if only_return_fn:
             return phone_setup_voice_general_for_subscription
@@ -2066,7 +2185,13 @@ def is_phone_in_call_on_rat(log, ad, rat='volte', only_return_fn=None):
         else:
             return is_phone_in_call_3g(log, ad)
 
-    elif rat.lower() == 'wfc':
+    elif rat.lower() == '2g':
+        if only_return_fn:
+            return is_phone_in_call_2g
+        else:
+            return is_phone_in_call_2g(log, ad)
+
+    elif rat.lower() == 'wfc' or rat.lower() == '5g_wfc':
         if only_return_fn:
             return is_phone_in_call_iwlan
         else:
@@ -2208,3 +2333,123 @@ def _test_call_long_duration(log, ads, dut_incall_check_func, total_duration):
         ads[0],
         verify_caller_func=dut_incall_check_func,
         wait_time_in_call=total_duration)
+
+def wait_for_network_idle(
+    log,
+    ad,
+    rat,
+    sub_id):
+    """Wait for attaching to network with assigned RAT and IMS/WFC registration
+
+    This function can be used right after network service recovery after turning
+    off airplane mode or switching DDS. It will ensure DUT has attached to the
+    network with assigned RAT, and VoLTE/WFC has been ready.
+
+    Args:
+        log: log object
+        ad: Android object
+        rat: following RAT are supported:
+            - 5g
+            - 5g_volte
+            - 5g_csfb
+            - 5g_wfc
+            - 4g (LTE)
+            - volte (LTE)
+            - csfb (LTE)
+            - wfc (LTE)
+
+    Returns:
+        True or False
+    """
+    if get_default_data_sub_id(ad) != sub_id and '5g' in rat.lower():
+        ad.log.warning('Default data sub ID is NOT given sub ID %s.', sub_id)
+        network_preference = network_preference_for_generation(
+            GEN_5G,
+            ad.telephony["subscription"][sub_id]["operator"],
+            ad.telephony["subscription"][sub_id]["phone_type"])
+
+        ad.log.info("Network preference for %s is %s", GEN_5G,
+                    network_preference)
+
+        if not set_preferred_network_mode_pref(log, ad, sub_id,
+            network_preference):
+            return False
+
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            max_wait_time=30,
+            voice_or_data=NETWORK_SERVICE_DATA):
+
+            ad.log.warning('Non-DDS slot (sub ID: %s) cannot attach 5G network.', sub_id)
+            ad.log.info('Check if sub ID %s can attach LTE network.', sub_id)
+
+            if not wait_for_network_generation_for_subscription(
+                log,
+                ad,
+                sub_id,
+                GEN_4G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+                return False
+
+            if rat.lower() == '5g':
+                rat = '4g'
+            elif rat.lower() == '5g_volte':
+                rat = 'volte'
+            elif rat.lower() == '5g_wfc':
+                rat = 'wfc'
+            elif rat.lower() == '5g_csfb':
+                rat = 'csfb'
+
+    if rat.lower() == '5g_volte':
+        if not phone_idle_volte_for_subscription(log, ad, sub_id, GEN_5G):
+            return False
+    elif rat.lower() == '5g_csfb':
+        if not phone_idle_csfb_for_subscription(log, ad, sub_id, GEN_5G):
+            return False
+    elif rat.lower() == '5g_wfc':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
+        if not wait_for_wfc_enabled(log, ad):
+            return False
+    elif rat.lower() == '5g':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_5G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
+    elif rat.lower() == 'volte':
+        if not phone_idle_volte_for_subscription(log, ad, sub_id, GEN_4G):
+            return False
+    elif rat.lower() == 'csfb':
+        if not phone_idle_csfb_for_subscription(log, ad, sub_id, GEN_4G):
+            return False
+    elif rat.lower() == 'wfc':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
+        if not wait_for_wfc_enabled(log, ad):
+            return False
+    elif rat.lower() == '4g':
+        if not wait_for_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            return False
+    return True
+

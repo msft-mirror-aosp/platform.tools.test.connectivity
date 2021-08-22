@@ -42,6 +42,52 @@ IPSEC_L2TP_RSA = {
     }
 }
 
+IPSEC_HYBRID_RSA = {
+    "conn HYBRID_RSA": {
+        "keyexchange": "ikev1",
+        "left": "192.168.1.1",
+        "leftsubnet": "0.0.0.0/0",
+        "leftauth": "pubkey",
+        "leftcert": "serverCert.der",
+        "leftsendcert": "always",
+        "right": "%any",
+        "rightsubnet": "0.0.0.0/0",
+        "rightauth": "pubkey",
+        "rightauth2": "xauth",
+        "xauth": "server",
+        "auto": "add",
+    }
+}
+
+IPSEC_XAUTH_PSK = {
+    "conn XAUTH_PSK": {
+        "keyexchange": "ikev1",
+        "left": "192.168.1.1",
+        "leftsubnet": "0.0.0.0/0",
+        "leftauth": "psk",
+        "right": "%any",
+        "rightsubnet": "0.0.0.0/0",
+        "rightauth": "psk",
+        "rightauth2": "xauth",
+        "auto": "add",
+    }
+}
+
+IPSEC_XAUTH_RSA = {
+    "conn XAUTH_RSA": {
+        "keyexchange": "ikev1",
+        "left": "192.168.1.1",
+        "leftsubnet": "0.0.0.0/0",
+        "leftcert": "serverCert.der",
+        "leftsendcert": "always",
+        "right": "%any",
+        "rightsubnet": "0.0.0.0/0",
+        "rightauth": "xauth",
+        "xauth": "server",
+        "auto": "add",
+    }
+}
+
 # parmas for lx2tpd
 
 XL2TPD_CONF_GLOBAL = (
@@ -111,6 +157,13 @@ FIREWALL_RULES_FOR_L2TP = (
     "iptables -A INPUT -p udp --dport 500 -j ACCEPT",
     "iptables -A INPUT -p udp --dport 4500 -j ACCEPT",
     "iptables -A INPUT -p udp -m policy --dir in --pol ipsec -m udp --dport 1701 -j ACCEPT"
+)
+
+FIREWALL_RULES_DISABLE_DNS_RESPONSE = (
+    "iptables -I OUTPUT -p udp --sport 53 -j DROP",
+    "iptables -I OUTPUT -p tcp --sport 53 -j DROP",
+    "ip6tables -I OUTPUT -p udp --sport 53 -j DROP",
+    "ip6tables -I OUTPUT -p tcp --sport 53 -j DROP",
 )
 
 

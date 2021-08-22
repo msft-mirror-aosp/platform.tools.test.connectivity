@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import re
+import shutil
 import socket
 import time
 from builtins import open
@@ -58,6 +59,7 @@ CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
 DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
+DEFAULT_SCREENSHOT_PATH = "/sdcard/Pictures/screencap"
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
@@ -683,11 +685,11 @@ class AndroidDevice:
                 except (IndexError, ValueError) as e:
                     # Possible ValueError from string to int cast.
                     # Possible IndexError from split.
-                    self.log.warn(
+                    self.log.warning(
                         'Command \"%s\" returned output line: '
                         '\"%s\".\nError: %s', cmd, out, e)
             except Exception as e:
-                self.log.warn(
+                self.log.warning(
                     'Device fails to check if %s running with \"%s\"\n'
                     'Exception %s', package_name, cmd, e)
         self.log.debug("apk %s is not running", package_name)
@@ -850,7 +852,7 @@ class AndroidDevice:
         save the logcat in a file.
         """
         if self.is_adb_logcat_on:
-            self.log.warn(
+            self.log.warning(
                 'Android device %s already has a running adb logcat thread. ' %
                 self.serial)
             return
@@ -871,7 +873,7 @@ class AndroidDevice:
         """Stops the adb logcat collection subprocess.
         """
         if not self.is_adb_logcat_on:
-            self.log.warn(
+            self.log.warning(
                 'Android device %s does not have an ongoing adb logcat ' %
                 self.serial)
             return
@@ -897,6 +899,29 @@ class AndroidDevice:
             return result.group(1)
         else:
             None
+
+    @record_api_usage
+    def get_apk_version(self, package_name):
+        """Get the version of the given apk.
+
+        Args:
+            package_name: Name of the package, e.g., com.android.phone.
+
+        Returns:
+            Version of the given apk.
+        """
+        try:
+            output = self.adb.shell("dumpsys package %s | grep versionName" %
+                                    package_name)
+            pattern = re.compile(r"versionName=(\S+)", re.I)
+            result = pattern.findall(output)
+            if result:
+                return result[0]
+        except Exception as e:
+            self.log.warning("Fail to get the version of package %s: %s",
+                             package_name, e)
+        self.log.debug("apk %s is not found", package_name)
+        return None
 
     def is_apk_installed(self, package_name):
         """Check if the given apk is already installed.
@@ -941,7 +966,7 @@ class AndroidDevice:
                     self.log.info("apk %s is running", package_name)
                     return True
             except Exception as e:
-                self.log.warn(
+                self.log.warning(
                     "Device fails to check is %s running by %s "
                     "Exception %s", package_name, cmd, e)
                 continue
@@ -964,7 +989,7 @@ class AndroidDevice:
             self.adb.shell(
                 'am force-stop %s' % package_name, ignore_status=True)
         except Exception as e:
-            self.log.warn("Fail to stop package %s: %s", package_name, e)
+            self.log.warning("Fail to stop package %s: %s", package_name, e)
 
     def stop_sl4a(self):
         # TODO(markdr): Move this into sl4a_manager.
@@ -1123,12 +1148,17 @@ class AndroidDevice:
             qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
             os.makedirs(qxdm_log_path, exist_ok=True)
+
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
+
             self.adb.pull(
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
+            # Zip Folder
+            utils.zip_directory('%s.zip' % qxdm_log_path, qxdm_log_path)
+            shutil.rmtree(qxdm_log_path)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
@@ -1556,6 +1586,21 @@ class AndroidDevice:
                 self.send_keycode_number_pad(number)
             self.send_keycode("ENTER")
             self.send_keycode("BACK")
+
+    @record_api_usage
+    def screenshot(self, name=""):
+        """Take a screenshot on the device.
+
+        Args:
+            name: additional information of screenshot on the file name.
+        """
+        if name:
+            file_name = "%s_%s" % (DEFAULT_SCREENSHOT_PATH, name)
+        file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
+        try:
+            self.adb.shell("screencap -p %s" % file_name)
+        except:
+            self.log.error("Fail to log screenshot to %s", file_name)
 
     @record_api_usage
     def exit_setup_wizard(self):

@@ -62,6 +62,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
+        self.dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
             'RemoteServer', 'main_network'
@@ -96,11 +97,10 @@ class WifiRvrTest(base_test.BaseTestClass):
 
         # Turn WiFi ON
         if self.testclass_params.get('airplane_mode', 1):
-            for dev in self.android_devices:
-                self.log.info('Turning on airplane mode.')
-                asserts.assert_true(utils.force_airplane_mode(dev, True),
-                                    "Can not turn on airplane mode.")
-        wutils.wifi_toggle_state(dev, True)
+            self.log.info('Turning on airplane mode.')
+            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                                "Can not turn on airplane mode.")
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
@@ -150,8 +150,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         try:
             throughput_limits = self.compute_throughput_limits(rvr_result)
         except:
-            asserts.explicit_pass(
-                'Test passed by default. Golden file not found')
+            asserts.fail('Test failed: Golden file not found')
 
         failure_count = 0
         for idx, current_throughput in enumerate(
@@ -353,9 +352,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         self.log.info('Start running RvR')
         # Refresh link layer stats before test
-        llstats_obj = wputils.LinkLayerStats(
-            self.monitored_dut,
-            self.testclass_params.get('monitor_llstats', 1))
+        llstats_obj = wputils.LinkLayerStats(self.dut)
         zero_counter = 0
         throughput = []
         llstats = []
@@ -366,7 +363,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     asserts.skip('DUT health check failed. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
-                attenuator.set_atten(atten, strict=False)
+                attenuator.set_atten(atten, strict=False, retry=True)
             # Refresh link layer stats
             llstats_obj.update_stats()
             # Setup sniffer
@@ -377,33 +374,20 @@ class WifiRvrTest(base_test.BaseTestClass):
                     bw=int(testcase_params['mode'][3:]),
                     duration=self.testclass_params['iperf_duration'] / 5)
             # Start iperf session
-            if self.testclass_params.get('monitor_rssi', 1):
-                rssi_future = wputils.get_connected_rssi_nb(
-                    self.monitored_dut,
-                    self.testclass_params['iperf_duration'] - 1,
-                    1,
-                    1,
-                    interface=self.monitored_interface)
             self.iperf_server.start(tag=str(atten))
+            rssi_future = wputils.get_connected_rssi_nb(
+                self.dut, self.testclass_params['iperf_duration'] - 1, 1, 1)
             client_output_path = self.iperf_client.start(
                 testcase_params['iperf_server_address'],
                 testcase_params['iperf_args'], str(atten),
                 self.testclass_params['iperf_duration'] + self.TEST_TIMEOUT)
             server_output_path = self.iperf_server.stop()
-            if self.testclass_params.get('monitor_rssi', 1):
-                rssi_result = rssi_future.result()
-                current_rssi = {
-                    'signal_poll_rssi':
-                    rssi_result['signal_poll_rssi']['mean'],
-                    'chain_0_rssi': rssi_result['chain_0_rssi']['mean'],
-                    'chain_1_rssi': rssi_result['chain_1_rssi']['mean']
-                }
-            else:
-                current_rssi = {
-                    'signal_poll_rssi': float('nan'),
-                    'chain_0_rssi': float('nan'),
-                    'chain_1_rssi': float('nan')
-                }
+            rssi_result = rssi_future.result()
+            current_rssi = {
+                'signal_poll_rssi': rssi_result['signal_poll_rssi']['mean'],
+                'chain_0_rssi': rssi_result['chain_0_rssi']['mean'],
+                'chain_1_rssi': rssi_result['chain_1_rssi']['mean']
+            }
             rssi.append(current_rssi)
             # Stop sniffer
             if self.testbed_params['sniffer_enable']:
@@ -446,7 +430,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     (len(testcase_params['atten_range']) - len(throughput)))
                 break
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False)
+            attenuator.set_atten(0, strict=False, retry=True)
         # Compile test result and meta data
         rvr_result = collections.OrderedDict()
         rvr_result['test_name'] = self.current_test_name
@@ -493,33 +477,30 @@ class WifiRvrTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        self.sta_dut = self.android_devices[0]
         # Check battery level before test
         if not wputils.health_check(
-                self.sta_dut,
-                20) and testcase_params['traffic_direction'] == 'UL':
+                self.dut, 20) and testcase_params['traffic_direction'] == 'UL':
             asserts.skip('Overheating or Battery level low. Skipping test.')
         # Turn screen off to preserve battery
-        self.sta_dut.go_to_sleep()
-        if wputils.validate_network(self.sta_dut,
+        self.dut.go_to_sleep()
+        if wputils.validate_network(self.dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
-            wutils.reset_wifi(self.sta_dut)
-            wutils.set_wifi_country_code(self.sta_dut,
+            wutils.wifi_toggle_state(self.dut, False)
+            wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
-            if self.testbed_params['sniffer_enable']:
-                self.sniffer.start_capture(
-                    network={'SSID': testcase_params['test_network']['SSID']},
-                    chan=testcase_params['channel'],
-                    bw=testcase_params['mode'][3:],
-                    duration=180)
-            wutils.wifi_connect(self.sta_dut,
+            wutils.wifi_toggle_state(self.dut, True)
+            wutils.reset_wifi(self.dut)
+            wutils.set_wifi_country_code(self.dut,
+                                         self.testclass_params['country_code'])
+            testcase_params['test_network']['channel'] = testcase_params[
+                'channel']
+            wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],
                                 num_of_tries=5,
                                 check_connectivity=True)
-            if self.testbed_params['sniffer_enable']:
-                self.sniffer.stop_capture(tag='connection_setup')
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -531,7 +512,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False)
+            attenuator.set_atten(0, strict=False, retry=True)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
         # Wait before running the first wifi test
@@ -541,17 +522,12 @@ class WifiRvrTest(base_test.BaseTestClass):
             time.sleep(first_test_delay)
             self.setup_dut(testcase_params)
         # Get iperf_server address
-        sta_dut_ip = self.sta_dut.droid.connectivityGetIPv4Addresses(
-            'wlan0')[0]
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
-            testcase_params['iperf_server_address'] = sta_dut_ip
+            testcase_params['iperf_server_address'] = self.dut_ip
         else:
             testcase_params[
                 'iperf_server_address'] = wputils.get_server_address(
-                    self.remote_server, sta_dut_ip, '255.255.255.0')
-        # Set DUT to monitor RSSI and LLStats on
-        self.monitored_dut = self.sta_dut
-        self.monitored_interface = None
+                    self.remote_server, self.dut_ip, '255.255.255.0')
 
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
@@ -570,16 +546,6 @@ class WifiRvrTest(base_test.BaseTestClass):
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         testcase_params['test_network'] = self.main_network[band]
-        if testcase_params['traffic_type'] == 'TCP':
-            testcase_params['iperf_socket_size'] = self.testclass_params.get(
-                'tcp_socket_size', None)
-            testcase_params['iperf_processes'] = self.testclass_params.get(
-                'tcp_processes', 1)
-        elif testcase_params['traffic_type'] == 'UDP':
-            testcase_params['iperf_socket_size'] = self.testclass_params.get(
-                'udp_socket_size', None)
-            testcase_params['iperf_processes'] = self.testclass_params.get(
-                'udp_processes', 1)
         if (testcase_params['traffic_direction'] == 'DL'
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
             ) or (testcase_params['traffic_direction'] == 'UL'
@@ -587,17 +553,13 @@ class WifiRvrTest(base_test.BaseTestClass):
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
                 duration=self.testclass_params['iperf_duration'],
                 reverse_direction=1,
-                traffic_type=testcase_params['traffic_type'],
-                socket_size=testcase_params['iperf_socket_size'],
-                num_processes=testcase_params['iperf_processes'])
+                traffic_type=testcase_params['traffic_type'])
             testcase_params['use_client_output'] = True
         else:
             testcase_params['iperf_args'] = wputils.get_iperf_arg_string(
                 duration=self.testclass_params['iperf_duration'],
                 reverse_direction=0,
-                traffic_type=testcase_params['traffic_type'],
-                socket_size=testcase_params['iperf_socket_size'],
-                num_processes=testcase_params['iperf_processes'])
+                traffic_type=testcase_params['traffic_type'])
             testcase_params['use_client_output'] = False
         return testcase_params
 

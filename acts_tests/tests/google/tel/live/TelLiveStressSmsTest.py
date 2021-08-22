@@ -18,20 +18,21 @@ import random
 import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_subscription_utils \
+from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_subscription_utils \
     import set_message_subid
-from acts.test_utils.tel.tel_subscription_utils \
+from acts_contrib.test_utils.tel.tel_subscription_utils \
     import get_subid_on_same_network_of_host_ad
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
-from acts.test_utils.tel.tel_voice_utils \
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_voice_utils \
     import phone_setup_volte_for_subscription
-from acts.test_utils.tel.tel_voice_utils \
+from acts_contrib.test_utils.tel.tel_voice_utils \
     import phone_setup_csfb_for_subscription
-from acts.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
 from acts.utils import rand_ascii_str
 
 class TelLiveStressSmsTest(TelephonyBaseTest):
@@ -45,6 +46,15 @@ class TelLiveStressSmsTest(TelephonyBaseTest):
             self.user_params.get("short_sms_ims_cycle", 1)
         self.long_sms_ims_cycle = \
             self.user_params.get("long_sms_ims_cycle", 1)
+
+        self.message_util = self.user_params.get("message_apk", None)
+        if isinstance(self.message_util, list):
+            self.message_util = self.message_util[0]
+
+        if self.message_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_message_apk(ad, self.message_util)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)

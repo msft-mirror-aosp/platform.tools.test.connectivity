@@ -188,18 +188,20 @@ class WifiPingTest(base_test.BaseTestClass):
         Args:
             result: dict containing ping results and meta data
         """
+        # Get target range
+        #rvr_range = self.get_range_from_rvr()
+        # Set Blackbox metric
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('ping_range',
+                                                   result['range'])
         # Evaluate test pass/fail
         test_message = ('Attenuation at range is {}dB. '
                         'LLStats at Range: {}'.format(
                             result['range'], result['llstats_at_range']))
         if result['peak_throughput_pct'] < 95:
             asserts.fail("(RESULT NOT RELIABLE) {}".format(test_message))
-
-        # If pass, set Blackbox metric
-        if self.publish_testcase_metrics:
-            self.testcase_metric_logger.add_metric('ping_range',
-                                                   result['range'])
-        asserts.explicit_pass(test_message)
+        else:
+            asserts.explicit_pass(test_message)
 
     def pass_fail_check(self, result):
         if 'range' in result['testcase_params']['test_type']:
@@ -306,7 +308,7 @@ class WifiPingTest(base_test.BaseTestClass):
         zero_counter = 0
         for atten in testcase_params['atten_range']:
             for attenuator in self.attenuators:
-                attenuator.set_atten(atten, strict=False)
+                attenuator.set_atten(atten, strict=False, retry=True)
             rssi_future = wputils.get_connected_rssi_nb(
                 self.dut,
                 int(testcase_params['ping_duration'] / 2 /
@@ -325,8 +327,8 @@ class WifiPingTest(base_test.BaseTestClass):
             test_result['llstats'].append(curr_llstats)
             if current_ping_stats['connected']:
                 self.log.info(
-                    'Attenuation = {0}dB\tPacket Loss = {1}%\t'
-                    'Avg RTT = {2:.2f}ms\tRSSI = {3} [{4},{5}]\t'.format(
+                    'Attenuation = {0}dB\tPacket Loss = {1:.1f}%\t'
+                    'Avg RTT = {2:.2f}ms\tRSSI = {3:.2f} [{4},{5}]\t'.format(
                         atten, current_ping_stats['packet_loss_percentage'],
                         statistics.mean(current_ping_stats['rtt']),
                         current_rssi['signal_poll_rssi']['mean'],
@@ -395,6 +397,10 @@ class WifiPingTest(base_test.BaseTestClass):
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
+            wutils.wifi_toggle_state(self.dut, False)
+            wutils.set_wifi_country_code(self.dut,
+                                         self.testclass_params['country_code'])
+            wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
                                          self.testclass_params['country_code'])
@@ -428,7 +434,7 @@ class WifiPingTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False)
+            attenuator.set_atten(0, strict=False, retry=True)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
 

@@ -31,6 +31,7 @@ install_requires = [
     'mock==3.0.5',
     'pyserial',
     'pyyaml>=5.1',
+    'pynacl==1.4.0',
     'protobuf>=3.14.0',
     'retry',
     'requests',
@@ -44,6 +45,7 @@ install_requires = [
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
     'dlipower',
+    'usbinfo',
     'zeroconf'
 ]
 
@@ -57,7 +59,7 @@ if sys.version_info < (3, 6):
 elif sys.version_info < (3, 7):
     # Python 3.6 uses scipy up to 1.5 and numpy up to 1.19.x
     install_requires.append('scipy<1.6')
-    install_requires.append('numpy==1.18.1')
+    install_requires.append('numpy<1.20')
 else:
     # Python 3.7+ is supported by latest scipy and numpy
     install_requires.append('scipy')

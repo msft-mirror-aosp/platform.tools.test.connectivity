@@ -29,6 +29,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_cell_switching_in_call
+from acts_contrib.test_utils.tel.tel_defines import CARRIER_VZW
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts_contrib.test_utils.tel.tel_defines import GEN_2G
@@ -54,6 +55,7 @@ from acts.utils import adb_shell_ping
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
@@ -109,6 +111,25 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.call_server_number = self.user_params.get(
                 "call_server_number", STORY_LINE)
         self.tel_logger = TelephonyMetricLogger.for_test_case()
+        self.dialer_util = self.user_params.get("dialer_apk", None)
+        if isinstance(self.dialer_util, list):
+            self.dialer_util = self.dialer_util[0]
+
+        if self.dialer_util:
+            ads = self.android_devices
+            for ad in ads:
+                install_dialer_apk(ad, self.dialer_util)
+
+    def get_carrier_name(self, ad):
+        return ad.adb.getprop("gsm.sim.operator.alpha")
+
+    def check_band_support(self,ad):
+        carrier = ad.adb.getprop("gsm.sim.operator.alpha")
+
+        if int(ad.adb.getprop("ro.product.first_api_level")) > 30 and (
+                carrier == CARRIER_VZW):
+            raise signals.TestSkip(
+                "Device Doesn't Support 2g/3G Band.")
 
 
     """ Tests Begin """
@@ -389,6 +410,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_csfb,
                                                            (self.log, ads[1]))]
@@ -420,6 +442,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_csfb,
                                                            (self.log, ads[1]))]
@@ -531,6 +554,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
@@ -564,6 +588,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Make Sure PhoneB is CDMA phone.
         if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA:
             self.log.error("PhoneB not cdma phone, can not 3g 1x. Stop test.")
@@ -603,6 +628,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Make Sure PhoneB is GSM phone.
         if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM:
             self.log.error(
@@ -641,6 +667,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_2g, (self.log, ads[1]))]
@@ -938,6 +965,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
              TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -972,6 +1000,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1006,6 +1035,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1040,6 +1070,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1074,6 +1105,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1108,6 +1140,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1142,6 +1175,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1176,6 +1210,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1210,6 +1245,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
@@ -1242,6 +1278,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
@@ -1462,6 +1499,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
@@ -1496,6 +1534,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
@@ -1825,6 +1864,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
                                                           (self.log, ads[1]))]
@@ -1878,6 +1918,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
@@ -2397,6 +2438,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             ads[0].log.error(
@@ -2449,6 +2491,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             ads[0].log.error(
@@ -2690,6 +2733,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2718,6 +2762,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_2g, (self.log, ads[0]))]
@@ -2805,6 +2850,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_2g, (self.log, ads[1]))]
@@ -2838,6 +2884,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_2g, (self.log, ads[1]))]
@@ -2867,6 +2914,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             raise signals.TestSkip(
@@ -2912,6 +2960,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
@@ -3020,6 +3069,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Otherwise True.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
 
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -3274,6 +3324,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_3g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup 3G")
             return False
@@ -3301,6 +3352,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_3g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup 3G")
             return False
@@ -3328,6 +3380,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_2g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup voice in 2G")
             return False
@@ -3355,6 +3408,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_2g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup voice in 2G")
             return False
@@ -3430,8 +3484,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3456,8 +3515,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3662,6 +3726,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_3g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup 3G")
             return False
@@ -3685,6 +3750,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_3g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup 3G")
             return False
@@ -3708,6 +3774,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_2g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup voice in 2G")
             return False
@@ -3731,6 +3798,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        self.check_band_support(self.android_devices[0])
         if not phone_setup_voice_2g(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup voice in 2G")
             return False
@@ -3803,8 +3871,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3828,8 +3901,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        carrier = self.get_carrier_name(self.android_devices[0])
+        if carrier == CARRIER_VZW:
+            wfc = WFC_MODE_CELLULAR_PREFERRED
+        else:
+            wfc = WFC_MODE_WIFI_PREFERRED
         if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
+                                 wfc,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3956,6 +4034,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             TestFailure is not success.
         """
         ads = self.android_devices
+        self.check_band_support(ads[0])
         try:
             subscriber_id = ads[0].droid.telephonyGetSubscriberId()
             data_usage = get_mobile_data_usage(ads[0], subscriber_id)

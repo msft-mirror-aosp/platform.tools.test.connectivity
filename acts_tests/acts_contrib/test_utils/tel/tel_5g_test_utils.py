@@ -25,10 +25,17 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDM
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
@@ -266,3 +273,50 @@ def check_current_network_5g(ad, timeout=30, sa_5g=False, nsa_mmwave=False):
             return False
     return True
 
+
+def test_activation_by_condition(ad, from_3g=False, nsa_mmwave=False, precond_func=None):
+    """Test 5G activation based on various pre-conditions.
+
+    Args:
+        ad: android device object.
+        from_3g: If true, test 5G activation from 3G attaching. Otherwise, starting from 5G attaching.
+        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        precond_func: A function to execute pre conditions before testing 5G activation.
+
+    Returns:
+        If success, return true. Otherwise, return false.
+    """
+    wifi_toggle_state(ad.log, ad, False)
+    toggle_airplane_mode(ad.log, ad, False)
+    if not from_3g:
+        set_preferred_mode_for_5g(ad)
+    for iteration in range(3):
+        ad.log.info("Attempt %d", iteration + 1)
+        if from_3g:
+            # Set mode pref to 3G
+            set_preferred_network_mode_pref(ad.log,
+                                            ad,
+                                            ad.droid.subscriptionGetDefaultSubId,
+                                            NETWORK_MODE_WCDMA_ONLY)
+            time.sleep(15)
+            # Set mode pref to 5G
+            set_preferred_mode_for_5g(ad)
+
+        elif precond_func:
+            if not precond_func():
+                return False
+        # LTE attach
+        if not wait_for_network_generation(
+                ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+            ad.log.error("Fail to ensure initial data in 4G")
+        # 5G attach
+        ad.log.info("Waiting for 5g NSA attach for 60 secs")
+        if is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave, timeout=60):
+            ad.log.info("Success! attached on 5g NSA")
+            return True
+        else:
+            ad.log.error("Failure - expected NR_NSA, current %s",
+                         get_current_override_network_type(ad))
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+    ad.log.info("nsa5g attach test FAIL for all 3 iterations")
+    return False
