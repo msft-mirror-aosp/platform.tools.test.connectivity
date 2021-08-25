@@ -45,6 +45,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
@@ -174,6 +175,24 @@ class TelephonyBaseTest(BaseTestClass):
         self.fi_util = self.user_params.get("fi_util", None)
         if isinstance(self.fi_util, list):
             self.fi_util = self.fi_util[0]
+        self.radio_img = self.user_params.get("radio_img", None)
+        if isinstance(self.radio_img, list):
+            self.radio_img = self.radio_img[0]
+        self.modem_bin = self.user_params.get("modem_bin", None)
+        if isinstance(self.modem_bin, list):
+            self.modem_bin = self.modem_bin[0]
+
+        if self.radio_img or self.modem_bin:
+            sideload_img = True
+            if self.radio_img:
+                file_path = self.radio_img
+            elif self.modem_bin:
+                file_path = self.modem_bin
+                sideload_img = False
+            tasks = [(flash_radio, [ad, file_path, True, sideload_img])
+                     for ad in self.android_devices]
+            multithread_func(self.log, tasks)
+
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
