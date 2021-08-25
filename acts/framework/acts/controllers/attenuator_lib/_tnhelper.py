@@ -127,7 +127,7 @@ class _TNHelper(object):
             telnet_recovered = self.diagnose_telnet()
             if telnet_recovered and retry:
                 logging.debug('Retrying telnet command once.')
-                self.cmd(cmd_str, wait_ret, retry=False)
+                return self.cmd(cmd_str, wait_ret, retry=False)
             else:
                 raise attenuator.InvalidDataError(
                     'Telnet command failed to return valid data')
