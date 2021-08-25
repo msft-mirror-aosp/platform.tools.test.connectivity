@@ -123,7 +123,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         self.attens = {}
         for atten in self.attenuators:
             self.attens[atten.path] = atten
-            atten.set_atten(ATTEN_MIN_VALUE)  # Default all attens to min
+            atten.set_atten(ATTEN_MIN_VALUE, retry=True)  # Default all attens to min
 
         self.log.info("WFC phone: <{}> <{}>".format(
             self.android_devices[0].serial,
