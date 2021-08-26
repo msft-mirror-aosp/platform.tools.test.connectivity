@@ -41,6 +41,7 @@ class A2dpBaseTest(BluetoothBaseTest):
     abstract_devices.bluetooth_handsfree_abstract_device.
     BuetoothHandsfreeAbstractDeviceFactory.
     """
+
     def setup_class(self):
 
         super().setup_class()
@@ -142,27 +143,44 @@ class A2dpBaseTest(BluetoothBaseTest):
         asserts.assert_true(audio_captured, 'Audio not recorded')
         return audio_captured
 
-    def _get_bt_link_metrics(self):
+    def _get_bt_link_metrics(self, tag=''):
         """Get bt link metrics such as rssi and tx pwls.
 
         Returns:
-            rssi_master: master rssi
-            pwl_master: master tx pwl
-            rssi_slave: slave rssi
+            master_metrics_list: list of metrics of central device
+            slave_metrics_list: list of metric of peripheral device
         """
 
+        self.raw_bt_metrics_path = os.path.join(self.log_path, 'BT_Raw_Metrics')
         self.media.play()
         # Get master rssi and power level
-        rssi_master = btutils.get_bt_metric(self.dut)['rssi']
-        pwl_master = btutils.get_bt_metric(self.dut)['pwlv']
-        # Get slave rssi if possible
+        process_data_dict = btutils.get_bt_metric(
+            self.dut, tag=tag, log_path=self.raw_bt_metrics_path)
+        rssi_master = process_data_dict.get('rssi')
+        pwl_master = process_data_dict.get('pwlv')
+        rssi_c0_master = process_data_dict.get('rssi_c0')
+        rssi_c1_master = process_data_dict.get('rssi_c1')
+        txpw_c0_master = process_data_dict.get('txpw_c0')
+        txpw_c1_master = process_data_dict.get('txpw_c1')
+        bftx_master = process_data_dict.get('bftx')
+        divtx_master = process_data_dict.get('divtx')
+
         if isinstance(self.bt_device_controller,
                       acts.controllers.android_device.AndroidDevice):
-            rssi_slave = btutils.get_bt_rssi(self.bt_device_controller)
+            rssi_slave = btutils.get_bt_rssi(self.bt_device_controller,
+                                             tag=tag,
+                                             log_path=self.raw_bt_metrics_path)
         else:
             rssi_slave = None
         self.media.stop()
-        return [rssi_master, pwl_master, rssi_slave]
+
+        master_metrics_list = [
+            rssi_master, pwl_master, rssi_c0_master, rssi_c1_master,
+            txpw_c0_master, txpw_c1_master, bftx_master, divtx_master
+        ]
+        slave_metrics_list = [rssi_slave]
+
+        return master_metrics_list, slave_metrics_list
 
     def run_thdn_analysis(self, audio_captured, tag):
         """Calculate Total Harmonic Distortion plus Noise for latest recording.
@@ -175,8 +193,7 @@ class A2dpBaseTest(BluetoothBaseTest):
             thdn: thdn value in a list
         """
         # Calculate Total Harmonic Distortion + Noise
-        audio_result = atu.AudioCaptureResult(audio_captured,
-                                              self.audio_params)
+        audio_result = atu.AudioCaptureResult(audio_captured, self.audio_params)
         thdn = audio_result.THDN(**self.audio_params['thdn_params'])
         file_name = tag + os.path.basename(audio_result.path)
         file_new = os.path.join(os.path.dirname(audio_result.path), file_name)
@@ -205,10 +222,9 @@ class A2dpBaseTest(BluetoothBaseTest):
                 for anomaly in anomalies:
                     num_anom += 1
                     start, end = anomaly
-                    self.log.warning(
-                        'Anomaly on channel {} at {}:{}. Duration '
-                        '{} sec'.format(ch_no, start // 60, start % 60,
-                                        end - start))
+                    self.log.warning('Anomaly on channel {} at {}:{}. Duration '
+                                     '{} sec'.format(ch_no, start // 60,
+                                                     start % 60, end - start))
         else:
             self.log.info('%i anomalies detected.' % num_anom)
         return anom

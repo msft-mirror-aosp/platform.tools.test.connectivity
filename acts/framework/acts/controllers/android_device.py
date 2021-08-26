@@ -913,7 +913,7 @@ class AndroidDevice:
         try:
             output = self.adb.shell("dumpsys package %s | grep versionName" %
                                     package_name)
-            pattern = re.compile(r"versionName=(\S+)", re.I)
+            pattern = re.compile(r"versionName=(.+)", re.I)
             result = pattern.findall(output)
             if result:
                 return result[0]
