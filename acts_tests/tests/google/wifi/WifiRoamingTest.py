@@ -261,7 +261,7 @@ class WifiRoamingTest(WifiBaseTest):
             ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
         self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="521269cb-5d2c-46e6-bc01-a03bd148ce28")
     def test_soft_2g_ap_channel_when_roam_to_chan_13(self):
         """Verify softAp 2G channel when after roaming to network on channel 13.
 
@@ -362,12 +362,16 @@ class WifiRoamingTest(WifiBaseTest):
                 wutils.set_attns_steps(self.attenuators, "AP1_on_AP2_off",
                                        self.roaming_attn)
                 self.openwrt2.set_password(pwd_2g=ap2_network["password"])
+                self.dut.log.info("Toggling wifi OFF.")
+                wutils.wifi_toggle_state(self.dut, False)
+                self.dut.log.info("Toggling wifi ON.")
+                wutils.wifi_toggle_state(self.dut, True)
                 self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
             else:
                 raise signals.TestFailure("DUT unexpectedly connect to Wi-Fi.")
 
         # Use Google OnHub as Wi-Fi AP to test when OpenWrt is no available.
-        if "AccessPoint" in self.user_params:
+        elif "AccessPoint" in self.user_params:
             network = {'SSID':'test_roaming_fail', 'password':'roam123456@'}
             # AP2 network with incorrect password.
             network_fail = {'SSID':'test_roaming_fail', 'password':'roam123456@#$%^'}

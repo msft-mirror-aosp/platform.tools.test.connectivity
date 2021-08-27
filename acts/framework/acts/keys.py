@@ -60,6 +60,7 @@ class Config(enum.Enum):
     key_pdu = 'PduDevice'
     key_openwrt_ap = 'OpenWrtAP'
     key_tigertail = 'Tigertail'
+    key_asus_axe11000_ap = 'AsusAXE11000AP'
     # Internal keys, used internally, not exposed to user's config files.
     ikey_user_param = 'user_params'
     ikey_testbed_name = 'testbed_name'
@@ -87,6 +88,7 @@ class Config(enum.Enum):
     m_key_pdu = 'pdu'
     m_key_openwrt_ap = 'openwrt_ap'
     m_key_tigertail = 'tigertail'
+    m_key_asus_axe11000_ap = 'asus_axe11000_ap'
 
     # A list of keys whose values in configs should not be passed to test
     # classes without unpacking first.
@@ -114,6 +116,7 @@ class Config(enum.Enum):
         key_pdu,
         key_openwrt_ap,
         key_tigertail,
+        key_asus_axe11000_ap,
     ]
 
     # Keys that are file or folder paths.
