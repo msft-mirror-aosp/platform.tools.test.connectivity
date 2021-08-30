@@ -2385,7 +2385,9 @@ class CommandInput(cmd.Cmd):
         try:
             info = line.strip().split()
             if len(info) != 3:
-                raise ValueError("Exactly three command line arguments required: <remote> <state> <direction>")
+                raise ValueError(
+                    "Exactly three command line arguments required: <remote> <state> <direction>"
+                )
             remote, state, direction = info[0], info[1], info[2]
             result = self.pri_dut.hfp_lib.newCall(remote, state, direction)
             self.log.info(result)
@@ -2743,7 +2745,9 @@ class CommandInput(cmd.Cmd):
         try:
             info = line.strip().split()
             if len(info) != 2:
-                raise ValueError("Exactly two command line arguments required: <location> <number>")
+                raise ValueError(
+                    "Exactly two command line arguments required: <location> <number>"
+                )
             location, number = info[0], info[1]
             result = self.pri_dut.hfp_lib.setMemoryLocation(location, number)
             self.log.info(result)
@@ -2786,7 +2790,9 @@ class CommandInput(cmd.Cmd):
         try:
             info = line.strip().split()
             if len(info) != 2:
-                raise ValueError("Exactly two command line arguments required: <number> <status>")
+                raise ValueError(
+                    "Exactly two command line arguments required: <number> <status>"
+                )
             number, status = info[0], int(info[1])
             result = self.pri_dut.hfp_lib.setDialResult(number, status)
             self.log.info(result)
@@ -2828,4 +2834,133 @@ class CommandInput(cmd.Cmd):
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
+
     """End HFP wrappers"""
+    """Begin RFCOMM wrappers"""
+
+    def do_rfcomm_init(self, line):
+        """
+        Description: Initialize the RFCOMM component services.
+
+        Usage:
+          Examples:
+            rfcomm_init
+        """
+        cmd = "Initialize RFCOMM proxy"
+        try:
+            result = self.pri_dut.rfcomm_lib.init()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_rfcomm_remove_service(self, line):
+        """
+        Description: Removes the RFCOMM service in use.
+
+        Usage:
+          Examples:
+            rfcomm_remove_service
+        """
+        cmd = "Remove RFCOMM service"
+        try:
+            result = self.pri_dut.rfcomm_lib.removeService()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_rfcomm_disconnect_session(self, line):
+        """
+        Description: Closes the RFCOMM Session.
+
+        Usage:
+          Examples:
+            rfcomm_disconnect_session
+            rfcomm_disconnect_session
+        """
+        cmd = "Disconnect the RFCOMM Session"
+        try:
+            result = self.pri_dut.rfcomm_lib.disconnectSession(
+                self.unique_mac_addr_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_rfcomm_connect_rfcomm_channel(self, line):
+        """
+        Description: Make an outgoing RFCOMM connection.
+
+        Usage:
+          Examples:
+            rfcomm_connect_rfcomm_channel <server_channel_number>
+            rfcomm_connect_rfcomm_channel 2
+        """
+        cmd = "Make an outgoing RFCOMM connection"
+        try:
+            server_channel_number = int(line.strip())
+            result = self.pri_dut.rfcomm_lib.connectRfcommChannel(
+                self.unique_mac_addr_id, server_channel_number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_rfcomm_disconnect_rfcomm_channel(self, line):
+        """
+        Description: Close the RFCOMM connection with the peer
+
+        Usage:
+          Examples:
+            rfcomm_disconnect_rfcomm_channel <server_channel_number>
+            rfcomm_disconnect_rfcomm_channel 2
+        """
+        cmd = "Close the RFCOMM channel"
+        try:
+            server_channel_number = int(line.strip())
+            result = self.pri_dut.rfcomm_lib.disconnectRfcommChannel(
+                self.unique_mac_addr_id, server_channel_number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_rfcomm_send_remote_line_status(self, line):
+        """
+        Description: Send a remote line status for the RFCOMM channel.
+
+        Usage:
+          Examples:
+            rfcomm_send_remote_line_status <server_channel_number>
+            rfcomm_send_remote_line_status 2
+        """
+        cmd = "Send a remote line status update for the RFCOMM channel"
+        try:
+            server_channel_number = int(line.strip())
+            result = self.pri_dut.rfcomm_lib.sendRemoteLineStatus(
+                self.unique_mac_addr_id, server_channel_number)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_rfcomm_write_rfcomm(self, line):
+        """
+        Description: Send data over the RFCOMM channel.
+
+        Usage:
+          Examples:
+            rfcomm_write_rfcomm <server_channel_number> <data>
+            rfcomm_write_rfcomm 2 foobar
+        """
+        cmd = "Send data using the RFCOMM channel"
+        try:
+            info = line.strip().split()
+            if len(info) != 2:
+                raise ValueError(
+                    "Exactly two command line arguments required: <server_channel_number> <data>"
+                )
+            server_channel_number = int(info[0])
+            data = info[1]
+            result = self.pri_dut.rfcomm_lib.writeRfcomm(
+                self.unique_mac_addr_id, server_channel_number, data)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End RFCOMM wrappers"""
