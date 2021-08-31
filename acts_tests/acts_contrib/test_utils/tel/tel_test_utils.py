@@ -8792,14 +8792,23 @@ def system_file_push(ad, src_file_path, dst_file_path):
         return True
 
 
-def flash_radio(ad, file_path, skip_setup_wizard=True):
-    """Flash radio image."""
+def flash_radio(ad, file_path, skip_setup_wizard=True, sideload_img=True):
+    """Flash radio image or modem binary.
+
+    Args:
+        file_path: The file path of test radio(radio.img)/binary(modem.bin).
+        skip_setup_wizard: Skip Setup Wizard if True.
+        sideload_img: True to flash radio, False to flash modem.
+    """
     ad.stop_services()
     ad.log.info("Reboot to bootloader")
     ad.adb.reboot_bootloader(ignore_status=True)
-    ad.log.info("Flash radio in fastboot")
+    ad.log.info("Sideload radio in fastboot")
     try:
-        ad.fastboot.flash("radio %s" % file_path, timeout=300)
+        if sideload_img:
+            ad.fastboot.flash("radio %s" % file_path, timeout=300)
+        else:
+            ad.fastboot.flash("modem %s" % file_path, timeout=300)
     except Exception as e:
         ad.log.error(e)
     ad.fastboot.reboot("bootloader")
