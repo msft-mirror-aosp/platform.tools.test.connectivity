@@ -68,9 +68,9 @@ class DnsOverTlsTest(WifiBaseTest):
             self.private_dns_servers = [self.dns_name]
             self.openwrt.network_setting.setup_dns_server(self.dns_name)
         else:
-            self.private_dns_servers = [cconst.DNS_GOOGLE,
-                                        cconst.DNS_QUAD9,
-                                        cconst.DNS_CLOUDFLARE]
+            self.private_dns_servers = [cconst.DNS_GOOGLE_HOSTNAME,
+                                        cconst.DNS_QUAD9_HOSTNAME,
+                                        cconst.DNS_CLOUDFLARE_HOSTNAME]
         self.tcpdump_pid = None
 
     def teardown_test(self):
@@ -484,7 +484,7 @@ class DnsOverTlsTest(WifiBaseTest):
 
         # set private DNS to strict mode
         cutils.set_private_dns(
-            self.dut, cconst.PRIVATE_DNS_MODE_STRICT, cconst.DNS_GOOGLE)
+            self.dut, cconst.PRIVATE_DNS_MODE_STRICT, cconst.DNS_GOOGLE_HOSTNAME)
 
         # connect DUT to wifi network
         wutils.start_wifi_connection_scan_and_ensure_network_found(
@@ -513,9 +513,9 @@ class DnsOverTlsTest(WifiBaseTest):
         pcap_file = self._stop_tcp_dump(self.dut)
 
         # Verify DNS server in link properties
-        asserts.assert_true(cconst.DNS_GOOGLE in wifi_dns_servers,
+        asserts.assert_true(cconst.DNS_GOOGLE_HOSTNAME in wifi_dns_servers,
                             "Hostname not in link properties - wifi network")
-        asserts.assert_true(cconst.DNS_GOOGLE in lte_dns_servers,
+        asserts.assert_true(cconst.DNS_GOOGLE_HOSTNAME in lte_dns_servers,
                             "Hostname not in link properites - cell network")
 
     @test_tracker_info(uuid="525a6f2d-9751-474e-a004-52441091e427")
