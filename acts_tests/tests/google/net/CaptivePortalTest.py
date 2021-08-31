@@ -172,7 +172,7 @@ class CaptivePortalTest(WifiBaseTest):
         # set private dns to strict mode
         cutils.set_private_dns(self.dut,
                                cconst.PRIVATE_DNS_MODE_STRICT,
-                               cconst.DNS_GOOGLE)
+                               cconst.DNS_GOOGLE_HOSTNAME)
 
         # verify connection to captive portal network
         self._verify_captive_portal(self.rk_captive_portal)
@@ -219,7 +219,7 @@ class CaptivePortalTest(WifiBaseTest):
         # set private dns to strict mode
         cutils.set_private_dns(self.dut,
                                cconst.PRIVATE_DNS_MODE_STRICT,
-                               cconst.DNS_GOOGLE)
+                               cconst.DNS_GOOGLE_HOSTNAME)
 
         # verify connection to captive portal network
         self._verify_captive_portal(self.gg_captive_portal)
@@ -261,6 +261,6 @@ class CaptivePortalTest(WifiBaseTest):
         """
         cutils.set_private_dns(self.dut,
                                cconst.PRIVATE_DNS_MODE_STRICT,
-                               cconst.DNS_GOOGLE)
+                               cconst.DNS_GOOGLE_HOSTNAME)
         self.openwrt.network_setting.service_manager.restart("nodogsplash")
         self._verify_captive_portal(self.wifi_network, click_accept="Continue")
