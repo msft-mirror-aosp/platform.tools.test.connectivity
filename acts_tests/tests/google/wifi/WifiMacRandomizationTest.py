@@ -66,7 +66,8 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        req_params = ["dbs_supported_models", "roaming_attn"]
+        req_params = ["sta_sta_supported_models", "dbs_supported_models",
+                      "support_one_factory_mac_address", "roaming_attn"]
         opt_param = [
             "open_network", "reference_networks", "wep_networks"
         ]
@@ -98,7 +99,11 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(DEFAULT_TIMEOUT)
         wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_toggle_state(self.dut_client, True)
-        self.soft_ap_factory_mac = self.get_soft_ap_mac_address()
+        if self.dut.model in self.support_one_factory_mac_address:
+            self.soft_ap_factory_mac = (self.dut.droid
+                                        .wifigetFactorymacAddresses()[0])
+        else:
+            self.soft_ap_factory_mac = self.get_soft_ap_mac_address()
         self.sta_factory_mac = self.dut.droid.wifigetFactorymacAddresses()[0]
 
         self.wpapsk_2g = self.reference_networks[0]["2g"]
@@ -266,6 +271,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
 
     def get_soft_ap_mac_address(self):
         """Gets the current MAC address being used for SoftAp."""
+        if self.dut.model in self.sta_sta_supported_models:
+            out = self.dut.adb.shell("ifconfig wlan2")
+            return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
         if self.dut.model in self.dbs_supported_models:
             out = self.dut.adb.shell("ifconfig wlan1")
             return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
@@ -665,4 +673,3 @@ class WifiMacRandomizationTest(WifiBaseTest):
         # verify both randomized mac addrs are different
         asserts.assert_true(randomized_mac1 != randomized_mac2,
                             "Randomized MAC addresses are same.")
-
