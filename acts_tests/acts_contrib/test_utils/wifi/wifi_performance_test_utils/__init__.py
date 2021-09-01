@@ -589,6 +589,11 @@ def health_check(dut, batt_thresh=5, temp_threshold=53, cooldown=1):
 
 
 # Wifi Device Utils
+def empty_rssi_result():
+    return collections.OrderedDict([('data', []), ('mean', float('nan')),
+                                    ('stdev', float('nan'))])
+
+
 @nonblocking
 def get_connected_rssi_nb(dut,
                           num_measurements=1,
@@ -723,6 +728,6 @@ def set_chain_mask(dut, chain_mask):
 class LinkLayerStats():
     def __new__(self, dut, llstats_enabled=True):
         if detect_wifi_platform(dut) == 'qcom':
-            return qcom_utils.LinkLayerStats(dut, llstats_enabled=True)
+            return qcom_utils.LinkLayerStats(dut, llstats_enabled)
         else:
-            return brcm_utils.LinkLayerStats(dut, llstats_enabled=True)
+            return brcm_utils.LinkLayerStats(dut, llstats_enabled)
