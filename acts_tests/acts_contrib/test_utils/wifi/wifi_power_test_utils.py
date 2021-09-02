@@ -173,7 +173,7 @@ def push_file_to_phone(ad, file_local, file_phone):
     ad.adb.push('{} {}'.format(file_local, file_phone))
 
 
-def ap_setup(ap, network, bandwidth=80):
+def ap_setup(ap, network, bandwidth=80, dtim_period=None):
     """Set up the whirlwind AP with provided network info.
 
     Args:
@@ -181,6 +181,7 @@ def ap_setup(ap, network, bandwidth=80):
         network: dict with information of the network, including ssid, password
                  bssid, channel etc.
         bandwidth: the operation bandwidth for the AP, default 80MHz
+        dtim_period: the dtim period of access point
     Returns:
         brconfigs: the bridge interface configs
     """
@@ -197,6 +198,7 @@ def ap_setup(ap, network, bandwidth=80):
     config = hostapd_ap_preset.create_ap_preset(
         channel=channel,
         ssid=ssid,
+        dtim_period=dtim_period,
         security=security,
         bss_settings=bss_settings,
         vht_bandwidth=bandwidth,

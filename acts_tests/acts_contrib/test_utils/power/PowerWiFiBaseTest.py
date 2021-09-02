@@ -118,7 +118,8 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
                             network,
                             bandwidth=80,
                             connect=True,
-                            ap=None):
+                            ap=None,
+                            dtim_period=None):
         """Setup AP and connect DUT to it.
 
         Args:
@@ -126,17 +127,23 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             bandwidth: bandwidth of the WiFi network to be setup
             connect: indicator of if connect dut to the network after setup
             ap: access point object, default is None to find the main AP
+            dtim_period: the dtim period of access point
         Returns:
             self.brconfigs: dict for bridge interface configs
         """
         wutils.wifi_toggle_state(self.dut, True)
+        if not dtim_period:
+            dtim_period = self.ap_dtim_period
         if not ap:
             if hasattr(self, 'access_points'):
-                self.brconfigs = wputils.ap_setup(self.access_point,
-                                                  network,
-                                                  bandwidth=bandwidth)
+                self.brconfigs = wputils.ap_setup(
+                    self.access_point,
+                    network,
+                    bandwidth=bandwidth,
+                    dtim_period=dtim_period)
         else:
-            self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
+            self.brconfigs = wputils.ap_setup(
+                ap, network, bandwidth=bandwidth, dtim_period=dtim_period)
         if connect:
             wutils.wifi_connect(self.dut, network, num_of_tries=3)
 
