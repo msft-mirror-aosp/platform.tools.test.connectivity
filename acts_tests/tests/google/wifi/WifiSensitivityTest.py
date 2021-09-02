@@ -32,6 +32,7 @@ from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
+from acts_contrib.test_utils.wifi import ota_sniffer
 from functools import partial
 from WifiRvrTest import WifiRvrTest
 from WifiPingTest import WifiPingTest
@@ -140,16 +141,25 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         common to all tests in this class.
         """
         self.dut = self.android_devices[-1]
+        self.sta_dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'sensitivity_test_params', 'testbed_params',
             'RemoteServer'
         ]
-        opt_params = ['main_network']
+        opt_params = ['main_network', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.sensitivity_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.ping_server = ssh.connection.SshConnection(
             ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
+        if hasattr(self,
+                   'OTASniffer') and self.testbed_params['sniffer_enable']:
+            try:
+                self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
+            except:
+                self.log.warning('Could not start sniffer. Disabling sniffs.')
+                self.testbed_params['sniffer_enable'] = 0
+        self.remote_server = self.ping_server
         self.iperf_server = self.iperf_servers[0]
         self.iperf_client = self.iperf_clients[0]
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
@@ -495,6 +505,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
 
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
+        testcase_params['band'] = band
         testcase_params['test_network'] = self.main_network[band]
         if testcase_params['chain_mask'] in ['0', '1']:
             testcase_params['attenuated_chain'] = 'DUT-Chain-{}'.format(
@@ -686,15 +697,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             testcase_params: dict containing AP and other test params
         """
         # Configure the right INI settings
-        if testcase_params['chain_mask'] != self.current_chain_mask:
-            self.log.info('Updating WiFi chain mask to: {}'.format(
-                testcase_params['chain_mask']))
-            self.current_chain_mask = testcase_params['chain_mask']
-            if testcase_params['chain_mask'] in ['0', '1']:
-                wputils.set_ini_single_chain_mode(
-                    self.dut, int(testcase_params['chain_mask']))
-            else:
-                wputils.set_ini_two_chain_mode(self.dut)
+        wputils.set_chain_mask(self.dut, testcase_params['chain_mask'])
         # Turn screen off to preserve battery
         if self.testbed_params.get('screen_on',
                                    False) or self.testclass_params.get(
@@ -702,23 +705,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             self.dut.droid.wakeLockAcquireDim()
         else:
             self.dut.go_to_sleep()
-        if wputils.validate_network(self.dut,
-                                    testcase_params['test_network']['SSID']):
-            self.log.info('Already connected to desired network')
-        else:
-            wutils.wifi_toggle_state(self.dut, False)
-            wutils.set_wifi_country_code(self.dut,
-                                         self.testclass_params['country_code'])
-            wutils.wifi_toggle_state(self.dut, True)
-            wutils.reset_wifi(self.dut)
-            wutils.set_wifi_country_code(self.dut,
-                                         self.testclass_params['country_code'])
-            testcase_params['test_network']['channel'] = testcase_params[
-                'channel']
-            wutils.wifi_connect(self.dut,
-                                testcase_params['test_network'],
-                                num_of_tries=5,
-                                check_connectivity=True)
+        self.validate_and_connect(testcase_params)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def process_testclass_results(self):
@@ -913,12 +900,16 @@ class WifiOtaSensitivity_PerChain_TenDegree_Test(WifiOtaSensitivityTest):
         WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
         requested_rates = [
+            self.RateTuple(9, 1, 96),
+            self.RateTuple(9, 2, 192),
+            self.RateTuple(6, 1, 65),
+            self.RateTuple(6, 2, 130.3),
             self.RateTuple(2, 1, 21.7),
             self.RateTuple(2, 2, 43.3)
         ]
-        self.tests = self.generate_test_cases(requested_channels, ['VHT20'],
-                                              requested_rates,
-                                              ['0', '1', '2x2'],
+        self.tests = self.generate_test_cases(requested_channels,
+                                              ['VHT20', 'VHT80'],
+                                              requested_rates, [0, 1, '2x2'],
                                               list(range(0, 360, 10)))
 
 
