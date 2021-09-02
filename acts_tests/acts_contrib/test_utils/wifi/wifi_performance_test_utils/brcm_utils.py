@@ -23,6 +23,7 @@ import re
 import statistics
 import time
 
+VERY_SHORT_SLEEP = 0.5
 SHORT_SLEEP = 1
 MED_SLEEP = 6
 DISCONNECTION_MESSAGE_BRCM = 'driver adapter not found'
@@ -93,9 +94,18 @@ def get_connected_rssi(dut,
         if interface == 'wlan0':
             try:
                 per_chain_rssi = dut.adb.shell('wl phy_rssi_ant')
-                per_chain_rssi = per_chain_rssi.split(' ')
-                chain_0_rssi = int(per_chain_rssi[1])
-                chain_1_rssi = int(per_chain_rssi[4])
+                chain_0_rssi = re.search(
+                    r'rssi\[0\]\s(?P<chain_0_rssi>[0-9\-]*)', per_chain_rssi)
+                if chain_0_rssi:
+                    chain_0_rssi = int(chain_0_rssi.group('chain_0_rssi'))
+                else:
+                    chain_0_rssi = -float('inf')
+                chain_1_rssi = re.search(
+                    r'rssi\[1\]\s(?P<chain_1_rssi>[0-9\-]*)', per_chain_rssi)
+                if chain_1_rssi:
+                    chain_1_rssi = int(chain_1_rssi.group('chain_1_rssi'))
+                else:
+                    chain_1_rssi = -float('inf')
             except:
                 chain_0_rssi = RSSI_ERROR_VAL
                 chain_1_rssi = RSSI_ERROR_VAL
@@ -214,6 +224,7 @@ def get_country_code(dut):
         country_code = 'XZ'
     if country_code == 'XZ':
         country_code = 'WW'
+    logging.debug('Country code: {}'.format(country_code))
     return country_code
 
 
@@ -247,6 +258,28 @@ def push_firmware(dut, firmware_files):
 
 def disable_beamforming(dut):
     dut.adb.shell('wl txbf 0')
+
+
+def set_chain_mask(dut, chain):
+    if chain == '2x2':
+        chain = 3
+    else:
+        chain = chain + 1
+    # Get current chain mask
+    try:
+        curr_tx_chain = dut.adb.shell('wl txchain')
+        curr_tx_chain = dut.adb.shell('wl rxchain')
+    except:
+        curr_tx_chain = -1
+        curr_rx_chain = -1
+    if curr_tx_chain == chain and curr_rx_chain == chain:
+        return
+    # Set chain mask if needed
+    dut.adb.shell('wl down')
+    time.sleep(VERY_SHORT_SLEEP)
+    dut.adb.shell('wl txchain 0x{}'.format(chain))
+    dut.adb.shell('wl rxchain 0x{}'.format(chain))
+    dut.adb.shell('wl up')
 
 
 class LinkLayerStats():
@@ -286,7 +319,7 @@ class LinkLayerStats():
         if self.llstats_enabled:
             try:
                 llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
-                                                    timeout=0.3)
+                                                    timeout=1)
                 self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
             except:
                 llstats_output = ''

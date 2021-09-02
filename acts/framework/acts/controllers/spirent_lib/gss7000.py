@@ -264,7 +264,7 @@ class GSS7000(AbstractInstGss7000):
                       'current input is {}').format(str(power_offset))
             raise GSS7000Error(error=errmsg, command='set_power_offset')
 
-        cmd = '-,POW_LEV,v1_a{},{},GPS,0,0,0,0,1,1,1'.format(
+        cmd = '-,POW_LEV,V1_A{},{},GPS,0,0,1,1,1,1,0'.format(
             str(ant), str(round(power_offset, 1)))
         self._query(cmd)
 

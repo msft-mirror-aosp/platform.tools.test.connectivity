@@ -51,8 +51,8 @@ def create(configs):
             'package': 'netgear_r7500'
         },
         ('Netgear', 'R7500NA'): {
-        'name': 'NetgearR7500NAAP',
-        'package': 'netgear_r7500'
+            'name': 'NetgearR7500NAAP',
+            'package': 'netgear_r7500'
         },
         ('Netgear', 'R7800'): {
             'name': 'NetgearR7800AP',
@@ -324,7 +324,9 @@ class WifiRetailAP(object):
         Args:
             region: string indicating AP region
         """
-        self.log.warning('Updating region may overwrite wireless settings.')
+        if region != self.ap_settings['region']:
+            self.log.warning(
+                'Updating region may overwrite wireless settings.')
         setting_to_update = {'region': region}
         self.update_ap_settings(setting_to_update)
 

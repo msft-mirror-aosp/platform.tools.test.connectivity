@@ -125,7 +125,8 @@ class BokehFigure():
         x_data_filtered = []
         y_data_filtered = []
         hover_text_filtered = {}
-        for idx, xy in enumerate(itertools.zip_longest(x_data, y_data)):
+        for idx, xy in enumerate(
+                itertools.zip_longest(x_data, y_data, fillvalue=float('nan'))):
             if not math.isnan(xy[1]):
                 x_data_filtered.append(xy[0])
                 y_data_filtered.append(xy[1])
