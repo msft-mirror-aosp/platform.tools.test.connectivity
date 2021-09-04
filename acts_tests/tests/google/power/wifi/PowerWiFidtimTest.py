@@ -54,8 +54,7 @@ class PowerWiFidtimTest(PWBT.PowerWiFiBaseTest):
                 self.dut_rockbottom()
             self.dut.log.info('DTIM value of the phone is now {}'.format(
                 self.test_configs.dtim))
-        self.setup_ap_connection(
-            self.main_network[self.test_configs.wifi_band])
+        self.setup_ap_connection(self.main_network[self.test_configs.wifi_band])
 
         if change_dtim_with_adb:
             self.dut.log.info('No ini file for dtim, change dtim with adb')
@@ -75,7 +74,10 @@ class PowerWiFidtimTest(PWBT.PowerWiFiBaseTest):
         self.dtim_test_func()
 
     @test_tracker_info(uuid='384d3b0f-4335-4b00-8363-308ec27a150c')
-    def test_screen_ON_band_2g_dtim_1(self):
+    def test_screen_OFF_band_2g_dtim_8(self):
+        self.dtim_test_func()
+
+    def test_screen_OFF_band_2g_dtim_9(self):
         self.dtim_test_func()
 
     @test_tracker_info(uuid='017f57c3-e133-461d-80be-d025d1491d8a')
@@ -83,5 +85,8 @@ class PowerWiFidtimTest(PWBT.PowerWiFiBaseTest):
         self.dtim_test_func()
 
     @test_tracker_info(uuid='327af44d-d9e7-49e0-9bda-accad6241dc7')
-    def test_screen_ON_band_5g_dtim_1(self):
+    def test_screen_OFF_band_5g_dtim_8(self):
+        self.dtim_test_func()
+
+    def test_screen_OFF_band_5g_dtim_9(self):
         self.dtim_test_func()

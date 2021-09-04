@@ -150,7 +150,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                                extra_wait=None,
                                iperf_duration=None,
                                pass_fail_tolerance=THRESHOLD_TOLERANCE_DEFAULT,
-                               mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT)
+                               mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT,
+                               ap_dtim_period=None)
 
         # Setup the must have controllers, phone and monsoon
         self.dut = self.android_devices[0]
