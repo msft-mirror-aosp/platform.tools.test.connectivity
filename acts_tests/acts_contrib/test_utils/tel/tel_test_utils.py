@@ -316,9 +316,6 @@ def setup_droid_properties(log, ad, sim_filename=None):
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
     refresh_droid_config(log, ad)
-    device_props = {}
-    device_props['subscription'] = {}
-
     sim_data = {}
     if sim_filename:
         try:
@@ -397,6 +394,7 @@ def refresh_droid_config(log, ad):
     droid = ad.droid
     sub_info_list = droid.subscriptionGetAllSubInfoList()
     ad.log.info("SubInfoList is %s", sub_info_list)
+    if not sub_info_list: return
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_info in sub_info_list:
         sub_id = sub_info["subscriptionId"]
@@ -484,7 +482,6 @@ def refresh_droid_config(log, ad):
                 else:
                     sub_record["phone_num"] = phone_number_formatter(
                         sub_info["number"])
-            #ad.telephony['subscription'][sub_id] = sub_record
             ad.log.info("SubId %s info: %s", sub_id, sorted(
                 sub_record.items()))
 
@@ -8792,14 +8789,23 @@ def system_file_push(ad, src_file_path, dst_file_path):
         return True
 
 
-def flash_radio(ad, file_path, skip_setup_wizard=True):
-    """Flash radio image."""
+def flash_radio(ad, file_path, skip_setup_wizard=True, sideload_img=True):
+    """Flash radio image or modem binary.
+
+    Args:
+        file_path: The file path of test radio(radio.img)/binary(modem.bin).
+        skip_setup_wizard: Skip Setup Wizard if True.
+        sideload_img: True to flash radio, False to flash modem.
+    """
     ad.stop_services()
     ad.log.info("Reboot to bootloader")
     ad.adb.reboot_bootloader(ignore_status=True)
-    ad.log.info("Flash radio in fastboot")
+    ad.log.info("Sideload radio in fastboot")
     try:
-        ad.fastboot.flash("radio %s" % file_path, timeout=300)
+        if sideload_img:
+            ad.fastboot.flash("radio %s" % file_path, timeout=300)
+        else:
+            ad.fastboot.flash("modem %s" % file_path, timeout=300)
     except Exception as e:
         ad.log.error(e)
     ad.fastboot.reboot("bootloader")
