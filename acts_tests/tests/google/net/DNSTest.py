@@ -17,6 +17,7 @@ import random
 
 from acts import asserts
 from acts.controllers.openwrt_ap import MOBLY_CONTROLLER_CONFIG_NAME as OPENWRT
+from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from scapy.all import rdpcap, DNSRR, DNSQR, IP, IPv6
@@ -76,6 +77,7 @@ class DNSTest(WifiBaseTest):
         """Return a random query name."""
         return "%s-ds.metric.gstatic.com" % random.randint(0, 99999999)
 
+    @test_tracker_info(uuid="dd7b8c92-c0f4-4403-a0ae-57a703162d83")
     def test_dns_query(self):
         # Setup environment
         wutils.connect_to_wifi_network(self.dut, self.wifi_network)
@@ -101,6 +103,7 @@ class DNSTest(WifiBaseTest):
                                 "Did not find match standard query response in tcpdump.")
         asserts.assert_true(ping_result, "Device ping fail.")
 
+    @test_tracker_info(uuid="cd20c6e7-9c2e-4286-b08e-c8e40e413da5")
     def test_dns_query_retransmit(self):
         # Setup environment
         wutils.connect_to_wifi_network(self.dut, self.wifi_network)
