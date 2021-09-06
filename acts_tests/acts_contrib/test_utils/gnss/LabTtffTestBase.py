@@ -184,13 +184,19 @@ class LabTtffTestBase(BaseTestClass):
             raise signals.TestError('Unrecognized mode %s' % mode)
         test_type = self.test_types.get(mode)
 
+        if mode != 'cs':
+            wait_time = 900
+        else:
+            wait_time = 300
+
         gutils.process_gnss_by_gtw_gpstool(self.dut,
                                            self.test_types['cs'].criteria)
         begin_time = gutils.get_current_epoch_time()
         gutils.start_ttff_by_gtw_gpstool(self.dut,
                                          ttff_mode=mode,
                                          iteration=self.ttff_iteration,
-                                         raninterval=True)
+                                         raninterval=True,
+                                         hot_warm_sleep=wait_time)
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.dut, begin_time,
                                                        self.simulator_location)
 
