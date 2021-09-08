@@ -89,7 +89,7 @@ class WlanController:
                     'Failed to query wlan iface id %s: %s' %
                     (id, response['error']))
             wlan_ifaces_by_mac[utils.mac_address_list_to_str(
-                response['result']['mac_addr'])] = response['result']
+                response['result']['sta_addr'])] = response['result']
 
         # Use mac addresses to query the interfaces from the netstack view,
         # which allows us to suppliment the interface information with the name,
