@@ -359,6 +359,7 @@ class A2dpBaseTest(BluetoothBaseTest):
 
         #loop RSSI with the same codec setting
         for atten in attenuation_range:
+            self.media.play()
             self.set_test_atten(atten)
 
             tag = 'codec_{}_attenuation_{}dB_'.format(
@@ -397,13 +398,19 @@ class A2dpBaseTest(BluetoothBaseTest):
                 'total_harmonic_distortion_plus_noise_percent':
                 thdns[0] * 100
             }
-            data_points.append(data_point)
             self.log.info(data_point)
-            A2dpRange_df = pd.DataFrame(data_points)
 
             # Check thdn for glitches, stop if max range reached
             if thdns[0] == 0:
-                raise TestError('Music play/recording is not working properly')
+                proto_dict = self.generate_proto(data_points,
+                                                     **codec_config)
+                A2dpRange_df = pd.DataFrame(data_points)
+                A2dpRange_df.to_csv(self.file_output, index=False)
+                self.plot_graph(A2dpRange_df)
+                raise TestError('Music play/recording is not working properly or Connection has lost')
+
+            data_points.append(data_point)
+            A2dpRange_df = pd.DataFrame(data_points)
             for thdn in thdns:
                 if thdn >= self.audio_params['thdn_threshold']:
                     self.log.info(
