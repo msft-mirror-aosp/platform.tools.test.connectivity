@@ -1870,14 +1870,20 @@ def excute_eecoexer_function(ad, eecoexer_args):
         ad: An AndroidDevice object.
         eecoexer_args: EEcoexer function arguments
     """
+    cat_index = eecoexer_args.split(',')[:2]
+    cat_index = ','.join(cat_index)
     enqueue_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
                    " --es sms_body ENQUEUE,{}".format(eecoexer_args))
     exe_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
                " --es sms_body EXECUTE")
+    wait_for_cmd = ("am broadcast -a com.google.eecoexer.action.LISTENER"
+                   " --es sms_body WAIT_FOR_COMPLETE,{}".format(cat_index))
     ad.log.info("EEcoexer Add Enqueue: {}".format(eecoexer_args))
     ad.adb.shell(enqueue_cmd)
     ad.log.info("EEcoexer Excute.")
     ad.adb.shell(exe_cmd)
+    ad.log.info("Wait EEcoexer for complete")
+    ad.adb.shell(wait_for_cmd)
 
 
 def restart_gps_daemons(ad):
