@@ -768,7 +768,6 @@ class WifiBridgedApTest(WifiBaseTest):
         infos = self.verify_number_band_freq_of_bridged_ap(
             self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
                        WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
-        self.enable_bridged_ap()
 
         # No client connection, wait 5 minutes, verify 5G is shutdown.
         self.verify_expected_number_of_softap_clients(self.dut, 0)
