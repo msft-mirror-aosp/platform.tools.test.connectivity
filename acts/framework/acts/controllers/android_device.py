@@ -1513,16 +1513,9 @@ class AndroidDevice:
     @record_api_usage
     def is_screen_lock_enabled(self):
         """Check if screen lock is enabled"""
-        cmd = ("sqlite3 /data/system/locksettings.db .dump"
-               " | grep lockscreen.password_type | grep -v alternate")
+        cmd = ("dumpsys window policy | grep showing=")
         out = self.adb.shell(cmd, ignore_status=True)
-        if "unable to open" in out:
-            self.root_adb()
-            out = self.adb.shell(cmd, ignore_status=True)
-        if ",0,'0'" not in out and out != "":
-            self.log.info("Screen lock is enabled")
-            return True
-        return False
+        return "true" in out
 
     @record_api_usage
     def is_waiting_for_unlock_pin(self):
@@ -1597,6 +1590,8 @@ class AndroidDevice:
         if name:
             file_name = "%s_%s" % (DEFAULT_SCREENSHOT_PATH, name)
         file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
+        self.ensure_screen_on()
+        self.log.info("Log screenshot to %s", file_name)
         try:
             self.adb.shell("screencap -p %s" % file_name)
         except:
