@@ -196,6 +196,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                   "CALL_ID_CLEANUP_FAIL": 0 }
         self.call_stats_check = self.user_params.get("call_stats_check", False)
         self.nsa_5g_for_stress = self.user_params.get("nsa_5g_for_stress", False)
+        self.nr_type = self.user_params.get("nr_type", 'nsa')
         return True
 
     def setup_test(self):
@@ -481,7 +482,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info,
-                nsa_5g_for_stress=self.nsa_5g_for_stress
+                nw_gen_5g=self.nsa_5g_for_stress,
+                nr_type= self.nr_type
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
@@ -497,7 +499,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info,
-                nsa_5g_for_stress=self.nsa_5g_for_stress)
+                nsa_5g_for_stress=self.nsa_5g_for_stress,
+                nr_type= self.nr_type)
             self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
