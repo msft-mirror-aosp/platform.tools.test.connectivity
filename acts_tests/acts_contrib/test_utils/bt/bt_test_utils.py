@@ -824,7 +824,10 @@ def get_bt_metric(ad_list,
             output_file_name = ad.serial + "_metrics_raw_data_" + tag + ".csv"
             output_file = os.path.join(log_path, output_file_name)
             os.makedirs(log_path, exist_ok=True)
-            MetricsDict_df = pd.DataFrame(metrics_dict)
+            df_save_metrics = {}
+            for item in metrics_dict.items():
+                df_save_metrics[item[0]] = next(iter(item[1].items()))[1]
+            MetricsDict_df = pd.DataFrame({key:pd.Series(value) for key, value in df_save_metrics.items()})
             MetricsDict_df.to_csv(output_file)
         # Defining the process_data_dict
         process_data = {
