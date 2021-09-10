@@ -46,7 +46,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconn
 from acts_contrib.test_utils.tel.tel_data_utils import verify_for_network_callback
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import set_preferred_mode_for_5g
 
@@ -86,13 +86,13 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         wifi_toggle_state(ad.log, ad, False)
         sub_id = ad.droid.subscriptionGetDefaultSubId()
-        if not set_preferred_mode_for_5g(ad.log, ad, sub_id,
+        if not set_preferred_mode_for_5g(ad, sub_id,
                                                NETWORK_MODE_NR_LTE_GSM_WCDMA):
             ad.log.error("Failed to set network mode to NSA")
             return False
         ad.log.info("Set network mode to NSA successfully")
         ad.log.info("Waiting for 5G NSA MMW attach for 60 secs")
-        if is_current_network_5g_nsa(ad, nsa_mmwave= True, timeout=60):
+        if is_current_network_5g(ad, nr_type = 'mmwave', timeout=60):
             ad.log.info("Success! attached on 5G NSA MMW")
         else:
             ad.log.error("Failure - expected NR_NSA MMW, current %s",
@@ -139,7 +139,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         wifi_toggle_state(ad.log, ad, False)
         toggle_airplane_mode(ad.log, ad, False)
 
-        if not provision_device_for_5g(ad.log, ad, nsa_mmwave=True):
+        if not provision_device_for_5g(ad.log, ad, nr_type='mmwave'):
             return False
 
         cmd = ('ss -l -p -n | grep "tcp.*droid_script" | tr -s " " '
@@ -196,7 +196,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         try:
             wifi_toggle_state(ad.log, ad, False)
             toggle_airplane_mode(ad.log, ad, False)
-            if not provision_device_for_5g(ad.log, ad, nsa_mmwave=True):
+            if not provision_device_for_5g(ad.log, ad, nr_type='mmwave'):
                 return False
 
             return verify_for_network_callback(ad.log, ad,
@@ -221,7 +221,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         try:
             toggle_airplane_mode(ad.log, ad, False)
-            if not provision_device_for_5g(ad.log, ad, nsa_mmwave=True):
+            if not provision_device_for_5g(ad.log, ad, nr_type='mmwave'):
                 return False
             wifi_toggle_state(ad.log, ad, True)
             if not ensure_wifi_connected(ad.log, ad,
@@ -255,7 +255,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         return wifi_cell_switching(ad.log, ad, GEN_5G, self.wifi_network_ssid,
-                                   self.wifi_network_pass, nsa_mmwave=True)
+                                   self.wifi_network_pass, nr_type='mmwave')
 
 
     @test_tracker_info(uuid="8033a359-1b92-45ff-b766-bb0010132eb7")
@@ -276,7 +276,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         wifi_reset(ad.log, ad)
         wifi_toggle_state(ad.log, ad, False)
-        return data_connectivity_single_bearer(ad.log, ad, GEN_5G, nsa_mmwave=True)
+        return data_connectivity_single_bearer(ad.log, ad, GEN_5G, nr_type='mmwave')
 
 
     @test_tracker_info(uuid="633526fa-9e58-47a4-8957-bb0a95eef4ab")
@@ -298,7 +298,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         wifi_reset(ad.log, ad)
         wifi_toggle_state(ad.log, ad, False)
         wifi_toggle_state(ad.log, ad, True)
-        return data_connectivity_single_bearer(ad.log, ad, GEN_5G, nsa_mmwave=True)
+        return data_connectivity_single_bearer(ad.log, ad, GEN_5G, nr_type='mmwave')
 
 
     @test_tracker_info(uuid="c56324a2-5eda-4027-9068-7e120d2b178e")
@@ -320,7 +320,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not provision_device_for_5g(self.log, self.provider, nsa_mmwave=True):
+        if not provision_device_for_5g(self.log, self.provider, nr_type='mmwave'):
             return False
 
         return test_wifi_connect_disconnect(self.log, self.provider, self.wifi_network_ssid, self.wifi_network_pass)
@@ -340,7 +340,7 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        if not provision_device_for_5g(self.log, self.android_devices[0], nsa_mmwave=True):
+        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='mmwave'):
             return False
         return airplane_mode_test(self.log, self.android_devices[0])
 
