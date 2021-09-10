@@ -90,7 +90,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                    WIFI_CONFIG_APBAND_5G,
                                    check_interval=10,
                                    check_iteration=10,
-                                   nsa_mmwave=True)
+                                   nr_type= 'mmwave')
 
 
     @test_tracker_info(uuid="bf6ed593-4fe3-417c-9d04-ad71a8d3095e")
@@ -115,7 +115,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                    WIFI_CONFIG_APBAND_2G,
                                    check_interval=10,
                                    check_iteration=10,
-                                   nsa_mmwave=True)
+                                   nr_type= 'mmwave')
 
 
     @test_tracker_info(uuid="96c4bc30-6dd1-4f14-bdbd-bf40b8b24701")
@@ -146,7 +146,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                        check_iteration=2,
                                        do_cleanup=False,
                                        ssid=ssid,
-                                       nsa_mmwave=True):
+                                       nr_type= 'mmwave'):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -181,7 +181,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                                         self.provider,
                                                         self.clients,
                                                         new_gen=RAT_5G,
-                                                        nsa_mmwave=True):
+                                                        nr_type= 'mmwave'):
             return False
         return True
 
@@ -197,7 +197,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
             True if entitlement check returns True.
         """
 
-        if not provision_device_for_5g(self.log, self.provider, nsa_mmwave=True):
+        if not provision_device_for_5g(self.log, self.provider, nr_type= 'mmwave'):
             return False
         return verify_tethering_entitlement_check(self.log,
                                                   self.provider)
@@ -228,7 +228,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                    check_interval=10,
                                    check_iteration=10,
                                    ssid=ssid,
-                                   nsa_mmwave=True)
+                                   nr_type= 'mmwave')
 
 
     @test_tracker_info(uuid="6702831b-f656-4410-a922-d47fae138d68")
@@ -258,7 +258,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                    check_interval=10,
                                    check_iteration=10,
                                    password=password,
-                                   nsa_mmwave=True)
+                                   nr_type= 'mmwave')
 
 
     @test_tracker_info(uuid="93cf9aa2-740f-42a4-92a8-c506ceb5d448")
@@ -273,7 +273,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
             True if WiFi tethering succeed on all SSIDs.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nsa_mmwave=True):
+        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nr_type= 'mmwave'):
             self.log.error("Setup Failed.")
             return False
         ssid_list = TETHERING_SPECIAL_SSID_LIST
@@ -308,7 +308,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
             True if WiFi tethering succeed on all passwords.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nsa_mmwave=True):
+        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nr_type= 'mmwave'):
             self.log.error("Setup Failed.")
             return False
         password_list = TETHERING_SPECIAL_PASSWORD_LIST
@@ -350,7 +350,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nsa_mmwave=True):
+        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nr_type= 'mmwave'):
             self.log.error("Verify 5G Internet access failed.")
             return False
         try:
@@ -438,7 +438,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                     RAT_5G,
                     voice_or_data=NETWORK_SERVICE_DATA,
                     toggle_apm_after_setting=False,
-                    mmwave=True):
+                    nr_type= 'mmwave'):
                 self.log.error("Provider failed to reselect to 5G NSA MMW")
                 return False
 
@@ -477,7 +477,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nsa_mmwave=True):
+        if not test_setup_tethering(self.log, self.provider, self.clients, RAT_5G, nr_type= 'mmwave'):
             self.log.error("Verify 5G Internet access failed.")
             return False
         try:
@@ -565,7 +565,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                     RAT_5G,
                     voice_or_data=NETWORK_SERVICE_DATA,
                     toggle_apm_after_setting=False,
-                    mmwave=True):
+                    nr_type= 'mmwave'):
                 self.log.error("Provider failed to reselect to 5G NSA MMW")
                 return False
 
@@ -608,7 +608,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                    check_interval=10,
                                    check_iteration=10,
                                    password="",
-                                   nsa_mmwave=True)
+                                   nr_type= 'mmwave')
 
 
     @test_tracker_info(uuid="39e73f91-79c7-4cc0-9fa0-a737f88889e8")
@@ -644,7 +644,7 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
                                    check_interval=10,
                                    check_iteration=2,
                                    pre_teardown_func=setup_provider_internet_connection,
-                                   nsa_mmwave=True):
+                                   nr_type= 'mmwave'):
             return False
 
         if not wait_and_verify_device_internet_connection(self.log, self.provider):
