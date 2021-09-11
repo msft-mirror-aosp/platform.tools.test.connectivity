@@ -26,6 +26,7 @@ PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
 WAIT_TIME = 20
+DEFAULT_RADIOS = ("radio0", "radio1")
 
 
 def create(configs):
@@ -106,7 +107,7 @@ class OpenWrtAP(object):
         lambda msg: "[OpenWrtAP|%s] %s" % (self.ssh_settings.hostname, msg))
     self.wireless_setting = None
     self.network_setting = network_settings.NetworkSettings(
-        self.ssh, config["ssh_config"]["host"], self.log)
+        self.ssh, self.ssh_settings, self.log)
 
   def configure_ap(self, wifi_configs, channel_2g, channel_5g):
     """Configure AP with the required settings.
@@ -528,6 +529,40 @@ class OpenWrtAP(object):
           del wifi_network["password"]
         return wifi_network
     return None
+
+  def get_wifi_status(self, radios=DEFAULT_RADIOS):
+    """Check if radios are up. Default are 2G and 5G bands.
+
+    Args:
+      radios: Wifi interfaces for check status.
+    Returns:
+      True if both radios are up. False if not.
+    """
+    status = True
+    for radio in radios:
+      str_output = self.ssh.run("wifi status %s" % radio).stdout
+      wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                              Loader=yaml.FullLoader)
+      status = wifi_status[radio]["up"] and status
+    return status
+
+  def verify_wifi_status(self, radios=DEFAULT_RADIOS, timeout=20):
+    """Ensure wifi interfaces are ready.
+
+    Args:
+      radios: Wifi interfaces for check status.
+      timeout: An integer that is the number of times to try
+               wait for interface ready.
+    Returns:
+      True if both radios are up. False if not.
+    """
+    start_time = time.time()
+    end_time = start_time + timeout
+    while time.time() < end_time:
+      if self.get_wifi_status(radios):
+        return True
+      time.sleep(1)
+    return False
 
   def close(self):
     """Reset wireless and network settings to default and stop AP."""
