@@ -59,13 +59,13 @@ class Sa5gMmsTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not provision_device_for_5g(self.log, ads, sa_5g=True):
+        if not provision_device_for_5g(self.log, ads, nr_type='sa'):
             return False
 
         if not _mms_test_mo(self.log, ads):
             return False
 
-        if not verify_5g_attach_for_both_devices(self.log, ads, True):
+        if not verify_5g_attach_for_both_devices(self.log, ads, nr_type='sa'):
             return False
 
         self.log.info("PASS - mms test over 5g sa validated")
@@ -91,7 +91,7 @@ class Sa5gMmsTest(TelephonyBaseTest):
         if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not provision_device_for_5g(self.log, ads, sa_5g=True):
+        if not provision_device_for_5g(self.log, ads, nr_type='sa'):
             return False
 
         return _long_mms_test_mo(self.log, ads)
@@ -117,7 +117,7 @@ class Sa5gMmsTest(TelephonyBaseTest):
         if not disable_apm_mode_both_devices(self.log, ads):
             return False
 
-        if not provision_device_for_5g(self.log, ads, sa_5g=True):
+        if not provision_device_for_5g(self.log, ads, nr_type='sa'):
             return False
 
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,

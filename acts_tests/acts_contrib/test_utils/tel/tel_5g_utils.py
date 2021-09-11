@@ -19,21 +19,26 @@ from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
 
-def is_current_network_5g_nsa(ad, nsa_mmwave=False, timeout=30):
+def is_current_network_5g_nsa(ad, nr_type=None, timeout=30):
     """Verifies 5G NSA override network type
     Args:
         ad: android device object.
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
+                wave
         timeout: max time to wait for event.
+
     Returns:
         True: if data is on nsa5g NSA
         False: if data is not on nsa5g NSA
     """
     ad.ed.clear_events(EventDisplayInfoChanged)
     ad.droid.telephonyStartTrackingDisplayInfoChange()
-    nsa_band = OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA
-    if nsa_mmwave:
+    if nr_type == 'mmwave':
         nsa_band = OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_MMWAVE
+    elif nr_type == 'nsa':
+        nsa_band = OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA
+    else:
+        nsa_band = OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA
     try:
         event = ad.ed.wait_for_event(
                 EventDisplayInfoChanged,
@@ -52,19 +57,20 @@ def is_current_network_5g_nsa(ad, nsa_mmwave=False, timeout=30):
     return None
 
 
-def is_current_network_5g_nsa_for_subscription(ad, nsa_mmwave=False, timeout=30, sub_id=None):
+def is_current_network_5g_nsa_for_subscription(ad, nr_type=None, timeout=30, sub_id=None):
     """Verifies 5G NSA override network type for subscription id.
     Args:
         ad: android device object.
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter wave
         timeout: max time to wait for event.
         sub_id: subscription id.
+
     Returns:
         True: if data is on nsa5g NSA
         False: if data is not on nsa5g NSA
     """
     if not sub_id:
-        return is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave)
+        return is_current_network_5g_nsa(ad, nr_type=nr_type)
 
     voice_sub_id_changed = False
     current_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
@@ -72,12 +78,13 @@ def is_current_network_5g_nsa_for_subscription(ad, nsa_mmwave=False, timeout=30,
         ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
         voice_sub_id_changed = True
 
-    result = is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave)
+    result = is_current_network_5g_nsa(ad, nr_type=nr_type)
 
     if voice_sub_id_changed:
         ad.droid.subscriptionSetDefaultVoiceSubId(current_sub_id)
 
     return result
+
 
 def is_current_network_5g_sa(ad):
     """Verifies 5G SA override network type
@@ -98,40 +105,44 @@ def is_current_network_5g_sa(ad):
         ad.screenshot("5g_sa_icon_checking")
         return False
 
-def is_current_network_5g(ad, sa_or_nsa=None, mmwave=None):
+
+def is_current_network_5g(ad, nr_type=None, timeout=30):
     """Verifies 5G override network type
 
     Args:
         ad: android device object
-        sa_or_nsa: 'sa' for 5G standalone, 'nsa' for 5G non-standalone and
-            None for 5G regardless of NSA or SA
-        mmwave: True for mmWave, False for sub-6 and None for no check
+        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
+                wave
+        timeout: max time to wait for event.
 
     Returns:
         True: if data is on 5G regardless of SA or NSA
         False: if data is not on 5G refardless of SA or NSA
     """
-    if sa_or_nsa == 'nsa':
-        return is_current_network_5g_nsa(ad, nsa_mmwave=mmwave)
-    elif sa_or_nsa == 'sa':
+    if nr_type == 'nsa':
+        return is_current_network_5g_nsa(ad, nr_type = 'nsa', timeout=timeout)
+    elif nr_type == 'sa':
         return is_current_network_5g_sa(ad)
+    elif nr_type == 'mmwave':
+        return is_current_network_5g_nsa(ad, nr_type = 'mmwave', timeout=timeout)
     else:
-        return is_current_network_5g_nsa(ad, nsa_mmwave=mmwave) or is_current_network_5g_sa(ad)
+        return is_current_network_5g_nsa(ad, nr_type=None) or is_current_network_5g_sa(ad)
 
-def is_current_network_5g_for_subscription(ad, sub_id=None, sa_or_nsa=None, mmwave=None):
+
+def is_current_network_5g_for_subscription(ad, sub_id=None, nr_type=None):
     """Verifies 5G override network type for subscription id.
     Args:
         ad: android device object
         sub_id: subscription id
-        sa_or_nsa: 'sa' for 5G standalone, 'nsa' for 5G non-standalone and
-            None for 5G regardless of NSA or SA
-        mmwave: True for mmWave, False for sub-6 and None for no check
+        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
+                wave
+
     Returns:
         True: if data is on 5G regardless of NSA or SA.
         False: if data is not on 5G regardless of NSA or SA.
     """
     if not sub_id:
-        return is_current_network_5g(ad, sa_or_nsa=sa_or_nsa, mmwave=mmwave)
+        return is_current_network_5g(ad, nr_type=nr_type)
 
     voice_sub_id_changed = False
     current_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
@@ -139,7 +150,7 @@ def is_current_network_5g_for_subscription(ad, sub_id=None, sa_or_nsa=None, mmwa
         ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
         voice_sub_id_changed = True
 
-    result = is_current_network_5g(ad, sa_or_nsa=sa_or_nsa, mmwave=mmwave)
+    result = is_current_network_5g(ad, nr_type=nr_type)
 
     if voice_sub_id_changed:
         ad.droid.subscriptionSetDefaultVoiceSubId(current_sub_id)
