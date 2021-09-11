@@ -56,7 +56,7 @@ class Nsa5gActivationTest(TelephonyBaseTest):
         """
 
         return test_activation_by_condition(self.android_devices[0],
-                                            nsa_mmwave=False,
+                                            nr_type='nsa',
                                             precond_func=lambda: cycle_airplane_mode(self.android_devices[0]))
 
 
@@ -75,7 +75,7 @@ class Nsa5gActivationTest(TelephonyBaseTest):
         """
 
         return test_activation_by_condition(self.android_devices[0],
-                                            nsa_mmwave=False,
+                                            nr_type='nsa',
                                             precond_func=lambda: reboot_device(self.android_devices[0]))
 
 
@@ -96,6 +96,6 @@ class Nsa5gActivationTest(TelephonyBaseTest):
 
         return test_activation_by_condition(self.android_devices[0],
                                             from_3g=True,
-                                            nsa_mmwave=False)
+                                            nr_type='nsa')
 
     """ Tests End """
