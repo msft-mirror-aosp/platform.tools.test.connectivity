@@ -54,7 +54,7 @@ class Nsa5gMmwActivationTest(TelephonyBaseTest):
         """
 
         return test_activation_by_condition(self.android_devices[0],
-                                            nsa_mmwave=True,
+                                            nr_type='mmwave',
                                             precond_func=lambda: cycle_airplane_mode(self.android_devices[0]))
 
     @test_tracker_info(uuid="21fb9b5c-40e8-4804-b05b-017395bb2e79")
@@ -72,7 +72,7 @@ class Nsa5gMmwActivationTest(TelephonyBaseTest):
         """
 
         return test_activation_by_condition(self.android_devices[0],
-                                            nsa_mmwave=True,
+                                            nr_type='mmwave',
                                             precond_func=lambda: reboot_device(self.android_devices[0]))
 
     @test_tracker_info(uuid="2cef7ec0-ea74-458f-a98e-143d0be71f31")
@@ -92,7 +92,7 @@ class Nsa5gMmwActivationTest(TelephonyBaseTest):
 
         return test_activation_by_condition(self.android_devices[0],
                                             from_3g=True,
-                                            nsa_mmwave=True)
+                                            nr_type='mmwave')
 
     """ Tests End """
 
