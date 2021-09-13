@@ -338,6 +338,7 @@ def check_location_service(ad):
     """
     remount_device(ad)
     utils.set_location_service(ad, True)
+    ad.adb.shell("cmd location set-location-enabled true")
     location_mode = int(ad.adb.shell("settings get secure location_mode"))
     ad.log.info("Current Location Mode >> %d" % location_mode)
     if location_mode != 3:
@@ -848,7 +849,8 @@ def gnss_tracking_via_gtw_gpstool(ad,
     """
     gnss_crash_list = [".*Fatal signal.*gnss",
                        ".*Fatal signal.*xtra",
-                       ".*F DEBUG.*gnss"]
+                       ".*F DEBUG.*gnss",
+                       ".*Fatal signal.*gpsd"]
     process_gnss_by_gtw_gpstool(
         ad, criteria=criteria, type=type, meas_flag=meas_flag)
     ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
@@ -2004,6 +2006,8 @@ def parse_brcm_nmea_log(ad, nmea_pattern):
         brcm_log_list: A list of specific NMEA pattern logs.
     """
     brcm_log_list = []
+    brcm_log_error_pattern = ["lhd: FS: Start Failsafe dump", "E slog"]
+    brcm_error_log_list = []
     stop_pixel_logger(ad)
     pixellogger_path = (
         "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/.")
@@ -2037,11 +2041,15 @@ def parse_brcm_nmea_log(ad, nmea_pattern):
         for line in lines:
             if nmea_pattern in line:
                 brcm_log_list.append(line)
+            for attr in brcm_log_error_pattern:
+                if attr in line:
+                    brcm_error_log_list.append(line)
+    brcm_error_log = "".join(brcm_error_log_list)
     shutil.rmtree(tmp_log_path, ignore_errors=True)
-    return brcm_log_list
+    return brcm_log_list, brcm_error_log
 
 
-def check_dpo_rate_via_brcm_log(ad, dpo_threshold):
+def check_dpo_rate_via_brcm_log(ad, dpo_threshold, brcm_error_log_allowlist):
     """Check DPO engage rate through "$PGLOR,11,STA" in BRCM Log.
     D - Disabled, Always full power.
     F - Enabled, now in full power mode.
@@ -2051,11 +2059,19 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold):
     Args:
         ad: An AndroidDevice object.
         dpo_threshold: The value to set threshold. (Ex: dpo_threshold = 60)
+        brcm_error_log_allowlist: Benign error logs to exclude.
     """
     always_full_power_count = 0
     full_power_count = 0
     power_save_count = 0
-    pglor_list = parse_brcm_nmea_log(ad, "$PGLOR,11,STA")
+    pglor_list, brcm_error_log = parse_brcm_nmea_log(ad, "$PGLOR,11,STA")
+    if brcm_error_log:
+        for allowlist in brcm_error_log_allowlist:
+            if allowlist in brcm_error_log:
+                brcm_error_log = re.sub(
+                    ".*" + allowlist + ".*\n?", "", brcm_error_log)
+                ad.log.info("\"%s\" is in allow-list and removed from error."
+                            % allowlist)
     for pglor in pglor_list:
         power_res = re.compile(r',P,(\w),').search(pglor).group(1)
         if power_res == "D":
@@ -2077,8 +2093,10 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold):
                 % (power_save_count, len(pglor_list)))
     ad.log.info("TestResult DPO_Engage_Rate " + dpo_engage_rate)
     threshold = "{percent:.0%}".format(percent=dpo_threshold / 100)
-    asserts.assert_true(dpo_rate * 100 > dpo_threshold,
+    asserts.assert_true((dpo_rate * 100 > dpo_threshold) and not brcm_error_log,
                         "Power Save Mode only engaged %s in %d seconds test "
-                        "with threshold %s." % (dpo_engage_rate,
-                                                len(pglor_list),
-                                                threshold))
+                        "with threshold %s.\nAbnormal behavior found as below."
+                        "\n%s" % (dpo_engage_rate,
+                                  len(pglor_list),
+                                  threshold,
+                                  brcm_error_log))
