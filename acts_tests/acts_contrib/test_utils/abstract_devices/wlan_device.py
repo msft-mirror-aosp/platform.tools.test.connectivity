@@ -487,8 +487,11 @@ class FuchsiaWlanDevice(WlanDevice):
         result = response.get('result')
         if result and isinstance(result, dict) and result.get('Connected'):
             if ssid and result['Connected'].get('ssid'):
-                connected_ssid = ''.join(
-                    chr(i) for i in result['Connected']['ssid'])
+                # Replace encoding errors instead of raising an exception.
+                # Since `ssid` is a string, this will not affect the test
+                # for equality.
+                connected_ssid = bytearray(result['Connected']['ssid']).decode(
+                    encoding='utf-8', errors='replace')
                 if ssid != connected_ssid:
                     return False
             return True
