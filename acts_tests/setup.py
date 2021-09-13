@@ -69,8 +69,11 @@ class ActsContribInstall(install):
     repository.
     """
     def run(self):
-        super().run()
         _setup_acts_framework('install')
+        # Calling install.run() directly fails to install the dependencies as
+        # listed in install_requires. Use install.do_egg_install() instead.
+        # Ref: https://stackoverflow.com/questions/21915469
+        self.do_egg_install()
 
 
 class ActsContribDevelop(develop):
@@ -79,11 +82,12 @@ class ActsContribDevelop(develop):
     See ActsContribInstall for more details.
     """
     def run(self):
-        super().run()
         if self.uninstall:
+            super().run()
             _setup_acts_framework('develop', '-u')
         else:
             _setup_acts_framework('develop')
+            super().run()
 
 
 class ActsContribInstallDependencies(cmd.Command):
