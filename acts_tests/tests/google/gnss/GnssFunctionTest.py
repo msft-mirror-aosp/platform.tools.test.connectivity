@@ -99,7 +99,8 @@ class GnssFunctionTest(BaseTestClass):
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_allowlist", "pixel_lab_location",
                       "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
-                      "collect_logs", "dpo_threshold"]
+                      "collect_logs", "dpo_threshold",
+                      "brcm_error_log_allowlist"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -383,7 +384,9 @@ class GnssFunctionTest(BaseTestClass):
                                                 dpo_begin_time,
                                                 self.dpo_threshold)
         else:
-            gutils.check_dpo_rate_via_brcm_log(self.ad, self.dpo_threshold)
+            gutils.check_dpo_rate_via_brcm_log(self.ad,
+                                               self.dpo_threshold,
+                                               self.brcm_error_log_allowlist)
 
     @test_tracker_info(uuid="499d2091-640a-4735-9c58-de67370e4421")
     def test_gnss_init_error(self):

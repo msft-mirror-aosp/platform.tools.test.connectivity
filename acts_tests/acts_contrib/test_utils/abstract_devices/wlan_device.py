@@ -484,11 +484,14 @@ class FuchsiaWlanDevice(WlanDevice):
             raise ConnectionError(
                 'Failed to get client network connection status')
 
-        status = response.get('result')
-        if status and status.get('connected_to'):
-            if ssid:
-                connected_ssid = ''.join(
-                    chr(i) for i in status['connected_to']['ssid'])
+        result = response.get('result')
+        if result and isinstance(result, dict) and result.get('Connected'):
+            if ssid and result['Connected'].get('ssid'):
+                # Replace encoding errors instead of raising an exception.
+                # Since `ssid` is a string, this will not affect the test
+                # for equality.
+                connected_ssid = bytearray(result['Connected']['ssid']).decode(
+                    encoding='utf-8', errors='replace')
                 if ssid != connected_ssid:
                     return False
             return True
