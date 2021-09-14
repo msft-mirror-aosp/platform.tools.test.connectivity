@@ -86,41 +86,15 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         self.anritsu.load_simulation_paramfile(sim_file_path)
         self.anritsu.load_cell_paramfile(cell_file_path)
-        self.anritsu.start_simulation()
 
-        self.bts = [self.anritsu.get_BTS(md8475a.BtsNumber.BTS1)]
-
-        self.num_carriers = 1
-
-    def setup_lte_ca_scenario(self):
-        """ Configures the equipment for an LTE with CA simulation. """
-        cell_file_name = self.LTE_CA_BASIC_CELL_FILE
-        sim_file_name = self.LTE_CA_BASIC_SIM_FILE
-
-        cell_file_path = ntpath.join(self.CALLBOX_CONFIG_PATH, cell_file_name)
-        sim_file_path = ntpath.join(self.CALLBOX_CONFIG_PATH, sim_file_name)
-
-        # Load the simulation config file
-        self.anritsu.load_simulation_paramfile(sim_file_path)
-
-        # Enable all LTE base stations. This is needed so that base settings
-        # can be applied.
-        self.anritsu.set_simulation_model(
-            *[md8475a.BtsTechnology.LTE for _ in range(self.LTE_MAX_CARRIERS)],
-            reset=False)
-
-        # Load cell settings
-        self.anritsu.load_cell_paramfile(cell_file_path)
-
-        self.anritsu.start_simulation()
-
+        # MD4875A supports only 2 carriers. The MD4875B class adds other cells.
         self.bts = [
             self.anritsu.get_BTS(md8475a.BtsNumber.BTS1),
             self.anritsu.get_BTS(md8475a.BtsNumber.BTS2)
         ]
 
-    def set_ca_combination(self, combination):
-        """ Prepares the test equipment for the indicated CA combination.
+    def set_band_combination(self, bands):
+        """ Prepares the test equipment for the indicated band combination.
 
         The reason why this is implemented in a separate method and not calling
         LteSimulation.BtsConfig for each separate band is that configuring each
@@ -129,40 +103,8 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         be shared in the test equipment.
 
         Args:
-            combination: carrier aggregation configurations are indicated
-                with a list of strings consisting of the band number followed
-                by the CA class. For example, for 5 CA using 3C 7C and 28A
-                the parameter value should be [3c, 7c, 28a].
+            bands: a list of bands represented as ints or strings
         """
-
-        # Obtain the list of bands from the carrier combination list
-        bands = []
-
-        for ca in combination:
-            ca_class = ca[-1]
-            band = ca[:-1]
-
-            # If the band appears twice in the combo it means that carriers
-            # must be in the same band but non contiguous.
-            if band in bands:
-                raise cc.CellularSimulatorError(
-                    'Intra-band non-contiguous carrier aggregation is not '
-                    'supported.')
-
-            if ca_class.upper() == 'B':
-                raise cc.CellularSimulatorError(
-                    'Class B carrier aggregation is not supported')
-            elif ca_class.upper() == 'A':
-                bands.append(band)
-            elif ca_class.upper() == 'C':
-                # Class C means two contiguous carriers in the same band, so
-                # add the band twice to the list.
-                bands.append(band)
-                bands.append(band)
-            else:
-                raise cc.CellularSimulatorError('Invalid carrier aggregation '
-                                                'configuration: ' + ca)
-
         self.num_carriers = len(bands)
 
         # Validate the number of carriers.
@@ -170,10 +112,6 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             raise cc.CellularSimulatorError('The test equipment supports up '
                                             'to {} carriers.'.format(
                                                 self.LTE_MAX_CARRIERS))
-        elif self.num_carriers < 2:
-            raise cc.CellularSimulatorError('At least two carriers need to be '
-                                            'indicated for the carrier '
-                                            'aggregation simulation.')
 
         # Initialize the base stations in the test equipment
         self.anritsu.set_simulation_model(
@@ -187,7 +125,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             # both base stations.
             self.bts[0].mimo_support = md8475a.LteMimoMode.MIMO_4X4
             self.bts[1].mimo_support = md8475a.LteMimoMode.MIMO_4X4
-        if self.num_carriers == 3:
+        elif self.num_carriers == 3:
             # 4X4 can only be done in the second base station if it is shared
             # with the primary. If the RF cards cannot be shared, then at most
             # 2X2 can be done.
@@ -197,16 +135,16 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             else:
                 self.bts[1].mimo_support = md8475a.LteMimoMode.MIMO_2X2
             self.bts[2].mimo_support = md8475a.LteMimoMode.MIMO_2X2
+        elif self.num_carriers > 3:
+            raise NotImplementedError('The controller doesn\'t implement more '
+                                      'than 3 carriers for MD8475B yet.')
 
-        # Enable carrier aggregation
-        self.anritsu.set_carrier_aggregation_enabled()
+        # Enable carrier aggregation if there is more than one carrier
+        if self.num_carriers > 1:
+            self.anritsu.set_carrier_aggregation_enabled()
 
         # Restart the simulation as changing the simulation model will stop it.
         self.anritsu.start_simulation()
-
-        # Set the bands in each base station
-        for bts_index in range(len(bands)):
-            self.set_band(bts_index, bands[bts_index])
 
     def set_input_power(self, bts_index, input_power):
         """ Sets the input power for the indicated base station.
@@ -693,6 +631,11 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
+        if self.anritsu.get_smartstudio_status() == \
+            md8475a.ProcessingStatus.PROCESS_STATUS_NOTRUN.value:
+            self.log.info('Device cannot be detached because simulation is '
+                          'not running.')
+            return
         self.anritsu.set_simulation_state_to_poweroff()
 
     def stop(self):
@@ -776,10 +719,10 @@ class MD8475BCellularSimulator(MD8475CellularSimulator):
     # formatted to replace {} with either A or B depending on the model.
     CALLBOX_CONFIG_PATH = 'C:\\Users\\MD8475B\\Documents\\DAN_configs\\'
 
-    def setup_lte_ca_scenario(self):
+    def setup_lte_scenario(self):
         """ The B model can support up to five carriers. """
 
-        super().setup_lte_ca_scenario()
+        super().setup_lte_scenario()
 
         self.bts.extend([
             self.anritsu.get_BTS(md8475a.BtsNumber.BTS3),

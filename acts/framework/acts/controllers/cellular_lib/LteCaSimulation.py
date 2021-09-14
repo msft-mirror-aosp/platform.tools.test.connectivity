@@ -107,10 +107,6 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
-    def setup_simulator(self):
-        """ Do initial configuration in the simulator. """
-        self.simulator.setup_lte_ca_scenario()
-
     def configure(self, parameters):
         """ Configures simulation using a dictionary of parameters.
 
@@ -135,22 +131,16 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                 "The CA configuration has to be indicated with one string as "
                 "in the following example: 3c7c28a".format(self.PARAM_CA))
 
-        # Apply the carrier aggregation combination
-        self.simulator.set_ca_combination(ca_configs)
-
-        # Save the bands to the bts config objects
-        bts_index = 0
+        # Initialize the secondary cells
+        bands = []
         for ca in ca_configs:
             ca_class = ca[-1]
             band = ca[:-1]
-
-            self.bts_configs[bts_index].band = band
-            bts_index += 1
-
+            bands.append(band)
             if ca_class.upper() == 'B' or ca_class.upper() == 'C':
                 # Class B and C means two carriers with the same band
-                self.bts_configs[bts_index].band = band
-                bts_index += 1
+                bands.append(band)
+        self.simulator.set_band_combination(bands)
 
         # Count the number of carriers in the CA combination
         self.num_carriers = 0
@@ -165,6 +155,20 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         # Create an array of configuration objects to set up the base stations.
         new_configs = [self.BtsConfig() for _ in range(self.num_carriers)]
+
+        # Save the bands to the bts config objects
+        bts_index = 0
+        for ca in ca_configs:
+            ca_class = ca[-1]
+            band = ca[:-1]
+
+            new_configs[bts_index].band = band
+            bts_index += 1
+
+            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
+                # Class B and C means two carriers with the same band
+                new_configs[bts_index].band = band
+                bts_index += 1
 
         # Get the bw for each carrier
         # This is an optional parameter, by default the maximum bandwidth for
