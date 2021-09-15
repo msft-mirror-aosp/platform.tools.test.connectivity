@@ -9262,12 +9262,11 @@ def add_whitelisted_account(ad, user_account,user_password, retries=3):
     ad.log.error("Failed to add google account - %s", output)
     return False
 
-def install_apk(ad, app_name, apk_path, app_package_name):
+def install_apk(ad, apk_path, app_package_name):
     """Install assigned apk to specific device.
 
     Args:
         ad: android device object
-        app_name: Application name shown in the log
         apk_path: The path of apk (please refer to the "Resources" section in
             go/mhbe-resources for supported file stores.)
         app_package_name: package name of the application
@@ -9275,14 +9274,14 @@ def install_apk(ad, app_name, apk_path, app_package_name):
     Returns:
         True if success, False if fail.
     """
-    ad.log.info("Install %s from %s", app_name, apk_path)
+    ad.log.info("Install %s from %s", app_package_name, apk_path)
     ad.adb.install("-r -g %s" % apk_path, timeout=300, ignore_status=True)
     time.sleep(3)
     if not ad.is_apk_installed(app_package_name):
-        ad.log.info("%s (%s) is not installed.", app_name, app_package_name)
+        ad.log.info("%s is not installed.", app_package_name)
         return False
     if ad.get_apk_version(app_package_name):
-        ad.log.info("Current version of %s (%s): %s", app_name, app_package_name,
+        ad.log.info("Current version of %s: %s", app_package_name,
                     ad.get_apk_version(app_package_name))
     return True
 
