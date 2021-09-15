@@ -17,9 +17,10 @@
 import logging
 import time
 import statistics
+import os
+import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
 from queue import Empty
 from concurrent.futures import ThreadPoolExecutor
-
 from acts_contrib.test_utils.bt.bt_gatt_utils import close_gatt_client
 from acts_contrib.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
 from acts_contrib.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
@@ -134,7 +135,9 @@ def ble_coc_connection(client_ad, server_ad):
     return True, gatt_callback, gatt_server, bluetooth_gatt, client_conn_id
 
 
-def run_ble_throughput(server_ad, client_conn_id, client_ad,
+def run_ble_throughput(server_ad,
+                       client_conn_id,
+                       client_ad,
                        num_iterations=30):
     """Function to measure Throughput from one client to one-or-many servers
 
@@ -208,3 +211,36 @@ def ble_gatt_disconnection(client_ad, bluetooth_gatt, gatt_callback):
         logging.error(err)
         return False
     return True
+
+
+def plot_graph(df, plot_data, bokeh_data, secondary_y_label=None):
+    """ Plotting for generating bokeh figure
+
+    Args:
+        df: Summary of results contains attenuation, DUT RSSI, remote RSSI and Tx Power
+        plot_data: plot_data for adding line to existing BokehFigure
+        bokeh_data: bokeh data for generating BokehFigure
+        secondary_y_label : label for secondary y axis , None if not available
+    """
+    plot = bokeh_figure.BokehFigure(
+        title='{}'.format(bokeh_data['current_test_name']),
+        x_label=bokeh_data['x_label'],
+        primary_y_label=bokeh_data['primary_y_label'],
+        secondary_y_label=secondary_y_label,
+        axis_label_size='16pt',
+        legend_label_size='16pt',
+        axis_tick_label_size='16pt',
+        sizing_mode='stretch_both')
+
+    for data in plot_data:
+        plot.add_line(df[plot_data[data].get('x_column')],
+                      df[plot_data[data].get('y_column')],
+                      legend=plot_data[data].get('legend'),
+                      marker=plot_data[data].get('marker'),
+                      y_axis=plot_data[data].get('y_axis'))
+
+    results_file_path = os.path.join(
+        bokeh_data['log_path'],
+        '{}.html'.format(bokeh_data['current_test_name']))
+    plot.generate_figure()
+    bokeh_figure.BokehFigure.save_figures([plot], results_file_path)

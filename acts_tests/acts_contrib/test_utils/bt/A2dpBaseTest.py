@@ -22,12 +22,12 @@ import time
 
 import acts_contrib.test_utils.coex.audio_test_utils as atu
 import acts_contrib.test_utils.bt.bt_test_utils as btutils
-import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
 from acts import asserts
 from acts_contrib.test_utils.bt import bt_constants
 from acts_contrib.test_utils.bt import BtEnum
 from acts_contrib.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as bt_factory
 from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.ble_performance_test_utils import plot_graph
 from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
 from acts_contrib.test_utils.bt.loggers import bluetooth_metric_logger as log
 from acts.signals import TestPass, TestError
@@ -53,7 +53,7 @@ class A2dpBaseTest(BluetoothBaseTest):
         super().setup_class()
         self.bt_logger = log.BluetoothMetricLogger.for_test_case()
         self.dut = self.android_devices[0]
-        req_params = ['audio_params', 'music_files']
+        req_params = ['audio_params', 'music_files', 'system_path_loss']
         opt_params = ['bugreport']
         #'audio_params' is a dict, contains the audio device type, audio streaming
         #settings such as volumn, duration, audio recording parameters such as
@@ -281,42 +281,6 @@ class A2dpBaseTest(BluetoothBaseTest):
         del proto_dict["proto_ascii"]
         return proto_dict
 
-    def plot_graph(self, df):
-        """ Plotting A2DP DUT RSSI, remote RSSI and TX Power with Attenuation.
-
-        Args:
-            df: Summary of results contains attenuation, DUT RSSI, remote RSSI and Tx Power
-        """
-
-        self.plot = bokeh_figure.BokehFigure(
-            title='{}'.format(self.current_test_name),
-            x_label='Pathloss (dBm)',
-            primary_y_label='RSSI (dBm)',
-            secondary_y_label='TX Power (dBm)',
-            axis_label_size='16pt',
-            legend_label_size='16pt',
-            axis_tick_label_size='16pt',
-            sizing_mode='stretch_both')
-
-        self.plot.add_line(df.index,
-                           df['rssi_primary'],
-                           legend='DUT RSSI (dBm)',
-                           marker='circle_x')
-        self.plot.add_line(df.index,
-                           df['rssi_secondary'],
-                           legend='Remote RSSI (dBm)',
-                           marker='square_x')
-        self.plot.add_line(df.index,
-                           df['tx_power_level_master'],
-                           legend='DUT TX Power (dBm)',
-                           marker='hex',
-                           y_axis='secondary')
-
-        results_file_path = os.path.join(
-            self.log_path, '{}.html'.format(self.current_test_name))
-        self.plot.generate_figure()
-        bokeh_figure.BokehFigure.save_figures([self.plot], results_file_path)
-
     def set_test_atten(self, atten):
         """Set the attenuation(s) for current test condition.
 
@@ -377,6 +341,8 @@ class A2dpBaseTest(BluetoothBaseTest):
             data_point = {
                 'attenuation_db':
                 int(self.attenuator.get_atten()),
+                'pathloss':
+                atten + self.system_path_loss,
                 'rssi_primary':
                 rssi_master.get(self.dut.serial, -127),
                 'tx_power_level_master':
@@ -399,18 +365,56 @@ class A2dpBaseTest(BluetoothBaseTest):
                 thdns[0] * 100
             }
             self.log.info(data_point)
+            # bokeh data for generating BokehFigure
+            bokeh_data = {
+                'x_label': 'Pathloss (dBm)',
+                'primary_y_label': 'RSSI (dBm)',
+                'log_path': self.log_path,
+                'current_test_name': self.current_test_name
+            }
+            #plot_data for adding line to existing BokehFigure
+            plot_data = {
+                'line_one': {
+                    'x_label': 'Pathloss (dBm)',
+                    'primary_y_label': 'RSSI (dBm)',
+                    'x_column': 'pathloss',
+                    'y_column': 'rssi_primary',
+                    'legend': 'DUT RSSI (dBm)',
+                    'marker': 'circle_x',
+                    'y_axis': 'default'
+                },
+                'line_two': {
+                    'x_column': 'pathloss',
+                    'y_column': 'rssi_secondary',
+                    'legend': 'Remote device RSSI (dBm)',
+                    'marker': 'hex',
+                    'y_axis': 'default'
+                },
+                'line_three': {
+                    'x_column': 'pathloss',
+                    'y_column': 'tx_power_level_master',
+                    'legend': 'DUT TX Power (dBm)',
+                    'marker': 'hex',
+                    'y_axis': 'secondary'
+                }
+            }
 
             # Check thdn for glitches, stop if max range reached
             if thdns[0] == 0:
-                proto_dict = self.generate_proto(data_points,
-                                                     **codec_config)
+                proto_dict = self.generate_proto(data_points, **codec_config)
                 A2dpRange_df = pd.DataFrame(data_points)
                 A2dpRange_df.to_csv(self.file_output, index=False)
-                self.plot_graph(A2dpRange_df)
-                raise TestError('Music play/recording is not working properly or Connection has lost')
+                plot_graph(A2dpRange_df,
+                           plot_data,
+                           bokeh_data,
+                           secondary_y_label='DUT TX Power')
+                raise TestError(
+                    'Music play/recording is not working properly or Connection has lost'
+                )
 
             data_points.append(data_point)
             A2dpRange_df = pd.DataFrame(data_points)
+
             for thdn in thdns:
                 if thdn >= self.audio_params['thdn_threshold']:
                     self.log.info(
@@ -421,14 +425,20 @@ class A2dpBaseTest(BluetoothBaseTest):
                     proto_dict = self.generate_proto(data_points,
                                                      **codec_config)
                     A2dpRange_df.to_csv(self.file_output, index=False)
-                    self.plot_graph(A2dpRange_df)
+                    plot_graph(A2dpRange_df,
+                               plot_data,
+                               bokeh_data,
+                               secondary_y_label='DUT TX Power')
                     return True
                     raise TestPass('Max range reached and move to next codec',
                                    extras=proto_dict)
         # Save Data points to csv
         A2dpRange_df.to_csv(self.file_output, index=False)
         # Plot graph
-        self.plot_graph(A2dpRange_df)
+        plot_graph(A2dpRange_df,
+                   plot_data,
+                   bokeh_data,
+                   secondary_y_label='DUT TX Power')
         proto_dict = self.generate_proto(data_points, **codec_config)
         return True
         raise TestPass('Could not reach max range, need extra attenuation.',
