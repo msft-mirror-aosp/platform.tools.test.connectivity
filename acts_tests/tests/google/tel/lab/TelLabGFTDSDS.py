@@ -74,7 +74,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_5G_VOLTE, _5G_VOLTE, 0),
@@ -104,7 +104,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_5G_VOLTE, _5G_VOLTE, 1),
@@ -134,7 +134,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_VOLTE, _5G_VOLTE, 0),
@@ -164,7 +164,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_VOLTE, _5G_VOLTE, 1),
@@ -193,7 +193,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+            for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_5G_VOLTE, _VOLTE, 0),
@@ -223,7 +223,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_5G_VOLTE, _VOLTE, 1),
@@ -253,7 +253,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_data_transfer(_5G_VOLTE, _5G_VOLTE, 0),
@@ -283,7 +283,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_data_transfer(_VOLTE, _5G_VOLTE, 1),
@@ -313,7 +313,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_data_transfer(_VOLTE, _5G_VOLTE, 0),
@@ -343,7 +343,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_data_transfer(_VOLTE, _5G_VOLTE, 1),
@@ -372,7 +372,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_data_transfer(_5G_VOLTE, _VOLTE, 0),
@@ -402,7 +402,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-        if x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_data_transfer(_5G_VOLTE, _VOLTE, 1),
