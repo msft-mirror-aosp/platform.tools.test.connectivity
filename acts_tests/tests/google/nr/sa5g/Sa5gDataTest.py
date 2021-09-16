@@ -43,7 +43,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_sa
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 
 
@@ -83,7 +83,7 @@ class Sa5gDataTest(TelephonyBaseTest):
             return False
         ad.log.info("Set network mode to SA successfully")
         ad.log.info("Waiting for 5g SA attach for 60 secs")
-        if is_current_network_5g_sa(ad):
+        if is_current_network_5g(ad, nr_type = 'sa'):
             ad.log.info("Success! attached on 5g SA")
         else:
             ad.log.error("Failure - expected NR, current %s",
@@ -129,7 +129,7 @@ class Sa5gDataTest(TelephonyBaseTest):
         wifi_toggle_state(ad.log, ad, False)
         toggle_airplane_mode(ad.log, ad, False)
 
-        if not provision_device_for_5g(ad.log, ad, sa_5g=True):
+        if not provision_device_for_5g(ad.log, ad, nr_type= 'sa'):
             return False
 
         cmd = ('ss -l -p -n | grep "tcp.*droid_script" | tr -s " " '
@@ -188,7 +188,7 @@ class Sa5gDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not provision_device_for_5g(self.log, self.provider, sa_5g=True):
+        if not provision_device_for_5g(self.log, self.provider, nr_type= 'sa'):
             return False
 
         return test_wifi_connect_disconnect(self.log, self.provider, self.wifi_network_ssid, self.wifi_network_pass)
@@ -211,7 +211,7 @@ class Sa5gDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         return wifi_cell_switching(ad.log, ad, GEN_5G, self.wifi_network_ssid,
-                                   self.wifi_network_pass, sa_5g=True)
+                                   self.wifi_network_pass, nr_type= 'sa')
 
 
     @test_tracker_info(uuid="8df1b65c-197e-40b3-83a4-6da1f0a51b97")
@@ -233,6 +233,6 @@ class Sa5gDataTest(TelephonyBaseTest):
         wifi_reset(ad.log, ad)
         wifi_toggle_state(ad.log, ad, False)
         wifi_toggle_state(ad.log, ad, True)
-        return data_connectivity_single_bearer(ad.log, ad, GEN_5G, sa_5g=True)
+        return data_connectivity_single_bearer(ad.log, ad, GEN_5G, nr_type= 'sa')
 
     """ Tests End """

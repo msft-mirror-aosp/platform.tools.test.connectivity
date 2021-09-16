@@ -193,7 +193,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voic
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts_contrib.test_utils.wifi import wifi_constants
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
@@ -1617,7 +1617,8 @@ def initiate_call(log,
                   voice_type_init=None,
                   call_stats_check=False,
                   result_info=result_dict,
-                  nsa_5g_for_stress=False):
+                  nw_gen_5g=False,
+                  nr_type= None):
     """Make phone call from caller to callee.
 
     Args:
@@ -1666,9 +1667,9 @@ def initiate_call(log,
             ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
 
-        if nsa_5g_for_stress:
-            if not is_current_network_5g_nsa(ad):
-                ad.log.error("Phone is not attached on 5G NSA")
+        if nw_gen_5g:
+            if not is_current_network_5g(ad, nr_type= nr_type):
+                ad.log.error("Phone is not attached on 5G")
 
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
             ad.droid.telecomShowInCallScreen()
@@ -2317,7 +2318,8 @@ def call_setup_teardown(log,
                         voice_type_init=None,
                         call_stats_check=False,
                         result_info=result_dict,
-                        nsa_5g_for_stress=False):
+                        nsa_5g_for_stress=False,
+                        nr_type= None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -2356,7 +2358,8 @@ def call_setup_teardown(log,
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state,
-        voice_type_init, call_stats_check, result_info, nsa_5g_for_stress)
+        voice_type_init, call_stats_check, result_info, nsa_5g_for_stress,
+        nr_type)
 
 
 
@@ -2376,7 +2379,8 @@ def call_setup_teardown_for_subscription(
         voice_type_init=None,
         call_stats_check=False,
         result_info=result_dict,
-        nsa_5g_for_stress=False):
+        nsa_5g_for_stress=False,
+        nr_type= None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -2570,8 +2574,8 @@ def call_setup_teardown_for_subscription(
 
         if nsa_5g_for_stress:
             for ad in (ad_caller, ad_callee):
-                if not is_current_network_5g_nsa(ad):
-                    ad.log.error("Phone not attached on 5G NSA")
+                if not is_current_network_5g(ad, nr_type):
+                    ad.log.error("Phone not attached on 5G")
 
         if ad_hangup or not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):
@@ -6790,8 +6794,7 @@ def ensure_network_generation(log,
                               max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                               voice_or_data=None,
                               toggle_apm_after_setting=False,
-                              sa_or_nsa=None,
-                              mmwave=None):
+                              nr_type=None):
     """Ensure ad's network is <network generation> for default subscription ID.
 
     Set preferred network generation to <generation>.
@@ -6800,7 +6803,7 @@ def ensure_network_generation(log,
     """
     return ensure_network_generation_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), generation,
-        max_wait_time, voice_or_data, toggle_apm_after_setting, sa_or_nsa, mmwave)
+        max_wait_time, voice_or_data, toggle_apm_after_setting, nr_type=nr_type)
 
 
 def ensure_network_generation_for_subscription(
@@ -6811,8 +6814,7 @@ def ensure_network_generation_for_subscription(
         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None,
         toggle_apm_after_setting=False,
-        sa_or_nsa=None,
-        mmwave=None):
+        nr_type=None):
     """Ensure ad's network is <network generation> for specified subscription ID.
 
         Set preferred network generation to <generation>.
@@ -6829,8 +6831,6 @@ def ensure_network_generation_for_subscription(
             This parameter is optional. If voice_or_data is None, then if
             either voice or data in expected generation, function will return True.
         toggle_apm_after_setting: Cycle airplane mode if True, otherwise do nothing.
-        sa_or_nsa: sa if nw_gen is sa 5G or nsa if nw_gen is nsa 5G or None for other nw_gen.
-        mmwave: True if nw_gen is nsa 5g mmwave.
 
     Returns:
         True if success, False if fail.
@@ -6872,7 +6872,7 @@ def ensure_network_generation_for_subscription(
 
     if (generation == GEN_5G) or (generation == RAT_5G):
         if is_current_network_5g_for_subscription(ad, sub_id=sub_id,
-                                        sa_or_nsa=sa_or_nsa, mmwave=mmwave):
+                                        nr_type=nr_type):
             ad.log.info("Current network type is 5G.")
             return True
         else:
@@ -6993,10 +6993,11 @@ def wait_for_network_generation_for_subscription(
         sub_id,
         generation,
         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
-        voice_or_data=None):
+        voice_or_data=None,
+        nr_type=None):
 
     if generation == GEN_5G:
-        if is_current_network_5g_for_subscription(ad, sub_id=sub_id):
+        if is_current_network_5g_for_subscription(ad, sub_id=sub_id, nr_type=nr_type):
             ad.log.info("Current network type is 5G.")
             return True
         else:
@@ -9261,12 +9262,11 @@ def add_whitelisted_account(ad, user_account,user_password, retries=3):
     ad.log.error("Failed to add google account - %s", output)
     return False
 
-def install_apk(ad, app_name, apk_path, app_package_name):
+def install_apk(ad, apk_path, app_package_name):
     """Install assigned apk to specific device.
 
     Args:
         ad: android device object
-        app_name: Application name shown in the log
         apk_path: The path of apk (please refer to the "Resources" section in
             go/mhbe-resources for supported file stores.)
         app_package_name: package name of the application
@@ -9274,14 +9274,14 @@ def install_apk(ad, app_name, apk_path, app_package_name):
     Returns:
         True if success, False if fail.
     """
-    ad.log.info("Install %s from %s", app_name, apk_path)
+    ad.log.info("Install %s from %s", app_package_name, apk_path)
     ad.adb.install("-r -g %s" % apk_path, timeout=300, ignore_status=True)
     time.sleep(3)
     if not ad.is_apk_installed(app_package_name):
-        ad.log.info("%s (%s) is not installed.", app_name, app_package_name)
+        ad.log.info("%s is not installed.", app_package_name)
         return False
     if ad.get_apk_version(app_package_name):
-        ad.log.info("Current version of %s (%s): %s", app_name, app_package_name,
+        ad.log.info("Current version of %s: %s", app_package_name,
                     ad.get_apk_version(app_package_name))
     return True
 
