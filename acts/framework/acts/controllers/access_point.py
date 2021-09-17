@@ -796,3 +796,18 @@ class AccessPoint(object):
             self.start_ap(config,
                           setup_bridge=setup_bridge,
                           additional_parameters=additional_parameters)
+
+    def channel_switch(self, identifier, channel_num):
+        """Switch to a different channel on the given AP."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError('Invalid identifier %s given' % identifier)
+        instance = self._aps.get(identifier)
+        self.log.info('channel switch to channel {}'.format(channel_num))
+        instance.hostapd.channel_switch(channel_num)
+
+    def get_current_channel(self, identifier):
+        """Find the current channel on the given AP."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError('Invalid identifier %s given' % identifier)
+        instance = self._aps.get(identifier)
+        return instance.hostapd.get_current_channel()
