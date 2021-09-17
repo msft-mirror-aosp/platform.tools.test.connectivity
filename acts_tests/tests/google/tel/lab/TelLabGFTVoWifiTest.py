@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+
 import time
 import logging
 
@@ -29,9 +30,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
@@ -39,6 +37,8 @@ from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import \
     phone_setup_volte_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ims_registered
 from acts_contrib.test_utils.tel.gft_inout_utils import check_no_service_time
 from acts_contrib.test_utils.tel.gft_inout_utils import check_back_to_service_time
@@ -48,6 +48,8 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
@@ -60,7 +62,6 @@ from acts_contrib.test_utils.tel.gft_inout_defines import WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_TIME
 from acts_contrib.test_utils.tel.gft_inout_defines import WAIT_FOR_SERVICE_TIME
-
 
 WAIT_TIME_AT_NO_SERVICE_AREA = 300
 
@@ -164,13 +165,11 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             %(wfc_mode, is_airplane_mode))
         self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
         time.sleep(10)
-        # enable WiFi
         tasks = [(phone_setup_iwlan, (self.log, ad, is_airplane_mode, wfc_mode ))
             for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
-            error_msg = "fail to setup WFC mode to %s" %(wfc_mode)
-            self.log.error(error_msg)
-            asserts.skip(error_msg)
+            self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
+            raise signals.TestFailure(self.my_error_msg)
         if call_type != None:
             if not self._voice_call(self.android_devices, call_type, end_call, talk_time):
                 self.log.error("%s failuer" %call_type)
@@ -317,19 +316,11 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
 
             ad = self.android_devices[0]
             wfc_mode = ad.droid.imsGetWfcMode()
-            if not self._enable_wifi_calling(wfc_mode):
-                error_msg = "Fail to setup WFC mode"
-                self.log.info(error_msg)
-                self.my_error_msg += error_msg
-                return False
-            tasks = [(toggle_airplane_mode, (self.log, ad, True)) for ad
-                in self.android_devices]
+            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode ))
+                for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                error_msg += "fail turn on airplane mode"
-                self.my_error_msg += error_msg
-                test_result = False
-                return False
-
+                self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
+                raise signals.TestFailure(self.my_error_msg)
             self.log.info("idle in service area")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             time.sleep(10)
@@ -354,18 +345,25 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         return test_result
 
 
-    def _device_status_check(self):
+    def _device_status_check(self, call_type=None, end_call=True,
+        talk_time=30, verify_data=True, verify_voice=True):
         '''
             Check device status
-
+            Args:
+                ad: android device
+                call_type: WFC call, VOLTE call. CSFB call, voice call
+                end_call: hangup call after voice call flag
+                talk_time: in call duration in sec
+                verify_data: flag to check data connection
+                verify_voice: flag to check voice
             Returns:
                 True if pass; False if fail
         '''
         tasks = [(check_back_to_service_time, (ad,))
             for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
-            tasks = [(self.verify_device_status, (ad, ))
-                for ad in self.android_devices]
+            tasks = [(self.verify_device_status, (ad, call_type, end_call,
+                talk_time, verify_data, verify_voice)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 self.my_error_msg += "Verify_device_status fail, "
                 return False
@@ -721,34 +719,572 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         for x in range(self.user_params.get("wfc_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             self.my_error_msg += "cylce%s: " %(x+1)
-            self.log.info("Enable Wi-Fi calling in Airplane on")
+            self.log.info("idle in service area")
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
-
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            # Make a MO VoWiFi call in service area.
+            self.log.info("Enable Wi-Fi calling in Airplane on")
             ad = self.android_devices[0]
             wfc_mode = ad.droid.imsGetWfcMode()
-            tasks = [(toggle_airplane_mode, (self.log, ad, True))
+            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode ))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                error_msg += "fail turn on airplane mode"
-                self.my_error_msg += error_msg
-                asserts.skip(error_msg)
-
-            self.log.info("idle in service area")
-            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
-            #Make a MO VoWiFi call in service area.
-            if self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
-            is_airplane_mode=True):
-                self.my_error_msg += "VoWiFi call failure, "
+                self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
                 raise signals.TestFailure(self.my_error_msg)
-            time.sleep(10)
             self.log.info("Move to no service area for %s sec" %(idle_time))
             self.adjust_cellular_signal(NO_SERVICE_POWER_LEVEL)
             time.sleep(idle_time)
-
             self.log.info("Move back to service area and verify device status")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             if not self._device_status_check():
                 raise signals.TestFailure(self.my_error_msg)
         return True
 
+
+    @test_tracker_info(uuid="2b1f19c5-1214-41bd-895f-86987f1cf2b5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_vowifi_call_wifi_preferred(self, loop=1 ,wfc_mode=WFC_MODE_WIFI_PREFERRED):
+        '''
+            In/Out Service - VoWiFi incall in Wi-Fi Preferred mode
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode: wifi prefer mode
+
+            Returns:
+                True if pass; False if fail
+            Raises:
+                TestFailure if not success.
+        '''
+        for x in range(self.user_params.get("roveinout_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.check_network()
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+
+            self.adjust_cellular_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(WAIT_FOR_SERVICE_TIME)
+            # check call status
+            for ad in self.android_devices:
+                get_voice_call_type(ad)
+            self.log.info("Move back to service area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.log.info("Verify device state after in-out service")
+            if not self._device_status_check():
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+
+    @test_tracker_info(uuid="63dfa017-8bdb-4c61-a29e-7c347982a5ac")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_volte_call_cellular_preferred(self, loop=1, wfc_mode=WFC_MODE_CELLULAR_PREFERRED):
+        '''
+            In/Out Service - VoLTE incall in Cellular preferred mode
+            Make sure that MO/MT VoWiFi call can be made after In/Out service
+            in Wi-Fi Preferred mode and Airplane on + Wi-Fi on and MO/MT
+            VoLTE call can be made in Cellular preferred mode.
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode: wifi prefer mode
+
+            Returns:
+                True if pass; False if fail
+            Raises:
+                TestFailure if not success.
+        '''
+        for x in range(self.user_params.get("roveinout_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.check_network()
+
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+            self.log.info(" Move to no service area for 1 minute during incall.")
+            self.adjust_cellular_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(WAIT_FOR_SERVICE_TIME)
+            # check call status
+            for ad in self.android_devices:
+                get_voice_call_type(ad)
+            self.log.info("Move back to service area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.log.info("Verify device state after in-out service")
+            if not self._device_status_check(VOLTE):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+    @test_tracker_info(uuid="4f196186-b163-4c78-bdd9-d8fd7dc79dac")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wfc_in_out_wifi_disabled(self, loop=1, wfc_mode=WFC_MODE_DISABLED):
+        """
+            [LAB][Wi-Fi Preferred/Cellular Preferred] In/Out Wi-Fi only area with
+            Wi-Fi calling disabled - Idle -> Make sure that radio function can work
+            after in/out Wi-Fi only area when Wi-Fi calling disabled.
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode: wfc mode
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        """
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            if not self._enable_wifi_calling(wfc_mode, ):
+                raise signals.TestFailure("_enable_wifi_calling failure: %s"
+                    %(self.my_error_msg))
+            self.log.info("Move out cellular area to Wi-Fi only area")
+            self.adjust_cellular_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(WAIT_TIME_AT_NO_SERVICE_AREA)
+            self.log.info("Move back to service area and no wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+
+            self.log.info("Verify device state after in-out service")
+            if not self._device_status_check(call_type=VOICE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+    @test_tracker_info(uuid="d597a694-fae9-426b-ba5e-97a9844cba4f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_in_out_wifi_browsing_wifi_preferred(self, loop=1, wfc_mode=WFC_MODE_WIFI_PREFERRED):
+        '''
+            [LAB][Wi-Fi Preferred] In/Out Wi-Fi only area with Wi-Fi calling enabled
+            Browsing -> Make sure that radio function can work after in/out Wi-Fi
+            only area in Wi-Fi preferred mode.
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode: wfc mode
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.check_network()
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+            #Keep browsing then move out cellular area to Wi-Fi only area
+            tasks_a = [(self._in_out_browse, ())]
+            tasks_b = [(browsing_test, (self.log, ad, )) for ad in self.android_devices]
+            tasks_b.extend(tasks_a)
+            if not multithread_func(self.log, tasks_b):
+                raise signals.TestFailure("in/out browsing failure: %s"
+                    %(self.my_error_msg))
+            self.log.info("Verify device state after in-out service")
+            if not self._device_status_check(call_type=VOICE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+    @test_tracker_info(uuid="c7d3dc90-c0ed-48f8-b674-6d5b1efea3cc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_in_out_wifi_browsing_wfc_disabled(self, loop=1, wfc_mode=WFC_MODE_DISABLED):
+        '''
+            [LAB][Wi-Fi Preferred/Cellular Preferred] In/Out Wi-Fi only area
+            with Wi-Fi calling disabled - Browsing
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode: wfc mode
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+            # Keep browsing then move out cellular area to Wi-Fi only area
+            tasks_a = [(self._in_out_browse, ())]
+            tasks_b = [(browsing_test, (self.log, ad, )) for ad in self.android_devices]
+            tasks_b.extend(tasks_a)
+            if not multithread_func(self.log, tasks_b):
+                raise signals.TestFailure("in/out browsing failure: %s"
+                    %(self.my_error_msg))
+            if not self._device_status_check(call_type=VOICE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+    def _in_out_browse(self):
+        '''
+            Move out cellular area to Wi-Fi only area and
+            move back to service area and no wifi area
+        '''
+        self.log.info("Move out cellular area to Wi-Fi only area")
+        self.adjust_cellular_signal(NO_SERVICE_POWER_LEVEL)
+        # browsing at no service area
+        time.sleep(WAIT_TIME_AT_NO_SERVICE_AREA)
+        self.log.info("Move back to service area and no wifi area")
+        self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+        self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+
+    @test_tracker_info(uuid="9029f3bb-3aca-42be-9241-ed21aab418ff")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_hand_in_out_vowifi_incall_data_transfer(self, loop=1,
+        wfc_mode=WFC_MODE_WIFI_PREFERRED):
+        '''
+            [Wi-Fi Preferred] Hand In/Out while VoWiFi incall -
+            Data transferring -> Make sure that IMS can register between Wi-Fi
+            and LTE NW and no call dropped during data transferring after
+            hand in/out in Wi-Fi Preferred mode.
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode: wfc mode
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.check_network()
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+            #Download a large file in the background then make a MO VoWiFi call.
+            if not self._voice_call(self.android_devices, WFC_CALL, False,):
+                    error_msg = "VoWiFi call failure, "
+                    self.log.info(error_msg)
+                    self._on_failure(error_msg)
+            self.log.info("Move out Wi-Fi area to VoLTE area during incall + data transferring.")
+            self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(WAIT_FOR_SERVICE_TIME)
+            for ad in self.android_devices:
+                hangup_call(self.log, ad)
+            if not self._device_status_check(call_type=VOLTE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+            # Download a file in the background then make a MO VoLTE call.
+            self.log.info("Move back to Wi-Fi area during incall + data transferring.")
+            # Move back to Wi-Fi area during incall + data transferring.
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            time.sleep(160)
+            for ad in self.android_devices:
+                hangup_call(self.log, ad)
+            if not self._device_status_check(call_type=VOICE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+    @test_tracker_info(uuid="45c1f623-5eeb-4ee4-8739-2b0ebcd5f19f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_rove_in_out_ims_on_airplane_mode(self, loop=1,):
+        '''
+            [Wi-Fi Calling+Airplane On] Rove In/Out when idle - IMS on ->
+            Make sure that IMS can register between Wi-Fi and LTE NW and
+            VoWiFi call can be made after rove in/out.
+
+            Args:
+                loop: repeat this test cases for how many times
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.my_error_msg += "cylce%s: " %(x+1)
+
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.log.info("Enable Wi-Fi calling in Airplane on")
+            ad = self.android_devices[0]
+            wfc_mode = ad.droid.imsGetWfcMode()
+            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode ))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
+                raise signals.TestFailure(self.my_error_msg)
+
+            self.log.info("Make a MO VoWiFi call in service area")
+            if not self._voice_call(self.android_devices, WFC_CALL, False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+
+            self.log.info("Move out Wi-Fi area to VoLTE area when idle.")
+            self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(WAIT_FOR_SERVICE_TIME)
+            if not self._device_status_check(call_type=VOICE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+            self.log.info("Move back to Wi-Fi area when idle.")
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.log.info("Verify device status after in-out service")
+            time.sleep(160)
+            if not self._device_status_check(call_type=VOICE_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+    @test_tracker_info(uuid="6c82e447-1c16-4339-b526-e9e932ee0d72")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_rove_out_wfc(self,loop=1, wfc_mode=WFC_MODE_WIFI_PREFERRED, idle_time=180):
+        '''
+            [Wi-Fi Preferred] Rove In/Out when idle for 1 hours - Wi-Fi calling enabled
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode:
+                idle_time: how long device will be idle
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+
+            if not self._voice_call(self.android_devices, WFC_CALL, ):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+            time.sleep(idle_time)
+
+            self.log.info("Move out Wi-Fi area to VoLTE area when idle.")
+            self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            if not self._voice_call(self.android_devices, VOLTE_CALL, ):
+                raise signals.TestFailure("VOLTE call failure: %s"
+                    %(self.my_error_msg))
+            self.log.info("Move back to Wi-Fi area when idle.")
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            if not self._device_status_check(call_type=WFC_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+    @test_tracker_info(uuid="fb431706-737d-4020-b3d1-347dc4d7ce03")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_rove_out_no_wfc(self,loop=1, wfc_mode=WFC_MODE_DISABLED,
+        idle_time=180):
+        '''
+            [Wi-Fi Preferred] Rove In/Out when idle for 1 hours
+            Wi-Fi calling disabled. Make sure that IMS can register between
+            Wi-Fi and LTE NW and VoWiFi call can be made after rove in/out.
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode:
+                idle_time: how long device will be idle
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at cellular and wifi area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            self.check_network()
+            if not self._enable_wifi_calling(wfc_mode):
+                raise signals.TestFailure("_enable_wifi_calling failure: %s"
+                    %(self.my_error_msg))
+
+            if not self._voice_call(self.android_devices, VOLTE_CALL, ):
+                raise signals.TestFailure("VOLTE call failure: %s"
+                    %(self.my_error_msg))
+            time.sleep(idle_time)
+
+            self.log.info("Move out Wi-Fi area to VoLTE area when idle.")
+            self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            if not self._voice_call(self.android_devices, VOLTE_CALL, ):
+                raise signals.TestFailure("VOLTE call failure: %s"
+                    %(self.my_error_msg))
+            self.log.info("Move back to Wi-Fi area when idle.")
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            # Enable Wi-Fi calling in Wi-Fi Preferred mode
+            if not self._enable_wifi_calling(WFC_MODE_WIFI_PREFERRED):
+                raise signals.TestFailure("_enable_wifi_calling failure: %s"
+                    %(self.my_error_msg))
+            # check device status
+            if not self._device_status_check(call_type=WFC_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+    @test_tracker_info(uuid="5ddfa906-7756-42b4-b1c4-2ac507211547")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_hand_in_out_vowifi_incall_call_hold(self,loop=1,
+        wfc_mode=WFC_MODE_WIFI_PREFERRED, idle_time=180):
+        '''
+            [NSA/SA][Wi-Fi Preferred] Hand In/Out while VoWiFi incall - Hold
+            Ensure IMS can register between Wi-Fi and LTE/NR NW and no call dropped
+            during incall with hold on after hand in/out in Wi-Fi Preferred mode.
+
+            Args:
+                loop: repeat this test cases for how many times
+                wfc_mode:
+                idle_time: how long device will be idle
+
+            Raises:
+                TestFailure if not success.
+            Returns:
+                True if pass; False if fail
+        '''
+        for x in range(self.user_params.get("wfc_cycle", 1)):
+            self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
+            self.log.info("Start test at wifi area and service area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
+                end_call=False):
+                raise signals.TestFailure("VoWiFi call failure: %s"
+                    %(self.my_error_msg))
+
+            tasks = [(self._call_hold, (ad,)) for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                raise signals.TestFailure("fail to hold call: %s"
+                    %(self.my_error_msg))
+
+            # Move out Wi-Fi area to 4G area during incall
+            self.log.info("Move out Wi-Fi area to VoLTE area")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            tasks = [(self._call_unhold, (ad,)) for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                raise signals.TestFailure("fail to unhold call: %s"
+                    %(self.my_error_msg))
+            time.sleep(30)
+            for ad in self.android_devices:
+                hangup_call(self.log, ad)
+
+            # Make a MO VoLTE call and verify data connection
+            if not self._voice_call(self.android_devices, VOLTE_CALL, False):
+                raise signals.TestFailure("VoLTE call failure: %s"
+                    %(self.my_error_msg))
+
+            tasks = [(self._call_hold, (ad,)) for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                raise signals.TestFailure("fail to hold call: %s"
+                    %(self.my_error_msg))
+
+            #Move back to Wi-Fi area during incall.
+            self.log.info("Move back to Wi-Fi area during incall.")
+            self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
+            self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            tasks = [(self._call_unhold, (ad,)) for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                raise signals.TestFailure("fail to unhold call: %s"
+                    %(self.my_error_msg))
+            time.sleep(30)
+            for ad in self.android_devices:
+                hangup_call(self.log, ad)
+            # check device status
+            if not self._device_status_check(call_type=WFC_CALL):
+                raise signals.TestFailure(self.my_error_msg)
+        return True
+
+
+    def _call_hold(self, ad, wait_time=5):
+        '''
+            Press call hold
+
+            Args:
+                ad: android device
+                wait_time: wait time after press hold/unhold in sec
+
+            Returns:
+                True if pass; False if fail
+        '''
+        if ad.droid.telecomIsInCall():
+            call_list = ad.droid.telecomCallGetCallIds()
+            ad.log.info("Calls in PhoneA %s", call_list)
+            call_id = call_list[0]
+            call_state = ad.droid.telecomCallGetCallState(call_id)
+            if call_state != CALL_STATE_ACTIVE:
+                ad.log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
+                        call_id,
+                        ad.droid.telecomCallGetCallState(call_id))
+                return False
+            ad.log.info("Hold call_id %s on PhoneA", call_id)
+            ad.droid.telecomCallHold(call_id)
+            time.sleep(wait_time)
+
+            call_state = ad.droid.telecomCallGetCallState(call_id)
+            if call_state != CALL_STATE_HOLDING:
+                ad.log.error("Call_id:%s, state:%s, expected: STATE_HOLDING",
+                                call_id,
+                                ad.droid.telecomCallGetCallState(call_id))
+                return False
+        else:
+            ad.log.info("device is not in call")
+            return False
+        return True
+
+    def _call_unhold(self, ad, wait_time=5):
+        '''
+            Press call unhold
+
+            Args:
+                ad: android device
+                wait_time: wait time after press hold/unhold in sec
+
+            Returns:
+                True if pass; False if fail
+        '''
+        if ad.droid.telecomIsInCall():
+            call_list = ad.droid.telecomCallGetCallIds()
+            ad.log.info("Calls in PhoneA %s", call_list)
+            call_id = call_list[0]
+            call_state = ad.droid.telecomCallGetCallState(call_id)
+            if call_state != CALL_STATE_HOLDING:
+                ad.log.error("Call_id:%s, state:%s, expected: STATE_HOLDING",
+                        call_id,
+                        ad.droid.telecomCallGetCallState(call_id))
+                return False
+            ad.log.info("Unhold call_id %s on PhoneA", call_id)
+            ad.droid.telecomCallUnhold(call_id)
+            time.sleep(wait_time)
+            call_state = ad.droid.telecomCallGetCallState(call_id)
+            if call_state != CALL_STATE_ACTIVE:
+                ad.log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
+                        call_id,
+                        call_state)
+                return False
+        else:
+            ad.log.info("device is not in call")
+            return False
+        return True
 
