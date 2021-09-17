@@ -43,6 +43,9 @@ This is all to say this documentation pattern is expected.
 
 """
 
+from acts.test_utils.audio_analysis_lib.check_quality import quality_analysis
+from acts.test_utils.bt.bt_constants import audio_bits_per_sample_32
+from acts.test_utils.bt.bt_constants import audio_sample_rate_48000
 from acts_contrib.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
 from acts_contrib.test_utils.bt.bt_constants import bt_attribute_values
 from acts_contrib.test_utils.bt.bt_constants import sig_appearance_constants
@@ -2272,6 +2275,58 @@ class CommandInput(cmd.Cmd):
         try:
             save_path = "{}/{}".format(self.pri_dut.log_path, "audio.raw")
             result = self.pri_dut.audio_lib.getOutputAudio(save_path)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_audio_5_min_test(self, line):
+        """
+        Description: Capture and anlyize sine audio waves played from a Bluetooth A2DP
+        Source device.
+
+        Pre steps:
+        1. Pair A2DP source device
+        2. Prepare generated SOX file over preferred codec on source device.
+            Quick way to generate necessary audio files:
+            sudo apt-get install sox
+            sox -b 16 -r 48000 -c 2 -n audio_file_2k1k_5_min.wav synth 300 sine 2000 sine 3000
+
+        Usage:
+          Examples:
+            audio_5_min_test
+        """
+        cmd = "5 min audio capture test"
+        input("Press Enter once Source device is streaming audio file")
+        try:
+            result = self.pri_dut.audio_lib.startOutputSave()
+            self.log.info(result)
+            for i in range(5):
+                print("Minutes left: {}".format(10 - i))
+                time.sleep(60)
+            result = self.pri_dut.audio_lib.stopOutputSave()
+            log_time = int(time.time())
+            save_path = "{}/{}".format(self.pri_dut.log_path,
+                                       "{}_audio.raw".format(log_time))
+            analysis_path = "{}/{}".format(
+                self.pri_dut.log_path,
+                "{}_audio_analysis.txt".format(log_time))
+            result = self.pri_dut.audio_lib.getOutputAudio(save_path)
+
+            channels = 1
+            try:
+                quality_analysis(filename=save_path,
+                                 output_file=analysis_path,
+                                 bit_width=audio_bits_per_sample_32,
+                                 rate=audio_sample_rate_48000,
+                                 channel=channels,
+                                 spectral_only=False)
+
+            except Exception as err:
+                self.log.error("Failed to analyze raw audio: {}".format(err))
+                return False
+
+            self.log.info("Analysis output here: {}".format(analysis_path))
+            self.log.info("Analysis Results: {}".format(
+                open(analysis_path).readlines()))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
