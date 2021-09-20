@@ -561,6 +561,7 @@ def timeout(sec):
     Raises:
         TimeoutError is raised when time out happens.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -1564,7 +1565,7 @@ def get_ping_command(dest_ip,
     if os_type == 'Darwin':
         if is_valid_ipv6_address(dest_ip):
             # ping6 on MacOS doesn't support timeout
-            logging.warn(
+            logging.debug(
                 'Ignoring timeout, as ping6 on MacOS does not support it.')
             timeout_flag = []
         else:
@@ -1846,8 +1847,10 @@ def get_device(devices, device_type):
     if not devices:
         raise ValueError('No devices available')
 
-    matches = [d for d in devices if
-               hasattr(d, 'device_type') and d.device_type == device_type]
+    matches = [
+        d for d in devices
+        if hasattr(d, 'device_type') and d.device_type == device_type
+    ]
 
     if len(matches) == 0:
         # No matches for the specified "device_type", use the first device
@@ -1857,6 +1860,7 @@ def get_device(devices, device_type):
         # Specifing multiple devices with the same "device_type" is a
         # configuration error.
         raise ValueError(
-            'More than one device matching "device_type" == "{}"'.format(device_type))
+            'More than one device matching "device_type" == "{}"'.format(
+                device_type))
 
     return matches[0]
