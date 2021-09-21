@@ -23,11 +23,12 @@ from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
 from acts.controllers.rohdeschwarz_lib import cmx500_cellular_simulator as cmx
 from acts.controllers.cellular_lib import AndroidCellularDut
-from acts.controllers.cellular_lib import GsmSimulation
-from acts.controllers.cellular_lib import LteSimulation
-from acts.controllers.cellular_lib import UmtsSimulation
-from acts.controllers.cellular_lib import LteCaSimulation
-from acts.controllers.cellular_lib import LteImsSimulation
+from acts.controllers.cellular_lib import BaseSimulation as base_sim
+from acts.controllers.cellular_lib import GsmSimulation as gsm_sim
+from acts.controllers.cellular_lib import LteSimulation as lte_sim
+from acts.controllers.cellular_lib import UmtsSimulation as umts_sim
+from acts.controllers.cellular_lib import LteCaSimulation as lteca_sim
+from acts.controllers.cellular_lib import LteImsSimulation as lteims_sim
 
 from acts_contrib.test_utils.tel import tel_test_utils as telutils
 
@@ -218,7 +219,9 @@ class CellularBaseTest(base_test.BaseTestClass):
         # This may throw a ValueError exception if incorrect values are passed
         # or if required arguments are omitted.
         try:
-            self.simulation.parse_parameters(self.parameters)
+            sim_params = self.parse_parameters()
+            self.log.info("Simulation parameters: " + str(sim_params))
+            self.simulation.configure(sim_params)
         except ValueError as error:
             self.log.error(str(error))
             return False
@@ -237,6 +240,83 @@ class CellularBaseTest(base_test.BaseTestClass):
         self.simulation.start()
 
         return True
+
+    def parse_parameters(self):
+        """ Creates the simulation parameters dict based on test name.
+
+        Example: calling from a test method "test_band_4_bw_20" returns a
+        dictionary {"band": "4", "bw": "20"}.
+
+        Returns:
+            a dictionary of simulation parameters.
+        """
+        config = {}
+
+        def set_param(param_name, num_args):
+            args = self.consume_parameter(param_name, num_args)
+            if args:
+                if num_args == 0:
+                    config[param_name] = True
+                elif num_args == 1:
+                    config[param_name] = args[1]
+                else:
+                    config[param_name] = args
+
+        set_param(self.simulation.PARAM_UL_PW, 1)
+        set_param(self.simulation.PARAM_DL_PW, 1)
+
+        if isinstance(self.simulation, gsm_sim.GsmSimulation):
+            set_param(self.simulation.PARAM_BAND, 1)
+            set_param(self.simulation.PARAM_GPRS, 1)
+            set_param(self.simulation.PARAM_EGPRS, 1)
+            set_param(self.simulation.PARAM_NO_GPRS, 1)
+            set_param(self.simulation.PARAM_SLOTS, 2)
+        elif isinstance(self.simulation, umts_sim.UmtsSimulation):
+            set_param(self.simulation.PARAM_BAND, 1)
+            set_param(self.simulation.PARAM_RELEASE_VERSION, 1)
+            set_param(self.simulation.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+        elif isinstance(self.simulation, umts_sim.UmtsSimulation):
+            set_param(self.simulation.PARAM_BAND, 1)
+            set_param(self.simulation.PARAM_RELEASE_VERSION, 1)
+            set_param(self.simulation.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+        elif (isinstance(self.simulation, lte_sim.LteSimulation)
+              or isinstance(self.simulation, lte_sim.LteImsSimulation)):
+            set_param(self.simulation.PARAM_BAND, 1)
+            set_param(self.simulation.PARAM_FRAME_CONFIG, 1)
+            set_param(self.simulation.PARAM_SSF, 1)
+            set_param(self.simulation.PARAM_BW, 1)
+            set_param(self.simulation.PARAM_MIMO, 1)
+            set_param(self.simulation.PARAM_TM, 1)
+            set_param(self.simulation.PARAM_SCHEDULING, 1)
+            set_param(self.simulation.PARAM_PATTERN, 2)
+            set_param(self.simulation.PARAM_DL_MCS, 1)
+            set_param(self.simulation.PARAM_UL_MCS, 1)
+            set_param(self.simulation.PARAM_DRX, 5)
+            set_param(self.simulation.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+            set_param(self.simulation.PARAM_CFI, 1)
+            set_param(self.simulation.PARAM_PHICH, 1)
+            set_param(self.simulation.PARAM_PAGING, 1)
+        elif isinstance(self.simulation, lteca_sim.LteCaSimulation):
+            param_ca = lteca_sim.LteSimulation.PARAM_CA
+            set_param(param_ca, 1)
+            # Count the number of carriers in the CA combination
+            if self.simulation.PARAM_CA not in config:
+                raise RuntimeError('{} is required.'.format(param_ca))
+            num_carriers = 0
+            ca_configs = re.findall(r'(\d+[abcABC])', config[param_ca])
+            for ca in ca_configs:
+                ca_class = ca[-1]
+                # Class C means that there are two contiguous carriers,
+                # while other classes are a single one.
+                if ca_class.upper() == 'C':
+                    num_carriers += 2
+                else:
+                    num_carriers += 1
+            set_param(self.simulation.PARAM_BW, num_carriers)
+            set_param(self.simulation.PARAM_TM, num_carriers)
+            set_param(self.simulation.PARAM_MIMO, num_carriers)
+
+        return config
 
     def teardown_test(self):
         """ Executed after every test case, even if it failed or an exception
@@ -313,11 +393,11 @@ class CellularBaseTest(base_test.BaseTestClass):
         """
 
         simulation_dictionary = {
-            self.PARAM_SIM_TYPE_LTE: LteSimulation.LteSimulation,
-            self.PARAM_SIM_TYPE_UMTS: UmtsSimulation.UmtsSimulation,
-            self.PARAM_SIM_TYPE_GSM: GsmSimulation.GsmSimulation,
-            self.PARAM_SIM_TYPE_LTE_CA: LteCaSimulation.LteCaSimulation,
-            self.PARAM_SIM_TYPE_LTE_IMS: LteImsSimulation.LteImsSimulation
+            self.PARAM_SIM_TYPE_LTE: lte_sim.LteSimulation,
+            self.PARAM_SIM_TYPE_UMTS: umts_sim.UmtsSimulation,
+            self.PARAM_SIM_TYPE_GSM: gsm_sim.GsmSimulation,
+            self.PARAM_SIM_TYPE_LTE_CA: lteca_sim.LteCaSimulation,
+            self.PARAM_SIM_TYPE_LTE_IMS: lteims_sim.LteImsSimulation
         }
 
         if not sim_type in simulation_dictionary:
