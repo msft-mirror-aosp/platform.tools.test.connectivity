@@ -185,7 +185,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             ca_class = ca[-1]
 
             if values:
-                bw = int(values[1 + bts_index])
+                bw = int(values[bts_index])
             else:
                 bw = max(self.allowed_bandwidth_dictionary[band])
 
@@ -213,7 +213,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         mimo_values = parameters[self.PARAM_MIMO]
 
-        if len(mimo_values) != self.num_carriers + 1:
+        if len(mimo_values) != self.num_carriers:
             raise ValueError(
                 "The value of '{}' must be a list of MIMO modes with a length "
                 "equal to the number of carriers.".format(self.PARAM_MIMO))
@@ -223,7 +223,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             # Parse and set the requested MIMO mode
 
             for mimo_mode in LteSimulation.MimoMode:
-                if mimo_values[bts_index + 1] == mimo_mode.value:
+                if mimo_values[bts_index] == mimo_mode.value:
                     requested_mimo = mimo_mode
                     break
             else:
@@ -249,7 +249,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                         'The number of elements in the transmission mode list '
                         'must be equal to the number of carriers.')
                 for tm in LteSimulation.TransmissionMode:
-                    if tm_values[bts_index + 1] == tm.value[2:]:
+                    if tm_values[bts_index] == tm.value[2:]:
                         requested_tm = tm
                         break
                 else:
