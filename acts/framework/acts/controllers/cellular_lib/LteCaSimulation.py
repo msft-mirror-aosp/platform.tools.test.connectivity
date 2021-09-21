@@ -65,7 +65,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         66: 66436
     }
 
-    # Simulation config keywords contained in the test name
+    # Configuration dictionary keys
     PARAM_CA = 'ca'
 
     # Test config keywords
@@ -111,32 +111,29 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         """ Do initial configuration in the simulator. """
         self.simulator.setup_lte_ca_scenario()
 
-    def parse_parameters(self, parameters):
-        """ Configs an LTE simulation with CA using a list of parameters.
+    def configure(self, parameters):
+        """ Configures simulation using a dictionary of parameters.
+
+        Processes LTE CA configuration parameters.
 
         Args:
-            parameters: list of parameters
+            parameters: a configuration dictionary
         """
-
         # Get the CA band configuration
-
-        values = self.consume_parameter(parameters, self.PARAM_CA, 1)
-
-        if not values:
+        if self.PARAM_CA not in parameters:
             raise ValueError(
-                "The test name needs to include parameter '{}' followed by "
-                "the CA configuration. For example: ca_3c7c28a".format(
-                    self.PARAM_CA))
+                "The config dictionary must include key '{}' with the CA "
+                "config. For example: ca_3c7c28a".format(self.PARAM_CA))
 
         # Carrier aggregation configurations are indicated with the band numbers
         # followed by the CA classes in a single string. For example, for 5 CA
         # using 3C 7C and 28A the parameter value should be 3c7c28a.
-        ca_configs = re.findall(r'(\d+[abcABC])', values[1])
+        ca_configs = re.findall(r'(\d+[abcABC])', parameters[self.PARAM_CA])
 
         if not ca_configs:
             raise ValueError(
                 "The CA configuration has to be indicated with one string as "
-                "in the following example: ca_3c7c28a".format(self.PARAM_CA))
+                "in the following example: 3c7c28a".format(self.PARAM_CA))
 
         # Apply the carrier aggregation combination
         self.simulator.set_ca_combination(ca_configs)
@@ -173,8 +170,12 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         # This is an optional parameter, by default the maximum bandwidth for
         # each band will be selected.
 
-        values = self.consume_parameter(parameters, self.PARAM_BW,
-                                        self.num_carriers)
+        if self.PARAM_BW not in parameters:
+            raise ValueError(
+                "The config dictionary must include the '{}' key.".format(
+                    self.PARAM_BW))
+
+        values = parameters[self.PARAM_BW]
 
         bts_index = 0
 
@@ -202,29 +203,20 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
                 bts_index += 1
 
-        # Get the TM for each carrier
-        # This is an optional parameter, by the default value depends on the
-        # MIMO mode for each carrier
-
-        tm_values = self.consume_parameter(parameters, self.PARAM_TM,
-                                           self.num_carriers)
-
         # Get the MIMO mode for each carrier
 
-        mimo_values = self.consume_parameter(parameters, self.PARAM_MIMO,
-                                             self.num_carriers)
-
-        if not mimo_values:
+        if self.PARAM_MIMO not in parameters:
             raise ValueError(
-                "The test parameter '{}' has to be included in the "
-                "test name followed by the MIMO mode for each "
-                "carrier separated by underscores.".format(self.PARAM_MIMO))
+                "The key '{}' has to be included in the config dictionary "
+                "with a list including the MIMO mode for each carrier.".format(
+                    self.PARAM_MIMO))
+
+        mimo_values = parameters[self.PARAM_MIMO]
 
         if len(mimo_values) != self.num_carriers + 1:
             raise ValueError(
-                "The test parameter '{}' has to be followed by "
-                "a number of MIMO mode values equal to the number "
-                "of carriers being used.".format(self.PARAM_MIMO))
+                "The value of '{}' must be a list of MIMO modes with a length "
+                "equal to the number of carriers.".format(self.PARAM_MIMO))
 
         for bts_index in range(self.num_carriers):
 
@@ -248,8 +240,14 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             new_configs[bts_index].mimo_mode = requested_mimo
 
             # Parse and set the requested TM
-
-            if tm_values:
+            # This is an optional parameter, by the default value depends on the
+            # MIMO mode for each carrier
+            if self.PARAM_TM in parameters:
+                tm_values = parameters[self.PARAM_TM]
+                if len(tm_values) < bts_index + 1:
+                    raise ValueError(
+                        'The number of elements in the transmission mode list '
+                        'must be equal to the number of carriers.')
                 for tm in LteSimulation.TransmissionMode:
                     if tm_values[bts_index + 1] == tm.value[2:]:
                         requested_tm = tm
@@ -288,24 +286,22 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         self.sim_dl_power = dl_power
 
         # Setup scheduling mode
-
-        values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
-
-        if not values:
+        if self.PARAM_SCHEDULING not in parameters:
             scheduling = LteSimulation.SchedulingMode.STATIC
             self.log.warning(
-                "The test name does not include the '{}' parameter. Setting to "
+                "Key '{}' is not set in the config dictionary. Setting to "
                 "{} by default.".format(scheduling.value,
                                         self.PARAM_SCHEDULING))
         else:
             for scheduling_mode in LteSimulation.SchedulingMode:
-                if values[1].upper() == scheduling_mode.value:
+                if (parameters[self.PARAM_SCHEDULING].upper() ==
+                        scheduling_mode.value):
                     scheduling = scheduling_mode
                     break
             else:
                 raise ValueError(
-                    "The test name parameter '{}' has to be followed by one of "
-                    "{}.".format(
+                    "Key '{}' must have a one of the following values: {}.".
+                    format(
                         self.PARAM_SCHEDULING,
                         {elem.value
                          for elem in LteSimulation.SchedulingMode}))
@@ -314,21 +310,18 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             new_configs[bts_index].scheduling_mode = scheduling
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
-
-            values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
-
-            if not values:
+            if self.PARAM_PATTERN not in parameters:
                 self.log.warning(
-                    "The '{}' parameter was not set, using 100% RBs for both "
+                    "The '{}' key was not set, using 100% RBs for both "
                     "DL and UL. To set the percentages of total RBs include "
-                    "the '{}' parameter followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages.".
-                    format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                    "the '{}' key with a list of two ints indicating downlink and uplink percentages."
+                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
                 dl_pattern = 100
                 ul_pattern = 100
             else:
-                dl_pattern = int(values[1])
-                ul_pattern = int(values[2])
+                values = parameters[self.PARAM_PATTERN]
+                dl_pattern = int(values[0])
+                ul_pattern = int(values[1])
 
             if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0),
                                                 (100, 100)]:
@@ -341,13 +334,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
                 # Look for a DL MCS configuration in the test parameters. If it
                 # is not present, use a default value.
-                dlmcs = self.consume_parameter(parameters, self.PARAM_DL_MCS,
-                                               1)
-                if dlmcs:
-                    mcs_dl = int(dlmcs[1])
+                if self.PARAM_DL_MCS in parameters:
+                    mcs_dl = int(parameters[self.PARAM_DL_MCS])
                 else:
                     self.log.warning(
-                        'The test name does not include the {} parameter. '
+                        'The config dictionary does not include the {} key. '
                         'Setting to the max value by default'.format(
                             self.PARAM_DL_MCS))
 
@@ -363,13 +354,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
                 # Look for an UL MCS configuration in the test parameters. If it
                 # is not present, use a default value.
-                ulmcs = self.consume_parameter(parameters, self.PARAM_UL_MCS,
-                                               1)
-                if ulmcs:
-                    mcs_ul = int(ulmcs[1])
+                if self.PARAM_UL_MCS in parameters:
+                    mcs_ul = int(parameters[self.PARAM_UL_MCS])
                 else:
                     self.log.warning(
-                        'The test name does not include the {} parameter. '
+                        'The config dictionary does not include the {} key. '
                         'Setting to the max value by default'.format(
                             self.PARAM_UL_MCS))
 
