@@ -267,14 +267,14 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.bts[bts_index].lte_ul_modulation_order = modulation.value
 
-    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
-        """ Enables or disables TBS pattern in the indicated base station.
+    def set_mac_padding(self, bts_index, mac_padding):
+        """ Enables or disables MAC padding in the indicated base station.
 
         Args:
             bts_index: the base station number
-            tbs_pattern_on: the new TBS pattern setting
+            mac_padding: the new MAC padding setting
         """
-        if tbs_pattern_on:
+        if mac_padding:
             self.bts[bts_index].tbs_pattern = 'FULLALLOCATION'
         else:
             self.bts[bts_index].tbs_pattern = 'OFF'
