@@ -237,6 +237,10 @@ class CellularBaseTest(base_test.BaseTestClass):
         if not sim_params:
             raise KeyError('Test config file does not contain '
                            'settings for ' + self.test_name)
+        # Get class parameters and apply if not overwritten by test parameters
+        for key, val in self.test_configs.items():
+            if not key.startswith('test_') and key not in sim_params:
+                sim_params[key] = val
         self.log.info('Simulation parameters: ' + str(sim_params))
         self.simulation.configure(sim_params)
 
