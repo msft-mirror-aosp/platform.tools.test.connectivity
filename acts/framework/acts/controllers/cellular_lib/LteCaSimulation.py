@@ -346,7 +346,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                             bts_index].bandwidth == 1.4:
                         mcs_dl = 26
                     elif (not self.dl_256_qam
-                          and self.primary_config.tbs_pattern_on
+                          and self.new_config[bts_index].mac_padding
                           and new_configs[bts_index].bandwidth != 1.4):
                         mcs_dl = 28
                     else:
