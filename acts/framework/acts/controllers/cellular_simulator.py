@@ -147,8 +147,8 @@ class AbstractCellularSimulator:
 
         # This variable stores a boolean value so the following is needed to
         # differentiate False from None
-        if config.tbs_pattern_on is not None:
-            self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
+        if config.mac_padding is not None:
+            self.set_mac_padding(bts_index, config.mac_padding)
 
         if config.cfi:
             self.set_cfi(bts_index, config.cfi)
@@ -304,12 +304,12 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
-    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
-        """ Enables or disables TBS pattern in the indicated base station.
+    def set_mac_padding(self, bts_index, mac_padding):
+        """ Enables or disables MAC padding in the indicated base station.
 
         Args:
             bts_index: the base station number
-            tbs_pattern_on: the new TBS pattern setting
+            mac_padding: the new MAC padding setting
         """
         raise NotImplementedError()
 

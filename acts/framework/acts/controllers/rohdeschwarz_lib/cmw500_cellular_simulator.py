@@ -489,12 +489,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.warning('Modulation config stored but not applied until '
                          'set_scheduling_mode called.')
 
-    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
-        """ Enables or disables TBS pattern in the indicated base station.
+    def set_mac_padding(self, bts_index, mac_padding):
+        """ Enables or disables MAC padding in the indicated base station.
 
         Args:
             bts_index: the base station number
-            tbs_pattern_on: the new TBS pattern setting
+            mac_padding: the new MAC padding setting
         """
         # TODO (b/143918664): CMW500 doesn't have an equivalent setting.
         pass
