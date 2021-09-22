@@ -288,15 +288,15 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.bts[bts_index].set_ul_modulation_table(
                 CMX_MODULATION_MAPPING[modulation])
 
-    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
-        """ Enables or disables TBS pattern in the indicated base station.
+    def set_mac_padding(self, bts_index, mac_padding):
+        """ Enables or disables MAC padding in the indicated base station.
 
         Args:
             bts_index: the base station number
-            tbs_pattern_on: a boolean of the new TBS pattern setting
+            mac_padding: the new MAC padding setting
         """
-        self.log.info('set mac pad on {}'.format(tbs_pattern_on))
-        self.bts[bts_index].set_dl_mac_padding(tbs_pattern_on)
+        self.log.info('set mac pad on {}'.format(mac_padding))
+        self.bts[bts_index].set_dl_mac_padding(mac_padding)
 
     def set_cfi(self, bts_index, cfi):
         """ Sets the Channel Format Indicator for the indicated base station.
