@@ -249,23 +249,27 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         time.sleep(8)
         self.bts[bts_index].dl_channel = str(channel_number)
 
-    def set_dl_modulation(self, bts_index, modulation):
-        """ Sets the DL modulation for the indicated base station.
+    def set_dl_256_qam_enabled(self, bts_index, enabled):
+        """ Determines what MCS table should be used for the downlink.
 
         Args:
             bts_index: the base station number
-            modulation: the new DL modulation
+            enabled: whether 256 QAM should be used
         """
-        self.bts[bts_index].lte_dl_modulation_order = modulation.value
+        if enabled and not self.LTE_SUPPORTS_DL_256QAM:
+            raise RuntimeError('256 QAM is not supported')
+        self.bts[bts_index].lte_dl_modulation_order = \
+            md8475a.ModulationType.Q256 if enabled else md8475a.ModulationType.Q64
 
-    def set_ul_modulation(self, bts_index, modulation):
-        """ Sets the UL modulation for the indicated base station.
+    def set_ul_64_qam_enabled(self, bts_index, enabled):
+        """ Determines what MCS table should be used for the uplink.
 
         Args:
             bts_index: the base station number
-            modulation: the new UL modulation
+            enabled: whether 64 QAM should be used
         """
-        self.bts[bts_index].lte_ul_modulation_order = modulation.value
+        self.bts[bts_index].lte_ul_modulation_order = \
+            md8475a.ModulationType.Q64 if enabled else md8475a.ModulationType.Q16
 
     def set_mac_padding(self, bts_index, mac_padding):
         """ Enables or disables MAC padding in the indicated base station.
