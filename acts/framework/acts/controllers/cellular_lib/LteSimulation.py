@@ -489,6 +489,7 @@ class LteSimulation(BaseSimulation):
                 "the required band number.".format(self.PARAM_BAND))
 
         new_config.band = parameters[self.PARAM_BAND]
+        self.simulator.set_band_combination([new_config.band])
 
         # Set TDD-only configs
         if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
