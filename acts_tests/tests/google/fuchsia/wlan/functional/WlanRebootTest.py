@@ -108,6 +108,7 @@ class WlanRebootTest(WifiBaseTest):
     * One Whirlwind Access Point (will also serve as iperf server)
     * One PduDevice
     """
+
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
 
