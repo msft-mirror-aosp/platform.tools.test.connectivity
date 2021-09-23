@@ -42,12 +42,6 @@ CMX_MIMO_MAPPING = {
     LteSimulation.MimoMode.MIMO_4x4: cmx500.MimoModes.MIMO4x4,
 }
 
-CMX_MODULATION_MAPPING = {
-    LteSimulation.ModulationType.Q16: cmx500.ModulationType.Q16,
-    LteSimulation.ModulationType.Q64: cmx500.ModulationType.Q64,
-    LteSimulation.ModulationType.Q256: cmx500.ModulationType.Q256,
-}
-
 MHZ_UPPER_BOUND_TO_RB = [
     (1.5, 6),
     (4.0, 15),
@@ -262,41 +256,39 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.bts[bts_index].set_scheduling_mode(
                 mcs_dl=mcs_dl, mcs_ul=mcs_ul, nrb_dl=nrb_dl, nrb_ul=nrb_ul)
 
-    def set_dl_modulation(self, bts_index, modulation):
-        """ Sets the DL modulation for the indicated base station.
+    def set_dl_256_qam_enabled(self, bts_index, enabled):
+        """ Determines what MCS table should be used for the downlink.
 
         Args:
             bts_index: the base station number
-            modulation: the new DL modulation
+            enabled: whether 256 QAM should be used
         """
-        if not isinstance(modulation, LteSimulation.ModulationType):
-            raise cc.CellularSimulatorError("Wrong mudulation type")
-        self.log.info('set dl modulation table to {}'.format(modulation))
+        self.log.info('Set 256 QAM DL MCS enabled: ' + str(enabled))
         self.bts[bts_index].set_dl_modulation_table(
-                CMX_MODULATION_MAPPING[modulation])
+            cmx500.ModulationType.Q256 if enabled else cmx500.ModulationType.
+            Q64)
 
-    def set_ul_modulation(self, bts_index, modulation):
-        """ Sets the UL modulation for the indicated base station.
+    def set_ul_64_qam_enabled(self, bts_index, enabled):
+        """ Determines what MCS table should be used for the uplink.
 
         Args:
             bts_index: the base station number
-            modulation: the new UL modulation
+            enabled: whether 64 QAM should be used
         """
-        if not isinstance(modulation, LteSimulation.ModulationType):
-            raise cc.CellularSimulatorError("Wrong mudulation type")
-        self.log.info('set up modulation table to {}'.format(modulation))
+        self.log.info('Set 64 QAM UL MCS enabled: ' + str(enabled))
         self.bts[bts_index].set_ul_modulation_table(
-                CMX_MODULATION_MAPPING[modulation])
+            cmx500.ModulationType.Q64 if enabled else cmx500.ModulationType.Q16
+        )
 
-    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
-        """ Enables or disables TBS pattern in the indicated base station.
+    def set_mac_padding(self, bts_index, mac_padding):
+        """ Enables or disables MAC padding in the indicated base station.
 
         Args:
             bts_index: the base station number
-            tbs_pattern_on: a boolean of the new TBS pattern setting
+            mac_padding: the new MAC padding setting
         """
-        self.log.info('set mac pad on {}'.format(tbs_pattern_on))
-        self.bts[bts_index].set_dl_mac_padding(tbs_pattern_on)
+        self.log.info('set mac pad on {}'.format(mac_padding))
+        self.bts[bts_index].set_dl_mac_padding(mac_padding)
 
     def set_cfi(self, bts_index, cfi):
         """ Sets the Channel Format Indicator for the indicated base station.
