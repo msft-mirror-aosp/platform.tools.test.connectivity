@@ -43,35 +43,41 @@ from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_sa
 
 
-def provision_device_for_5g(log, ads, sa_5g=False, nsa_mmwave=False):
+def provision_device_for_5g(log, ads, nr_type=None):
     """Provision Devices for 5G
 
     Args:
         log: Log object.
         ads: android device object(s).
-        sa_5g: Check for provision on sa_5G or not
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: NR network type
 
     Returns:
         True: Device(s) are provisioned on 5G
         False: Device(s) are not provisioned on 5G
     """
-    if sa_5g:
+    if nr_type == 'sa':
         if not provision_device_for_5g_sa(log, ads):
             return False
+    elif nr_type == 'nsa':
+        if not provision_device_for_5g_nsa(log, ads, nr_type='nsa'):
+            return False
+    elif nr_type == 'mmwave':
+        if not provision_device_for_5g_nsa(log, ads, nr_type='mmwave'):
+            return False
     else:
-        if not provision_device_for_5g_nsa(log, ads, nsa_mmwave=nsa_mmwave):
+        if not provision_device_for_5g_nsa(log, ads, nr_type='nsa'):
             return False
     return True
 
 
-def provision_device_for_5g_nsa(log, ads, nsa_mmwave=False):
+def provision_device_for_5g_nsa(log, ads, nr_type=None):
     """Provision Devices for 5G NSA
 
     Args:
         log: Log object.
         ads: android device object(s).
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
+                wave
 
     Returns:
         True: Device(s) are provisioned on 5G NSA
@@ -84,9 +90,9 @@ def provision_device_for_5g_nsa(log, ads, nsa_mmwave=False):
             log.error("failed to set preferred network mode on 5g")
             return False
         # Attach
-        tasks = [(is_current_network_5g_nsa, [ad, nsa_mmwave]) for ad in ads]
+        tasks = [(is_current_network_5g_nsa, [ad, nr_type]) for ad in ads]
         if not multithread_func(log, tasks):
-            log.error("phone not on 5g nsa")
+            log.error("phone not on 5g")
             return False
         return True
     else:
@@ -94,8 +100,8 @@ def provision_device_for_5g_nsa(log, ads, nsa_mmwave=False):
         set_preferred_mode_for_5g(ads)
 
         # Attach nsa5g
-        if not is_current_network_5g_nsa(ads, nsa_mmwave=nsa_mmwave):
-            ads.log.error("Phone not attached on nsa 5g")
+        if not is_current_network_5g_nsa(ads, nr_type):
+            ads.log.error("Phone not attached on 5g")
             return False
         return True
 
@@ -176,20 +182,20 @@ def connect_both_devices_to_wifi(log,
     return True
 
 
-def verify_5g_attach_for_both_devices(log, ads, sa_5g=False, nsa_mmwave=False):
+def verify_5g_attach_for_both_devices(log, ads, nr_type=None):
     """Verify the network is attached
 
     Args:
         log: Log object.
         ads: android device object(s).
-        sa_5g: Check for verify data network type is on 5G SA or not
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
+                wave
 
     Returns:
         True: Device(s) are attached on 5G
         False: Device(s) are not attached on 5G NSA
     """
-    if sa_5g:
+    if nr_type=='sa':
         # Attach
         tasks = [(is_current_network_5g_sa, [ad]) for ad in ads]
         if not multithread_func(log, tasks):
@@ -198,7 +204,7 @@ def verify_5g_attach_for_both_devices(log, ads, sa_5g=False, nsa_mmwave=False):
         return True
     else:
         # Attach
-        tasks = [(is_current_network_5g_nsa, [ad, nsa_mmwave]) for ad in ads]
+        tasks = [(is_current_network_5g_nsa, [ad, nr_type]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g nsa")
             return False
@@ -252,35 +258,35 @@ def provision_device_for_5g_sa(log, ads):
         return True
 
 
-def check_current_network_5g(ad, timeout=30, sa_5g=False, nsa_mmwave=False):
+def check_current_network_5g(ad, timeout=30, nr_type=None):
     """Verifies data network type is on 5G
 
     Args:
         ad: android device object.
         timeout: max time to wait for event
-        sa_5g: Check for verify data network type is on 5G SA or not
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
+                wave
 
     Returns:
         True: if data is on 5g
         False: if data is not on 5g
     """
-    if sa_5g:
+    if nr_type == 'sa':
         if not is_current_network_5g_sa(ad):
             return False
     else:
-        if not is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave, timeout=timeout):
+        if not is_current_network_5g_nsa(ad, nr_type= nr_type, timeout=timeout):
             return False
     return True
 
 
-def test_activation_by_condition(ad, from_3g=False, nsa_mmwave=False, precond_func=None):
+def test_activation_by_condition(ad, from_3g=False, nr_type=None, precond_func=None):
     """Test 5G activation based on various pre-conditions.
 
     Args:
         ad: android device object.
         from_3g: If true, test 5G activation from 3G attaching. Otherwise, starting from 5G attaching.
-        nsa_mmwave: If true, check the band of NSA network is mmWave. Default is to check sub-6.
+        nr_type: check the band of NR network. Default is to check sub-6.
         precond_func: A function to execute pre conditions before testing 5G activation.
 
     Returns:
@@ -311,7 +317,7 @@ def test_activation_by_condition(ad, from_3g=False, nsa_mmwave=False, precond_fu
             ad.log.error("Fail to ensure initial data in 4G")
         # 5G attach
         ad.log.info("Waiting for 5g NSA attach for 60 secs")
-        if is_current_network_5g_nsa(ad, nsa_mmwave=nsa_mmwave, timeout=60):
+        if is_current_network_5g_nsa(ad, nr_type= nr_type, timeout=60):
             ad.log.info("Success! attached on 5g NSA")
             return True
         else:

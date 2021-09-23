@@ -30,6 +30,7 @@ class WlanControllerError(signals.ControllerError):
 
 class WlanController:
     """Contains methods related to wlan core, to be used in FuchsiaDevice object"""
+
     def __init__(self, fuchsia_device):
         self.device = fuchsia_device
         self.log = logger.create_tagged_trace_logger(
@@ -88,11 +89,19 @@ class WlanController:
                 raise WlanControllerError(
                     'Failed to query wlan iface id %s: %s' %
                     (id, response['error']))
+
+            mac = response['result'].get('sta_addr', None)
+            if mac is None:
+                # Fallback to older field name to maintain backwards
+                # compatibility with older versions of SL4F's
+                # QueryIfaceResponse. See https://fxrev.dev/562146.
+                mac = response['result'].get('mac_addr')
+
             wlan_ifaces_by_mac[utils.mac_address_list_to_str(
-                response['result']['mac_addr'])] = response['result']
+                mac)] = response['result']
 
         # Use mac addresses to query the interfaces from the netstack view,
-        # which allows us to suppliment the interface information with the name,
+        # which allows us to supplement the interface information with the name,
         # netstack_id, etc.
 
         # TODO(fxb/75909): This tedium is necessary to get the interface name

@@ -46,6 +46,9 @@ from acts.libs.proc import job
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
 
+# All Fuchsia devices use this suffix for link-local mDNS host names.
+FUCHSIA_MDNS_TYPE = '_fuchsia._udp.local.'
+
 
 class ActsUtilsError(Exception):
     """Generic error raised for exceptions in ACTS utils."""
@@ -558,6 +561,7 @@ def timeout(sec):
     Raises:
         TimeoutError is raised when time out happens.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -1561,7 +1565,7 @@ def get_ping_command(dest_ip,
     if os_type == 'Darwin':
         if is_valid_ipv6_address(dest_ip):
             # ping6 on MacOS doesn't support timeout
-            logging.warn(
+            logging.debug(
                 'Ignoring timeout, as ping6 on MacOS does not support it.')
             timeout_flag = []
         else:
@@ -1759,50 +1763,62 @@ def mac_address_list_to_str(mac_addr_list):
 
 
 def get_fuchsia_mdns_ipv6_address(device_mdns_name):
-    """Gets the ipv6 link local address from a fuchsia device over mdns
+    """Finds the IPv6 link-local address of a Fuchsia device matching a mDNS
+    name.
 
     Args:
-        device_mdns_name: name of fuchsia device, ie gig-clone-sugar-slash
+        device_mdns_name: name of Fuchsia device (e.g. gig-clone-sugar-slash)
 
     Returns:
-        string, ipv6 link local address
+        string, IPv6 link-local address
     """
     if not device_mdns_name:
         return None
-    mdns_type = '_fuchsia._udp.local.'
-    interface_list = psutil.net_if_addrs()
-    for interface in interface_list:
-        interface_ipv6_link_local = \
-            get_interface_ip_addresses(job, interface)['ipv6_link_local']
-        if 'fe80::1' in interface_ipv6_link_local:
-            logging.info('Removing IPv6 loopback IP from %s interface list.'
-                         '  Not modifying actual system IP addresses.' %
-                         interface)
-            # This is needed as the Zeroconf library crashes if you try to
-            # instantiate it on a IPv6 loopback IP address.
-            interface_ipv6_link_local.remove('fe80::1')
 
-        if interface_ipv6_link_local:
-            zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
-                                interfaces=interface_ipv6_link_local)
-            device_records = (zeroconf.get_service_info(
-                mdns_type, device_mdns_name + '.' + mdns_type))
-            if device_records:
-                for device_ip_address in device_records.parsed_addresses():
-                    device_ip_address = ipaddress.ip_address(device_ip_address)
-                    if (device_ip_address.version == 6
-                            and device_ip_address.is_link_local):
-                        if ping(job,
-                                dest_ip='%s%%%s' %
-                                (str(device_ip_address),
-                                 interface))['exit_status'] == 0:
+    interfaces = psutil.net_if_addrs()
+    for interface in interfaces:
+        for addr in interfaces[interface]:
+            address = addr.address.split('%')[0]
+            if addr.family == socket.AF_INET6 and ipaddress.ip_address(
+                    address).is_link_local and address != 'fe80::1':
+                logging.info('Sending mDNS query for device "%s" using "%s"' %
+                             (device_mdns_name, addr.address))
+                try:
+                    zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
+                                        interfaces=[address])
+                except RuntimeError as e:
+                    if 'No adapter found for IP address' in e.args[0]:
+                        # Most likely, a device went offline and its control
+                        # interface was deleted. This is acceptable since the
+                        # device that went offline isn't guaranteed to be the
+                        # device we're searching for.
+                        logging.warning('No adapter found for "%s"' % address)
+                        continue
+                    raise
+
+                device_records = zeroconf.get_service_info(
+                    FUCHSIA_MDNS_TYPE,
+                    device_mdns_name + '.' + FUCHSIA_MDNS_TYPE)
+
+                if device_records:
+                    for device_address in device_records.parsed_addresses():
+                        device_ip_address = ipaddress.ip_address(
+                            device_address)
+                        scoped_address = '%s%%%s' % (device_address, interface)
+                        if (device_ip_address.version == 6
+                                and device_ip_address.is_link_local
+                                and can_ping(job, dest_ip=scoped_address)):
+                            logging.info('Found device "%s" at "%s"' %
+                                         (device_mdns_name, scoped_address))
                             zeroconf.close()
                             del zeroconf
-                            return ('%s%%%s' %
-                                    (str(device_ip_address), interface))
-            zeroconf.close()
-            del zeroconf
-    logging.error('Unable to get ip address for %s' % device_mdns_name)
+                            return scoped_address
+
+                zeroconf.close()
+                del zeroconf
+
+    logging.error('Unable to find IP address for device "%s"' %
+                  device_mdns_name)
     return None
 
 
@@ -1831,8 +1847,10 @@ def get_device(devices, device_type):
     if not devices:
         raise ValueError('No devices available')
 
-    matches = [d for d in devices if
-               hasattr(d, 'device_type') and d.device_type == device_type]
+    matches = [
+        d for d in devices
+        if hasattr(d, 'device_type') and d.device_type == device_type
+    ]
 
     if len(matches) == 0:
         # No matches for the specified "device_type", use the first device
@@ -1842,6 +1860,7 @@ def get_device(devices, device_type):
         # Specifing multiple devices with the same "device_type" is a
         # configuration error.
         raise ValueError(
-            'More than one device matching "device_type" == "{}"'.format(device_type))
+            'More than one device matching "device_type" == "{}"'.format(
+                device_type))
 
     return matches[0]
