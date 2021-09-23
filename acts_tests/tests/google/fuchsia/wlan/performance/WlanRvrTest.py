@@ -178,7 +178,11 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
             self.attenuators, 'attenuator_ports_wifi_5g')
 
         self.iperf_server = self.iperf_servers[0]
-        self.dut_iperf_client = self.iperf_clients[0]
+
+        if hasattr(self, "iperf_clients") and self.iperf_clients:
+            self.dut_iperf_client = self.iperf_clients[0]
+        else:
+            self.dut_iperf_client = self.dut.create_iperf_client()
 
         self.access_point.stop_all_aps()
 
