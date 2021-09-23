@@ -91,9 +91,13 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         """ Configures the equipment for an NR non stand alone simulation. """
         raise NotImplementedError()
 
-    def setup_lte_ca_scenario(self):
-        """ Configures the equipment for an LTE with CA simulation. """
-        raise NotImplementedError()
+    def set_band_combination(self, bands):
+        """ Prepares the test equipment for the indicated band combination.
+
+        Args:
+            bands: a list of bands represented as ints or strings
+        """
+        self.num_carriers = len(bands)
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
