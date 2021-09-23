@@ -124,11 +124,16 @@ class ChannelSweepTest(WifiBaseTest):
             try:
                 self.iperf_server = self.iperf_servers[0]
                 self.iperf_server.start()
-                self.iperf_client = self.iperf_clients[0]
             except AttributeError:
                 self.log.warn(
                     'Missing iperf config. Throughput cannot be measured, so only '
                     'association will be tested.')
+
+            if hasattr(self, "iperf_clients") and self.iperf_clients:
+                self.iperf_client = self.iperf_clients[0]
+            else:
+                self.iperf_client = self.dut.create_iperf_client()
+
         self.regulatory_results = "====CountryCode,Channel,Frequency,ChannelBandwith,Connected/Not-Connected====\n"
 
     def teardown_class(self):
