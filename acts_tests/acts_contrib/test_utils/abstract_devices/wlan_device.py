@@ -439,7 +439,7 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def get_default_wlan_test_interface(self):
         """Returns name of the WLAN client interface"""
-        return self.device.wlan_controller.get_wlan_interface_name()
+        return self.device.wlan_client_test_interface_name
 
     def destroy_wlan_interface(self, iface_id):
         """Function to associate a Fuchsia WLAN device.
