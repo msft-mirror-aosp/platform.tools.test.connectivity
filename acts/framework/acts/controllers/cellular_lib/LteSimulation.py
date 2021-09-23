@@ -50,6 +50,7 @@ class DuplexMode(Enum):
     FDD = "FDD"
     TDD = "TDD"
 
+
 class ModulationType(Enum):
     """DL/UL Modulation order."""
     QPSK = 'QPSK'
@@ -61,7 +62,7 @@ class ModulationType(Enum):
 class LteSimulation(BaseSimulation):
     """ Single-carrier LTE simulation. """
 
-    # Simulation config keywords contained in the test name
+    # Configuration dictionary keys
     PARAM_FRAME_CONFIG = "tddconfig"
     PARAM_BW = "bw"
     PARAM_SCHEDULING = "scheduling"
@@ -69,8 +70,6 @@ class LteSimulation(BaseSimulation):
     PARAM_SCHEDULING_DYNAMIC = "dynamic"
     PARAM_PATTERN = "pattern"
     PARAM_TM = "tm"
-    PARAM_UL_PW = 'pul'
-    PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
     PARAM_MIMO = "mimo"
     PARAM_DL_MCS = 'dlmcs'
@@ -81,11 +80,9 @@ class LteSimulation(BaseSimulation):
     PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
     PARAM_DRX = 'drx'
-
-    # Test config keywords
-    KEY_TBS_PATTERN = "tbs_pattern_on"
-    KEY_DL_256_QAM = "256_qam_dl"
-    KEY_UL_64_QAM = "64_qam_ul"
+    PARAM_PADDING = 'mac_padding'
+    PARAM_DL_256_QAM_ENABLED = "256_qam_dl_enabled"
+    PARAM_UL_64_QAM_ENABLED = "64_qam_ul_enabled"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
@@ -373,13 +370,13 @@ class LteSimulation(BaseSimulation):
     # Peak throughput lookup table dictionary
     tdd_config_tput_lut_dict = {
         'TDD_CONFIG1':
-        tdd_config1_tput_lut,  # DL 256QAM, UL 64QAM & TBS turned OFF
+        tdd_config1_tput_lut,  # DL 256QAM, UL 64QAM & MAC padding turned OFF
         'TDD_CONFIG2':
-        tdd_config2_tput_lut,  # DL 256QAM, UL 64 QAM turned ON & TBS OFF
+        tdd_config2_tput_lut,  # DL 256QAM, UL 64 QAM ON & MAC padding OFF
         'TDD_CONFIG3':
-        tdd_config3_tput_lut,  # DL 256QAM, UL 64QAM & TBS turned ON
+        tdd_config3_tput_lut,  # DL 256QAM, UL 64QAM & MAC padding ON
         'TDD_CONFIG4':
-        tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM turned OFF & TBS ON
+        tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM OFF & MAC padding ON
     }
 
     class BtsConfig(BaseSimulation.BtsConfig):
@@ -401,10 +398,10 @@ class LteSimulation(BaseSimulation):
             ul_rbs: an integer indicating the number of uplink RBs
             dl_mcs: an integer indicating the MCS for the downlink signal
             ul_mcs: an integer indicating the MCS for the uplink signal
-            dl_modulation_order: a string indicating a DL modulation scheme
-            ul_modulation_order: a string indicating an UL modulation scheme
-            tbs_pattern_on: a boolean indicating whether full allocation mode
-                should be used or not
+            dl_256_qam_enabled: a boolean indicating if 256 QAM is enabled
+            ul_64_qam_enabled: a boolean indicating if 256 QAM is enabled
+            mac_padding: a boolean indicating whether RBs should be allocated
+                when there is no user data in static scheduling
             dl_channel: an integer indicating the downlink channel number
             cfi: an integer indicating the Control Format Indicator
             paging_cycle: an integer indicating the paging cycle duration in
@@ -438,9 +435,9 @@ class LteSimulation(BaseSimulation):
             self.ul_rbs = None
             self.dl_mcs = None
             self.ul_mcs = None
-            self.dl_modulation_order = None
-            self.ul_modulation_order = None
-            self.tbs_pattern_on = None
+            self.dl_256_qam_enabled = None
+            self.ul_64_qam_enabled = None
+            self.mac_padding = None
             self.dl_channel = None
             self.cfi = None
             self.paging_cycle = None
@@ -454,8 +451,6 @@ class LteSimulation(BaseSimulation):
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
-
-        Loads a simple LTE simulation environment with 1 basestation.
 
         Args:
             simulator: a cellular simulator controller
@@ -472,144 +467,77 @@ class LteSimulation(BaseSimulation):
         self.dut.set_preferred_network_type(
             BaseCellularDut.PreferredNetworkType.LTE_ONLY)
 
-        # Get TBS pattern setting from the test configuration
-        if self.KEY_TBS_PATTERN not in test_config:
-            self.log.warning("The key '{}' is not set in the config file. "
-                             "Setting to true by default.".format(
-                                 self.KEY_TBS_PATTERN))
-        self.primary_config.tbs_pattern_on = test_config.get(
-            self.KEY_TBS_PATTERN, True)
-
-        # Get the 256-QAM setting from the test configuration
-        if self.KEY_DL_256_QAM not in test_config:
-            self.log.warning("The key '{}' is not set in the config file. "
-                             "Setting to false by default.".format(
-                                 self.KEY_DL_256_QAM))
-
-        self.dl_256_qam = test_config.get(self.KEY_DL_256_QAM, False)
-
-        if self.dl_256_qam:
-            if not self.simulator.LTE_SUPPORTS_DL_256QAM:
-                self.log.warning("The key '{}' is set to true but the "
-                                 "simulator doesn't support that modulation "
-                                 "order.".format(self.KEY_DL_256_QAM))
-                self.dl_256_qam = False
-            else:
-                self.primary_config.dl_modulation_order = ModulationType.Q256
-
-        else:
-            self.log.warning('dl modulation 256QAM is not specified in config, '
-                             'setting to default value 64QAM')
-            self.primary_config.dl_modulation_order = ModulationType.Q64
-        # Get the 64-QAM setting from the test configuration
-        if self.KEY_UL_64_QAM not in test_config:
-            self.log.warning("The key '{}' is not set in the config file. "
-                             "Setting to false by default.".format(
-                                 self.KEY_UL_64_QAM))
-
-        self.ul_64_qam = test_config.get(self.KEY_UL_64_QAM, False)
-
-        if self.ul_64_qam:
-            if not self.simulator.LTE_SUPPORTS_UL_64QAM:
-                self.log.warning("The key '{}' is set to true but the "
-                                 "simulator doesn't support that modulation "
-                                 "order.".format(self.KEY_UL_64_QAM))
-                self.ul_64_qam = False
-            else:
-                self.primary_config.ul_modulation_order = ModulationType.Q64
-        else:
-            self.log.warning('ul modulation 64QAM is not specified in config, '
-                             'setting to default value 16QAM')
-            self.primary_config.ul_modulation_order = ModulationType.Q16
-
-        self.simulator.configure_bts(self.primary_config)
-
     def setup_simulator(self):
         """ Do initial configuration in the simulator. """
         self.simulator.setup_lte_scenario()
 
-    def parse_parameters(self, parameters):
-        """ Configs an LTE simulation using a list of parameters.
+    def configure(self, parameters):
+        """ Configures simulation using a dictionary of parameters.
 
-        Calls the parent method first, then consumes parameters specific to LTE.
+        Processes LTE configuration parameters.
 
         Args:
-            parameters: list of parameters
+            parameters: a configuration dictionary
         """
-
         # Instantiate a new configuration object
         new_config = self.BtsConfig()
 
         # Setup band
-
-        values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
-
-        if not values:
+        if self.PARAM_BAND not in parameters:
             raise ValueError(
-                "The test name needs to include parameter '{}' followed by "
+                "The configuration dictionary must include a key '{}' with "
                 "the required band number.".format(self.PARAM_BAND))
 
-        new_config.band = values[1]
+        new_config.band = parameters[self.PARAM_BAND]
 
         # Set TDD-only configs
         if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
 
             # Sub-frame DL/UL config
-            values = self.consume_parameter(parameters,
-                                            self.PARAM_FRAME_CONFIG, 1)
-            if not values:
-                raise ValueError(
-                    "When a TDD band is selected the frame "
-                    "structure has to be indicated with the '{}' "
-                    "parameter followed by a number from 0 to 6.".format(
-                        self.PARAM_FRAME_CONFIG))
+            if self.PARAM_FRAME_CONFIG not in parameters:
+                raise ValueError("When a TDD band is selected the frame "
+                                 "structure has to be indicated with the '{}' "
+                                 "key with a value from 0 to 6.".format(
+                                     self.PARAM_FRAME_CONFIG))
 
-            new_config.dlul_config = int(values[1])
+            new_config.dlul_config = int(parameters[self.PARAM_FRAME_CONFIG])
 
             # Special Sub-Frame configuration
-            values = self.consume_parameter(parameters, self.PARAM_SSF, 1)
-
-            if not values:
+            if self.PARAM_SSF not in parameters:
                 self.log.warning(
                     'The {} parameter was not provided. Setting '
                     'Special Sub-Frame config to 6 by default.'.format(
                         self.PARAM_SSF))
                 new_config.ssf_config = 6
             else:
-                new_config.ssf_config = int(values[1])
+                new_config.ssf_config = int(parameters[self.PARAM_SSF])
 
         # Setup bandwidth
-
-        values = self.consume_parameter(parameters, self.PARAM_BW, 1)
-
-        if not values:
+        if self.PARAM_BW not in parameters:
             raise ValueError(
-                "The test name needs to include parameter {} followed by an "
+                "The config dictionary must include parameter {} with an "
                 "int value (to indicate 1.4 MHz use 14).".format(
                     self.PARAM_BW))
 
-        bw = float(values[1])
+        bw = float(parameters[self.PARAM_BW])
 
-        if bw == 14:
+        if abs(bw - 14) < 0.00000000001:
             bw = 1.4
 
         new_config.bandwidth = bw
 
         # Setup mimo mode
-
-        values = self.consume_parameter(parameters, self.PARAM_MIMO, 1)
-
-        if not values:
+        if self.PARAM_MIMO not in parameters:
             raise ValueError(
-                "The test name needs to include parameter '{}' followed by the "
+                "The config dictionary must include parameter '{}' with the "
                 "mimo mode.".format(self.PARAM_MIMO))
 
         for mimo_mode in MimoMode:
-            if values[1] == mimo_mode.value:
+            if parameters[self.PARAM_MIMO] == mimo_mode.value:
                 new_config.mimo_mode = mimo_mode
                 break
         else:
-            raise ValueError("The {} parameter needs to be followed by either "
+            raise ValueError("The value of {} must be one of the following:"
                              "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
         if (new_config.mimo_mode == MimoMode.MIMO_4x4
@@ -618,58 +546,59 @@ class LteSimulation(BaseSimulation):
                              "supported by the cellular simulator.")
 
         # Setup transmission mode
-
-        values = self.consume_parameter(parameters, self.PARAM_TM, 1)
-
-        if not values:
+        if self.PARAM_TM not in parameters:
             raise ValueError(
-                "The test name needs to include parameter {} followed by an "
+                "The config dictionary must include key {} with an "
                 "int value from 1 to 4 indicating transmission mode.".format(
                     self.PARAM_TM))
 
         for tm in TransmissionMode:
-            if values[1] == tm.value[2:]:
+            if parameters[self.PARAM_TM] == tm.value[2:]:
                 new_config.transmission_mode = tm
                 break
         else:
-            raise ValueError("The {} parameter needs to be followed by either "
-                             "TM1, TM2, TM3, TM4, TM7, TM8 or TM9.".format(
-                                 self.PARAM_MIMO))
+            raise ValueError(
+                "The {} key must have one of the following values:"
+                "TM1, TM2, TM3, TM4, TM7, TM8 or TM9.".format(self.PARAM_TM))
 
         # Setup scheduling mode
-
-        values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
-
-        if not values:
+        if self.PARAM_SCHEDULING not in parameters:
             new_config.scheduling_mode = SchedulingMode.STATIC
             self.log.warning(
-                "The test name does not include the '{}' parameter. Setting to "
+                "The test config does not include the '{}' key. Setting to "
                 "static by default.".format(self.PARAM_SCHEDULING))
-        elif values[1] == self.PARAM_SCHEDULING_DYNAMIC:
+        elif parameters[
+                self.PARAM_SCHEDULING] == self.PARAM_SCHEDULING_DYNAMIC:
             new_config.scheduling_mode = SchedulingMode.DYNAMIC
-        elif values[1] == self.PARAM_SCHEDULING_STATIC:
+        elif parameters[self.PARAM_SCHEDULING] == self.PARAM_SCHEDULING_STATIC:
             new_config.scheduling_mode = SchedulingMode.STATIC
         else:
-            raise ValueError(
-                "The test name parameter '{}' has to be followed by either "
-                "'dynamic' or 'static'.".format(self.PARAM_SCHEDULING))
+            raise ValueError("Key '{}' must have a value of "
+                             "'dynamic' or 'static'.".format(
+                                 self.PARAM_SCHEDULING))
 
         if new_config.scheduling_mode == SchedulingMode.STATIC:
 
-            values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
+            if self.PARAM_PADDING not in parameters:
+                self.log.warning(
+                    "The '{}' parameter was not set. Enabling MAC padding by "
+                    "default.".format(self.PARAM_PADDING))
+                new_config.mac_padding = True
+            else:
+                new_config.mac_padding = parameters[self.PARAM_PADDING]
 
-            if not values:
+            if self.PARAM_PATTERN not in parameters:
                 self.log.warning(
                     "The '{}' parameter was not set, using 100% RBs for both "
                     "DL and UL. To set the percentages of total RBs include "
-                    "the '{}' parameter followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages.".
-                    format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                    "the '{}' key with a list of two ints indicating downlink "
+                    "and uplink percentages.".format(self.PARAM_PATTERN,
+                                                     self.PARAM_PATTERN))
                 dl_pattern = 100
                 ul_pattern = 100
             else:
-                dl_pattern = int(values[1])
-                ul_pattern = int(values[2])
+                dl_pattern = int(parameters[self.PARAM_PATTERN][0])
+                ul_pattern = int(parameters[self.PARAM_PATTERN][1])
 
             if not (0 <= dl_pattern <= 100 and 0 <= ul_pattern <= 100):
                 raise ValueError(
@@ -681,59 +610,72 @@ class LteSimulation(BaseSimulation):
                     new_config.bandwidth, new_config.transmission_mode,
                     dl_pattern, ul_pattern))
 
+            # Check if 256 QAM is enabled for DL MCS
+            if self.PARAM_DL_256_QAM_ENABLED not in parameters:
+                self.log.warning("The key '{}' is not set in the test config. "
+                                 "Setting to false by default.".format(
+                                     self.PARAM_DL_256_QAM_ENABLED))
+
+            new_config.dl_256_qam_enabled = parameters.get(
+                self.PARAM_DL_256_QAM_ENABLED, False)
+
             # Look for a DL MCS configuration in the test parameters. If it is
             # not present, use a default value.
-            dlmcs = self.consume_parameter(parameters, self.PARAM_DL_MCS, 1)
-
-            if dlmcs:
-                new_config.dl_mcs = int(dlmcs[1])
+            if self.PARAM_DL_MCS in parameters:
+                new_config.dl_mcs = int(parameters[self.PARAM_DL_MCS])
             else:
                 self.log.warning(
-                    'The test name does not include the {} parameter. Setting '
+                    'The test config does not include the {} key. Setting '
                     'to the max value by default'.format(self.PARAM_DL_MCS))
-                if self.dl_256_qam and new_config.bandwidth == 1.4:
+                if new_config.dl_256_qam_enabled and new_config.bandwidth == 1.4:
                     new_config.dl_mcs = 26
-                elif (not self.dl_256_qam
-                      and self.primary_config.tbs_pattern_on
+                elif (not new_config.dl_256_qam_enabled
+                      and new_config.mac_padding
                       and new_config.bandwidth != 1.4):
                     new_config.dl_mcs = 28
                 else:
                     new_config.dl_mcs = 27
 
+            # Check if 64 QAM is enabled for UL MCS
+            if self.PARAM_UL_64_QAM_ENABLED not in parameters:
+                self.log.warning("The key '{}' is not set in the config file. "
+                                 "Setting to false by default.".format(
+                                     self.PARAM_UL_64_QAM_ENABLED))
+
+            new_config.ul_64_qam_enabled = parameters.get(
+                self.PARAM_UL_64_QAM_ENABLED, False)
+
             # Look for an UL MCS configuration in the test parameters. If it is
             # not present, use a default value.
-            ulmcs = self.consume_parameter(parameters, self.PARAM_UL_MCS, 1)
-
-            if ulmcs:
-                new_config.ul_mcs = int(ulmcs[1])
+            if self.PARAM_UL_MCS in parameters:
+                new_config.ul_mcs = int(parameters[self.PARAM_UL_MCS])
             else:
                 self.log.warning(
-                    'The test name does not include the {} parameter. Setting '
+                    'The test config does not include the {} key. Setting '
                     'to the max value by default'.format(self.PARAM_UL_MCS))
-                if self.ul_64_qam:
+                if new_config.ul_64_qam_enabled:
                     new_config.ul_mcs = 28
                 else:
                     new_config.ul_mcs = 23
 
         # Configure the simulation for DRX mode
-
-        drx = self.consume_parameter(parameters, self.PARAM_DRX, 5)
-
-        if drx and len(drx) == 6:
+        if self.PARAM_DRX in parameters and len(
+                parameters[self.PARAM_DRX]) == 5:
             new_config.drx_connected_mode = True
-            new_config.drx_on_duration_timer = drx[1]
-            new_config.drx_inactivity_timer = drx[2]
-            new_config.drx_retransmission_timer = drx[3]
-            new_config.drx_long_cycle = drx[4]
+            new_config.drx_on_duration_timer = parameters[self.PARAM_DRX][0]
+            new_config.drx_inactivity_timer = parameters[self.PARAM_DRX][1]
+            new_config.drx_retransmission_timer = parameters[self.PARAM_DRX][2]
+            new_config.drx_long_cycle = parameters[self.PARAM_DRX][3]
             try:
-                long_cycle = int(drx[4])
-                long_cycle_offset = int(drx[5])
+                long_cycle = int(parameters[self.PARAM_DRX][3])
+                long_cycle_offset = int(parameters[self.PARAM_DRX][4])
                 if long_cycle_offset in range(0, long_cycle):
                     new_config.drx_long_cycle_offset = long_cycle_offset
                 else:
-                    self.log.error(("The cDRX long cycle offset must be in the "
-                                    "range 0 to (long cycle  - 1). Setting "
-                                    "long cycle offset to 0"))
+                    self.log.error(
+                        ("The cDRX long cycle offset must be in the "
+                         "range 0 to (long cycle  - 1). Setting "
+                         "long cycle offset to 0"))
                     new_config.drx_long_cycle_offset = 0
 
             except ValueError:
@@ -741,72 +683,65 @@ class LteSimulation(BaseSimulation):
                                 "must be integers. Disabling cDRX mode."))
                 new_config.drx_connected_mode = False
         else:
-            self.log.warning(("DRX mode was not configured properly. "
-                              "Please provide the following 5 values: "
-                              "1) DRX on duration timer "
-                              "2) Inactivity timer "
-                              "3) Retransmission timer "
-                              "4) Long DRX cycle duration "
-                              "5) Long DRX cycle offset "
-                              "Example: drx_2_6_16_20_0"))
+            self.log.warning(
+                ("DRX mode was not configured properly. "
+                 "Please provide a list with the following values: "
+                 "1) DRX on duration timer "
+                 "2) Inactivity timer "
+                 "3) Retransmission timer "
+                 "4) Long DRX cycle duration "
+                 "5) Long DRX cycle offset "
+                 "Example: [2, 6, 16, 20, 0]."))
 
         # Setup LTE RRC status change function and timer for LTE idle test case
-        values = self.consume_parameter(parameters,
-                                        self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
-        if not values:
+        if self.PARAM_RRC_STATUS_CHANGE_TIMER not in parameters:
             self.log.info(
-                "The test name does not include the '{}' parameter. Disabled "
+                "The test config does not include the '{}' key. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
             self.simulator.set_lte_rrc_state_change_timer(False)
         else:
-            timer = int(values[1])
+            timer = int(parameters[self.PARAM_RRC_STATUS_CHANGE_TIMER])
             self.simulator.set_lte_rrc_state_change_timer(True, timer)
             self.rrc_sc_timer = timer
 
         # Channel Control Indicator
-        values = self.consume_parameter(parameters, self.PARAM_CFI, 1)
-
-        if not values:
+        if self.PARAM_CFI not in parameters:
             self.log.warning('The {} parameter was not provided. Setting '
                              'CFI to BESTEFFORT.'.format(self.PARAM_CFI))
             new_config.cfi = 'BESTEFFORT'
         else:
-            new_config.cfi = values[1]
+            new_config.cfi = parameters[self.PARAM_CFI]
 
         # PHICH group size
-        values = self.consume_parameter(parameters, self.PARAM_PHICH, 1)
-
-        if not values:
+        if self.PARAM_PHICH not in parameters:
             self.log.warning('The {} parameter was not provided. Setting '
                              'PHICH group size to 1 by default.'.format(
                                  self.PARAM_PHICH))
             new_config.phich = '1'
         else:
-            if values[1] == '16':
+            if parameters[self.PARAM_PHICH] == '16':
                 new_config.phich = '1/6'
-            elif values[1] == '12':
+            elif parameters[self.PARAM_PHICH] == '12':
                 new_config.phich = '1/2'
-            elif values[1] in ['1/6', '1/2', '1', '2']:
-                new_config.phich = values[1]
+            elif parameters[self.PARAM_PHICH] in ['1/6', '1/2', '1', '2']:
+                new_config.phich = parameters[self.PARAM_PHICH]
             else:
                 raise ValueError('The {} parameter can only be followed by 1,'
                                  '2, 1/2 (or 12) and 1/6 (or 16).'.format(
                                      self.PARAM_PHICH))
 
         # Paging cycle duration
-        values = self.consume_parameter(parameters, self.PARAM_PAGING, 1)
-
-        if not values:
+        if self.PARAM_PAGING not in parameters:
             self.log.warning('The {} parameter was not provided. Setting '
                              'paging cycle duration to 1280 ms by '
                              'default.'.format(self.PARAM_PAGING))
             new_config.paging_cycle = 1280
         else:
             try:
-                new_config.paging_cycle = int(values[1])
+                new_config.paging_cycle = int(parameters[self.PARAM_PAGING])
             except ValueError:
                 raise ValueError(
-                    'The {} parameter has to be followed by the paging cycle '
+                    'The {} key has to be followed by the paging cycle '
                     'duration in milliseconds.'.format(self.PARAM_PAGING))
 
         # Get uplink power
@@ -944,9 +879,9 @@ class LteSimulation(BaseSimulation):
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
         if duplex_mode == DuplexMode.TDD:
-            if self.dl_256_qam:
+            if bts_config.dl_256_qam_enabled:
                 if mcs == 27:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
                                 'DL']
@@ -956,7 +891,7 @@ class LteSimulation(BaseSimulation):
                                 'DL']
             else:
                 if mcs == 28:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
                                 'DL']
@@ -966,7 +901,7 @@ class LteSimulation(BaseSimulation):
                                 'DL']
 
         elif duplex_mode == DuplexMode.FDD:
-            if (not self.dl_256_qam and bts_config.tbs_pattern_on
+            if (not bts_config.dl_256_qam_enabled and bts_config.mac_padding
                     and mcs == 28):
                 max_rate_per_stream = {
                     3: 9.96,
@@ -975,13 +910,13 @@ class LteSimulation(BaseSimulation):
                     15: 52.7,
                     20: 72.2
                 }.get(bandwidth, None)
-            if (not self.dl_256_qam and bts_config.tbs_pattern_on
+            if (not bts_config.dl_256_qam_enabled and bts_config.mac_padding
                     and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.94,
                 }.get(bandwidth, None)
-            elif (not self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == 27):
+            elif (not bts_config.dl_256_qam_enabled
+                  and not bts_config.mac_padding and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.87,
                     3: 7.7,
@@ -990,7 +925,7 @@ class LteSimulation(BaseSimulation):
                     15: 42.3,
                     20: 57.7
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 27:
+            elif bts_config.dl_256_qam_enabled and bts_config.mac_padding and mcs == 27:
                 max_rate_per_stream = {
                     3: 13.2,
                     5: 22.9,
@@ -998,11 +933,11 @@ class LteSimulation(BaseSimulation):
                     15: 72.2,
                     20: 93.9
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 26:
+            elif bts_config.dl_256_qam_enabled and bts_config.mac_padding and mcs == 26:
                 max_rate_per_stream = {
                     1.4: 3.96,
                 }.get(bandwidth, None)
-            elif (self.dl_256_qam and not bts_config.tbs_pattern_on
+            elif (bts_config.dl_256_qam_enabled and not bts_config.mac_padding
                   and mcs == 27):
                 max_rate_per_stream = {
                     3: 11.3,
@@ -1011,7 +946,7 @@ class LteSimulation(BaseSimulation):
                     15: 68.1,
                     20: 88.4
                 }.get(bandwidth, None)
-            elif (self.dl_256_qam and not bts_config.tbs_pattern_on
+            elif (bts_config.dl_256_qam_enabled and not bts_config.mac_padding
                   and mcs == 26):
                 max_rate_per_stream = {
                     1.4: 3.96,
@@ -1019,9 +954,9 @@ class LteSimulation(BaseSimulation):
 
         if not max_rate_per_stream:
             raise NotImplementedError(
-                "The calculation for tbs pattern = {} "
+                "The calculation for MAC padding = {} "
                 "and mcs = {} is not implemented.".format(
-                    "FULLALLOCATION" if bts_config.tbs_pattern_on else "OFF",
+                    "FULLALLOCATION" if bts_config.mac_padding else "OFF",
                     mcs))
 
         return max_rate_per_stream * streams * rb_ratio
@@ -1059,9 +994,9 @@ class LteSimulation(BaseSimulation):
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
         if duplex_mode == DuplexMode.TDD:
-            if self.ul_64_qam:
+            if bts_config.ul_64_qam_enabled:
                 if mcs == 28:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
                                 'UL']
@@ -1071,7 +1006,7 @@ class LteSimulation(BaseSimulation):
                                 'UL']
             else:
                 if mcs == 23:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
                                 'UL']
@@ -1081,7 +1016,7 @@ class LteSimulation(BaseSimulation):
                                 'UL']
 
         elif duplex_mode == DuplexMode.FDD:
-            if mcs == 23 and not self.ul_64_qam:
+            if mcs == 23 and not bts_config.ul_64_qam_enabled:
                 max_rate_per_stream = {
                     1.4: 2.85,
                     3: 7.18,
@@ -1090,7 +1025,7 @@ class LteSimulation(BaseSimulation):
                     15: 36.5,
                     20: 49.1
                 }.get(bandwidth, None)
-            elif mcs == 28 and self.ul_64_qam:
+            elif mcs == 28 and bts_config.ul_64_qam_enabled:
                 max_rate_per_stream = {
                     1.4: 4.2,
                     3: 10.5,
@@ -1103,7 +1038,7 @@ class LteSimulation(BaseSimulation):
         if not max_rate_per_stream:
             raise NotImplementedError(
                 "The calculation fir mcs = {} is not implemented.".format(
-                    "FULLALLOCATION" if bts_config.tbs_pattern_on else "OFF",
+                    "FULLALLOCATION" if bts_config.mac_padding else "OFF",
                     mcs))
 
         return max_rate_per_stream * rb_ratio
@@ -1239,18 +1174,13 @@ class LteSimulation(BaseSimulation):
         self.primary_config.incorporate(restore_config)
 
     def start_traffic_for_calibration(self):
-        """
-            If TBS pattern is set to full allocation, there is no need to start
-            IP traffic.
-        """
-        if not self.primary_config.tbs_pattern_on:
+        """ If MAC padding is enabled, there is no need to start IP traffic. """
+        if not self.primary_config.mac_padding:
             super().start_traffic_for_calibration()
 
     def stop_traffic_for_calibration(self):
-        """
-            If TBS pattern is set to full allocation, IP traffic wasn't started
-        """
-        if not self.primary_config.tbs_pattern_on:
+        """ If MAC padding is enabled, IP traffic wasn't started. """
+        if not self.primary_config.mac_padding:
             super().stop_traffic_for_calibration()
 
     def get_duplex_mode(self, band):
