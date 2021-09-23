@@ -80,11 +80,9 @@ class LteSimulation(BaseSimulation):
     PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
     PARAM_DRX = 'drx'
-
-    # Test config keywords
-    KEY_TBS_PATTERN = "tbs_pattern_on"
-    KEY_DL_256_QAM = "256_qam_dl"
-    KEY_UL_64_QAM = "64_qam_ul"
+    PARAM_PADDING = 'mac_padding'
+    PARAM_DL_256_QAM_ENABLED = "256_qam_dl_enabled"
+    PARAM_UL_64_QAM_ENABLED = "64_qam_ul_enabled"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
@@ -372,13 +370,13 @@ class LteSimulation(BaseSimulation):
     # Peak throughput lookup table dictionary
     tdd_config_tput_lut_dict = {
         'TDD_CONFIG1':
-        tdd_config1_tput_lut,  # DL 256QAM, UL 64QAM & TBS turned OFF
+        tdd_config1_tput_lut,  # DL 256QAM, UL 64QAM & MAC padding turned OFF
         'TDD_CONFIG2':
-        tdd_config2_tput_lut,  # DL 256QAM, UL 64 QAM turned ON & TBS OFF
+        tdd_config2_tput_lut,  # DL 256QAM, UL 64 QAM ON & MAC padding OFF
         'TDD_CONFIG3':
-        tdd_config3_tput_lut,  # DL 256QAM, UL 64QAM & TBS turned ON
+        tdd_config3_tput_lut,  # DL 256QAM, UL 64QAM & MAC padding ON
         'TDD_CONFIG4':
-        tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM turned OFF & TBS ON
+        tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM OFF & MAC padding ON
     }
 
     class BtsConfig(BaseSimulation.BtsConfig):
@@ -400,10 +398,10 @@ class LteSimulation(BaseSimulation):
             ul_rbs: an integer indicating the number of uplink RBs
             dl_mcs: an integer indicating the MCS for the downlink signal
             ul_mcs: an integer indicating the MCS for the uplink signal
-            dl_modulation_order: a string indicating a DL modulation scheme
-            ul_modulation_order: a string indicating an UL modulation scheme
-            tbs_pattern_on: a boolean indicating whether full allocation mode
-                should be used or not
+            dl_256_qam_enabled: a boolean indicating if 256 QAM is enabled
+            ul_64_qam_enabled: a boolean indicating if 256 QAM is enabled
+            mac_padding: a boolean indicating whether RBs should be allocated
+                when there is no user data in static scheduling
             dl_channel: an integer indicating the downlink channel number
             cfi: an integer indicating the Control Format Indicator
             paging_cycle: an integer indicating the paging cycle duration in
@@ -437,9 +435,9 @@ class LteSimulation(BaseSimulation):
             self.ul_rbs = None
             self.dl_mcs = None
             self.ul_mcs = None
-            self.dl_modulation_order = None
-            self.ul_modulation_order = None
-            self.tbs_pattern_on = None
+            self.dl_256_qam_enabled = None
+            self.ul_64_qam_enabled = None
+            self.mac_padding = None
             self.dl_channel = None
             self.cfi = None
             self.paging_cycle = None
@@ -453,8 +451,6 @@ class LteSimulation(BaseSimulation):
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
-
-        Loads a simple LTE simulation environment with 1 basestation.
 
         Args:
             simulator: a cellular simulator controller
@@ -470,59 +466,6 @@ class LteSimulation(BaseSimulation):
 
         self.dut.set_preferred_network_type(
             BaseCellularDut.PreferredNetworkType.LTE_ONLY)
-
-        # Get TBS pattern setting from the test configuration
-        if self.KEY_TBS_PATTERN not in test_config:
-            self.log.warning("The key '{}' is not set in the config file. "
-                             "Setting to true by default.".format(
-                                 self.KEY_TBS_PATTERN))
-        self.primary_config.tbs_pattern_on = test_config.get(
-            self.KEY_TBS_PATTERN, True)
-
-        # Get the 256-QAM setting from the test configuration
-        if self.KEY_DL_256_QAM not in test_config:
-            self.log.warning("The key '{}' is not set in the config file. "
-                             "Setting to false by default.".format(
-                                 self.KEY_DL_256_QAM))
-
-        self.dl_256_qam = test_config.get(self.KEY_DL_256_QAM, False)
-
-        if self.dl_256_qam:
-            if not self.simulator.LTE_SUPPORTS_DL_256QAM:
-                self.log.warning("The key '{}' is set to true but the "
-                                 "simulator doesn't support that modulation "
-                                 "order.".format(self.KEY_DL_256_QAM))
-                self.dl_256_qam = False
-            else:
-                self.primary_config.dl_modulation_order = ModulationType.Q256
-
-        else:
-            self.log.warning(
-                'dl modulation 256QAM is not specified in config, '
-                'setting to default value 64QAM')
-            self.primary_config.dl_modulation_order = ModulationType.Q64
-        # Get the 64-QAM setting from the test configuration
-        if self.KEY_UL_64_QAM not in test_config:
-            self.log.warning("The key '{}' is not set in the config file. "
-                             "Setting to false by default.".format(
-                                 self.KEY_UL_64_QAM))
-
-        self.ul_64_qam = test_config.get(self.KEY_UL_64_QAM, False)
-
-        if self.ul_64_qam:
-            if not self.simulator.LTE_SUPPORTS_UL_64QAM:
-                self.log.warning("The key '{}' is set to true but the "
-                                 "simulator doesn't support that modulation "
-                                 "order.".format(self.KEY_UL_64_QAM))
-                self.ul_64_qam = False
-            else:
-                self.primary_config.ul_modulation_order = ModulationType.Q64
-        else:
-            self.log.warning('ul modulation 64QAM is not specified in config, '
-                             'setting to default value 16QAM')
-            self.primary_config.ul_modulation_order = ModulationType.Q16
-
-        self.simulator.configure_bts(self.primary_config)
 
     def setup_simulator(self):
         """ Do initial configuration in the simulator. """
@@ -635,6 +578,15 @@ class LteSimulation(BaseSimulation):
                                  self.PARAM_SCHEDULING))
 
         if new_config.scheduling_mode == SchedulingMode.STATIC:
+
+            if self.PARAM_PADDING not in parameters:
+                self.log.warning(
+                    "The '{}' parameter was not set. Enabling MAC padding by "
+                    "default.".format(self.PARAM_PADDING))
+                new_config.mac_padding = True
+            else:
+                new_config.mac_padding = parameters[self.PARAM_PADDING]
+
             if self.PARAM_PATTERN not in parameters:
                 self.log.warning(
                     "The '{}' parameter was not set, using 100% RBs for both "
@@ -658,6 +610,15 @@ class LteSimulation(BaseSimulation):
                     new_config.bandwidth, new_config.transmission_mode,
                     dl_pattern, ul_pattern))
 
+            # Check if 256 QAM is enabled for DL MCS
+            if self.PARAM_DL_256_QAM_ENABLED not in parameters:
+                self.log.warning("The key '{}' is not set in the test config. "
+                                 "Setting to false by default.".format(
+                                     self.PARAM_DL_256_QAM_ENABLED))
+
+            new_config.dl_256_qam_enabled = parameters.get(
+                self.PARAM_DL_256_QAM_ENABLED, False)
+
             # Look for a DL MCS configuration in the test parameters. If it is
             # not present, use a default value.
             if self.PARAM_DL_MCS in parameters:
@@ -666,14 +627,23 @@ class LteSimulation(BaseSimulation):
                 self.log.warning(
                     'The test config does not include the {} key. Setting '
                     'to the max value by default'.format(self.PARAM_DL_MCS))
-                if self.dl_256_qam and new_config.bandwidth == 1.4:
+                if new_config.dl_256_qam_enabled and new_config.bandwidth == 1.4:
                     new_config.dl_mcs = 26
-                elif (not self.dl_256_qam
-                      and self.primary_config.tbs_pattern_on
+                elif (not new_config.dl_256_qam_enabled
+                      and new_config.mac_padding
                       and new_config.bandwidth != 1.4):
                     new_config.dl_mcs = 28
                 else:
                     new_config.dl_mcs = 27
+
+            # Check if 64 QAM is enabled for UL MCS
+            if self.PARAM_UL_64_QAM_ENABLED not in parameters:
+                self.log.warning("The key '{}' is not set in the config file. "
+                                 "Setting to false by default.".format(
+                                     self.PARAM_UL_64_QAM_ENABLED))
+
+            new_config.ul_64_qam_enabled = parameters.get(
+                self.PARAM_UL_64_QAM_ENABLED, False)
 
             # Look for an UL MCS configuration in the test parameters. If it is
             # not present, use a default value.
@@ -683,7 +653,7 @@ class LteSimulation(BaseSimulation):
                 self.log.warning(
                     'The test config does not include the {} key. Setting '
                     'to the max value by default'.format(self.PARAM_UL_MCS))
-                if self.ul_64_qam:
+                if new_config.ul_64_qam_enabled:
                     new_config.ul_mcs = 28
                 else:
                     new_config.ul_mcs = 23
@@ -909,9 +879,9 @@ class LteSimulation(BaseSimulation):
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
         if duplex_mode == DuplexMode.TDD:
-            if self.dl_256_qam:
+            if bts_config.dl_256_qam_enabled:
                 if mcs == 27:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
                                 'DL']
@@ -921,7 +891,7 @@ class LteSimulation(BaseSimulation):
                                 'DL']
             else:
                 if mcs == 28:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
                                 'DL']
@@ -931,7 +901,7 @@ class LteSimulation(BaseSimulation):
                                 'DL']
 
         elif duplex_mode == DuplexMode.FDD:
-            if (not self.dl_256_qam and bts_config.tbs_pattern_on
+            if (not bts_config.dl_256_qam_enabled and bts_config.mac_padding
                     and mcs == 28):
                 max_rate_per_stream = {
                     3: 9.96,
@@ -940,13 +910,13 @@ class LteSimulation(BaseSimulation):
                     15: 52.7,
                     20: 72.2
                 }.get(bandwidth, None)
-            if (not self.dl_256_qam and bts_config.tbs_pattern_on
+            if (not bts_config.dl_256_qam_enabled and bts_config.mac_padding
                     and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.94,
                 }.get(bandwidth, None)
-            elif (not self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == 27):
+            elif (not bts_config.dl_256_qam_enabled
+                  and not bts_config.mac_padding and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.87,
                     3: 7.7,
@@ -955,7 +925,7 @@ class LteSimulation(BaseSimulation):
                     15: 42.3,
                     20: 57.7
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 27:
+            elif bts_config.dl_256_qam_enabled and bts_config.mac_padding and mcs == 27:
                 max_rate_per_stream = {
                     3: 13.2,
                     5: 22.9,
@@ -963,11 +933,11 @@ class LteSimulation(BaseSimulation):
                     15: 72.2,
                     20: 93.9
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 26:
+            elif bts_config.dl_256_qam_enabled and bts_config.mac_padding and mcs == 26:
                 max_rate_per_stream = {
                     1.4: 3.96,
                 }.get(bandwidth, None)
-            elif (self.dl_256_qam and not bts_config.tbs_pattern_on
+            elif (bts_config.dl_256_qam_enabled and not bts_config.mac_padding
                   and mcs == 27):
                 max_rate_per_stream = {
                     3: 11.3,
@@ -976,7 +946,7 @@ class LteSimulation(BaseSimulation):
                     15: 68.1,
                     20: 88.4
                 }.get(bandwidth, None)
-            elif (self.dl_256_qam and not bts_config.tbs_pattern_on
+            elif (bts_config.dl_256_qam_enabled and not bts_config.mac_padding
                   and mcs == 26):
                 max_rate_per_stream = {
                     1.4: 3.96,
@@ -984,9 +954,9 @@ class LteSimulation(BaseSimulation):
 
         if not max_rate_per_stream:
             raise NotImplementedError(
-                "The calculation for tbs pattern = {} "
+                "The calculation for MAC padding = {} "
                 "and mcs = {} is not implemented.".format(
-                    "FULLALLOCATION" if bts_config.tbs_pattern_on else "OFF",
+                    "FULLALLOCATION" if bts_config.mac_padding else "OFF",
                     mcs))
 
         return max_rate_per_stream * streams * rb_ratio
@@ -1024,9 +994,9 @@ class LteSimulation(BaseSimulation):
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
         if duplex_mode == DuplexMode.TDD:
-            if self.ul_64_qam:
+            if bts_config.ul_64_qam_enabled:
                 if mcs == 28:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
                                 'UL']
@@ -1036,7 +1006,7 @@ class LteSimulation(BaseSimulation):
                                 'UL']
             else:
                 if mcs == 23:
-                    if bts_config.tbs_pattern_on:
+                    if bts_config.mac_padding:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
                                 'UL']
@@ -1046,7 +1016,7 @@ class LteSimulation(BaseSimulation):
                                 'UL']
 
         elif duplex_mode == DuplexMode.FDD:
-            if mcs == 23 and not self.ul_64_qam:
+            if mcs == 23 and not bts_config.ul_64_qam_enabled:
                 max_rate_per_stream = {
                     1.4: 2.85,
                     3: 7.18,
@@ -1055,7 +1025,7 @@ class LteSimulation(BaseSimulation):
                     15: 36.5,
                     20: 49.1
                 }.get(bandwidth, None)
-            elif mcs == 28 and self.ul_64_qam:
+            elif mcs == 28 and bts_config.ul_64_qam_enabled:
                 max_rate_per_stream = {
                     1.4: 4.2,
                     3: 10.5,
@@ -1068,7 +1038,7 @@ class LteSimulation(BaseSimulation):
         if not max_rate_per_stream:
             raise NotImplementedError(
                 "The calculation fir mcs = {} is not implemented.".format(
-                    "FULLALLOCATION" if bts_config.tbs_pattern_on else "OFF",
+                    "FULLALLOCATION" if bts_config.mac_padding else "OFF",
                     mcs))
 
         return max_rate_per_stream * rb_ratio
@@ -1204,18 +1174,13 @@ class LteSimulation(BaseSimulation):
         self.primary_config.incorporate(restore_config)
 
     def start_traffic_for_calibration(self):
-        """
-            If TBS pattern is set to full allocation, there is no need to start
-            IP traffic.
-        """
-        if not self.primary_config.tbs_pattern_on:
+        """ If MAC padding is enabled, there is no need to start IP traffic. """
+        if not self.primary_config.mac_padding:
             super().start_traffic_for_calibration()
 
     def stop_traffic_for_calibration(self):
-        """
-            If TBS pattern is set to full allocation, IP traffic wasn't started
-        """
-        if not self.primary_config.tbs_pattern_on:
+        """ If MAC padding is enabled, IP traffic wasn't started. """
+        if not self.primary_config.mac_padding:
             super().stop_traffic_for_calibration()
 
     def get_duplex_mode(self, band):

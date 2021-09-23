@@ -509,10 +509,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
             self.access_point.set_region(self.testbed_params['default_region'])
-        self.access_point.set_channel(testcase_params['band'],
-                                      testcase_params['channel'])
-        self.access_point.set_bandwidth(testcase_params['band'],
-                                        testcase_params['mode'])
+        self.access_point.set_channel_and_bandwidth(testcase_params['band'],
+                                                    testcase_params['channel'],
+                                                    testcase_params['mode'])
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
 

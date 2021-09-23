@@ -381,6 +381,33 @@ class WifiRetailAP(object):
         setting_to_update = {network: {'bandwidth': bandwidth}}
         self.update_ap_settings(setting_to_update)
 
+    def set_channel_and_bandwidth(self, network, channel, bandwidth):
+        """Function that sets network bandwidth/mode and channel.
+
+        Args:
+            network: string containing network identifier (2G, 5G_1, 5G_2)
+            channel: string containing desired channel
+            bandwidth: string containing mode, e.g. 11g, VHT20, VHT40, VHT80.
+        """
+        if 'bw' in bandwidth:
+            bandwidth = bandwidth.replace('bw',
+                                          self.capabilities['default_mode'])
+        elif isinstance(bandwidth, int):
+            bandwidth = str(bandwidth) + self.capabilities['default_mode']
+        if bandwidth not in self.capabilities['modes'][network]:
+            self.log.error('{} mode is not supported on {} interface.'.format(
+                bandwidth, network))
+        if channel not in self.capabilities['channels'][network]:
+            self.log.error('Ch{} is not supported on {} interface.'.format(
+                channel, network))
+        setting_to_update = {
+            network: {
+                'bandwidth': bandwidth,
+                'channel': channel
+            }
+        }
+        self.update_ap_settings(setting_to_update)
+
     def set_power(self, network, power):
         """Function that sets network transmit power.
 

@@ -342,11 +342,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                         'Setting to the max value by default'.format(
                             self.PARAM_DL_MCS))
 
-                    if self.dl_256_qam and new_configs[
-                            bts_index].bandwidth == 1.4:
+                    if new_configs[bts_index].dl_256_qam_enabled and \
+                        new_configs[bts_index].bandwidth == 1.4:
                         mcs_dl = 26
-                    elif (not self.dl_256_qam
-                          and self.primary_config.tbs_pattern_on
+                    elif (not new_configs[bts_index].dl_256_qam_enabled
+                          and new_configs[bts_index].mac_padding
                           and new_configs[bts_index].bandwidth != 1.4):
                         mcs_dl = 28
                     else:
@@ -362,7 +362,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                         'Setting to the max value by default'.format(
                             self.PARAM_UL_MCS))
 
-                    if self.ul_64_qam:
+                    if new_configs[bts_index].ul_64_qam_enabled:
                         mcs_ul = 28
                     else:
                         mcs_ul = 23
