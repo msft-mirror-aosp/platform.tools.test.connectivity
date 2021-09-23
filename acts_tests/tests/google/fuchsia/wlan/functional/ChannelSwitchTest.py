@@ -22,17 +22,16 @@ import time
 from acts import asserts
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
-
+from acts.utils import rand_ascii_str
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
-from acts.utils import rand_ascii_str
 
 
 class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
     # Time to wait between issuing channel switches
     WAIT_BETWEEN_CHANNEL_SWITCHES_S = 15
 
-    def setup_class(self):
+    def setup_class(self) -> None:
         super().setup_class()
         self.ssid = rand_ascii_str(10)
         if 'dut' in self.user_params:
@@ -49,12 +48,12 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
         self.ap = self.access_points[0]
         self.in_use_interface = None
 
-    def teardown_test(self):
+    def teardown_test(self) -> None:
         self.dut.disconnect()
         self.dut.reset_wifi()
         self.ap.stop_all_aps()
 
-    def channel_switch(self, band):
+    def channel_switch(self, band: str) -> None:
         """Setup and run a channel switch test with the given parameters.
 
         Creates an AP, associates to it, and then issues channel switches
@@ -64,7 +63,7 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
         the channel switch successful.
 
         Args:
-            band: str, band that AP will use, must be a valid band (e.g.
+            band: band that AP will use, must be a valid band (e.g.
                 hostapd_constants.BAND_2G)
         """
         self.current_channel_num = None
@@ -115,11 +114,9 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
                 # TODO(fxbug.dev/84701): Verify that DUT is on expected channel.
                 time.sleep(1)
 
-        return True
-
-    def test_channel_switch_2g(self):
+    def test_channel_switch_2g(self) -> None:
         self.channel_switch(band=hostapd_constants.BAND_2G)
 
     # TODO(fxbug.dev/64280): This test fails on 5 GHz channel switches.
-    def test_channel_switch_5g(self):
+    def test_channel_switch_5g(self) -> None:
         self.channel_switch(band=hostapd_constants.BAND_5G)
