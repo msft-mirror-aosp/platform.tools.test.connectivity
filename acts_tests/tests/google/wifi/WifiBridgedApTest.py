@@ -135,8 +135,11 @@ class WifiBridgedApTest(WifiBaseTest):
                    e,g,. [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
                           WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G]
         """
+        self.dut.log.info("Length of infos: {}, Length of bands: {}"
+                          .format(len(infos), len(bands)))
         asserts.assert_true(len(infos) == len(bands),
-                            "length of infos and bands not matched")
+                            "There should be {} BridgedAp instance, "
+                            "instead of {}".format(len(bands), len(infos)))
         if len(bands) == 1 and (bands[0] == WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G):
             asserts.assert_true(infos[0][wifi_constants.
                                 SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
