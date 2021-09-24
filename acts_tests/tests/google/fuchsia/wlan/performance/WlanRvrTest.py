@@ -387,7 +387,6 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                                   self.dut_iperf_client.test_interface))
                 _ = self._wait_for_dad(self.dut,
                                        self.dut_iperf_client.test_interface)
-                break
             else:
                 raise ValueError('Invalid IP version: {}'.format(ip_version))
 
