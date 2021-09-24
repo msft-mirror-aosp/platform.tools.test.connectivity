@@ -273,6 +273,7 @@ class Bits(object):
                 {
                    'duration': <seconds to measure for>
                    'hz': <samples per second>
+                   'measure_after_seconds': <sleep time before measurement>
                 }
                 The actual number of samples per second is limited by the
                 bits configuration. The value of hz is defaulted to 1000.
@@ -292,6 +293,11 @@ class Bits(object):
                 'duration can not be left undefined within measurement_args')
 
         hz = measurement_args.get('hz', 1000)
+
+        # Delay the start of the measurement if an offset is required
+        measure_after_seconds = measurement_args.get('measure_after_seconds')
+        if measure_after_seconds:
+            time.sleep(measure_after_seconds)
 
         if self._active_collection:
             raise BitsError(
