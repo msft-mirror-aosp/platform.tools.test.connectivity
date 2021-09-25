@@ -135,13 +135,16 @@ class WifiBridgedApTest(WifiBaseTest):
                    e,g,. [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
                           WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G]
         """
+        self.dut.log.info("Length of infos: {}, Length of bands: {}"
+                          .format(len(infos), len(bands)))
         asserts.assert_true(len(infos) == len(bands),
-                            "length of infos and bands not matched")
+                            "There should be {} BridgedAp instance, "
+                            "instead of {}".format(len(bands), len(infos)))
         if len(bands) == 1 and (bands[0] == WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G):
             asserts.assert_true(infos[0][wifi_constants.
                                 SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
                                 in WifiEnums.softap_band_frequencies[bands[0]],
-                                "This should be a %s instance", bands[0])
+                                "This should be a {} instance".format(bands[0]))
         if len(bands) == 2 and (bands[0] == WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G):
             asserts.assert_true((infos[0][wifi_constants.
                                 SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
@@ -262,11 +265,10 @@ class WifiBridgedApTest(WifiBaseTest):
         """
         self.config = self.generate_softap_config(security)
         wutils.save_wifi_soft_ap_config(
-            ad,
-            self.config,
-            bands=bands,
-            bridged_opportunistic_shutdown_enabled=None,
-            shutdown_timeout_enable=None)
+                                        ad,
+                                        self.config,
+                                        bands=bands,
+                                        **kwargs)
         wutils.start_wifi_tethering_saved_config(self.dut)
         # Wait 5 seconds for BridgedAp launch.
         self.wait_interval(BRIDGED_AP_LAUNCH_INTERVAL_5_SECONDS)
@@ -436,10 +438,46 @@ class WifiBridgedApTest(WifiBaseTest):
         asserts.assert_true(client2_bssid == bssid_2g,
                             "Client2 does not connect to the 2G instance")
 
+    def client_connects_to_a_bridgeap(self, ad, band):
+        """One client connects to a BridgeAp instance
+
+        Args:
+            band: String; '2g' or '5g'.
+        """
+        callbackId = self.dut.droid.registerSoftApCallback()
+        infos = wutils.get_current_softap_infos(self.dut, callbackId, True)
+        self.dut.droid.unregisterSoftApCallback(callbackId)
+        # Make one client connects to 2G instance if band == '2g'.
+        if band == BAND_2G:
+            if (infos[0][wifi_constants.SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
+               in WifiEnums.ALL_2G_FREQUENCIES):
+                bssid_2g = (infos[0][wifi_constants.
+                            SOFTAP_INFO_BSSID_CALLBACK_KEY])
+            else:
+                bssid_2g = (infos[1][wifi_constants.
+                            SOFTAP_INFO_BSSID_CALLBACK_KEY])
+            config_2g = self.config.copy()
+            config_2g[WifiEnums.BSSID_KEY] = bssid_2g
+            wutils.connect_to_wifi_network(ad, config_2g,
+                                           check_connectivity=False)
+        # Make one client connects to 5G instance if band == '5g'.
+        elif band == BAND_5G:
+            if (infos[0][wifi_constants.SOFTAP_INFO_FREQUENCY_CALLBACK_KEY]
+               in WifiEnums.ALL_5G_FREQUENCIES):
+                bssid_5g = (infos[0][wifi_constants.
+                            SOFTAP_INFO_BSSID_CALLBACK_KEY])
+            else:
+                bssid_5g = (infos[1][wifi_constants.
+                            SOFTAP_INFO_BSSID_CALLBACK_KEY])
+            config_5g = self.config.copy()
+            config_5g[WifiEnums.BSSID_KEY] = bssid_5g
+            wutils.connect_to_wifi_network(ad, config_5g,
+                                           check_connectivity=False)
+
     # Tests
 
     @test_tracker_info(uuid="6f776b4a-b080-4b52-a330-52aa641b18f2")
-    def test_two_clients_ping_on_bridged_ap_band_2_and_5_with_wpa3_in_country_us(self):
+    def test_two_clients_ping_bridged_ap_5g_2g_wpa3_country_us(self):
         """Test clients on different instances can ping each other.
 
         Steps:
@@ -469,6 +507,112 @@ class WifiBridgedApTest(WifiBaseTest):
         # Enable BridgedAp and verify both 2G,5G instances have been enabled.
         self.enable_bridged_ap(self.dut,
                                WifiEnums.SoftApSecurityType.WPA3_SAE,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
+        infos = self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+
+        self.sniffing_bridgedap_channels(infos)
+
+        self.two_clients_connect_to_wifi_network(self.client1, self.client2,
+                                                 self.config)
+        # Trigger client#1 and client#2 ping each other.
+        wutils.validate_ping_between_two_clients(self.client1, self.client2)
+
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+    @test_tracker_info(uuid="8685a6cb-f7be-4384-b25b-23cecb4cb6dc")
+    def test_two_clients_ping_bridged_ap_5g_2g_wpa3_sae_transition_country_us(self):
+        """Test clients on different instances can ping each other.
+
+        Steps:
+            Refer to test_two_clients_ping_bridged_ap_5g_2g_wpa3_country_us,
+            but this case enable WPA3/WPA2-Personal SoftAp security type.
+        """
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Make sure clients support WPA3 SAE.
+        self.verify_clients_support_wpa3_sae(self.client1, self.client2)
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+
+        # Enable BridgedAp and verify both 2G,5G instances have been enabled.
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA3_SAE_TRANSITION,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
+        infos = self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+
+        self.sniffing_bridgedap_channels(infos)
+
+        self.two_clients_connect_to_wifi_network(self.client1, self.client2,
+                                                 self.config)
+        # Trigger client#1 and client#2 ping each other.
+        wutils.validate_ping_between_two_clients(self.client1, self.client2)
+
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="b217d4de-cd09-4a8f-b27d-302ae5b86c7e")
+    def test_two_clients_ping_bridged_ap_5g_2g_wpa2_country_us(self):
+        """Test clients on different instances can ping each other.
+
+        Steps:
+            Refer to test_two_clients_ping_bridged_ap_5g_2g_wpa3_country_us,
+            but this case enable WPA2-Personal SoftAp security type.
+        """
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+
+        # Enable BridgedAp and verify both 2G,5G instances have been enabled.
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA2,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
+        infos = self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+
+        self.sniffing_bridgedap_channels(infos)
+
+        self.two_clients_connect_to_wifi_network(self.client1, self.client2,
+                                                 self.config)
+        # Trigger client#1 and client#2 ping each other.
+        wutils.validate_ping_between_two_clients(self.client1, self.client2)
+
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="ef98a5ea-c7d5-4cc4-a2f8-e5fd44648788")
+    def test_two_clients_ping_bridged_ap_5g_2g_no_security_country_us(self):
+        """Test clients on different instances can ping each other.
+
+        Steps:
+            Refer to test_two_clients_ping_bridged_ap_5g_2g_wpa3_country_us,
+            but this case enable OPEN SoftAp security type.
+        """
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+
+        # Enable BridgedAp and verify both 2G,5G instances have been enabled.
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.OPEN,
                                bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
                                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
         infos = self.verify_number_band_freq_of_bridged_ap(
@@ -960,5 +1104,232 @@ class WifiBridgedApTest(WifiBaseTest):
             self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G], False)
         self.sniffing_bridgedap_channels(infos)
 
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="b5c7c6df-b181-4bba-a7b3-48fad0d7fa98")
+    def test_bridged_ap_5g_2g_shutdown_2g_after_5_minutes(self):
+        """Test the BridgeAp shutdown mechanism.
+
+        Steps:
+            Backup config.
+            DUT turns ON BridgedAp.
+            start sniffer and sniffing on BridgedAp channels.
+            A Client connect to BridgeAp 5G instance.
+            Wait for 5 minutes.
+            Verify 2G instance is shutdown and only 5G instance exists.
+            Stop sniffers.
+            Restore config."""
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+
+        # Enable BridgedAp and verify both 2G,5G instances have been enabled.
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA3_SAE,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
+        infos = self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+
+        self.sniffing_bridgedap_channels(infos)
+
+        # Client connects to the 5G BridgedAp instance.
+        self.client_connects_to_a_bridgeap(self.client1, BAND_5G)
+        self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
+        # Verify there is only one client connects to the BridgedAp.
+        self.verify_expected_number_of_softap_clients(self.dut, 1)
+        # Verify the BridgedAp instance is 5G.
+        self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="683b2c7f-7f24-4324-be09-0b6554d5d7a8")
+    def test_bridged_ap_5g_2g_shutdown_5g_after_5_minutes(self):
+        """Test the BridgeAp shutdown mechanism.
+
+        Steps:
+            Backup config.
+            DUT turns ON BridgedAp.
+            start sniffer and sniffing on BridgedAp channels.
+            A Client connect to BridgeAp 2G instance.
+            Wait for 5 minutes.
+            Verify 5G instance is shutdown and only 2G instance exists.
+            Stop sniffers.
+            Restore config."""
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+
+        # Enable BridgedAp and verify both 2G,5G instances have been enabled.
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA3_SAE,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
+        infos = self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+        self.sniffing_bridgedap_channels(infos)
+
+        # Client connects to the 2G BridgedAp instance.
+        self.client_connects_to_a_bridgeap(self.client1, BAND_2G)
+        self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
+        # Verify there is only one client connects to the BridgedAp.
+        self.verify_expected_number_of_softap_clients(self.dut, 1)
+        # Verify the BridgedAp instance is 2G.
+        self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G], False)
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="6de46e5b-04c3-4fba-a21d-e914a3e34e24")
+    def test_bridged_ap_5g_2g_no_shutdown_after_5_minutes(self):
+        """Test clients on different instances can ping each other.
+
+        Steps:
+            Backup config.
+            Make sure clients support WPA3 SAE.
+            Make sure DUT is able to enable BridgedAp.
+            Enable BridgedAp with bridged configuration.
+            RegisterSoftApCallback.
+            Check the bridged AP enabled succeed.
+            start sniffer and sniffing on BridgedAp channels.
+            Client#1 connect to 5G instance.
+            Client#2 connect to 2G instance.
+            Wait for 5 minutes.
+            Verify both 2G/5G BridgedAp instances are exist.
+            Stop sniffers.
+            Restore config.
+        """
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Make sure clients support WPA3 SAE.
+        self.verify_clients_support_wpa3_sae(self.client1, self.client2)
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+
+        # Enable BridgedAp and verify both 2G,5G instances have been enabled.
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA3_SAE,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G])
+        infos = self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+
+        self.sniffing_bridgedap_channels(infos)
+
+        self.two_clients_connect_to_wifi_network(self.client1, self.client2,
+                                                 self.config)
+        self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
+        # Verify there are two clients connect to the BridgedAp.
+        self.verify_expected_number_of_softap_clients(self.dut, 2)
+        # Verify both 2G/5G BridgedAp instances are exist.
+        self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="f8742dfb-5232-4fe8-b568-3a99a9356d59")
+    def test_bridged_ap_5g_2g_extend_compatibility_on_no_shutdown_5g(self):
+        """Test BridgedAp mechanism when "Extend compatibility is ON.
+
+        Steps:
+            Backup config.
+            Make sure clients support WPA3 SAE.
+            Make sure DUT is able to enable BridgedAp.
+            Enable BridgedAp with Extend compatibility is ON.
+            RegisterSoftApCallback.
+            Check the bridged AP enabled succeed.
+            start sniffer and sniffing on BridgedAp channels.
+            Client#1 connect to 2G.
+            Verify both 2G/5G instances are exist.
+            Stop sniffers.
+            Restore config.
+        """
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Make sure clients support WPA3 SAE.
+        self.verify_clients_support_wpa3_sae(self.client1, self.client2)
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+        # Enable BridgedAp with "Extend compatibility set to ON".
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA3_SAE,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G],
+                               bridged_opportunistic_shutdown_enabled=False)
+        # Client connects to the 2G BridgedAp instance and wait 5 minutes.
+        self.client_connects_to_a_bridgeap(self.client1, BAND_2G)
+        self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
+        # Verify there are two clients connect to the BridgedAp.
+        self.verify_expected_number_of_softap_clients(self.dut, 2)
+        # Verify both 2G/5G BridgedAp instances exist.
+        self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
+        # Restore config
+        wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
+
+    @test_tracker_info(uuid="050f8dd8-ed38-4f7a-87a9-9dbdade58cc7")
+    def test_bridged_ap_5g_2g_extend_compatibility_on_no_shutdown_2g(self):
+        """Test BridgedAp mechanism when "Extend compatibility is ON.
+
+        Steps:
+            Backup config.
+            Make sure clients support WPA3 SAE.
+            Make sure DUT is able to enable BridgedAp.
+            Enable BridgedAp with Extend compatibility is ON.
+            RegisterSoftApCallback.
+            Check the bridged AP enabled succeed.
+            start sniffer and sniffing on BridgedAp channels.
+            Client#1 connect to 5G.
+            Verify both 2G/5G instances are exist.
+            Stop sniffers.
+            Restore config.
+        """
+        # Backup config
+        original_softap_config = self.dut.droid.wifiGetApConfiguration()
+        # Make sure clients support WPA3 SAE.
+        self.verify_clients_support_wpa3_sae(self.client1, self.client2)
+        # Make sure DUT is able to enable BridgedAp.
+        is_supported = wutils.check_available_channels_in_bands_2_5(
+            self.dut, wutils.WifiEnums.CountryCode.US)
+        asserts.skip_if(not is_supported, "BridgedAp is not supported in {}"
+                        .format(wutils.WifiEnums.CountryCode.US))
+        # Enable BridgedAp with "Extend compatibility set to ON".
+        self.enable_bridged_ap(self.dut,
+                               WifiEnums.SoftApSecurityType.WPA3_SAE,
+                               bands=[WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                                      WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G_5G],
+                               bridged_opportunistic_shutdown_enabled=False)
+        # Client connects to the 5G BridgedAp instance and wait 5 minutes.
+        self.client_connects_to_a_bridgeap(self.client1, BAND_5G)
+        self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
+        # Verify there are two clients connect to the BridgedAp.
+        self.verify_expected_number_of_softap_clients(self.dut, 2)
+        # Verify both 2G/5G BridgedAp instances exist.
+        self.verify_number_band_freq_of_bridged_ap(
+            self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
+                       WifiEnums.WIFI_CONFIG_SOFTAP_BAND_5G], False)
         # Restore config
         wutils.save_wifi_soft_ap_config(self.dut, original_softap_config)
