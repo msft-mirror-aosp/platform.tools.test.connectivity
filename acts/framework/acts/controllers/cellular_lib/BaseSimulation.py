@@ -29,6 +29,9 @@ class BaseSimulation(object):
     configurations.
 
     """
+    # Configuration dictionary keys
+    PARAM_UL_PW = 'pul'
+    PARAM_DL_PW = 'pdl'
 
     NUM_UL_CAL_READS = 3
     NUM_DL_CAL_READS = 5
@@ -325,51 +328,15 @@ class BaseSimulation(object):
         # Stop IP traffic after setting the UL power level
         self.stop_traffic_for_calibration()
 
-    def parse_parameters(self, parameters):
-        """ Configures simulation using a list of parameters.
+    def configure(self, parameters):
+        """ Configures simulation using a dictionary of parameters.
 
-        Consumes parameters from a list.
         Children classes need to call this method first.
 
         Args:
-            parameters: list of parameters
+            parameters: a configuration dictionary
         """
-
         raise NotImplementedError()
-
-    def consume_parameter(self, parameters, parameter_name, num_values=0):
-        """ Parses a parameter from a list.
-
-        Allows to parse the parameter list. Will delete parameters from the
-        list after consuming them to ensure that they are not used twice.
-
-        Args:
-            parameters: list of parameters
-            parameter_name: keyword to look up in the list
-            num_values: number of arguments following the
-                parameter name in the list
-        Returns:
-            A list containing the parameter name and the following num_values
-            arguments
-        """
-
-        try:
-            i = parameters.index(parameter_name)
-        except ValueError:
-            # parameter_name is not set
-            return []
-
-        return_list = []
-
-        try:
-            for j in range(num_values + 1):
-                return_list.append(parameters.pop(i))
-        except IndexError:
-            raise ValueError(
-                "Parameter {} has to be followed by {} values.".format(
-                    parameter_name, num_values))
-
-        return return_list
 
     def set_uplink_tx_power(self, signal_level):
         """ Configure the uplink tx power level
@@ -396,44 +363,42 @@ class BaseSimulation(object):
         self.primary_config.incorporate(new_config)
 
     def get_uplink_power_from_parameters(self, parameters):
-        """ Reads uplink power from a list of parameters. """
+        """ Reads uplink power from the parameter dictionary. """
 
-        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
-
-        if values:
-            if values[1] in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
-                return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+        if self.PARAM_UL_PW in parameters:
+            value = parameters[self.PARAM_UL_PW]
+            if value in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
+                return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[value]
             else:
                 try:
-                    if values[1][0] == 'n':
+                    if isinstance(value[0], str) and value[0] == 'n':
                         # Treat the 'n' character as a negative sign
-                        return -int(values[1][1:])
+                        return -int(value[1:])
                     else:
-                        return int(values[1])
+                        return int(value)
                 except ValueError:
                     pass
 
         # If the method got to this point it is because PARAM_UL_PW was not
         # included in the test parameters or the provided value was invalid.
         raise ValueError(
-            "The test name needs to include parameter {} followed by the "
-            "desired uplink power expressed by an integer number in dBm "
-            "or by one the following values: {}. To indicate negative "
+            "The config dictionary must include a key {} with the desired "
+            "uplink power expressed by an integer number in dBm or with one of "
+            "the following values: {}. To indicate negative "
             "values, use the letter n instead of - sign.".format(
                 self.PARAM_UL_PW,
                 list(self.UPLINK_SIGNAL_LEVEL_DICTIONARY.keys())))
 
     def get_downlink_power_from_parameters(self, parameters):
-        """ Reads downlink power from a list of parameters. """
+        """ Reads downlink power from a the parameter dictionary. """
 
-        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
-
-        if values:
-            if values[1] not in self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY:
-                raise ValueError("Invalid signal level value {}.".format(
-                    values[1]))
+        if self.PARAM_DL_PW in parameters:
+            value = parameters[self.PARAM_DL_PW]
+            if value not in self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY:
+                raise ValueError(
+                    "Invalid signal level value {}.".format(value))
             else:
-                return self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+                return self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY[value]
         else:
             # Use default value
             power = self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY['excellent']
