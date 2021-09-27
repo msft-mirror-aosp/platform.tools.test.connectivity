@@ -83,6 +83,7 @@ class LteSimulation(BaseSimulation):
     PARAM_PADDING = 'mac_padding'
     PARAM_DL_256_QAM_ENABLED = "256_qam_dl_enabled"
     PARAM_UL_64_QAM_ENABLED = "64_qam_ul_enabled"
+    PARAM_DL_EARFCN = 'dl_earfcn'
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
@@ -181,6 +182,51 @@ class LteSimulation(BaseSimulation):
         85: [5, 10],
         252: [20],
         255: [20]
+    }
+
+    # Dictionary of lower DL channel number bound for each band.
+    LOWEST_DL_CN_DICTIONARY = {
+        1: 0,
+        2: 600,
+        3: 1200,
+        4: 1950,
+        5: 2400,
+        6: 2650,
+        7: 2750,
+        8: 3450,
+        9: 3800,
+        10: 4150,
+        11: 4750,
+        12: 5010,
+        13: 5180,
+        14: 5280,
+        17: 5730,
+        18: 5850,
+        19: 6000,
+        20: 6150,
+        21: 6450,
+        22: 6600,
+        23: 7500,
+        24: 7700,
+        25: 8040,
+        26: 8690,
+        27: 9040,
+        28: 9210,
+        29: 9660,
+        30: 9770,
+        31: 9870,
+        32: 36000,
+        33: 36200,
+        34: 36350,
+        35: 36950,
+        36: 37550,
+        37: 37750,
+        38: 38250,
+        39: 38650,
+        40: 39650,
+        41: 41590,
+        42: 45590,
+        66: 66436
     }
 
     # Peak throughput lookup tables for each TDD subframe
@@ -490,6 +536,16 @@ class LteSimulation(BaseSimulation):
 
         new_config.band = parameters[self.PARAM_BAND]
         self.simulator.set_band_combination([new_config.band])
+
+        if not self.PARAM_DL_EARFCN in parameters:
+            band = int(new_config.band)
+            channel = int(self.LOWEST_DL_CN_DICTIONARY[band] +
+                          self.LOWEST_DL_CN_DICTIONARY[band + 1]) / 2
+            self.log.warning(
+                "Key '{}' was not set. Using center band channel {} by default."
+                .format(self.PARAM_DL_EARFCN, channel))
+
+        new_config.dl_channel = parameters.get(self.PARAM_DL_EARFCN, channel)
 
         # Set TDD-only configs
         if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
