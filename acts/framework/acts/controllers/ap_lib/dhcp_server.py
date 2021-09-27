@@ -17,8 +17,6 @@ from retry import retry
 
 from acts.controllers.utils_lib.commands import shell
 
-_ROUTER_DNS = '8.8.8.8, 4.4.4.4'
-
 
 class Error(Exception):
     """An error caused by the dhcp server."""
@@ -71,12 +69,8 @@ class DhcpServer(object):
             config: dhcp_config.DhcpConfig, Configs to start the dhcp server
                     with.
 
-        Returns:
-            True if the daemon could be started. Note that the daemon can still
-            start and not work. Invalid configurations can take a long amount
-            of time to be produced, and because the daemon runs indefinitely
-            it's infeasible to wait on. If you need to check if configs are ok
-            then periodic checks to is_running and logs should be used.
+        Raises:
+            Error: Raised when a dhcp server error is found.
         """
         if self.is_alive():
             self.stop()
@@ -183,48 +177,6 @@ class DhcpServer(object):
 
     def _write_configs(self, config):
         """Writes the configs to the dhcp server config file."""
-
         self._shell.delete_file(self._config_file)
-
-        lines = []
-
-        if config.default_lease_time:
-            lines.append('default-lease-time %d;' % config.default_lease_time)
-        if config.max_lease_time:
-            lines.append('max-lease-time %s;' % config.max_lease_time)
-
-        for subnet in config.subnets:
-            address = subnet.network.network_address
-            mask = subnet.network.netmask
-            router = subnet.router
-            start = subnet.start
-            end = subnet.end
-            lease_time = subnet.lease_time
-
-            lines.append('subnet %s netmask %s {' % (address, mask))
-            lines.append('\toption subnet-mask %s;' % mask)
-            lines.append('\toption routers %s;' % router)
-            lines.append('\toption domain-name-servers %s;' % _ROUTER_DNS)
-            lines.append('\trange %s %s;' % (start, end))
-            if lease_time:
-                lines.append('\tdefault-lease-time %d;' % lease_time)
-                lines.append('\tmax-lease-time %d;' % lease_time)
-            lines.append('}')
-
-        for mapping in config.static_mappings:
-            identifier = mapping.identifier
-            fixed_address = mapping.ipv4_address
-            host_fake_name = 'host%s' % identifier.replace(':', '')
-            lease_time = mapping.lease_time
-
-            lines.append('host %s {' % host_fake_name)
-            lines.append('\thardware ethernet %s;' % identifier)
-            lines.append('\tfixed-address %s;' % fixed_address)
-            if lease_time:
-                lines.append('\tdefault-lease-time %d;' % lease_time)
-                lines.append('\tmax-lease-time %d;' % lease_time)
-            lines.append('}')
-
-        config_str = '\n'.join(lines)
-
+        config_str = config.render_config_file()
         self._shell.write_file(self._config_file, config_str)
