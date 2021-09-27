@@ -183,9 +183,9 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         # Temporarily adding this line to workaround a bug in the
         # Anritsu callbox in which the channel number needs to be set
         # to a different value before setting it to the final one.
-        self.bts[bts_index].dl_channel = str(channel_number + 1)
+        self.bts[bts_index].dl_channel = str(int(channel_number + 1))
         time.sleep(8)
-        self.bts[bts_index].dl_channel = str(channel_number)
+        self.bts[bts_index].dl_channel = str(int(channel_number))
 
     def set_dl_256_qam_enabled(self, bts_index, enabled):
         """ Determines what MCS table should be used for the downlink.
