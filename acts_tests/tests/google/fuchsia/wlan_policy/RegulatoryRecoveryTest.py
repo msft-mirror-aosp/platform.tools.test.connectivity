@@ -32,6 +32,7 @@ class RegulatoryRecoveryTest(WifiBaseTest):
     If no configuration information is provided, the test will default to
     toggling between WW and US.
     """
+
     def setup_class(self):
         super().setup_class()
         if len(self.fuchsia_devices) < 1:
@@ -40,7 +41,8 @@ class RegulatoryRecoveryTest(WifiBaseTest):
         self.config_test_params = self.user_params.get(
             "regulatory_recovery_test_params", {})
         self.country_code = self.config_test_params.get("country_code", "US")
-        self.negative_test = self.config_test_params.get("negative_test", False)
+        self.negative_test = self.config_test_params.get(
+            "negative_test", False)
 
         for fd in self.fuchsia_devices:
             fd.configure_wlan(association_mechanism='policy')
@@ -68,7 +70,6 @@ class RegulatoryRecoveryTest(WifiBaseTest):
             fd.wlan_policy_controller.stop_client_connections()
             fd.wlan_ap_policy_lib.wlanStopAllAccessPoint()
 
-
     def set_country_code(self, fd):
         try:
             fd.wlan_controller.set_country_code(self.country_code)
@@ -89,7 +90,6 @@ class RegulatoryRecoveryTest(WifiBaseTest):
                     "Setting invalid country code succeeded.")
             else:
                 pass
-
 
     def test_interfaces_not_recreated_when_initially_disabled(self):
         """This test ensures that after a new regulatory region is applied

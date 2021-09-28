@@ -169,6 +169,7 @@ class SshResults:
         stderr: The file descriptor to the stderr of the SSH connection.
         exit_status: The file descriptor of the SSH command.
     """
+
     def __init__(self, stdin, stdout, stderr, exit_status):
         self._raw_stdout = stdout.read()
         self._stdout = self._raw_stdout.decode('utf-8', errors='replace')
@@ -192,9 +193,8 @@ class SshResults:
         return self._exit_status
 
 
-def flash(fuchsia_device,
-          use_ssh=False,
-          fuchsia_reconnect_after_reboot_time = 5):
+def flash(fuchsia_device, use_ssh=False,
+          fuchsia_reconnect_after_reboot_time=5):
     """A function to flash, not pave, a fuchsia_device
 
     Args:
@@ -228,25 +228,28 @@ def flash(fuchsia_device,
     if not fuchsia_device.specific_image:
         file_download_needed = True
         if 'LATEST' in fuchsia_device.build_number:
-            gsutil_process = job.run('gsutil ls %s'
-                                     % fuchsia_device.server_path).stdout
+            gsutil_process = job.run('gsutil ls %s' %
+                                     fuchsia_device.server_path).stdout
             build_list = list(
                 # filter out builds that are not part of branches
-                filter(None, gsutil_process.replace(
-                    fuchsia_device.server_path, '').replace(
-                    '/', '').split('\n')))
+                filter(
+                    None,
+                    gsutil_process.replace(fuchsia_device.server_path,
+                                           '').replace('/', '').split('\n')))
             if 'LATEST_F' in fuchsia_device.build_number:
                 build_number = fuchsia_device.build_number.split(
                     'LATEST_F', 1)[1]
-                build_list = [x for x in build_list if x.startswith(
-                    '%s.' % build_number)]
+                build_list = [
+                    x for x in build_list if x.startswith('%s.' % build_number)
+                ]
             elif fuchsia_device.build_number == 'LATEST':
                 build_list = [x for x in build_list if '.' in x]
             if build_list:
                 fuchsia_device.build_number = build_list[-2]
             else:
-                raise FileNotFoundError('No build(%s) on the found on %s.' % (
-                    fuchsia_device.build_number, fuchsia_device.server_path))
+                raise FileNotFoundError(
+                    'No build(%s) on the found on %s.' %
+                    (fuchsia_device.build_number, fuchsia_device.server_path))
         image_front_string = fuchsia_device.product_type
         if fuchsia_device.build_type:
             image_front_string = '%s_%s' % (image_front_string,
@@ -264,8 +267,8 @@ def flash(fuchsia_device,
         file_to_download = fuchsia_device.specific_image
     else:
         raise ValueError('A suitable build could not be found.')
-    tmp_path = '/tmp/%s_%s' % (str(int(time.time()*10000)),
-                               fuchsia_device.board_type)
+    tmp_path = '/tmp/%s_%s' % (str(int(
+        time.time() * 10000)), fuchsia_device.board_type)
     os.mkdir(tmp_path)
     if file_download_needed:
         job.run('gsutil cp %s %s' % (file_to_download, tmp_path))
@@ -307,25 +310,23 @@ def flash(fuchsia_device,
     while time_counter < FASTBOOT_TIMEOUT:
         logging.info('Checking to see if fuchsia_device(%s) SN: %s is in '
                      'fastboot. (Attempt #%s Timeout: %s)' %
-                     (fuchsia_device.orig_ip,
-                      fuchsia_device.serial_number,
-                      str(time_counter + 1),
-                      FASTBOOT_TIMEOUT))
+                     (fuchsia_device.orig_ip, fuchsia_device.serial_number,
+                      str(time_counter + 1), FASTBOOT_TIMEOUT))
         for usb_device in usbinfo.usbinfo():
-            if (usb_device['iSerialNumber'] == fuchsia_device.serial_number and
-                usb_device['iProduct'] == 'USB_download_gadget'):
-                logging.info('fuchsia_device(%s) SN: %s is in fastboot.' %
-                             (fuchsia_device.orig_ip,
-                              fuchsia_device.serial_number))
+            if (usb_device['iSerialNumber'] == fuchsia_device.serial_number
+                    and usb_device['iProduct'] == 'USB_download_gadget'):
+                logging.info(
+                    'fuchsia_device(%s) SN: %s is in fastboot.' %
+                    (fuchsia_device.orig_ip, fuchsia_device.serial_number))
                 time_counter = FASTBOOT_TIMEOUT
         time_counter = time_counter + 1
         if time_counter == FASTBOOT_TIMEOUT:
             for fail_usb_device in usbinfo.usbinfo():
                 logging.debug(fail_usb_device)
-            raise TimeoutError('fuchsia_device(%s) SN: %s '
-                               'never went into fastboot' %
-                               (fuchsia_device.orig_ip,
-                                fuchsia_device.serial_number))
+            raise TimeoutError(
+                'fuchsia_device(%s) SN: %s '
+                'never went into fastboot' %
+                (fuchsia_device.orig_ip, fuchsia_device.serial_number))
         time.sleep(1)
 
     end_time = time.time() + WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC
@@ -334,17 +335,19 @@ def flash(fuchsia_device,
         flash_process_found = False
         for proc in psutil.process_iter():
             if "bash" in proc.name() and "flash.sh" in proc.cmdline():
-                logging.info("Waiting for existing flash.sh process to complete.")
+                logging.info(
+                    "Waiting for existing flash.sh process to complete.")
                 time.sleep(PROCESS_CHECK_WAIT_TIME_SEC)
                 flash_process_found = True
         if not flash_process_found:
             break
-    logging.info('Flashing fuchsia_device(%s) with %s/%s.' % (
-        fuchsia_device.orig_ip, tmp_path, image_tgz))
+    logging.info('Flashing fuchsia_device(%s) with %s/%s.' %
+                 (fuchsia_device.orig_ip, tmp_path, image_tgz))
     try:
-        flash_output = job.run('bash flash.sh --ssh-key=%s -s %s' % (
-            fuchsia_device.authorized_file, fuchsia_device.serial_number),
-                               timeout=120)
+        flash_output = job.run(
+            'bash flash.sh --ssh-key=%s -s %s' %
+            (fuchsia_device.authorized_file, fuchsia_device.serial_number),
+            timeout=120)
         logging.debug(flash_output.stderr)
     except job.TimeoutError as err:
         raise TimeoutError(err)
@@ -364,10 +367,8 @@ def flash(fuchsia_device,
         else:
             time.sleep(1)
     if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
-        logging.info('IP for fuchsia_device(%s) changed from %s to %s' % (
-            fuchsia_device.orig_ip,
-            fuchsia_device.ip,
-            mdns_ip))
+        logging.info('IP for fuchsia_device(%s) changed from %s to %s' %
+                     (fuchsia_device.orig_ip, fuchsia_device.ip, mdns_ip))
         fuchsia_device.ip = mdns_ip
         fuchsia_device.address = "http://[{}]:{}".format(
             fuchsia_device.ip, fuchsia_device.sl4f_port)

@@ -32,6 +32,7 @@ class WlanPhyComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
     * One Android device or Fuchsia device
     * One Access Point
     """
+
     def setup_class(self):
         super().setup_class()
         if 'dut' in self.user_params:
