@@ -27,6 +27,7 @@ class WlanStatusTest(BaseTestClass):
     Test Bed Requirements:
     * One or more Fuchsia devices with WLAN client capabilities.
     """
+
     def setup_class(self):
         super().setup_class()
         for fd in self.fuchsia_devices:
