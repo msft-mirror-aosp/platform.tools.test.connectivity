@@ -137,6 +137,10 @@ def _get_single_file(registry, key):
 
 
 class Bits(object):
+
+    ROOT_RAIL_KEY = 'RootRail'
+    ROOT_RAIL_DEFAULT_VALUE = 'Monsoon:mA'
+
     def __init__(self, index, config):
         """Creates an instance of a bits controller.
 
@@ -165,6 +169,8 @@ class Bits(object):
                             'serial': 'serial_2'
                         }
                     ]
+                    // optional
+                    'RootRail': 'Monsoon:mA'
                 }
         """
         self.index = index
@@ -173,6 +179,8 @@ class Bits(object):
         self._client = None
         self._active_collection = None
         self._collections_counter = 0
+        self._root_rail = config.get(self.ROOT_RAIL_KEY,
+                                     self.ROOT_RAIL_DEFAULT_VALUE)
 
     def setup(self, *_, registry=None, **__):
         """Starts a bits_service in the background.
@@ -421,8 +429,8 @@ class Bits(object):
         milli_amps_channel = None
 
         for channel in available_channels:
-            if channel.endswith('Monsoon:mA'):
-                milli_amps_channel = 'Monsoon:mA'
+            if channel.endswith(self._root_rail):
+                milli_amps_channel = self._root_rail
                 break
 
         if milli_amps_channel is None:
