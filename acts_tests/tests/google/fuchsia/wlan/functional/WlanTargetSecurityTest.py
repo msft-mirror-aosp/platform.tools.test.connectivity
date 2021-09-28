@@ -32,6 +32,7 @@ class WlanTargetSecurityTest(BaseTestClass):
     * One Fuchsia device
     * One Whirlwind Access Point
     """
+
     def setup_class(self):
         if 'dut' in self.user_params and self.user_params[
                 'dut'] != 'fuchsia_devices':
