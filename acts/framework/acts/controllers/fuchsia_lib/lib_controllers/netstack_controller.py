@@ -24,6 +24,7 @@ class NetstackControllerError(signals.ControllerError):
 
 class NetstackController:
     """Contains methods related to netstack, to be used in FuchsiaDevice object"""
+
     def __init__(self, fuchsia_device):
         self.device = fuchsia_device
         self.log = logger.create_tagged_trace_logger(
