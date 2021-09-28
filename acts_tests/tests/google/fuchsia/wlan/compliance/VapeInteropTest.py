@@ -32,6 +32,7 @@ class VapeInteropTest(AbstractDeviceWlanDeviceBaseTest):
     * One Android or Fuchsia Device
     * One Whirlwind Access Point
     """
+
     def setup_class(self):
         super().setup_class()
         if 'dut' in self.user_params:
