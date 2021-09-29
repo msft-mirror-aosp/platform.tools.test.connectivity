@@ -115,6 +115,7 @@ class WlanPhyCompliance11ACTest(AbstractDeviceWlanDeviceBaseTest):
     * One Android device or Fuchsia device
     * One Access Point
     """
+
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
         self.tests = [

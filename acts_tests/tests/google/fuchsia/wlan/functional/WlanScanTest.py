@@ -43,6 +43,7 @@ class WlanScanTest(WifiBaseTest):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network or a onHub/GoogleWifi
     """
+
     def setup_class(self):
         super().setup_class()
 

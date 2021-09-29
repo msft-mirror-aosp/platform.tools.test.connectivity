@@ -371,7 +371,7 @@ class BaseSimulation(object):
                 return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[value]
             else:
                 try:
-                    if value[0] == 'n':
+                    if isinstance(value[0], str) and value[0] == 'n':
                         # Treat the 'n' character as a negative sign
                         return -int(value[1:])
                     else:

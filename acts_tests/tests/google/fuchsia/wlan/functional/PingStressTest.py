@@ -62,11 +62,7 @@ class PingStressTest(BaseTestClass):
         self.wlan_device.reset_wifi()
         self.ap.stop_all_aps()
 
-    def send_ping(self,
-                  dest_ip,
-                  count=3,
-                  interval=1000,
-                  timeout=1000,
+    def send_ping(self, dest_ip, count=3, interval=1000, timeout=1000,
                   size=25):
         self.log.info('Attempting to ping %s...' % dest_ip)
         ping_result = self.wlan_device.can_ping(dest_ip, count, interval,
