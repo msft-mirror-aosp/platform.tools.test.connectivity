@@ -144,6 +144,9 @@ class GnssFunctionTest(BaseTestClass):
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
             set_wifi_and_bt_scanning(self.ad, True)
+        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                          expected_state=True):
+            raise signals.TestFailure("Fail to connect to LTE network.")
 
     def on_fail(self, test_name, begin_time):
         if self.collect_logs:
