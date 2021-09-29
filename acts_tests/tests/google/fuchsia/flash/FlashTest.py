@@ -43,11 +43,10 @@ class FlashTest(BaseTestClass):
     def teardown_class(self):
         try:
             dut = get_device(self.fuchsia_devices, 'DUT')
-            self.record_data({
-                'sponge_properties': {
+            self.record_data(
+                {'sponge_properties': {
                     'DUT_VERSION': dut.version()
-                }
-            })
+                }})
         except ValueError as err:
             self.log.warn("Failed to determine DUT: %s" % err)
         except DeviceOffline as err:
@@ -70,8 +69,8 @@ class FlashTest(BaseTestClass):
                     if fuchsia_device.device_pdu_config:
                         self.log.info('Flashing failed.'
                                       '  Hard rebooting fuchsia_device(%s)'
-                                      ' and retrying.'
-                                      % fuchsia_device.orig_ip)
+                                      ' and retrying.' %
+                                      fuchsia_device.orig_ip)
                         fuchsia_device.reboot(reboot_type='hard',
                                               testbed_pdus=self.pdu_devices)
                         flash_counter = flash_counter + 1
@@ -80,8 +79,8 @@ class FlashTest(BaseTestClass):
                         time.sleep(1)
                     else:
                         raise err
-                self.log.info("fuchsia_device(%s) has been flashed."
-                              % fuchsia_device.orig_ip)
+                self.log.info("fuchsia_device(%s) has been flashed." %
+                              fuchsia_device.orig_ip)
             flash_counter = 0
 
         return True

@@ -55,6 +55,7 @@ class SavedNetworksTest(WifiBaseTest):
     * One or more Fuchsia devices
     * One Access Point
     """
+
     def setup_class(self):
         super().setup_class()
         # Keep track of whether we have started an access point in a test
