@@ -2001,12 +2001,13 @@ def check_dpo_rate_via_gnss_meas(ad, begin_time, dpo_threshold):
                                            threshold))
 
 
-def parse_brcm_nmea_log(ad, nmea_pattern):
+def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
     """Parse specific NMEA pattern out of BRCM NMEA log.
 
     Args:
         ad: An AndroidDevice object.
         nmea_pattern: Specific NMEA pattern to parse.
+        brcm_error_log_allowlist: Benign error logs to exclude.
 
     Returns:
         brcm_log_list: A list of specific NMEA pattern logs.
@@ -2049,7 +2050,14 @@ def parse_brcm_nmea_log(ad, nmea_pattern):
                 brcm_log_list.append(line)
             for attr in brcm_log_error_pattern:
                 if attr in line:
-                    brcm_error_log_list.append(line)
+                    benign_log = False
+                    for allow_log in brcm_error_log_allowlist:
+                        if allow_log in line:
+                            benign_log = True
+                            ad.log.info("\"%s\" is in allow-list and removed "
+                                        "from error." % allow_log)
+                    if not benign_log:
+                        brcm_error_log_list.append(line)
     brcm_error_log = "".join(brcm_error_log_list)
     shutil.rmtree(tmp_log_path, ignore_errors=True)
     return brcm_log_list, brcm_error_log
@@ -2070,14 +2078,8 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold, brcm_error_log_allowlist):
     always_full_power_count = 0
     full_power_count = 0
     power_save_count = 0
-    pglor_list, brcm_error_log = parse_brcm_nmea_log(ad, "$PGLOR,11,STA")
-    if brcm_error_log:
-        for allowlist in brcm_error_log_allowlist:
-            if allowlist in brcm_error_log:
-                brcm_error_log = re.sub(
-                    ".*" + allowlist + ".*\n?", "", brcm_error_log)
-                ad.log.info("\"%s\" is in allow-list and removed from error."
-                            % allowlist)
+    pglor_list, brcm_error_log = parse_brcm_nmea_log(
+        ad, "$PGLOR,11,STA", brcm_error_log_allowlist)
     for pglor in pglor_list:
         power_res = re.compile(r',P,(\w),').search(pglor).group(1)
         if power_res == "D":
