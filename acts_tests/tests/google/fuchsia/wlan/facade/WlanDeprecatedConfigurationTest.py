@@ -30,6 +30,7 @@ TEST_MAC_ADDR_SECONDARY = 'bc:9a:78:56:34:12'
 
 class WlanDeprecatedConfigurationTest(BaseTestClass):
     """Tests for WlanDeprecatedConfigurationFacade"""
+
     def setup_class(self):
         super().setup_class()
         self.dut = self.fuchsia_devices[0]

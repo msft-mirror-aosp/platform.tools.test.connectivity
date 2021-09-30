@@ -108,6 +108,7 @@ class WlanRebootTest(WifiBaseTest):
     * One Whirlwind Access Point (will also serve as iperf server)
     * One PduDevice
     """
+
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
 
@@ -143,9 +144,9 @@ class WlanRebootTest(WifiBaseTest):
         self.iperf_server_on_ap = None
         self.iperf_client_on_dut = None
         if not self.skip_iperf:
-            try:
+            if hasattr(self, "iperf_clients") and self.iperf_clients:
                 self.iperf_client_on_dut = self.iperf_clients[0]
-            except AttributeError:
+            else:
                 self.iperf_client_on_dut = self.dut.create_iperf_client()
         else:
             self.log.info(

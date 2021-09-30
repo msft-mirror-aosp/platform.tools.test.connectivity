@@ -84,6 +84,7 @@ class ChannelSweepTest(WifiBaseTest):
     * One Linux Machine used as IPerfServer if running performance tests
     Note: Performance tests should be done in isolated testbed.
     """
+
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
         if 'channel_sweep_test_params' in self.user_params:
@@ -124,11 +125,16 @@ class ChannelSweepTest(WifiBaseTest):
             try:
                 self.iperf_server = self.iperf_servers[0]
                 self.iperf_server.start()
-                self.iperf_client = self.iperf_clients[0]
             except AttributeError:
                 self.log.warn(
                     'Missing iperf config. Throughput cannot be measured, so only '
                     'association will be tested.')
+
+            if hasattr(self, "iperf_clients") and self.iperf_clients:
+                self.iperf_client = self.iperf_clients[0]
+            else:
+                self.iperf_client = self.dut.create_iperf_client()
+
         self.regulatory_results = "====CountryCode,Channel,Frequency,ChannelBandwith,Connected/Not-Connected====\n"
 
     def teardown_class(self):
@@ -726,9 +732,9 @@ class ChannelSweepTest(WifiBaseTest):
             for channel_bandwidth in test_channels[channel]:
                 sub_test_name = '%s_channel_%s_%smhz' % (
                     base_test_name, channel, channel_bandwidth)
-                should_associate = (channel in allowed_channels
-                                    and channel_bandwidth
-                                    in allowed_channels[channel])
+                should_associate = (
+                    channel in allowed_channels
+                    and channel_bandwidth in allowed_channels[channel])
                 # Note: these int conversions because when these tests are
                 # imported via JSON, they may be strings since the channels
                 # will be keys. This makes the json/list test_channels param
@@ -1055,8 +1061,8 @@ _
 
         """
         asserts.skip_if(
-            'debug_channel_performance_tests'
-            not in self.user_params.get('channel_sweep_test_params', {}),
+            'debug_channel_performance_tests' not in self.user_params.get(
+                'channel_sweep_test_params', {}),
             'No custom channel performance tests provided in config.')
         base_tests = self.user_params['channel_sweep_test_params'][
             'debug_channel_performance_tests']
@@ -1088,8 +1094,8 @@ _
         }
         """
         asserts.skip_if(
-            'regulatory_compliance_tests'
-            not in self.user_params.get('channel_sweep_test_params', {}),
+            'regulatory_compliance_tests' not in self.user_params.get(
+                'channel_sweep_test_params', {}),
             'No custom regulatory compliance tests provided in config.')
         base_tests = self.user_params['channel_sweep_test_params'][
             'regulatory_compliance_tests']

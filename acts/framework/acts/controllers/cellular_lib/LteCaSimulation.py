@@ -20,51 +20,6 @@ from acts.controllers.cellular_lib import LteSimulation
 class LteCaSimulation(LteSimulation.LteSimulation):
     """ Carrier aggregation LTE simulation. """
 
-    # Dictionary of lower DL channel number bound for each band.
-    LOWEST_DL_CN_DICTIONARY = {
-        1: 0,
-        2: 600,
-        3: 1200,
-        4: 1950,
-        5: 2400,
-        6: 2650,
-        7: 2750,
-        8: 3450,
-        9: 3800,
-        10: 4150,
-        11: 4750,
-        12: 5010,
-        13: 5180,
-        14: 5280,
-        17: 5730,
-        18: 5850,
-        19: 6000,
-        20: 6150,
-        21: 6450,
-        22: 6600,
-        23: 7500,
-        24: 7700,
-        25: 8040,
-        26: 8690,
-        27: 9040,
-        28: 9210,
-        29: 9660,
-        30: 9770,
-        31: 9870,
-        32: 36000,
-        33: 36200,
-        34: 36350,
-        35: 36950,
-        36: 37550,
-        37: 37750,
-        38: 38250,
-        39: 38650,
-        40: 39650,
-        41: 41590,
-        42: 45590,
-        66: 66436
-    }
-
     # Configuration dictionary keys
     PARAM_CA = 'ca'
 
@@ -107,10 +62,6 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
-    def setup_simulator(self):
-        """ Do initial configuration in the simulator. """
-        self.simulator.setup_lte_ca_scenario()
-
     def configure(self, parameters):
         """ Configures simulation using a dictionary of parameters.
 
@@ -135,22 +86,16 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                 "The CA configuration has to be indicated with one string as "
                 "in the following example: 3c7c28a".format(self.PARAM_CA))
 
-        # Apply the carrier aggregation combination
-        self.simulator.set_ca_combination(ca_configs)
-
-        # Save the bands to the bts config objects
-        bts_index = 0
+        # Initialize the secondary cells
+        bands = []
         for ca in ca_configs:
             ca_class = ca[-1]
             band = ca[:-1]
-
-            self.bts_configs[bts_index].band = band
-            bts_index += 1
-
+            bands.append(band)
             if ca_class.upper() == 'B' or ca_class.upper() == 'C':
                 # Class B and C means two carriers with the same band
-                self.bts_configs[bts_index].band = band
-                bts_index += 1
+                bands.append(band)
+        self.simulator.set_band_combination(bands)
 
         # Count the number of carriers in the CA combination
         self.num_carriers = 0
@@ -165,6 +110,20 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         # Create an array of configuration objects to set up the base stations.
         new_configs = [self.BtsConfig() for _ in range(self.num_carriers)]
+
+        # Save the bands to the bts config objects
+        bts_index = 0
+        for ca in ca_configs:
+            ca_class = ca[-1]
+            band = ca[:-1]
+
+            new_configs[bts_index].band = band
+            bts_index += 1
+
+            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
+                # Class B and C means two carriers with the same band
+                new_configs[bts_index].band = band
+                bts_index += 1
 
         # Get the bw for each carrier
         # This is an optional parameter, by default the maximum bandwidth for
