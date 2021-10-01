@@ -73,6 +73,9 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import enable_supl_mode
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import grant_location_permission
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
+from acts_contrib.test_utils.gnss.gnss_test_utils import is_wearable_btwifi
+from acts_contrib.test_utils.gnss.gnss_test_utils import delete_lto_file
+from acts_contrib.test_utils.gnss.gnss_test_utils import is_device_wearable
 from acts_contrib.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_test_utils import get_tcpdump_log
@@ -122,6 +125,10 @@ class GnssFunctionTest(BaseTestClass):
             clear_logd_gnss_qxdm_log(self.ad)
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
+        if is_wearable_btwifi(self.ad) and not self.ad.droid.wifiCheckState():
+            wifi_toggle_state(self.ad, True)
+            connect_to_wifi_network(
+            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE network.")
@@ -132,12 +139,14 @@ class GnssFunctionTest(BaseTestClass):
             stop_adb_tcpdump(self.ad)
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
-        if check_call_state_connected_by_adb(self.ad):
-            hangup_call(self.ad.log, self.ad)
+        # TODO(chenstanley): sim structure issue
+        if not is_device_wearable(self.ad):
+            if check_call_state_connected_by_adb(self.ad):
+                hangup_call(self.ad.log, self.ad)
         if self.ad.droid.connectivityCheckAirplaneMode():
             self.ad.log.info("Force airplane mode off")
             self.ad.droid.connectivityToggleAirplaneMode(False)
-        if self.ad.droid.wifiCheckState():
+        if not is_wearable_btwifi and self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
         if not is_mobile_data_on(self.ad):
             set_mobile_data(self.ad, True)
@@ -923,7 +932,7 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         for times in range(1, 4):
-            fastboot_factory_reset(self.ad)
+            fastboot_factory_reset(self.ad, True)
             self.ad.unlock_screen(password=None)
             _init_device(self.ad)
             begin_time = get_current_epoch_time()
@@ -1282,3 +1291,32 @@ class GnssFunctionTest(BaseTestClass):
         self.ad.log.info("TestResult Pass_rate %s" % format(pass_rate, ".0%"))
         asserts.assert_true(all(overall_test_result),
                             "GNSS init fail after reboot.")
+
+    @test_tracker_info(uuid="2c62183a-4354-4efc-92f2-84580cbd3398")
+    def test_lto_download_after_reboot(self):
+        """Verify LTO data could be downloaded and injected after device reboot.
+
+        Steps:
+            1. Reboot device.
+            2. Verify whether LTO is auto downloaded and injected without trigger GPS.
+            3. Repeat Step 1 to Step 2 for 5 times.
+
+        Expected Results:
+            LTO data is properly downloaded and injected at the first time tether to phone.
+        """
+        reboot_lto_test_results_all = []
+        disable_supl_mode(self.ad)
+        for times in range(1, 6):
+            delete_lto_file(self.ad)
+            reboot(self.ad)
+            self.start_qxdm_and_tcpdump_log()
+            # Wait 20 seconds for boot busy and lto auto-download time
+            time.sleep(20)
+            begin_time = get_current_epoch_time()
+            reboot_lto_test_result = gutils.check_xtra_download(self.watch, begin_time)
+            self.watch.log.info("Iteration %d => %s" % (times, reboot_lto_test_result))
+            reboot_lto_test_results_all.append(reboot_lto_test_result)
+            gutils.stop_pixel_logger(self.ad)
+            tutils.stop_adb_tcpdump(self.ad)
+        asserts.assert_true(all(reboot_lto_test_results_all),
+                                "Fail to Download and Inject LTO File.")
