@@ -418,6 +418,14 @@ class AccessPoint(object):
         """
         self._dhcp.stop()
 
+    def get_dhcp_logs(self):
+        """Get DHCP logs for this AP object.
+
+        This allows consumers of the access point objects validate DHCP
+        behavior.
+        """
+        return self._dhcp.get_logs()
+
     def start_nat(self):
         """Start NAT on the AP.
 

@@ -71,24 +71,60 @@ class DhcpConfigTest(unittest.TestCase):
         expected_config = (f'default-lease-time {default_lease_time};\n'
                            f'max-lease-time {max_lease_time};\n'
                            'subnet 10.10.1.0 netmask 255.255.255.0 {\n'
-                           '\toption subnet-mask 255.255.255.0;\n'
-                           '\toption routers 10.10.1.1;\n'
-                           '\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
-                           '\trange 10.10.1.2 10.10.1.254;\n'
+                           '\tpool {\n'
+                           '\t\toption subnet-mask 255.255.255.0;\n'
+                           '\t\toption routers 10.10.1.1;\n'
+                           '\t\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
+                           '\t\trange 10.10.1.2 10.10.1.254;\n'
+                           '\t}\n'
                            '}\n'
                            'subnet 10.10.3.0 netmask 255.255.255.252 {\n'
-                           '\toption subnet-mask 255.255.255.252;\n'
-                           '\toption routers 10.10.3.1;\n'
-                           '\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
-                           '\trange 10.10.3.2 10.10.3.2;\n'
+                           '\tpool {\n'
+                           '\t\toption subnet-mask 255.255.255.252;\n'
+                           '\t\toption routers 10.10.3.1;\n'
+                           '\t\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
+                           '\t\trange 10.10.3.2 10.10.3.2;\n'
+                           '\t}\n'
                            '}\n'
                            'subnet 10.10.5.0 netmask 255.255.255.0 {\n'
-                           '\toption subnet-mask 255.255.255.0;\n'
-                           '\toption routers 10.10.5.255;\n'
-                           '\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
-                           '\trange 10.10.5.20 10.10.5.25;\n'
-                           '\tdefault-lease-time 60;\n'
-                           '\tmax-lease-time 60;\n'
+                           '\tpool {\n'
+                           '\t\toption subnet-mask 255.255.255.0;\n'
+                           '\t\toption routers 10.10.5.255;\n'
+                           '\t\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
+                           '\t\trange 10.10.5.20 10.10.5.25;\n'
+                           '\t\tdefault-lease-time 60;\n'
+                           '\t\tmax-lease-time 60;\n'
+                           '\t}\n'
+                           '}')
+
+        self.assertEqual(expected_config, dhcp_conf.render_config_file())
+
+    def test_additional_subnet_parameters(self):
+        default_lease_time = 150
+        max_lease_time = 3000
+        subnets = [
+            Subnet(ipaddress.ip_network('10.10.1.0/24'),
+                   additional_parameters=[('allow', 'unknown-clients'),
+                                          ('foo', 'bar')]),
+        ]
+        dhcp_conf = DhcpConfig(subnets=subnets,
+                               default_lease_time=default_lease_time,
+                               max_lease_time=max_lease_time)
+
+        # Unless an explicit start/end address is provided, the second
+        # address in the range is used for "start", and the second to
+        # last address is used for "end".
+        expected_config = (f'default-lease-time {default_lease_time};\n'
+                           f'max-lease-time {max_lease_time};\n'
+                           'subnet 10.10.1.0 netmask 255.255.255.0 {\n'
+                           '\tpool {\n'
+                           '\t\toption subnet-mask 255.255.255.0;\n'
+                           '\t\toption routers 10.10.1.1;\n'
+                           '\t\toption domain-name-servers 8.8.8.8, 4.4.4.4;\n'
+                           '\t\trange 10.10.1.2 10.10.1.254;\n'
+                           '\t\tallow unknown-clients;\n'
+                           '\t\tfoo bar;\n'
+                           '\t}\n'
                            '}')
 
         self.assertEqual(expected_config, dhcp_conf.render_config_file())
