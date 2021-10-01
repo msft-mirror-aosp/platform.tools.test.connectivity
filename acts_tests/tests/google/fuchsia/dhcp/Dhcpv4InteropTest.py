@@ -14,7 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
 import time
+import re
 
 from acts import asserts
 from acts import utils
@@ -28,8 +30,8 @@ from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlan
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class Dhcpv4InteropTest(AbstractDeviceWlanDeviceBaseTest):
-    """Tests for validating DHCPv4 Interop
+class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
+    """Test helpers for validating DHCPv4 Interop
 
     Test Bed Requirement:
     * One Android device or Fuchsia device
@@ -126,8 +128,11 @@ class Dhcpv4InteropTest(AbstractDeviceWlanDeviceBaseTest):
         }
 
     def device_can_ping(self, dest_ip):
+        """Checks if the DUT can ping the given address.
+
+        Returns: True if can ping, False otherwise"""
         self.log.info('Attempting to ping %s...' % dest_ip)
-        ping_result = self.dut.can_ping(dest_ip, count=10, size=50)
+        ping_result = self.dut.can_ping(dest_ip, count=2)
         if ping_result:
             self.log.info('Success pinging: %s' % dest_ip)
         else:
@@ -171,18 +176,191 @@ class Dhcpv4InteropTest(AbstractDeviceWlanDeviceBaseTest):
         else:
             raise ConnectionError('DUT failed to get an ipv4 address.')
 
-    def test_basic_dhcp_assignment(self):
+    def run_test_case_expect_dhcp_success(self, settings):
+        """Starts the AP and DHCP server, and validates that the client
+        connects and obtains an address.
+
+        Args:
+            settings: a dictionary containing:
+                dhcp_parameters: a list of tuples of DHCP parameters
+                dhcp_options: a list of tuples of DHCP options
+        """
         ap_params = self.setup_ap()
-        subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
-                                         router=ap_params['ip'])
+        subnet_conf = dhcp_config.Subnet(
+            subnet=ap_params['network'],
+            router=ap_params['ip'],
+            additional_parameters=settings['dhcp_parameters'],
+            additional_options=settings['dhcp_options'])
         dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
+
+        self.log.debug('DHCP Configuration:\n' +
+                       dhcp_conf.render_config_file() + "\n")
+
+        dhcp_logs_before = self.access_point.get_dhcp_logs()
         self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
         self.connect(ap_params=ap_params)
-        self.get_device_ipv4_addr()
+        dhcp_logs_after = self.access_point.get_dhcp_logs()
+        dhcp_logs = dhcp_logs_after.replace(dhcp_logs_before, '')
+
+        # Typical log lines look like:
+        # dhcpd[26695]: DHCPDISCOVER from f8:0f:f9:3d:ce:d1 via wlan1
+        # dhcpd[26695]: DHCPOFFER on 192.168.9.2 to f8:0f:f9:3d:ce:d1 via wlan1
+        # dhcpd[26695]: DHCPREQUEST for 192.168.9.2 (192.168.9.1) from f8:0f:f9:3d:ce:d1 via wlan1
+        # dhcpd[26695]: DHCPACK on 192.168.9.2 to f8:0f:f9:3d:ce:d1 via wlan1
+
+        ip = self.get_device_ipv4_addr()
+        expected_string = f'DHCPDISCOVER from'
+        asserts.assert_true(
+            dhcp_logs.count(expected_string) == 1,
+            f'Incorrect count of DHCP Discovers ("{expected_string}") in logs: '
+            + dhcp_logs + "\n")
+
+        expected_string = f'DHCPOFFER on {ip}'
+        asserts.assert_true(
+            dhcp_logs.count(expected_string) == 1,
+            f'Incorrect count of DHCP Offers ("{expected_string}") in logs: ' +
+            dhcp_logs + "\n")
+
+        expected_string = f'DHCPREQUEST for {ip}'
+        asserts.assert_true(
+            dhcp_logs.count(expected_string) >= 1,
+            f'Incorrect count of DHCP Requests ("{expected_string}") in logs: '
+            + dhcp_logs + "\n")
+
+        expected_string = f'DHCPACK on {ip}'
+        asserts.assert_true(
+            dhcp_logs.count(expected_string) >= 1,
+            f'Incorrect count of DHCP Acks ("{expected_string}") in logs: ' +
+            dhcp_logs + "\n")
+
+        asserts.assert_true(self.device_can_ping(ap_params['ip']),
+                            f'DUT failed to ping router at {ap_params["ip"]}')
+
+
+class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
+    """Tests which validate the behavior of the Dhcpv4InteropFixture.
+
+    In theory, these are more similar to unit tests than ACTS tests, but
+    since they interact with hardware (specifically, the AP), we have to
+    write and run them like the rest of the ACTS tests."""
+
+    def test_invalid_options_not_accepted(self):
+        """Ensures the DHCP server doesn't accept invalid options"""
+        ap_params = self.setup_ap()
+        subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
+                                         router=ap_params['ip'],
+                                         additional_options=[('foo', 'bar')])
+        dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
+        with asserts.assert_raises_regex(Exception, r'failed to start'):
+            self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
+
+    def test_invalid_parameters_not_accepted(self):
+        """Ensures the DHCP server doesn't accept invalid parameters"""
+        ap_params = self.setup_ap()
+        subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
+                                         router=ap_params['ip'],
+                                         additional_parameters=[('foo', 'bar')
+                                                                ])
+        dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
+        with asserts.assert_raises_regex(Exception, r'failed to start'):
+            self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
 
     def test_no_dhcp_server_started(self):
-        """Validates that self.setup_ap() does not start a DHCP server."""
+        """Validates that the test fixture does not start a DHCP server."""
         ap_params = self.setup_ap()
         self.connect(ap_params=ap_params)
         with asserts.assert_raises(ConnectionError):
             self.get_device_ipv4_addr()
+
+
+class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
+    """DhcpV4 tests which validate basic DHCP client/server interactions."""
+
+    def test_basic_dhcp_assignment(self):
+        self.run_test_case_expect_dhcp_success(settings={
+            'dhcp_options': [],
+            'dhcp_parameters': []
+        })
+
+    def test_pool_allows_unknown_clients(self):
+        self.run_test_case_expect_dhcp_success(settings={
+            'dhcp_options': [],
+            'dhcp_parameters': [('allow', 'unknown-clients')]
+        })
+
+    def test_pool_disallows_unknown_clients(self):
+        ap_params = self.setup_ap()
+        subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
+                                         router=ap_params['ip'],
+                                         additional_parameters=[
+                                             ('deny', 'unknown-clients')
+                                         ])
+        dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
+        self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
+
+        self.connect(ap_params=ap_params)
+        with asserts.assert_raises(ConnectionError):
+            self.get_device_ipv4_addr()
+
+        dhcp_logs = self.access_point.get_dhcp_logs()
+        asserts.assert_true(
+            re.search(r'DHCPDISCOVER from .*no free leases', dhcp_logs),
+            "Did not find expected message in dhcp logs: " + dhcp_logs + "\n")
+
+    def test_lease_renewal(self):
+        """Validates that a client renews their DHCP lease."""
+        LEASE_TIME = 30
+        ap_params = self.setup_ap()
+        subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
+                                         router=ap_params['ip'])
+        dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf],
+                                           default_lease_time=LEASE_TIME,
+                                           max_lease_time=LEASE_TIME)
+        self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
+        self.connect(ap_params=ap_params)
+        ip = self.get_device_ipv4_addr()
+
+        dhcp_logs_before = self.access_point.get_dhcp_logs()
+        SLEEP_TIME = LEASE_TIME + 3
+        self.log.info(f'Sleeping {SLEEP_TIME}s to await DHCP renewal')
+        time.sleep(SLEEP_TIME)
+
+        dhcp_logs_after = self.access_point.get_dhcp_logs()
+        dhcp_logs = dhcp_logs_after.replace(dhcp_logs_before, '')
+        # Fuchsia renews at LEASE_TIME / 2, so there should be at least 2 DHCPREQUESTs in logs.
+        # The log lines look like:
+        # INFO dhcpd[17385]: DHCPREQUEST for 192.168.9.2 from f8:0f:f9:3d:ce:d1 via wlan1
+        # INFO dhcpd[17385]: DHCPACK on 192.168.9.2 to f8:0f:f9:3d:ce:d1 via wlan1
+        expected_string = f'DHCPREQUEST for {ip}'
+        asserts.assert_true(
+            dhcp_logs.count(expected_string) >= 2,
+            f'Not enough DHCP renewals ("{expected_string}") in logs: ' +
+            dhcp_logs + "\n")
+
+
+class Dhcpv4InteropCombinatorialOptionsTest(Dhcpv4InteropFixture):
+    """DhcpV4 tests which validate combinations of DHCP options."""
+    OPTION_DOMAIN_NAME = [('domain-name', 'example.invalid'),
+                          ('domain-name', 'example.test')]
+    OPTION_DOMAIN_SEARCH = [('domain-search', 'example.invalid'),
+                            ('domain-search', 'example.test')]
+
+    def test_search_domains(self):
+        test_list = []
+        for combination in itertools.product(self.OPTION_DOMAIN_SEARCH):
+            test_list.append({
+                'dhcp_options': combination,
+                'dhcp_parameters': []
+            })
+        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
+                                     settings=test_list)
+
+    def test_domain_names(self):
+        test_list = []
+        for combination in itertools.product(self.OPTION_DOMAIN_NAME):
+            test_list.append({
+                'dhcp_options': combination,
+                'dhcp_parameters': []
+            })
+        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
+                                     settings=test_list)
