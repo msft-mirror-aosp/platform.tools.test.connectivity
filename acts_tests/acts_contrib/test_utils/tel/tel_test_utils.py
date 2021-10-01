@@ -8051,8 +8051,8 @@ def start_sdm_logger(ad):
             "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
             (ad.sdm_log_path, seconds))
     # Disable any modem logging already running
-    ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
-    ad.adb.shell('echo "modem_logging_control START -n 10 -s 100 -i 1" > /data/vendor/radio/logs/always-on.conf')
+    if not getattr(ad, "enable_always_on_modem_logger", False):
+        ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
     ad.log.debug("start sdm logging")
