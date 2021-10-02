@@ -284,7 +284,7 @@ def _init_device(ad):
         disable_xtra_throttle(ad)
     enable_supl_mode(ad)
     if is_device_wearable(ad):
-        ad.adb.shell("adb shell settings put global stay_on_while_plugged_in 7")
+        ad.adb.shell("settings put global stay_on_while_plugged_in 7")
     else:
         ad.adb.shell("settings put system screen_off_timeout 1800000")
     wutils.wifi_toggle_state(ad, False)
