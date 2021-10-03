@@ -32,6 +32,7 @@ class WlanTargetSecurityTest(BaseTestClass):
     * One Fuchsia device
     * One Whirlwind Access Point
     """
+
     def setup_class(self):
         if 'dut' in self.user_params and self.user_params[
                 'dut'] != 'fuchsia_devices':
@@ -288,10 +289,14 @@ class WlanTargetSecurityTest(BaseTestClass):
 
     def test_associate_wpa3_ap_with_wpa_target_security(self):
         ssid, password = self.setup_ap(hostapd_constants.WPA3_STRING)
-        asserts.assert_true(
+        asserts.assert_false(
             self.dut.associate(ssid,
                                target_security=hostapd_constants.WPA_STRING,
-                               target_pwd=password), 'Failed to associate.')
+                               target_pwd=password),
+            'Expected failure to associate. WPA credentials for WPA3 was '
+            'temporarily disabled, see https://fxbug.dev/85817 for context. '
+            'If this feature was reenabled, please update this test\'s '
+            'expectation.')
 
     def test_associate_wpa3_ap_with_wpa2_target_security(self):
         ssid, password = self.setup_ap(hostapd_constants.WPA3_STRING)
@@ -325,10 +330,14 @@ class WlanTargetSecurityTest(BaseTestClass):
     def test_associate_wpa2_wpa3_ap_with_wpa_target_security(self):
         ssid, password = self.setup_ap(
             hostapd_constants.WPA2_WPA3_MIXED_STRING)
-        asserts.assert_true(
+        asserts.assert_false(
             self.dut.associate(ssid,
                                target_security=hostapd_constants.WPA_STRING,
-                               target_pwd=password), 'Failed to associate.')
+                               target_pwd=password),
+            'Expected failure to associate. WPA credentials for WPA3 was '
+            'temporarily disabled, see https://fxbug.dev/85817 for context. '
+            'If this feature was reenabled, please update this test\'s '
+            'expectation.')
 
     def test_associate_wpa2_wpa3_ap_with_wpa2_target_security(self):
         ssid, password = self.setup_ap(

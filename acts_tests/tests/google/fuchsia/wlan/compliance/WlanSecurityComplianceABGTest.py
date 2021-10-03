@@ -39,6 +39,7 @@ def create_security_profile(test_func):
         security_profile_generator: The function that generates the security
             profile object
     """
+
     @wraps(test_func)
     def security_profile_generator(self, *args, **kwargs):
         """Function that looks at the name of the function and determines what
@@ -162,6 +163,7 @@ class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
     * One Android device or Fuchsia device
     * One Access Point
     """
+
     def setup_class(self):
         super().setup_class()
         if 'dut' in self.user_params:

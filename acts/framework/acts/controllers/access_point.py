@@ -177,14 +177,15 @@ class AccessPoint(object):
         ssh_settings: The ssh settings being used by the ssh connection.
         dhcp_settings: The dhcp server settings being used.
     """
+
     def __init__(self, configs):
         """
         Args:
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
-        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
-                                        (self.ssh_settings.hostname, msg))
+        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
+            self.ssh_settings.hostname, msg))
         self.device_pdu_config = configs.get('PduDevice', None)
         self.identifier = self.ssh_settings.hostname
 
@@ -323,6 +324,7 @@ class AccessPoint(object):
         # Clear all routes to prevent old routes from interfering.
         self._route_cmd.clear_routes(net_interface=interface)
 
+        self._dhcp_bss = dict()
         if hostapd_config.bss_lookup:
             # The self._dhcp_bss dictionary is created to hold the key/value
             # pair of the interface name and the ip scope that will be
@@ -332,7 +334,6 @@ class AccessPoint(object):
             # is requested.  This part is designed to bring up the
             # hostapd interfaces and not the DHCP servers for each
             # interface.
-            self._dhcp_bss = dict()
             counter = 1
             for bss in hostapd_config.bss_lookup:
                 if interface_mac_orig:
@@ -374,12 +375,9 @@ class AccessPoint(object):
                 self._ip_cmd.set_ipv4_address(str(k), bss_interface_ip)
 
         # Restart the DHCP server with our updated list of subnets.
-        configured_subnets = [x.subnet for x in self._aps.values()]
-        if hostapd_config.bss_lookup:
-            for k, v in self._dhcp_bss.items():
-                configured_subnets.append(v)
-
-        self.start_dhcp(subnets=configured_subnets)
+        configured_subnets = self.get_configured_subnets()
+        dhcp_conf = dhcp_config.DhcpConfig(subnets=configured_subnets)
+        self.start_dhcp(dhcp_conf=dhcp_conf)
         self.start_nat()
 
         bss_interfaces = [bss for bss in hostapd_config.bss_lookup]
@@ -387,22 +385,46 @@ class AccessPoint(object):
 
         return bss_interfaces
 
-    def start_dhcp(self, subnets):
+    def get_configured_subnets(self):
+        """Get the list of configured subnets on the access point.
+
+        This allows consumers of the access point objects create custom DHCP
+        configs with the correct subnets.
+
+        Returns: a list of dhcp_config.Subnet objects
+        """
+        configured_subnets = [x.subnet for x in self._aps.values()]
+        for k, v in self._dhcp_bss.items():
+            configured_subnets.append(v)
+        return configured_subnets
+
+    def start_dhcp(self, dhcp_conf):
         """Start a DHCP server for the specified subnets.
 
         This allows consumers of the access point objects to control DHCP.
 
         Args:
-            subnets: A list of Subnets.
+            dhcp_conf: A dhcp_config.DhcpConfig object.
+
+        Raises:
+            Error: Raised when a dhcp server error is found.
         """
-        return self._dhcp.start(config=dhcp_config.DhcpConfig(subnets))
+        self._dhcp.start(config=dhcp_conf)
 
     def stop_dhcp(self):
         """Stop DHCP for this AP object.
 
         This allows consumers of the access point objects to control DHCP.
         """
-        return self._dhcp.stop()
+        self._dhcp.stop()
+
+    def get_dhcp_logs(self):
+        """Get DHCP logs for this AP object.
+
+        This allows consumers of the access point objects validate DHCP
+        behavior.
+        """
+        return self._dhcp.get_logs()
 
     def start_nat(self):
         """Start NAT on the AP.

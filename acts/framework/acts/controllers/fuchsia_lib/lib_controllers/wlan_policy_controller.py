@@ -39,6 +39,7 @@ class WlanPolicyController:
     """Contains methods related to the wlan policy layer, to be used in the
     FuchsiaDevice object.
     """
+
     def __init__(self, fuchsia_device):
         self.device = fuchsia_device
         self.log = logger.create_tagged_trace_logger(
