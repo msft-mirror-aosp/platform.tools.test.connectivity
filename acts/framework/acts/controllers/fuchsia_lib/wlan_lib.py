@@ -131,18 +131,25 @@ class FuchsiaWlanLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, {})
 
-    def wlanStatus(self):
+    def wlanStatus(self, iface_id=None):
         """ Request connection status
+
+        Args:
+            iface_id: unsigned 16-bit int, the wlan interface id
+                (defaults to None)
 
         Returns:
             Client state summary containing WlanClientState and
             status of various networks connections
         """
         test_cmd = COMMAND_STATUS
+        test_args = {}
+        if iface_id:
+            test_args = {'iface_id': iface_id}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, {})
+        return self.send_command(test_id, test_cmd, test_args)
 
     def wlanGetCountry(self, phy_id):
         """ Reads the currently configured country for `phy_id`.
