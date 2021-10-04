@@ -33,6 +33,7 @@ PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
 L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
 NAT6_PACKAGE = "ip6tables kmod-ipt-nat6"
 CAPTIVE_PORTAL_PACKAGE = "nodogsplash"
+MDNS_PACKAGE = "avahi-utils avahi-daemon-service-http avahi-daemon-service-ssh libavahi-client avahi-dbus-daemon"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
@@ -85,6 +86,7 @@ class NetworkSettings(object):
             "setup_ipv6_bridge": self.remove_ipv6_bridge,
             "ipv6_prefer_option": self.remove_ipv6_prefer_option,
             "block_dns_response": self.unblock_dns_response,
+            "setup_mdns": self.remove_mdns,
             "setup_captive_portal": self.remove_cpative_portal
         }
         # This map contains cleanup functions to restore the configuration to
@@ -845,6 +847,16 @@ class NetworkSettings(object):
     def _get_tcpdump_pid(self, tcpdump_file_name):
         """Check tcpdump process on OpenWrt."""
         return self.ssh.run("pgrep -f %s" % (tcpdump_file_name), ignore_status=True).stdout
+
+    def setup_mdns(self):
+        self.config.add("setup_mdns")
+        self.package_install(MDNS_PACKAGE)
+        self.commit_changes()
+
+    def remove_mdns(self):
+        self.config.discard("setup_mdns")
+        self.package_remove(MDNS_PACKAGE)
+        self.commit_changes()
 
     def block_dns_response(self):
         self.config.add("block_dns_response")
