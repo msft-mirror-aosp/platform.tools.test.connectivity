@@ -23,6 +23,7 @@ from acts_contrib.test_utils.net import connectivity_const as cconsts
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
+from acts.controllers.openwrt_lib.openwrt_constants import OpenWrtWifiSetting
 import os
 
 WifiEnums = wutils.WifiEnums
@@ -1162,4 +1163,42 @@ class WifiRoamingTest(WifiBaseTest):
         ap2_network["SSID"] = ap1_network["SSID"]
         ap2_network["password"] = ap1_network["password"]
 
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+
+    @test_tracker_info(uuid="cc8781ec-12fb-47a4-86d4-80d13231c75d")
+    def test_connect_to_wpa2_psk_2g_80211r(self):
+        """Test WPA2-PSK 802.11r 2G connectivity ant roaming."""
+        if "OpenWrtAP" in self.user_params:
+            self.openwrt1 = self.access_points[0]
+            self.openwrt2 = self.access_points[1]
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2,
+                                                mirror_ap=True)
+        ap1_network = self.reference_networks[0]["2g"]
+        ap2_network = self.reference_networks[1]["2g"]
+        ap1_network["bssid"] = self.bssid_map[0]["2g"][ap1_network["SSID"]]
+        ap2_network["bssid"] = self.bssid_map[1]["2g"][ap2_network["SSID"]]
+
+        md = self.openwrt1.generate_mobility_domain()
+        self.openwrt1.enable_80211r(OpenWrtWifiSetting.IFACE_2G, md)
+        self.openwrt2.enable_80211r(OpenWrtWifiSetting.IFACE_2G, md)
+        self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
+
+    @test_tracker_info(uuid="8b0ee65e-bba2-4786-a8b9-8990316d123d")
+    def test_connect_to_wpa2_psk_5g_80211r(self):
+        """Test WPA2-PSK 802.11r 5G connectivity and roaming."""
+        if "OpenWrtAP" in self.user_params:
+            self.openwrt1 = self.access_points[0]
+            self.openwrt2 = self.access_points[1]
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2,
+                                                mirror_ap=True)
+        ap1_network = self.reference_networks[0]["5g"]
+        ap2_network = self.reference_networks[1]["5g"]
+        ap1_network["bssid"] = self.bssid_map[0]["5g"][ap1_network["SSID"]]
+        ap2_network["bssid"] = self.bssid_map[1]["5g"][ap2_network["SSID"]]
+
+        md = self.openwrt1.generate_mobility_domain()
+        self.openwrt1.enable_80211r(OpenWrtWifiSetting.IFACE_5G, md)
+        self.openwrt2.enable_80211r(OpenWrtWifiSetting.IFACE_5G, md)
         self.roaming_from_AP1_and_AP2(ap1_network, ap2_network)
