@@ -125,7 +125,8 @@ class GnssFunctionTest(BaseTestClass):
             clear_logd_gnss_qxdm_log(self.ad)
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
-        if is_wearable_btwifi(self.ad) and not self.ad.droid.wifiCheckState():
+        # TODO (b/202101058:chenstanley): Need to double check how to disable wifi successfully in wearable projects.
+        if is_wearable_btwifi(self.ad):
             wifi_toggle_state(self.ad, True)
             connect_to_wifi_network(
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
