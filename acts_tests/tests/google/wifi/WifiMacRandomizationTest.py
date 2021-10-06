@@ -66,7 +66,8 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        req_params = ["dbs_supported_models", "roaming_attn"]
+        req_params = ["sta_sta_supported_models", "dbs_supported_models",
+                      "support_one_factory_mac_address", "roaming_attn"]
         opt_param = [
             "open_network", "reference_networks", "wep_networks"
         ]
@@ -79,7 +80,14 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.configure_packet_capture()
 
         if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start(wep_network=True, ap_count=2)
+            self.legacy_configure_ap_and_start(wep_network=True,
+                                               ap_count=2)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                wep_network=True,
+                                                mirror_ap=True,
+                                                ap_count=2)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -91,7 +99,11 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(DEFAULT_TIMEOUT)
         wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_toggle_state(self.dut_client, True)
-        self.soft_ap_factory_mac = self.get_soft_ap_mac_address()
+        if self.dut.model in self.support_one_factory_mac_address:
+            self.soft_ap_factory_mac = (self.dut.droid
+                                        .wifigetFactorymacAddresses()[0])
+        else:
+            self.soft_ap_factory_mac = self.get_soft_ap_mac_address()
         self.sta_factory_mac = self.dut.droid.wifigetFactorymacAddresses()[0]
 
         self.wpapsk_2g = self.reference_networks[0]["2g"]
@@ -102,15 +114,18 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.open_5g = self.open_network[0]["5g"]
 
     def setup_test(self):
+        super().setup_test()
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
             wutils.wifi_toggle_state(ad, True)
 
     def teardown_test(self):
+        super().teardown_test()
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
+        self.dut.droid.wifiRemoveNetworkSuggestions([])
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
 
@@ -256,11 +271,59 @@ class WifiMacRandomizationTest(WifiBaseTest):
 
     def get_soft_ap_mac_address(self):
         """Gets the current MAC address being used for SoftAp."""
+        if self.dut.model in self.sta_sta_supported_models:
+            out = self.dut.adb.shell("ifconfig wlan2")
+            return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
         if self.dut.model in self.dbs_supported_models:
             out = self.dut.adb.shell("ifconfig wlan1")
             return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
         else:
             return self.get_sta_mac_address()
+
+    def _add_suggestion_and_verify_mac_randomization(self, network_suggestion):
+        """Add wifi network suggestion and verify MAC randomization.
+
+        Args:
+            network_suggestion: network suggestion to add.
+
+        Returns:
+            Randomized MAC address.
+        """
+        self.log.info("Adding network suggestion")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([network_suggestion]),
+            "Failed to add suggestions")
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, network_suggestion[WifiEnums.SSID_KEY])
+        wutils.wait_for_connect(self.dut, network_suggestion[WifiEnums.SSID_KEY])
+        default_mac = self.get_sta_mac_address()
+        randomized_mac = self.dut.droid.wifiGetConnectionInfo()["mac_address"]
+        self.log.info("Factory MAC = %s\nRandomized MAC = %s\nDefault MAC = %s" %
+                      (self.sta_factory_mac, randomized_mac, default_mac))
+        asserts.assert_true(
+            default_mac == randomized_mac,
+            "Connection is not using randomized MAC as the default MAC.")
+        return randomized_mac
+
+    def _remove_suggestion_and_verify_disconnect(self, network_suggestion):
+        """Remove wifi network suggestion and verify device disconnects.
+
+        Args:
+            network_suggestion: network suggestion to remove.
+        """
+        self.dut.log.info("Removing network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiRemoveNetworkSuggestions([network_suggestion]),
+            "Failed to remove suggestions")
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+        asserts.assert_false(
+            wutils.wait_for_connect(
+                self.dut,
+                network_suggestion[WifiEnums.SSID_KEY],
+                assert_on_fail=False),
+            "Device should not connect back")
+
     """Tests"""
 
 
@@ -400,7 +463,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
             raise signals.TestFailure(msg %(self.open_5g, mac_list[1], mac_open))
 
     @test_tracker_info(uuid="edb5a0e5-7f3b-4147-b1d3-48ad7ad9799e")
-    def test_mac_randomization_differnet_APs(self):
+    def test_mac_randomization_different_APs(self):
         """Verify randomization using two different APs.
 
         Steps:
@@ -485,6 +548,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
+        if "OpenWrtAP" in self.user_params:
+            AP1_network["bssid"] = self.bssid_map[0]["5g"][AP1_network["SSID"]]
+            AP2_network["bssid"] = self.bssid_map[1]["5g"][AP2_network["SSID"]]
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off", self.roaming_attn)
         mac_before_roam = self.connect_to_network_and_verify_mac_randomization(
                 AP1_network)
@@ -521,6 +587,17 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(SHORT_TIMEOUT)
         network = self.wpapsk_5g
         rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
+        pcap_fname_bflink = '%s_%s.pcap' % \
+            (self.pcap_procs[hostapd_constants.BAND_5G][1],
+             hostapd_constants.BAND_5G.upper())
+        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        time.sleep(SHORT_TIMEOUT)
+        packets_bflink = rdpcap(pcap_fname_bflink)
+        self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets_bflink)
+        self.verify_mac_is_found_in_pcap(rand_mac, packets_bflink)
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, 'dual', self.test_name)
+        time.sleep(SHORT_TIMEOUT)
         wutils.send_link_probes(self.dut, 3, 3)
         pcap_fname = '%s_%s.pcap' % \
             (self.pcap_procs[hostapd_constants.BAND_5G][1],
@@ -529,7 +606,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(SHORT_TIMEOUT)
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
-        self.verify_mac_is_found_in_pcap(self.get_sta_mac_address(), packets)
+        self.verify_mac_is_found_in_pcap(rand_mac, packets)
 
     @test_tracker_info(uuid="1c2cc0fd-a340-40c4-b679-6acc5f526451")
     def test_check_mac_in_wifi_scan(self):
@@ -553,3 +630,46 @@ class WifiMacRandomizationTest(WifiBaseTest):
              hostapd_constants.BAND_2G.upper())
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
+
+    @test_tracker_info(uuid="7714d31f-bb08-4f29-b246-0ce1398a3c03")
+    def test_mac_randomization_for_network_suggestion(self):
+        """Add network suggestion and verify MAC randomization.
+
+        Steps:
+            1. Add a network suggestion and verify device connects to it.
+            2. Verify the device uses randomized MAC address for this network.
+        """
+        network_suggestion = self.reference_networks[0]["5g"]
+        self._add_suggestion_and_verify_mac_randomization(network_suggestion)
+
+    @test_tracker_info(uuid="144ad0b4-b79d-4b1d-a8a9-3c612a76c32c")
+    def test_enhanced_mac_randomization_for_network_suggestion(self):
+        """Test enhanced MAC randomization.
+
+        Steps:
+            1. Add a network suggestion with enhanced mac randomization enabled.
+            2. Connect to the network and verify the MAC address is random.
+            3. Remove the suggestion network and add it back.
+            4. Connect to the network. Verify the MAC address is random and
+               different from the randomized MAC observed in step 2.
+        """
+        asserts.skip_if(not self.dut.droid.isSdkAtLeastS(),
+                        "This feature is only supported on S and later.")
+
+        network_suggestion = self.reference_networks[0]["5g"]
+        network_suggestion["enhancedMacRandomizationEnabled"] = True
+
+        # add network suggestion with enhanced mac randomization
+        randomized_mac1 = self._add_suggestion_and_verify_mac_randomization(
+            network_suggestion)
+
+        # remove network suggestion and verify no connection
+        self._remove_suggestion_and_verify_disconnect(network_suggestion)
+
+        # add network suggestion and verify device connects back
+        randomized_mac2 = self._add_suggestion_and_verify_mac_randomization(
+            network_suggestion)
+
+        # verify both randomized mac addrs are different
+        asserts.assert_true(randomized_mac1 != randomized_mac2,
+                            "Randomized MAC addresses are same.")

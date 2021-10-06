@@ -1411,7 +1411,7 @@ def get_interface_ip_addresses(comm_channel, interface):
 
     Returns:
         A list of dictionaries of the the various IP addresses:
-            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+            ipv4_private_local_addresses: Any 192.168, 172.16, 10, or 169.254
                 addresses
             ipv4_public_addresses: Any IPv4 public addresses
             ipv6_link_local_addresses: Any fe80:: addresses

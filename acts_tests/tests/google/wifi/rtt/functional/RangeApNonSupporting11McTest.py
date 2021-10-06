@@ -22,7 +22,7 @@ from acts_contrib.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts_contrib.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
-class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
+class RangeApNonSupporting11McTest(RttBaseTest, WifiBaseTest):
     """Test class for RTT ranging to Access Points which do not support IEEE
     802.11mc
     """
@@ -111,6 +111,8 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
         device not having privilege access (expect failures).
         """
         dut = self.android_devices[0]
+        asserts.skip_if(dut.droid.isSdkAtLeastS(),
+                        "Build at least S doesn't need privilege access to use one-sided RTT.")
         rutils.config_privilege_override(dut, True)
         non_rtt_aps = rutils.select_best_scan_results(
             rutils.scan_with_rtt_support_constraint(dut, False),

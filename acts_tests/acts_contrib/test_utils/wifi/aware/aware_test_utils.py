@@ -64,8 +64,26 @@ def wait_for_event(ad, event_name, timeout=EVENT_TIMEOUT):
         ad.log.info('%sTimed out while waiting for %s', prefix, event_name)
         asserts.fail(event_name)
 
+def _filter_callbacks(event, expected_kv):
+    """
+    Helper method to use in |fail_on_event_with_keys| and
+    |wait_for_event_with_keys|
+    """
+    for expected_k, expected_v in expected_kv:
+        actual_v = event['data'][expected_k]
+        if isinstance(expected_v, dict) and isinstance(actual_v, dict):
+            # |expected_v| not a subset of |actual_v|
+            if not(expected_v.items() <= actual_v.items()):
+                return False
+        else:
+            if actual_v != expected_v:
+                return False
+    return True
 
-def wait_for_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT,
+
+def wait_for_event_with_keys(ad,
+                             event_name,
+                             timeout=EVENT_TIMEOUT,
                              *keyvalues):
     """Wait for the specified event contain the key/value pairs or timeout
 
@@ -73,23 +91,16 @@ def wait_for_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT,
     ad: The android device
     event_name: The event to wait on
     timeout: Number of seconds to wait
-    keyvalues: (kay, value) pairs
+    keyvalues: Expected (key, value) pairs. If the value for a key is a dict,
+               then this will perform subset matching for that key.
   Returns:
     The event (if available)
   """
-
-    def filter_callbacks(event, keyvalues):
-        for keyvalue in keyvalues:
-            key, value = keyvalue
-            if event['data'][key] != value:
-                return False
-        return True
-
     prefix = ''
     if hasattr(ad, 'pretty_name'):
         prefix = '[%s] ' % ad.pretty_name
     try:
-        event = ad.ed.wait_for_event(event_name, filter_callbacks, timeout,
+        event = ad.ed.wait_for_event(event_name, _filter_callbacks, timeout,
                                      keyvalues)
         ad.log.info('%s%s: %s', prefix, event_name, event['data'])
         return event
@@ -128,21 +139,14 @@ def fail_on_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT, *keyvalues):
     ad: The android device
     event_name: The event to wait on
     timeout: Number of seconds to wait
-    keyvalues: (kay, value) pairs
+    keyvalues: Expected (key, value) pairs. If the value for a key is a dict,
+               then this will perform subset matching for that key.
   """
-
-    def filter_callbacks(event, keyvalues):
-        for keyvalue in keyvalues:
-            key, value = keyvalue
-            if event['data'][key] != value:
-                return False
-        return True
-
     prefix = ''
     if hasattr(ad, 'pretty_name'):
         prefix = '[%s] ' % ad.pretty_name
     try:
-        event = ad.ed.wait_for_event(event_name, filter_callbacks, timeout,
+        event = ad.ed.wait_for_event(event_name, _filter_callbacks, timeout,
                                      keyvalues)
         ad.log.info('%sReceived unwanted %s: %s', prefix, event_name,
                     event['data'])
@@ -286,8 +290,6 @@ def validate_forbidden_callbacks(ad, limited_cb=None):
 
     if limited_cb is None:
         limited_cb = {}
-    # add callbacks which should never be called
-    limited_cb[aconsts.CB_EV_MATCH_EXPIRED] = 0
 
     fail = False
     for cb_event in limited_cb.keys():
@@ -410,10 +412,10 @@ def get_mac_addr(device, interface):
   """
     out = device.adb.shell("ifconfig %s" % interface)
     res = re.match(".* HWaddr (\S+).*", out, re.S)
-    asserts.assert_true(
-        res,
-        'Unable to obtain MAC address for interface %s' % interface,
-        extras=out)
+    asserts.assert_true(res,
+                        'Unable to obtain MAC address for interface %s' %
+                        interface,
+                        extras=out)
     return res.group(1).upper().replace(':', '')
 
 
@@ -454,8 +456,9 @@ def verify_socket_connect(dut_s, dut_c, ipv6_s, ipv6_c, port):
         port_to_use = port
         if port == 0:
             port_to_use = dut_s.droid.getTcpServerSocketPort(server_sock)
-        sock_c, sock_s = sutils.open_connect_socket(
-            dut_c, dut_s, ipv6_c, ipv6_s, 0, port_to_use, server_sock)
+        sock_c, sock_s = sutils.open_connect_socket(dut_c, dut_s, ipv6_c,
+                                                    ipv6_s, 0, port_to_use,
+                                                    server_sock)
     except:
         return False
     finally:
@@ -488,6 +491,44 @@ def run_ping6(dut, target_ip, duration=60):
     for i in range(len(title)):
         latency_result[title[i]] = result[i]
     return latency_result
+
+
+def reset_device_parameters(ad):
+    """Reset device configurations.
+
+    Args:
+      ad: device to be reset
+    """
+    ad.adb.shell("cmd wifiaware reset")
+
+
+def reset_device_statistics(ad):
+    """Reset device statistics.
+
+    Args:
+        ad: device to be reset
+    """
+    ad.adb.shell("cmd wifiaware native_cb get_cb_count --reset")
+
+
+def set_power_mode_parameters(ad, power_mode):
+    """Set device power mode.
+
+    Set the power configuration DW parameters for the device based on any
+    configuration overrides (if provided)
+
+    Args:
+        ad: android device
+        power_mode: Desired power mode (INTERACTIVE or NON_INTERACTIVE)
+    """
+    if power_mode == "INTERACTIVE":
+        config_settings_high_power(ad)
+    elif power_mode == "NON_INTERACTIVE":
+        config_settings_low_power(ad)
+    else:
+        asserts.assert_false(
+            "The 'aware_default_power_mode' configuration must be INTERACTIVE or "
+            "NON_INTERACTIVE")
 
 
 #########################################################
@@ -537,8 +578,8 @@ def configure_power_setting(device, mode, name, value):
     name: One of the power settings from 'wifiaware set-power'.
     value: An integer.
   """
-    device.adb.shell(
-        "cmd wifiaware native_api set-power %s %s %d" % (mode, name, value))
+    device.adb.shell("cmd wifiaware native_api set-power %s %s %d" %
+                     (mode, name, value))
 
 
 def configure_mac_random_interval(device, interval_sec):
@@ -550,8 +591,9 @@ def configure_mac_random_interval(device, interval_sec):
     interval_sec: The MAC randomization interval in seconds. A value of 0
                   disables all randomization.
   """
-    device.adb.shell("cmd wifiaware native_api set mac_random_interval_sec %d"
-                     % interval_sec)
+    device.adb.shell(
+        "cmd wifiaware native_api set mac_random_interval_sec %d" %
+        interval_sec)
 
 
 def configure_ndp_allow_any_override(device, override_api_check):
@@ -843,8 +885,12 @@ def create_ib_ndp(p_dut, s_dut, p_config, s_config, device_startup_offset):
                            the two devices.
   """
     (p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
-     peer_id_on_pub) = create_discovery_pair(
-         p_dut, s_dut, p_config, s_config, device_startup_offset, msg_id=9999)
+     peer_id_on_pub) = create_discovery_pair(p_dut,
+                                             s_dut,
+                                             p_config,
+                                             s_config,
+                                             device_startup_offset,
+                                             msg_id=9999)
 
     # Publisher: request network
     p_req_key = request_network(
@@ -1001,9 +1047,9 @@ def create_oob_ndp(init_dut, resp_dut):
     # to execute the data-path request)
     time.sleep(WAIT_FOR_CLUSTER)
 
-    (init_req_key, resp_req_key, init_aware_if, resp_aware_if,
-     init_ipv6, resp_ipv6) = create_oob_ndp_on_sessions(
-         init_dut, resp_dut, init_id, init_mac, resp_id, resp_mac)
+    (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+     resp_ipv6) = create_oob_ndp_on_sessions(init_dut, resp_dut, init_id,
+                                             init_mac, resp_id, resp_mac)
 
     return (init_req_key, resp_req_key, init_aware_if, resp_aware_if,
             init_ipv6, resp_ipv6)

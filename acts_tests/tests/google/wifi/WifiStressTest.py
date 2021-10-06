@@ -46,6 +46,9 @@ class WifiStressTest(WifiBaseTest):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network.
     """
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
 
     def setup_class(self):
         super().setup_class()
@@ -68,7 +71,10 @@ class WifiStressTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(ap_count=2)
-
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                ap_count=2)
         asserts.assert_true(
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
@@ -79,19 +85,17 @@ class WifiStressTest(WifiBaseTest):
         self.networks = [self.wpa_2g, self.wpa_5g, self.open_2g, self.open_5g]
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
+        super().teardown_test()
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
@@ -334,6 +338,7 @@ class WifiStressTest(WifiBaseTest):
         raise signals.TestPass(details="", extras={"Total Hours":"%d" %
             self.stress_hours, "Seconds Run":"%d" %total_time})
 
+    @test_tracker_info(uuid="591d257d-9477-4a89-a220-5715c93a76a7")
     def test_stress_youtube_5g(self):
         """Test to connect to network and play various youtube videos.
 

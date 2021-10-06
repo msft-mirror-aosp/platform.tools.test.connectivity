@@ -29,6 +29,11 @@ NETWORK_ERROR = "Device is not connected to reference network"
 
 
 class WifiNewSetupAutoJoinTest(WifiBaseTest):
+
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
+
     def add_network_and_enable(self, network):
         """Add a network and enable it.
 
@@ -53,7 +58,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("atten_val", "ping_addr", "max_bugreports")
+        req_params = ("atten_val", "ping_addr")
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -82,11 +87,6 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
             return
         else:
             self.log.info("Configured networks for testing")
-            self.attenuators[0].set_atten(0)
-            self.attenuators[1].set_atten(0)
-            self.attenuators[2].set_atten(90)
-            self.attenuators[3].set_atten(90)
-            wait_time = 15
             self.dut.droid.wakeLockAcquireBright()
             self.dut.droid.wakeUpNow()
             # Add and enable all networks.
@@ -116,7 +116,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
 
         Args:
             attn_value: Attenuation value for different APs signal.
-            bssid: Bssid of excepted network.
+            bssid: Bssid of expected network.
 
         Returns:
             True if bssid of current network match, else false.
@@ -125,6 +125,7 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
         self.attenuators[1].set_atten(attn_value[1])
         self.attenuators[2].set_atten(attn_value[2])
         self.attenuators[3].set_atten(attn_value[3])
+        time.sleep(10) # wait time for attenuation
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         try:
@@ -140,18 +141,21 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
             self.dut.droid.wifiLockRelease()
             self.dut.droid.goToSleepNow()
 
-    def on_fail(self, test_name, begin_time):
-        if self.max_bugreports > 0:
-            self.dut.take_bug_report(test_name, begin_time)
-            self.max_bugreports -= 1
-        self.dut.cat_adb_log(test_name, begin_time)
-
     def teardown_class(self):
         for ad in self.android_devices:
             wutils.reset_wifi(ad)
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
+
+    def setup_test(self):
+        super().setup_test()
+        # initialize attenuators
+        self.attenuators[0].set_atten(0)
+        self.attenuators[1].set_atten(0)
+        self.attenuators[2].set_atten(90)
+        self.attenuators[3].set_atten(90)
+
 
     """ Tests Begin """
 

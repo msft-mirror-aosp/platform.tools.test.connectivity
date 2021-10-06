@@ -135,6 +135,54 @@ def p2p_get_current_group(ad):
          ad_group_info_event['data']['Interface']))
     return ad_group_info_event['data']
 
+def is_ongoing_peer_ready(peerConfig, waitForPin):
+    """Check whether the peer config is ready
+
+    Args:
+        peerConfig: the ongoing config
+        waitForPin: this config needs key or not
+    Return:
+        true for ready; false otherwise.
+    """
+    if peerConfig is None:
+        return False
+    if not peerConfig['data'][WifiP2PEnums.WifiP2pConfig.DEVICEADDRESS_KEY]:
+        return False
+    if not waitForPin:
+        return True
+    if WifiP2PEnums.WpsInfo.WPS_PIN_KEY in peerConfig['data'][
+        WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY]:
+        return True
+    return False
+
+def wait_for_ongoing_peer_ready(ad, waitForPin, maxPollingCount):
+    """wait for the ongoing peer data ready
+
+    Args:
+        ad: The android device
+        waitForPin: this config needs key or not
+        maxPollingCount: the max polling count
+    Return:
+        the ongoing peer config
+    """
+    ad_peerConfig = None
+    ad.log.debug("%s is waiting for the ongoing peer, max polling count %s"
+        % (ad.name, maxPollingCount))
+    while maxPollingCount > 0:
+        ad.droid.requestP2pPeerConfigure()
+        ad_peerConfig = ad.ed.pop_event(
+            p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+        maxPollingCount -= 1
+        if is_ongoing_peer_ready(ad_peerConfig, waitForPin):
+            break
+        ad.log.debug("%s is not ready for next step" % (ad.name))
+        time.sleep(p2pconsts.DEFAULT_POLLING_SLEEPTIME)
+    asserts.assert_true(
+        ad_peerConfig['data'][WifiP2PEnums.WifiP2pConfig.DEVICEADDRESS_KEY],
+        "DUT %s does not receive the request." % (ad.name))
+    ad.log.debug(ad_peerConfig['data'])
+    return ad_peerConfig
 
 #trigger p2p connect to ad2 from ad1
 def p2p_connect(ad1,
@@ -160,6 +208,7 @@ def p2p_connect(ad1,
         if go_ad is None:
             go_ad = ad1
         find_p2p_device(ad1, ad2)
+        # GO might be another peer, so ad2 needs to find it first.
         find_p2p_group_owner(ad2, go_ad)
     elif p2p_connect_type == p2pconsts.P2P_CONNECT_JOIN:
         find_p2p_group_owner(ad1, ad2)
@@ -175,23 +224,19 @@ def p2p_connect(ad1,
     ad1.droid.wifiP2pConnect(wifi_p2p_config)
     ad1.ed.pop_event(p2pconsts.CONNECT_SUCCESS_EVENT,
                      p2pconsts.DEFAULT_TIMEOUT)
-    time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
     if not isReconnect:
-        ad1.droid.requestP2pPeerConfigure()
-        ad1_peerConfig = ad1.ed.pop_event(
-            p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
-            p2pconsts.DEFAULT_TIMEOUT)
-        ad1.log.debug(ad1_peerConfig['data'])
-        ad2.droid.requestP2pPeerConfigure()
-        ad2_peerConfig = ad2.ed.pop_event(
-            p2pconsts.ONGOING_PEER_INFO_AVAILABLE_EVENT,
-            p2pconsts.DEFAULT_TIMEOUT)
-        ad2.log.debug(ad2_peerConfig['data'])
+        # ad1 is the initiator, it should be ready soon.
+        ad1_peerConfig = wait_for_ongoing_peer_ready(ad1,
+            wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY, 6)
+        # auto-join tries 10 times to find groups, and
+        # one round takes 2 - 3 seconds.
+        ad2_peerConfig = wait_for_ongoing_peer_ready(ad2,
+            wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_KEYPAD, 31)
         if wpsSetup == WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY:
             asserts.assert_true(
                 WifiP2PEnums.WpsInfo.WPS_PIN_KEY in ad1_peerConfig['data'][
                     WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY],
-                "Can't get pin value")
+                "Can't get display pin value")
             ad2_peerConfig['data'][WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY][
                 WifiP2PEnums.WpsInfo.WPS_PIN_KEY] = ad1_peerConfig['data'][
                     WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY][
@@ -204,7 +249,7 @@ def p2p_connect(ad1,
             asserts.assert_true(
                 WifiP2PEnums.WpsInfo.WPS_PIN_KEY in ad2_peerConfig['data'][
                     WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY],
-                "Can't get pin value")
+                "Can't get keypad pin value")
             ad1_peerConfig['data'][WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY][
                 WifiP2PEnums.WpsInfo.WPS_PIN_KEY] = ad2_peerConfig['data'][
                     WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY][
@@ -212,8 +257,6 @@ def p2p_connect(ad1,
             ad1.droid.setP2pPeerConfigure(ad1_peerConfig['data'])
             ad1.ed.pop_event(p2pconsts.ONGOING_PEER_SET_SUCCESS_EVENT,
                              p2pconsts.DEFAULT_TIMEOUT)
-            #Need to Accept first in ad1 to avoid connect time out in ad2,
-            #the timeout just 1 sec in ad2
             ad1.droid.wifiP2pAcceptConnection()
             time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
             ad2.droid.wifiP2pConfirmConnection()
@@ -274,6 +317,7 @@ def find_p2p_device(ad1, ad2):
     ad1.droid.wifiP2pDiscoverPeers()
     ad2.droid.wifiP2pDiscoverPeers()
     p2p_find_result = False
+    ad1.ed.clear_events(p2pconsts.PEER_AVAILABLE_EVENT)
     while not p2p_find_result:
         ad1_event = ad1.ed.pop_event(p2pconsts.PEER_AVAILABLE_EVENT,
                                      p2pconsts.P2P_FIND_TIMEOUT)
@@ -291,11 +335,13 @@ def find_p2p_group_owner(ad1, ad2):
         ad1: The android device
         ad2: The android device which is a group owner
     """
-    ad2.droid.wifiP2pStopPeerDiscovery()
-    time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
-    ad1.droid.wifiP2pDiscoverPeers()
     p2p_find_result = False
+    ad1.ed.clear_events(p2pconsts.PEER_AVAILABLE_EVENT)
     while not p2p_find_result:
+        ad2.droid.wifiP2pStopPeerDiscovery()
+        ad1.droid.wifiP2pStopPeerDiscovery()
+        ad2.droid.wifiP2pDiscoverPeers()
+        ad1.droid.wifiP2pDiscoverPeers()
         ad1_event = ad1.ed.pop_event(p2pconsts.PEER_AVAILABLE_EVENT,
                                      p2pconsts.P2P_FIND_TIMEOUT)
         ad1.log.debug(ad1_event['data'])

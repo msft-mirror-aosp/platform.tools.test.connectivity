@@ -43,6 +43,9 @@ class WifiWakeTest(WifiBaseTest):
     * One Android Device
     * Two APs that can be turned on and off
     """
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
 
     def setup_class(self):
         super().setup_class()
@@ -58,6 +61,9 @@ class WifiWakeTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(mirror_ap=False, ap_count=2)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2)
 
         # use 2G since Wifi Wake does not work if an AP is on a 5G DFS channel
         self.ap_a = self.reference_networks[0]["2g"]
@@ -65,34 +71,53 @@ class WifiWakeTest(WifiBaseTest):
 
         self.ap_a_atten = self.attenuators[0]
         self.ap_b_atten = self.attenuators[2]
+        if "OpenWrtAP" in self.user_params:
+            self.ap_b_atten = self.attenuators[1]
 
     # TODO(b/119040540): this method of disabling/re-enabling Wifi on APs is
     # hacky, switch to using public methods when they are implemented
     def ap_a_off(self):
+        if "OpenWrtAP" in self.user_params:
+            self.access_points[0].stop_ap()
+            self.log.info('Turned AP A off')
+            return
         ap_a_hostapd = self.access_points[0]._aps['wlan0'].hostapd
         if ap_a_hostapd.is_alive():
             ap_a_hostapd.stop()
             self.log.info('Turned AP A off')
 
     def ap_a_on(self):
+        if "OpenWrtAP" in self.user_params:
+            self.access_points[0].start_ap()
+            self.log.info('Turned AP A on')
+            return
         ap_a_hostapd = self.access_points[0]._aps['wlan0'].hostapd
         if not ap_a_hostapd.is_alive():
             ap_a_hostapd.start(ap_a_hostapd.config)
             self.log.info('Turned AP A on')
 
     def ap_b_off(self):
+        if "OpenWrtAP" in self.user_params:
+            self.access_points[1].stop_ap()
+            self.log.info('Turned AP B off')
+            return
         ap_b_hostapd = self.access_points[1]._aps['wlan0'].hostapd
         if ap_b_hostapd.is_alive():
             ap_b_hostapd.stop()
             self.log.info('Turned AP B off')
 
     def ap_b_on(self):
+        if "OpenWrtAP" in self.user_params:
+            self.access_points[1].start_ap()
+            self.log.info('Turned AP B on')
+            return
         ap_b_hostapd = self.access_points[1]._aps['wlan0'].hostapd
         if not ap_b_hostapd.is_alive():
             ap_b_hostapd.start(ap_b_hostapd.config)
             self.log.info('Turned AP B on')
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.ap_a_on()
@@ -107,12 +132,9 @@ class WifiWakeTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def find_ssid_in_scan_results(self, scan_results_batches, ssid):
         scan_results_batch = scan_results_batches[0]
@@ -202,7 +224,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
 
         self.ap_a_on()
         self.do_location_scan(
@@ -246,7 +268,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
 
         self.ap_a_on()
         self.do_location_scan(
@@ -314,7 +336,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
         self.ap_a_on()
         self.do_location_scan(
             SCANS_REQUIRED_TO_FIND_SSID, self.ap_a[wutils.WifiEnums.SSID_KEY])
@@ -382,7 +404,7 @@ class WifiWakeTest(WifiBaseTest):
         time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
         wutils.wifi_toggle_state(self.dut, new_state=False)
         time.sleep(PRESCAN_DELAY_SEC)
-        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+        self.do_location_scan(2 * CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
 
         self.ap_a_on()
         self.ap_b_on()
