@@ -807,7 +807,8 @@ def start_ttff_by_gtw_gpstool(ad,
                               aid_data=False,
                               raninterval=False,
                               mininterval=10,
-                              maxinterval=40):
+                              maxinterval=40,
+                              hot_warm_sleep=300):
     """Identify which TTFF mode for different test items.
 
     Args:
@@ -818,21 +819,22 @@ def start_ttff_by_gtw_gpstool(ad,
         raninterval: Boolean for identify random interval of TTFF in enable or not.
         mininterval: Minimum value of random interval pool. The unit is second.
         maxinterval: Maximum value of random interval pool. The unit is second.
+        hot_warm_sleep: Wait time for acquiring Almanac.
     """
     begin_time = get_current_epoch_time()
     if (ttff_mode == "hs" or ttff_mode == "ws") and not aid_data:
-        ad.log.info("Wait 5 minutes to start TTFF %s..." % ttff_mode.upper())
-        time.sleep(300)
+        ad.log.info("Wait {} seconds to start TTFF {}...".format(
+            hot_warm_sleep, ttff_mode.upper()))
+        time.sleep(hot_warm_sleep)
     if ttff_mode == "cs":
         ad.log.info("Start TTFF Cold Start...")
         time.sleep(3)
     for i in range(1, 4):
-        ad.adb.shell(
-            "am broadcast -a com.android.gpstool.ttff_action "
-            "--es ttff {} --es cycle {}  --ez raninterval {} "
-            "--ei mininterval {} --ei maxinterval {}"
-            .format(ttff_mode, iteration, raninterval, mininterval,
-                    maxinterval))
+        ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
+                     "--es ttff {} --es cycle {}  --ez raninterval {} "
+                     "--ei mininterval {} --ei maxinterval {}".format(
+                         ttff_mode, iteration, raninterval, mininterval,
+                         maxinterval))
         time.sleep(1)
         if ad.search_logcat("act=com.android.gpstool.start_test_action",
                             begin_time):
