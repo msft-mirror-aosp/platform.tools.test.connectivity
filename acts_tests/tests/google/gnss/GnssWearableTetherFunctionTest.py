@@ -61,7 +61,8 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
                                        self.default_gnss_signal_attenuation)
         if not gutils.is_mobile_data_on(self.watch):
             gutils.set_mobile_data(self.watch, True)
-        if gutils.is_wearable_btwifi(self.watch) and not self.watch.droid.wifiCheckState():
+        # TODO (b/202101058:chenstanley): Need to double check how to disable wifi successfully in wearable projects.
+        if gutils.is_wearable_btwifi(self.watch):
             wutils.wifi_toggle_state(self.watch, True)
             gutils.connect_to_wifi_network(
                 self.watch, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
