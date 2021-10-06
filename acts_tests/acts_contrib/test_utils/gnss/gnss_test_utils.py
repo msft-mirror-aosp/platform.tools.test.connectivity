@@ -1388,8 +1388,8 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
                          "--es mode toggle --es cycle %d" % iteration)
             time.sleep(1)
             if is_device_wearable(ad):
-                # Wait 10 seconds for Wearable low performance time.
-                time.sleep(10)
+                # Wait 20 seconds for Wearable low performance time.
+                time.sleep(20)
                 if ad.search_logcat("cmp=com.android.gpstool/.GPSTool",
                                 begin_time):
                     ad.log.info("Send ToggleGPS start_test_action successfully.")
