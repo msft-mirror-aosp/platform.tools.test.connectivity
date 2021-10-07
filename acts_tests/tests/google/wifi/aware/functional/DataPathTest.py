@@ -2247,7 +2247,7 @@ class DataPathTest(AwareBaseTest):
                 "ipv6s": ipv6s
             })
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="88cd288f-71ad-40fe-94d7-34e60fb6c962")
     def test_ndp_initiate_from_both_sides_with_accepts_any_responder(self):
         """Validate when two device both try to initiate a connection to each other, both NDP can be
         formed.
