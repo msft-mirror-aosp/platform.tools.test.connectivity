@@ -16,6 +16,7 @@ import time
 from retry import retry
 
 from acts.controllers.utils_lib.commands import shell
+from acts import logger
 
 
 class Error(Exception):
@@ -45,10 +46,12 @@ class DhcpServer(object):
             interface: string, The name of the interface to use.
             working_dir: The directory to work out of.
         """
+        self._log = logger.create_logger(lambda msg: '[DHCP Server|%s] %s' % (
+            interface, msg))
         self._runner = runner
         self._working_dir = working_dir
         self._shell = shell.ShellCommand(runner, working_dir)
-        self._log_file = 'dhcpd_%s.log' % interface
+        self._stdio_log_file = 'dhcpd_%s.log' % interface
         self._config_file = 'dhcpd_%s.conf' % interface
         self._lease_file = 'dhcpd_%s.leases' % interface
         self._pid_file = 'dhcpd_%s.pid' % interface
@@ -76,20 +79,25 @@ class DhcpServer(object):
             self.stop()
 
         self._write_configs(config)
-        self._shell.delete_file(self._log_file)
+        self._shell.delete_file(self._stdio_log_file)
+        self._shell.delete_file(self._pid_file)
         self._shell.touch_file(self._lease_file)
 
         dhcpd_command = '%s -cf "%s" -lf %s -f -pf "%s"' % (
             self.PROGRAM_FILE, self._config_file, self._lease_file,
             self._pid_file)
         base_command = 'cd "%s"; %s' % (self._working_dir, dhcpd_command)
-        job_str = '%s > "%s" 2>&1' % (base_command, self._log_file)
+        job_str = '%s > "%s" 2>&1' % (base_command, self._stdio_log_file)
         self._runner.run_async(job_str)
 
         try:
             self._wait_for_process(timeout=timeout)
             self._wait_for_server(timeout=timeout)
         except:
+            self._log.warn("Failed to start DHCP server.")
+            self._log.debug("DHCP configuration:\n" +
+                            config.render_config_file() + "\n")
+            self._log.debug("DHCP logs:\n" + self.get_logs() + "\n")
             self.stop()
             raise
 
@@ -111,7 +119,24 @@ class DhcpServer(object):
         Returns:
             A string of the dhcp server logs.
         """
-        return self._shell.read_file(self._log_file)
+        try:
+            # Try reading the PID file. This will fail if the server failed to
+            # start.
+            pid = self._shell.read_file(self._pid_file)
+            # `dhcpd` logs to the syslog, where its messages are interspersed
+            # with all other programs that use the syslog. Log lines contain
+            # `dhcpd[<pid>]`, which we can search for to extract all the logs
+            # from this particular dhcpd instance.
+            # The logs are preferable to the stdio output, since they contain
+            # a superset of the information from stdio, including leases
+            # that the server provides.
+            return self._shell.run(
+                f"grep dhcpd.{pid} /var/log/messages").stdout
+        except Exception:
+            self._log.info(
+                "Failed to read logs from syslog (likely because the server " +
+                "failed to start). Falling back to stdio output.")
+            return self._shell.read_file(self._stdio_log_file)
 
     def _wait_for_process(self, timeout=60):
         """Waits for the process to come up.
@@ -140,7 +165,7 @@ class DhcpServer(object):
         start_time = time.time()
         while time.time() - start_time < timeout:
             success = self._shell.search_file(
-                'Wrote [0-9]* leases to leases file', self._log_file)
+                'Wrote [0-9]* leases to leases file', self._stdio_log_file)
             if success:
                 return
 
@@ -166,7 +191,7 @@ class DhcpServer(object):
         is_dead = not self.is_alive()
 
         no_interface = self._shell.search_file(
-            'Not configured to listen on any interfaces', self._log_file)
+            'Not configured to listen on any interfaces', self._stdio_log_file)
         if no_interface:
             raise NoInterfaceError(
                 'Dhcp does not contain a subnet for any of the networks the'
