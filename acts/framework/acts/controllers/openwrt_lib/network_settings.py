@@ -33,6 +33,7 @@ PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
 L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
 NAT6_PACKAGE = "ip6tables kmod-ipt-nat6"
 CAPTIVE_PORTAL_PACKAGE = "nodogsplash"
+MDNS_PACKAGE = "avahi-utils avahi-daemon-service-http avahi-daemon-service-ssh libavahi-client avahi-dbus-daemon"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
 PPTPD_OPTION_PATH = "/etc/ppp/options.pptpd"
@@ -83,8 +84,11 @@ class NetworkSettings(object):
             "setup_vpn_l2tp_server": self.remove_vpn_l2tp_server,
             "disable_ipv6": self.enable_ipv6,
             "setup_ipv6_bridge": self.remove_ipv6_bridge,
+            "default_dns": self.del_default_dns,
+            "default_v6_dns": self.del_default_v6_dns,
             "ipv6_prefer_option": self.remove_ipv6_prefer_option,
             "block_dns_response": self.unblock_dns_response,
+            "setup_mdns": self.remove_mdns,
             "setup_captive_portal": self.remove_cpative_portal
         }
         # This map contains cleanup functions to restore the configuration to
@@ -107,7 +111,11 @@ class NetworkSettings(object):
         if self.config:
             temp = self.config.copy()
             for change in temp:
-                self.cleanup_map[change]()
+                change_list = change.split()
+                if len(change_list) > 1:
+                    self.cleanup_map[change_list[0]](*change_list[1:])
+                else:
+                    self.cleanup_map[change]()
             self.config = set()
 
         if self.file_exists(HISTORY_CONFIG_PATH):
@@ -737,8 +745,6 @@ class NetworkSettings(object):
 
     def setup_ipv6_bridge(self):
         """Setup ipv6 bridge for client have ability to access network."""
-        #  Install pptp service
-
         self.config.add("setup_ipv6_bridge")
 
         self.ssh.run("uci set dhcp.lan.dhcpv6=relay")
@@ -758,22 +764,67 @@ class NetworkSettings(object):
 
     def remove_ipv6_bridge(self):
         """Discard ipv6 bridge on OpenWrt."""
-        self.config.discard("setup_ipv6_bridge")
+        if "setup_ipv6_bridge" in self.config:
+            self.config.discard("setup_ipv6_bridge")
 
-        self.ssh.run("uci set dhcp.lan.dhcpv6=server")
-        self.ssh.run("uci set dhcp.lan.ra=server")
-        self.ssh.run("uci delete dhcp.lan.ndp")
+            self.ssh.run("uci set dhcp.lan.dhcpv6=server")
+            self.ssh.run("uci set dhcp.lan.ra=server")
+            self.ssh.run("uci delete dhcp.lan.ndp")
 
-        self.ssh.run("uci delete dhcp.wan6")
+            self.ssh.run("uci delete dhcp.wan6")
 
-        self.service_manager.need_restart(SERVICE_ODHCPD)
-        self.commit_changes()
+            self.service_manager.need_restart(SERVICE_ODHCPD)
+            self.commit_changes()
 
     def _add_dhcp_option(self, args):
         self.ssh.run("uci add_list dhcp.lan.dhcp_option=\"%s\"" % args)
 
     def _remove_dhcp_option(self, args):
         self.ssh.run("uci del_list dhcp.lan.dhcp_option=\"%s\"" % args)
+
+    def add_default_dns(self, addr_list):
+        """Add default dns server for client.
+
+        Args:
+            addr_list: dns ip address for Openwrt client.
+        """
+        self._add_dhcp_option("6,%s" % ",".join(addr_list))
+        self.config.add("default_dns %s" % addr_list)
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def del_default_dns(self, addr_list):
+        """Remove default dns server for client.
+
+        Args:
+            addr_list: list of dns ip address for Openwrt client.
+        """
+        self._remove_dhcp_option("6,%s" % addr_list)
+        self.config.discard("default_dns %s" % addr_list)
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def add_default_v6_dns(self, addr_list):
+        """Add default v6 dns server for client.
+
+        Args:
+            addr_list: dns ip address for Openwrt client.
+        """
+        self.ssh.run("uci add_list dhcp.lan.dns=\"%s\"" % addr_list)
+        self.config.add("default_v6_dns %s" % addr_list)
+        self.service_manager.need_restart(SERVICE_ODHCPD)
+        self.commit_changes()
+
+    def del_default_v6_dns(self, addr_list):
+        """Del default v6 dns server for client.
+
+        Args:
+            addr_list: dns ip address for Openwrt client.
+        """
+        self.ssh.run("uci del_list dhcp.lan.dns=\"%s\"" % addr_list)
+        self.config.add("default_v6_dns %s" % addr_list)
+        self.service_manager.need_restart(SERVICE_ODHCPD)
+        self.commit_changes()
 
     def add_ipv6_prefer_option(self):
         self._add_dhcp_option("108,1800i")
@@ -845,6 +896,16 @@ class NetworkSettings(object):
     def _get_tcpdump_pid(self, tcpdump_file_name):
         """Check tcpdump process on OpenWrt."""
         return self.ssh.run("pgrep -f %s" % (tcpdump_file_name), ignore_status=True).stdout
+
+    def setup_mdns(self):
+        self.config.add("setup_mdns")
+        self.package_install(MDNS_PACKAGE)
+        self.commit_changes()
+
+    def remove_mdns(self):
+        self.config.discard("setup_mdns")
+        self.package_remove(MDNS_PACKAGE)
+        self.commit_changes()
 
     def block_dns_response(self):
         self.config.add("block_dns_response")
