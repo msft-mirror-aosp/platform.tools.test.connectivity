@@ -98,16 +98,14 @@ class WifiAutoUpdateTest(WifiBaseTest):
                 "Failed up apply OTA update. Aborting tests: %s" % e)
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -137,7 +135,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
                 wifi_ap[WifiEnums.SSID_KEY] == self.wifi_hotspot[WifiEnums.SSID_KEY],
                 "Hotspot SSID doesn't match with expected SSID")
             return
-        elif self.dut.build_info["build_id"].startswith("Q"):
+        if self.dut.build_info["build_id"].startswith("Q"):
             band = WifiEnums.WIFI_CONFIG_APBAND_5G_OLD
             self.wifi_hotspot[WifiEnums.AP_BAND_KEY] = band
             asserts.assert_true(
@@ -242,7 +240,22 @@ class WifiAutoUpdateTest(WifiBaseTest):
             networks: List of network dicts.
         """
         network_info = self.dut.droid.wifiGetConfiguredNetworks()
-        if len(network_info) != len(networks):
+        """
+            b/189285598, the network id of a network might be changed after \
+            reboot because the network sequence is not stable on \
+            backup/restore. This test should find the correct network against
+            the desired SSID before connecting to the network after reboot.
+            Start from Android S.
+        """
+        network_info_ssid = list()
+        for i in network_info:
+            network_info_ssid.append(i['SSID'])
+        network_info_ssid_list = set(network_info_ssid)
+        networks_ssid= list()
+        for i in networks:
+            networks_ssid.append(i['SSID'])
+        networks_ssid_list = set(networks_ssid)
+        if len(network_info_ssid_list) != len(networks_ssid_list):
             msg = (
                 "Number of configured networks before and after Auto-update "
                 "don't match. \nBefore reboot = %s \n After reboot = %s" %
@@ -257,6 +270,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
                 raise signals.TestFailure("%s network is not present in the"
                                           " configured list after Auto-update" %
                                           network[SSID])
+
             # Get the new network id for each network after reboot.
             network[NETID] = exists[0]["networkId"]
 

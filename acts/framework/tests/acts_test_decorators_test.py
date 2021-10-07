@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import mock
 import shutil
 import tempfile
 import unittest
@@ -24,9 +25,10 @@ from acts import signals
 from acts import test_decorators
 from acts import test_runner
 from acts.controllers.sl4a_lib import rpc_client
+from acts.libs.testtracker.testtracker_results_writer import KEY_EFFORT_NAME
 
 TEST_TRACKER_UUID = '12345'
-UUID_KEY = 'test_tracker_uuid'
+UUID_KEY = 'uuid'
 
 
 def return_true():
@@ -54,9 +56,9 @@ def raise_generic():
 
 
 class TestDecoratorUnitTests(unittest.TestCase):
-    def _verify_test_tracker_info(self, func):
+    def _verify_test_info(self, func):
         try:
-            test_decorators.test_tracker_info(uuid=TEST_TRACKER_UUID)(func)()
+            test_decorators.test_info(uuid=TEST_TRACKER_UUID)(func)()
             self.fail('Expected decorator to raise exception.')
         except signals.TestSignal as e:
             self.assertTrue(hasattr(e, 'extras'),
@@ -65,23 +67,23 @@ class TestDecoratorUnitTests(unittest.TestCase):
                             'Expected extras to have %s.' % UUID_KEY)
             self.assertEqual(e.extras[UUID_KEY], TEST_TRACKER_UUID)
 
-    def test_test_tracker_info_on_return_true(self):
-        self._verify_test_tracker_info(return_true)
+    def test_test_info_on_return_true(self):
+        self._verify_test_info(return_true)
 
-    def test_test_tracker_info_on_return_false(self):
-        self._verify_test_tracker_info(return_false)
+    def test_test_info_on_return_false(self):
+        self._verify_test_info(return_false)
 
-    def test_test_tracker_info_on_raise_pass(self):
-        self._verify_test_tracker_info(raise_pass)
+    def test_test_info_on_raise_pass(self):
+        self._verify_test_info(raise_pass)
 
-    def test_test_tracker_info_on_raise_failure(self):
-        self._verify_test_tracker_info(raise_failure)
+    def test_test_info_on_raise_failure(self):
+        self._verify_test_info(raise_failure)
 
-    def test_test_tracker_info_on_raise_sl4a(self):
-        self._verify_test_tracker_info(raise_sl4a)
+    def test_test_info_on_raise_sl4a(self):
+        self._verify_test_info(raise_sl4a)
 
-    def test_test_tracker_info_on_raise_generic(self):
-        self._verify_test_tracker_info(raise_generic)
+    def test_test_info_on_raise_generic(self):
+        self._verify_test_info(raise_generic)
 
     def test_test_tracker_info_on_raise_generic_is_chained(self):
         @test_decorators.test_tracker_info(uuid='SOME_UID')
@@ -94,7 +96,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
         self.assertIsInstance(context.exception.__cause__, ValueError)
 
     def test_tti_returns_existing_test_pass(self):
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_raises_test_pass():
             raise signals.TestPass('Expected Message')
 
@@ -104,7 +106,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
         self.assertEqual(context.exception.details, 'Expected Message')
 
     def test_tti_returns_existing_test_failure(self):
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_raises_test_failure():
             raise signals.TestFailure('Expected Message')
 
@@ -116,7 +118,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
     def test_tti_returns_test_error_on_non_signal_error(self):
         expected_error = ValueError('Some Message')
 
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_raises_non_signal():
             raise expected_error
 
@@ -126,7 +128,7 @@ class TestDecoratorUnitTests(unittest.TestCase):
         self.assertEqual(context.exception.details, expected_error)
 
     def test_tti_returns_test_pass_if_no_return_value_specified(self):
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_returns_nothing():
             pass
 
@@ -135,7 +137,8 @@ class TestDecoratorUnitTests(unittest.TestCase):
 
     def test_tti_returns_test_fail_if_return_value_is_truthy(self):
         """This is heavily frowned upon. Use signals.TestPass instead!"""
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_returns_truthy():
             return True
 
@@ -144,7 +147,8 @@ class TestDecoratorUnitTests(unittest.TestCase):
 
     def test_tti_returns_test_fail_if_return_value_is_falsy(self):
         """This is heavily frowned upon. Use signals.TestFailure instead!"""
-        @test_decorators.test_tracker_info(uuid='SOME_UID')
+
+        @test_decorators.test_info(uuid='SOME_UID')
         def test_returns_falsy_but_not_none():
             return False
 
@@ -181,9 +185,109 @@ class MockTest(base_test.BaseTestClass):
     TEST_CASE_LIST = 'test_run_mock_test'
     TEST_LOGIC_ATTR = 'test_logic'
 
-    @test_decorators.test_tracker_info(uuid=TEST_TRACKER_UUID)
+    @test_decorators.test_info(uuid=TEST_TRACKER_UUID)
     def test_run_mock_test(self):
         getattr(MockTest, MockTest.TEST_LOGIC_ATTR, None)()
+
+
+class FakeTest(base_test.BaseTestClass):
+    """A fake test class used to test TestTrackerInfoDecoratorFunc."""
+
+    def __init__(self):
+        self.user_params = {
+            'testtracker_properties': 'tt_prop_a=param_a,'
+                                      'tt_prop_b=param_b',
+            'param_a': 'prop_a_value',
+            'param_b': 'prop_b_value',
+        }
+        self.log_path = '/dummy/path'
+        self.begin_time = 1000000
+
+    @test_decorators.test_tracker_info(uuid='SOME_UID')
+    def test_case(self):
+        pass
+
+
+class TestTrackerInfoDecoratorFuncTests(unittest.TestCase):
+
+    @mock.patch('acts.test_decorators.TestTrackerResultsWriter')
+    def test_write_to_testtracker_no_effort_name_no_ad(self, mock_writer):
+        """Should not set the TT Effort name."""
+        with self.assertRaises(signals.TestPass):
+            FakeTest().test_case()
+
+        testtracker_properties = mock_writer.call_args[0][1]
+        self.assertEqual(testtracker_properties,
+                         {'tt_prop_a': 'prop_a_value',
+                          'tt_prop_b': 'prop_b_value'})
+
+    @mock.patch('acts.test_decorators.TestTrackerResultsWriter')
+    def test_write_to_testtracker_no_effort_name_has_ad(self, mock_writer):
+        """Should set the TT Effort Name using the AndroidDevice."""
+        fake_test = FakeTest()
+        fake_test.android_devices = [mock.Mock()]
+        fake_test.android_devices[0].build_info = {'build_id': 'EFFORT_NAME'}
+        with self.assertRaises(signals.TestPass):
+            fake_test.test_case()
+
+        testtracker_properties = mock_writer.call_args[0][1]
+        self.assertEqual(testtracker_properties,
+                         {'tt_prop_a': 'prop_a_value',
+                          'tt_prop_b': 'prop_b_value',
+                          KEY_EFFORT_NAME: 'EFFORT_NAME'})
+
+    @mock.patch('acts.test_decorators.TestTrackerResultsWriter')
+    def test_write_to_testtracker_has_effort_name_has_ad(self, mock_writer):
+        """Should set the TT Effort Name using the AndroidDevice."""
+        fake_test = FakeTest()
+        fake_test.android_devices = [mock.Mock()]
+        fake_test.android_devices[0].build_info = {'build_id': 'BAD_EFFORT'}
+        fake_test.user_params['testtracker_properties'] += (
+                    ',' + KEY_EFFORT_NAME + '=param_effort_name')
+        fake_test.user_params['param_effort_name'] = 'GOOD_EFFORT_NAME'
+
+        with self.assertRaises(signals.TestPass):
+            fake_test.test_case()
+
+        testtracker_properties = mock_writer.call_args[0][1]
+        self.assertEqual(testtracker_properties,
+                         {'tt_prop_a': 'prop_a_value',
+                          'tt_prop_b': 'prop_b_value',
+                          KEY_EFFORT_NAME: 'GOOD_EFFORT_NAME'})
+
+    @mock.patch('acts.test_decorators.TestTrackerResultsWriter')
+    def test_no_testtracker_properties_provided(self, mock_writer):
+        fake_test = FakeTest()
+        del fake_test.user_params['testtracker_properties']
+
+        with self.assertRaises(signals.TestPass):
+            fake_test.test_case()
+
+        self.assertFalse(mock_writer.called)
+
+    @mock.patch('acts.test_decorators.TestTrackerResultsWriter')
+    def test_needs_base_class_set_to_write_to_testtracker(self, mock_writer):
+        class DoesntHaveBaseClass(object):
+            @test_decorators.test_tracker_info(uuid='SOME_UID')
+            def test_case(self):
+                pass
+
+        with self.assertRaises(signals.TestPass):
+            DoesntHaveBaseClass().test_case()
+
+        self.assertFalse(mock_writer.called)
+
+    @mock.patch('acts.test_decorators.TestTrackerResultsWriter')
+    def test_does_not_write_when_decorated_args_are_missing(self, mock_writer):
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def some_decorated_func():
+            pass
+
+        with self.assertRaises(signals.TestPass):
+            some_decorated_func()
+
+        self.assertFalse(mock_writer.called)
+
 
 
 class TestDecoratorIntegrationTests(unittest.TestCase):

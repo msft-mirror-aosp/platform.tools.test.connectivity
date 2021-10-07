@@ -1,7 +1,7 @@
 """Controller for Open WRT access point."""
 
+import re
 import time
-
 from acts import logger
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.openwrt_lib import network_settings
@@ -14,6 +14,7 @@ import yaml
 MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
 OPEN_SECURITY = "none"
+PSK1_SECURITY = 'psk'
 PSK_SECURITY = "psk2"
 WEP_SECURITY = "wep"
 ENT_SECURITY = "wpa2"
@@ -23,6 +24,7 @@ ENABLE_RADIO = "0"
 PMF_ENABLED = 2
 WIFI_2G = "wifi2g"
 WIFI_5G = "wifi5g"
+WAIT_TIME = 20
 DEFAULT_RADIOS = ("radio0", "radio1")
 
 
@@ -150,12 +152,24 @@ class OpenWrtAP(object):
   def start_ap(self):
     """Starts the AP with the settings in /etc/config/wireless."""
     self.ssh.run("wifi up")
-    time.sleep(9)  # wait for sometime for AP to come up
+    curr_time = time.time()
+    while time.time() < curr_time + WAIT_TIME:
+      if self.get_wifi_status():
+        return
+      time.sleep(3)
+    if not self.get_wifi_status():
+      raise ValueError("Failed to turn on WiFi on the AP.")
 
   def stop_ap(self):
     """Stops the AP."""
     self.ssh.run("wifi down")
-    time.sleep(9)  # wait for sometime for AP to go down
+    curr_time = time.time()
+    while time.time() < curr_time + WAIT_TIME:
+      if not self.get_wifi_status():
+        return
+      time.sleep(3)
+    if self.get_wifi_status():
+      raise ValueError("Failed to turn off WiFi on the AP.")
 
   def get_bssids_for_wifi_networks(self):
     """Get BSSIDs for wifi networks configured.
@@ -173,6 +187,21 @@ class OpenWrtAP(object):
         for ssid, ifname in ssid_ifname_map.items():
           bssid_map["2g"][ssid] = self.get_bssid(ifname)
     return bssid_map
+
+  def get_wifi_status(self):
+    """Check if radios are up for both 2G and 5G bands.
+
+    Returns:
+      True if both radios are up. False if not.
+    """
+    radios = ["radio0", "radio1"]
+    status = True
+    for radio in radios:
+      str_output = self.ssh.run("wifi status %s" % radio).stdout
+      wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                              Loader=yaml.FullLoader)
+      status = wifi_status[radio]["up"] and status
+    return status
 
   def get_ifnames_for_ssids(self, radio):
     """Get interfaces for wifi networks.
@@ -209,6 +238,77 @@ class OpenWrtAP(object):
     mac_addr = ifconfig.split("\n")[0].split()[-1]
     return mac_addr
 
+  def set_wpa_encryption(self, encryption):
+    """Set different encryptions to wpa or wpa2.
+
+    Args:
+      encryption: ccmp, tkip, or ccmp+tkip.
+    """
+    str_output = self.ssh.run("wifi status").stdout
+    wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                            Loader=yaml.FullLoader)
+
+    # Counting how many interface are enabled.
+    total_interface = 0
+    for radio in ["radio0", "radio1"]:
+      num_interface = len(wifi_status[radio]['interfaces'])
+      total_interface += num_interface
+
+    # Iterates every interface to get and set wpa encryption.
+    default_extra_interface = 2
+    for i in range(total_interface + default_extra_interface):
+      origin_encryption = self.ssh.run(
+          'uci get wireless.@wifi-iface[{}].encryption'.format(i)).stdout
+      origin_psk_pattern = re.match(r'psk\b', origin_encryption)
+      target_psk_pattern = re.match(r'psk\b', encryption)
+      origin_psk2_pattern = re.match(r'psk2\b', origin_encryption)
+      target_psk2_pattern = re.match(r'psk2\b', encryption)
+
+      if origin_psk_pattern == target_psk_pattern:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].encryption={}'.format(
+                i, encryption))
+
+      if origin_psk2_pattern == target_psk2_pattern:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].encryption={}'.format(
+                i, encryption))
+
+    self.ssh.run("uci commit wireless")
+    self.ssh.run("wifi")
+
+  def set_password(self, pwd_5g=None, pwd_2g=None):
+    """Set password for individual interface.
+
+    Args:
+        pwd_5g: 8 ~ 63 chars, ascii letters and digits password for 5g network.
+        pwd_2g: 8 ~ 63 chars, ascii letters and digits password for 2g network.
+    """
+    if pwd_5g:
+      if len(pwd_5g) < 8 or len(pwd_5g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_5g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(3, pwd_5g))
+        self.log.info("Set 5G password to :{}".format(pwd_2g))
+
+    if pwd_2g:
+      if len(pwd_2g) < 8 or len(pwd_2g) > 63:
+        self.log.error("Password must be 8~63 characters long")
+      # Only accept ascii letters and digits
+      elif not re.match("^[A-Za-z0-9]*$", pwd_2g):
+        self.log.error("Password must only contains ascii letters and digits")
+      else:
+        self.ssh.run(
+            'uci set wireless.@wifi-iface[{}].key={}'.format(2, pwd_2g))
+        self.log.info("Set 2G password to :{}".format(pwd_2g))
+
+    self.ssh.run("uci commit wireless")
+    self.ssh.run("wifi")
+
   def generate_wireless_configs(self, wifi_configs):
     """Generate wireless configs to configure.
 
@@ -229,6 +329,14 @@ class OpenWrtAP(object):
       if hostapd_constants.BAND_2G in wifi_configs[i]:
         config = wifi_configs[i][hostapd_constants.BAND_2G]
         if config["security"] == PSK_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_2G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"]))
+        elif config["security"] == PSK1_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig("%s%s" % (WIFI_2G, num_2g),
                                              config["SSID"],
@@ -283,6 +391,14 @@ class OpenWrtAP(object):
       if hostapd_constants.BAND_5G in wifi_configs[i]:
         config = wifi_configs[i][hostapd_constants.BAND_5G]
         if config["security"] == PSK_SECURITY:
+          wireless_configs.append(
+              wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
+                                             config["SSID"],
+                                             config["security"],
+                                             hostapd_constants.BAND_5G,
+                                             password=config["password"],
+                                             hidden=config["hiddenSSID"]))
+        elif config["security"] == PSK1_SECURITY:
           wireless_configs.append(
               wireless_config.WirelessConfig("%s%s" % (WIFI_5G, num_5g),
                                              config["SSID"],
