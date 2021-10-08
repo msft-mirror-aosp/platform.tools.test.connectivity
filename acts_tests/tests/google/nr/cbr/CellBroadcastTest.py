@@ -20,9 +20,11 @@
 import xml.etree.ElementTree as ET
 import time
 import random
+import os
 
 from acts import signals
 from acts.logger import epoch_to_log_line_timestamp
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -92,15 +94,42 @@ from acts_contrib.test_utils.net import ui_utils as uutils
 class CellBroadcastTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
-        self.region_plmn_list_conf = self.user_params.get("region_plmn_list")
-        self.emergency_alert_settings_conf = self.user_params.get("emergency_alert_settings")
-        self.emergency_alert_channels_conf = self.user_params.get("emergency_alert_channels")
+        req_param = ["region_plmn_list", "emergency_alert_settings", "emergency_alert_channels", "carrier_test_conf"]
+        self.unpack_userparams(req_param_names=req_param)
+        if hasattr(self, "region_plmn_list"):
+            if isinstance(self.region_plmn_list, list):
+                self.region_plmn_list = self.region_plmn_list[0]
+            if not os.path.isfile(self.region_plmn_list):
+                self.region_plmn_list = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.region_plmn_list)
+        if hasattr(self, "emergency_alert_settings"):
+            if isinstance(self.emergency_alert_settings, list):
+                self.emergency_alert_settings = self.emergency_alert_settings[0]
+            if not os.path.isfile(self.emergency_alert_settings):
+                self.emergency_alert_settings = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.emergency_alert_settings)
+        if hasattr(self, "emergency_alert_channels"):
+            if isinstance(self.emergency_alert_channels, list):
+                self.emergency_alert_channels = self.emergency_alert_channels[0]
+            if not os.path.isfile(self.emergency_alert_channels):
+                self.emergency_alert_channels = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.emergency_alert_channels)
+        if hasattr(self, "carrier_test_conf"):
+            if isinstance(self.carrier_test_conf, list):
+                self.carrier_test_conf = self.carrier_test_conf[0]
+            if not os.path.isfile(self.carrier_test_conf):
+                self.carrier_test_conf = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.carrier_test_conf)
         self.verify_vibration = self.user_params.get("verify_vibration", True)
         self._disable_vibration_check_for_11()
         self.verify_sound = self.user_params.get("verify_sound", True)
-        self.region_plmn_dict = load_config(self.region_plmn_list_conf)
-        self.emergency_alert_settings_dict = load_config(self.emergency_alert_settings_conf)
-        self.emergency_alert_channels_dict = load_config(self.emergency_alert_channels_conf)
+        self.region_plmn_dict = load_config(self.region_plmn_list)
+        self.emergency_alert_settings_dict = load_config(self.emergency_alert_settings)
+        self.emergency_alert_channels_dict = load_config(self.emergency_alert_channels)
         self._verify_cbr_test_apk_install(self.android_devices[0])
 
     def setup_test(self):
@@ -143,7 +172,7 @@ class CellBroadcastTest(TelephonyBaseTest):
 
 
     def _close_wea_settings_page(self, ad):
-        pid = ad.adb.shell("pidof %s" % CBR_PACKAGE)
+        pid = ad.adb.shell("pidof %s" % CBR_PACKAGE, ignore_status=True)
         ad.adb.shell("kill -9 %s" % pid, ignore_status=True)
 
 
@@ -160,15 +189,14 @@ class CellBroadcastTest(TelephonyBaseTest):
                     region.upper(), mccmnc, imsi)
 
         # update carrier xml file
-        carrier_test_conf = self.user_params.get("carrier_test_conf")
-        tree = ET.parse(carrier_test_conf)
+        tree = ET.parse(self.carrier_test_conf)
         root = tree.getroot()
         root[1].attrib['value'] = mccmnc
         root[2].attrib['value'] = imsi
-        tree.write(carrier_test_conf)
+        tree.write(self.carrier_test_conf)
 
         # push carrier xml to device
-        ad.adb.push("%s %s" % (carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
+        ad.adb.push("%s %s" % (self.carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
 
         # reboot device
         reboot_device(ad)
