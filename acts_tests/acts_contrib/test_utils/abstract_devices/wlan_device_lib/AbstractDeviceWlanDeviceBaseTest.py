@@ -15,10 +15,21 @@
 #   limitations under the License.
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
+from mobly import utils
+from mobly.base_test import STAGE_NAME_TEARDOWN_CLASS
+
 
 class AbstractDeviceWlanDeviceBaseTest(WifiBaseTest):
     def setup_class(self):
         super().setup_class()
+
+    def teardown_class(self):
+        begin_time = utils.get_current_epoch_time()
+        super().teardown_class()
+        for device in getattr(self, "android_devices", []):
+            device.take_bug_report(STAGE_NAME_TEARDOWN_CLASS, begin_time)
+        for device in getattr(self, "fuchsia_devices", []):
+            device.take_bug_report(STAGE_NAME_TEARDOWN_CLASS, begin_time)
 
     def on_fail(self, test_name, begin_time):
         try:
