@@ -196,6 +196,7 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
     def teardown_class(self):
         for tc in self.wmm_transceivers:
             tc.destroy_resources()
+        super().teardown_class()
 
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
