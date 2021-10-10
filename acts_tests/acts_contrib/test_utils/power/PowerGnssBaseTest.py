@@ -43,7 +43,8 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = ['customjsfile', 'maskfile']
+        req_params = ['customjsfile', 'maskfile', 'dpooff_nv_dict',
+                      'dpoon_nv_dict', 'mdsapp', 'modemparfile']
         self.unpack_userparams(req_params)
 
     def collect_power_data(self):

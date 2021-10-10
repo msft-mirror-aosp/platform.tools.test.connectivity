@@ -483,17 +483,23 @@ class FuchsiaWlanDevice(WlanDevice):
         if response.get('error'):
             raise ConnectionError(
                 'Failed to get client network connection status')
-
         result = response.get('result')
-        if result and isinstance(result, dict) and result.get('Connected'):
-            if ssid and result['Connected'].get('ssid'):
+        if isinstance(result, dict):
+            connected_to = result.get('Connected')
+            # TODO(https://fxbug.dev/85938): Remove backwards compatibility once
+            # ACTS is versioned with Fuchsia.
+            if not connected_to:
+                connected_to = result.get('connected_to')
+            if not connected_to:
+                return False
+
+            if ssid:
                 # Replace encoding errors instead of raising an exception.
                 # Since `ssid` is a string, this will not affect the test
                 # for equality.
-                connected_ssid = bytearray(result['Connected']['ssid']).decode(
+                connected_ssid = bytearray(connected_to['ssid']).decode(
                     encoding='utf-8', errors='replace')
-                if ssid != connected_ssid:
-                    return False
+                return ssid == connected_ssid
             return True
         return False
 

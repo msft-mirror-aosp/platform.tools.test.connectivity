@@ -20,7 +20,6 @@ import time
 import traceback
 
 from acts import asserts
-from acts import base_test
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import wifi_constants
@@ -45,8 +44,9 @@ class WifiScannerScanError(Exception):
 
 
 class WifiScannerScanTest(WifiBaseTest):
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
         # TODO(angli): Remove this list.
         # There are order dependencies among these tests so we'll have to leave
         # it here for now. :(
@@ -71,15 +71,21 @@ class WifiScannerScanTest(WifiBaseTest):
             "test_wifi_scanner_dual_radio_high_accuracy")
 
     def setup_class(self):
+        super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("run_extended_test", "ping_addr", "max_bugreports", "dbs_supported_models")
+        req_params = ("run_extended_test", "ping_addr", "dbs_supported_models",
+                      "support_addition_channel")
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(ap_count=2, mirror_ap=False)
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(open_network=True,
+                                                wpa_network=True,
+                                                ap_count=2)
 
         self.leeway = 10
         self.stime_channel = SCAN_TIME_PASSIVE
@@ -94,21 +100,15 @@ class WifiScannerScanTest(WifiBaseTest):
             "reportEvents": wutils.WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL
         }
         self.log.debug("Run extended test: {}".format(self.run_extended_test))
-        self.wifi_chs = wutils.WifiChannelUS(self.dut.model)
+        self.wifi_chs = wutils.WifiChannelUS(self.dut.model, self.support_addition_channel)
         self.attenuators = wutils.group_attenuators(self.attenuators)
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
 
     def teardown_test(self):
-        base_test.BaseTestClass.teardown_test(self)
+        super().teardown_test()
         self.log.debug("Shut down all wifi scanner activities.")
         self.dut.droid.wifiScannerShutdown()
-
-    def on_fail(self, test_name, begin_time):
-        if self.max_bugreports > 0:
-            self.dut.take_bug_report(test_name, begin_time)
-            self.max_bugreports -= 1
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:

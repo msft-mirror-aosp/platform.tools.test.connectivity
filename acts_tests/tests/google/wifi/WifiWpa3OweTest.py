@@ -35,13 +35,10 @@ class WifiWpa3OweTest(WifiBaseTest):
         super().setup_class()
 
         self.dut = self.android_devices[0]
-        self.dut_client = self.android_devices[1]
-        wutils.wifi_test_device_init(self.dut)
-        wutils.wifi_test_device_init(self.dut_client)
-        req_params = ["owe_networks", "sae_networks"]
-        self.unpack_userparams(req_param_names=req_params,)
-        wutils.wifi_toggle_state(self.dut, True)
-        wutils.wifi_toggle_state(self.dut_client, True)
+        opt_params = ["owe_networks", "sae_networks"]
+        req_params = ["wpa3_sae_gcmp_128", "wpa3_sae_gcmp_256", "wifi6_models"]
+        self.unpack_userparams(opt_param_names=opt_params,
+                               req_param_names=req_params)
         if "OpenWrtAP" in self.user_params:
             self.configure_openwrt_ap_and_start(owe_network=True,
                                                 sae_network=True)
@@ -63,7 +60,6 @@ class WifiWpa3OweTest(WifiBaseTest):
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        wutils.reset_wifi(self.dut_client)
 
     ### Test cases ###
 
@@ -78,10 +74,14 @@ class WifiWpa3OweTest(WifiBaseTest):
     @test_tracker_info(uuid="3670702a-3d78-4184-b5e1-7fcf5fa48fd8")
     def test_connect_to_wpa3_personal_2g(self):
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="c4528eaf-7960-4ecd-8f11-d5439bdf1c58")
     def test_connect_to_wpa3_personal_5g(self):
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_5g)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
 
     @test_tracker_info(uuid="a8fb46be-3487-4dc8-a393-5af992b27f45")
     def test_connect_to_wpa3_personal_reconnection(self):
@@ -95,5 +95,19 @@ class WifiWpa3OweTest(WifiBaseTest):
                Second connect request from framework succeeds.
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         wutils.toggle_wifi_off_and_on(self.dut)
         wutils.connect_to_wifi_network(self.dut, self.wpa3_personal_2g)
+        wutils.verify_11ax_wifi_connection(
+            self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
+
+    @test_tracker_info(uuid="b1502202-10c3-4834-a899-5023947fb21d")
+    def test_connect_to_wpa3_personal_gcmp_128(self):
+        """Test connect to WPA3 SAE GCMP 128."""
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_sae_gcmp_128)
+
+    @test_tracker_info(uuid="4d8c3c63-75bf-4131-bb07-fe3f6020389c")
+    def test_connect_to_wpa3_personal_gcmp_256(self):
+        """Test connect to WPA3 SAE GCMP 256."""
+        wutils.connect_to_wifi_network(self.dut, self.wpa3_sae_gcmp_256)

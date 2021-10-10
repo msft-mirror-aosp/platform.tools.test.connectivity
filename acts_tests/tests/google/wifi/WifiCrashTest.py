@@ -32,8 +32,12 @@ WifiEnums = wutils.WifiEnums
 # Timeout used for crash recovery.
 RECOVERY_TIMEOUT = 15
 WIFICOND_KILL_SHELL_COMMAND = "killall wificond"
-WIFI_VENDOR_HAL_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service vendor.google.wifi_ext@1.0-service-vendor"
 SUPPLICANT_KILL_SHELL_COMMAND = "killall wpa_supplicant"
+WIFI_VENDOR_EXT_HAL_DAEMON = "vendor.google.wifi_ext@1.0-service-vendor"
+WIFI_VENDOR_EXT_HAL_DAEMON_PREFIX = "vendor.google.wifi_ext@"
+WIFI_VENDOR_EXT_HAL_DAEMON_KILL_SHELL_COMMAND = "killall vendor.google.wifi_ext@1.0-service-vendor"
+WIFI_VENDOR_HAL_DAEMON = "android.hardware.wifi@1.0-service"
+WIFI_VENDOR_HAL_DAEMON_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service"
 
 class WifiCrashTest(WifiBaseTest):
     """Crash Tests for wifi stack.
@@ -42,6 +46,9 @@ class WifiCrashTest(WifiBaseTest):
     * One Android device
     * One Wi-Fi network visible to the device.
     """
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
 
     def setup_class(self):
         super().setup_class()
@@ -55,6 +62,8 @@ class WifiCrashTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -62,18 +71,16 @@ class WifiCrashTest(WifiBaseTest):
         self.network = self.reference_networks[0]["2g"]
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -143,7 +150,14 @@ class WifiCrashTest(WifiBaseTest):
         wutils.wifi_connect(self.dut, self.network, num_of_tries=3)
         # Restart wificond
         self.log.info("Crashing wifi HAL")
-        self.dut.adb.shell(WIFI_VENDOR_HAL_KILL_SHELL_COMMAND)
+        daemon_search_cmd = "ps -ef | grep %s" % WIFI_VENDOR_EXT_HAL_DAEMON_PREFIX
+        result = self.dut.adb.shell(daemon_search_cmd) or ""
+        if WIFI_VENDOR_EXT_HAL_DAEMON in result:
+            self.log.info("Crashing wifi ext HAL")
+            self.dut.adb.shell(WIFI_VENDOR_EXT_HAL_DAEMON_KILL_SHELL_COMMAND)
+        else:
+            self.log.info("Crashing wifi HAL")
+            self.dut.adb.shell(WIFI_VENDOR_HAL_DAEMON_KILL_SHELL_COMMAND)
         wutils.wait_for_disconnect(self.dut)
         time.sleep(RECOVERY_TIMEOUT)
         wifi_info = self.dut.droid.wifiGetConnectionInfo()

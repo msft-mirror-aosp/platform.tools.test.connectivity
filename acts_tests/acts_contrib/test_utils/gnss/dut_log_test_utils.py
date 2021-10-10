@@ -23,6 +23,7 @@ DEVICE_DIAGMDLOG_FOLDER = "/data/vendor/radio/diag_logs/logs/"
 MDLOG_SETTLING_TIME = 2
 MDLOG_PROCESS_KILL_TIME = 3
 NOHUP_CMD = "nohup diag_mdlog -f {} -o {} -s 100 -c &> /dev/null &"
+DEVICE_GPSLOG_FOLDER = '/sdcard/Android/data/com.android.gpstool/files/'
 
 
 def find_device_qxdm_log_mask(ad, maskfile):
@@ -154,3 +155,23 @@ def stop_background_diagmdlog(ad, local_logpath, keep_logs=True):
         # errno.ESRCH - No such process
         raise ProcessLookupError(errno.ESRCH, os.strerror(errno.ESRCH),
                                  "diag_mdlog")
+
+
+def get_gpstool_logs(ad, local_logpath, keep_logs=True):
+    """
+
+    Pulls gpstool Logs from android device
+
+       Args:
+           ad: the target android device, AndroidDevice object
+           local_logpath: Local file path to pull the gpstool logs
+           keep_logs: False, delete log files from the gpstool log path
+    """
+
+    gps_log_path = os.path.join(local_logpath, 'GPSLogs')
+    ad.adb.pull("{} {}".format(DEVICE_GPSLOG_FOLDER, gps_log_path))
+    ad.log.debug("gpstool logs are pulled from device")
+
+    if not keep_logs:
+        ad.adb.shell("rm -rf " + DEVICE_GPSLOG_FOLDER + "*.*")
+        ad.log.debug("gpstool logs are deleted from device")

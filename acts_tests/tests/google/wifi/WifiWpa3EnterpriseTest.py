@@ -37,25 +37,25 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
     req_params = [
         "ec2_ca_cert", "ec2_client_cert", "ec2_client_key", "rsa3072_ca_cert",
         "rsa3072_client_cert", "rsa3072_client_key", "wpa3_ec2_network",
-        "wpa3_rsa3072_network"
+        "wpa3_rsa3072_network", "rsa2048_client_cert", "rsa2048_client_key",
+        "rsa3072_client_cert_expired", "rsa3072_client_cert_corrupted",
+        "rsa3072_client_cert_unsigned", "rsa3072_client_key_unsigned",
     ]
     self.unpack_userparams(req_param_names=req_params,)
 
   def setup_test(self):
+    super().setup_test()
     for ad in self.android_devices:
       ad.droid.wakeLockAcquireBright()
       ad.droid.wakeUpNow()
     wutils.wifi_toggle_state(self.dut, True)
 
   def teardown_test(self):
+    super().teardown_test()
     for ad in self.android_devices:
       ad.droid.wakeLockRelease()
       ad.droid.goToSleepNow()
     wutils.reset_wifi(self.dut)
-
-  def on_fail(self, test_name, begin_time):
-    self.dut.cat_adb_log(test_name, begin_time)
-    self.dut.take_bug_report(test_name, begin_time)
 
   ### Tests ###
 
@@ -89,4 +89,125 @@ class WifiWpa3EnterpriseTest(WifiBaseTest):
         "identity": self.wpa3_rsa3072_network["identity"],
         "domain_suffix_match": self.wpa3_rsa3072_network["domain"]
     }
-    wutils.connect_to_wifi_network(self.dut, config)
+    # Synology AP is slow in sending out IP address after the connection.
+    # Increasing the wait time to receive IP address to 60s from 15s.
+    wutils.connect_to_wifi_network(self.dut, config, check_connectivity=False)
+    wutils.validate_connection(self.dut, wait_time=60)
+
+  @test_tracker_info(uuid="4779c662-1925-4c26-a4d6-3d729393796e")
+  def test_connect_to_wpa3_enterprise_insecure_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa2048_client_cert,
+        Ent.PRIVATE_KEY_ID: self.rsa2048_client_key,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]
+    }
+    logcat_msg = "E WifiKeyStore: Invalid certificate type for Suite-B"
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with insecure RSA key. Expected to fail.")
+    except:
+      logcat_search = self.dut.search_logcat(logcat_msg)
+      self.log.info("Logcat search results: %s" % logcat_search)
+      asserts.assert_true(logcat_search, "No valid error msg in logcat")
+
+  @test_tracker_info(uuid="897957f3-de25-4f9e-b6fc-9d7798ea1e6f")
+  def test_connect_to_wpa3_enterprise_expired_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa3072_client_cert_expired,
+        Ent.PRIVATE_KEY_ID: self.rsa2048_client_key,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]
+    }
+    logcat_msg = "E WifiKeyStore: Invalid certificate type for Suite-B"
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with expired cert. Expected to fail.")
+    except:
+      logcat_search = self.dut.search_logcat(logcat_msg)
+      self.log.info("Logcat search results: %s" % logcat_search)
+      asserts.assert_true(logcat_search, "No valid error msg in logcat")
+
+  @test_tracker_info(uuid="f7ab30e2-f2b5-488a-8667-e45920fc24d1")
+  def test_connect_to_wpa3_enterprise_corrupted_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa3072_client_cert_corrupted,
+        Ent.PRIVATE_KEY_ID: self.rsa2048_client_key,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]
+    }
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")
+    except:
+      asserts.explicit_pass("Connection failed as expected.")
+
+  @test_tracker_info(uuid="f934f388-dc0b-4c78-a493-026b798c15ca")
+  def test_connect_to_wpa3_enterprise_unsigned_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa3072_client_cert_unsigned,
+        Ent.PRIVATE_KEY_ID: self.rsa3072_client_key_unsigned,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]
+    }
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
+    except:
+      asserts.explicit_pass("Connection failed as expected.")
+
+  @test_tracker_info(uuid="7082dc90-5eb8-4055-8b48-b555a98a837a")
+  def test_connect_to_wpa3_enterprise_wrong_domain_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa3072_client_cert,
+        Ent.PRIVATE_KEY_ID: self.rsa3072_client_key,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]+"_wrong"
+    }
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with unsigned cert. Expected to fail.")
+    except:
+      asserts.explicit_pass("Connection failed as expected.")
+
+  @test_tracker_info(uuid="9ad5fd82-f115-42c3-b8e8-520144485ea1")
+  def test_network_selection_status_for_wpa3_ent_wrong_domain_rsa_cert(self):
+    config = {
+        Ent.EAP: int(EAP.TLS),
+        Ent.CA_CERT: self.rsa3072_ca_cert,
+        WifiEnums.SSID_KEY: self.wpa3_rsa3072_network[WifiEnums.SSID_KEY],
+        Ent.CLIENT_CERT: self.rsa3072_client_cert,
+        Ent.PRIVATE_KEY_ID: self.rsa2048_client_key,
+        WifiEnums.SECURITY: WPA3_SECURITY,
+        "identity": self.wpa3_rsa3072_network["identity"],
+        "domain_suffix_match": self.wpa3_rsa3072_network["domain"]+"_wrong"
+    }
+    try:
+      wutils.connect_to_wifi_network(self.dut, config)
+      asserts.fail("WPA3 Ent worked with corrupted cert. Expected to fail.")
+    except:
+      asserts.assert_true(
+          self.dut.droid.wifiIsNetworkTemporaryDisabledForNetwork(config),
+          "WiFi network is not temporary disabled.")
+      asserts.explicit_pass(
+          "Connection failed with correct network selection status.")

@@ -20,9 +20,11 @@
 import xml.etree.ElementTree as ET
 import time
 import random
+import os
 
 from acts import signals
 from acts.logger import epoch_to_log_line_timestamp
+from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -35,15 +37,20 @@ from acts_contrib.test_utils.tel.tel_defines import UAE
 from acts_contrib.test_utils.tel.tel_defines import JAPAN_KDDI
 from acts_contrib.test_utils.tel.tel_defines import NEWZEALAND
 from acts_contrib.test_utils.tel.tel_defines import HONGKONG
-from acts_contrib.test_utils.tel.tel_defines import CHILE
-from acts_contrib.test_utils.tel.tel_defines import PERU
+from acts_contrib.test_utils.tel.tel_defines import CHILE_ENTEL
+from acts_contrib.test_utils.tel.tel_defines import CHILE_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import MEXICO_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import ELSALVADOR_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import PERU_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import PERU_ENTEL
 from acts_contrib.test_utils.tel.tel_defines import KOREA
 from acts_contrib.test_utils.tel.tel_defines import TAIWAN
 from acts_contrib.test_utils.tel.tel_defines import CANADA
 from acts_contrib.test_utils.tel.tel_defines import AUSTRALIA
 from acts_contrib.test_utils.tel.tel_defines import BRAZIL
 from acts_contrib.test_utils.tel.tel_defines import COLUMBIA
-from acts_contrib.test_utils.tel.tel_defines import ECUADOR
+from acts_contrib.test_utils.tel.tel_defines import ECUADOR_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import ECUADOR_CLARO
 from acts_contrib.test_utils.tel.tel_defines import FRANCE
 from acts_contrib.test_utils.tel.tel_defines import PUERTORICO
 from acts_contrib.test_utils.tel.tel_defines import NETHERLANDS
@@ -64,6 +71,7 @@ from acts_contrib.test_utils.tel.tel_defines import JAPAN_SOFTBANK
 from acts_contrib.test_utils.tel.tel_defines import SAUDIARABIA
 from acts_contrib.test_utils.tel.tel_defines import MAIN_ACTIVITY
 from acts_contrib.test_utils.tel.tel_defines import CBR_PACKAGE
+from acts_contrib.test_utils.tel.tel_defines import SYSUI_PACKAGE
 from acts_contrib.test_utils.tel.tel_defines import CBR_ACTIVITY
 from acts_contrib.test_utils.tel.tel_defines import CBR_TEST_APK
 from acts_contrib.test_utils.tel.tel_defines import MCC_MNC
@@ -90,15 +98,42 @@ from acts_contrib.test_utils.net import ui_utils as uutils
 class CellBroadcastTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
-        self.region_plmn_list_conf = self.user_params.get("region_plmn_list")
-        self.emergency_alert_settings_conf = self.user_params.get("emergency_alert_settings")
-        self.emergency_alert_channels_conf = self.user_params.get("emergency_alert_channels")
+        req_param = ["region_plmn_list", "emergency_alert_settings", "emergency_alert_channels", "carrier_test_conf"]
+        self.unpack_userparams(req_param_names=req_param)
+        if hasattr(self, "region_plmn_list"):
+            if isinstance(self.region_plmn_list, list):
+                self.region_plmn_list = self.region_plmn_list[0]
+            if not os.path.isfile(self.region_plmn_list):
+                self.region_plmn_list = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.region_plmn_list)
+        if hasattr(self, "emergency_alert_settings"):
+            if isinstance(self.emergency_alert_settings, list):
+                self.emergency_alert_settings = self.emergency_alert_settings[0]
+            if not os.path.isfile(self.emergency_alert_settings):
+                self.emergency_alert_settings = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.emergency_alert_settings)
+        if hasattr(self, "emergency_alert_channels"):
+            if isinstance(self.emergency_alert_channels, list):
+                self.emergency_alert_channels = self.emergency_alert_channels[0]
+            if not os.path.isfile(self.emergency_alert_channels):
+                self.emergency_alert_channels = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.emergency_alert_channels)
+        if hasattr(self, "carrier_test_conf"):
+            if isinstance(self.carrier_test_conf, list):
+                self.carrier_test_conf = self.carrier_test_conf[0]
+            if not os.path.isfile(self.carrier_test_conf):
+                self.carrier_test_conf = os.path.join(
+                    self.user_params[Config.key_config_path.value],
+                    self.carrier_test_conf)
         self.verify_vibration = self.user_params.get("verify_vibration", True)
         self._disable_vibration_check_for_11()
         self.verify_sound = self.user_params.get("verify_sound", True)
-        self.region_plmn_dict = load_config(self.region_plmn_list_conf)
-        self.emergency_alert_settings_dict = load_config(self.emergency_alert_settings_conf)
-        self.emergency_alert_channels_dict = load_config(self.emergency_alert_channels_conf)
+        self.region_plmn_dict = load_config(self.region_plmn_list)
+        self.emergency_alert_settings_dict = load_config(self.emergency_alert_settings)
+        self.emergency_alert_channels_dict = load_config(self.emergency_alert_channels)
         self._verify_cbr_test_apk_install(self.android_devices[0])
 
     def setup_test(self):
@@ -141,7 +176,7 @@ class CellBroadcastTest(TelephonyBaseTest):
 
 
     def _close_wea_settings_page(self, ad):
-        pid = ad.adb.shell("pidof %s" % CBR_PACKAGE)
+        pid = ad.adb.shell("pidof %s" % CBR_PACKAGE, ignore_status=True)
         ad.adb.shell("kill -9 %s" % pid, ignore_status=True)
 
 
@@ -158,15 +193,14 @@ class CellBroadcastTest(TelephonyBaseTest):
                     region.upper(), mccmnc, imsi)
 
         # update carrier xml file
-        carrier_test_conf = self.user_params.get("carrier_test_conf")
-        tree = ET.parse(carrier_test_conf)
+        tree = ET.parse(self.carrier_test_conf)
         root = tree.getroot()
         root[1].attrib['value'] = mccmnc
         root[2].attrib['value'] = imsi
-        tree.write(carrier_test_conf)
+        tree.write(self.carrier_test_conf)
 
         # push carrier xml to device
-        ad.adb.push("%s %s" % (carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
+        ad.adb.push("%s %s" % (self.carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
 
         # reboot device
         reboot_device(ad)
@@ -293,10 +327,10 @@ class CellBroadcastTest(TelephonyBaseTest):
         return False
 
 
-    def _verify_sound(self, ad, begintime, expectedtime, offset):
+    def _verify_sound(self, ad, begintime, expectedtime, offset, calling_package=CBR_PACKAGE):
         if not self.verify_sound:
             return True
-        cbr_pid = ad.adb.shell("pidof %s" % CBR_PACKAGE)
+        cbr_pid = ad.adb.shell("pidof %s" % calling_package)
         DUMPSYS_START_AUDIO = "dumpsys audio | grep %s | grep requestAudioFocus | tail -1" % cbr_pid
         DUMPSYS_END_AUDIO = "dumpsys audio | grep %s | grep abandonAudioFocus | tail -1" % cbr_pid
         start_audio = ad.adb.shell(DUMPSYS_START_AUDIO)
@@ -409,8 +443,19 @@ class CellBroadcastTest(TelephonyBaseTest):
                     if self._popup_alert_in_statusbar_notifications(ad, alert_text):
                         ad.log.info("Found alert channel %d in status bar notifications, pop it up.", channel)
                         # Verify alert text in message.
-                        # Skip sound and vibration verification since it's not expected for notification alert.
                         alert_in_notification = self._verify_text_present_on_ui(ad, alert_text)
+                        if alert_in_notification:
+                            # Verify vibration and notification sound.
+                            # We check sound generated by com.android.systemui package.
+                            # For the reason of offset + 1, refer to b/199565843
+                            # TODO: The notification sound is initiated by system
+                            #  rather than CellBroadcastReceiver. In case there are
+                            #  any non-emergency notifications coming during testing, we
+                            #  should consider to validate notification id instead of
+                            #  com.android.systemui package. b/199565843
+                            if not (self._verify_vibration(ad, begintime, vibration_time, offset) and
+                                    self._verify_sound(ad, begintime, sound_time, offset+1, SYSUI_PACKAGE)):
+                                iteration_result = False
                 if alert_expected == "true" and not alert_in_notification:
                     iteration_result = False
                     self._log_and_screenshot_alert_fail(ad, "missing", region, channel)
@@ -566,32 +611,92 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="d9e2dca2-4965-48d5-9d79-352c4ccf9e0f")
     @TelephonyBaseTest.tel_test_wrap
-    def test_default_alert_settings_chile(self):
-        """ Verifies Wireless Emergency Alert settings for Chile
+    def test_default_alert_settings_chile_entel(self):
+        """ Verifies Wireless Emergency Alert settings for Chile_Entel
 
-        configures the device to Chile
+        configures the device to Chile_Entel
         verifies alert names and its default values
         toggles the alert twice if available
 
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._settings_test_flow(CHILE)
+        return self._settings_test_flow(CHILE_ENTEL)
+
+
+    @test_tracker_info(uuid="2a045a0e-145c-4677-b454-b0b63a69ea10")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_chile_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for Chile_Telefonica
+
+        configures the device to Chile_Telefonica
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(CHILE_TELEFONICA)
 
 
     @test_tracker_info(uuid="77cff297-fe3b-4b4c-b502-5324b4e91506")
     @TelephonyBaseTest.tel_test_wrap
-    def test_default_alert_settings_peru(self):
-        """ Verifies Wireless Emergency Alert settings for Peru
+    def test_default_alert_settings_peru_entel(self):
+        """ Verifies Wireless Emergency Alert settings for Peru_Entel
 
-        configures the device to Peru
+        configures the device to Peru_Entel
         verifies alert names and its default values
         toggles the alert twice if available
 
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._settings_test_flow(PERU)
+        return self._settings_test_flow(PERU_ENTEL)
+
+
+    @test_tracker_info(uuid="8b683505-288f-4587-95f2-9a8705476f09")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_peru_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for Peru_Telefonica
+
+        configures the device to Peru_Telefonica
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(PERU_TELEFONICA)
+
+
+    @test_tracker_info(uuid="cc0e0f64-2c77-4e20-b55e-6f555f7ecb97")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_elsalvador_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for Elsalvador_Telefonica
+
+        configures the device to Elsalvador_Telefonica
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(ELSALVADOR_TELEFONICA)
+
+
+    @test_tracker_info(uuid="339be9ef-7e0e-463a-ad45-12b7e74bb1c4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_mexico_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for Mexico_Telefonica
+
+        configures the device to Mexico_Telefonica
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(MEXICO_TELEFONICA)
 
 
     @test_tracker_info(uuid="4c3c4e65-c624-4eba-9a81-263f4ee01e12")
@@ -671,17 +776,32 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2ebfc05b-3512-4eff-9c09-5d8f49fe0b5e")
     @TelephonyBaseTest.tel_test_wrap
-    def test_default_alert_settings_ecuador(self):
-        """ Verifies Wireless Emergency Alert settings for Ecuador
+    def test_default_alert_settings_ecuador_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for Ecuador Telefonica
 
-        configures the device to Ecuador
+        configures the device to Ecuador Telefonica
         verifies alert names and its default values
         toggles the alert twice if available
 
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._settings_test_flow(ECUADOR)
+        return self._settings_test_flow(ECUADOR_TELEFONICA)
+
+
+    @test_tracker_info(uuid="694bf8f6-9e6e-46b4-98df-c7ab1a9a3ec8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_ecuador_claro(self):
+        """ Verifies Wireless Emergency Alert settings for Ecuador Claro
+
+        configures the device to Ecuador Claro
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(ECUADOR_CLARO)
 
 
     @test_tracker_info(uuid="96628975-a23f-47f7-ab18-1aa7a7dc08b5")
@@ -992,10 +1112,10 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="feea4e42-99cc-4075-bd78-15b149cb2e4c")
     @TelephonyBaseTest.tel_test_wrap
-    def test_send_receive_alerts_chile(self):
-        """ Verifies Wireless Emergency Alerts for CHILE
+    def test_send_receive_alerts_chile_entel(self):
+        """ Verifies Wireless Emergency Alerts for CHILE_ENTEL
 
-        configures the device to CHILE
+        configures the device to CHILE_ENTEL
         send alerts across all channels,
         verify if alert is received correctly
         verify sound and vibration timing
@@ -1004,7 +1124,24 @@ class CellBroadcastTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._send_receive_test_flow(CHILE)
+        return self._send_receive_test_flow(CHILE_ENTEL)
+
+
+    @test_tracker_info(uuid="d2ec84ad-7f9a-4aa2-97e8-ca9ffa6c58a7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_chile_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for CHILE_TELEFONICA
+
+        configures the device to CHILE_TELEFONICA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(CHILE_TELEFONICA)
 
 
     @test_tracker_info(uuid="4af30b94-50ea-4e19-8866-31fd3573a059")
@@ -1026,10 +1163,10 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2378b651-2097-48e6-b409-885bde9f4586")
     @TelephonyBaseTest.tel_test_wrap
-    def test_send_receive_alerts_ecuador(self):
-        """ Verifies Wireless Emergency Alerts for ECUADOR
+    def test_send_receive_alerts_ecuador_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for ECUADOR Telefonica
 
-        configures the device to ECUADOR
+        configures the device to ECUADOR Telefonica
         send alerts across all channels,
         verify if alert is received correctly
         verify sound and vibration timing
@@ -1038,7 +1175,41 @@ class CellBroadcastTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._send_receive_test_flow(ECUADOR)
+        return self._send_receive_test_flow(ECUADOR_TELEFONICA)
+
+
+    @test_tracker_info(uuid="cd064259-6cb2-460b-8225-de613f6cf967")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_ecuador_claro(self):
+        """ Verifies Wireless Emergency Alerts for ECUADOR Claro
+
+        configures the device to ECUADOR Claro
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(ECUADOR_CLARO)
+
+
+    @test_tracker_info(uuid="b11d1dd7-2090-463a-ba3a-39703db7f376")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_elsalvador_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for ELSALVADOR telefonica
+
+        configures the device to ELSALVADOR telefonica
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(ELSALVADOR_TELEFONICA)
 
 
     @test_tracker_info(uuid="46d6c612-21df-476e-a41b-3baa621b52f0")
@@ -1228,6 +1399,23 @@ class CellBroadcastTest(TelephonyBaseTest):
         return self._send_receive_test_flow(LITHUANIA)
 
 
+    @test_tracker_info(uuid="061cd0f3-cefa-4e5d-a1aa-f6125ccf9347")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_mexico_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for MEXICO telefonica
+
+        configures the device to MEXICO telefonica
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(MEXICO_TELEFONICA)
+
+
     @test_tracker_info(uuid="a9c7cdbe-5a9e-49fb-af60-953e8c1547c0")
     @TelephonyBaseTest.tel_test_wrap
     def test_send_receive_alerts_netherlands(self):
@@ -1281,10 +1469,10 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="35f0f156-1555-4bf1-98b1-b5848d8e2d39")
     @TelephonyBaseTest.tel_test_wrap
-    def test_send_receive_alerts_peru(self):
-        """ Verifies Wireless Emergency Alerts for PERU
+    def test_send_receive_alerts_peru_entel(self):
+        """ Verifies Wireless Emergency Alerts for PERU_ENTEL
 
-        configures the device to PERU
+        configures the device to PERU_ENTEL
         send alerts across all channels,
         verify if alert is received correctly
         verify sound and vibration timing
@@ -1293,7 +1481,24 @@ class CellBroadcastTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail and collects screenshot
         """
-        return self._send_receive_test_flow(PERU)
+        return self._send_receive_test_flow(PERU_ENTEL)
+
+
+    @test_tracker_info(uuid="4708c783-ca89-498d-b74c-a6bc9df3fb32")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_peru_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for PERU_TELEFONICA
+
+        configures the device to PERU_TELEFONICA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(PERU_TELEFONICA)
 
 
     @test_tracker_info(uuid="fefb293a-5c22-45b2-9323-ccb355245c9a")

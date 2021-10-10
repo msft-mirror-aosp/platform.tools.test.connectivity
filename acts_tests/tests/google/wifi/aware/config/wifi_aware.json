@@ -9,7 +9,8 @@
         }
     ],
     "logpath": "~/logs",
-    "testpaths": ["./tools/test/connectivity/acts/tests/google/wifi"],
+    "testpaths": ["./tools/test/connectivity/acts_tests/tests/google/wifi"],
+    "dbs_supported_models": "*",
     "adb_logcat_param": "-b all",
     "aware_default_power_mode": "INTERACTIVE"
 }
