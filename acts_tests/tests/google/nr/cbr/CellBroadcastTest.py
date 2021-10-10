@@ -167,9 +167,23 @@ class CellBroadcastTest(TelephonyBaseTest):
             self.verify_vibration = False
 
     def _get_toggle_value(self, ad, alert_text=None):
-        node = uutils.wait_and_get_xml_node(ad, timeout=30, text=alert_text)
+        if alert_text == "Alerts":
+            node = uutils.wait_and_get_xml_node(ad, timeout=30, matching_node=2, text=alert_text)
+        else:
+            node = uutils.wait_and_get_xml_node(ad, timeout=30, text=alert_text)
         return node.parentNode.nextSibling.firstChild.attributes['checked'].value
 
+    def _wait_and_click(self, ad, alert_text=None):
+        if alert_text == "Alerts":
+            uutils.wait_and_click(ad, text=alert_text, matching_node=2)
+        else:
+            uutils.wait_and_click(ad, text=alert_text)
+
+    def _has_element(self, ad, alert_text=None):
+        if alert_text == "Alerts":
+            return uutils.has_element(ad, text=alert_text, matching_node=2)
+        else:
+            return uutils.has_element(ad, text=alert_text)
 
     def _open_wea_settings_page(self, ad):
         ad.adb.shell("am start -a %s -n %s/%s" % (MAIN_ACTIVITY, CBR_PACKAGE, CBR_ACTIVITY))
@@ -219,10 +233,10 @@ class CellBroadcastTest(TelephonyBaseTest):
             alert_value = value["default_value"]
             self._open_wea_settings_page(ad)
             # scroll till bottom
-            if not uutils.has_element(ad, text=alert_text):
+            if not self._has_element(ad, alert_text):
                 for _ in range(3):
                     ad.adb.shell(SCROLL_DOWN)
-                if not uutils.has_element(ad, text=alert_text):
+                if not self._has_element(ad, alert_text):
                     ad.log.error("UI - %s missing", alert_text)
                     result = False
                     continue
@@ -244,26 +258,26 @@ class CellBroadcastTest(TelephonyBaseTest):
             alert_toggle = value["toggle_avail"]
             if alert_toggle == "true":
                 self._open_wea_settings_page(ad)
-                if not uutils.has_element(ad, text=alert_text):
+                if not self._has_element(ad, alert_text):
                     for _ in range(3):
                         ad.adb.shell(SCROLL_DOWN)
-                    if not uutils.has_element(ad, text=alert_text):
+                    if not self._has_element(ad, alert_text):
                         ad.log.error("UI - %s missing", alert_text)
                         result = False
                         continue
                 before_toggle = self._get_toggle_value(ad, alert_text)
-                uutils.wait_and_click(ad, text=alert_text)
+                self._wait_and_click(ad, alert_text)
                 after_toggle = self._get_toggle_value(ad, alert_text)
                 if before_toggle == after_toggle:
                     for _ in range(3):
                         ad.adb.shell(SCROLL_DOWN)
-                    uutils.wait_and_click(ad, text=alert_text)
+                    self._wait_and_click(ad, alert_text)
                     after_toggle = self._get_toggle_value(ad, alert_text)
                     if before_toggle == after_toggle:
                         ad.log.error("UI - fail to toggle %s", alert_text)
                         result = False
                 else:
-                    uutils.wait_and_click(ad, text=alert_text)
+                    self._wait_and_click(ad, alert_text)
                     reset_toggle = self._get_toggle_value(ad, alert_text)
                     if reset_toggle != before_toggle:
                         ad.log.error("UI - fail to reset toggle %s", alert_text)
@@ -495,6 +509,10 @@ class CellBroadcastTest(TelephonyBaseTest):
             result = False
         log_screen_shot(ad, "default_settings_%s" % region)
         self._close_wea_settings_page(ad)
+        # Here close wea setting UI and then immediately open the UI that sometimes causes
+        # failing to open the wea setting UI. So we just delay 1 sec after closing
+        # the wea setting UI.
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         if not self._verify_wea_toggle_settings(ad, region):
             log_screen_shot(ad, "toggle_settings_%s" % region)
             result = False
