@@ -50,7 +50,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
 from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem

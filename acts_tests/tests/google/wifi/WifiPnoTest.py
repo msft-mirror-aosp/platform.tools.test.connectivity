@@ -16,7 +16,6 @@
 import time
 
 from acts import asserts
-from acts import base_test
 from acts.test_decorators import test_tracker_info
 import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -26,21 +25,29 @@ MAX_ATTN = 95
 
 class WifiPnoTest(WifiBaseTest):
 
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.enable_packet_log = True
+
     def setup_class(self):
         super().setup_class()
 
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["attn_vals", "pno_interval"]
+        req_params = ["attn_vals", "pno_interval", "wifi6_models"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
-
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True,
+                                                ap_count=2)
         self.pno_network_a = self.reference_networks[0]['2g']
         self.pno_network_b = self.reference_networks[0]['5g']
+        if "OpenWrtAP" in self.user_params:
+            self.pno_network_b = self.reference_networks[1]['5g']
         self.attn_a = self.attenuators[0]
         self.attn_b = self.attenuators[1]
         # Disable second AP's networks, so that it does not interfere during PNO
@@ -49,6 +56,7 @@ class WifiPnoTest(WifiBaseTest):
         self.set_attns("default")
 
     def setup_test(self):
+        super().setup_test()
         self.dut.droid.wifiStartTrackingStateChange()
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
@@ -56,14 +64,11 @@ class WifiPnoTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
 
     def teardown_test(self):
+        super().teardown_test()
         self.dut.droid.wifiStopTrackingStateChange()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
         self.set_attns("default")
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -112,6 +117,8 @@ class WifiPnoTest(WifiBaseTest):
             wutils.verify_wifi_connection_info(self.dut, verify_con)
             self.log.info("Connected to %s successfully after PNO",
                           expected_ssid)
+            wutils.verify_11ax_wifi_connection(
+                self.dut, self.wifi6_models, "wifi6_ap" in self.user_params)
         finally:
             pass
 
@@ -143,7 +150,7 @@ class WifiPnoTest(WifiBaseTest):
     """ Tests Begin """
 
     @test_tracker_info(uuid="33d3cae4-5fa7-4e90-b9e2-5d3747bba64c")
-    def test_simple_pno_connection_to_2g(self):
+    def test_simple_pno_connection_5g_to_2g(self):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
@@ -157,7 +164,7 @@ class WifiPnoTest(WifiBaseTest):
         self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
 
     @test_tracker_info(uuid="39b945a1-830f-4f11-9e6a-9e9641066a96")
-    def test_simple_pno_connection_to_5g(self):
+    def test_simple_pno_connection_2g_to_5g(self):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
@@ -176,20 +183,24 @@ class WifiPnoTest(WifiBaseTest):
         """Test PNO triggered autoconnect to a network when there are more
         than 16 networks saved in the device.
 
-        16 is the max list size of PNO watch list for most devices. The device
-        should automatically pick the 16 latest added networks in the list.
-        So add 16 test networks and then add 2 valid networks.
+        16 is the max list size of PNO watch list for most devices. The device should automatically
+        pick the 16 most recently connected networks. For networks that were never connected, the
+        networks seen in the previous scan result would have higher priority.
 
         Steps:
         1. Save 16 test network configurations in the device.
-        2. Run the simple pno test.
+        2. Add 2 connectable networks and do a normal scan.
+        3. Trigger PNO scan
         """
         self.add_and_enable_test_networks(16)
         self.add_network_and_enable(self.pno_network_a)
         self.add_network_and_enable(self.pno_network_b)
         # Force single scan so that both networks become preferred before PNO.
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
+        self.dut.droid.goToSleepNow()
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.wifi_toggle_state(self.dut, True)
         time.sleep(10)
-        self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
+        self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
 
     """ Tests End """

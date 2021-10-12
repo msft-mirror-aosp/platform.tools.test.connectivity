@@ -213,6 +213,8 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
                           'to Exception')
             self.log.info(e)
 
+        super().teardown_class()
+
     def on_fail(self, test_name, begin_time):
         super().on_fail(test_name, begin_time)
         self.cleanup_tests()

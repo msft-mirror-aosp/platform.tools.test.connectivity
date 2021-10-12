@@ -18,6 +18,7 @@ from acts import base_test
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 
 class WifiPerformancePreflightTest(base_test.BaseTestClass):
@@ -43,25 +44,24 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
         # Load BDF and firmware if needed
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
-            wputils.push_bdf(self.dut, self.bdf[0])
+            wputils.push_config(self.dut, self.bdf[0])
         if hasattr(self, 'firmware'):
             self.log.info('Pushing WiFi firmware to DUT.')
-            wlanmdsp = [
-                file for file in self.firmware if "wlanmdsp.mbn" in file
-            ][0]
-            data_msc = [file for file in self.firmware
-                        if "Data.msc" in file][0]
-            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
+            wputils.push_firmware(self.dut, self.firmware)
 
         for ad in self.android_devices:
+            wutils.wifi_toggle_state(ad, True)
             ad.droid.wifiEnableVerboseLogging(1)
-            ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
-                         "wlan0 log_level EXCESSIVE")
+            try:
+                ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
+                             "wlan0 log_level EXCESSIVE")
+            except:
+                self.log.warning('Could not set log level.')
 
     def test_wifi_sw_signature(self):
         sw_signature = wputils.get_sw_signature(self.dut)
-        self.testcase_metric_logger.add_metric('bdf_signature',
-                                               sw_signature['bdf_signature'])
+        self.testcase_metric_logger.add_metric(
+            'config_signature', sw_signature['config_signature'])
         self.testcase_metric_logger.add_metric('fw_signature',
                                                sw_signature['fw_signature'])
         self.testcase_metric_logger.add_metric('serial_hash',
