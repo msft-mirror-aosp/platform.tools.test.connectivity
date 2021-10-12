@@ -484,7 +484,8 @@ class TelephonyBaseTest(BaseTestClass):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "sdm_log", False):
             start_sdm_loggers(self.log, self.android_devices)
-        if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
+        if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name or (
+            "iwlan" in self.test_name):
             mask = getattr(self, "tcpdump_mask", "all")
             interface = getattr(self, "tcpdump_interface", "wlan0")
             start_tcpdumps(
