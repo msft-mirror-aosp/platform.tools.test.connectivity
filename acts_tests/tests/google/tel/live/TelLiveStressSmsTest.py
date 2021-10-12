@@ -27,7 +27,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils \
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_voice_utils \
     import phone_setup_volte_for_subscription
 from acts_contrib.test_utils.tel.tel_voice_utils \

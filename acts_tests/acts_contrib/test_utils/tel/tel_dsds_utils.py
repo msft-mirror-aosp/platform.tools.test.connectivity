@@ -54,7 +54,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_forwarding_by_mmi
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_waiting
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
