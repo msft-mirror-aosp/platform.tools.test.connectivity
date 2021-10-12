@@ -21,14 +21,13 @@ import time
 
 from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from future import standard_library
 
 standard_library.install_aliases()
 
 
-def initial_set_up_for_subid_infomation(log, ad):
+def initial_set_up_for_subid_information(log, ad):
     """Initial subid setup for voice, message and data according to ad's
     attribute.
 
