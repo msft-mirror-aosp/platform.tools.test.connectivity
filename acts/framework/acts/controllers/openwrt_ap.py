@@ -1,14 +1,17 @@
 """Controller for Open WRT access point."""
 
+import random
 import re
 import time
 from acts import logger
+from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.openwrt_lib import network_settings
 from acts.controllers.openwrt_lib import wireless_config
 from acts.controllers.openwrt_lib import wireless_settings_applier
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.controllers.openwrt_lib.openwrt_constants import OpenWrtWifiSetting
 import yaml
 
 MOBLY_CONTROLLER_CONFIG_NAME = "OpenWrtAP"
@@ -336,6 +339,61 @@ class OpenWrtAP(object):
 
     self.ssh.run("uci commit wireless")
     self.ssh.run("wifi")
+
+  def generate_mobility_domain(self):
+      """Generate 4-character hexadecimal ID
+
+      Returns: String; a 4-character hexadecimal ID.
+      """
+      md = "{:04x}".format(random.getrandbits(16))
+      self.log.info("Mobility Domain ID: {}".format(md))
+      return md
+
+  def enable_80211r(self, iface, md):
+    """Enable 802.11r for one single radio.
+
+     Args:
+       iface: index number of wifi-iface.
+              2: radio1
+              3: radio0
+       md: mobility domain. a 4-character hexadecimal ID.
+    Raises: TestSkip if 2g or 5g radio is not up or 802.11r is not enabled.
+     """
+    str_output = self.ssh.run("wifi status").stdout
+    wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                            Loader=yaml.FullLoader)
+    # Check if the radio is up.
+    if iface == OpenWrtWifiSetting.IFACE_2G:
+      if wifi_status['radio1']['up']:
+        self.log.info("2g network is ENABLED")
+      else:
+        raise signals.TestSkip("2g network is NOT ENABLED")
+    elif iface == OpenWrtWifiSetting.IFACE_5G:
+      if wifi_status['radio0']['up']:
+        self.log.info("5g network is ENABLED")
+      else:
+        raise signals.TestSkip("5g network is NOT ENABLED")
+
+    # Setup 802.11r.
+    self.ssh.run(
+        "uci set wireless.@wifi-iface[{}].ieee80211r='1'".format(iface))
+    self.ssh.run(
+        "uci set wireless.@wifi-iface[{}].ft_psk_generate_local='1'"
+          .format(iface))
+    self.ssh.run(
+        "uci set wireless.@wifi-iface[{}].mobility_domain='{}'"
+          .format(iface, md))
+    self.ssh.run(
+        "uci commit wireless")
+    self.ssh.run("wifi")
+
+    # Check if 802.11r is enabled.
+    result = self.ssh.run(
+        "uci get wireless.@wifi-iface[{}].ieee80211r".format(iface)).stdout
+    if result == '1':
+      self.log.info("802.11r is ENABLED")
+    else:
+      raise signals.TestSkip("802.11r is NOT ENABLED")
 
   def generate_wireless_configs(self, wifi_configs):
     """Generate wireless configs to configure.
