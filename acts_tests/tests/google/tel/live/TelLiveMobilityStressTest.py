@@ -44,7 +44,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_voice_attached
 from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g

@@ -39,7 +39,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import fastboot_wipe
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state

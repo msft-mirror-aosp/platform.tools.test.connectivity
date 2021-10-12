@@ -36,7 +36,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_sta
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
