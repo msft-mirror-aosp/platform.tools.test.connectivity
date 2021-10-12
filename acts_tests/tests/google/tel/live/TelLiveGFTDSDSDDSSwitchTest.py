@@ -34,6 +34,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
@@ -50,8 +51,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import \
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import \
-    sms_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
