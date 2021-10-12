@@ -44,6 +44,9 @@ AFTER_FLASH_BOOT_TIME = 30
 WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC = 360
 PROCESS_CHECK_WAIT_TIME_SEC = 30
 
+FUCHSIA_SDK_URL = "gs://fuchsia-sdk/development"
+FUCHSIA_RELEASE_TESTING_URL = "gs://fuchsia-release-testing/images"
+
 
 def get_private_key(ip_address, ssh_config):
     """Tries to load various ssh key types.
@@ -218,8 +221,6 @@ def flash(fuchsia_device, use_ssh=False,
                          'fuchsia_devices.')
     if not fuchsia_device.build_number:
         fuchsia_device.build_number = 'LATEST'
-    if not fuchsia_device.server_path:
-        fuchsia_device.server_path = 'gs://fuchsia-sdk/development/'
     if (utils.is_valid_ipv4_address(fuchsia_device.orig_ip)
             or utils.is_valid_ipv6_address(fuchsia_device.orig_ip)):
         raise ValueError('The fuchsia_device ip must be the mDNS name to be '
@@ -227,38 +228,23 @@ def flash(fuchsia_device, use_ssh=False,
 
     if not fuchsia_device.specific_image:
         file_download_needed = True
-        if 'LATEST' in fuchsia_device.build_number:
-            gsutil_process = job.run('gsutil ls %s' %
-                                     fuchsia_device.server_path).stdout
-            build_list = list(
-                # filter out builds that are not part of branches
-                filter(
-                    None,
-                    gsutil_process.replace(fuchsia_device.server_path,
-                                           '').replace('/', '').split('\n')))
-            if 'LATEST_F' in fuchsia_device.build_number:
-                build_number = fuchsia_device.build_number.split(
-                    'LATEST_F', 1)[1]
-                build_list = [
-                    x for x in build_list if x.startswith('%s.' % build_number)
-                ]
-            elif fuchsia_device.build_number == 'LATEST':
-                build_list = [x for x in build_list if '.' in x]
-            if build_list:
-                fuchsia_device.build_number = build_list[-2]
-            else:
-                raise FileNotFoundError(
-                    'No build(%s) on the found on %s.' %
-                    (fuchsia_device.build_number, fuchsia_device.server_path))
-        image_front_string = fuchsia_device.product_type
+        product_build = fuchsia_device.product_type
         if fuchsia_device.build_type:
-            image_front_string = '%s_%s' % (image_front_string,
-                                            fuchsia_device.build_type)
-        full_image_string = '%s.%s-release.tgz' % (image_front_string,
-                                                   fuchsia_device.board_type)
-        file_to_download = '%s%s/images/%s' % (fuchsia_device.server_path,
-                                               fuchsia_device.build_number,
-                                               full_image_string)
+            product_build = '{}_{}'.format(product_build,
+                                           fuchsia_device.build_type)
+        if 'LATEST' in fuchsia_device.build_number:
+            sdk_version = 'sdk'
+            if 'LATEST_F' in fuchsia_device.build_number:
+                f_branch = fuchsia_device.build_number.split('LATEST_F', 1)[1]
+                sdk_version = 'f{}_sdk'.format(f_branch)
+            file_to_download = '{}/{}-{}.{}-release.tgz'.format(
+                FUCHSIA_RELEASE_TESTING_URL, sdk_version, product_build,
+                fuchsia_device.board_type)
+        else:
+            # Must be a fully qualified build number (e.g. 5.20210721.4.1215)
+            file_to_download = '{}/{}/images/{}.{}-release.tgz'.format(
+                FUCHSIA_SDK_URL, fuchsia_device.build_number, product_build,
+                fuchsia_device.board_type)
     elif 'gs://' in fuchsia_device.specific_image:
         file_download_needed = True
         file_to_download = fuchsia_device.specific_image
@@ -267,6 +253,7 @@ def flash(fuchsia_device, use_ssh=False,
         file_to_download = fuchsia_device.specific_image
     else:
         raise ValueError('A suitable build could not be found.')
+
     tmp_path = '/tmp/%s_%s' % (str(int(
         time.time() * 10000)), fuchsia_device.board_type)
     os.mkdir(tmp_path)
