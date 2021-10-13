@@ -30,7 +30,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts_contrib.test_utils.tel.tel_voice_utils import get_audio_route
 from acts_contrib.test_utils.tel.tel_voice_utils import set_audio_route

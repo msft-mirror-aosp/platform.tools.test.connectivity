@@ -97,6 +97,7 @@ class GnssFunctionTest(BaseTestClass):
                       "weak_signal_xtra_cs_criteria",
                       "weak_signal_xtra_ws_criteria",
                       "weak_signal_xtra_hs_criteria",
+                      "wearable_reboot_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
@@ -1281,8 +1282,12 @@ class GnssFunctionTest(BaseTestClass):
         for test_loop in range(1, 11):
             reboot(self.ad)
             self.start_qxdm_and_tcpdump_log()
-            test_result = process_gnss_by_gtw_gpstool(
-                self.ad, self.supl_hs_criteria, clear_data=False)
+            if is_device_wearable(self.ad):
+                test_result = process_gnss_by_gtw_gpstool(
+                    self.ad, self.wearable_reboot_hs_criteria, clear_data=False)
+            else:
+                test_result = process_gnss_by_gtw_gpstool(
+                    self.ad, self.supl_hs_criteria, clear_data=False)
             start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
             overall_test_result.append(test_result)
@@ -1314,8 +1319,8 @@ class GnssFunctionTest(BaseTestClass):
             # Wait 20 seconds for boot busy and lto auto-download time
             time.sleep(20)
             begin_time = get_current_epoch_time()
-            reboot_lto_test_result = gutils.check_xtra_download(self.watch, begin_time)
-            self.watch.log.info("Iteration %d => %s" % (times, reboot_lto_test_result))
+            reboot_lto_test_result = gutils.check_xtra_download(self.ad, begin_time)
+            self.ad.log.info("Iteration %d => %s" % (times, reboot_lto_test_result))
             reboot_lto_test_results_all.append(reboot_lto_test_result)
             gutils.stop_pixel_logger(self.ad)
             tutils.stop_adb_tcpdump(self.ad)
