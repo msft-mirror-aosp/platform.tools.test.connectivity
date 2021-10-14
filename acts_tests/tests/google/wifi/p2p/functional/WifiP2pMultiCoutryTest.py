@@ -20,7 +20,7 @@ import time
 import acts.controllers.packet_capture as packet_capture
 import re
 import logging
-
+#import acts.signals as signals
 from acts import asserts
 from acts import utils
 
@@ -29,6 +29,7 @@ from acts_contrib.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
 from acts_contrib.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
 from acts_contrib.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 from acts.controllers.ap_lib.hostapd_constants import CHANNEL_MAP
+
 
 WPS_PBC = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
 WPS_DISPLAY = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_DISPLAY
@@ -46,8 +47,8 @@ class WifiP2pMultiCoutryTest(WifiP2pBaseTest):
     def __init__(self, controllers):
         WifiP2pBaseTest.__init__(self, controllers)
         self.basetest_name = (
-            "test_p2p_connect_via_pbc_and_ping_and_reconnect_multicountry",
             "test_p2p_connect_via_display_and_ping_and_reconnect_multicountry",
+            "test_p2p_connect_via_pbc_and_ping_and_reconnect_multicountry",
             )
 
         self.generate_tests()
@@ -99,8 +100,6 @@ class WifiP2pMultiCoutryTest(WifiP2pBaseTest):
         out_p2p01 = dut.adb.shell(get_p2p0)
         out_p2p0 = re.findall("freq=(\d+)", out_p2p01)
         return out_p2p0
-
-
 
     """Test Cases"""
 
@@ -169,6 +168,7 @@ class WifiP2pMultiCoutryTest(WifiP2pBaseTest):
         wp2putils.check_disconnect(
             go_dut, timeout=p2pconsts.DEFAULT_GROUP_CLIENT_LOST_TIME)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
+
         if hasattr(self, 'packet_capture'):
             wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         time.sleep(10)
@@ -192,6 +192,7 @@ class WifiP2pMultiCoutryTest(WifiP2pBaseTest):
         wutils.set_wifi_country_code(self.dut1, country)
         wutils.set_wifi_country_code(self.dut2, country)
         wp2putils.p2p_connect(self.dut1, self.dut2, False, WPS_DISPLAY)
+
         p2pfreg = int(self.get_p2p0_freq(self.dut1)[0])
         p2p_channel = str(CHANNEL_MAP[p2pfreg])
         n = int(p2p_channel)
@@ -240,4 +241,3 @@ class WifiP2pMultiCoutryTest(WifiP2pBaseTest):
         if hasattr(self, 'packet_capture'):
             wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         time.sleep(10)
-

@@ -199,12 +199,14 @@ class Hostapd(object):
         """
         start_time = time.time()
         while time.time() - start_time < timeout:
+            time.sleep(0.1)
             success = self._shell.search_file('Setup of interface done',
                                               self._log_file)
             if success:
                 return
+            self._scan_for_errors(False)
 
-            self._scan_for_errors(True)
+        self._scan_for_errors(True)
 
     def _scan_for_errors(self, should_be_up):
         """Scans the hostapd log for any errors.
