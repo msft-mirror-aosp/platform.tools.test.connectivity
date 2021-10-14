@@ -14,13 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import re
-import time
-
-from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
@@ -31,8 +26,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import erase_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_call_voice_conf
-
-CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def setup_class(self):
@@ -59,6 +52,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_psim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -72,6 +66,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_psim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -85,6 +80,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_esim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -98,6 +94,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_esim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -113,6 +110,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_csfb_psim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -126,6 +124,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_csfb_psim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -139,6 +138,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_csfb_esim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -152,6 +152,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_csfb_esim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -160,13 +161,12 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             callee_rat=["volte", "csfb"],
             call_forwarding_type="unconditional")
 
-
-
     @test_tracker_info(uuid="29e36a21-9c94-418b-8628-e601e56fb168")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_call_forwarding_unconditional_csfb_volte_psim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -180,6 +180,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_volte_psim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -193,6 +194,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_volte_esim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -206,6 +208,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_volte_esim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -221,6 +224,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_psim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -234,6 +238,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_psim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -247,6 +252,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_esim_dds_slot_0(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -260,6 +266,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_csfb_esim_dds_slot_1(self):
         return msim_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -268,13 +275,12 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             callee_rat=["csfb", "csfb"],
             call_forwarding_type="unconditional")
 
-
-
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="73ac948b-5260-44f1-a0a6-e4a410cb3283")
     def test_msim_voice_conf_call_host_volte_psim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 0, host_rat=["volte", "volte"])
 
@@ -283,6 +289,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_volte_psim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 1, host_rat=["volte", "volte"])
 
@@ -291,6 +298,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_volte_esim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 0, host_rat=["volte", "volte"])
 
@@ -299,16 +307,16 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_volte_esim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 1, host_rat=["volte", "volte"])
-
-
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="378f24cf-bb96-45e1-8150-02f08d7417b6")
     def test_msim_voice_conf_call_host_volte_csfb_psim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 0, host_rat=["volte", "csfb"])
 
@@ -317,6 +325,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_volte_csfb_psim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 1, host_rat=["volte", "csfb"])
 
@@ -325,6 +334,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_volte_csfb_esim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 0, host_rat=["volte", "csfb"])
 
@@ -333,16 +343,16 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_volte_csfb_esim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 1, host_rat=["volte", "csfb"])
-
-
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="90abbc8a-d492-45f9-9919-fae7e44c877a")
     def test_msim_voice_conf_call_host_csfb_volte_psim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 0, host_rat=["csfb", "volte"])
 
@@ -351,6 +361,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_csfb_volte_psim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 1, host_rat=["csfb", "volte"])
 
@@ -359,6 +370,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_csfb_volte_esim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 0, host_rat=["csfb", "volte"])
 
@@ -367,16 +379,16 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_csfb_volte_esim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 1, host_rat=["csfb", "volte"])
-
-
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="4831c07a-9a38-4ccd-8fa0-beaf52a2751e")
     def test_msim_voice_conf_call_host_csfb_psim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 0, host_rat=["csfb", "csfb"])
 
@@ -385,6 +397,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_csfb_psim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0, None, None, 1, host_rat=["csfb", "csfb"])
 
@@ -393,6 +406,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_csfb_esim_dds_slot_0(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 0, host_rat=["csfb", "csfb"])
 
@@ -401,10 +415,9 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_host_csfb_esim_dds_slot_1(self):
         return msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1, None, None, 1, host_rat=["csfb", "csfb"])
-
-
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="43e450c8-8a0b-4dfc-8c59-d0865c4c6399")
@@ -412,6 +425,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -422,6 +436,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         	result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -439,6 +454,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -450,6 +466,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -467,6 +484,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -478,6 +496,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -495,6 +514,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -506,6 +526,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -517,14 +538,13 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         return result
 
-
-
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="3cef5c80-b15f-45fa-8376-5252e61d7849")
     def test_msim_call_waiting_volte_csfb_psim_dds_slot_0(self):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -536,6 +556,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -553,6 +574,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -564,6 +586,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -581,6 +604,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -592,6 +616,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -609,6 +634,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -620,6 +646,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -631,14 +658,13 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         return result
 
-
-
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b239d4be-9a36-4791-84df-ecebae645c84")
     def test_msim_call_waiting_csfb_volte_psim_dds_slot_0(self):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -650,6 +676,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -667,6 +694,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -678,6 +706,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -695,6 +724,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -706,6 +736,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -723,6 +754,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -734,6 +766,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -751,6 +784,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -762,6 +796,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -779,6 +814,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -790,6 +826,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -807,6 +844,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -818,6 +856,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -835,6 +874,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
         result = True
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -846,6 +886,7 @@ class TelLiveGFTDSDSSupplementaryServiceTest(TelephonyBaseTest):
             result = False
         if not msim_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
