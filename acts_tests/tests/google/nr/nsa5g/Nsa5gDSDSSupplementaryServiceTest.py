@@ -70,6 +70,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             0,
             None,
@@ -99,6 +100,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             1,
             None,
@@ -129,6 +131,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             0,
             None,
@@ -158,6 +161,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             1,
             None,
@@ -188,6 +192,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             0,
             None,
@@ -217,6 +222,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             1,
             None,
@@ -247,6 +253,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             0,
             None,
@@ -276,6 +283,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             1,
             None,
@@ -305,6 +313,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             0,
             None,
@@ -334,6 +343,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             1,
             None,
@@ -363,6 +373,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             0,
             None,
@@ -392,6 +403,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_forwarding(
             self.log,
             self.tel_logger,
+            self.android_devices,
             None,
             1,
             None,
@@ -420,6 +432,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0, None, None, 0, host_rat=["5g_volte", "5g_volte"])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -442,6 +455,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1, None, None, 0, host_rat=["5g_volte", "5g_volte"])
 
     # psim 5g nsa volte & esim 5g nsa volte & dds slot 1
@@ -465,6 +479,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0, None, None, 1, host_rat=["5g_volte", "5g_volte"])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -487,6 +502,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1, None, None, 1, host_rat=["5g_volte", "5g_volte"])
 
     # psim 5g nsa volte & esim 4g volte & dds slot 0
@@ -510,6 +526,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0, None, None, 0, host_rat=["5g_volte", "volte"])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -532,6 +549,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1, None, None, 0, host_rat=["5g_volte", "volte"])
 
     # psim 5g nsa volte & esim 4g volte & dds slot 1
@@ -555,6 +573,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0, None, None, 1, host_rat=["5g_volte", "volte"])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -577,6 +596,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1, None, None, 1, host_rat=["5g_volte", "volte"])
 
     # psim 4g volte & esim 5g nsa volte & dds slot 0
@@ -600,6 +620,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0, None, None, 0, host_rat=["volte", "5g_volte"])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -622,6 +643,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1, None, None, 0, host_rat=["volte", "5g_volte"])
 
     # psim 4g volte & esim 5g nsa volte & dds slot 1
@@ -645,6 +667,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0, None, None, 1, host_rat=["volte", "5g_volte"])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -667,6 +690,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         return msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1, None, None, 1, host_rat=["volte", "5g_volte"])
 
     # psim 5g nsa volte & esim 5g nsa volte & dds slot 0
@@ -694,6 +718,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -704,6 +729,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -738,6 +764,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -748,6 +775,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -783,6 +811,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -793,6 +822,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -827,6 +857,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -837,6 +868,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -872,6 +904,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -882,6 +915,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -916,6 +950,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -926,6 +961,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -961,6 +997,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -971,6 +1008,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -1005,6 +1043,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -1015,6 +1054,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -1050,6 +1090,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -1061,6 +1102,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -1095,6 +1137,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -1106,6 +1149,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -1141,6 +1185,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -1152,6 +1197,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             0,
             None,
             None,
@@ -1186,6 +1232,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
@@ -1197,6 +1244,7 @@ class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
         if not msim_call_voice_conf(
             self.log,
             self.tel_logger,
+            self.android_devices,
             1,
             None,
             None,
