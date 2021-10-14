@@ -58,7 +58,7 @@ def start_pixellogger_always_on_logging(ad):
         else:
             return False
     else:
-        return
+        return True
 
 def start_sdm_logger(ad):
     """Start SDM logger."""
