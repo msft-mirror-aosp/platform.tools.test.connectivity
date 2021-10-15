@@ -15,15 +15,12 @@
 #   limitations under the License.
 
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_dsds_utils import dds_switch_during_data_transfer_test
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-
-CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def setup_class(self):
@@ -43,6 +40,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_volte", "5g_volte"])
 
@@ -51,6 +49,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mo_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_volte", "5g_volte"],
             call_slot=0,
@@ -61,6 +60,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mt_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_volte", "5g_volte"],
             call_slot=0,
@@ -71,6 +71,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mo_esim_5g_nsa_volte_psim_5g_nsa_volte(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_volte", "5g_volte"],
             call_slot=1,
@@ -81,6 +82,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mt_esim_5g_nsa_volte_psim_5g_nsa_volte(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_volte", "5g_volte"],
             call_slot=1,
@@ -91,6 +93,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mo_psim_5g_nsa_csfb_esim_5g_nsa_csfb(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_csfb", "5g_csfb"],
             call_slot=0,
@@ -101,6 +104,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mt_psim_5g_nsa_csfb_esim_5g_nsa_csfb(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_csfb", "5g_csfb"],
             call_slot=0,
@@ -111,6 +115,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mo_esim_5g_nsa_csfb_psim_5g_nsa_csfb(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_csfb", "5g_csfb"],
             call_slot=1,
@@ -121,6 +126,7 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     def test_dds_switch_youtube_and_voice_mt_esim_5g_nsa_csfb_psim_5g_nsa_csfb(self):
         return dds_switch_during_data_transfer_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             nw_rat=["5g_csfb", "5g_csfb"],
             call_slot=1,
