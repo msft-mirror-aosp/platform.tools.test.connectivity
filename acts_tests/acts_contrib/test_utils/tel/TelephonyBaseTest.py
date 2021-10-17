@@ -24,19 +24,18 @@ import shutil
 import time
 
 from acts import asserts
-from acts import logger as acts_logger
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
-from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.keys import Config
 from acts import records
 from acts import utils
 
-from acts_contrib.test_utils.tel.tel_subscription_utils import \
-    initial_set_up_for_subid_infomation
-from acts_contrib.test_utils.tel.tel_subscription_utils import \
-    set_default_sub_for_all_services
+from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_loggers
+from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import stop_sdm_logger
+from acts_contrib.test_utils.tel.tel_subscription_utils import initial_set_up_for_subid_information
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_default_sub_for_all_services
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_test_utils import build_id_override
 from acts_contrib.test_utils.tel.tel_test_utils import disable_qxdm_logger
@@ -47,7 +46,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
-from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_tcpdump_log
@@ -63,12 +61,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts_contrib.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
-from acts_contrib.test_utils.tel.tel_test_utils import start_sdm_loggers
-from acts_contrib.test_utils.tel.tel_test_utils import start_sdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts_contrib.test_utils.tel.tel_test_utils import stop_qxdm_logger
-from acts_contrib.test_utils.tel.tel_test_utils import stop_sdm_loggers
-from acts_contrib.test_utils.tel.tel_test_utils import stop_sdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import stop_tcpdumps
 from acts_contrib.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
@@ -80,7 +74,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import add_google_account
 from acts_contrib.test_utils.tel.tel_test_utils import install_googlefi_apk
 from acts_contrib.test_utils.tel.tel_test_utils import activate_google_fi_account
 from acts_contrib.test_utils.tel.tel_test_utils import check_google_fi_activated
-from acts_contrib.test_utils.tel.tel_test_utils import check_fi_apk_installed
 from acts_contrib.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
 from acts_contrib.test_utils.tel.tel_test_utils import activate_esim_using_suw
 from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
@@ -365,7 +358,7 @@ class TelephonyBaseTest(BaseTestClass):
         activate_wfc_on_device(self.log, ad)
 
         # Sub ID setup
-        initial_set_up_for_subid_infomation(self.log, ad)
+        initial_set_up_for_subid_information(self.log, ad)
 
 
         #try:
@@ -484,7 +477,8 @@ class TelephonyBaseTest(BaseTestClass):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "sdm_log", False):
             start_sdm_loggers(self.log, self.android_devices)
-        if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
+        if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name or (
+            "iwlan" in self.test_name):
             mask = getattr(self, "tcpdump_mask", "all")
             interface = getattr(self, "tcpdump_interface", "wlan0")
             start_tcpdumps(

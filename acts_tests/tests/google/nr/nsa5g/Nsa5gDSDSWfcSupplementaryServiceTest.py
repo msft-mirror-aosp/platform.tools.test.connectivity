@@ -16,7 +16,6 @@
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
@@ -29,8 +28,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_dsds_utils import erase_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_volte_wfc_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_volte_wfc_call_voice_conf
-
-CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def setup_class(self):
@@ -58,6 +55,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cfu_psim_5g_nsa_wfc_wifi_preferred_apm_off_dds_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -71,6 +69,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cfu_psim_5g_nsa_wfc_wifi_preferred_apm_off_dds_1(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -84,6 +83,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cfu_psim_5g_nsa_volte_cellular_preferred_wifi_on_dds_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -97,6 +97,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cfu_esim_5g_nsa_wfc_wifi_preferred_apm_off_dds_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -110,6 +111,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cfu_esim_5g_nsa_wfc_wifi_preferred_apm_off_dds_1(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -123,6 +125,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cfu_esim_5g_nsa_volte_cellular_preferred_wifi_on_dds_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -136,6 +139,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cw_hold_swap_psim_5g_nsa_wfc_wifi_preferred_apm_off_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -151,6 +155,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cw_hold_swap_psim_5g_nsa_wfc_wifi_preferred_apm_off_dds_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -166,6 +171,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cw_hold_swap_psim_5g_nsa_volte_cellular_preferred_wifi_on_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -182,6 +188,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cw_hold_swap_esim_5g_nsa_wfc_wifi_preferred_apm_off_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -197,6 +204,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cw_hold_swap_esim_5g_nsa_wfc_wifi_preferred_apm_off_dds_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -212,6 +220,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_cw_hold_swap_esim_5g_nsa_volte_cellular_preferred_wifi_on_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -228,6 +237,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_conf_psim_5g_nsa_wfc_wifi_preferred_apm_off_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -241,6 +251,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_conf_psim_5g_nsa_wfc_wifi_preferred_apm_off_dds_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -254,6 +265,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_conf_psim_5g_nsa_volte_cellular_preferred_wifi_on_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -267,6 +279,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_conf_esim_5g_wfc_wifi_preferred_apm_off_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -280,6 +293,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_conf_esim_5g_nsa_wfc_wifi_preferred_apm_off_dds_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -293,6 +307,7 @@ class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_conf_esim_5g_nsa_volte_cellular_preferred_wifi_on_dds_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,

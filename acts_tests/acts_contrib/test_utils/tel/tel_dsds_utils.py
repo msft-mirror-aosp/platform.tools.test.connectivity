@@ -21,7 +21,6 @@ from datetime import datetime, timedelta
 from acts import signals
 from acts.utils import rand_ascii_str
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
-from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
@@ -54,7 +53,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_forwarding_by_mmi
 from acts_contrib.test_utils.tel.tel_test_utils import set_call_waiting
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
@@ -75,11 +74,10 @@ from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_wcdma_confere
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mt
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
-tel_logger = TelephonyMetricLogger.for_test_case()
-
 
 def dsds_voice_call_test(
         log,
+        tel_logger,
         ads,
         mo_slot,
         mt_slot,
@@ -110,6 +108,7 @@ def dsds_voice_call_test(
 
     Args:
         log: logger object
+        tel_logger: logger object for telephony proto
         ads: list of android devices
         mo_slot: Slot making MO call (0 or 1)
         mt_slot: Slot receiving MT call (0 or 1)
@@ -471,6 +470,7 @@ def dsds_message_test(
 
 def dds_switch_during_data_transfer_test(
         log,
+        tel_logger,
         ads,
         nw_rat=["volte", "volte"],
         call_slot=0,
@@ -496,6 +496,7 @@ def dds_switch_during_data_transfer_test(
 
     Args:
         log: logger object
+        tel_logger: logger object for telephony proto
         ads: list of android devices
         nw_rat: RAT for both slots of the primary device
         call_slot: Slot for making voice call
@@ -714,6 +715,7 @@ def dds_switch_during_data_transfer_test(
 
 def enable_slot_after_voice_call_test(
         log,
+        tel_logger,
         ads,
         mo_slot,
         mt_slot,
@@ -736,6 +738,7 @@ def enable_slot_after_voice_call_test(
 
     Args:
         log: logger object
+        tel_logger: logger object for telephony proto
         ads: list of android devices
         mo_slot: Slot making MO call (0 or 1)
         mt_slot: Slot receiving MT call (0 or 1)
@@ -1240,6 +1243,7 @@ def msim_message_test(
 
 def msim_call_forwarding(
         log,
+        tel_logger,
         ads,
         caller_slot,
         callee_slot,
@@ -1263,6 +1267,9 @@ def msim_call_forwarding(
         to 3rd device.
 
     Args:
+        log: logger object
+        tel_logger: logger object for telephony proto
+        ads: list of android devices
         caller_slot: Slot of 2nd device making MO call (0 or 1)
         callee_slot: Slot of primary device receiving and forwarding MT call
                         (0 or 1)
@@ -1510,6 +1517,7 @@ def msim_call_forwarding(
 
 def msim_call_voice_conf(
         log,
+        tel_logger,
         ads,
         host_slot,
         p1_slot,
@@ -1532,6 +1540,9 @@ def msim_call_voice_conf(
     6. Merge calls.
 
     Args:
+        log: logger object
+        tel_logger: logger object for telephony proto
+        ads: list of android devices
         host_slot: Slot on the primary device to host the comference call.
         0 or 1 (0 for pSIM or 1 for eSIM)
         p1_slot: Slot on the participant device for the call
@@ -1739,6 +1750,7 @@ def msim_call_voice_conf(
 
 def msim_volte_wfc_call_forwarding(
         log,
+        tel_logger,
         ads,
         callee_slot,
         dds_slot,
@@ -1765,6 +1777,9 @@ def msim_volte_wfc_call_forwarding(
         forwarded to 3rd device.
 
     Args:
+        log: logger object
+        tel_logger: logger object for telephony proto
+        ads: list of android devices
         callee_slot: Slot of primary device receiving and forwarding MT call
                         (0 or 1)
         dds_slot: Preferred data slot
@@ -1934,6 +1949,7 @@ def msim_volte_wfc_call_forwarding(
 
 def msim_volte_wfc_call_voice_conf(
         log,
+        tel_logger,
         ads,
         host_slot,
         dds_slot,
@@ -1960,6 +1976,9 @@ def msim_volte_wfc_call_voice_conf(
     8. Merge calls.
 
     Args:
+        log: logger object
+        tel_logger: logger object for telephony proto
+        ads: list of android devices
         host_slot: Slot on the primary device to host the comference call.
                     0 or 1 (0 for pSIM or 1 for eSIM)call
         dds_slot: Preferred data slot
