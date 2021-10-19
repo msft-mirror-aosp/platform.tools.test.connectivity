@@ -22,7 +22,11 @@ from acts import utils
 from acts.base_test import BaseTestClass
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.tel import tel_test_utils as tutils
+from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import stop_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
+from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
+from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
 BACKGROUND_LOCATION_PERMISSION = 'android.permission.ACCESS_BACKGROUND_LOCATION'
 APP_CLEAN_UP_TIME = 60
@@ -61,8 +65,8 @@ class LocationPlatinumTest(BaseTestClass):
         gutils._init_device(self.ad)
         self.begin_time = utils.get_current_epoch_time()
         gutils.clear_logd_gnss_qxdm_log(self.ad)
-        tutils.start_qxdm_logger(self.ad, self.begin_time)
-        tutils.start_adb_tcpdump(self.ad)
+        start_qxdm_logger(self.ad, self.begin_time)
+        start_adb_tcpdump(self.ad)
 
     def setup_test(self):
         """Prepare device with mobile data, wifi and gps ready for test """
@@ -78,10 +82,10 @@ class LocationPlatinumTest(BaseTestClass):
                           BACKGROUND_LOCATION_PERMISSION)
 
     def teardown_class(self):
-        tutils.stop_qxdm_logger(self.ad)
+        stop_qxdm_logger(self.ad)
         gutils.get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
-        tutils.stop_adb_tcpdump(self.ad)
-        tutils.get_tcpdump_log(self.ad, 'location_platinum', self.begin_time)
+        stop_adb_tcpdump(self.ad)
+        get_tcpdump_log(self.ad, 'location_platinum', self.begin_time)
         self.ad.take_bug_report('location_platinum', self.begin_time)
 
     def get_and_verify_ttff(self, mode):
