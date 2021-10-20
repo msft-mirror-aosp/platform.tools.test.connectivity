@@ -744,6 +744,7 @@ def reset_wifi(ad):
         "Failed to remove these configured Wi-Fi networks: %s" % networks)
 
 
+
 def toggle_airplane_mode_on_and_off(ad):
     """Turn ON and OFF Airplane mode.
 
