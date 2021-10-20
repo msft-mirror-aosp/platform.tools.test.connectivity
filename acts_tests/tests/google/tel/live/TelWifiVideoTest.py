@@ -20,6 +20,7 @@
 import time
 from queue import Empty
 from acts.test_decorators import test_tracker_info
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
 from acts_contrib.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
@@ -47,7 +48,6 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import disconnect_call_by_id
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state

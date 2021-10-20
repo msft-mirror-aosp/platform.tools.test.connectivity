@@ -23,6 +23,7 @@ from acts import utils
 from acts.controllers.android_device import get_info
 from acts.libs.ota import ota_updater
 from acts.test_decorators import test_tracker_info
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
@@ -35,7 +36,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_user_config_profile
 from acts_contrib.test_utils.tel.tel_test_utils import is_sim_locked
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_rat

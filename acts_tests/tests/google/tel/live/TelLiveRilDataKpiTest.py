@@ -31,7 +31,6 @@ from acts_contrib.test_utils.tel.tel_data_utils import activate_and_verify_cellu
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_4g_for_subscription
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
@@ -41,6 +40,7 @@ from acts_contrib.test_utils.tel.tel_parse_utils import parse_deactivate_data_ca
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_setup_data_call_on_iwlan
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_deactivate_data_call_on_iwlan
 from acts.utils import get_current_epoch_time
+from acts.libs.utils.multithread import multithread_func
 
 CALCULATE_EVERY_N_CYCLES = 10
 
