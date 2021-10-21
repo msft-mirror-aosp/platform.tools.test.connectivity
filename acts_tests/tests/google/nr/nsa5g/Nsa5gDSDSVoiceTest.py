@@ -16,6 +16,7 @@
 
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
@@ -26,6 +27,7 @@ from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_data_ca
 class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
@@ -41,6 +43,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -58,6 +61,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -75,6 +79,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -92,6 +97,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -110,6 +116,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -127,6 +134,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -144,6 +152,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -161,6 +170,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -179,6 +189,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -196,6 +207,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -213,6 +225,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -230,6 +243,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -248,6 +262,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -265,6 +280,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -282,6 +298,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -299,6 +316,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -317,6 +335,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -334,6 +353,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -351,6 +371,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -368,6 +389,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -386,6 +408,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -403,6 +426,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -420,6 +444,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -437,6 +462,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -460,6 +486,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -483,6 +510,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -526,6 +554,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -549,6 +578,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -592,6 +622,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -615,6 +646,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -658,6 +690,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -681,6 +714,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -724,6 +758,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -747,6 +782,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -790,6 +826,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -813,6 +850,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return enable_slot_after_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -853,6 +891,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -877,6 +916,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -901,6 +941,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -925,6 +966,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -949,6 +991,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -973,6 +1016,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -997,6 +1041,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1021,6 +1066,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1045,6 +1091,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1069,6 +1116,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1093,6 +1141,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1117,6 +1166,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1141,6 +1191,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1165,6 +1216,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1189,6 +1241,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1213,6 +1266,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1237,6 +1291,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1261,6 +1316,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1285,6 +1341,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1309,6 +1366,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1333,6 +1391,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1357,6 +1416,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1381,6 +1441,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1405,6 +1466,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1430,6 +1492,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1457,6 +1520,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1484,6 +1548,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1511,6 +1576,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1538,6 +1604,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1565,6 +1632,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1592,6 +1660,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1619,6 +1688,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1646,6 +1716,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1673,6 +1744,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1700,6 +1772,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1727,6 +1800,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1754,6 +1828,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1781,6 +1856,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1808,6 +1884,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1835,6 +1912,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1862,6 +1940,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1889,6 +1968,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -1916,6 +1996,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -1943,6 +2024,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
@@ -1970,6 +2052,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -1997,6 +2080,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             0,
@@ -2024,6 +2108,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
@@ -2051,6 +2136,7 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
         """
         return dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             None,
             1,
