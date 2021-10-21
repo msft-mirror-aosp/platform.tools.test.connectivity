@@ -28,11 +28,12 @@ SERVICE_FIREWALL = "firewall"
 SERVICE_IPSEC = "ipsec"
 SERVICE_XL2TPD = "xl2tpd"
 SERVICE_ODHCPD = "odhcpd"
-SERVICE_NODOGSPLASH = "nodogsplash"
+SERVICE_OPENNDS = "opennds"
+SERVICE_UHTTPD = "uhttpd"
 PPTP_PACKAGE = "pptpd kmod-nf-nathelper-extra"
 L2TP_PACKAGE = "strongswan-full openssl-util xl2tpd"
 NAT6_PACKAGE = "ip6tables kmod-ipt-nat6"
-CAPTIVE_PORTAL_PACKAGE = "nodogsplash"
+CAPTIVE_PORTAL_PACKAGE = "opennds php7-cli php7-mod-openssl php7-cgi php7"
 MDNS_PACKAGE = "avahi-utils avahi-daemon-service-http avahi-daemon-service-ssh libavahi-client avahi-dbus-daemon"
 STUNNEL_CONFIG_PATH = "/etc/stunnel/DoTServer.conf"
 HISTORY_CONFIG_PATH = "/etc/dirty_configs"
@@ -188,12 +189,27 @@ class NetworkSettings(object):
         return False
 
     def path_exists(self, abs_path):
-        """Check if dir exist on OpenWrt."""
+        """Check if dir exist on OpenWrt.
+
+        Args:
+            abs_path: absolutely path for create folder.
+        """
         try:
             self.ssh.run("ls %s" % abs_path)
         except:
             return False
         return True
+
+    def create_folder(self, abs_path):
+        """If dir not exist, create it.
+
+        Args:
+            abs_path: absolutely path for create folder.
+        """
+        if not self.path_exists(abs_path):
+            self.ssh.run("mkdir %s" % abs_path)
+        else:
+            self.log.info("%s already existed." %abs_path)
 
     def count(self, config, key):
         """Count in uci config.
@@ -849,6 +865,7 @@ class NetworkSettings(object):
             tcpdump_file_name: tcpdump file name on OpenWrt.
             pid: tcpdump process id.
         """
+        self.package_install("tcpdump")
         if not self.path_exists(TCPDUMP_DIR):
             self.ssh.run("mkdir %s" % TCPDUMP_DIR)
         tcpdump_file_name = "openwrt_%s_%s.pcap" % (test_name,
@@ -920,15 +937,54 @@ class NetworkSettings(object):
         self.service_manager.need_restart(SERVICE_FIREWALL)
         self.commit_changes()
 
-    def setup_captive_portal(self):
+    def setup_captive_portal(self, fas_fdqn,fas_port=2080):
+        """Create captive portal with Forwarding Authentication Service.
+
+        Args:
+             fas_fdqn: String for captive portal page's fdqn add to local dns server.
+             fas_port: Port for captive portal page.
+        """
         self.package_install(CAPTIVE_PORTAL_PACKAGE)
-        self.config.add("setup_captive_portal")
-        self.service_manager.need_restart(SERVICE_NODOGSPLASH)
+        self.config.add("setup_captive_portal %s" % fas_port)
+        self.ssh.run("uci set opennds.@opennds[0].fas_secure_enabled=2")
+        self.ssh.run("uci set opennds.@opennds[0].gatewayport=2050")
+        self.ssh.run("uci set opennds.@opennds[0].fasport=%s" % fas_port)
+        self.ssh.run("uci set opennds.@opennds[0].fasremotefqdn=%s" % fas_fdqn)
+        self.ssh.run("uci set opennds.@opennds[0].faspath=\"/nds/fas-aes.php\"")
+        self.ssh.run("uci set opennds.@opennds[0].faskey=1234567890")
+        self.service_manager.need_restart(SERVICE_OPENNDS)
+        # Config uhttpd
+        self.ssh.run("uci set uhttpd.main.interpreter=.php=/usr/bin/php-cgi")
+        self.ssh.run("uci add_list uhttpd.main.listen_http=0.0.0.0:%s" % fas_port)
+        self.ssh.run("uci add_list uhttpd.main.listen_http=[::]:%s" % fas_port)
+        self.service_manager.need_restart(SERVICE_UHTTPD)
+        # cp fas-aes.php
+        self.create_folder("/www/nds/")
+        self.ssh.run("cp /etc/opennds/fas-aes.php /www/nds")
+        # Add fdqn
+        self.add_resource_record(fas_fdqn, LOCALHOST)
         self.commit_changes()
 
-    def remove_cpative_portal(self):
+    def remove_cpative_portal(self, fas_port=2080):
+        """Remove captive portal.
+
+        Args:
+             fas_port: Port for captive portal page.
+        """
+        # Remove package
         self.package_remove(CAPTIVE_PORTAL_PACKAGE)
-        self.config.discard("setup_captive_portal")
+        # Clean up config
+        self.ssh.run("rm /etc/config/opennds")
+        # Remove fdqn
+        self.clear_resource_record()
+        # Restore uhttpd
+        self.ssh.run("uci del uhttpd.main.interpreter")
+        self.ssh.run("uci del_list uhttpd.main.listen_http=\'0.0.0.0:%s\'" % fas_port)
+        self.ssh.run("uci del_list uhttpd.main.listen_http=\'[::]:%s\'" % fas_port)
+        self.service_manager.need_restart(SERVICE_UHTTPD)
+        # Clean web root
+        self.ssh.run("rm -r /www/nds")
+        self.config.discard("setup_captive_portal %s" % fas_port)
         self.commit_changes()
 
 
