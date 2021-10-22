@@ -473,6 +473,7 @@ class PowerBaseTest(base_test.BaseTestClass):
                                 measure_after_seconds=self.mon_info.offset,
                                 hz=self.mon_info.freq)
         self.power_monitor.measure(measurement_args=measurement_args,
+                                   measurement_name=self.test_name,
                                    start_time=device_to_host_offset,
                                    monsoon_output_path=data_path)
         self.power_monitor.release_resources()
