@@ -186,6 +186,42 @@ class DnsOverTlsTest(WifiBaseTest):
         # reset wifi
         wutils.reset_wifi(self.dut)
 
+    def _test_invalid_private_dns(self, net, dns_mode, dns_hostname):
+        """Test private DNS with invalid hostname, which should failed the ping.
+
+        :param net: Wi-Fi network to connect to
+        :param dns_mode: private DNS mode
+        :param dns_hostname: private DNS hostname
+        :return:
+        """
+
+        cutils.set_private_dns(self.dut, dns_mode, dns_hostname)
+        if net:
+            wutils.start_wifi_connection_scan_and_ensure_network_found(
+                self.dut, net[SSID])
+            wutils.wifi_connect(
+                self.dut, net, assert_on_fail=False, check_connectivity=False)
+
+        self._start_tcp_dump(self.dut)
+
+        # ping hosts should NOT pass
+        ping_result = False
+        for host in self.ping_hosts:
+            self.log.info("Pinging %s" % host)
+            try:
+                ping_result = self.dut.droid.httpPing(host)
+            except:
+                pass
+            # Ping result should keep negative with invalid DNS,
+            # so once it's positive we should break, and the test should fail
+            if ping_result:
+                break
+
+        pcap_file = self._stop_tcp_dump(self.dut)
+        self._verify_dns_queries_over_tls(pcap_file, True)
+        wutils.reset_wifi(self.dut)
+        return ping_result
+
     @test_tracker_info(uuid="2957e61c-d333-45fb-9ff9-2250c9c8535a")
     def test_private_dns_mode_off_wifi_ipv4_only_network(self):
         """Verify private dns mode off on ipv4 only network.
@@ -539,6 +575,7 @@ class DnsOverTlsTest(WifiBaseTest):
         for host in self.ping_hosts:
             wutils.validate_connection(self.dut, host)
 
+
         # stop tcpdump on device
         pcap_file = self._stop_tcp_dump(self.dut)
 
@@ -547,18 +584,17 @@ class DnsOverTlsTest(WifiBaseTest):
 
     @test_tracker_info(uuid="af6e34f1-3ad5-4ab0-b3b9-53008aa08294")
     def test_private_dns_mode_strict_invalid_hostnames(self):
-        """Verify that invalid hostnames are not saved for strict mode.
+        """Verify that invalid hostnames are not able to ping for strict mode.
 
         Steps:
             1. Set private DNS to strict mode with invalid hostname
             2. Verify that invalid hostname is not saved
         """
         invalid_hostnames = ["!%@&!*", "12093478129", "9.9.9.9", "sdkfjhasdf"]
-        for hostname in invalid_hostnames:
-            cutils.set_private_dns(
-                self.dut, cconst.PRIVATE_DNS_MODE_STRICT, hostname)
-            mode = self.dut.droid.getPrivateDnsMode()
-            specifier = self.dut.droid.getPrivateDnsSpecifier()
-            asserts.assert_true(
-                mode == cconst.PRIVATE_DNS_MODE_STRICT and specifier != hostname,
-                "Able to set invalid private DNS strict mode")
+        for dns_hostname in invalid_hostnames:
+            ping_result = self._test_invalid_private_dns(
+                self.get_wifi_network(False),
+                cconst.PRIVATE_DNS_MODE_STRICT,
+                dns_hostname)
+            asserts.assert_false(ping_result, "Ping success with invalid DNS.")
+
