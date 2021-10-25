@@ -92,9 +92,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             ca_class = ca[-1]
             band = ca[:-1]
             bands.append(band)
-            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
-                # Class B and C means two carriers with the same band
+            if ca_class.upper() == 'C':
+                # Class C means two carriers with the same band
                 bands.append(band)
+            elif ca_class.upper() == 'B':
+                raise RuntimeError('Class B LTE CA not supported.')
         self.simulator.set_band_combination(bands)
 
         # Count the number of carriers in the CA combination
@@ -120,8 +122,8 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             new_configs[bts_index].band = band
             bts_index += 1
 
-            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
-                # Class B and C means two carriers with the same band
+            if ca_class.upper() == 'C':
+                # Class C means two carriers with the same band
                 new_configs[bts_index].band = band
                 bts_index += 1
 
