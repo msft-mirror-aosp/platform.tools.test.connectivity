@@ -14,12 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
-import random
+import copy
 import re
 import statistics
 
+from acts import signals
+from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 
 SETUP_DATA_CALL = 'SETUP_DATA_CALL'
 SETUP_DATA_CALL_REQUEST = '> SETUP_DATA_CALL'
@@ -46,6 +49,19 @@ WHI_IWLAN_SETUP_DATA_CALL_REQUEST = r'IwlanDataService\[\d\]: Setup data call'
 WHI_IWLAN_SETUP_DATA_CALL_RESPONSE = r'IwlanDataService\[\d\]: Tunnel opened!'
 WHI_IWLAN_DEACTIVATE_DATA_CALL_REQUEST = r'IwlanDataService\[\d\]: Deactivate data call'
 WHI_IWLAN_DEACTIVATE_DATA_CALL_RESPONSE = r'IwlanDataService\[\d\]: Tunnel closed!'
+
+ON_ENABLE_APN_IMS_SLOT0 = 'DCT-C-0 : onEnableApn: apnType=ims, request type=NORMAL'
+ON_ENABLE_APN_IMS_SLOT1 = 'DCT-C-1 : onEnableApn: apnType=ims, request type=NORMAL'
+ON_ENABLE_APN_IMS_HANDOVER_SLOT0 = 'DCT-C-0 : onEnableApn: apnType=ims, request type=HANDOVER'
+ON_ENABLE_APN_IMS_HANDOVER_SLOT1 = 'DCT-C-1 : onEnableApn: apnType=ims, request type=HANDOVER'
+RADIO_ON_4G_SLOT0 = r'GsmCdmaPhone: \[0\] Event EVENT_RADIO_ON Received'
+RADIO_ON_4G_SLOT1 = r'GsmCdmaPhone: \[1\] Event EVENT_RADIO_ON Received'
+RADIO_ON_IWLAN = 'Switching to new default network.*WIFI CONNECTED'
+WIFI_OFF = 'setWifiEnabled.*enable=false'
+ON_IMS_MM_TEL_CONNECTED_4G_SLOT0 = r'ImsPhone: \[0\].*onImsMmTelConnected imsRadioTech=WWAN'
+ON_IMS_MM_TEL_CONNECTED_4G_SLOT1 = r'ImsPhone: \[1\].*onImsMmTelConnected imsRadioTech=WWAN'
+ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT0 = r'ImsPhone: \[0\].*onImsMmTelConnected imsRadioTech=WLAN'
+ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT1 = r'ImsPhone: \[1\].*onImsMmTelConnected imsRadioTech=WLAN'
 
 def print_nested_dict(ad, d):
     divider = "------"
@@ -1058,3 +1074,169 @@ def parse_deactivate_data_call_on_iwlan(ad):
         deactivate_data_call,
         deactivate_data_call_time_list,
         avg_deactivate_data_call_time)
+
+def parse_ims_reg(
+    ad,
+    search_intervals=None,
+    rat='4g',
+    reboot_or_apm='reboot',
+    slot=None):
+    """Search in logcat for lines containing messages about IMS registration.
+
+    Args:
+        ad: Android object
+        search_intervals: List. Only lines with time stamp in given time
+            intervals will be parsed.
+            E.g., [(begin_time1, end_time1), (begin_time2, end_time2)]
+            Both begin_time and end_time should be datetime object.
+        rat: "4g" for IMS over LTE or "iwlan" for IMS over Wi-Fi
+        reboot_or_apm: specify the scenario "reboot" or "apm"
+        slot: 0 for pSIM and 1 for eSIM
+
+    Returns:
+        (ims_reg, parsing_fail, avg_ims_reg_duration)
+
+        ims_reg: List of dictionaries containing found lines for start and
+            end time stamps. Each dict represents a cycle of the test.
+
+            [
+                {'start': message on start time stamp,
+                'end': message on end time stamp,
+                'duration': time difference between start and end}
+            ]
+        parsing_fail: List of dictionaries containing the cycle number and
+            missing messages of each failed cycle
+
+            [
+                'attempt': failed cycle number
+                'missing_msg' missing messages which should be found
+            ]
+        avg_ims_reg_duration: average of the duration in ims_reg
+
+    """
+    if slot is None:
+        slot = get_slot_index_from_voice_sub_id(ad)
+        ad.log.info('Default voice slot: %s', slot)
+    else:
+        if get_subid_from_slot_index(ad.log, ad, slot) == INVALID_SUB_ID:
+            ad.log.error('Slot %s is invalid.', slot)
+            raise signals.TestFailure('Failed',
+                extras={'fail_reason': 'Slot %s is invalid.' % slot})
+
+        ad.log.info('Assigned slot: %s', slot)
+
+    start_command = {
+        'reboot': {
+            '0': {'4g': ON_ENABLE_APN_IMS_SLOT0,
+                'iwlan': ON_ENABLE_APN_IMS_HANDOVER_SLOT0 + '\|' + ON_ENABLE_APN_IMS_SLOT0},
+            '1': {'4g': ON_ENABLE_APN_IMS_SLOT1,
+                'iwlan': ON_ENABLE_APN_IMS_HANDOVER_SLOT1 + '\|' + ON_ENABLE_APN_IMS_SLOT1}
+        },
+        'apm':{
+            '0': {'4g': RADIO_ON_4G_SLOT0, 'iwlan': RADIO_ON_IWLAN},
+            '1': {'4g': RADIO_ON_4G_SLOT1, 'iwlan': RADIO_ON_IWLAN}
+        },
+        'wifi_off':{
+            '0': {'4g': WIFI_OFF, 'iwlan': WIFI_OFF},
+            '1': {'4g': WIFI_OFF, 'iwlan': WIFI_OFF}
+        },
+    }
+
+    end_command = {
+        '0': {'4g': ON_IMS_MM_TEL_CONNECTED_4G_SLOT0,
+            'iwlan': ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT0},
+        '1': {'4g': ON_IMS_MM_TEL_CONNECTED_4G_SLOT1,
+            'iwlan': ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT1}
+    }
+
+    ad.log.info('====== Start to search logcat ======')
+    logcat = ad.search_logcat('%s\|%s' % (
+        start_command[reboot_or_apm][str(slot)][rat],
+        end_command[str(slot)][rat]))
+
+    if not logcat:
+        raise signals.TestFailure('Failed',
+            extras={'fail_reason': 'No line matching the given pattern can '
+            'be found in logcat.'})
+
+    for msg in logcat:
+        ad.log.info(msg["log_message"])
+
+    ims_reg = []
+    ims_reg_duration_list = []
+    parsing_fail = []
+
+    start_command['reboot'] = {
+        '0': {'4g': ON_ENABLE_APN_IMS_SLOT0,
+            'iwlan': ON_ENABLE_APN_IMS_HANDOVER_SLOT0 + '|' + ON_ENABLE_APN_IMS_SLOT0},
+        '1': {'4g': ON_ENABLE_APN_IMS_SLOT1,
+            'iwlan': ON_ENABLE_APN_IMS_HANDOVER_SLOT1 + '|' + ON_ENABLE_APN_IMS_SLOT1}
+    }
+
+    keyword_dict = {
+        'start': start_command[reboot_or_apm][str(slot)][rat],
+        'end': end_command[str(slot)][rat]
+    }
+
+    for attempt, interval in enumerate(search_intervals):
+        if isinstance(interval, list):
+            try:
+                begin_time, end_time = interval
+            except Exception as e:
+                ad.log.error(e)
+                continue
+
+            ad.log.info('Parsing begin time: %s', begin_time)
+            ad.log.info('Parsing end time: %s', end_time)
+
+            temp_keyword_dict = copy.deepcopy(keyword_dict)
+            for line in logcat:
+                if begin_time and line['datetime_obj'] < begin_time:
+                    continue
+
+                if end_time and line['datetime_obj'] > end_time:
+                    break
+
+                for key in temp_keyword_dict:
+                    if temp_keyword_dict[key] and not isinstance(
+                        temp_keyword_dict[key], dict):
+                        res = re.findall(
+                            temp_keyword_dict[key], line['log_message'])
+                        if res:
+                            ad.log.info('Found: %s', line['log_message'])
+                            temp_keyword_dict[key] = {
+                                'message': line['log_message'],
+                                'time_stamp': line['datetime_obj']}
+                            break
+
+            for key in temp_keyword_dict:
+                if temp_keyword_dict[key] == keyword_dict[key]:
+                    ad.log.error(
+                        '"%s" is missing in cycle %s.',
+                        keyword_dict[key],
+                        attempt)
+                    parsing_fail.append({
+                        'attempt': attempt,
+                        'missing_msg': keyword_dict[key]})
+            try:
+                ims_reg_duration = (
+                    temp_keyword_dict['end'][
+                        'time_stamp'] - temp_keyword_dict[
+                            'start'][
+                                'time_stamp']).total_seconds()
+                ims_reg_duration_list.append(ims_reg_duration)
+                ims_reg.append({
+                    'start': temp_keyword_dict['start'][
+                        'message'],
+                    'end': temp_keyword_dict['end'][
+                        'message'],
+                    'duration': ims_reg_duration})
+            except Exception as e:
+                ad.log.error(e)
+
+    try:
+        avg_ims_reg_duration = statistics.mean(ims_reg_duration_list)
+    except:
+        avg_ims_reg_duration = None
+
+    return ims_reg, parsing_fail, avg_ims_reg_duration
