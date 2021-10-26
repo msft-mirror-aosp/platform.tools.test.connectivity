@@ -18,7 +18,7 @@ import re
 import time
 
 from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts.libs.utils.multithread import run_multithread_func
 
 def check_if_tensor_platform(ad):
     """Check if current platform belongs to the Tensor platform
