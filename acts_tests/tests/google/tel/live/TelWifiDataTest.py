@@ -30,12 +30,12 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_signal_strength
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts.utils import adb_shell_ping
+from acts.libs.utils.multithread import run_multithread_func
 
 # Attenuator name
 ATTEN_NAME_FOR_WIFI_2G = 'wifi0'
