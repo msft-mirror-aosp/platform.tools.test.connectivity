@@ -829,6 +829,9 @@ def start_ttff_by_gtw_gpstool(ad,
     if ttff_mode == "cs":
         ad.log.info("Start TTFF Cold Start...")
         time.sleep(3)
+    elif ttff_mode == "csa":
+        ad.log.info("Start TTFF CSWith Assist...")
+        time.sleep(3)
     for i in range(1, 4):
         ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
                      "--es ttff {} --es cycle {}  --ez raninterval {} "
@@ -1392,7 +1395,7 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
             if is_device_wearable(ad):
                 # Wait 20 seconds for Wearable low performance time.
                 time.sleep(20)
-                if ad.search_logcat("cmp=com.android.gpstool/.GPSTool",
+                if ad.search_logcat("ToggleGPS onResume",
                                 begin_time):
                     ad.log.info("Send ToggleGPS start_test_action successfully.")
                     break
@@ -1406,7 +1409,7 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
                                     "start_test_action within 3 attempts.")
         time.sleep(2)
         if is_device_wearable(ad):
-            test_start = ad.search_logcat("GPSTool: msg:First fixed",
+            test_start = ad.search_logcat("GPSService: create toggle GPS log",
                                       begin_time)
         else:
             test_start = ad.search_logcat("GPSTool_ToggleGPS: startService",
@@ -2134,6 +2137,9 @@ def pair_to_wearable(ad, ad1):
     ad.log.info("Wait 1 min for wearable system busy time.")
     time.sleep(60)
     ad.adb.shell("input keyevent 4")
+    # Clear Denali paired data in phone.
+    ad1.adb.shell("pm clear com.google.android.gms")
+    ad1.adb.shell("pm clear com.google.android.apps.wear.companion")
     ad1.adb.shell("am start -S -n com.google.android.apps.wear.companion/"
                         "com.google.android.apps.wear.companion.application.RootActivity")
     uia_click(ad1, "Next")
@@ -2146,6 +2152,7 @@ def pair_to_wearable(ad, ad1):
     ad.log.info("Wait 3 mins for complete pairing process.")
     time.sleep(180)
     ad.adb.shell("adb shell settings put global stay_on_while_plugged_in 7")
+    check_location_service(ad)
     if is_bluetooth_connected(ad, ad1):
         ad.log.info("Pairing successfully.")
     else:

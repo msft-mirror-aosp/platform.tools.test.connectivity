@@ -113,7 +113,8 @@ class GnssFunctionTest(BaseTestClass):
             self.ssid_map[SSID] = network
         self.ttff_mode = {"cs": "Cold Start",
                           "ws": "Warm Start",
-                          "hs": "Hot Start"}
+                          "hs": "Hot Start",
+                          "csa": "CSWith Assist"}
         if self.collect_logs and \
             gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.flash_new_radio_or_mbn()
@@ -352,6 +353,31 @@ class GnssFunctionTest(BaseTestClass):
         connect_to_wifi_network(
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         self.run_ttff_via_gtw_gpstool(mode, criteria)
+
+    def ttff_with_assist(self, mode, criteria):
+        """Verify CS/WS TTFF functionality with Assist data.
+
+        Args:
+            mode: "csa" or "ws"
+            criteria: Criteria for the test.
+        """
+        disable_supl_mode(self.ad)
+        begin_time = get_current_epoch_time()
+        process_gnss_by_gtw_gpstool(
+            self.ad, self.standalone_cs_criteria)
+        check_xtra_download(self.ad, begin_time)
+        self.ad.log.info("Turn airplane mode on")
+        self.ad.droid.connectivityToggleAirplaneMode(True)
+        start_gnss_by_gtw_gpstool(self.ad, True)
+        start_ttff_by_gtw_gpstool(
+            self.ad, mode, iteration=self.ttff_test_cycle)
+        ttff_data = process_ttff_by_gtw_gpstool(
+            self.ad, begin_time, self.pixel_lab_location)
+        result = check_ttff_data(
+            self.ad, ttff_data, mode, criteria)
+        asserts.assert_true(
+            result, "TTFF %s fails to reach designated criteria of %d "
+                    "seconds." % (self.ttff_mode.get(mode), criteria))
 
     """ Test Cases """
 
@@ -1326,3 +1352,35 @@ class GnssFunctionTest(BaseTestClass):
             tutils.stop_adb_tcpdump(self.ad)
         asserts.assert_true(all(reboot_lto_test_results_all),
                                 "Fail to Download and Inject LTO File.")
+
+    @test_tracker_info(uuid="a7048a4f-8a40-40a4-bb6c-7fc90e8227bd")
+    def test_ws_with_assist(self):
+        """Verify Warm Start functionality with existed LTO data.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. Make LTO is downloaded.
+            3. Turn on AirPlane mode to make sure there's no network connection.
+            4. TTFF Warm Start with Assist for 10 iteration.
+
+        Expected Results:
+            All TTFF Warm Start with Assist results should be within
+            xtra_ws_criteria.
+        """
+        self.ttff_with_assist("ws", self.xtra_ws_criteria)
+
+    @test_tracker_info(uuid="c5fb9519-63b0-42bd-bd79-fce7593604ea")
+    def test_cs_with_assist(self):
+        """Verify Cold Start functionality with existed LTO data.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. Make sure LTO is downloaded.
+            3. Turn on AirPlane mode to make sure there's no network connection.
+            4. TTFF Cold Start with Assist for 10 iteration.
+
+        Expected Results:
+            All TTFF Cold Start with Assist results should be within
+            standalone_cs_criteria.
+        """
+        self.ttff_with_assist("csa", self.standalone_cs_criteria)
