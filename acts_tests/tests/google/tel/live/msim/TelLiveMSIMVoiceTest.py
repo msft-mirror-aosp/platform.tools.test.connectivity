@@ -17,8 +17,8 @@
 from acts_contrib.test_utils.tel.tel_voice_utils \
         import two_phone_call_msim_short_seq, phone_setup_voice_general_for_slot
 from acts.test_decorators import test_tracker_info
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_defines import MULTI_SIM_CONFIG
 
 

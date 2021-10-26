@@ -22,6 +22,7 @@
 import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
@@ -30,7 +31,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voic
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
