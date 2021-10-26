@@ -22,8 +22,6 @@ from acts.test_decorators import test_tracker_info
 
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_funcd
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
@@ -32,7 +30,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1

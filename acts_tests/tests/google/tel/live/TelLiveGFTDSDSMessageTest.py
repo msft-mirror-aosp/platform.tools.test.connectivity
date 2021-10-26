@@ -29,7 +29,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_message_utils import sms_in_collision_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import sms_rx_power_off_multiple_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import voice_call_in_collision_with_mt_sms_msim
@@ -41,6 +40,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import multithread_func
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 

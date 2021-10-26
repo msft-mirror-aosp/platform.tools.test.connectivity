@@ -14,9 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 """
-Fi Switching Methods 
+Fi Switching Methods
 """
 import time
+from acts.libs.utils.multithread import multithread_func
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import CBCHSetup
 from acts.controllers.anritsu_lib.md8475a import CTCHSetup
@@ -44,7 +45,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import is_sim_ready
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts_contrib.test_utils.tel.tel_test_utils import send_dialer_secret_code

@@ -30,6 +30,8 @@ from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.keys import Config
 from acts import records
 from acts import utils
+from acts.libs.utils.multithread import multithread_func
+from acts.libs.utils.multithread import run_multithread_func
 
 from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_logger
@@ -50,11 +52,9 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_tcpdump_log
 from acts_contrib.test_utils.tel.tel_test_utils import install_apk
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import print_radio_info
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import recover_build_id
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts_contrib.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
