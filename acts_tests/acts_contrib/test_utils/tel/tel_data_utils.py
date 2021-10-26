@@ -23,6 +23,8 @@ from acts.utils import adb_shell_ping
 from acts.utils import rand_ascii_str
 from acts.utils import disable_doze
 from acts.utils import enable_doze
+from acts.libs.utils.multithread import multithread_func
+from acts.libs.utils.multithread import run_multithread_func
 from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
@@ -67,7 +69,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
@@ -89,7 +90,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active

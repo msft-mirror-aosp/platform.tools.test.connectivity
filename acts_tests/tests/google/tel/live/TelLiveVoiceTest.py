@@ -58,10 +58,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
@@ -93,7 +91,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voi
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
-
+from acts.libs.utils.multithread import multithread_func
 
 DEFAULT_PING_DURATION = 120  # in seconds
 
