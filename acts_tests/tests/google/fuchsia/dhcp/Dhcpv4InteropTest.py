@@ -16,6 +16,7 @@
 
 import ipaddress
 import itertools
+import random
 import time
 import re
 
@@ -188,8 +189,8 @@ class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
 
         Args:
             settings: a dictionary containing:
-                dhcp_parameters: a list of tuples of DHCP parameters
-                dhcp_options: a list of tuples of DHCP options
+                dhcp_parameters: a dictionary of DHCP parameters
+                dhcp_options: a dictionary of DHCP options
         """
         ap_params = self.setup_ap()
         subnet_conf = dhcp_config.Subnet(
@@ -214,7 +215,12 @@ class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
         # dhcpd[26695]: DHCPREQUEST for 192.168.9.2 (192.168.9.1) from f8:0f:f9:3d:ce:d1 via wlan1
         # dhcpd[26695]: DHCPACK on 192.168.9.2 to f8:0f:f9:3d:ce:d1 via wlan1
 
-        ip = self.get_device_ipv4_addr()
+        try:
+            ip = self.get_device_ipv4_addr()
+        except ConnectionError:
+            self.log.warn(dhcp_logs)
+            asserts.fail(f'DUT failed to get an IP address')
+
         expected_string = f'DHCPDISCOVER from'
         asserts.assert_true(
             dhcp_logs.count(expected_string) == 1,
@@ -255,7 +261,7 @@ class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
         ap_params = self.setup_ap()
         subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
                                          router=ap_params['ip'],
-                                         additional_options=[('foo', 'bar')])
+                                         additional_options={'foo': 'bar'})
         dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
         with asserts.assert_raises_regex(Exception, r'failed to start'):
             self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
@@ -265,8 +271,7 @@ class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
         ap_params = self.setup_ap()
         subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
                                          router=ap_params['ip'],
-                                         additional_parameters=[('foo', 'bar')
-                                                                ])
+                                         additional_parameters={'foo': 'bar'})
         dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
         with asserts.assert_raises_regex(Exception, r'failed to start'):
             self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
@@ -284,23 +289,24 @@ class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
 
     def test_basic_dhcp_assignment(self):
         self.run_test_case_expect_dhcp_success(settings={
-            'dhcp_options': [],
-            'dhcp_parameters': []
+            'dhcp_options': {},
+            'dhcp_parameters': {}
         })
 
     def test_pool_allows_unknown_clients(self):
         self.run_test_case_expect_dhcp_success(settings={
-            'dhcp_options': [],
-            'dhcp_parameters': [('allow', 'unknown-clients')]
+            'dhcp_options': {},
+            'dhcp_parameters': {
+                'allow': 'unknown-clients'
+            }
         })
 
     def test_pool_disallows_unknown_clients(self):
         ap_params = self.setup_ap()
-        subnet_conf = dhcp_config.Subnet(subnet=ap_params['network'],
-                                         router=ap_params['ip'],
-                                         additional_parameters=[
-                                             ('deny', 'unknown-clients')
-                                         ])
+        subnet_conf = dhcp_config.Subnet(
+            subnet=ap_params['network'],
+            router=ap_params['ip'],
+            additional_parameters={'deny': 'unknown-clients'})
         dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
         self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
 
@@ -376,7 +382,7 @@ class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
             # the client.
             # The ping-check configuration parameter can be used to control checking - if its value
             # is false, no ping check is done.
-            additional_parameters=[('ping-check', 'false')])
+            additional_parameters={'ping-check': 'false'})
         dhcp_conf = dhcp_config.DhcpConfig(subnets=[subnet_conf])
         self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
 
@@ -433,27 +439,102 @@ class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
 
 class Dhcpv4InteropCombinatorialOptionsTest(Dhcpv4InteropFixture):
     """DhcpV4 tests which validate combinations of DHCP options."""
-    OPTION_DOMAIN_NAME = [('domain-name', 'example.invalid'),
-                          ('domain-name', 'example.test')]
-    OPTION_DOMAIN_SEARCH = [('domain-search', 'example.invalid'),
-                            ('domain-search', 'example.test')]
+    OPT_NUM_DOMAIN_SEARCH = 119
+    OPT_NUM_DOMAIN_NAME = 15
 
-    def test_search_domains(self):
-        test_list = []
-        for combination in itertools.product(self.OPTION_DOMAIN_SEARCH):
-            test_list.append({
-                'dhcp_options': combination,
-                'dhcp_parameters': []
-            })
-        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
-                                     settings=test_list)
+    def setup_class(self):
+        super().setup_class()
+        self.DHCP_OPTIONS = {
+            'domain-name-tests': [{
+                'domain-name':
+                '"example.invalid"',
+                'dhcp-parameter-request-list':
+                self.OPT_NUM_DOMAIN_NAME
+            }, {
+                'domain-name':
+                '"example.test"',
+                'dhcp-parameter-request-list':
+                self.OPT_NUM_DOMAIN_NAME
+            }],
+            'domain-search-tests': [{
+                'domain-search':
+                '"example.invalid"',
+                'dhcp-parameter-request-list':
+                self.OPT_NUM_DOMAIN_SEARCH
+            }, {
+                'domain-search':
+                '"example.test"',
+                'dhcp-parameter-request-list':
+                self.OPT_NUM_DOMAIN_SEARCH
+            }]
+        }
+
+        # The RFC limits DHCP payloads to 576 bytes unless the client signals it can handle larger
+        # payloads, which it does by sending DHCP option 57, "Maximum DHCP Message Size". Despite
+        # being able to accept larger payloads, clients typically don't advertise this.
+        # The test verifies that the client accepts a large message split across multiple ethernet
+        # frames.
+        # The test is created by sending many bytes of options through the domain-name-servers
+        # option, which is of unbounded length (though is compressed per RFC1035 section 4.1.4).
+        typical_ethernet_mtu = 1500
+        self.DHCP_OPTIONS['max-message-size-tests'] = []
+
+        long_dns_setting = ', '.join(
+            f'"ns{num}.example"'
+            for num in random.sample(range(100_000, 1_000_000), 250))
+        # RFC1035 compression means any shared suffix ('.example' in this case) will
+        # be deduplicated. Calculate approximate length by removing that suffix.
+        long_dns_setting_len = len(
+            long_dns_setting.replace(', ', '').replace('"', '').replace(
+                '.example', '').encode('utf-8'))
+        asserts.assert_true(
+            long_dns_setting_len > typical_ethernet_mtu,
+            "Expected to generate message greater than ethernet mtu")
+        self.DHCP_OPTIONS['max-message-size-tests'].append({
+            'dhcp-max-message-size':
+            long_dns_setting_len * 2,
+            'domain-search':
+            long_dns_setting,
+            'dhcp-parameter-request-list':
+            self.OPT_NUM_DOMAIN_SEARCH
+        })
 
     def test_domain_names(self):
         test_list = []
-        for combination in itertools.product(self.OPTION_DOMAIN_NAME):
+        for option_list in self.DHCP_OPTIONS['domain-name-tests']:
             test_list.append({
-                'dhcp_options': combination,
-                'dhcp_parameters': []
+                'dhcp_options': option_list,
+                'dhcp_parameters': {}
             })
         self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
                                      settings=test_list)
+
+    def test_search_domains(self):
+        test_list = []
+        for option_list in self.DHCP_OPTIONS['domain-search-tests']:
+            test_list.append({
+                'dhcp_options': option_list,
+                'dhcp_parameters': {}
+            })
+        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
+                                     settings=test_list)
+
+    def test_large_messages(self):
+        test_list = []
+        for option_list in self.DHCP_OPTIONS['max-message-size-tests']:
+            test_list.append({
+                'dhcp_options': option_list,
+                'dhcp_parameters': {}
+            })
+        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
+                                     settings=test_list)
+
+    def test_dns(self):
+        pass
+
+    def test_ignored_options_singularly(self):
+        pass
+
+    def test_all_combinations(self):
+        # TODO: test all the combinations above
+        pass
