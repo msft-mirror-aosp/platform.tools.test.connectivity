@@ -592,3 +592,38 @@ def get_slot_index_from_data_sub_id(ad):
         if info['subscriptionId'] == data_sub_id:
             return info['simSlotIndex']
     return INVALID_SUB_ID
+
+def get_slot_index_from_voice_sub_id(ad):
+    """Get slot index from the current voice sub ID.
+
+    Args:
+        ad: android object
+
+    Returns:
+        0: pSIM
+        1: eSIM
+        INVALID_SUB_ID (-1): if no sub ID is equal to current voice sub ID.
+    """
+    voice_sub_id = get_incoming_voice_sub_id(ad)
+    sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    for info in sub_info:
+        if info['subscriptionId'] == voice_sub_id:
+            return info['simSlotIndex']
+    return INVALID_SUB_ID
+
+def get_all_sub_id(ad):
+    """Return all valid subscription IDs.
+
+    Args:
+        ad: Android object
+
+    Returns:
+        List containing all valid subscription IDs.
+    """
+    sub_id_list = []
+    sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    for info in sub_info:
+        if info['simSlotIndex'] != INVALID_SUB_ID:
+            sub_id_list.append(info['subscriptionId'])
+
+    return sub_id_list

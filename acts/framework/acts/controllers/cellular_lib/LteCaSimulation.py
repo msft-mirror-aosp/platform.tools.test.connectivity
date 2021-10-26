@@ -20,9 +20,6 @@ from acts.controllers.cellular_lib import LteSimulation
 class LteCaSimulation(LteSimulation.LteSimulation):
     """ Carrier aggregation LTE simulation. """
 
-    # Configuration dictionary keys
-    PARAM_CA = 'ca'
-
     # Test config keywords
     KEY_FREQ_BANDS = "freq_bands"
 
@@ -63,284 +60,71 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
     def configure(self, parameters):
-        """ Configures simulation using a dictionary of parameters.
-
-        Processes LTE CA configuration parameters.
+        """ Configures PCC and SCCs using a dictionary of parameters.
 
         Args:
-            parameters: a configuration dictionary
+            parameters: a list of configuration dictionaris
         """
-        # Get the CA band configuration
-        if self.PARAM_CA not in parameters:
-            raise ValueError(
-                "The config dictionary must include key '{}' with the CA "
-                "config. For example: ca_3c7c28a".format(self.PARAM_CA))
-
-        # Carrier aggregation configurations are indicated with the band numbers
-        # followed by the CA classes in a single string. For example, for 5 CA
-        # using 3C 7C and 28A the parameter value should be 3c7c28a.
-        ca_configs = re.findall(r'(\d+[abcABC])', parameters[self.PARAM_CA])
-
-        if not ca_configs:
-            raise ValueError(
-                "The CA configuration has to be indicated with one string as "
-                "in the following example: 3c7c28a".format(self.PARAM_CA))
-
-        # Initialize the secondary cells
-        bands = []
-        for ca in ca_configs:
-            ca_class = ca[-1]
-            band = ca[:-1]
-            bands.append(band)
-            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
-                # Class B and C means two carriers with the same band
-                bands.append(band)
-        self.simulator.set_band_combination(bands)
-
-        # Count the number of carriers in the CA combination
-        self.num_carriers = 0
-        for ca in ca_configs:
-            ca_class = ca[-1]
-            # Class C means that there are two contiguous carriers, while other
-            # classes are a single one.
-            if ca_class.upper() == 'C':
-                self.num_carriers += 2
-            else:
-                self.num_carriers += 1
-
-        # Create an array of configuration objects to set up the base stations.
-        new_configs = [self.BtsConfig() for _ in range(self.num_carriers)]
-
-        # Save the bands to the bts config objects
-        bts_index = 0
-        for ca in ca_configs:
-            ca_class = ca[-1]
-            band = ca[:-1]
-
-            new_configs[bts_index].band = band
-            bts_index += 1
-
-            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
-                # Class B and C means two carriers with the same band
-                new_configs[bts_index].band = band
-                bts_index += 1
-
-        # Get the bw for each carrier
-        # This is an optional parameter, by default the maximum bandwidth for
-        # each band will be selected.
-
-        if self.PARAM_BW not in parameters:
-            raise ValueError(
-                "The config dictionary must include the '{}' key.".format(
-                    self.PARAM_BW))
-
-        values = parameters[self.PARAM_BW]
-
-        bts_index = 0
-
-        for ca in ca_configs:
-
-            band = int(ca[:-1])
-            ca_class = ca[-1]
-
-            if values:
-                bw = int(values[bts_index])
-            else:
-                bw = max(self.allowed_bandwidth_dictionary[band])
-
-            new_configs[bts_index].bandwidth = bw
-            bts_index += 1
-
-            if ca_class.upper() == 'C':
-
-                new_configs[bts_index].bandwidth = bw
-
-                # Calculate the channel number for the second carrier to be
-                # contiguous to the first one
-                new_configs[bts_index].dl_channel = int(
-                    self.LOWEST_DL_CN_DICTIONARY[int(band)] + bw * 10 - 2)
-
-                bts_index += 1
-
-        # Get the MIMO mode for each carrier
-
-        if self.PARAM_MIMO not in parameters:
-            raise ValueError(
-                "The key '{}' has to be included in the config dictionary "
-                "with a list including the MIMO mode for each carrier.".format(
-                    self.PARAM_MIMO))
-
-        mimo_values = parameters[self.PARAM_MIMO]
-
-        if len(mimo_values) != self.num_carriers:
-            raise ValueError(
-                "The value of '{}' must be a list of MIMO modes with a length "
-                "equal to the number of carriers.".format(self.PARAM_MIMO))
-
-        for bts_index in range(self.num_carriers):
-
-            # Parse and set the requested MIMO mode
-
-            for mimo_mode in LteSimulation.MimoMode:
-                if mimo_values[bts_index] == mimo_mode.value:
-                    requested_mimo = mimo_mode
-                    break
-            else:
+        new_cell_list = []
+        for cell in parameters:
+            if self.PARAM_BAND not in cell:
                 raise ValueError(
-                    "The mimo mode must be one of %s." %
-                    {elem.value
-                     for elem in LteSimulation.MimoMode})
+                    "The configuration dictionary must include a key '{}' with "
+                    "the required band number.".format(self.PARAM_BAND))
 
-            if (requested_mimo == LteSimulation.MimoMode.MIMO_4x4
-                    and not self.simulator.LTE_SUPPORTS_4X4_MIMO):
-                raise ValueError("The test requires 4x4 MIMO, but that is not "
-                                 "supported by the MD8475A callbox.")
+            band = cell[self.PARAM_BAND]
 
-            new_configs[bts_index].mimo_mode = requested_mimo
+            if isinstance(band, str) and not band.isdigit():
+                ca_class = band[-1].upper()
+                band_num = int(band[:-1])
 
-            # Parse and set the requested TM
-            # This is an optional parameter, by the default value depends on the
-            # MIMO mode for each carrier
-            if self.PARAM_TM in parameters:
-                tm_values = parameters[self.PARAM_TM]
-                if len(tm_values) < bts_index + 1:
-                    raise ValueError(
-                        'The number of elements in the transmission mode list '
-                        'must be equal to the number of carriers.')
-                for tm in LteSimulation.TransmissionMode:
-                    if tm_values[bts_index] == tm.value[2:]:
-                        requested_tm = tm
-                        break
+                if ca_class in ['A', 'C']:
+                    # Remove the CA class label and add the cell
+                    cell[self.PARAM_BAND].band = band_num
+                    new_cell_list.append(cell)
+                elif ca_class == 'B':
+                    raise RuntimeError('Class B LTE CA not supported.')
                 else:
-                    raise ValueError(
-                        "The TM must be one of %s." %
-                        {elem.value
-                         for elem in LteSimulation.MimoMode})
+                    raise ValueError('Invalid band value: ' + band)
+
+                # Class C means that there are two contiguous carriers
+                if ca_class == 'C':
+                    new_cell_list.append(cell)
+                    bw = int(cell[self.PARAM_BW])
+                    new_cell_list[-1].dl_earfcn = int(
+                        self.LOWEST_DL_CN_DICTIONARY[band_num] + bw * 10 - 2)
             else:
-                # Provide default values if the TM parameter is not set
-                if requested_mimo == LteSimulation.MimoMode.MIMO_1x1:
-                    requested_tm = LteSimulation.TransmissionMode.TM1
-                else:
-                    requested_tm = LteSimulation.TransmissionMode.TM3
+                # The band is just a number, so just add it to the list.
+                new_cell_list.append(cell)
 
-            new_configs[bts_index].transmission_mode = requested_tm
+        self.simulator.set_band_combination(
+            [c[self.PARAM_BAND] for c in new_cell_list])
 
-            self.log.info("Cell {} will be set to {} and {} MIMO.".format(
-                bts_index + 1, requested_tm.value, requested_mimo.value))
+        self.num_carriers = len(new_cell_list)
 
-        # Get uplink power
+        # Setup the base station with the obtained configuration and then save
+        # these parameters in the current configuration object
+        for bts_index in range(self.num_carriers):
+            cell_config = self.configure_lte_cell(parameters[bts_index])
+            self.simulator.configure_bts(cell_config, bts_index)
+            self.bts_configs[bts_index].incorporate(cell_config)
 
-        ul_power = self.get_uplink_power_from_parameters(parameters)
+        # Now that the band is set, calibrate the link if necessary
+        self.load_pathloss_if_required()
+
+        # Get uplink power from primary carrier
+        ul_power = self.get_uplink_power_from_parameters(parameters[0])
 
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
         self.sim_ul_power = ul_power
 
-        # Get downlink power
-
-        dl_power = self.get_downlink_power_from_parameters(parameters)
+        # Get downlink power from primary carrier
+        dl_power = self.get_downlink_power_from_parameters(parameters[0])
 
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
         self.sim_dl_power = dl_power
-
-        # Setup scheduling mode
-        if self.PARAM_SCHEDULING not in parameters:
-            scheduling = LteSimulation.SchedulingMode.STATIC
-            self.log.warning(
-                "Key '{}' is not set in the config dictionary. Setting to "
-                "{} by default.".format(scheduling.value,
-                                        self.PARAM_SCHEDULING))
-        else:
-            for scheduling_mode in LteSimulation.SchedulingMode:
-                if (parameters[self.PARAM_SCHEDULING].upper() ==
-                        scheduling_mode.value):
-                    scheduling = scheduling_mode
-                    break
-            else:
-                raise ValueError(
-                    "Key '{}' must have a one of the following values: {}.".
-                    format(
-                        self.PARAM_SCHEDULING,
-                        {elem.value
-                         for elem in LteSimulation.SchedulingMode}))
-
-        for bts_index in range(self.num_carriers):
-            new_configs[bts_index].scheduling_mode = scheduling
-
-        if scheduling == LteSimulation.SchedulingMode.STATIC:
-            if self.PARAM_PATTERN not in parameters:
-                self.log.warning(
-                    "The '{}' key was not set, using 100% RBs for both "
-                    "DL and UL. To set the percentages of total RBs include "
-                    "the '{}' key with a list of two ints indicating downlink and uplink percentages."
-                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
-                dl_pattern = 100
-                ul_pattern = 100
-            else:
-                values = parameters[self.PARAM_PATTERN]
-                dl_pattern = int(values[0])
-                ul_pattern = int(values[1])
-
-            if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0),
-                                                (100, 100)]:
-                raise ValueError(
-                    "Only full RB allocation for DL or UL is supported in CA "
-                    "sims. The allowed combinations are 100/0, 0/100 and "
-                    "100/100.")
-
-            for bts_index in range(self.num_carriers):
-
-                # Look for a DL MCS configuration in the test parameters. If it
-                # is not present, use a default value.
-                if self.PARAM_DL_MCS in parameters:
-                    mcs_dl = int(parameters[self.PARAM_DL_MCS])
-                else:
-                    self.log.warning(
-                        'The config dictionary does not include the {} key. '
-                        'Setting to the max value by default'.format(
-                            self.PARAM_DL_MCS))
-
-                    if new_configs[bts_index].dl_256_qam_enabled and \
-                        new_configs[bts_index].bandwidth == 1.4:
-                        mcs_dl = 26
-                    elif (not new_configs[bts_index].dl_256_qam_enabled
-                          and new_configs[bts_index].mac_padding
-                          and new_configs[bts_index].bandwidth != 1.4):
-                        mcs_dl = 28
-                    else:
-                        mcs_dl = 27
-
-                # Look for an UL MCS configuration in the test parameters. If it
-                # is not present, use a default value.
-                if self.PARAM_UL_MCS in parameters:
-                    mcs_ul = int(parameters[self.PARAM_UL_MCS])
-                else:
-                    self.log.warning(
-                        'The config dictionary does not include the {} key. '
-                        'Setting to the max value by default'.format(
-                            self.PARAM_UL_MCS))
-
-                    if new_configs[bts_index].ul_64_qam_enabled:
-                        mcs_ul = 28
-                    else:
-                        mcs_ul = 23
-
-                dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
-                    new_configs[bts_index].bandwidth,
-                    new_configs[bts_index].transmission_mode, dl_pattern,
-                    ul_pattern)
-
-                new_configs[bts_index].dl_rbs = dl_rbs
-                new_configs[bts_index].ul_rbs = ul_rbs
-                new_configs[bts_index].dl_mcs = mcs_dl
-                new_configs[bts_index].ul_mcs = mcs_ul
-
-        # Setup the base stations with the obtained configurations and then save
-        # these parameters in the current configuration objects
-        for bts_index in range(len(new_configs)):
-            self.simulator.configure_bts(new_configs[bts_index], bts_index)
-            self.bts_configs[bts_index].incorporate(new_configs[bts_index])
 
         # Now that the band is set, calibrate the link for the PCC if necessary
         self.load_pathloss_if_required()
