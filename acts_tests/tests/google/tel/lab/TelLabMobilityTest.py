@@ -52,7 +52,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_host_ip_address
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import iperf_test_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
@@ -62,6 +61,7 @@ from acts.utils import adb_shell_ping
 from acts.utils import rand_ascii_str
 from acts.controllers import iperf_server
 from acts.utils import exe_cmd
+from acts.libs.utils.multithread import run_multithread_func
 
 DEFAULT_CALL_NUMBER = "+11234567891"
 DEFAULT_PING_DURATION = 5
