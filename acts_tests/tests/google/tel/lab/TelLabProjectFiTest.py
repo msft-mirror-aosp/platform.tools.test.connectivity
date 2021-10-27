@@ -19,18 +19,15 @@ Fi Switching Methods
 import time
 from acts.libs.utils.multithread import multithread_func
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
-from acts.controllers.anritsu_lib.md8475a import CBCHSetup
-from acts.controllers.anritsu_lib.md8475a import CTCHSetup
 from acts.controllers.anritsu_lib.md8475a import MD8475A
 from acts_contrib.test_utils.tel.anritsu_utils import cb_serial_number
 from acts_contrib.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts_contrib.test_utils.tel.anritsu_utils import set_usim_parameters
 from acts_contrib.test_utils.tel.anritsu_utils import set_post_sim_params
-from acts_contrib.test_utils.tel.tel_test_utils import \
-    ensure_preferred_network_type_for_subscription
+from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_preferred_network_type_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_LTE

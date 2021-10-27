@@ -30,6 +30,7 @@ from acts.controllers.cellular_lib import UmtsSimulation as umts_sim
 from acts.controllers.cellular_lib import LteCaSimulation as lteca_sim
 from acts.controllers.cellular_lib import LteImsSimulation as lteims_sim
 
+from acts_contrib.test_utils.tel import tel_logging_utils
 from acts_contrib.test_utils.tel import tel_test_utils as telutils
 
 
@@ -247,8 +248,8 @@ class CellularBaseTest(base_test.BaseTestClass):
         # Enable QXDM logger if required
         if self.qxdm_logs:
             self.log.info('Enabling the QXDM logger.')
-            telutils.set_qxdm_logger_command(self.dut)
-            telutils.start_qxdm_logger(self.dut)
+            tel_logging_utils.set_qxdm_logger_command(self.dut)
+            tel_logging_utils.start_qxdm_logger(self.dut)
 
         # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
@@ -268,7 +269,7 @@ class CellularBaseTest(base_test.BaseTestClass):
         # If QXDM logging was enabled pull the results
         if self.qxdm_logs:
             self.log.info('Stopping the QXDM logger and pulling results.')
-            telutils.stop_qxdm_logger(self.dut)
+            tel_logging_utils.stop_qxdm_logger(self.dut)
             self.dut.get_qxdm_logs()
 
     def consume_parameter(self, parameter_name, num_values=0):
