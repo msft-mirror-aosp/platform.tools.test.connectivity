@@ -46,7 +46,9 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_MESSAGE_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_VOICE_SUB_ID
+from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_loggers
+from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
@@ -64,8 +66,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
-from acts_contrib.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref

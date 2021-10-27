@@ -17,13 +17,12 @@
 import time
 import datetime
 from acts import utils
-from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
+from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
+from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.tel import tel_test_utils as tutils
 
 CONCURRENCY_TYPE = {
     "gnss": "GNSS location received",
@@ -50,7 +49,7 @@ class GnssConcurrencyTest(BaseTestClass):
 
     def setup_test(self):
         gutils.start_pixel_logger(self.ad)
-        tutils.start_adb_tcpdump(self.ad)
+        start_adb_tcpdump(self.ad)
         # related properties
         gutils.check_location_service(self.ad)
         gutils.get_baseband_and_gms_version(self.ad)
@@ -58,12 +57,12 @@ class GnssConcurrencyTest(BaseTestClass):
 
     def teardown_test(self):
         gutils.stop_pixel_logger(self.ad)
-        tutils.stop_adb_tcpdump(self.ad)
+        stop_adb_tcpdump(self.ad)
 
     def on_fail(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)
         gutils.get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
-        tutils.get_tcpdump_log(self.ad, test_name, begin_time)
+        get_tcpdump_log(self.ad, test_name, begin_time)
 
     def load_chre_nanoapp(self):
         """ Load CHRE nanoapp to target Android Device. """
