@@ -42,7 +42,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_voice_attached
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
@@ -62,6 +61,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import run_multithread_func
 
 from TelWifiVoiceTest import TelWifiVoiceTest
 from TelWifiVoiceTest import ATTEN_NAME_FOR_WIFI_2G
