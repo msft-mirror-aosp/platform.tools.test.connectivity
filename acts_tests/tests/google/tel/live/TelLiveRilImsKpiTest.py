@@ -26,6 +26,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
 from acts_contrib.test_utils.tel.tel_logging_utils import start_pixellogger_always_on_logging
+from acts_contrib.test_utils.tel.tel_logging_utils import wait_for_log
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_all_sub_id
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
@@ -48,7 +49,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_service
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_log
 from acts.utils import get_current_epoch_time
 
 SETUP_PHONE_FAIL = 'SETUP_PHONE_FAIL'

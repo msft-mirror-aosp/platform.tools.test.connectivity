@@ -23,6 +23,7 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_loggers
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -32,7 +33,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
