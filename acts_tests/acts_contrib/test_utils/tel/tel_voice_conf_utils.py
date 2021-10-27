@@ -17,6 +17,7 @@
 import time
 
 from acts import signals
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
@@ -27,7 +28,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voic
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_call_uri
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state

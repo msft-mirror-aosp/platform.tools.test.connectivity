@@ -62,7 +62,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_loggers
@@ -102,6 +101,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import run_multithread_func
 
 EXCEPTION_TOLERANCE = 5
 BINDER_LOGS = ["/sys/kernel/debug/binder"]
