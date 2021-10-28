@@ -21,6 +21,7 @@ import time
 
 from acts import signals
 from acts.utils import adb_shell_ping
+from acts.libs.utils.multithread import multithread_func
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
@@ -41,7 +42,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_voice_utils import _test_call_long_duration

@@ -15,9 +15,9 @@
 #   limitations under the License.
 
 import time
-from acts_contrib.test_utils.tel.tel_test_utils \
-              import sms_send_receive_verify, multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.tel_subscription_utils \
               import get_subid_from_slot_index, set_subid_for_message
 from acts_contrib.test_utils.tel.tel_defines \

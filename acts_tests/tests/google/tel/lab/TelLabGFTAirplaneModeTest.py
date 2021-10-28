@@ -20,12 +20,11 @@ import time
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
+from acts.libs.utils.multithread import multithread_func
 
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
