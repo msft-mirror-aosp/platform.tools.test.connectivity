@@ -28,8 +28,8 @@ class Subnet(object):
         end: ipaddress.IPv4Address, the end ip address.
         router: The router to give to all hosts in this subnet.
         lease_time: The lease time of all hosts in this subnet.
-        additional_parameters: A list of tuples corresponding to a DHCP parameter.
-        additional_options: A list of tuples corresponding to a DHCP option.
+        additional_parameters: A dictionary corresponding to DHCP parameters.
+        additional_options: A dictionary corresponding to DHCP options.
     """
 
     def __init__(self,
@@ -38,8 +38,8 @@ class Subnet(object):
                  end=None,
                  router=None,
                  lease_time=None,
-                 additional_parameters=[],
-                 additional_options=[]):
+                 additional_parameters={},
+                 additional_options={}):
         """
         Args:
             subnet: ipaddress.IPv4Network, The address space of the subnetwork
@@ -55,10 +55,8 @@ class Subnet(object):
                     subnet. If not given the first ip in the network is used.
             lease_time: int, The amount of lease time in seconds
                         hosts in this subnet have.
-            additional_parameters: A list of tuples corresponding to a DHCP
-                                   parameter.
-            additional_options: A list of tuples corresponding to a DHCP
-                                   option.
+            additional_parameters: A dictionary corresponding to DHCP parameters.
+            additional_options: A dictionary corresponding to DHCP options.
         """
         self.network = subnet
 
@@ -111,6 +109,8 @@ class Subnet(object):
         self.lease_time = lease_time
         self.additional_parameters = additional_parameters
         self.additional_options = additional_options
+        if 'domain-name-servers' not in self.additional_options:
+            self.additional_options['domain-name-servers'] = _ROUTER_DNS
 
 
 class StaticMapping(object):
@@ -175,15 +175,14 @@ class DhcpConfig(object):
             lines.append('\tpool {')
             lines.append('\t\toption subnet-mask %s;' % mask)
             lines.append('\t\toption routers %s;' % router)
-            lines.append('\t\toption domain-name-servers %s;' % _ROUTER_DNS)
             lines.append('\t\trange %s %s;' % (start, end))
             if lease_time:
                 lines.append('\t\tdefault-lease-time %d;' % lease_time)
                 lines.append('\t\tmax-lease-time %d;' % lease_time)
-            for param, value in additional_parameters:
+            for param, value in additional_parameters.items():
                 lines.append('\t\t%s %s;' % (param, value))
-            for option, value in additional_options:
-                lines.append('\t\toption %s "%s";' % (option, value))
+            for option, value in additional_options.items():
+                lines.append('\t\toption %s %s;' % (option, value))
             lines.append('\t}')
             lines.append('}')
 
