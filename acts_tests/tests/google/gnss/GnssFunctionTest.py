@@ -19,7 +19,6 @@ import re
 import fnmatch
 from multiprocessing import Process
 
-from acts import utils
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
@@ -32,14 +31,10 @@ from acts.utils import unzip_maintain_permissions
 from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import abort_all_tests
-from acts_contrib.test_utils.tel.tel_test_utils import stop_qxdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import http_file_download_by_sl4a
-from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_logger
-from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts_contrib.test_utils.gnss.gnss_test_utils import get_baseband_and_gms_version
 from acts_contrib.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_signal
 from acts_contrib.test_utils.gnss.gnss_test_utils import _init_device
@@ -62,7 +57,6 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gps
 from acts_contrib.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_youtube_video
 from acts_contrib.test_utils.gnss.gnss_test_utils import fastboot_factory_reset
-from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_adb
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_mds
 from acts_contrib.test_utils.gnss.gnss_test_utils import disable_supl_mode
 from acts_contrib.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
@@ -76,9 +70,9 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_wearable_btwifi
 from acts_contrib.test_utils.gnss.gnss_test_utils import delete_lto_file
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_device_wearable
-from acts_contrib.test_utils.tel.tel_test_utils import start_adb_tcpdump
-from acts_contrib.test_utils.tel.tel_test_utils import stop_adb_tcpdump
-from acts_contrib.test_utils.tel.tel_test_utils import get_tcpdump_log
+from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
+from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
+from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
 
 class GnssFunctionTest(BaseTestClass):
