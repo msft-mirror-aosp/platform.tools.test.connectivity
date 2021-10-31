@@ -525,6 +525,44 @@ class LteSimulation(BaseSimulation):
         Args:
             parameters: a configuration dictionary
         """
+        # Setup band
+        if self.PARAM_BAND not in parameters:
+            raise ValueError(
+                "The configuration dictionary must include a key '{}' with "
+                "the required band number.".format(self.PARAM_BAND))
+
+        self.simulator.set_band_combination([parameters[self.PARAM_BAND]])
+
+        new_config = self.configure_lte_cell(parameters)
+
+        # Get uplink power
+        ul_power = self.get_uplink_power_from_parameters(parameters)
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
+
+        # Get downlink power
+        dl_power = self.get_downlink_power_from_parameters(parameters)
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
+
+        # Setup the base station with the obtained configuration and then save
+        # these parameters in the current configuration object
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
+
+        # Now that the band is set, calibrate the link if necessary
+        self.load_pathloss_if_required()
+
+    def configure_lte_cell(self, parameters):
+        """ Configures an LTE cell using a dictionary of parameters.
+
+        Args:
+            parameters: a configuration dictionary
+        """
         # Instantiate a new configuration object
         new_config = self.BtsConfig()
 
@@ -535,7 +573,6 @@ class LteSimulation(BaseSimulation):
                 "the required band number.".format(self.PARAM_BAND))
 
         new_config.band = parameters[self.PARAM_BAND]
-        self.simulator.set_band_combination([new_config.band])
 
         if not self.PARAM_DL_EARFCN in parameters:
             band = int(new_config.band)
@@ -801,29 +838,7 @@ class LteSimulation(BaseSimulation):
                     'The {} key has to be followed by the paging cycle '
                     'duration in milliseconds.'.format(self.PARAM_PAGING))
 
-        # Get uplink power
-
-        ul_power = self.get_uplink_power_from_parameters(parameters)
-
-        # Power is not set on the callbox until after the simulation is
-        # started. Saving this value in a variable for later
-        self.sim_ul_power = ul_power
-
-        # Get downlink power
-
-        dl_power = self.get_downlink_power_from_parameters(parameters)
-
-        # Power is not set on the callbox until after the simulation is
-        # started. Saving this value in a variable for later
-        self.sim_dl_power = dl_power
-
-        # Setup the base station with the obtained configuration and then save
-        # these parameters in the current configuration object
-        self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
-
-        # Now that the band is set, calibrate the link if necessary
-        self.load_pathloss_if_required()
+        return new_config
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """ LTE simulation overrides this method so that it can convert from

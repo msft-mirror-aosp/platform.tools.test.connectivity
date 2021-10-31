@@ -19,6 +19,8 @@ import time
 from queue import Empty
 from acts import signals
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import multithread_func
+from acts.libs.utils.multithread import run_multithread_func
 from acts_contrib.test_utils.tel.tel_defines import EventCallStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventSmsDeliverFailure
 from acts_contrib.test_utils.tel.tel_defines import EventSmsDeliverSuccess
@@ -47,8 +49,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_test_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
 from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active

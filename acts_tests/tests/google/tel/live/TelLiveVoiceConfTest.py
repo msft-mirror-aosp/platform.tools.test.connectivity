@@ -20,6 +20,7 @@
 import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MERGE_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
@@ -37,7 +38,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
