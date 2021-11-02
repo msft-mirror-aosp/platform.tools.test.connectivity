@@ -298,11 +298,12 @@ def test_activation_by_condition(ad, from_3g=False, nr_type=None, precond_func=N
         set_preferred_mode_for_5g(ad)
     for iteration in range(3):
         ad.log.info("Attempt %d", iteration + 1)
+        sub_id=ad.droid.subscriptionGetDefaultSubId()
         if from_3g:
             # Set mode pref to 3G
             set_preferred_network_mode_pref(ad.log,
                                             ad,
-                                            ad.droid.subscriptionGetDefaultSubId,
+                                            sub_id,
                                             NETWORK_MODE_WCDMA_ONLY)
             time.sleep(15)
             # Set mode pref to 5G
