@@ -19,6 +19,7 @@ import datetime
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
+from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
@@ -39,7 +40,8 @@ class GnssConcurrencyTest(BaseTestClass):
         self.ad = self.android_devices[0]
         req_params = [
             "standalone_cs_criteria", "chre_tolerate_rate", "qdsp6m_path",
-            "outlier_criteria", "max_outliers"
+            "outlier_criteria", "max_outliers", "pixel_lab_location",
+            "max_interval", "onchip_interval"
         ]
         self.unpack_userparams(req_param_names=req_params)
         gutils._init_device(self.ad)
@@ -63,6 +65,11 @@ class GnssConcurrencyTest(BaseTestClass):
         self.ad.take_bug_report(test_name, begin_time)
         gutils.get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
         get_tcpdump_log(self.ad, test_name, begin_time)
+
+    def is_brcm_test(self):
+        """ Check the test is for BRCM and skip if not. """
+        if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Not BRCM chipset. Skip the test.")
 
     def load_chre_nanoapp(self):
         """ Load CHRE nanoapp to target Android Device. """
@@ -154,7 +161,7 @@ class GnssConcurrencyTest(BaseTestClass):
         time.sleep(test_duration)
         self.enable_chre(0)
         gutils.start_gnss_by_gtw_gpstool(self.ad, False)
-        self.validate_chre_test_result(begin_time, criteria, test_duration)
+        self.validate_location_test_result(begin_time, criteria)
 
     def run_chre_only_test(self, criteria, test_duration):
         """ Execute CHRE only test steps.
@@ -169,36 +176,72 @@ class GnssConcurrencyTest(BaseTestClass):
         self.enable_chre(criteria["gnss"])
         time.sleep(test_duration)
         self.enable_chre(0)
-        self.validate_chre_test_result(begin_time, criteria, test_duration)
+        self.validate_location_test_result(begin_time, criteria)
 
-    def validate_chre_test_result(self, begin_time, criteria, test_duration):
+    def validate_location_test_result(self, begin_time, request):
         """ Validate GNSS concurrency/CHRE test results.
 
         Args:
             begin_time: epoc of test begin time
-            criteria: int for test criteria.
-            test_duration: int for test duration.
+            request: int for test criteria.
         """
         results = {}
         outliers = {}
         failures = {}
         failure_log = ""
-        for type in criteria.keys():
-            self.ad.log.info("Starting process %s result" % type)
-            outliers[type], failures[type], results[
-                type] = self.parse_concurrency_result(begin_time, type,
-                                                      criteria[type])
-            if not results[type]:
-                failure_log += "[%s] Fail to find location report.\n" % type
-            if len(failures[type]) > 0:
+        for request_type, criteria in request.items():
+            criteria = criteria if criteria > 1 else 1
+            self.ad.log.info("Starting process %s result" % request_type)
+            outliers[request_type], failures[request_type], results[
+                request_type] = self.parse_concurrency_result(
+                    begin_time, request_type, criteria)
+            if not results[request_type]:
+                failure_log += "[%s] Fail to find location report.\n" % request_type
+            if len(failures[request_type]) > 0:
                 failure_log += "[%s] Test exceeds criteria: %.2f\n" % (
-                    type, criteria[type])
-            if len(outliers[type]) > self.max_outliers:
+                    request_type, criteria)
+            if len(outliers[request_type]) > self.max_outliers:
                 failure_log += "[%s] Outliers excceds max amount: %d\n" % (
-                    type, len(outliers[type]))
+                    request_type, len(outliers[request_type]))
 
         if failure_log:
             raise signals.TestFailure(failure_log)
+
+    def run_engine_switching_test(self, freq):
+        """ Conduct engine switching test with given frequency.
+
+        Args:
+            freq: a list identify source1/2 frequency [freq1, freq2]
+        """
+        request = {"ap_location": self.max_interval}
+        begin_time = utils.get_current_epoch_time()
+        self.ad.droid.startLocating(freq[0] * 1000, 0)
+        time.sleep(10)
+        for i in range(5):
+            gutils.start_gnss_by_gtw_gpstool(self.ad, True, freq=freq[1])
+            time.sleep(10)
+            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+        self.ad.droid.stopLocating()
+        self.calculate_position_error(begin_time)
+        self.validate_location_test_result(begin_time, request)
+
+    def calculate_position_error(self, begin_time):
+        """ Calculate the position error for the logcat search results.
+
+        Args:
+            begin_time: test begin time
+        """
+        position_errors = []
+        search_results = self.ad.search_logcat("reportLocation", begin_time)
+        for result in search_results:
+            lat_long = result["log_message"].split(" ")[10].split(",")
+            lat = float(lat_long[0])
+            long = float(lat_long[1])
+            pe = gutils.calculate_position_error(lat, long,
+                                                 self.pixel_lab_location)
+            position_errors.append(pe)
+        self.ad.log.info("TestResult max_position_error %.2f" %
+                         max(position_errors))
 
     # Concurrency Test Cases
     @test_tracker_info(uuid="9b0daebf-461e-4005-9773-d5d10aaeaaa4")
@@ -243,3 +286,45 @@ class GnssConcurrencyTest(BaseTestClass):
         test_duration = 30
         criteria = {"gnss": 8, "gnss_meas": 8}
         self.run_chre_only_test(criteria, test_duration)
+
+    # Interval tests
+    @test_tracker_info(uuid="53b161e5-335e-44a7-ae2e-eae7464a2b37")
+    def test_variable_interval_via_chre(self):
+        test_duration = 10
+        intervals = [{
+            "gnss": 0.1,
+            "gnss_meas": 0.1
+        }, {
+            "gnss": 0.5,
+            "gnss_meas": 0.5
+        }, {
+            "gnss": 1.5,
+            "gnss_meas": 1.5
+        }]
+        for interval in intervals:
+            self.run_chre_only_test(interval, test_duration)
+
+    @test_tracker_info(uuid="ee0a46fe-aa5f-4dfd-9cb7-d4924f9e9cea")
+    def test_variable_interval_via_framework(self):
+        test_duration = 10
+        intervals = [0, 0.5, 1.5]
+        for interval in intervals:
+            begin_time = utils.get_current_epoch_time()
+            self.ad.droid.startLocating(interval * 1000, 0)
+            time.sleep(test_duration)
+            self.ad.droid.stopLocating()
+            criteria = interval if interval > 1 else 1
+            self.parse_concurrency_result(begin_time, "ap_location", criteria)
+
+    # Engine switching test
+    @test_tracker_info(uuid="8b42bcb2-cb8c-4ef9-bd98-4fb74a521224")
+    def test_gps_engine_switching_host_to_onchip(self):
+        self.is_brcm_test()
+        freq = [1, self.onchip_interval]
+        self.run_engine_switching_test(freq)
+
+    @test_tracker_info(uuid="636041dc-2bd6-4854-aa5d-61c87943d99c")
+    def test_gps_engine_switching_onchip_to_host(self):
+        self.is_brcm_test()
+        freq = [self.onchip_interval, 1]
+        self.run_engine_switching_test(freq)
