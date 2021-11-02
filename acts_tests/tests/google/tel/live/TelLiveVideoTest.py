@@ -28,8 +28,6 @@ from acts_contrib.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
-from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MERGE_CONFERENCE
-from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
@@ -46,17 +44,14 @@ from acts_contrib.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_EVENT
 from acts_contrib.test_utils.tel.tel_defines import EventTelecomVideoCallSessionEvent
 from acts_contrib.test_utils.tel.tel_defines import SESSION_EVENT_RX_PAUSE
 from acts_contrib.test_utils.tel.tel_defines import SESSION_EVENT_RX_RESUME
-from acts_contrib.test_utils.tel.tel_lookup_tables import operator_capabilities
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_video_enabled
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import disconnect_call_by_id
-from acts_contrib.test_utils.tel.tel_test_utils import get_model_name
-from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_video_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_video_utils import get_call_id_in_video_state
 from acts_contrib.test_utils.tel.tel_video_utils import \

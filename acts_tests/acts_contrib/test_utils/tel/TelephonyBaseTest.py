@@ -34,6 +34,7 @@ from acts.libs.utils.multithread import multithread_func
 from acts.libs.utils.multithread import run_multithread_func
 
 from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
+from acts_contrib.test_utils.tel.tel_ims_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
@@ -68,7 +69,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_test_utils import install_googleaccountutil_apk
 from acts_contrib.test_utils.tel.tel_test_utils import add_google_account
 from acts_contrib.test_utils.tel.tel_test_utils import install_googlefi_apk
