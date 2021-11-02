@@ -20,7 +20,6 @@ import re
 import shutil
 import time
 
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.libs.utils.multithread import run_multithread_func
@@ -397,7 +396,7 @@ def start_adb_tcpdump(ad,
             else:
                 cmds.append("adb -s %s shell tcpdump -i %s -s0 -w %s" %
                             (ad.serial, intf, log_file_name))
-    if not gutils.check_chipset_vendor_by_qualcomm(ad):
+    if "Qualcomm" not in str(ad.adb.shell("getprop gsm.version.ril-impl")):
         log_file_name = ("/data/local/tmp/tcpdump/tcpdump_%s_any_%s_%s.pcap"
                          % (ad.serial, test_name, begin_time))
         cmds.append("adb -s %s shell nohup tcpdump -i any -s0 -w %s" %
