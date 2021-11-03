@@ -51,7 +51,7 @@ GNSSSTATUS_LOG_PATH = (
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
 TTFF_REPORT = namedtuple(
     "TTFF_REPORT", "utc_time ttff_loop ttff_sec ttff_pe ttff_ant_cn "
-                   "ttff_base_cn")
+                   "ttff_base_cn ttff_haccu")
 TRACK_REPORT = namedtuple(
     "TRACK_REPORT", "l5flag pe ant_top4cn ant_cn base_top4cn base_cn")
 LOCAL_PROP_FILE_CONTENTS = """\
@@ -1010,6 +1010,8 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                         loc_time = int(
                             gnss_location_log[10].split("=")[-1].strip(","))
                         utc_time = epoch_to_human_time(loc_time)
+                        ttff_haccu = float(
+                            gnss_location_log[11].split("=")[-1].strip(","))
                 elif type == "flp":
                     flp_results = ad.search_logcat("GPSService: FLP Location",
                                                    begin_time)
@@ -1019,12 +1021,14 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                             "log_message"].split()
                         ttff_lat = float(flp_location_log[8].split(",")[0])
                         ttff_lon = float(flp_location_log[8].split(",")[1])
+                        ttff_haccu = float(flp_location_log[9].split("=")[1])
                         utc_time = epoch_to_human_time(get_current_epoch_time())
             else:
                 ttff_ant_cn = float(ttff_log[19].strip("]"))
                 ttff_base_cn = float(ttff_log[26].strip("]"))
                 ttff_lat = 0
                 ttff_lon = 0
+                ttff_haccu = 0
                 utc_time = epoch_to_human_time(get_current_epoch_time())
             ad.log.debug("TTFF Loop %d - (Lat, Lon) = (%s, %s)" % (ttff_loop,
                                                                    ttff_lat,
@@ -1036,16 +1040,19 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                                ttff_sec=ttff_sec,
                                                ttff_pe=ttff_pe,
                                                ttff_ant_cn=ttff_ant_cn,
-                                               ttff_base_cn=ttff_base_cn)
+                                               ttff_base_cn=ttff_base_cn,
+                                               ttff_haccu=ttff_haccu)
             ad.log.info("UTC Time = %s, Loop %d = %.1f seconds, "
                         "Position Error = %.1f meters, "
                         "Antenna Average Signal = %.1f dbHz, "
-                        "Baseband Average Signal = %.1f dbHz" % (utc_time,
+                        "Baseband Average Signal = %.1f dbHz, "
+                        "Horizontal Accuracy = %.1f meters" % (utc_time,
                                                                  ttff_loop,
                                                                  ttff_sec,
                                                                  ttff_pe,
                                                                  ttff_ant_cn,
-                                                                 ttff_base_cn))
+                                                                 ttff_base_cn,
+                                                                 ttff_haccu))
         stop_gps_results = ad.search_logcat("stop gps test", begin_time)
         if stop_gps_results:
             ad.send_keycode("HOME")
@@ -1110,6 +1117,8 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
                    ttff_data.keys()]
     base_cn_list = [float(ttff_data[key].ttff_base_cn) for key in
                     ttff_data.keys()]
+    haccu_list = [float(ttff_data[key].ttff_haccu) for key in
+                    ttff_data.keys()]
     timeoutcount = sec_list.count(0.0)
     if len(sec_list) == timeoutcount:
         avgttff = 9527
@@ -1123,6 +1132,7 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     maxdis = max(pe_list)
     ant_avgcn = sum(ant_cn_list)/len(ant_cn_list)
     base_avgcn = sum(base_cn_list)/len(base_cn_list)
+    avg_haccu = sum(haccu_list)/len(haccu_list)
     ad.log.info(prop_basename+"AvgTime %.1f" % avgttff)
     ad.log.info(prop_basename+"MaxTime %.1f" % maxttff)
     ad.log.info(prop_basename+"TimeoutCount %d" % timeoutcount)
@@ -1130,6 +1140,7 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     ad.log.info(prop_basename+"MaxDis %.1f" % maxdis)
     ad.log.info(prop_basename+"Ant_AvgSignal %.1f" % ant_avgcn)
     ad.log.info(prop_basename+"Base_AvgSignal %.1f" % base_avgcn)
+    ad.log.info(prop_basename+"Avg_Horizontal_Accuracy %.1f" % avg_haccu)
 
 
 def calculate_position_error(latitude, longitude, true_position):

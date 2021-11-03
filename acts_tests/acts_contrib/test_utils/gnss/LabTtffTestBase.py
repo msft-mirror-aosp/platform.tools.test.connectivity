@@ -246,11 +246,14 @@ class LabTtffTestBase(BaseTestClass):
 
         ttff_time = []
         ttff_pe = []
+        ttff_haccu = []
         for i in ttff_dict.keys():
             ttff_time.append(ttff_dict[i]['ttff_sec'])
             ttff_pe.append(ttff_dict[i]['ttff_pe'])
+            ttff_haccu.append(ttff_dict[i]['ttff_haccu'])
         df['ttff_sec'] = ttff_time
         df['ttff_pe'] = ttff_pe
+        df['ttff_haccu'] = ttff_haccu
         df.to_json(gps_log_path + '/gps_log.json', orient='table')
         result = gutils.check_ttff_data(self.dut,
                                         ttff_data,
