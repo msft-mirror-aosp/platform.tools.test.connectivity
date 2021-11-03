@@ -22,7 +22,8 @@ from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.tel import tel_test_utils as tutils
+from acts_contrib.test_utils.tel import tel_logging_utils as tutils
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.utils import get_current_epoch_time
 from acts_contrib.test_utils.gnss.gnss_test_utils import delete_lto_file, pair_to_wearable
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
@@ -57,7 +58,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
     def setup_test(self):
         gutils.get_baseband_and_gms_version(self.watch)
         gutils.clear_logd_gnss_qxdm_log(self.watch)
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+        gutils.set_attenuator_gnss_signal(self.watch, self.attenuators,
                                        self.default_gnss_signal_attenuation)
         if not gutils.is_mobile_data_on(self.watch):
             gutils.set_mobile_data(self.watch, True)
@@ -66,7 +67,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
             wutils.wifi_toggle_state(self.watch, True)
             gutils.connect_to_wifi_network(
                 self.watch, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        if not tutils.verify_internet_connection(self.watch.log, self.watch, retries=3,
+        if not verify_internet_connection(self.watch.log, self.watch, retries=3,
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE or WiFi network.")
         if not gutils.is_bluetooth_connected(self.watch, self.phone):
@@ -75,7 +76,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
     def teardown_test(self):
         gutils.stop_pixel_logger(self.watch)
         tutils.stop_adb_tcpdump(self.watch)
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+        gutils.set_attenuator_gnss_signal(self.watch, self.attenuators,
                                        self.default_gnss_signal_attenuation)
 
     def on_fail(self, test_name, begin_time):
@@ -93,10 +94,10 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         process_gnss_by_gtw_gpstool(
             self.watch, self.standalone_cs_criteria, type="flp")
         gutils.start_ttff_by_gtw_gpstool(
-            self.watch, mode, iteration=self.ttff_test_cycle)
+            self.watch, mode, iteration=self.flp_ttff_cycle)
         results = gutils.process_ttff_by_gtw_gpstool(
             self.watch, begin_time, location, type="flp")
-        gutils.check_ttff_data(self.ad, results, mode, criteria)
+        gutils.check_ttff_data(self.watch, results, mode, criteria)
 
     def check_location(self):
         watch_file = check_tracking_file(self.watch)
