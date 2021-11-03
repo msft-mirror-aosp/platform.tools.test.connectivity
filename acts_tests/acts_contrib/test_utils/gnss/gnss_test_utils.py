@@ -2152,7 +2152,7 @@ def pair_to_wearable(ad, ad1):
     uia_click(ad1, "Finish")
     ad.log.info("Wait 3 mins for complete pairing process.")
     time.sleep(180)
-    ad.adb.shell("adb shell settings put global stay_on_while_plugged_in 7")
+    ad.adb.shell("settings put global stay_on_while_plugged_in 7")
     check_location_service(ad)
     if is_bluetooth_connected(ad, ad1):
         ad.log.info("Pairing successfully.")
