@@ -33,8 +33,7 @@ class BtInterferenceStaticTest(BtInterferenceBaseTest):
                                           self.attenuation_vector['stop'] + 1,
                                           self.attenuation_vector['step'])
 
-        self.iperf_duration = self.audio_params[
-            'duration'] + TIME_OVERHEAD
+        self.iperf_duration = self.audio_params['duration'] + TIME_OVERHEAD
         for level in list(
                 self.static_wifi_interference['interference_level'].keys()):
             for channels in self.static_wifi_interference['channels']:
@@ -120,8 +119,15 @@ class BtInterferenceStaticTest(BtInterferenceBaseTest):
         for atten in self.bt_attenuation_range:
             # Set attenuation for BT link
             self.attenuator.set_atten(atten)
-            [rssi_master, pwl_master, rssi_slave] = self._get_bt_link_metrics()
-            tag = 'attenuation_{}dB_'.format(atten)
+            [
+                rssi_master, pwl_master, rssi_c0_master, rssi_c1_master,
+                txpw_c0_master, txpw_c1_master, bftx_master, divtx_master
+            ], [rssi_slave] = self._get_bt_link_metrics()
+            rssi_primary = rssi_master.get(self.dut.serial, -127)
+            pwl_primary = pwl_master.get(self.dut.serial, -127)
+            rssi_secondary = rssi_slave.get(self.bt_device_controller.serial,
+                                            -127)
+            tag = 'attenuation_{}dB'.format(atten)
             self.log.info(
                 'BT attenuation set to {} dB and start A2DP streaming'.format(
                     atten))
@@ -140,8 +146,8 @@ class BtInterferenceStaticTest(BtInterferenceBaseTest):
 
             #play a2dp streaming and run thdn analysis
             queue = Queue()
-            proc_bt = Process(target=self.play_and_record_audio, 
-                              args=(self.audio_params['duration'],queue))
+            proc_bt = Process(target=self.play_and_record_audio,
+                              args=(self.audio_params['duration'], queue))
             for proc in procs_iperf:
                 proc.start()
             proc_bt.start()
@@ -155,23 +161,23 @@ class BtInterferenceStaticTest(BtInterferenceBaseTest):
                         obj.channel, iperf_throughput))
                 obj.iperf_server.stop()
                 self.log.info('Stopped IPERF server at port {}'.format(
-                        obj.iperf_server.port))
+                    obj.iperf_server.port))
             audio_captured = queue.get()
             thdns = self.run_thdn_analysis(audio_captured, tag)
-            self.log.info('THDN results are {} at {} dB attenuation'
-                          .format(thdns, atten))
-            self.log.info('master rssi {} dBm, master tx power level {}, '
-                          'slave rssi {} dBm'
-                          .format(rssi_master, pwl_master, rssi_slave))
+            self.log.info('THDN results are {} at {} dB attenuation'.format(
+                thdns, atten))
+            self.log.info('DUT rssi {} dBm, master tx power level {}, '
+                          'RemoteDevice rssi {} dBm'.format(rssi_primary, pwl_primary,
+                                                     rssi_secondary))
             for thdn in thdns:
                 if thdn >= self.audio_params['thdn_threshold']:
                     self.log.info('Under the WiFi interference condition: '
                                   'channel 1 RSSI: {} dBm, '
                                   'channel 6 RSSI: {} dBm'
-                                  'channel 11 RSSI: {} dBm'
-                                  .format(self.interference_rssi[0]['rssi'],
-                                          self.interference_rssi[1]['rssi'],
-                                          self.interference_rssi[2]['rssi']))
+                                  'channel 11 RSSI: {} dBm'.format(
+                                      self.interference_rssi[0]['rssi'],
+                                      self.interference_rssi[1]['rssi'],
+                                      self.interference_rssi[2]['rssi']))
                     raise TestPass(
                         'Max range for this test is {}, with BT master RSSI at'
-                        ' {} dBm'.format(atten, rssi_master))
+                        ' {} dBm'.format(atten, rssi_primary))
