@@ -384,7 +384,7 @@ class AndroidDevice:
         self.skip_sl4a = False
         self.crash_report = None
         self.data_accounting = collections.defaultdict(int)
-        self._sl4a_manager = sl4a_manager.Sl4aManager(self.adb)
+        self._sl4a_manager = sl4a_manager.create_sl4a_manager(self.adb)
         self.last_logcat_timestamp = None
         # Device info cache.
         self._user_added_device_info = {}
