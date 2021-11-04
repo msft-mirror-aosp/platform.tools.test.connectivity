@@ -171,6 +171,7 @@ def get_gpstool_logs(ad, local_logpath, keep_logs=True):
     """
 
     gps_log_path = os.path.join(local_logpath, 'GPSLogs')
+    os.makedirs(gps_log_path, exist_ok=True)
     ad.adb.pull("{} {}".format(DEVICE_GPSLOG_FOLDER, gps_log_path))
     ad.log.debug("gpstool logs are pulled from device")
 
