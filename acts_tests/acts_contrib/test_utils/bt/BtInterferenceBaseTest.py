@@ -163,7 +163,6 @@ class BtInterferenceBaseTest(A2dpBaseTest):
                 obj.iperf_server.port))
             obj.iperf_server.stop()
             self.log.info('Stop IPERF process on {}'.format(obj.dut.serial))
-            obj.dut.adb.shell('pkill -9 iperf3')
             #only for glinux machine
             #            wputils.bring_down_interface(obj.ether_int.interface)
             obj.attenuator.set_atten(MAX_ATTENUATION)
