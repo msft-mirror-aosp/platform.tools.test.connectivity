@@ -95,9 +95,9 @@ class DhcpServer(object):
             self._wait_for_server(timeout=timeout)
         except:
             self._log.warn("Failed to start DHCP server.")
-            self._log.debug("DHCP configuration:\n" +
-                            config.render_config_file() + "\n")
-            self._log.debug("DHCP logs:\n" + self.get_logs() + "\n")
+            self._log.info("DHCP configuration:\n" +
+                           config.render_config_file() + "\n")
+            self._log.info("DHCP logs:\n" + self.get_logs() + "\n")
             self.stop()
             raise
 
