@@ -177,6 +177,7 @@ FUCHSIA_INIT_NETSTACK = ('acts.controllers.fuchsia_lib.netstack.'
 
 class ByPassSetupWizardTests(unittest.TestCase):
     """This test class for unit testing acts.utils.bypass_setup_wizard."""
+
     def test_start_standing_subproc(self):
         with self.assertRaisesRegex(utils.ActsUtilsError,
                                     'Process .* has terminated'):
@@ -310,6 +311,7 @@ class BypassSetupWizardReturn:
 
 class ConcurrentActionsTest(unittest.TestCase):
     """Tests acts.utils.run_concurrent_actions and related functions."""
+
     @staticmethod
     def function_returns_passed_in_arg(arg):
         return arg
@@ -326,8 +328,8 @@ class ConcurrentActionsTest(unittest.TestCase):
         values returned from each individual callable in the order passed in.
         """
         ret_values = utils.run_concurrent_actions_no_raise(
-            lambda: self.function_returns_passed_in_arg('ARG1'),
-            lambda: self.function_returns_passed_in_arg('ARG2'),
+            lambda: self.function_returns_passed_in_arg(
+                'ARG1'), lambda: self.function_returns_passed_in_arg('ARG2'),
             lambda: self.function_returns_passed_in_arg('ARG3'))
 
         self.assertEqual(len(ret_values), 3)
@@ -358,8 +360,8 @@ class ConcurrentActionsTest(unittest.TestCase):
         """
 
         ret_values = utils.run_concurrent_actions(
-            lambda: self.function_returns_passed_in_arg('ARG1'),
-            lambda: self.function_returns_passed_in_arg('ARG2'),
+            lambda: self.function_returns_passed_in_arg(
+                'ARG1'), lambda: self.function_returns_passed_in_arg('ARG2'),
             lambda: self.function_returns_passed_in_arg('ARG3'))
 
         self.assertEqual(len(ret_values), 3)
@@ -393,6 +395,7 @@ class ConcurrentActionsTest(unittest.TestCase):
 
 class SuppressLogOutputTest(unittest.TestCase):
     """Tests SuppressLogOutput"""
+
     def test_suppress_log_output(self):
         """Tests that the SuppressLogOutput context manager removes handlers
         of the specified levels upon entry and re-adds handlers upon exit.
@@ -537,6 +540,9 @@ class IpAddressUtilTest(unittest.TestCase):
                                                      start_services_mock,
                                                      control_path_mock,
                                                      fuchsia_device_mock):
+        # Will never actually be created/used.
+        logging.log_path = '/tmp/unit_test_garbage'
+
         init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
@@ -555,6 +561,9 @@ class IpAddressUtilTest(unittest.TestCase):
                                                       start_services_mock,
                                                       control_path_mock,
                                                       fuchsia_device_mock):
+        # Will never actually be created/used.
+        logging.log_path = '/tmp/unit_test_garbage'
+
         init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
@@ -565,7 +574,6 @@ class IpAddressUtilTest(unittest.TestCase):
 
 
 class GetDeviceTest(unittest.TestCase):
-
     class TestDevice:
         def __init__(self, id, device_type=None) -> None:
             self.id = id

@@ -991,13 +991,6 @@ class AndroidDevice:
         except Exception as e:
             self.log.warning("Fail to stop package %s: %s", package_name, e)
 
-    def stop_sl4a(self):
-        # TODO(markdr): Move this into sl4a_manager.
-        return self.force_stop_apk(SL4A_APK_NAME)
-
-    def start_sl4a(self):
-        self._sl4a_manager.start_sl4a_service()
-
     def take_bug_report(self, test_name, begin_time):
         """Takes a bug report on the device and stores it in a file.
 
