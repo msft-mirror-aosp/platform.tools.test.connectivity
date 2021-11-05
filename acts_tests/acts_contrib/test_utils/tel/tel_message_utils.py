@@ -22,6 +22,9 @@ from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func
 from acts.libs.utils.multithread import run_multithread_func
 from acts_contrib.test_utils.tel.tel_defines import EventCallStateChanged
+from acts_contrib.test_utils.tel.tel_defines import EventMmsSentFailure
+from acts_contrib.test_utils.tel.tel_defines import EventMmsSentSuccess
+from acts_contrib.test_utils.tel.tel_defines import EventMmsDownloaded
 from acts_contrib.test_utils.tel.tel_defines import EventSmsDeliverFailure
 from acts_contrib.test_utils.tel.tel_defines import EventSmsDeliverSuccess
 from acts_contrib.test_utils.tel.tel_defines import EventSmsReceived
@@ -46,9 +49,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
-from acts_contrib.test_utils.tel.tel_test_utils import log_messaging_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
-from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
@@ -1524,3 +1524,315 @@ def voice_call_in_collision_with_mt_sms_msim(
             ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
 
     return tel_result_wrapper
+
+
+def is_mms_match(event, phonenumber_tx, text):
+    """Return True if 'text' equals to event['data']['Text']
+        and phone number match.
+
+    Args:
+        event: Event object to verify.
+        phonenumber_tx: phone number for sender.
+        text: text string to verify.
+
+    Returns:
+        Return True if 'text' equals to event['data']['Text']
+            and phone number match.
+    """
+    #TODO:  add mms matching after mms message parser is added in sl4a. b/34276948
+    return True
+
+
+def wait_for_matching_mms(log,
+                          ad_rx,
+                          phonenumber_tx,
+                          text,
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+    """Wait for matching incoming SMS.
+
+    Args:
+        log: Log object.
+        ad_rx: Receiver's Android Device Object
+        phonenumber_tx: Sender's phone number.
+        text: SMS content string.
+        allow_multi_part_long_sms: is long SMS allowed to be received as
+            multiple short SMS. This is optional, default value is True.
+
+    Returns:
+        True if matching incoming SMS is received.
+    """
+    try:
+        #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
+        ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
+                                          max_wait_time, phonenumber_tx, text)
+        ad_rx.log.info("Got event %s", EventMmsDownloaded)
+        return True
+    except Empty:
+        ad_rx.log.warning("No matched MMS downloaded event.")
+        return False
+
+
+def mms_send_receive_verify(log,
+                            ad_tx,
+                            ad_rx,
+                            array_message,
+                            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
+                            expected_result=True,
+                            slot_id_rx=None):
+    """Send MMS, receive MMS, and verify content and sender's number.
+
+        Send (several) MMS from droid_tx to droid_rx.
+        Verify MMS is sent, delivered and received.
+        Verify received content and sender's number are correct.
+
+    Args:
+        log: Log object.
+        ad_tx: Sender's Android Device Object
+        ad_rx: Receiver's Android Device Object
+        array_message: the array of message to send/receive
+    """
+    subid_tx = get_outgoing_message_sub_id(ad_tx)
+    if slot_id_rx is None:
+        subid_rx = get_incoming_message_sub_id(ad_rx)
+    else:
+        subid_rx = get_subid_from_slot_index(log, ad_rx, slot_id_rx)
+
+    result = mms_send_receive_verify_for_subscription(
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
+    if result != expected_result:
+        log_messaging_screen_shot(ad_tx, test_name="mms_tx")
+        log_messaging_screen_shot(ad_rx, test_name="mms_rx")
+    return result == expected_result
+
+
+def sms_mms_send_logcat_check(ad, type, begin_time):
+    type = type.upper()
+    log_results = ad.search_logcat(
+        "%s Message sent successfully" % type, begin_time=begin_time)
+    if log_results:
+        ad.log.info("Found %s sent successful log message: %s", type,
+                    log_results[-1]["log_message"])
+        return True
+    else:
+        log_results = ad.search_logcat(
+            "ProcessSentMessageAction: Done sending %s message" % type,
+            begin_time=begin_time)
+        if log_results:
+            for log_result in log_results:
+                if "status is SUCCEEDED" in log_result["log_message"]:
+                    ad.log.info(
+                        "Found BugleDataModel %s send succeed log message: %s",
+                        type, log_result["log_message"])
+                    return True
+    return False
+
+
+def sms_mms_receive_logcat_check(ad, type, begin_time):
+    type = type.upper()
+    smshandle_logs = ad.search_logcat(
+        "InboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
+        begin_time=begin_time)
+    if smshandle_logs:
+        ad.log.warning("Found %s", smshandle_logs[-1]["log_message"])
+    log_results = ad.search_logcat(
+        "New %s Received" % type, begin_time=begin_time) or \
+        ad.search_logcat("New %s Downloaded" % type, begin_time=begin_time)
+    if log_results:
+        ad.log.info("Found SL4A %s received log message: %s", type,
+                    log_results[-1]["log_message"])
+        return True
+    else:
+        log_results = ad.search_logcat(
+            "Received %s message" % type, begin_time=begin_time)
+        if log_results:
+            ad.log.info("Found %s received log message: %s", type,
+                        log_results[-1]["log_message"])
+        log_results = ad.search_logcat(
+            "ProcessDownloadedMmsAction", begin_time=begin_time)
+        for log_result in log_results:
+            ad.log.info("Found %s", log_result["log_message"])
+            if "status is SUCCEEDED" in log_result["log_message"]:
+                ad.log.info("Download succeed with ProcessDownloadedMmsAction")
+                return True
+    return False
+
+
+#TODO: add mms matching after mms message parser is added in sl4a. b/34276948
+def mms_send_receive_verify_for_subscription(
+        log,
+        ad_tx,
+        ad_rx,
+        subid_tx,
+        subid_rx,
+        array_payload,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+    """Send MMS, receive MMS, and verify content and sender's number.
+
+        Send (several) MMS from droid_tx to droid_rx.
+        Verify MMS is sent, delivered and received.
+        Verify received content and sender's number are correct.
+
+    Args:
+        log: Log object.
+        ad_tx: Sender's Android Device Object..
+        ad_rx: Receiver's Android Device Object.
+        subid_tx: Sender's subscription ID to be used for SMS
+        subid_rx: Receiver's subscription ID to be used for SMS
+        array_message: the array of message to send/receive
+    """
+
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+    toggle_enforce = False
+
+    for ad in (ad_tx, ad_rx):
+        if "Permissive" not in ad.adb.shell("su root getenforce"):
+            ad.adb.shell("su root setenforce 0")
+            toggle_enforce = True
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
+        else:
+            try:
+                if not ad.messaging_droid.is_live:
+                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                    ad.messaging_ed.start()
+                else:
+                    ad.messaging_ed.clear_all_events()
+                ad.messaging_droid.logI(
+                    "Start mms_send_receive_verify_for_subscription test")
+            except Exception:
+                ad.log.info("Create new sl4a session for messaging")
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
+
+    for subject, message, filename in array_payload:
+        ad_tx.messaging_ed.clear_events(EventMmsSentSuccess)
+        ad_tx.messaging_ed.clear_events(EventMmsSentFailure)
+        ad_rx.messaging_ed.clear_events(EventMmsDownloaded)
+        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
+        ad_tx.log.info(
+            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
+            phonenumber_tx, phonenumber_rx, subject, message, filename)
+        try:
+            ad_tx.messaging_droid.smsSendMultimediaMessage(
+                phonenumber_rx, subject, message, phonenumber_tx, filename)
+            try:
+                events = ad_tx.messaging_ed.pop_events(
+                    "(%s|%s)" % (EventMmsSentSuccess,
+                                 EventMmsSentFailure), max_wait_time)
+                for event in events:
+                    ad_tx.log.info("Got event %s", event["name"])
+                    if event["name"] == EventMmsSentFailure:
+                        if event.get("data") and event["data"].get("Reason"):
+                            ad_tx.log.error("%s with reason: %s",
+                                            event["name"],
+                                            event["data"]["Reason"])
+                        return False
+                    elif event["name"] == EventMmsSentSuccess:
+                        break
+            except Empty:
+                ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
+                                  EventMmsSentFailure)
+                return False
+
+            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx,
+                                         message, max_wait_time):
+                return False
+        except Exception as e:
+            log.error("Exception error %s", e)
+            raise
+        finally:
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
+            for ad in (ad_tx, ad_rx):
+                if toggle_enforce:
+                    ad.send_keycode("BACK")
+                    ad.adb.shell("su root setenforce 1")
+    return True
+
+
+def mms_receive_verify_after_call_hangup(
+        log, ad_tx, ad_rx, array_message,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+    """Verify the suspanded MMS during call will send out after call release.
+
+        Hangup call from droid_tx to droid_rx.
+        Verify MMS is sent, delivered and received.
+        Verify received content and sender's number are correct.
+
+    Args:
+        log: Log object.
+        ad_tx: Sender's Android Device Object
+        ad_rx: Receiver's Android Device Object
+        array_message: the array of message to send/receive
+    """
+    return mms_receive_verify_after_call_hangup_for_subscription(
+        log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
+        get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
+
+
+#TODO: add mms matching after mms message parser is added in sl4a. b/34276948
+def mms_receive_verify_after_call_hangup_for_subscription(
+        log,
+        ad_tx,
+        ad_rx,
+        subid_tx,
+        subid_rx,
+        array_payload,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+    """Verify the suspanded MMS during call will send out after call release.
+
+        Hangup call from droid_tx to droid_rx.
+        Verify MMS is sent, delivered and received.
+        Verify received content and sender's number are correct.
+
+    Args:
+        log: Log object.
+        ad_tx: Sender's Android Device Object..
+        ad_rx: Receiver's Android Device Object.
+        subid_tx: Sender's subscription ID to be used for SMS
+        subid_rx: Receiver's subscription ID to be used for SMS
+        array_message: the array of message to send/receive
+    """
+
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+    for ad in (ad_tx, ad_rx):
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
+    for subject, message, filename in array_payload:
+        ad_rx.log.info(
+            "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
+            phonenumber_tx, phonenumber_rx, subject, message, filename)
+        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
+        time.sleep(5)
+        try:
+            hangup_call(log, ad_tx)
+            hangup_call(log, ad_rx)
+            try:
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                             max_wait_time)
+                ad_tx.log.info("Got event %s", EventMmsSentSuccess)
+            except Empty:
+                log.warning("No sent_success event.")
+            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
+                return False
+        finally:
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
+    return True
+
+
+def log_messaging_screen_shot(ad, test_name=""):
+    ad.ensure_screen_on()
+    ad.send_keycode("HOME")
+    ad.adb.shell("am start -n com.google.android.apps.messaging/.ui."
+                 "ConversationListActivity")
+    time.sleep(3)
+    ad.screenshot(test_name)
+    ad.adb.shell("am start -n com.google.android.apps.messaging/com.google."
+                 "android.apps.messaging.ui.conversation."
+                 "LaunchConversationShimActivity -e conversation_id 1")
+    time.sleep(3)
+    ad.screenshot(test_name)
+    ad.send_keycode("HOME")
