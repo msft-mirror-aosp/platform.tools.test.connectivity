@@ -160,9 +160,6 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMW 500
     controller. """
 
-    # Indicates if 4x4 MIMO is supported for LTE
-    LTE_SUPPORTS_4X4_MIMO = True
-
     # The maximum number of carriers that this simulator can support for LTE
     LTE_MAX_CARRIERS = 1
 
