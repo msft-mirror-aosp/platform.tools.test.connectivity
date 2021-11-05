@@ -20,6 +20,7 @@ import re
 
 from queue import Empty
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_ONLY
@@ -30,7 +31,6 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
@@ -298,11 +298,12 @@ def test_activation_by_condition(ad, from_3g=False, nr_type=None, precond_func=N
         set_preferred_mode_for_5g(ad)
     for iteration in range(3):
         ad.log.info("Attempt %d", iteration + 1)
+        sub_id=ad.droid.subscriptionGetDefaultSubId()
         if from_3g:
             # Set mode pref to 3G
             set_preferred_network_mode_pref(ad.log,
                                             ad,
-                                            ad.droid.subscriptionGetDefaultSubId,
+                                            sub_id,
                                             NETWORK_MODE_WCDMA_ONLY)
             time.sleep(15)
             # Set mode pref to 5G

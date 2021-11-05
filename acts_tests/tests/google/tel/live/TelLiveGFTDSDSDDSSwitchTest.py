@@ -14,10 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import re
 import time
 
-from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
@@ -26,15 +24,14 @@ from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import \
     TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
@@ -44,17 +41,14 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_subscription_utils import \
     get_subid_on_same_network_of_host_ad
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import \
     wait_for_cell_data_connection_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode

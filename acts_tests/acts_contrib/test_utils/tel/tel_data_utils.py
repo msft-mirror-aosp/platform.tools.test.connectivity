@@ -16,21 +16,21 @@
 
 import time
 import random
-import re
 from queue import Empty
 
 from acts.utils import adb_shell_ping
 from acts.utils import rand_ascii_str
 from acts.utils import disable_doze
 from acts.utils import enable_doze
+from acts.libs.utils.multithread import multithread_func
+from acts.libs.utils.multithread import run_multithread_func
 from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import \
-    get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
@@ -42,14 +42,12 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTIO
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import RAT_5G
-from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
-from acts_contrib.test_utils.tel.tel_defines import \
-    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
@@ -67,7 +65,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
@@ -79,20 +76,18 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_service
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
-from acts_contrib.test_utils.tel.tel_test_utils import \
-    wait_for_voice_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ims_registered
 from acts_contrib.test_utils.tel.tel_5g_test_utils import check_current_network_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
@@ -2143,3 +2138,104 @@ def activate_and_verify_cellular_data(log, ad):
         return False
 
     return True
+
+
+def wait_for_network_service(
+    log,
+    ad,
+    wifi_connected=False,
+    wifi_ssid=None,
+    ims_reg=True,
+    recover=False,
+    retry=3):
+    """ Wait for multiple network services in sequence, including:
+        - service state
+        - network connection
+        - wifi connection
+        - cellular data
+        - internet connection
+        - IMS registration
+
+        The mechanism (cycling airplane mode) to recover network services is
+        also provided if any service is not available.
+
+        Args:
+            log: log object
+            ad: android device
+            wifi_connected: True if wifi should be connected. Otherwise False.
+            ims_reg: True if IMS should be registered. Otherwise False.
+            recover: True if the mechanism (cycling airplane mode) to recover
+            network services should be enabled (by default False).
+            retry: times of retry.
+    """
+    times = 1
+    while times <= retry:
+        while True:
+            if not wait_for_state(
+                    get_service_state_by_adb,
+                    "IN_SERVICE",
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK,
+                    log,
+                    ad):
+                ad.log.error("Current service state is not 'IN_SERVICE'.")
+                break
+
+            if not wait_for_state(
+                    ad.droid.connectivityNetworkIsConnected,
+                    True,
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK):
+                ad.log.error("Network is NOT connected!")
+                break
+
+            if wifi_connected and wifi_ssid:
+                if not wait_for_state(
+                        check_is_wifi_connected,
+                        True,
+                        MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                        WAIT_TIME_BETWEEN_STATE_CHECK,
+                        log,
+                        ad,
+                        wifi_ssid):
+                    ad.log.error("Failed to connect Wi-Fi SSID '%s'.", wifi_ssid)
+                    break
+            else:
+                if not wait_for_cell_data_connection(log, ad, True):
+                    ad.log.error("Failed to enable data connection.")
+                    break
+
+            if not wait_for_state(
+                    verify_internet_connection,
+                    True,
+                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                    WAIT_TIME_BETWEEN_STATE_CHECK,
+                    log,
+                    ad):
+                ad.log.error("Data not available on cell.")
+                break
+
+            if ims_reg:
+                if not wait_for_ims_registered(log, ad):
+                    ad.log.error("IMS is not registered.")
+                    break
+                ad.log.info("IMS is registered.")
+            return True
+
+        if recover:
+            ad.log.warning("Trying to recover by cycling airplane mode...")
+            if not toggle_airplane_mode(log, ad, True):
+                ad.log.error("Failed to enable airplane mode")
+                break
+
+            time.sleep(5)
+
+            if not toggle_airplane_mode(log, ad, False):
+                ad.log.error("Failed to disable airplane mode")
+                break
+
+            times = times + 1
+
+        else:
+            return False
+    return False

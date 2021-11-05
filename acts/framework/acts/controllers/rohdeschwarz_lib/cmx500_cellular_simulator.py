@@ -55,8 +55,6 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMX 500
     controller. """
 
-    LTE_SUPPORTS_4X4_MIMO = True
-
     def __init__(self, ip_address, port='5025'):
         """ Initializes the cellular simulator.
 

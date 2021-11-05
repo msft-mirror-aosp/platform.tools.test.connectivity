@@ -14,11 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from datetime import datetime
 from future import standard_library
 standard_library.install_aliases()
 
-import concurrent.futures
 import json
 import logging
 import re
@@ -26,7 +24,6 @@ import os
 import urllib.parse
 import time
 import acts.controllers.iperf_server as ipf
-import shutil
 import struct
 
 from acts import signals
@@ -36,7 +33,6 @@ from acts.asserts import abort_all
 from acts.controllers.adb_lib.error import AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
-from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
@@ -81,7 +77,6 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STA
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_IDLE_EVENT
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TELECOM_RINGING
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
@@ -140,9 +135,6 @@ from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventMessageWaitingIndicatorChanged
 from acts_contrib.test_utils.tel.tel_defines import EventServiceStateChanged
-from acts_contrib.test_utils.tel.tel_defines import EventMmsSentFailure
-from acts_contrib.test_utils.tel.tel_defines import EventMmsSentSuccess
-from acts_contrib.test_utils.tel.tel_defines import EventMmsDownloaded
 from acts_contrib.test_utils.tel.tel_defines import CallStateContainer
 from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts_contrib.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
@@ -152,6 +144,10 @@ from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
+from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
+from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_valid_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import get_allowable_network_preference
@@ -168,22 +164,18 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_ra
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.wifi import wifi_test_utils
-from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import adb_shell_ping
 from acts.utils import load_config
-from acts.utils import start_standing_subprocess
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import exe_cmd
-
+from acts.libs.utils.multithread import multithread_func
 
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
@@ -6115,303 +6107,6 @@ def get_model_name(ad):
     return model
 
 
-def is_mms_match(event, phonenumber_tx, text):
-    """Return True if 'text' equals to event['data']['Text']
-        and phone number match.
-
-    Args:
-        event: Event object to verify.
-        phonenumber_tx: phone number for sender.
-        text: text string to verify.
-
-    Returns:
-        Return True if 'text' equals to event['data']['Text']
-            and phone number match.
-    """
-    #TODO:  add mms matching after mms message parser is added in sl4a. b/34276948
-    return True
-
-
-def wait_for_matching_mms(log,
-                          ad_rx,
-                          phonenumber_tx,
-                          text,
-                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
-    """Wait for matching incoming SMS.
-
-    Args:
-        log: Log object.
-        ad_rx: Receiver's Android Device Object
-        phonenumber_tx: Sender's phone number.
-        text: SMS content string.
-        allow_multi_part_long_sms: is long SMS allowed to be received as
-            multiple short SMS. This is optional, default value is True.
-
-    Returns:
-        True if matching incoming SMS is received.
-    """
-    try:
-        #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-        ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
-                                          max_wait_time, phonenumber_tx, text)
-        ad_rx.log.info("Got event %s", EventMmsDownloaded)
-        return True
-    except Empty:
-        ad_rx.log.warning("No matched MMS downloaded event.")
-        return False
-
-
-def mms_send_receive_verify(log,
-                            ad_tx,
-                            ad_rx,
-                            array_message,
-                            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
-                            expected_result=True,
-                            slot_id_rx=None):
-    """Send MMS, receive MMS, and verify content and sender's number.
-
-        Send (several) MMS from droid_tx to droid_rx.
-        Verify MMS is sent, delivered and received.
-        Verify received content and sender's number are correct.
-
-    Args:
-        log: Log object.
-        ad_tx: Sender's Android Device Object
-        ad_rx: Receiver's Android Device Object
-        array_message: the array of message to send/receive
-    """
-    subid_tx = get_outgoing_message_sub_id(ad_tx)
-    if slot_id_rx is None:
-        subid_rx = get_incoming_message_sub_id(ad_rx)
-    else:
-        subid_rx = get_subid_from_slot_index(log, ad_rx, slot_id_rx)
-
-    result = mms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
-    if result != expected_result:
-        log_messaging_screen_shot(ad_tx, test_name="mms_tx")
-        log_messaging_screen_shot(ad_rx, test_name="mms_rx")
-    return result == expected_result
-
-
-def sms_mms_send_logcat_check(ad, type, begin_time):
-    type = type.upper()
-    log_results = ad.search_logcat(
-        "%s Message sent successfully" % type, begin_time=begin_time)
-    if log_results:
-        ad.log.info("Found %s sent successful log message: %s", type,
-                    log_results[-1]["log_message"])
-        return True
-    else:
-        log_results = ad.search_logcat(
-            "ProcessSentMessageAction: Done sending %s message" % type,
-            begin_time=begin_time)
-        if log_results:
-            for log_result in log_results:
-                if "status is SUCCEEDED" in log_result["log_message"]:
-                    ad.log.info(
-                        "Found BugleDataModel %s send succeed log message: %s",
-                        type, log_result["log_message"])
-                    return True
-    return False
-
-
-def sms_mms_receive_logcat_check(ad, type, begin_time):
-    type = type.upper()
-    smshandle_logs = ad.search_logcat(
-        "InboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
-        begin_time=begin_time)
-    if smshandle_logs:
-        ad.log.warning("Found %s", smshandle_logs[-1]["log_message"])
-    log_results = ad.search_logcat(
-        "New %s Received" % type, begin_time=begin_time) or \
-        ad.search_logcat("New %s Downloaded" % type, begin_time=begin_time)
-    if log_results:
-        ad.log.info("Found SL4A %s received log message: %s", type,
-                    log_results[-1]["log_message"])
-        return True
-    else:
-        log_results = ad.search_logcat(
-            "Received %s message" % type, begin_time=begin_time)
-        if log_results:
-            ad.log.info("Found %s received log message: %s", type,
-                        log_results[-1]["log_message"])
-        log_results = ad.search_logcat(
-            "ProcessDownloadedMmsAction", begin_time=begin_time)
-        for log_result in log_results:
-            ad.log.info("Found %s", log_result["log_message"])
-            if "status is SUCCEEDED" in log_result["log_message"]:
-                ad.log.info("Download succeed with ProcessDownloadedMmsAction")
-                return True
-    return False
-
-
-#TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-def mms_send_receive_verify_for_subscription(
-        log,
-        ad_tx,
-        ad_rx,
-        subid_tx,
-        subid_rx,
-        array_payload,
-        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
-    """Send MMS, receive MMS, and verify content and sender's number.
-
-        Send (several) MMS from droid_tx to droid_rx.
-        Verify MMS is sent, delivered and received.
-        Verify received content and sender's number are correct.
-
-    Args:
-        log: Log object.
-        ad_tx: Sender's Android Device Object..
-        ad_rx: Receiver's Android Device Object.
-        subid_tx: Sender's subsciption ID to be used for SMS
-        subid_rx: Receiver's subsciption ID to be used for SMS
-        array_message: the array of message to send/receive
-    """
-
-    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
-    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
-    toggle_enforce = False
-
-    for ad in (ad_tx, ad_rx):
-        if "Permissive" not in ad.adb.shell("su root getenforce"):
-            ad.adb.shell("su root setenforce 0")
-            toggle_enforce = True
-        if not getattr(ad, "messaging_droid", None):
-            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
-            ad.messaging_ed.start()
-        else:
-            try:
-                if not ad.messaging_droid.is_live:
-                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
-                    ad.messaging_ed.start()
-                else:
-                    ad.messaging_ed.clear_all_events()
-                ad.messaging_droid.logI(
-                    "Start mms_send_receive_verify_for_subscription test")
-            except Exception:
-                ad.log.info("Create new sl4a session for messaging")
-                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
-                ad.messaging_ed.start()
-
-    for subject, message, filename in array_payload:
-        ad_tx.messaging_ed.clear_events(EventMmsSentSuccess)
-        ad_tx.messaging_ed.clear_events(EventMmsSentFailure)
-        ad_rx.messaging_ed.clear_events(EventMmsDownloaded)
-        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
-        ad_tx.log.info(
-            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
-            phonenumber_tx, phonenumber_rx, subject, message, filename)
-        try:
-            ad_tx.messaging_droid.smsSendMultimediaMessage(
-                phonenumber_rx, subject, message, phonenumber_tx, filename)
-            try:
-                events = ad_tx.messaging_ed.pop_events(
-                    "(%s|%s)" % (EventMmsSentSuccess,
-                                 EventMmsSentFailure), max_wait_time)
-                for event in events:
-                    ad_tx.log.info("Got event %s", event["name"])
-                    if event["name"] == EventMmsSentFailure:
-                        if event.get("data") and event["data"].get("Reason"):
-                            ad_tx.log.error("%s with reason: %s",
-                                            event["name"],
-                                            event["data"]["Reason"])
-                        return False
-                    elif event["name"] == EventMmsSentSuccess:
-                        break
-            except Empty:
-                ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
-                                  EventMmsSentFailure)
-                return False
-
-            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx,
-                                         message, max_wait_time):
-                return False
-        except Exception as e:
-            log.error("Exception error %s", e)
-            raise
-        finally:
-            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
-            for ad in (ad_tx, ad_rx):
-                if toggle_enforce:
-                    ad.send_keycode("BACK")
-                    ad.adb.shell("su root setenforce 1")
-    return True
-
-
-def mms_receive_verify_after_call_hangup(
-        log, ad_tx, ad_rx, array_message,
-        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
-    """Verify the suspanded MMS during call will send out after call release.
-
-        Hangup call from droid_tx to droid_rx.
-        Verify MMS is sent, delivered and received.
-        Verify received content and sender's number are correct.
-
-    Args:
-        log: Log object.
-        ad_tx: Sender's Android Device Object
-        ad_rx: Receiver's Android Device Object
-        array_message: the array of message to send/receive
-    """
-    return mms_receive_verify_after_call_hangup_for_subscription(
-        log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
-        get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
-
-
-#TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-def mms_receive_verify_after_call_hangup_for_subscription(
-        log,
-        ad_tx,
-        ad_rx,
-        subid_tx,
-        subid_rx,
-        array_payload,
-        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
-    """Verify the suspanded MMS during call will send out after call release.
-
-        Hangup call from droid_tx to droid_rx.
-        Verify MMS is sent, delivered and received.
-        Verify received content and sender's number are correct.
-
-    Args:
-        log: Log object.
-        ad_tx: Sender's Android Device Object..
-        ad_rx: Receiver's Android Device Object.
-        subid_tx: Sender's subsciption ID to be used for SMS
-        subid_rx: Receiver's subsciption ID to be used for SMS
-        array_message: the array of message to send/receive
-    """
-
-    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
-    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
-    for ad in (ad_tx, ad_rx):
-        if not getattr(ad, "messaging_droid", None):
-            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
-            ad.messaging_ed.start()
-    for subject, message, filename in array_payload:
-        ad_rx.log.info(
-            "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
-            phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
-        time.sleep(5)
-        try:
-            hangup_call(log, ad_tx)
-            hangup_call(log, ad_rx)
-            try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
-                                             max_wait_time)
-                ad_tx.log.info("Got event %s", EventMmsSentSuccess)
-            except Empty:
-                log.warning("No sent_success event.")
-            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
-                return False
-        finally:
-            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
-    return True
-
-
 def ensure_preferred_network_type_for_subscription(
         ad,
         network_preference
@@ -7298,109 +6993,6 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
             pass
 
 
-def task_wrapper(task):
-    """Task wrapper for multithread_func
-
-    Args:
-        task[0]: function to be wrapped.
-        task[1]: function args.
-
-    Returns:
-        Return value of wrapped function call.
-    """
-    func = task[0]
-    params = task[1]
-    return func(*params)
-
-
-def run_multithread_func_async(log, task):
-    """Starts a multi-threaded function asynchronously.
-
-    Args:
-        log: log object.
-        task: a task to be executed in parallel.
-
-    Returns:
-        Future object representing the execution of the task.
-    """
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    try:
-        future_object = executor.submit(task_wrapper, task)
-    except Exception as e:
-        log.error("Exception error %s", e)
-        raise
-    return future_object
-
-
-def run_multithread_func(log, tasks):
-    """Run multi-thread functions and return results.
-
-    Args:
-        log: log object.
-        tasks: a list of tasks to be executed in parallel.
-
-    Returns:
-        results for tasks.
-    """
-    MAX_NUMBER_OF_WORKERS = 10
-    number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
-    executor = concurrent.futures.ThreadPoolExecutor(
-        max_workers=number_of_workers)
-    if not log: log = logging
-    try:
-        results = list(executor.map(task_wrapper, tasks))
-    except Exception as e:
-        log.error("Exception error %s", e)
-        raise
-    executor.shutdown()
-    if log:
-        log.info("multithread_func %s result: %s",
-                 [task[0].__name__ for task in tasks], results)
-    return results
-
-
-def multithread_func(log, tasks):
-    """Multi-thread function wrapper.
-
-    Args:
-        log: log object.
-        tasks: tasks to be executed in parallel.
-
-    Returns:
-        True if all tasks return True.
-        False if any task return False.
-    """
-    results = run_multithread_func(log, tasks)
-    for r in results:
-        if not r:
-            return False
-    return True
-
-
-def multithread_func_and_check_results(log, tasks, expected_results):
-    """Multi-thread function wrapper.
-
-    Args:
-        log: log object.
-        tasks: tasks to be executed in parallel.
-        expected_results: check if the results from tasks match expected_results.
-
-    Returns:
-        True if expected_results are met.
-        False if expected_results are not met.
-    """
-    return_value = True
-    results = run_multithread_func(log, tasks)
-    log.info("multithread_func result: %s, expecting %s", results,
-             expected_results)
-    for task, result, expected_result in zip(tasks, results, expected_results):
-        if result != expected_result:
-            logging.info("Result for task %s is %s, expecting %s", task[0],
-                         result, expected_result)
-            return_value = False
-    return return_value
-
-
 def set_phone_screen_on(log, ad, screen_on_time=MAX_SCREEN_ON_TIME):
     """Set phone screen on time.
 
@@ -7728,357 +7320,6 @@ def get_number_from_tel_uri(uri):
         return uri_number
     else:
         return None
-
-
-def find_qxdm_log_mask(ad, mask="default.cfg"):
-    """Find QXDM logger mask."""
-    if "/" not in mask:
-        # Call nexuslogger to generate log mask
-        start_nexuslogger(ad)
-        # Find the log mask path
-        for path in (DEFAULT_QXDM_LOG_PATH, "/data/diag_logs",
-                     "/vendor/etc/mdlog/", "/vendor/etc/modem/"):
-            out = ad.adb.shell(
-                "find %s -type f -iname %s" % (path, mask), ignore_status=True)
-            if out and "No such" not in out and "Permission denied" not in out:
-                if path.startswith("/vendor/"):
-                    setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
-                else:
-                    setattr(ad, "qxdm_log_path", path)
-                return out.split("\n")[0]
-        for mask_file in ("/vendor/etc/mdlog/", "/vendor/etc/modem/"):
-            if mask in ad.adb.shell("ls %s" % mask_file, ignore_status=True):
-                setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
-                return "%s/%s" % (mask_file, mask)
-    else:
-        out = ad.adb.shell("ls %s" % mask, ignore_status=True)
-        if out and "No such" not in out:
-            qxdm_log_path, cfg_name = os.path.split(mask)
-            setattr(ad, "qxdm_log_path", qxdm_log_path)
-            return mask
-    ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
-
-
-def set_qxdm_logger_command(ad, mask=None):
-    """Set QXDM logger always on.
-
-    Args:
-        ad: android device object.
-
-    """
-    ## Neet to check if log mask will be generated without starting nexus logger
-    masks = []
-    mask_path = None
-    if mask:
-        masks = [mask]
-    masks.extend(["QC_Default.cfg", "default.cfg"])
-    for mask in masks:
-        mask_path = find_qxdm_log_mask(ad, mask)
-        if mask_path: break
-    if not mask_path:
-        ad.log.error("Cannot find QXDM mask %s", mask)
-        ad.qxdm_logger_command = None
-        return False
-    else:
-        ad.log.info("Use QXDM log mask %s", mask_path)
-        ad.log.debug("qxdm_log_path = %s", ad.qxdm_log_path)
-        output_path = os.path.join(ad.qxdm_log_path, "logs")
-        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 90 -c" %
-                                  (mask_path, output_path))
-        return True
-
-
-def stop_qxdm_logger(ad):
-    """Stop QXDM logger."""
-    for cmd in ("diag_mdlog -k", "killall diag_mdlog"):
-        output = ad.adb.shell("ps -ef | grep mdlog") or ""
-        if "diag_mdlog" not in output:
-            break
-        ad.log.debug("Kill the existing qxdm process")
-        ad.adb.shell(cmd, ignore_status=True)
-        time.sleep(5)
-
-
-def start_qxdm_logger(ad, begin_time=None):
-    """Start QXDM logger."""
-    if not getattr(ad, "qxdm_log", True): return
-    # Delete existing QXDM logs 5 minutes earlier than the begin_time
-    current_time = get_current_epoch_time()
-    if getattr(ad, "qxdm_log_path", None):
-        seconds = None
-        file_count = ad.adb.shell(
-            "find %s -type f -iname *.qmdl | wc -l" % ad.qxdm_log_path)
-        if int(file_count) > 3:
-            if begin_time:
-                # if begin_time specified, delete old qxdm logs modified
-                # 10 minutes before begin time
-                seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
-            else:
-                # if begin_time is not specified, delete old qxdm logs modified
-                # 15 minutes before current time
-                seconds = 15 * 60
-        if seconds:
-            # Remove qxdm logs modified more than specified seconds ago
-            ad.adb.shell(
-                "find %s -type f -iname *.qmdl -not -mtime -%ss -delete" %
-                (ad.qxdm_log_path, seconds))
-            ad.adb.shell(
-                "find %s -type f -iname *.xml -not -mtime -%ss -delete" %
-                (ad.qxdm_log_path, seconds))
-    if getattr(ad, "qxdm_logger_command", None):
-        output = ad.adb.shell("ps -ef | grep mdlog") or ""
-        if ad.qxdm_logger_command not in output:
-            ad.log.debug("QXDM logging command %s is not running",
-                         ad.qxdm_logger_command)
-            if "diag_mdlog" in output:
-                # Kill the existing non-matching diag_mdlog process
-                # Only one diag_mdlog process can be run
-                stop_qxdm_logger(ad)
-            ad.log.info("Start QXDM logger")
-            ad.adb.shell_nb(ad.qxdm_logger_command)
-            time.sleep(10)
-        else:
-            run_time = check_qxdm_logger_run_time(ad)
-            if run_time < 600:
-                # the last diag_mdlog started within 10 minutes ago
-                # no need to restart
-                return True
-            if ad.search_logcat(
-                    "Diag_Lib: diag: In delete_log",
-                    begin_time=current_time -
-                    run_time) or not ad.get_file_names(
-                        ad.qxdm_log_path,
-                        begin_time=current_time - 600000,
-                        match_string="*.qmdl"):
-                # diag_mdlog starts deleting files or no qmdl logs were
-                # modified in the past 10 minutes
-                ad.log.debug("Quit existing diag_mdlog and start a new one")
-                stop_qxdm_logger(ad)
-                ad.adb.shell_nb(ad.qxdm_logger_command)
-                time.sleep(10)
-        return True
-
-
-def disable_qxdm_logger(ad):
-    for prop in ("persist.sys.modem.diag.mdlog",
-                 "persist.vendor.sys.modem.diag.mdlog",
-                 "vendor.sys.modem.diag.mdlog_on"):
-        if ad.adb.getprop(prop):
-            ad.adb.shell("setprop %s false" % prop, ignore_status=True)
-    for apk in ("com.android.nexuslogger", "com.android.pixellogger"):
-        if ad.is_apk_installed(apk) and ad.is_apk_running(apk):
-            ad.force_stop_apk(apk)
-    stop_qxdm_logger(ad)
-    return True
-
-
-def check_qxdm_logger_run_time(ad):
-    output = ad.adb.shell("ps -eo etime,cmd | grep diag_mdlog")
-    result = re.search(r"(\d+):(\d+):(\d+) diag_mdlog", output)
-    if result:
-        return int(result.group(1)) * 60 * 60 + int(
-            result.group(2)) * 60 + int(result.group(3))
-    else:
-        result = re.search(r"(\d+):(\d+) diag_mdlog", output)
-        if result:
-            return int(result.group(1)) * 60 + int(result.group(2))
-        else:
-            return 0
-
-
-def start_qxdm_loggers(log, ads, begin_time=None):
-    tasks = [(start_qxdm_logger, [ad, begin_time]) for ad in ads
-             if getattr(ad, "qxdm_log", True)]
-    if tasks: run_multithread_func(log, tasks)
-
-
-def stop_qxdm_loggers(log, ads):
-    tasks = [(stop_qxdm_logger, [ad]) for ad in ads]
-    run_multithread_func(log, tasks)
-
-
-def start_nexuslogger(ad):
-    """Start Nexus/Pixel Logger Apk."""
-    qxdm_logger_apk = None
-    for apk, activity in (("com.android.nexuslogger", ".MainActivity"),
-                          ("com.android.pixellogger",
-                           ".ui.main.MainActivity")):
-        if ad.is_apk_installed(apk):
-            qxdm_logger_apk = apk
-            break
-    if not qxdm_logger_apk: return
-    if ad.is_apk_running(qxdm_logger_apk):
-        if "granted=true" in ad.adb.shell(
-                "dumpsys package %s | grep WRITE_EXTERN" % qxdm_logger_apk):
-            return True
-        else:
-            ad.log.info("Kill %s" % qxdm_logger_apk)
-            ad.force_stop_apk(qxdm_logger_apk)
-            time.sleep(5)
-    for perm in ("READ", "WRITE"):
-        ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
-                     (qxdm_logger_apk, perm))
-    time.sleep(2)
-    for i in range(3):
-        ad.unlock_screen()
-        ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
-        ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
-        time.sleep(5)
-        if ad.is_apk_running(qxdm_logger_apk):
-            ad.send_keycode("HOME")
-            return True
-    return False
-
-
-def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
-    """Check if QXDM logger always on is set.
-
-    Args:
-        ad: android device object.
-
-    """
-    output = ad.adb.shell(
-        "ls /data/vendor/radio/diag_logs/", ignore_status=True)
-    if not output or "No such" in output:
-        return True
-    if mask_file not in ad.adb.shell(
-            "cat /data/vendor/radio/diag_logs/diag.conf", ignore_status=True):
-        return False
-    return True
-
-
-def start_tcpdumps(ads,
-                   test_name="",
-                   begin_time=None,
-                   interface="any",
-                   mask="all"):
-    for ad in ads:
-        try:
-            start_adb_tcpdump(
-                ad,
-                test_name=test_name,
-                begin_time=begin_time,
-                interface=interface,
-                mask=mask)
-        except Exception as e:
-            ad.log.warning("Fail to start tcpdump due to %s", e)
-
-
-def start_adb_tcpdump(ad,
-                      test_name="",
-                      begin_time=None,
-                      interface="any",
-                      mask="all"):
-    """Start tcpdump on any iface
-
-    Args:
-        ad: android device object.
-        test_name: tcpdump file name will have this
-
-    """
-    out = ad.adb.shell("ls -l /data/local/tmp/tcpdump/", ignore_status=True)
-    if "No such file" in out or not out:
-        ad.adb.shell("mkdir /data/local/tmp/tcpdump")
-    else:
-        ad.adb.shell(
-            "find /data/local/tmp/tcpdump -type f -not -mtime -1800s -delete",
-            ignore_status=True)
-        ad.adb.shell(
-            "find /data/local/tmp/tcpdump -type f -size +5G -delete",
-            ignore_status=True)
-
-    if not begin_time:
-        begin_time = get_current_epoch_time()
-
-    out = ad.adb.shell(
-        'ifconfig | grep -v -E "r_|-rmnet" | grep -E "lan|data"',
-        ignore_status=True,
-        timeout=180)
-    intfs = re.findall(r"(\S+).*", out)
-    if interface and interface not in ("any", "all"):
-        if interface not in intfs: return
-        intfs = [interface]
-
-    out = ad.adb.shell("ps -ef | grep tcpdump")
-    cmds = []
-    for intf in intfs:
-        if intf in out:
-            ad.log.info("tcpdump on interface %s is already running", intf)
-            continue
-        else:
-            log_file_name = "/data/local/tmp/tcpdump/tcpdump_%s_%s_%s_%s.pcap" \
-                            % (ad.serial, intf, test_name, begin_time)
-            if mask == "ims":
-                cmds.append(
-                    "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or "
-                    "udp port 4500 -w %s" % (ad.serial, intf, log_file_name))
-            else:
-                cmds.append("adb -s %s shell tcpdump -i %s -s0 -w %s" %
-                            (ad.serial, intf, log_file_name))
-    if not gutils.check_chipset_vendor_by_qualcomm(ad):
-        log_file_name = ("/data/local/tmp/tcpdump/tcpdump_%s_any_%s_%s.pcap"
-                         % (ad.serial, test_name, begin_time))
-        cmds.append("adb -s %s shell nohup tcpdump -i any -s0 -w %s" %
-                    (ad.serial, log_file_name))
-    for cmd in cmds:
-        ad.log.info(cmd)
-        try:
-            start_standing_subprocess(cmd, 10)
-        except Exception as e:
-            ad.log.error(e)
-    if cmds:
-        time.sleep(5)
-
-
-def stop_tcpdumps(ads):
-    for ad in ads:
-        stop_adb_tcpdump(ad)
-
-
-def stop_adb_tcpdump(ad, interface="any"):
-    """Stops tcpdump on any iface
-       Pulls the tcpdump file in the tcpdump dir
-
-    Args:
-        ad: android device object.
-
-    """
-    if interface == "any":
-        try:
-            ad.adb.shell("killall -9 tcpdump", ignore_status=True)
-        except Exception as e:
-            ad.log.error("Killing tcpdump with exception %s", e)
-    else:
-        out = ad.adb.shell("ps -ef | grep tcpdump | grep %s" % interface)
-        if "tcpdump -i" in out:
-            pids = re.findall(r"\S+\s+(\d+).*tcpdump -i", out)
-            for pid in pids:
-                ad.adb.shell("kill -9 %s" % pid)
-    ad.adb.shell(
-        "find /data/local/tmp/tcpdump -type f -not -mtime -1800s -delete",
-        ignore_status=True)
-
-
-def get_tcpdump_log(ad, test_name="", begin_time=None):
-    """Stops tcpdump on any iface
-       Pulls the tcpdump file in the tcpdump dir
-       Zips all tcpdump files
-
-    Args:
-        ad: android device object.
-        test_name: test case name
-        begin_time: test begin time
-    """
-    logs = ad.get_file_names("/data/local/tmp/tcpdump", begin_time=begin_time)
-    if logs:
-        ad.log.info("Pulling tcpdumps %s", logs)
-        log_path = os.path.join(
-            ad.device_log_path, "TCPDUMP_%s_%s" % (ad.model, ad.serial))
-        os.makedirs(log_path, exist_ok=True)
-        ad.pull_files(logs, log_path)
-        shutil.make_archive(log_path, "zip", log_path)
-        shutil.rmtree(log_path)
-    return True
 
 
 def fastboot_wipe(ad, skip_setup_wizard=True):
@@ -8869,21 +8110,6 @@ def verify_default_telephony_setting(ad):
                      network_preference, default_network_preference)
         result = False
     return result
-
-
-def log_messaging_screen_shot(ad, test_name=""):
-    ad.ensure_screen_on()
-    ad.send_keycode("HOME")
-    ad.adb.shell("am start -n com.google.android.apps.messaging/.ui."
-                 "ConversationListActivity")
-    time.sleep(3)
-    log_screen_shot(ad, test_name)
-    ad.adb.shell("am start -n com.google.android.apps.messaging/com.google."
-                 "android.apps.messaging.ui.conversation."
-                 "LaunchConversationShimActivity -e conversation_id 1")
-    time.sleep(3)
-    log_screen_shot(ad, test_name)
-    ad.send_keycode("HOME")
 
 
 def log_screen_shot(ad, test_name=""):
@@ -9945,107 +9171,6 @@ def change_voice_subid_temporarily(ad, sub_id, state_check_func, params=None):
     return result
 
 
-def wait_for_network_service(
-    log,
-    ad,
-    wifi_connected=False,
-    wifi_ssid=None,
-    ims_reg=True,
-    recover=False,
-    retry=3):
-    """ Wait for multiple network services in sequence, including:
-        - service state
-        - network connection
-        - wifi connection
-        - cellular data
-        - internet connection
-        - IMS registration
-
-        The mechanism (cycling airplane mode) to recover network services is
-        also provided if any service is not available.
-
-        Args:
-            log: log object
-            ad: android device
-            wifi_connected: True if wifi should be connected. Otherwise False.
-            ims_reg: True if IMS should be registered. Otherwise False.
-            recover: True if the mechanism (cycling airplane mode) to recover
-            network services should be enabled (by default False).
-            retry: times of retry.
-    """
-    times = 1
-    while times <= retry:
-        while True:
-            if not wait_for_state(
-                    get_service_state_by_adb,
-                    "IN_SERVICE",
-                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                    WAIT_TIME_BETWEEN_STATE_CHECK,
-                    log,
-                    ad):
-                ad.log.error("Current service state is not 'IN_SERVICE'.")
-                break
-
-            if not wait_for_state(
-                    ad.droid.connectivityNetworkIsConnected,
-                    True,
-                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                    WAIT_TIME_BETWEEN_STATE_CHECK):
-                ad.log.error("Network is NOT connected!")
-                break
-
-            if wifi_connected and wifi_ssid:
-                if not wait_for_state(
-                        check_is_wifi_connected,
-                        True,
-                        MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                        WAIT_TIME_BETWEEN_STATE_CHECK,
-                        log,
-                        ad,
-                        wifi_ssid):
-                    ad.log.error("Failed to connect Wi-Fi SSID '%s'.", wifi_ssid)
-                    break
-            else:
-                if not wait_for_cell_data_connection(log, ad, True):
-                    ad.log.error("Failed to enable data connection.")
-                    break
-
-            if not wait_for_state(
-                    verify_internet_connection,
-                    True,
-                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                    WAIT_TIME_BETWEEN_STATE_CHECK,
-                    log,
-                    ad):
-                ad.log.error("Data not available on cell.")
-                break
-
-            if ims_reg:
-                if not wait_for_ims_registered(log, ad):
-                    ad.log.error("IMS is not registered.")
-                    break
-                ad.log.info("IMS is registered.")
-            return True
-
-        if recover:
-            ad.log.warning("Trying to recover by cycling airplane mode...")
-            if not toggle_airplane_mode(log, ad, True):
-                ad.log.error("Failed to enable airplane mode")
-                break
-
-            time.sleep(5)
-
-            if not toggle_airplane_mode(log, ad, False):
-                ad.log.error("Failed to disable airplane mode")
-                break
-
-            times = times + 1
-
-        else:
-            return False
-    return False
-
-
 def check_voice_network_type(ads, voice_init=True):
     """
     Args:
@@ -10105,39 +9230,6 @@ def update_voice_call_type_dict(dut, key):
         voice_call_type[dut] = {key:0}
         voice_call_type[dut][key] += 1
     return voice_call_type
-
-
-def wait_for_log(ad, pattern, begin_time=None, end_time=None, max_wait_time=120):
-    """Wait for logcat logs matching given pattern. This function searches in
-    logcat for strings matching given pattern by using search_logcat per second
-    until max_wait_time reaches.
-
-    Args:
-        ad: android device object
-        pattern: pattern to be searched in grep format
-        begin_time: only the lines in logcat with time stamps later than
-            begin_time will be searched.
-        end_time: only the lines in logcat with time stamps earlier than
-            end_time will be searched.
-        max_wait_time: timeout of this function
-
-    Returns:
-        All matched lines will be returned. If no line matches the given pattern
-        None will be returned.
-    """
-    start_time = datetime.now()
-    while True:
-        ad.log.info(
-            '====== Searching logcat for "%s" ====== ', pattern)
-        res = ad.search_logcat(
-            pattern, begin_time=begin_time, end_time=end_time)
-        if res:
-            return res
-        time.sleep(1)
-        stop_time = datetime.now()
-        passed_time = (stop_time - start_time).total_seconds()
-        if passed_time > max_wait_time:
-            return
 
 
 def cycle_airplane_mode(ad):

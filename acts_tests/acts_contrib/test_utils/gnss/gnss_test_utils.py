@@ -33,6 +33,7 @@ from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts_contrib.test_utils.tel import tel_logging_utils as tlutils
 from acts_contrib.test_utils.tel import tel_test_utils as tutils
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationCommandBuilder
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
@@ -1247,9 +1248,9 @@ def set_gnss_qxdm_mask(ad, masks):
     """
     try:
         for mask in masks:
-            if not tutils.find_qxdm_log_mask(ad, mask):
+            if not tlutils.find_qxdm_log_mask(ad, mask):
                 continue
-            tutils.set_qxdm_logger_command(ad, mask)
+            tlutils.set_qxdm_logger_command(ad, mask)
             break
     except Exception as e:
         ad.log.error(e)

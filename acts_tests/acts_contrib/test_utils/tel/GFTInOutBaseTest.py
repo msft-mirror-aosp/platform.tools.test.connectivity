@@ -28,10 +28,9 @@ from acts.test_decorators import test_info
 from acts.test_decorators import test_tracker_info
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
+from acts.libs.utils.multithread import multithread_func
 from acts.base_test import BaseTestClass
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
-from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs

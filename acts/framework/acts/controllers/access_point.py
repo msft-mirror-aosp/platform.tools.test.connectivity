@@ -128,6 +128,13 @@ def setup_ap(access_point,
         additional_ap_parameters: Additional parameters to send the AP.
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
+
+    Returns:
+        An identifier for each ssid being started. These identifiers can be
+        used later by this controller to control the ap.
+
+    Raises:
+        Error: When the ap can't be brought up.
     """
     ap = hostapd_ap_preset.create_ap_preset(profile_name=profile_name,
                                             iface_wlan_2g=access_point.wlan_2g,
@@ -148,9 +155,10 @@ def setup_ap(access_point,
                                             n_capabilities=n_capabilities,
                                             ac_capabilities=ac_capabilities,
                                             vht_bandwidth=vht_bandwidth)
-    access_point.start_ap(hostapd_config=ap,
-                          setup_bridge=setup_bridge,
-                          additional_parameters=additional_ap_parameters)
+    return access_point.start_ap(
+        hostapd_config=ap,
+        setup_bridge=setup_bridge,
+        additional_parameters=additional_ap_parameters)
 
 
 class Error(Exception):

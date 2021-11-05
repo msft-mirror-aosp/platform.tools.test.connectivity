@@ -32,12 +32,12 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_message_utils import sms_in_collision_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import sms_rx_power_off_multiple_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
 from acts.utils import rand_ascii_str
+from acts.libs.utils.multithread import multithread_func
 
 class TelLiveSmsTest(TelephonyBaseTest):
     def setup_class(self):
