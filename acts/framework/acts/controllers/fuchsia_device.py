@@ -17,7 +17,6 @@
 import backoff
 import json
 import logging
-import platform
 import os
 import random
 import re
@@ -230,13 +229,13 @@ class FuchsiaDevice:
         self.server_path = fd_conf_data.get("server_path", None)
         self.specific_image = fd_conf_data.get("specific_image", None)
 
-        # Instead of the input ssh_config, a new config with
-        # proper ControlPath values is set and written to
-        # /tmp/temp_fuchsia_ssh_config.config.
-        self._set_control_path_config(self.ssh_config,
-                                      "/tmp/temp_fuchsia_ssh_config.config")
-
-        self.ssh_config = "/tmp/temp_fuchsia_ssh_config.config"
+        # Instead of the input ssh_config, a new config is generated with proper
+        # ControlPath to the test output directory.
+        output_path = context.get_current_context().get_base_output_path()
+        generated_ssh_config = os.path.join(output_path,
+                                            "ssh_config_{}".format(self.ip))
+        self._set_control_path_config(self.ssh_config, generated_ssh_config)
+        self.ssh_config = generated_ssh_config
 
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
@@ -326,13 +325,16 @@ class FuchsiaDevice:
             raise FuchsiaDeviceError('Failed to run setup commands.')
 
     def _set_control_path_config(self, old_config, new_config):
-        """Given an input ssh_config, write to a new config with
-        proper ControlPath values in place.
+        """Given an input ssh_config, write to a new config with proper
+        ControlPath values in place, if it doesn't exist already.
 
         Args:
             old_config: string, path to the input config
             new_config: string, path to store the new config
         """
+        if os.path.isfile(new_config):
+            return
+
         ssh_config_copy = ""
 
         with open(old_config, 'r') as file:
