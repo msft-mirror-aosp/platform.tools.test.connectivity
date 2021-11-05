@@ -22,6 +22,7 @@ from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import Telephon
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_network_service
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
@@ -48,7 +49,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connectio
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_service
 from acts.utils import get_current_epoch_time
 
 SETUP_PHONE_FAIL = 'SETUP_PHONE_FAIL'
