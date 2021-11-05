@@ -26,6 +26,7 @@ from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.cellular_lib import BaseCellularDut
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
+from acts.controllers.cellular_lib.BaseCellConfig import BaseCellConfig
 
 
 class GsmSimulation(BaseSimulation):
@@ -107,6 +108,7 @@ class GsmSimulation(BaseSimulation):
         Args:
             parameters: a configuration dictionary
         """
+        # Don't call super() because Gsm doesn't control Tx power.
 
         # Setup band
         if self.PARAM_BAND not in parameters:

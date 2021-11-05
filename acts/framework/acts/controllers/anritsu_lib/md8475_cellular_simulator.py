@@ -457,7 +457,8 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
                                  "number of DL antennas will override this "
                                  "setting.")
             bts.dl_antenna = 2
-        elif mimo == LteSimulation.MimoMode.MIMO_4x4:
+        elif mimo == LteSimulation.MimoMode.MIMO_4x4 and \
+            self.LTE_SUPPORTS_4X4_MIMO:
             if bts.transmode not in [
                     LteSimulation.TransmissionMode.TM2,
                     LteSimulation.TransmissionMode.TM3,
