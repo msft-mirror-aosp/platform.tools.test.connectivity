@@ -227,7 +227,9 @@ class WifiRssiTest(base_test.BaseTestClass):
         # Save output as text file
         results_file_path = os.path.join(self.log_path, self.current_test_name)
         with open(results_file_path, 'w') as results_file:
-            json.dump(rssi_result, results_file, indent=4)
+            json.dump(wputils.serialize_dict(rssi_result),
+                      results_file,
+                      indent=4)
         # Compile results into arrays of RSSIs suitable for plotting
         # yapf: disable
         postprocessed_results = collections.OrderedDict(
