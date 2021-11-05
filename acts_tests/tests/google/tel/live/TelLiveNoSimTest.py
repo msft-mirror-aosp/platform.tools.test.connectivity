@@ -28,9 +28,8 @@ from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_ABSENT
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_bootloader_utils import reset_device_password
+from acts_contrib.test_utils.tel.tel_lookup_tables import network_preference_for_generation
 from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
-from acts_contrib.test_utils.tel.tel_lookup_tables import \
-    network_preference_for_generation
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from TelLiveEmergencyBase import TelLiveEmergencyBase
 

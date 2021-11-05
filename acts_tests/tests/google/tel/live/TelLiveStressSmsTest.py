@@ -16,22 +16,16 @@
 
 import random
 import time
-from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts_contrib.test_utils.tel.tel_subscription_utils \
-    import set_message_subid
-from acts_contrib.test_utils.tel.tel_subscription_utils \
-    import get_subid_on_same_network_of_host_ad
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_voice_utils \
-    import phone_setup_volte_for_subscription
-from acts_contrib.test_utils.tel.tel_voice_utils \
-    import phone_setup_csfb_for_subscription
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb_for_subscription
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
+from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func
 

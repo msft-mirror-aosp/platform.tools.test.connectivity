@@ -20,14 +20,15 @@ from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import Telephon
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_dsds_utils import erase_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_volte_wfc_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_volte_wfc_call_voice_conf
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+
 
 class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def setup_class(self):

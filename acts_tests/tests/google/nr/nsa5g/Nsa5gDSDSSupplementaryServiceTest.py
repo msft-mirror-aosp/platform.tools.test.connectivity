@@ -19,13 +19,14 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
-from acts_contrib.test_utils.tel.tel_ss_utils import set_call_waiting
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import erase_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_call_forwarding
 from acts_contrib.test_utils.tel.tel_dsds_utils import msim_call_voice_conf
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_ss_utils import set_call_waiting
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
+
 
 class Nsa5gDSDSSupplementaryServiceTest(TelephonyBaseTest):
     def setup_class(self):

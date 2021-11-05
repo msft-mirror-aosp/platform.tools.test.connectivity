@@ -29,26 +29,27 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTIO
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_logging_utils import start_pixellogger_always_on_logging
 from acts_contrib.test_utils.tel.tel_logging_utils import wait_for_log
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_voice_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_all_sub_id
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan_for_subscription
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte_for_subscription
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_parse_utils import print_nested_dict
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_ims_reg
 from acts_contrib.test_utils.tel.tel_parse_utils import ON_IMS_MM_TEL_CONNECTED_4G_SLOT0
 from acts_contrib.test_utils.tel.tel_parse_utils import ON_IMS_MM_TEL_CONNECTED_4G_SLOT1
 from acts_contrib.test_utils.tel.tel_parse_utils import ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT0
 from acts_contrib.test_utils.tel.tel_parse_utils import ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT1
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_all_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+
 from acts.utils import get_current_epoch_time
 
 SETUP_PHONE_FAIL = 'SETUP_PHONE_FAIL'
@@ -57,6 +58,7 @@ VERIFY_INTERNET_FAIL = 'VERIFY_INTERNET_FAIL'
 TOGGLE_OFF_APM_FAIL = 'TOGGLE_OFF_APM_FAIL'
 
 CALCULATE_EVERY_N_CYCLES = 10
+
 
 def test_result(result_list, cycle, min_fail=0, failrate=0):
     failure_count = len(list(filter(lambda x: (x != True), result_list)))
