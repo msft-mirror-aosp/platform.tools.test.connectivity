@@ -19,6 +19,7 @@ from enum import Enum
 
 import numpy as np
 from acts.controllers import cellular_simulator
+from acts.controllers.cellular_lib.BaseCellConfig import BaseCellConfig
 
 
 class BaseSimulation(object):
@@ -29,9 +30,6 @@ class BaseSimulation(object):
     configurations.
 
     """
-    # Configuration dictionary keys
-    PARAM_UL_PW = 'pul'
-    PARAM_DL_PW = 'pdl'
 
     NUM_UL_CAL_READS = 3
     NUM_DL_CAL_READS = 5
@@ -69,32 +67,6 @@ class BaseSimulation(object):
     # Units for downlink signal level. This variable has to be overridden by
     # the simulations inheriting from this class.
     DOWNLINK_SIGNAL_LEVEL_UNITS = None
-
-    class BtsConfig:
-        """ Base station configuration class. This class is only a container for
-        base station parameters and should not interact with the instrument
-        controller.
-
-        Attributes:
-            output_power: a float indicating the required signal level at the
-                instrument's output.
-            input_level: a float indicating the required signal level at the
-                instrument's input.
-        """
-        def __init__(self):
-            """ Initialize the base station config by setting all its
-            parameters to None. """
-            self.output_power = None
-            self.input_power = None
-            self.band = None
-
-        def incorporate(self, new_config):
-            """ Incorporates a different configuration by replacing the current
-            values with the new ones for all the parameters different to None.
-            """
-            for attr, value in vars(new_config).items():
-                if value:
-                    setattr(self, attr, value)
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
@@ -149,7 +121,7 @@ class BaseSimulation(object):
                                               self.DEFAULT_ATTACH_TIMEOUT)
 
         # Configuration object for the primary base station
-        self.primary_config = self.BtsConfig()
+        self.primary_config = BaseCellConfig(self.log)
 
         # Store the current calibrated band
         self.current_calibrated_band = None
@@ -202,7 +174,7 @@ class BaseSimulation(object):
         time.sleep(2)
 
         # Provide a good signal power for the phone to attach easily
-        new_config = self.BtsConfig()
+        new_config = BaseCellConfig(self.log)
         new_config.input_power = -10
         new_config.output_power = -30
         self.simulator.configure_bts(new_config)
@@ -336,7 +308,20 @@ class BaseSimulation(object):
         Args:
             parameters: a configuration dictionary
         """
-        raise NotImplementedError()
+        # Setup uplink power
+        ul_power = self.get_uplink_power_from_parameters(parameters)
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
+
+        # Setup downlink power
+
+        dl_power = self.get_downlink_power_from_parameters(parameters)
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
 
     def set_uplink_tx_power(self, signal_level):
         """ Configure the uplink tx power level
@@ -344,7 +329,7 @@ class BaseSimulation(object):
         Args:
             signal_level: calibrated tx power in dBm
         """
-        new_config = self.BtsConfig()
+        new_config = BaseCellConfig(self.log)
         new_config.input_power = self.calibrated_uplink_tx_power(
             self.primary_config, signal_level)
         self.simulator.configure_bts(new_config)
@@ -356,7 +341,7 @@ class BaseSimulation(object):
         Args:
             signal_level: calibrated rx power in dBm
         """
-        new_config = self.BtsConfig()
+        new_config = BaseCellConfig(self.log)
         new_config.output_power = self.calibrated_downlink_rx_power(
             self.primary_config, signal_level)
         self.simulator.configure_bts(new_config)
@@ -365,8 +350,8 @@ class BaseSimulation(object):
     def get_uplink_power_from_parameters(self, parameters):
         """ Reads uplink power from the parameter dictionary. """
 
-        if self.PARAM_UL_PW in parameters:
-            value = parameters[self.PARAM_UL_PW]
+        if BaseCellConfig.PARAM_UL_PW in parameters:
+            value = parameters[BaseCellConfig.PARAM_UL_PW]
             if value in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
                 return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[value]
             else:
@@ -386,14 +371,14 @@ class BaseSimulation(object):
             "uplink power expressed by an integer number in dBm or with one of "
             "the following values: {}. To indicate negative "
             "values, use the letter n instead of - sign.".format(
-                self.PARAM_UL_PW,
+                BaseCellConfig.PARAM_UL_PW,
                 list(self.UPLINK_SIGNAL_LEVEL_DICTIONARY.keys())))
 
     def get_downlink_power_from_parameters(self, parameters):
         """ Reads downlink power from a the parameter dictionary. """
 
-        if self.PARAM_DL_PW in parameters:
-            value = parameters[self.PARAM_DL_PW]
+        if BaseCellConfig.PARAM_DL_PW in parameters:
+            value = parameters[BaseCellConfig.PARAM_DL_PW]
             if value not in self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY:
                 raise ValueError(
                     "Invalid signal level value {}.".format(value))
@@ -574,11 +559,11 @@ class BaseSimulation(object):
                 "reported by the phone.")
 
         # Save initial output level to restore it after calibration
-        restoration_config = self.BtsConfig()
+        restoration_config = BaseCellConfig(self.log)
         restoration_config.output_power = self.primary_config.output_power
 
         # Set BTS to a good output level to minimize measurement error
-        new_config = self.BtsConfig()
+        new_config = BaseCellConfig(self.log)
         new_config.output_power = self.simulator.MAX_DL_POWER - 5
         self.simulator.configure_bts(new_config)
 
@@ -635,13 +620,13 @@ class BaseSimulation(object):
         """
 
         # Save initial input level to restore it after calibration
-        restoration_config = self.BtsConfig()
+        restoration_config = BaseCellConfig(self.log)
         restoration_config.input_power = self.primary_config.input_power
 
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER
-        new_config = self.BtsConfig()
+        new_config = BaseCellConfig(self.log)
         new_config.input_power = self.MAX_BTS_INPUT_POWER
         self.simulator.configure_bts(new_config)
 
