@@ -142,6 +142,7 @@ class UmtsSimulation(BaseSimulation):
         Args:
             parameters: a configuration dictionary
         """
+        super().configure(parameters)
 
         # Setup band
         if self.PARAM_BAND not in parameters:
@@ -176,22 +177,6 @@ class UmtsSimulation(BaseSimulation):
                 parameters[self.PARAM_RRC_STATUS_CHANGE_TIMER])
             self.anritsu.set_umts_rrc_status_change(True)
             self.anritsu.set_umts_dch_stat_timer(self.rrc_sc_timer)
-
-        # Setup uplink power
-
-        ul_power = self.get_uplink_power_from_parameters(parameters)
-
-        # Power is not set on the callbox until after the simulation is
-        # started. Saving this value in a variable for later
-        self.sim_ul_power = ul_power
-
-        # Setup downlink power
-
-        dl_power = self.get_downlink_power_from_parameters(parameters)
-
-        # Power is not set on the callbox until after the simulation is
-        # started. Saving this value in a variable for later
-        self.sim_dl_power = dl_power
 
     def set_release_version(self, bts, release_version):
         """ Sets the release version.

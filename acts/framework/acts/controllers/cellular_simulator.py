@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from acts import logger
-from acts.controllers import cellular_lib as sims
+from acts.controllers import cellular_lib
 
 
 class AbstractCellularSimulator:
@@ -24,9 +24,6 @@ class AbstractCellularSimulator:
 
     This class defines the interface that every cellular simulator controller
     needs to implement and shouldn't be instantiated by itself. """
-
-    # Indicates if 4x4 MIMO is supported for LTE
-    LTE_SUPPORTS_4X4_MIMO = None
 
     # The maximum number of carriers that this simulator can support for LTE
     LTE_MAX_CARRIERS = None
@@ -72,7 +69,7 @@ class AbstractCellularSimulator:
         if config.input_power:
             self.set_input_power(bts_index, config.input_power)
 
-        if isinstance(config, sims.LteSimulation.LteSimulation.BtsConfig):
+        if isinstance(config, cellular_lib.LteCellConfig.LteCellConfig):
             self.configure_lte_bts(config, bts_index)
 
     def configure_lte_bts(self, config, bts_index=0):
@@ -115,7 +112,7 @@ class AbstractCellularSimulator:
         if config.scheduling_mode:
 
             if (config.scheduling_mode ==
-                    sims.LteSimulation.SchedulingMode.STATIC
+                    cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
