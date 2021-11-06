@@ -18,6 +18,7 @@ import collections
 import importlib
 import ipaddress
 import logging
+import numpy
 import re
 import time
 from acts import asserts
@@ -100,7 +101,13 @@ def _serialize_value(value):
     """Function to recursively serialize dict entries to enable JSON output"""
     if isinstance(value, tuple):
         return str(value)
+    if isinstance(value, numpy.int64):
+        return int(value)
+    if isinstance(value, numpy.float64):
+        return float(value)
     if isinstance(value, list):
+        return [_serialize_value(x) for x in value]
+    if isinstance(value, numpy.ndarray):
         return [_serialize_value(x) for x in value]
     elif isinstance(value, dict):
         return serialize_dict(value)
@@ -710,6 +717,12 @@ def push_firmware(dut, firmware_files):
 @detect_wifi_decorator
 def disable_beamforming(dut):
     """Function to disable beamforming."""
+    pass
+
+
+@detect_wifi_decorator
+def set_nss_capability(dut, nss):
+    """Function to set number of spatial streams supported."""
     pass
 
 

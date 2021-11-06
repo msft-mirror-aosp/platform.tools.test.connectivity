@@ -220,9 +220,40 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         else:
             asserts.explicit_pass('Test Passed. {}'.format(result_string))
 
+    def plot_per_curves(self):
+        """Plots PER curves to help debug sensitivity."""
+
+        plots = collections.OrderedDict()
+        id_fields = ['channel', 'mode', 'num_streams']
+        for result in self.testclass_results:
+            testcase_params = result['testcase_params']
+            plot_id = self.extract_test_id(testcase_params, id_fields)
+            plot_id = tuple(plot_id.items())
+            if plot_id not in plots:
+                plots[plot_id] = BokehFigure(
+                    title='Channel {} {} Nss{}'.format(
+                        result['testcase_params']['channel'],
+                        result['testcase_params']['mode'],
+                        result['testcase_params']['num_streams']),
+                    x_label='Attenuation (dB)',
+                    primary_y_label='PER (%)')
+            per = [stat['summary']['rx_per'] for stat in result['llstats']]
+            if len(per) < len(result['total_attenuation']):
+                per.extend([100] *
+                           (len(result['total_attenuation']) - len(per)))
+            plots[plot_id].add_line(result['total_attenuation'], per,
+                                    result['test_name'])
+        figure_list = []
+        for plot_id, plot in plots.items():
+            plot.generate_figure()
+            figure_list.append(plot)
+        output_file_path = os.path.join(self.log_path, 'results.html')
+        BokehFigure.save_figures(figure_list, output_file_path)
+
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
         # write json output
+        self.plot_per_curves()
         testclass_results_dict = collections.OrderedDict()
         id_fields = ['mode', 'rate', 'num_streams', 'chain_mask']
         channels_tested = []
@@ -710,6 +741,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
 
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
+        self.plot_per_curves()
         testclass_results_dict = collections.OrderedDict()
         id_fields = ['channel', 'mode', 'rate']
         plots = []
