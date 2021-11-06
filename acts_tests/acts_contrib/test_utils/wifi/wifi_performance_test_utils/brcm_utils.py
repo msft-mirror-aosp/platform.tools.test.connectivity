@@ -19,6 +19,7 @@ import hashlib
 import itertools
 import logging
 import math
+import numpy
 import re
 import statistics
 import time
@@ -28,6 +29,92 @@ SHORT_SLEEP = 1
 MED_SLEEP = 6
 DISCONNECTION_MESSAGE_BRCM = 'driver adapter not found'
 RSSI_ERROR_VAL = float('nan')
+RATE_TABLE = {
+    'HT': {
+        1: {
+            20: [7.2, 14.4, 21.7, 28.9, 43.4, 57.8, 65.0, 72.2],
+            40: [15.0, 30.0, 45.0, 60.0, 90.0, 120.0, 135.0, 150.0]
+        },
+        2: {
+            20: [
+                0, 0, 0, 0, 0, 0, 0, 0, 14.4, 28.8, 43.4, 57.8, 86.8, 115.6,
+                130, 144.4
+            ],
+            40: [0, 0, 0, 0, 0, 0, 0, 0, 30, 60, 90, 120, 180, 240, 270, 300]
+        }
+    },
+    'VHT': {
+        1: {
+            20: [
+                7.2, 14.4, 21.7, 28.9, 43.4, 57.8, 65.0, 72.2, 86.7, 96.2,
+                129.0, 143.4
+            ],
+            40: [
+                15.0, 30.0, 45.0, 60.0, 90.0, 120.0, 135.0, 150.0, 180.0,
+                200.0, 258, 286.8
+            ],
+            80: [
+                32.5, 65.0, 97.5, 130.0, 195.0, 260.0, 292.5, 325.0, 390.0,
+                433.3, 540.4, 600.4
+            ],
+            160: [
+                65.0, 130.0, 195.0, 260.0, 390.0, 520.0, 585.0, 650.0, 780.0,
+                1080.8, 1200.8
+            ]
+        },
+        2: {
+            20: [
+                14.4, 28.8, 43.4, 57.8, 86.8, 115.6, 130, 144.4, 173.4, 192.4,
+                258, 286.8
+            ],
+            40: [30, 60, 90, 120, 180, 240, 270, 300, 360, 400, 516, 573.6],
+            80: [
+                65, 130, 195, 260, 390, 520, 585, 650, 780, 866.6, 1080.8,
+                1200.8
+            ],
+            160:
+            [130, 260, 390, 520, 780, 1040, 1170, 1300, 1560, 2161.6, 2401.6]
+        },
+    },
+    'HE': {
+        1: {
+            20: [
+                8.6, 17.2, 25.8, 34.4, 51.6, 68.8, 77.4, 86.0, 103.2, 114.7,
+                129.0, 143.4
+            ],
+            40: [
+                17.2, 34.4, 51.6, 68.8, 103.2, 137.6, 154.8, 172, 206.4, 229.4,
+                258, 286.8
+            ],
+            80: [
+                36.0, 72.1, 108.1, 144.1, 216.2, 288.2, 324.3, 360.3, 432.4,
+                480.4, 540.4, 600.4
+            ],
+            160: [
+                72, 144.2, 216.2, 288.2, 432.4, 576.4, 648.6, 720.6, 864.8,
+                960.8, 1080.8, 1200.8
+            ]
+        },
+        2: {
+            20: [
+                17.2, 34.4, 51.6, 68.8, 103.2, 137.6, 154.8, 172, 206.4, 229.4,
+                258, 286.8
+            ],
+            40: [
+                34.4, 68.8, 103.2, 137.6, 206.4, 275.2, 309.6, 344, 412.8,
+                458.8, 516, 573.6
+            ],
+            80: [
+                72, 144.2, 216.2, 288.2, 432.4, 576.4, 648.6, 720.6, 864.8,
+                960.8, 1080.8, 1200.8
+            ],
+            160: [
+                144, 288.4, 432.4, 576.4, 864.8, 1152.8, 1297.2, 1441.2,
+                1729.6, 1921.6, 2161.6, 2401.6
+            ]
+        },
+    },
+}
 
 
 # Rssi Utilities
@@ -175,7 +262,6 @@ def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
                                      flags=re.IGNORECASE)
             if bssid_result:
                 bssid_result = bssid_result.group(0).split()
-                print(bssid_result)
                 scan_rssi[bssid]['data'].append(int(bssid_result[2]))
             else:
                 scan_rssi[bssid]['data'].append(RSSI_ERROR_VAL)
@@ -260,6 +346,10 @@ def disable_beamforming(dut):
     dut.adb.shell('wl txbf 0')
 
 
+def set_nss_capability(dut, nss):
+    dut.adb.shell('wl he omi -r {} -t {}'.format(nss, nss))
+
+
 def set_chain_mask(dut, chain):
     if chain == '2x2':
         chain = 3
@@ -286,6 +376,7 @@ class LinkLayerStats():
 
     LLSTATS_CMD = 'wl dump ampdu; wl counters;'
     LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
+    BW_REGEX = re.compile(r'Chanspec:.+ (?P<bandwidth>[0-9]+)MHz')
     MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
     RX_REGEX = re.compile(r'RX (?P<mode>\S+)\s+:\s*(?P<nss1>[0-9, ,(,),%]*)'
                           '\n\s*:?\s*(?P<nss2>[0-9, ,(,),%]*)')
@@ -321,6 +412,10 @@ class LinkLayerStats():
                 llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
                                                     timeout=1)
                 self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
+
+                wl_join = self.dut.adb.shell("wl status")
+                self.bandwidth = int(
+                    re.search(self.BW_REGEX, wl_join).group('bandwidth'))
             except:
                 llstats_output = ''
         else:
@@ -378,7 +473,7 @@ class LinkLayerStats():
                               itertools.zip_longest(rx_mcs_iter, tx_mcs_iter,
                                                     tx_per_iter)):
                     current_mcs = self.MCS_ID(
-                        mode, nss, 0,
+                        mode, nss, self.bandwidth,
                         mcs + int(8 * (mode == 'HT') * (nss - 1)), 0)
                     current_stats = collections.OrderedDict(
                         txmpdu=int(tx_mcs_stats.group('count'))
@@ -389,7 +484,8 @@ class LinkLayerStats():
                         retries=tx_per_mcs_stats.group('count')
                         if tx_per_mcs_stats else 0,
                         retries_short=0,
-                        retries_long=0)
+                        retries_long=0,
+                        mcs_id=current_mcs)
                     llstats_dict[self._mcs_id_to_string(
                         current_mcs)] = current_stats
         return llstats_dict
@@ -399,6 +495,7 @@ class LinkLayerStats():
         tx_agg_match = re.search(self.TX_AGG_REGEX, llstats_output)
         tx_agg_stop_match = re.search(self.TX_AGG_STOP_REGEX, llstats_output)
         rx_fcs_match = re.search(self.RX_FCS_REGEX, llstats_output)
+
         if rx_agg_match and tx_agg_match and tx_agg_stop_match and rx_fcs_match:
             agg_stop_dict = collections.OrderedDict(
                 rx_aggregation=int(rx_agg_match.group('aggregation')),
@@ -416,7 +513,13 @@ class LinkLayerStats():
                     'reason')] = reason_match.group('value')
 
         else:
-            agg_stop_dict = collections.OrderedDict()
+            agg_stop_dict = collections.OrderedDict(rx_aggregation=0,
+                                                    tx_aggregation=0,
+                                                    tx_agg_tried=0,
+                                                    tx_agg_canceled=0,
+                                                    rx_good_fcs=0,
+                                                    rx_bad_fcs=0,
+                                                    agg_stop_reason=None)
         return agg_stop_dict
 
     def _generate_stats_summary(self, llstats_dict):
@@ -425,24 +528,40 @@ class LinkLayerStats():
                                                   common_tx_mcs_freq=0,
                                                   common_rx_mcs=None,
                                                   common_rx_mcs_count=0,
-                                                  common_rx_mcs_freq=0)
-        txmpdu_count = 0
-        rxmpdu_count = 0
-        for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
-            if mcs_stats['txmpdu'] > llstats_summary['common_tx_mcs_count']:
-                llstats_summary['common_tx_mcs'] = mcs_id
-                llstats_summary['common_tx_mcs_count'] = mcs_stats['txmpdu']
-            if mcs_stats['rxmpdu'] > llstats_summary['common_rx_mcs_count']:
-                llstats_summary['common_rx_mcs'] = mcs_id
-                llstats_summary['common_rx_mcs_count'] = mcs_stats['rxmpdu']
-            txmpdu_count += mcs_stats['txmpdu']
-            rxmpdu_count += mcs_stats['rxmpdu']
-        if txmpdu_count:
+                                                  common_rx_mcs_freq=0,
+                                                  rx_per=float('nan'))
+        mcs_ids = []
+        tx_mpdu = []
+        rx_mpdu = []
+        phy_rates = []
+        for mcs_str, mcs_stats in llstats_dict['mcs_stats'].items():
+            mcs_id = mcs_stats['mcs_id']
+            mcs_ids.append(mcs_str)
+            tx_mpdu.append(mcs_stats['txmpdu'])
+            rx_mpdu.append(mcs_stats['rxmpdu'])
+            phy_rates.append(RATE_TABLE[mcs_id.mode][mcs_id.num_streams][
+                mcs_id.bandwidth][mcs_id.mcs])
+        if len(tx_mpdu) == 0 or len(rx_mpdu) == 0:
+            return llstats_summary
+        llstats_summary['common_tx_mcs'] = mcs_ids[numpy.argmax(tx_mpdu)]
+        llstats_summary['common_tx_mcs_count'] = numpy.max(tx_mpdu)
+        llstats_summary['common_rx_mcs'] = mcs_ids[numpy.argmax(rx_mpdu)]
+        llstats_summary['common_rx_mcs_count'] = numpy.max(rx_mpdu)
+        if sum(tx_mpdu) and sum(rx_mpdu):
+            llstats_summary['mean_tx_phy_rate'] = numpy.average(
+                phy_rates, weights=tx_mpdu)
+            llstats_summary['mean_rx_phy_rate'] = numpy.average(
+                phy_rates, weights=rx_mpdu)
             llstats_summary['common_tx_mcs_freq'] = (
-                llstats_summary['common_tx_mcs_count'] / txmpdu_count)
-        if rxmpdu_count:
+                llstats_summary['common_tx_mcs_count'] / sum(tx_mpdu))
             llstats_summary['common_rx_mcs_freq'] = (
-                llstats_summary['common_rx_mcs_count'] / rxmpdu_count)
+                llstats_summary['common_rx_mcs_count'] / sum(rx_mpdu))
+            total_rx_frames = llstats_dict['mpdu_stats'][
+                'rx_good_fcs'] + llstats_dict['mpdu_stats']['rx_bad_fcs']
+            if total_rx_frames:
+                llstats_summary['rx_per'] = (
+                    llstats_dict['mpdu_stats']['rx_bad_fcs'] /
+                    (total_rx_frames)) * 100
         return llstats_summary
 
     def _update_stats(self, llstats_output):

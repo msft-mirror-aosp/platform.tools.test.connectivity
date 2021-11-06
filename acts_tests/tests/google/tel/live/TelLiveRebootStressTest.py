@@ -39,6 +39,8 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_CRASH
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_model_name
@@ -46,12 +48,9 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import is_sim_locked
-from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
 from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
-from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim

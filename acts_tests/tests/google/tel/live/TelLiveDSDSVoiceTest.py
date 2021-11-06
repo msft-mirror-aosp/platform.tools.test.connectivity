@@ -43,7 +43,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connectio
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import mms_send_receive_verify
+from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g

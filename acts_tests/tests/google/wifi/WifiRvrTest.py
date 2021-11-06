@@ -139,6 +139,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                                     result['test_name'],
                                     hover_text=result['hover_text'],
                                     marker='circle')
+            plots[plot_id].add_line(result['total_attenuation'],
+                                    result['avg_phy_rate'],
+                                    result['test_name'] + ' (PHY)',
+                                    hover_text=result['hover_text'],
+                                    marker='circle')
+
         figure_list = []
         for plot_id, plot in plots.items():
             plot.generate_figure()
@@ -251,19 +257,20 @@ class WifiRvrTest(base_test.BaseTestClass):
             data
         """
         # Save output as text file
-        test_name = self.current_test_name
         results_file_path = os.path.join(
             self.log_path, '{}.json'.format(self.current_test_name))
         with open(results_file_path, 'w') as results_file:
-            json.dump(rvr_result, results_file, indent=4)
+            json.dump(wputils.serialize_dict(rvr_result),
+                      results_file,
+                      indent=4)
         # Plot and save
-        figure = BokehFigure(title=test_name,
+        figure = BokehFigure(title=self.current_test_name,
                              x_label='Attenuation (dB)',
                              primary_y_label='Throughput (Mbps)')
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
-                               if test_name in file_name)
+                               if self.current_test_name in file_name)
             with open(golden_path, 'r') as golden_file:
                 golden_results = json.load(golden_file)
             golden_attenuation = [
@@ -303,15 +310,35 @@ class WifiRvrTest(base_test.BaseTestClass):
                 ) for rssi in rvr_result['rssi']
             ]
         }
+        if 'DL' in self.current_test_name:
+            rvr_result['avg_phy_rate'] = [
+                curr_llstats['summary'].get('mean_rx_phy_rate', 0)
+                for curr_llstats in rvr_result['llstats']
+            ]
+        else:
+            rvr_result['avg_phy_rate'] = [
+                curr_llstats['summary'].get('mean_tx_phy_rate', 0)
+                for curr_llstats in rvr_result['llstats']
+            ]
         figure.add_line(rvr_result['total_attenuation'],
                         rvr_result['throughput_receive'],
-                        'Test Results',
+                        'Measured Throughput',
                         hover_text=rvr_result['hover_text'],
                         color='red',
                         marker='circle')
+        rvr_result['avg_phy_rate'].extend(
+            [0] * (len(rvr_result['total_attenuation']) -
+                   len(rvr_result['avg_phy_rate'])))
+        figure.add_line(rvr_result['total_attenuation'],
+                        rvr_result['avg_phy_rate'],
+                        'Average PHY Rate',
+                        hover_text=rvr_result['hover_text'],
+                        color='red',
+                        style='dashed',
+                        marker='square')
 
-        output_file_path = os.path.join(self.log_path,
-                                        '{}.html'.format(test_name))
+        output_file_path = os.path.join(
+            self.log_path, '{}.html'.format(self.current_test_name))
         figure.generate_figure(output_file_path)
 
     def compute_test_metrics(self, rvr_result):
@@ -552,6 +579,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                                     testcase_params['test_network'],
                                     num_of_tries=5,
                                     check_connectivity=True)
+                if self.testclass_params.get('num_streams', 2) == 1:
+                    wputils.set_nss_capability(self.sta_dut, 1)
             finally:
                 if self.testbed_params['sniffer_enable']:
                     self.sniffer.stop_capture(tag='connection_setup')
@@ -856,7 +885,7 @@ class WifiOtaRvrTest(WifiRvrTest):
 
     def extract_test_id(self, testcase_params, id_fields):
         test_id = collections.OrderedDict(
-            (param, testcase_params[param]) for param in id_fields)
+            (param, testcase_params.get(param, None)) for param in id_fields)
         return test_id
 
     def process_testclass_results(self):
@@ -866,10 +895,10 @@ class WifiOtaRvrTest(WifiRvrTest):
         compiled_data = collections.OrderedDict()
         for result in self.testclass_results:
             test_id = tuple(
-                self.extract_test_id(
-                    result['testcase_params'],
-                    ['channel', 'mode', 'traffic_type', 'traffic_direction'
-                     ]).items())
+                self.extract_test_id(result['testcase_params'], [
+                    'channel', 'mode', 'traffic_type', 'traffic_direction',
+                    'chain'
+                ]).items())
             if test_id not in plots:
                 # Initialize test id data when not present
                 compiled_data[test_id] = {'throughput': [], 'metrics': {}}
@@ -885,6 +914,15 @@ class WifiOtaRvrTest(WifiRvrTest):
                         result['testcase_params']['traffic_direction']),
                     x_label='Attenuation (dB)',
                     primary_y_label='Throughput (Mbps)')
+                test_id_phy = test_id + tuple('PHY')
+                plots[test_id_phy] = BokehFigure(
+                    title='Channel {} {} ({} {}) (PHY Rate)'.format(
+                        result['testcase_params']['channel'],
+                        result['testcase_params']['mode'],
+                        result['testcase_params']['traffic_type'],
+                        result['testcase_params']['traffic_direction']),
+                    x_label='Attenuation (dB)',
+                    primary_y_label='PHY Rate (Mbps)')
             # Compile test id data and metrics
             compiled_data[test_id]['throughput'].append(
                 result['throughput_receive'])
@@ -901,6 +939,13 @@ class WifiOtaRvrTest(WifiRvrTest):
                                     width=1,
                                     style='dashed',
                                     marker='circle')
+            plots[test_id_phy].add_line(result['total_attenuation'],
+                                        result['avg_phy_rate'],
+                                        result['test_name'] + ' PHY',
+                                        hover_text=result['hover_text'],
+                                        width=1,
+                                        style='dashed',
+                                        marker='circle')
 
         # Compute average RvRs and compute metrics over orientations
         for test_id, test_data in compiled_data.items():
@@ -930,7 +975,7 @@ class WifiOtaRvrTest(WifiRvrTest):
                                     marker='square')
 
         figure_list = []
-        for test_id, plot in plots.items():
+        for plot_id, plot in plots.items():
             plot.generate_figure()
             figure_list.append(plot)
         output_file_path = os.path.join(self.log_path, 'results.html')
@@ -1008,15 +1053,15 @@ class WifiOtaRvr_SingleChain_Test(WifiOtaRvrTest):
         WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6], ['bw20'],
                                               list(range(0, 360, 45)), ['TCP'],
-                                              ['DL'], [0, 1])
+                                              ['DL', 'UL'], [0, 1])
         self.tests.extend(
-            self.generate_test_cases([36, 149], ['bw80', 'bw160'],
-                                     list(range(0, 360, 45)), ['TCP'], ['DL'],
-                                     [0, 1, '2x2']))
+            self.generate_test_cases([36, 149], ['bw20', 'bw80', 'bw160'],
+                                     list(range(0, 360, 45)), ['TCP'],
+                                     ['DL', 'UL'], [0, 1, '2x2']))
         self.tests.extend(
-            self.generate_test_cases(['6g37'], ['bw160'],
-                                     list(range(0, 360, 45)), ['TCP'], ['DL'],
-                                     [0, 1, '2x2']))
+            self.generate_test_cases(['6g37'], ['bw20', 'bw80', 'bw160'],
+                                     list(range(0, 360, 45)), ['TCP'],
+                                     ['DL', 'UL'], [0, 1, '2x2']))
 
     def setup_dut(self, testcase_params):
         self.sta_dut = self.android_devices[0]

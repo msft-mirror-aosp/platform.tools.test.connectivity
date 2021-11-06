@@ -140,7 +140,9 @@ class WifiPingTest(base_test.BaseTestClass):
         results_file_path = os.path.join(self.log_path,
                                          'testclass_summary.json')
         with open(results_file_path, 'w') as results_file:
-            json.dump(testclass_summary, results_file, indent=4)
+            json.dump(wputils.serialize_dict(testclass_summary),
+                      results_file,
+                      indent=4)
 
     def pass_fail_check_ping_rtt(self, result):
         """Check the test result and decide if it passed or failed.
@@ -240,6 +242,10 @@ class WifiPingTest(base_test.BaseTestClass):
             range_index]
         ping_range_result['peak_throughput_pct'] = 100 - min(
             ping_loss_over_att)
+        ping_range_result['total_attenuation'] = [
+            ping_range_result['fixed_attenuation'] + att
+            for att in testcase_params['atten_range']
+        ]
         ping_range_result['range'] = (ping_range_result['atten_at_range'] +
                                       ping_range_result['fixed_attenuation'])
         ping_range_result['llstats_at_range'] = (
@@ -256,10 +262,12 @@ class WifiPingTest(base_test.BaseTestClass):
         results_file_path = os.path.join(
             self.log_path, '{}.json'.format(self.current_test_name))
         with open(results_file_path, 'w') as results_file:
-            json.dump(ping_range_result, results_file, indent=4)
+            json.dump(wputils.serialize_dict(ping_range_result),
+                      results_file,
+                      indent=4)
 
         # Plot results
-        if 'range' not in self.current_test_name:
+        if 'rtt' in self.current_test_name:
             figure = BokehFigure(self.current_test_name,
                                  x_label='Timestamp (s)',
                                  primary_y_label='Round Trip Time (ms)')
