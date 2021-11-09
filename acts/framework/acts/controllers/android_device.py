@@ -1429,10 +1429,9 @@ class AndroidDevice:
     def get_my_current_focus_window(self):
         """Get the current focus window on screen"""
         output = self.adb.shell(
-            'dumpsys window displays | grep -E mCurrentFocus',
+            'dumpsys window displays | grep -E mCurrentFocus | grep -v null',
             ignore_status=True)
-        if not output or "not found" in output or "Can't find" in output or (
-                "mCurrentFocus=null" in output):
+        if not output or "not found" in output or "Can't find" in output:
             result = ''
         else:
             result = output.split(' ')[-1].strip("}")
