@@ -18,6 +18,7 @@ from enum import Enum
 
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
 from acts.controllers.cellular_lib.LteCellConfig import LteCellConfig
+from acts.controllers.cellular_lib.NrCellConfig import NrCellConfig
 from acts.controllers.cellular_lib import BaseCellularDut
 
 
@@ -475,8 +476,14 @@ class LteSimulation(BaseSimulation):
             band = cell[LteCellConfig.PARAM_BAND]
 
             if isinstance(band, str) and not band.isdigit():
+                # If band starts with n then it is an NR band
+                if band[0] == 'n' and band[1:].isdigit():
+                    # If the remaining string is only the band number, add
+                    # the cell and continue
+                    new_cell_list.append(cell)
+
                 ca_class = band[-1].upper()
-                band_num = int(band[:-1])
+                band_num = band[:-1]
 
                 if ca_class in ['A', 'C']:
                     # Remove the CA class label and add the cell
@@ -494,7 +501,7 @@ class LteSimulation(BaseSimulation):
                     new_cell_list[-1].dl_earfcn = int(
                         self.LOWEST_DL_CN_DICTIONARY[band_num] + bw * 10 - 2)
             else:
-                # The band is just a number, so just add it to the list.
+                # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
 
         self.simulator.set_band_combination(
@@ -505,7 +512,11 @@ class LteSimulation(BaseSimulation):
         # Setup the base station with the obtained configuration and then save
         # these parameters in the current configuration object
         for bts_index in range(self.num_carriers):
-            cell_config = LteCellConfig(self.log)
+            band = new_cell_list[bts_index][LteCellConfig.PARAM_BAND]
+            if isinstance(band, str) and band[0] == 'n':
+                cell_config = NrCellConfig(self.log)
+            else:
+                cell_config = LteCellConfig(self.log)
             cell_config.configure(new_cell_list[bts_index])
             self.simulator.configure_bts(cell_config, bts_index)
             self.bts_configs[bts_index].incorporate(cell_config)
