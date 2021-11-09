@@ -74,7 +74,10 @@ MIN_UL_RBS_DICTIONARY = {20: 8, 15: 6, 10: 4, 5: 2, 3: 2, 1.4: 1}
 
 class LteSimulation(BaseSimulation):
     """ Single-carrier LTE simulation. """
+    # Test config keywords
+    KEY_FREQ_BANDS = "freq_bands"
 
+    # Cell param keywords
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
@@ -420,8 +423,26 @@ class LteSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
+        self.num_carriers = None
+
+        # Force device to LTE only so that it connects faster
         self.dut.set_preferred_network_type(
             BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+
+        # Create a list with the primary and secondary cells.
+        self.bts_configs = [self.primary_config]
+        self.bts_configs.extend([
+            LteCellConfig(self.log)
+            for _ in range(1, self.simulator.LTE_MAX_CARRIERS)
+        ])
+
+        # Get LTE CA frequency bands setting from the test configuration
+        if self.KEY_FREQ_BANDS not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to null by default.".format(
+                                 self.KEY_FREQ_BANDS))
+
+        self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
     def setup_simulator(self):
         """ Do initial configuration in the simulator. """
@@ -433,26 +454,61 @@ class LteSimulation(BaseSimulation):
         Processes LTE configuration parameters.
 
         Args:
-            parameters: a configuration dictionary
+            parameters: a configuration dictionary if there is only one carrier,
+                a list if there are multiple cells.
         """
-        super().configure(parameters)
+        # If there is a single item, put in a list
+        if not isinstance(parameters, list):
+            parameters = [parameters]
 
-        # Setup band
-        if LteCellConfig.PARAM_BAND not in parameters:
-            raise ValueError(
-                "The configuration dictionary must include a key '{}' with "
-                "the required band number.".format(LteCellConfig.PARAM_BAND))
+        # Pass only PCC configs to BaseSimulation
+        super().configure(parameters[0])
+
+        new_cell_list = []
+        for cell in parameters:
+            if LteCellConfig.PARAM_BAND not in cell:
+                raise ValueError(
+                    "The configuration dictionary must include a key '{}' with "
+                    "the required band number.".format(
+                        LteCellConfig.PARAM_BAND))
+
+            band = cell[LteCellConfig.PARAM_BAND]
+
+            if isinstance(band, str) and not band.isdigit():
+                ca_class = band[-1].upper()
+                band_num = int(band[:-1])
+
+                if ca_class in ['A', 'C']:
+                    # Remove the CA class label and add the cell
+                    cell[LteCellConfig.PARAM_BAND].band = band_num
+                    new_cell_list.append(cell)
+                elif ca_class == 'B':
+                    raise RuntimeError('Class B LTE CA not supported.')
+                else:
+                    raise ValueError('Invalid band value: ' + band)
+
+                # Class C means that there are two contiguous carriers
+                if ca_class == 'C':
+                    new_cell_list.append(cell)
+                    bw = int(cell[LteCellConfig.PARAM_BW])
+                    new_cell_list[-1].dl_earfcn = int(
+                        self.LOWEST_DL_CN_DICTIONARY[band_num] + bw * 10 - 2)
+            else:
+                # The band is just a number, so just add it to the list.
+                new_cell_list.append(cell)
 
         self.simulator.set_band_combination(
-            [parameters[LteCellConfig.PARAM_BAND]])
+            [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
 
-        new_config = LteCellConfig(self.log)
-        new_config.configure(parameters)
+        self.num_carriers = len(new_cell_list)
 
         # Setup the base station with the obtained configuration and then save
         # these parameters in the current configuration object
-        self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        for bts_index in range(self.num_carriers):
+            cell_config = LteCellConfig(self.log)
+            cell_config.configure(new_cell_list[bts_index])
+            self.simulator.configure_bts(cell_config, bts_index)
+            self.bts_configs[bts_index].incorporate(cell_config)
 
         # Now that the band is set, calibrate the link if necessary
         self.load_pathloss_if_required()
@@ -465,7 +521,7 @@ class LteSimulation(BaseSimulation):
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
             self.simulator.set_lte_rrc_state_change_timer(False)
         else:
-            timer = int(parameters[self.PARAM_RRC_STATUS_CHANGE_TIMER])
+            timer = int(parameters[0][self.PARAM_RRC_STATUS_CHANGE_TIMER])
             self.simulator.set_lte_rrc_state_change_timer(True, timer)
             self.rrc_sc_timer = timer
 
@@ -546,8 +602,9 @@ class LteSimulation(BaseSimulation):
             Maximum throughput in mbps.
 
         """
-
-        return self.bts_maximum_downlink_throughtput(self.primary_config)
+        return sum(
+            self.bts_maximum_downlink_throughtput(self.bts_configs[bts_index])
+            for bts_index in range(self.num_carriers))
 
     def bts_maximum_downlink_throughtput(self, bts_config):
         """ Calculates maximum achievable downlink throughput for a single
@@ -812,3 +869,25 @@ class LteSimulation(BaseSimulation):
                              'uncalibrated values as measured by the '
                              'callbox.')
             return ul_power_sum / samples
+
+    def start(self):
+        """ Set the signal level for the secondary carriers, as the base class
+        implementation of this method will only set up downlink power for the
+        primary carrier component.
+
+        After that, attaches the secondary carriers."""
+
+        super().start()
+
+        if self.num_carriers > 1:
+            if self.sim_dl_power:
+                self.log.info('Setting DL power for secondary carriers.')
+
+                for bts_index in range(1, self.num_carriers):
+                    new_config = LteCellConfig(self.log)
+                    new_config.output_power = self.calibrated_downlink_rx_power(
+                        self.bts_configs[bts_index], self.sim_dl_power)
+                    self.simulator.configure_bts(new_config, bts_index)
+                    self.bts_configs[bts_index].incorporate(new_config)
+
+            self.simulator.lte_attach_secondary_carriers(self.freq_bands)
