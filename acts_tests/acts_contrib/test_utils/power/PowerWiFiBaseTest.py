@@ -51,6 +51,8 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.mon_duration = self.iperf_duration - self.mon_offset - IPERF_TAIL
             self.create_monsoon_info()
 
+        wutils.set_wifi_country_code(self.dut, 'US')
+
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
 
@@ -159,3 +161,13 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
                                              self.mon_info.data_path,
                                              plot_title)
         return samples
+
+    def setup_test(self):
+        """Set up test specific parameters or configs.
+
+        """
+        super().setup_test()
+
+        wutils.reset_wifi(self.dut)
+        wutils.wifi_toggle_state(self.dut, False)
+
