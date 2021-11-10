@@ -684,6 +684,28 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ret = ad.push_system_file('asdf', 'jkl')
         self.assertFalse(ret)
 
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_get_my_current_focus_window_return_empty_string(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb.return_value = ''
+
+        ret = ad.get_my_current_focus_window()
+
+        self.assertEqual('', ret)
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_get_my_current_focus_window_return_current_window(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb.return_value = 'mCurrentFocus=Window{a247ded u0 NotificationShade}'
+
+        ret = ad.get_my_current_focus_window()
+
+        self.assertEqual('NotificationShade', ret)
+
 
 if __name__ == "__main__":
     unittest.main()
