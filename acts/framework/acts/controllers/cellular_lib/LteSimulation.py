@@ -13,11 +13,12 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-import math
+import time
 from enum import Enum
 
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
+from acts.controllers.cellular_lib.LteCellConfig import LteCellConfig
+from acts.controllers.cellular_lib.NrCellConfig import NrCellConfig
 from acts.controllers.cellular_lib import BaseCellularDut
 
 
@@ -59,31 +60,26 @@ class ModulationType(Enum):
     Q256 = '256QAM'
 
 
+# Bandwidth [MHz] to RB group size
+RBG_DICTIONARY = {20: 4, 15: 4, 10: 3, 5: 2, 3: 2, 1.4: 1}
+
+# Bandwidth [MHz] to total RBs mapping
+TOTAL_RBS_DICTIONARY = {20: 100, 15: 75, 10: 50, 5: 25, 3: 15, 1.4: 6}
+
+# Bandwidth [MHz] to minimum number of DL RBs that can be assigned to a UE
+MIN_DL_RBS_DICTIONARY = {20: 16, 15: 12, 10: 9, 5: 4, 3: 4, 1.4: 2}
+
+# Bandwidth [MHz] to minimum number of UL RBs that can be assigned to a UE
+MIN_UL_RBS_DICTIONARY = {20: 8, 15: 6, 10: 4, 5: 2, 3: 2, 1.4: 1}
+
+
 class LteSimulation(BaseSimulation):
     """ Single-carrier LTE simulation. """
+    # Test config keywords
+    KEY_FREQ_BANDS = "freq_bands"
 
-    # Configuration dictionary keys
-    PARAM_FRAME_CONFIG = "tddconfig"
-    PARAM_BW = "bw"
-    PARAM_SCHEDULING = "scheduling"
-    PARAM_SCHEDULING_STATIC = "static"
-    PARAM_SCHEDULING_DYNAMIC = "dynamic"
-    PARAM_PATTERN = "pattern"
-    PARAM_TM = "tm"
-    PARAM_BAND = "band"
-    PARAM_MIMO = "mimo"
-    PARAM_DL_MCS = 'dlmcs'
-    PARAM_UL_MCS = 'ulmcs'
-    PARAM_SSF = 'ssf'
-    PARAM_CFI = 'cfi'
-    PARAM_PAGING = 'paging'
-    PARAM_PHICH = 'phich'
+    # Cell param keywords
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
-    PARAM_DRX = 'drx'
-    PARAM_PADDING = 'mac_padding'
-    PARAM_DL_256_QAM_ENABLED = "256_qam_dl_enabled"
-    PARAM_UL_64_QAM_ENABLED = "64_qam_ul_enabled"
-    PARAM_DL_EARFCN = 'dl_earfcn'
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
@@ -105,18 +101,6 @@ class LteSimulation(BaseSimulation):
         'medium': 3,
         'low': -20
     }
-
-    # Bandwidth [MHz] to total RBs mapping
-    total_rbs_dictionary = {20: 100, 15: 75, 10: 50, 5: 25, 3: 15, 1.4: 6}
-
-    # Bandwidth [MHz] to RB group size
-    rbg_dictionary = {20: 4, 15: 4, 10: 3, 5: 2, 3: 2, 1.4: 1}
-
-    # Bandwidth [MHz] to minimum number of DL RBs that can be assigned to a UE
-    min_dl_rbs_dictionary = {20: 16, 15: 12, 10: 9, 5: 4, 3: 4, 1.4: 2}
-
-    # Bandwidth [MHz] to minimum number of UL RBs that can be assigned to a UE
-    min_ul_rbs_dictionary = {20: 8, 15: 6, 10: 4, 5: 2, 3: 2, 1.4: 1}
 
     # Allowed bandwidth for each band.
     allowed_bandwidth_dictionary = {
@@ -425,76 +409,6 @@ class LteSimulation(BaseSimulation):
         tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM OFF & MAC padding ON
     }
 
-    class BtsConfig(BaseSimulation.BtsConfig):
-        """ Extension of the BaseBtsConfig to implement parameters that are
-         exclusive to LTE.
-
-        Attributes:
-            band: an integer indicating the required band number.
-            dlul_config: an integer indicating the TDD config number.
-            ssf_config: an integer indicating the Special Sub-Frame config.
-            bandwidth: a float indicating the required channel bandwidth.
-            mimo_mode: an instance of LteSimulation.MimoMode indicating the
-                required MIMO mode for the downlink signal.
-            transmission_mode: an instance of LteSimulation.TransmissionMode
-                indicating the required TM.
-            scheduling_mode: an instance of LteSimulation.SchedulingMode
-                indicating whether to use Static or Dynamic scheduling.
-            dl_rbs: an integer indicating the number of downlink RBs
-            ul_rbs: an integer indicating the number of uplink RBs
-            dl_mcs: an integer indicating the MCS for the downlink signal
-            ul_mcs: an integer indicating the MCS for the uplink signal
-            dl_256_qam_enabled: a boolean indicating if 256 QAM is enabled
-            ul_64_qam_enabled: a boolean indicating if 256 QAM is enabled
-            mac_padding: a boolean indicating whether RBs should be allocated
-                when there is no user data in static scheduling
-            dl_channel: an integer indicating the downlink channel number
-            cfi: an integer indicating the Control Format Indicator
-            paging_cycle: an integer indicating the paging cycle duration in
-                milliseconds
-            phich: a string indicating the PHICH group size parameter
-            drx_connected_mode: a boolean indicating whether cDRX mode is
-                on or off
-            drx_on_duration_timer: number of PDCCH subframes representing
-                DRX on duration
-            drx_inactivity_timer: number of PDCCH subframes to wait before
-                entering DRX mode
-            drx_retransmission_timer: number of consecutive PDCCH subframes
-                to wait for retransmission
-            drx_long_cycle: number of subframes representing one long DRX cycle.
-                One cycle consists of DRX sleep + DRX on duration
-            drx_long_cycle_offset: number representing offset in range
-                0 to drx_long_cycle - 1
-        """
-        def __init__(self):
-            """ Initialize the base station config by setting all its
-            parameters to None. """
-            super().__init__()
-            self.band = None
-            self.dlul_config = None
-            self.ssf_config = None
-            self.bandwidth = None
-            self.mimo_mode = None
-            self.transmission_mode = None
-            self.scheduling_mode = None
-            self.dl_rbs = None
-            self.ul_rbs = None
-            self.dl_mcs = None
-            self.ul_mcs = None
-            self.dl_256_qam_enabled = None
-            self.ul_64_qam_enabled = None
-            self.mac_padding = None
-            self.dl_channel = None
-            self.cfi = None
-            self.paging_cycle = None
-            self.phich = None
-            self.drx_connected_mode = None
-            self.drx_on_duration_timer = None
-            self.drx_inactivity_timer = None
-            self.drx_retransmission_timer = None
-            self.drx_long_cycle = None
-            self.drx_long_cycle_offset = None
-
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
 
@@ -510,8 +424,26 @@ class LteSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
+        self.num_carriers = None
+
+        # Force device to LTE only so that it connects faster
         self.dut.set_preferred_network_type(
             BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+
+        # Create a list with the primary and secondary cells.
+        self.bts_configs = [self.primary_config]
+        self.bts_configs.extend([
+            LteCellConfig(self.log)
+            for _ in range(1, self.simulator.LTE_MAX_CARRIERS)
+        ])
+
+        # Get LTE CA frequency bands setting from the test configuration
+        if self.KEY_FREQ_BANDS not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to null by default.".format(
+                                 self.KEY_FREQ_BANDS))
+
+        self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
     def setup_simulator(self):
         """ Do initial configuration in the simulator. """
@@ -523,270 +455,76 @@ class LteSimulation(BaseSimulation):
         Processes LTE configuration parameters.
 
         Args:
-            parameters: a configuration dictionary
+            parameters: a configuration dictionary if there is only one carrier,
+                a list if there are multiple cells.
         """
-        # Setup band
-        if self.PARAM_BAND not in parameters:
-            raise ValueError(
-                "The configuration dictionary must include a key '{}' with "
-                "the required band number.".format(self.PARAM_BAND))
+        # If there is a single item, put in a list
+        if not isinstance(parameters, list):
+            parameters = [parameters]
 
-        self.simulator.set_band_combination([parameters[self.PARAM_BAND]])
+        # Pass only PCC configs to BaseSimulation
+        super().configure(parameters[0])
 
-        new_config = self.configure_lte_cell(parameters)
+        new_cell_list = []
+        for cell in parameters:
+            if LteCellConfig.PARAM_BAND not in cell:
+                raise ValueError(
+                    "The configuration dictionary must include a key '{}' with "
+                    "the required band number.".format(
+                        LteCellConfig.PARAM_BAND))
 
-        # Get uplink power
-        ul_power = self.get_uplink_power_from_parameters(parameters)
+            band = cell[LteCellConfig.PARAM_BAND]
 
-        # Power is not set on the callbox until after the simulation is
-        # started. Saving this value in a variable for later
-        self.sim_ul_power = ul_power
+            if isinstance(band, str) and not band.isdigit():
+                # If band starts with n then it is an NR band
+                if band[0] == 'n' and band[1:].isdigit():
+                    # If the remaining string is only the band number, add
+                    # the cell and continue
+                    new_cell_list.append(cell)
 
-        # Get downlink power
-        dl_power = self.get_downlink_power_from_parameters(parameters)
+                ca_class = band[-1].upper()
+                band_num = band[:-1]
 
-        # Power is not set on the callbox until after the simulation is
-        # started. Saving this value in a variable for later
-        self.sim_dl_power = dl_power
+                if ca_class in ['A', 'C']:
+                    # Remove the CA class label and add the cell
+                    cell[LteCellConfig.PARAM_BAND].band = band_num
+                    new_cell_list.append(cell)
+                elif ca_class == 'B':
+                    raise RuntimeError('Class B LTE CA not supported.')
+                else:
+                    raise ValueError('Invalid band value: ' + band)
+
+                # Class C means that there are two contiguous carriers
+                if ca_class == 'C':
+                    new_cell_list.append(cell)
+                    bw = int(cell[LteCellConfig.PARAM_BW])
+                    new_cell_list[-1].dl_earfcn = int(
+                        self.LOWEST_DL_CN_DICTIONARY[band_num] + bw * 10 - 2)
+            else:
+                # The band is just a number, so just add it to the list
+                new_cell_list.append(cell)
+
+        self.simulator.set_band_combination(
+            [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
+
+        self.num_carriers = len(new_cell_list)
 
         # Setup the base station with the obtained configuration and then save
         # these parameters in the current configuration object
-        self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        for bts_index in range(self.num_carriers):
+            band = new_cell_list[bts_index][LteCellConfig.PARAM_BAND]
+            if isinstance(band, str) and band[0] == 'n':
+                cell_config = NrCellConfig(self.log)
+            else:
+                cell_config = LteCellConfig(self.log)
+            cell_config.configure(new_cell_list[bts_index])
+            self.simulator.configure_bts(cell_config, bts_index)
+            self.bts_configs[bts_index].incorporate(cell_config)
 
         # Now that the band is set, calibrate the link if necessary
         self.load_pathloss_if_required()
 
-    def configure_lte_cell(self, parameters):
-        """ Configures an LTE cell using a dictionary of parameters.
-
-        Args:
-            parameters: a configuration dictionary
-        """
-        # Instantiate a new configuration object
-        new_config = self.BtsConfig()
-
-        # Setup band
-        if self.PARAM_BAND not in parameters:
-            raise ValueError(
-                "The configuration dictionary must include a key '{}' with "
-                "the required band number.".format(self.PARAM_BAND))
-
-        new_config.band = parameters[self.PARAM_BAND]
-
-        if not self.PARAM_DL_EARFCN in parameters:
-            band = int(new_config.band)
-            channel = int(self.LOWEST_DL_CN_DICTIONARY[band] +
-                          self.LOWEST_DL_CN_DICTIONARY[band + 1]) / 2
-            self.log.warning(
-                "Key '{}' was not set. Using center band channel {} by default."
-                .format(self.PARAM_DL_EARFCN, channel))
-
-        new_config.dl_channel = parameters.get(self.PARAM_DL_EARFCN, channel)
-
-        # Set TDD-only configs
-        if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
-
-            # Sub-frame DL/UL config
-            if self.PARAM_FRAME_CONFIG not in parameters:
-                raise ValueError("When a TDD band is selected the frame "
-                                 "structure has to be indicated with the '{}' "
-                                 "key with a value from 0 to 6.".format(
-                                     self.PARAM_FRAME_CONFIG))
-
-            new_config.dlul_config = int(parameters[self.PARAM_FRAME_CONFIG])
-
-            # Special Sub-Frame configuration
-            if self.PARAM_SSF not in parameters:
-                self.log.warning(
-                    'The {} parameter was not provided. Setting '
-                    'Special Sub-Frame config to 6 by default.'.format(
-                        self.PARAM_SSF))
-                new_config.ssf_config = 6
-            else:
-                new_config.ssf_config = int(parameters[self.PARAM_SSF])
-
-        # Setup bandwidth
-        if self.PARAM_BW not in parameters:
-            raise ValueError(
-                "The config dictionary must include parameter {} with an "
-                "int value (to indicate 1.4 MHz use 14).".format(
-                    self.PARAM_BW))
-
-        bw = float(parameters[self.PARAM_BW])
-
-        if abs(bw - 14) < 0.00000000001:
-            bw = 1.4
-
-        new_config.bandwidth = bw
-
-        # Setup mimo mode
-        if self.PARAM_MIMO not in parameters:
-            raise ValueError(
-                "The config dictionary must include parameter '{}' with the "
-                "mimo mode.".format(self.PARAM_MIMO))
-
-        for mimo_mode in MimoMode:
-            if parameters[self.PARAM_MIMO] == mimo_mode.value:
-                new_config.mimo_mode = mimo_mode
-                break
-        else:
-            raise ValueError("The value of {} must be one of the following:"
-                             "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
-
-        if (new_config.mimo_mode == MimoMode.MIMO_4x4
-                and not self.simulator.LTE_SUPPORTS_4X4_MIMO):
-            raise ValueError("The test requires 4x4 MIMO, but that is not "
-                             "supported by the cellular simulator.")
-
-        # Setup transmission mode
-        if self.PARAM_TM not in parameters:
-            raise ValueError(
-                "The config dictionary must include key {} with an "
-                "int value from 1 to 4 indicating transmission mode.".format(
-                    self.PARAM_TM))
-
-        for tm in TransmissionMode:
-            if parameters[self.PARAM_TM] == tm.value[2:]:
-                new_config.transmission_mode = tm
-                break
-        else:
-            raise ValueError(
-                "The {} key must have one of the following values:"
-                "TM1, TM2, TM3, TM4, TM7, TM8 or TM9.".format(self.PARAM_TM))
-
-        # Setup scheduling mode
-        if self.PARAM_SCHEDULING not in parameters:
-            new_config.scheduling_mode = SchedulingMode.STATIC
-            self.log.warning(
-                "The test config does not include the '{}' key. Setting to "
-                "static by default.".format(self.PARAM_SCHEDULING))
-        elif parameters[
-                self.PARAM_SCHEDULING] == self.PARAM_SCHEDULING_DYNAMIC:
-            new_config.scheduling_mode = SchedulingMode.DYNAMIC
-        elif parameters[self.PARAM_SCHEDULING] == self.PARAM_SCHEDULING_STATIC:
-            new_config.scheduling_mode = SchedulingMode.STATIC
-        else:
-            raise ValueError("Key '{}' must have a value of "
-                             "'dynamic' or 'static'.".format(
-                                 self.PARAM_SCHEDULING))
-
-        if new_config.scheduling_mode == SchedulingMode.STATIC:
-
-            if self.PARAM_PADDING not in parameters:
-                self.log.warning(
-                    "The '{}' parameter was not set. Enabling MAC padding by "
-                    "default.".format(self.PARAM_PADDING))
-                new_config.mac_padding = True
-            else:
-                new_config.mac_padding = parameters[self.PARAM_PADDING]
-
-            if self.PARAM_PATTERN not in parameters:
-                self.log.warning(
-                    "The '{}' parameter was not set, using 100% RBs for both "
-                    "DL and UL. To set the percentages of total RBs include "
-                    "the '{}' key with a list of two ints indicating downlink "
-                    "and uplink percentages.".format(self.PARAM_PATTERN,
-                                                     self.PARAM_PATTERN))
-                dl_pattern = 100
-                ul_pattern = 100
-            else:
-                dl_pattern = int(parameters[self.PARAM_PATTERN][0])
-                ul_pattern = int(parameters[self.PARAM_PATTERN][1])
-
-            if not (0 <= dl_pattern <= 100 and 0 <= ul_pattern <= 100):
-                raise ValueError(
-                    "The scheduling pattern parameters need to be two "
-                    "positive numbers between 0 and 100.")
-
-            new_config.dl_rbs, new_config.ul_rbs = (
-                self.allocation_percentages_to_rbs(
-                    new_config.bandwidth, new_config.transmission_mode,
-                    dl_pattern, ul_pattern))
-
-            # Check if 256 QAM is enabled for DL MCS
-            if self.PARAM_DL_256_QAM_ENABLED not in parameters:
-                self.log.warning("The key '{}' is not set in the test config. "
-                                 "Setting to false by default.".format(
-                                     self.PARAM_DL_256_QAM_ENABLED))
-
-            new_config.dl_256_qam_enabled = parameters.get(
-                self.PARAM_DL_256_QAM_ENABLED, False)
-
-            # Look for a DL MCS configuration in the test parameters. If it is
-            # not present, use a default value.
-            if self.PARAM_DL_MCS in parameters:
-                new_config.dl_mcs = int(parameters[self.PARAM_DL_MCS])
-            else:
-                self.log.warning(
-                    'The test config does not include the {} key. Setting '
-                    'to the max value by default'.format(self.PARAM_DL_MCS))
-                if new_config.dl_256_qam_enabled and new_config.bandwidth == 1.4:
-                    new_config.dl_mcs = 26
-                elif (not new_config.dl_256_qam_enabled
-                      and new_config.mac_padding
-                      and new_config.bandwidth != 1.4):
-                    new_config.dl_mcs = 28
-                else:
-                    new_config.dl_mcs = 27
-
-            # Check if 64 QAM is enabled for UL MCS
-            if self.PARAM_UL_64_QAM_ENABLED not in parameters:
-                self.log.warning("The key '{}' is not set in the config file. "
-                                 "Setting to false by default.".format(
-                                     self.PARAM_UL_64_QAM_ENABLED))
-
-            new_config.ul_64_qam_enabled = parameters.get(
-                self.PARAM_UL_64_QAM_ENABLED, False)
-
-            # Look for an UL MCS configuration in the test parameters. If it is
-            # not present, use a default value.
-            if self.PARAM_UL_MCS in parameters:
-                new_config.ul_mcs = int(parameters[self.PARAM_UL_MCS])
-            else:
-                self.log.warning(
-                    'The test config does not include the {} key. Setting '
-                    'to the max value by default'.format(self.PARAM_UL_MCS))
-                if new_config.ul_64_qam_enabled:
-                    new_config.ul_mcs = 28
-                else:
-                    new_config.ul_mcs = 23
-
-        # Configure the simulation for DRX mode
-        if self.PARAM_DRX in parameters and len(
-                parameters[self.PARAM_DRX]) == 5:
-            new_config.drx_connected_mode = True
-            new_config.drx_on_duration_timer = parameters[self.PARAM_DRX][0]
-            new_config.drx_inactivity_timer = parameters[self.PARAM_DRX][1]
-            new_config.drx_retransmission_timer = parameters[self.PARAM_DRX][2]
-            new_config.drx_long_cycle = parameters[self.PARAM_DRX][3]
-            try:
-                long_cycle = int(parameters[self.PARAM_DRX][3])
-                long_cycle_offset = int(parameters[self.PARAM_DRX][4])
-                if long_cycle_offset in range(0, long_cycle):
-                    new_config.drx_long_cycle_offset = long_cycle_offset
-                else:
-                    self.log.error(
-                        ("The cDRX long cycle offset must be in the "
-                         "range 0 to (long cycle  - 1). Setting "
-                         "long cycle offset to 0"))
-                    new_config.drx_long_cycle_offset = 0
-
-            except ValueError:
-                self.log.error(("cDRX long cycle and long cycle offset "
-                                "must be integers. Disabling cDRX mode."))
-                new_config.drx_connected_mode = False
-        else:
-            self.log.warning(
-                ("DRX mode was not configured properly. "
-                 "Please provide a list with the following values: "
-                 "1) DRX on duration timer "
-                 "2) Inactivity timer "
-                 "3) Retransmission timer "
-                 "4) Long DRX cycle duration "
-                 "5) Long DRX cycle offset "
-                 "Example: [2, 6, 16, 20, 0]."))
-
+        # This shouldn't be a cell parameter but instead a simulation config
         # Setup LTE RRC status change function and timer for LTE idle test case
         if self.PARAM_RRC_STATUS_CHANGE_TIMER not in parameters:
             self.log.info(
@@ -794,51 +532,9 @@ class LteSimulation(BaseSimulation):
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
             self.simulator.set_lte_rrc_state_change_timer(False)
         else:
-            timer = int(parameters[self.PARAM_RRC_STATUS_CHANGE_TIMER])
+            timer = int(parameters[0][self.PARAM_RRC_STATUS_CHANGE_TIMER])
             self.simulator.set_lte_rrc_state_change_timer(True, timer)
             self.rrc_sc_timer = timer
-
-        # Channel Control Indicator
-        if self.PARAM_CFI not in parameters:
-            self.log.warning('The {} parameter was not provided. Setting '
-                             'CFI to BESTEFFORT.'.format(self.PARAM_CFI))
-            new_config.cfi = 'BESTEFFORT'
-        else:
-            new_config.cfi = parameters[self.PARAM_CFI]
-
-        # PHICH group size
-        if self.PARAM_PHICH not in parameters:
-            self.log.warning('The {} parameter was not provided. Setting '
-                             'PHICH group size to 1 by default.'.format(
-                                 self.PARAM_PHICH))
-            new_config.phich = '1'
-        else:
-            if parameters[self.PARAM_PHICH] == '16':
-                new_config.phich = '1/6'
-            elif parameters[self.PARAM_PHICH] == '12':
-                new_config.phich = '1/2'
-            elif parameters[self.PARAM_PHICH] in ['1/6', '1/2', '1', '2']:
-                new_config.phich = parameters[self.PARAM_PHICH]
-            else:
-                raise ValueError('The {} parameter can only be followed by 1,'
-                                 '2, 1/2 (or 12) and 1/6 (or 16).'.format(
-                                     self.PARAM_PHICH))
-
-        # Paging cycle duration
-        if self.PARAM_PAGING not in parameters:
-            self.log.warning('The {} parameter was not provided. Setting '
-                             'paging cycle duration to 1280 ms by '
-                             'default.'.format(self.PARAM_PAGING))
-            new_config.paging_cycle = 1280
-        else:
-            try:
-                new_config.paging_cycle = int(parameters[self.PARAM_PAGING])
-            except ValueError:
-                raise ValueError(
-                    'The {} key has to be followed by the paging cycle '
-                    'duration in milliseconds.'.format(self.PARAM_PAGING))
-
-        return new_config
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """ LTE simulation overrides this method so that it can convert from
@@ -917,8 +613,9 @@ class LteSimulation(BaseSimulation):
             Maximum throughput in mbps.
 
         """
-
-        return self.bts_maximum_downlink_throughtput(self.primary_config)
+        return sum(
+            self.bts_maximum_downlink_throughtput(self.bts_configs[bts_index])
+            for bts_index in range(self.num_carriers))
 
     def bts_maximum_downlink_throughtput(self, bts_config):
         """ Calculates maximum achievable downlink throughput for a single
@@ -942,13 +639,13 @@ class LteSimulation(BaseSimulation):
                              'because the MIMO mode has not been set.')
 
         bandwidth = bts_config.bandwidth
-        rb_ratio = bts_config.dl_rbs / self.total_rbs_dictionary[bandwidth]
+        rb_ratio = bts_config.dl_rbs / TOTAL_RBS_DICTIONARY[bandwidth]
         mcs = bts_config.dl_mcs
 
         max_rate_per_stream = None
 
         tdd_subframe_config = bts_config.dlul_config
-        duplex_mode = self.get_duplex_mode(bts_config.band)
+        duplex_mode = bts_config.get_duplex_mode()
 
         if duplex_mode == DuplexMode.TDD:
             if bts_config.dl_256_qam_enabled:
@@ -1057,13 +754,13 @@ class LteSimulation(BaseSimulation):
         """
 
         bandwidth = bts_config.bandwidth
-        rb_ratio = bts_config.ul_rbs / self.total_rbs_dictionary[bandwidth]
+        rb_ratio = bts_config.ul_rbs / TOTAL_RBS_DICTIONARY[bandwidth]
         mcs = bts_config.ul_mcs
 
         max_rate_per_stream = None
 
         tdd_subframe_config = bts_config.dlul_config
-        duplex_mode = self.get_duplex_mode(bts_config.band)
+        duplex_mode = bts_config.get_duplex_mode()
 
         if duplex_mode == DuplexMode.TDD:
             if bts_config.ul_64_qam_enabled:
@@ -1115,105 +812,6 @@ class LteSimulation(BaseSimulation):
 
         return max_rate_per_stream * rb_ratio
 
-    def allocation_percentages_to_rbs(self, bw, tm, dl, ul):
-        """ Converts usage percentages to number of DL/UL RBs
-
-        Because not any number of DL/UL RBs can be obtained for a certain
-        bandwidth, this function calculates the number of RBs that most
-        closely matches the desired DL/UL percentages.
-
-        Args:
-            bw: the bandwidth for the which the RB configuration is requested
-            tm: the transmission in which the base station will be operating
-            dl: desired percentage of downlink RBs
-            ul: desired percentage of uplink RBs
-        Returns:
-            a tuple indicating the number of downlink and uplink RBs
-        """
-
-        # Validate the arguments
-        if (not 0 <= dl <= 100) or (not 0 <= ul <= 100):
-            raise ValueError("The percentage of DL and UL RBs have to be two "
-                             "positive between 0 and 100.")
-
-        # Get min and max values from tables
-        max_rbs = self.total_rbs_dictionary[bw]
-        min_dl_rbs = self.min_dl_rbs_dictionary[bw]
-        min_ul_rbs = self.min_ul_rbs_dictionary[bw]
-
-        def percentage_to_amount(min_val, max_val, percentage):
-            """ Returns the integer between min_val and max_val that is closest
-            to percentage/100*max_val
-            """
-
-            # Calculate the value that corresponds to the required percentage.
-            closest_int = round(max_val * percentage / 100)
-            # Cannot be less than min_val
-            closest_int = max(closest_int, min_val)
-            # RBs cannot be more than max_rbs
-            closest_int = min(closest_int, max_val)
-
-            return closest_int
-
-        # Calculate the number of DL RBs
-
-        # Get the number of DL RBs that corresponds to
-        #  the required percentage.
-        desired_dl_rbs = percentage_to_amount(min_val=min_dl_rbs,
-                                              max_val=max_rbs,
-                                              percentage=dl)
-
-        if tm == TransmissionMode.TM3 or tm == TransmissionMode.TM4:
-
-            # For TM3 and TM4 the number of DL RBs needs to be max_rbs or a
-            # multiple of the RBG size
-
-            if desired_dl_rbs == max_rbs:
-                dl_rbs = max_rbs
-            else:
-                dl_rbs = (math.ceil(desired_dl_rbs / self.rbg_dictionary[bw]) *
-                          self.rbg_dictionary[bw])
-
-        else:
-            # The other TMs allow any number of RBs between 1 and max_rbs
-            dl_rbs = desired_dl_rbs
-
-        # Calculate the number of UL RBs
-
-        # Get the number of UL RBs that corresponds
-        # to the required percentage
-        desired_ul_rbs = percentage_to_amount(min_val=min_ul_rbs,
-                                              max_val=max_rbs,
-                                              percentage=ul)
-
-        # Create a list of all possible UL RBs assignment
-        # The standard allows any number that can be written as
-        # 2**a * 3**b * 5**c for any combination of a, b and c.
-
-        def pow_range(max_value, base):
-            """ Returns a range of all possible powers of base under
-              the given max_value.
-          """
-            return range(int(math.ceil(math.log(max_value, base))))
-
-        possible_ul_rbs = [
-            2**a * 3**b * 5**c for a in pow_range(max_rbs, 2)
-            for b in pow_range(max_rbs, 3)
-            for c in pow_range(max_rbs, 5)
-            if 2**a * 3**b * 5**c <= max_rbs] # yapf: disable
-
-        # Find the value in the list that is closest to desired_ul_rbs
-        differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
-        ul_rbs = possible_ul_rbs[differences.index(min(differences))]
-
-        # Report what are the obtained RB percentages
-        self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
-                      "percentages are {}% / {}%.".format(
-                          dl, ul, round(100 * dl_rbs / max_rbs),
-                          round(100 * ul_rbs / max_rbs)))
-
-        return dl_rbs, ul_rbs
-
     def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before
 
@@ -1225,13 +823,13 @@ class LteSimulation(BaseSimulation):
         """
 
         # Save initial values in a configuration object so they can be restored
-        restore_config = self.BtsConfig()
+        restore_config = LteCellConfig(self.log)
         restore_config.mimo_mode = self.primary_config.mimo_mode
         restore_config.transmission_mode = self.primary_config.transmission_mode
         restore_config.bandwidth = self.primary_config.bandwidth
 
         # Set up a temporary calibration configuration.
-        temporary_config = self.BtsConfig()
+        temporary_config = LteCellConfig(self.log)
         temporary_config.mimo_mode = MimoMode.MIMO_1x1
         temporary_config.transmission_mode = TransmissionMode.TM1
         temporary_config.bandwidth = max(
@@ -1254,20 +852,6 @@ class LteSimulation(BaseSimulation):
         """ If MAC padding is enabled, IP traffic wasn't started. """
         if not self.primary_config.mac_padding:
             super().stop_traffic_for_calibration()
-
-    def get_duplex_mode(self, band):
-        """ Determines if the band uses FDD or TDD duplex mode
-
-        Args:
-            band: a band number
-        Returns:
-            an variable of class DuplexMode indicating if band is FDD or TDD
-        """
-
-        if 33 <= int(band) <= 46:
-            return DuplexMode.TDD
-        else:
-            return DuplexMode.FDD
 
     def get_measured_ul_power(self, samples=5, wait_after_sample=3):
         """ Calculates UL power using measurements from the callbox and the
@@ -1296,3 +880,25 @@ class LteSimulation(BaseSimulation):
                              'uncalibrated values as measured by the '
                              'callbox.')
             return ul_power_sum / samples
+
+    def start(self):
+        """ Set the signal level for the secondary carriers, as the base class
+        implementation of this method will only set up downlink power for the
+        primary carrier component.
+
+        After that, attaches the secondary carriers."""
+
+        super().start()
+
+        if self.num_carriers > 1:
+            if self.sim_dl_power:
+                self.log.info('Setting DL power for secondary carriers.')
+
+                for bts_index in range(1, self.num_carriers):
+                    new_config = LteCellConfig(self.log)
+                    new_config.output_power = self.calibrated_downlink_rx_power(
+                        self.bts_configs[bts_index], self.sim_dl_power)
+                    self.simulator.configure_bts(new_config, bts_index)
+                    self.bts_configs[bts_index].incorporate(new_config)
+
+            self.simulator.lte_attach_secondary_carriers(self.freq_bands)

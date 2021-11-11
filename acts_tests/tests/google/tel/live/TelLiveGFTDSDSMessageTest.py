@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
-
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
@@ -29,11 +27,11 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
+from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_message_utils import sms_in_collision_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import sms_rx_power_off_multiple_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import voice_call_in_collision_with_mt_sms_msim
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
