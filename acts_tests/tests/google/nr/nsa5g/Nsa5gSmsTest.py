@@ -23,9 +23,14 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
+from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 
 class Nsa5gSmsTest(TelephonyBaseTest):
     def setup_class(self):
@@ -598,5 +603,106 @@ class Nsa5gSmsTest(TelephonyBaseTest):
             mo_rat='default',
             mt_rat='5g_csfb',
             msg_in_call=True)
+
+    @test_tracker_info(uuid="303d5c2f-15bd-4608-96b8-37d16341004e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_multiple_pdns_mo(self):
+        """Test 5G NSA for multiple pdns
+
+        Steps:
+            (1) UE supports EN-DC option 3.
+            (2) SIM with 5G service.
+            (3) UE is provisioned for 5G service and powered off.
+            (4) NR cell (Cell 2) that is within the coverage of LTE cell (Cell 1).
+            (5) UE is in near cell coverage for LTE (Cell 1) and NR (Cell 2).
+            (6) Power on the UE.
+            (7) Initiate data transfer while UE is in idle mode.
+            (8) During data transferring, send a MO SMS.
+            (9) End the data transfer
+
+	Returns:
+            True if pass; False if fail.
+        """
+        cell_1 = self.android_devices[0]
+        cell_2 = self.android_devices[1]
+        if not phone_setup_volte(self.log, cell_1):
+            cell_1.log.error("Failed to setup on VoLTE")
+            return False
+
+        if not verify_internet_connection(self.log, cell_1):
+            return False
+        if not provision_device_for_5g(self.log, cell_2, nr_type='nsa'):
+            cell_2.log.error("Failed to setup on 5G NSA")
+            return False
+        if not verify_internet_connection(self.log, cell_2):
+            return False
+        if not active_file_download_task(self.log, cell_2):
+            return False
+        download_task = active_file_download_task(self.log, cell_2, "10MB")
+        message_task = (message_test, (self.log, cell_2, cell_1,
+                                        '5g', 'volte', 'sms'))
+        results = run_multithread_func(self.log, [download_task, message_task])
+
+        if ((results[0]) & (results[1])):
+            self.log.info("PASS - MO SMS test validated over active data transfer")
+        elif ((results[0] == False) & (results[1] == True)):
+            self.log.error("FAIL - Data Transfer failed")
+        elif ((results[0] == True) & (results[1] == False)):
+            self.log.error("FAIL - Sending SMS failed")
+        else:
+            self.log.error("FAILED - MO SMS test over active data transfer")
+
+        return results
+
+    @test_tracker_info(uuid="cc9d2b46-80cc-47a8-926b-3ccf8095cefb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_sms_multiple_pdns_mt(self):
+        """Test 5G NSA for multiple pdns
+
+        Steps:
+	    (1) UE supports EN-DC option 3.
+	    (2) SIM with 5G service.
+	    (3) UE is provisioned for 5G service and powered off.
+	    (4) NR cell (Cell 2) that is within the coverage of LTE cell (Cell 1).
+	    (5) UE is in near cell coverage for LTE (Cell 1) and NR (Cell 2).
+	    (6) Power on the UE.
+	    (7) Initiate data transfer while UE is in idle mode.
+	    (8) During data transferring, send a MT SMS.
+	    (9) End the data transfer.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        cell_1 = self.android_devices[0]
+        cell_2 = self.android_devices[1]
+
+        if not phone_setup_volte(self.log, cell_1):
+            cell_1.log.error("Failed to setup on VoLTE")
+            return False
+        if not verify_internet_connection(self.log, cell_1):
+            return False
+        if not provision_device_for_5g(self.log, cell_2, nr_type='nsa'):
+            cell_2.log.error("Failed to setup on 5G NSA")
+            return False
+        if not verify_internet_connection(self.log, cell_2):
+            return False
+        if not active_file_download_task(self.log, cell_2):
+            return False
+
+        download_task = active_file_download_task(self.log, cell_2, "10MB")
+        message_task = (message_test, (self.log, cell_1, cell_2,
+                                        'volte', '5g', 'sms'))
+        results = run_multithread_func(self.log, [download_task, message_task])
+
+        if ((results[0]) & (results[1])):
+            self.log.info("PASS - MT SMS test validated over active data transfer")
+        elif ((results[0] == False) & (results[1] == True)):
+            self.log.error("FAIL - Data Transfer failed")
+        elif ((results[0] == True) & (results[1] == False)):
+            self.log.error("FAIL - Sending SMS failed")
+        else:
+            self.log.error("FAILED - MT SMS test over active data transfer")
+
+        return results
 
     """ Tests End """
