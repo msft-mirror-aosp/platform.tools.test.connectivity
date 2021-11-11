@@ -29,7 +29,6 @@ from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts_contrib.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
 from acts_contrib.test_utils.power import plot_utils
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 IPERF_TIMEOUT = 180
@@ -194,7 +193,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Sync device time, timezone and country code
         utils.require_sl4a((self.dut, ))
         utils.sync_device_time(self.dut)
-        wutils.set_wifi_country_code(self.dut, 'US')
 
         screen_on_img = self.user_params.get('screen_on_img', [])
         if screen_on_img:
@@ -217,8 +215,6 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         # Set the device into rockbottom state
         self.dut_rockbottom()
-        wutils.reset_wifi(self.dut)
-        wutils.wifi_toggle_state(self.dut, False)
 
         # Wait for extra time if needed for the first test
         if self.extra_wait:
