@@ -55,7 +55,6 @@ from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaR
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.ram_lib import FuchsiaRamLib
-from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.sysinfo_lib import FuchsiaSysInfoLib
@@ -229,8 +228,6 @@ class FuchsiaDevice:
         self.build_type = fd_conf_data.get("build_type", None)
         self.server_path = fd_conf_data.get("server_path", None)
         self.specific_image = fd_conf_data.get("specific_image", None)
-        self.ffx_binary_path = fd_conf_data.get("ffx_binary_path", None)
-        self.mdns_name = fd_conf_data.get("mdns_name", None)
 
         # Instead of the input ssh_config, a new config is generated with proper
         # ControlPath to the test output directory.
@@ -284,9 +281,6 @@ class FuchsiaDevice:
                 else:
                     time.sleep(1)
             if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
-                # self.ip was actually an mdns name. Use it for self.mdns_name
-                # unless one was explicitly provided.
-                self.mdns_name = self.mdns_name or self.ip
                 self.ip = mdns_ip
                 self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
             else:
@@ -443,9 +437,6 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaSysInfoLib
         self.sysinfo_lib = FuchsiaSysInfoLib(self.address, self.test_counter,
                                              self.client_id)
-
-        # Grab commands from FuchsiaSessionManagerLib
-        self.session_manager_lib = FuchsiaSessionManagerLib(self)
 
         # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
         self.wlan_deprecated_configuration_lib = (
@@ -1293,56 +1284,6 @@ class FuchsiaDevice:
         bt_snoop_file = open(full_out_path, 'wb')
         bt_snoop_file.write(bt_snoop_data)
         bt_snoop_file.close()
-
-    def ffx_command(self,
-                    command,
-                    timeout=FUCHSIA_DEFAULT_COMMAND_TIMEOUT,
-                    skip_status_code_check=False):
-        """Runs an ffx command.
-
-        Args:
-            command: string, command to run with ffx.
-            timeout: Timeout to wait for a command to complete.
-            skip_status_code_check: Whether to check for the status code.
-
-        Raises:
-            ValueError: if necessary attributes are not set.
-            job.TimeoutError: when the command times out.
-            Error: when the command returns non-zero and skip_status_code_check is False.
-            FuchsiaDeviceError: when stderr has contents and skip_status_code_check is False.
-
-        Returns:
-            A job.Result object containing the results of the command.
-        """
-        if not self.ffx_binary_path:
-            raise ValueError(
-                'Must provide "ffx_binary_path: path_to_ffx" in the device config'
-            )
-        if not self.mdns_name:
-            raise ValueError(
-                'Must provide "mdns_name: device_MDNS_name" in the device config'
-            )
-
-        self.log.debug(f'Running "ffx {command}".')
-
-        full_command = f'{self.ffx_binary_path} --target {self.mdns_name} {command}'
-        result = job.run(command=full_command,
-                         timeout=timeout,
-                         ignore_status=skip_status_code_check)
-
-        if isinstance(result, Exception):
-            raise result
-
-        elif not skip_status_code_check and result.stderr:
-            self.log.warning(
-                f'Ran "{full_command}", exit status {result.exit_status}')
-            self.log.warning(f'stdout: {result.stdout}')
-            self.log.warning(f'stderr: {result.stderr}')
-
-            raise FuchsiaDeviceError(
-                f'Error when running "{full_command}": {result.stderr}')
-
-        return result
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
