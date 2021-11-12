@@ -687,7 +687,10 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_get_my_current_focus_window_return_empty_string(self, adb_proxy):
+    @mock.patch(
+        'acts.controllers.fastboot.FastbootProxy',
+        return_value=MockFastbootProxy(MOCK_SERIAL))
+    def test_get_my_current_focus_window_return_empty_string(self, *_):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_value = ''
 
@@ -698,7 +701,10 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_get_my_current_focus_window_return_current_window(self, adb_proxy):
+    @mock.patch(
+        'acts.controllers.fastboot.FastbootProxy',
+        return_value=MockFastbootProxy(MOCK_SERIAL))
+    def test_get_my_current_focus_window_return_current_window(self, *_):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_value = 'mCurrentFocus=Window{a247ded u0 NotificationShade}'
 
