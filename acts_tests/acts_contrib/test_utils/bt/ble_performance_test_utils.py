@@ -92,6 +92,38 @@ def read_ble_rssi(client_ad, gatt_server, gatt_callback):
     return ble_rssi
 
 
+def read_ble_scan_rssi(client_ad, scan_callback, rssi_read_duration=30):
+    """Function to Read BLE RSSI of the remote BLE device.
+    Args:
+        client_ad: the Android device performing the connection.
+        scan_callback: the scan callback of the server
+    Returns:
+      ble_rssi: RSSI value of the remote BLE device
+      raw_rssi: RSSI list of remote BLE device
+    """
+    raw_rssi = []
+    end_time = time.time() + rssi_read_duration
+    logging.info("Reading BLE Scan RSSI for {} sec".format(rssi_read_duration))
+    while time.time() < end_time:
+        expected_event = gatt_cb_strings['rd_remote_ble_rssi'].format(
+            scan_callback)
+        try:
+            event = client_ad.ed.pop_event(expected_event,
+                                           default_event_timeout)
+        except Empty:
+            logging.error(
+                gatt_cb_err['rd_remote_rssi_err'].format(expected_event))
+            return False
+        rssi_value = event['data']['Result']['rssi']
+        raw_rssi.append(rssi_value)
+    logging.debug("First & Last reading of RSSI :{:03d} & {:03d}".format(
+        raw_rssi[0], raw_rssi[-1]))
+    ble_rssi = statistics.mean(raw_rssi)
+    ble_rssi = round(ble_rssi, 2)
+
+    return ble_rssi, raw_rssi
+
+
 def ble_coc_connection(client_ad, server_ad):
     """Sets up the CoC connection between two Android devices.
 
