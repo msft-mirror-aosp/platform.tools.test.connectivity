@@ -50,6 +50,10 @@ def create(configs):
             'name': 'NetgearR7500AP',
             'package': 'netgear_r7500'
         },
+        ('Netgear', 'R7500NA'): {
+        'name': 'NetgearR7500NAAP',
+        'package': 'netgear_r7500'
+        },
         ('Netgear', 'R7800'): {
             'name': 'NetgearR7800AP',
             'package': 'netgear_r7800'

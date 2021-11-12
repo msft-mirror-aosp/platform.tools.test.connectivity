@@ -201,6 +201,8 @@ class DataPathStressTest(AwareBaseTest):
                     init_req_key)
                 resp_dut.droid.connectivityUnregisterNetworkCallback(
                     resp_req_key)
+                # Wait a minimal amount of time to let device finish the clean-up
+                time.sleep(2)
 
             # clean-up at end of iteration
             init_dut.droid.wifiAwareDestroy(init_id)

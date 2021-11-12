@@ -325,8 +325,7 @@ class WifiPasspointTest(WifiBaseTest):
             raise signals.TestFailure("Failed because an unknown FQDN"
                                       " was successfully deleted.")
 
-
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="ac71344f-e5d9-4e70-b15d-8ce24a4b3744")
     def test_global_reach_passpoint(self):
         """Test connection to global reach passpoint.
 
@@ -368,7 +367,9 @@ class WifiPasspointTest(WifiBaseTest):
         current_ssid = current_passpoint[WifiEnums.SSID_KEY]
         if current_ssid not in passpoint_ssid:
            raise signals.TestFailure("Device did not connect to any of the "
-                                     "configured Passpoint networks.")
+                                     "configured Passpoint networks."
+                                     "current: {}, expected: {}"
+                                     .format(current_ssid, passpoint_ssid))
 
         expected_ssid =  self.passpoint_networks[0][WifiEnums.SSID_KEY]
         if current_ssid in expected_ssid:
