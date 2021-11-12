@@ -29,10 +29,10 @@ from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_test_utils import bring_up_connectivity_monitor
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import get_model_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
