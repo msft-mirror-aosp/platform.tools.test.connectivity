@@ -28,10 +28,9 @@ from acts.context import get_current_context
 from acts_contrib.test_utils.gnss import dut_log_test_utils as diaglog
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.gnss import gnss_testlog_utils as glogutils
-
-# TODO: b/189387425 define the common constants in new gnss_defines.py for GNSS tests.
-DEVICE_GPSLOG_FOLDER = '/sdcard/Android/data/com.android.gpstool/files/'
-GPS_PKG_NAME = 'com.android.gpstool'
+from acts_contrib.test_utils.gnss.gnss_defines import DEVICE_GPSLOG_FOLDER
+from acts_contrib.test_utils.gnss.gnss_defines import GPS_PKG_NAME
+from acts_contrib.test_utils.gnss.gnss_defines import BCM_GPS_XML_PATH
 
 
 class LabTtffTestBase(BaseTestClass):
@@ -63,6 +62,7 @@ class LabTtffTestBase(BaseTestClass):
         self.gnss_simulator = None
         self.rockbottom_script = None
         self.gnss_log_path = self.log_path
+        self.gps_xml_bk_path = BCM_GPS_XML_PATH + '.bk'
 
     def setup_class(self):
         super().setup_class()
@@ -139,6 +139,17 @@ class LabTtffTestBase(BaseTestClass):
         utils.set_location_service(self.dut, True)
         gutils.reinstall_package_apk(self.dut, GPS_PKG_NAME,
                                      self.gtw_gpstool_app)
+
+        # For BCM DUTs, delete gldata.sto and set IgnoreRomAlm="true" based on b/196936791#comment20
+        if self.diag_option == "BCM":
+            gutils.remount_device(self.dut)
+            # Backup gps.xml
+            copy_cmd = "cp {} {}".format(BCM_GPS_XML_PATH, self.gps_xml_bk_path)
+            self.dut.adb.shell(copy_cmd)
+            gutils.delete_bcm_nvmem_sto_file(self.dut)
+            gutils.bcm_gps_ignore_rom_alm(self.dut)
+            # Reboot DUT to apply the setting
+            gutils.reboot(self.dut)
         self.gnss_simulator.connect()
 
     def dut_rockbottom(self):
@@ -156,6 +167,18 @@ class LabTtffTestBase(BaseTestClass):
         self.dut.root_adb()
         # Restart SL4A
         self.dut.start_services()
+
+    def teardown_test(self):
+        """Teardown settings for the test class"""
+        super().teardown_test()
+        # Restore the gps.xml everytime after the test.
+        if self.diag_option == "BCM":
+            # Restore gps.xml
+            rm_cmd = "rm -rf {}".format(BCM_GPS_XML_PATH)
+            restore_cmd = "mv {} {}".format(self.gps_xml_bk_path,
+                                            BCM_GPS_XML_PATH)
+            self.dut.adb.shell(rm_cmd)
+            self.dut.adb.shell(restore_cmd)
 
     def teardown_class(self):
         """ Executed after completing all selected test cases."""
@@ -223,11 +246,14 @@ class LabTtffTestBase(BaseTestClass):
 
         ttff_time = []
         ttff_pe = []
+        ttff_haccu = []
         for i in ttff_dict.keys():
             ttff_time.append(ttff_dict[i]['ttff_sec'])
             ttff_pe.append(ttff_dict[i]['ttff_pe'])
+            ttff_haccu.append(ttff_dict[i]['ttff_haccu'])
         df['ttff_sec'] = ttff_time
         df['ttff_pe'] = ttff_pe
+        df['ttff_haccu'] = ttff_haccu
         df.to_json(gps_log_path + '/gps_log.json', orient='table')
         result = gutils.check_ttff_data(self.dut,
                                         ttff_data,
