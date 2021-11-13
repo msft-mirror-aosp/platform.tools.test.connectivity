@@ -29,7 +29,7 @@ from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import get_current_epoch_time
 from acts.utils import unzip_maintain_permissions
 from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_toggle_state
-from acts_contrib.test_utils.tel.tel_test_utils import flash_radio
+from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call

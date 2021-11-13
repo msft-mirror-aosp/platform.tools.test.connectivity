@@ -33,6 +33,7 @@ from acts import utils
 from acts.libs.utils.multithread import multithread_func
 from acts.libs.utils.multithread import run_multithread_func
 
+from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
@@ -53,7 +54,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state

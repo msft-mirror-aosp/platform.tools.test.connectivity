@@ -81,12 +81,11 @@ class ActsContribDevelop(develop):
     See ActsContribInstall for more details.
     """
     def run(self):
+        super().run()
         if self.uninstall:
-            super().run()
             _setup_acts_framework('develop', '-u')
         else:
             _setup_acts_framework('develop')
-            super().run()
 
 
 class ActsContribInstallDependencies(cmd.Command):
