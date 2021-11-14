@@ -45,6 +45,7 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_ID_CONTENT_URL_P
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_ID_VERSION_P
 from acts_contrib.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts_contrib.test_utils.tel.tel_lookup_tables import operator_capabilities
+from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_test_utils import lock_lte_band_by_mds
 from acts_contrib.test_utils.tel.tel_test_utils import get_model_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
@@ -52,7 +53,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts_contrib.test_utils.tel.tel_test_utils import bring_up_sl4a
-from acts_contrib.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_test_utils import get_carrier_config_version
 from acts_contrib.test_utils.tel.tel_test_utils import get_carrier_id_version
 from acts_contrib.test_utils.tel.tel_test_utils import get_er_db_id_version

@@ -34,15 +34,14 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_LTE
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import dumpsys_carrier_config
-from acts_contrib.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts_contrib.test_utils.tel.tel_test_utils import revert_default_telephony_setting
 from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc
 from acts_contrib.test_utils.tel.tel_test_utils import verify_default_telephony_setting
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ims_registered
