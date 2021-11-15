@@ -20,16 +20,20 @@ Test script to execute BLE connection,run data traffic and calculating RSSI valu
 import os
 import logging
 import pandas as pd
+import numpy as np
 import time
 import acts_contrib.test_utils.bt.bt_test_utils as btutils
 import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
 from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_coc_connection
 from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_gatt_disconnection
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts_contrib.test_utils.bt.ble_performance_test_utils import establish_ble_connection
+from acts_contrib.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts_contrib.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
 from acts_contrib.test_utils.bt.ble_performance_test_utils import run_ble_throughput
 from acts_contrib.test_utils.bt.ble_performance_test_utils import read_ble_rssi
+from acts_contrib.test_utils.bt.ble_performance_test_utils import read_ble_scan_rssi
 from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
 from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.signals import TestPass
@@ -113,7 +117,7 @@ class BleRangeTest(BluetoothBaseTest):
                 attenuation.append(atten)
                 ble_rssi.append(rssi_primary)
                 dut_pwlv.append(pwlv_primary)
-                path_loss.append(atten + self.system_path_loss['pathloss'])
+                path_loss.append(atten + self.system_path_loss)
                 df = pd.DataFrame({
                     'Attenuation': attenuation,
                     'BLE_RSSI': ble_rssi,
@@ -199,6 +203,53 @@ class BleRangeTest(BluetoothBaseTest):
                                               results_file_path)
         df.to_csv(filepath, encoding='utf-8')
         ble_gatt_disconnection(self.server_ad, bluetooth_gatt, gatt_callback)
+        return True
+
+    def test_ble_scan_remote_rssi(self):
+        data_points = []
+        for atten in self.attenuation_range:
+            csv_path = os.path.join(
+                self.log_path,
+                '{}_attenuation_{}.csv'.format(self.current_test_name, atten))
+            ramp_attenuation(self.attenuator, atten)
+            self.log.info('Set attenuation to %d dB', atten)
+            try:
+                self.client_ad.droid.bleSetScanSettingsScanMode(
+                    ble_scan_settings_modes['low_latency'])
+                mac_address, adv_callback, scan_callback = (
+                    get_mac_address_of_generic_advertisement(
+                        self.client_ad, self.server_ad))
+            except BtTestUtilsError as err:
+                raise GattTestUtilsError(
+                    "Error in getting mac address: {}".format(err))
+            average_rssi, raw_rssi = read_ble_scan_rssi(
+                self.client_ad, scan_callback)
+            self.log.info(
+                "Scanned rssi list of the remote device is :{}".format(
+                    raw_rssi))
+            self.log.info(
+                "BLE RSSI of the remote device is:{} dBm".format(average_rssi))
+            min_rssi = min(raw_rssi)
+            max_rssi = max(raw_rssi)
+            path_loss = atten + self.system_path_loss
+            std_deviation = np.std(raw_rssi)
+            data_point = {
+                'Attenuation': atten,
+                'BLE_RSSI': average_rssi,
+                'Pathloss': path_loss,
+                'Min_RSSI': min_rssi,
+                'Max_RSSI': max_rssi,
+                'Standard_deviation': std_deviation
+            }
+            data_points.append(data_point)
+            df = pd.DataFrame({'raw rssi': raw_rssi})
+            df.to_csv(csv_path, encoding='utf-8', index=False)
+            self.server_ad.droid.bleStopBleAdvertising(adv_callback)
+            self.client_ad.droid.bleStopBleScan(scan_callback)
+        filepath = os.path.join(
+            self.log_path, '{}_summary.csv'.format(self.current_test_name))
+        ble_df = pd.DataFrame(data_points)
+        ble_df.to_csv(filepath, encoding='utf-8')
         return True
 
     def plot_ble_graph(self, df):
