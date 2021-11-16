@@ -23,6 +23,7 @@ from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts_contrib.test_utils.tel.tel_defines import NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import _phone_number_remove_prefix
@@ -45,7 +46,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_offhook_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 
 
 def call_setup_teardown_for_call_forwarding(

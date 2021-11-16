@@ -55,6 +55,10 @@ from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackAvailable
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackLost
 from acts_contrib.test_utils.tel.tel_defines import SignalStrengthContainer
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
+from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_disabled
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -66,14 +70,10 @@ from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_network_call_back_event_match
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_not_in_call
-from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_droid_not_in_call
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
