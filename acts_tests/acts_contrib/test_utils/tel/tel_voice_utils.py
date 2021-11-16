@@ -54,6 +54,8 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_lookup_tables import network_preference_for_generation
+from acts_contrib.test_utils.tel.tel_ss_utils import call_setup_teardown_for_call_forwarding
+from acts_contrib.test_utils.tel.tel_ss_utils import call_setup_teardown_for_call_waiting
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -61,8 +63,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_sl
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown_for_call_forwarding
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown_for_call_waiting
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
