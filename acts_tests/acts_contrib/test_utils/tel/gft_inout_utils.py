@@ -14,56 +14,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
-import json
-import logging
-import re
-import os
-import urllib.parse
 import time
-from acts.controllers import android_device
 
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_ims_utils import change_ims_setting
-
-
+from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
 from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_DISCONNECTED
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_IN_SERVICE
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_OUT_OF_SERVICE
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_POWER_OFF
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_ABSENT
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_LOADED
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_READY
-from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
-
-from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
