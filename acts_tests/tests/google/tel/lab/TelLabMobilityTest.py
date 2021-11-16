@@ -42,11 +42,11 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import get_host_ip_address
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_test_utils import iperf_test_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte

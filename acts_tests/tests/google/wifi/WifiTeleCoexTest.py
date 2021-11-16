@@ -13,6 +13,8 @@ from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
+from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
@@ -208,14 +210,14 @@ class WifiTeleCoexTest(TelephonyBaseTest):
 
         """
         tele_utils.toggle_airplane_mode(self.log, self.android_devices[0], False)
-        tele_utils.toggle_volte(self.log, self.android_devices[0], volte_mode)
+        toggle_volte(self.log, self.android_devices[0], volte_mode)
         if not tele_utils.ensure_network_generation(
                 self.log,
                 self.android_devices[0],
                 GEN_4G,
                 voice_or_data=NETWORK_SERVICE_DATA):
             return False
-        if not tele_utils.set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
+        if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
             self.log.error("{} set WFC mode failed.".format(
                 self.android_devices[0].serial))
             return False
