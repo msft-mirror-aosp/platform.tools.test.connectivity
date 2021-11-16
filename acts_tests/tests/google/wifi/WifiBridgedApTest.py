@@ -1281,8 +1281,6 @@ class WifiBridgedApTest(WifiBaseTest):
         # Client connects to the 2G BridgedAp instance and wait 5 minutes.
         self.client_connects_to_a_bridgeap(self.client1, BAND_2G)
         self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
-        # Verify there are two clients connect to the BridgedAp.
-        self.verify_expected_number_of_softap_clients(self.dut, 2)
         # Verify both 2G/5G BridgedAp instances exist.
         self.verify_number_band_freq_of_bridged_ap(
             self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
@@ -1325,8 +1323,6 @@ class WifiBridgedApTest(WifiBaseTest):
         # Client connects to the 5G BridgedAp instance and wait 5 minutes.
         self.client_connects_to_a_bridgeap(self.client1, BAND_5G)
         self.wait_interval(BRIDGED_AP_SHUTDOWN_INTERVAL_5_MINUTES)
-        # Verify there are two clients connect to the BridgedAp.
-        self.verify_expected_number_of_softap_clients(self.dut, 2)
         # Verify both 2G/5G BridgedAp instances exist.
         self.verify_number_band_freq_of_bridged_ap(
             self.dut, [WifiEnums.WIFI_CONFIG_SOFTAP_BAND_2G,
