@@ -27,7 +27,6 @@ from acts.controllers.cellular_lib import BaseSimulation as base_sim
 from acts.controllers.cellular_lib import GsmSimulation as gsm_sim
 from acts.controllers.cellular_lib import LteSimulation as lte_sim
 from acts.controllers.cellular_lib import UmtsSimulation as umts_sim
-from acts.controllers.cellular_lib import LteCaSimulation as lteca_sim
 from acts.controllers.cellular_lib import LteImsSimulation as lteims_sim
 
 from acts_contrib.test_utils.tel import tel_logging_utils
@@ -333,9 +332,9 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         simulation_dictionary = {
             self.PARAM_SIM_TYPE_LTE: lte_sim.LteSimulation,
+            self.PARAM_SIM_TYPE_LTE_CA: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_UMTS: umts_sim.UmtsSimulation,
             self.PARAM_SIM_TYPE_GSM: gsm_sim.GsmSimulation,
-            self.PARAM_SIM_TYPE_LTE_CA: lteca_sim.LteCaSimulation,
             self.PARAM_SIM_TYPE_LTE_IMS: lteims_sim.LteImsSimulation
         }
 
