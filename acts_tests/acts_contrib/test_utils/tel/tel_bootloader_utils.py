@@ -20,10 +20,10 @@ import time
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
+from acts_contrib.test_utils.tel.tel_ims_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import abort_all_tests
-from acts_contrib.test_utils.tel.tel_test_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_test_utils import bring_up_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import refresh_sl4a_session
 from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode

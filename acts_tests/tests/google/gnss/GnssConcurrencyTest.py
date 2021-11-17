@@ -16,6 +16,7 @@
 
 import time
 import datetime
+import re
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
@@ -234,10 +235,15 @@ class GnssConcurrencyTest(BaseTestClass):
         position_errors = []
         search_results = self.ad.search_logcat("reportLocation", begin_time)
         for result in search_results:
-            lat_long = result["log_message"].split(" ")[10].split(",")
-            lat = float(lat_long[0])
-            long = float(lat_long[1])
-            pe = gutils.calculate_position_error(lat, long,
+            # search for location like 25.000717,121.455163
+            regex = r"(-?\d{1,5}\.\d{1,10}),\s*(-?\d{1,5}\.\d{1,10})"
+            result = re.search(regex, result["log_message"])
+            if not result:
+                raise ValueError("lat/lon does not found. "
+                                 f"original text: {result['log_message']}")
+            lat = float(result.group(1))
+            lon = float(result.group(2))
+            pe = gutils.calculate_position_error(lat, lon,
                                                  self.pixel_lab_location)
             position_errors.append(pe)
         self.ad.log.info("TestResult max_position_error %.2f" %
