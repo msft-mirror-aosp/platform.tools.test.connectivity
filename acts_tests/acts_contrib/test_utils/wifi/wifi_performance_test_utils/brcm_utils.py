@@ -358,7 +358,7 @@ def set_chain_mask(dut, chain):
     # Get current chain mask
     try:
         curr_tx_chain = int(dut.adb.shell('wl txchain'))
-        curr_tx_chain = int(dut.adb.shell('wl rxchain'))
+        curr_rx_chain = int(dut.adb.shell('wl rxchain'))
     except:
         curr_tx_chain = -1
         curr_rx_chain = -1
