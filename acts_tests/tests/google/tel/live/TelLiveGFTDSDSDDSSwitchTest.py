@@ -29,6 +29,11 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
+from acts_contrib.test_utils.tel.tel_ims_utils import is_volte_enabled
+from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte_for_subscription
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc_for_subscription
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
@@ -44,18 +49,13 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import \
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import \
     wait_for_cell_data_connection_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import is_volte_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_voice_utils import \
     phone_setup_volte_for_subscription
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
