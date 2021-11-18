@@ -286,8 +286,11 @@ class DiscoveryTest(AwareBaseTest):
         p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
         s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
 
-        # sleep for timeout period and then verify all 'fail_on_event' together
-        time.sleep(autils.EVENT_TIMEOUT)
+        autils.wait_for_event(p_dut,
+                              aconsts.SESSION_CB_ON_SESSION_TERMINATED)
+        autils.wait_for_event(s_dut,
+                              aconsts.SESSION_CB_ON_SESSION_TERMINATED)
+
 
         # verify that there were no other events
         autils.verify_no_more_events(p_dut, timeout=0)
@@ -543,9 +546,12 @@ class DiscoveryTest(AwareBaseTest):
         # Publisher+Subscriber: Terminate sessions
         p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
         s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
+        autils.wait_for_event(p_dut,
+                              aconsts.SESSION_CB_ON_SESSION_TERMINATED)
+        autils.wait_for_event(s_dut,
+                          aconsts.SESSION_CB_ON_SESSION_TERMINATED)
 
         # verify that there were no other events (including terminations)
-        time.sleep(autils.EVENT_TIMEOUT)
         autils.verify_no_more_events(p_dut, timeout=0)
         autils.verify_no_more_events(s_dut, timeout=0)
 
@@ -1330,7 +1336,7 @@ class DiscoveryTest(AwareBaseTest):
 
         s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b1894ce3-8692-478b-a96f-db2797e22caa")
     def test_service_discovery_on_service_lost_unsolicited_passive(self):
         """
         Test service discovery lost with unsolicited publish and passive subscribe
@@ -1338,7 +1344,7 @@ class DiscoveryTest(AwareBaseTest):
         self.run_service_discovery_on_service_lost(aconsts.PUBLISH_TYPE_UNSOLICITED,
                                                    aconsts.SUBSCRIBE_TYPE_PASSIVE)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4470d897-223a-4f9f-b21f-4061943137dd")
     def test_service_discovery_on_service_lost_solicited_active(self):
         """
         Test service discovery lost with solicited publish and active subscribe

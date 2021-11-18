@@ -478,11 +478,16 @@ class WifiChannelUS(WifiChannelBase):
         5700, 5745, 5805
     ]
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, support_addition_channel=[]):
+        if model in support_addition_channel:
+            self.ALL_2G_FREQUENCIES = [
+                2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457,
+                2462, 2467, 2472
+                ]
         self.DFS_5G_FREQUENCIES = [
             5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620,
             5640, 5660, 5680, 5700, 5720
-        ]
+            ]
         self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
 
 
@@ -721,8 +726,13 @@ def reset_wifi(ad):
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
+    removed = []
     for n in networks:
-        ad.droid.wifiForgetNetwork(n['networkId'])
+        if n['networkId'] not in removed:
+            ad.droid.wifiForgetNetwork(n['networkId'])
+            removed.append(n['networkId'])
+        else:
+            continue
         try:
             event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                     SHORT_TIMEOUT)
@@ -777,9 +787,11 @@ def wifi_forget_network(ad, net_ssid):
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
+    removed = []
     for n in networks:
-        if net_ssid in n[WifiEnums.SSID_KEY]:
+        if net_ssid in n[WifiEnums.SSID_KEY] and n['networkId'] not in removed:
             ad.droid.wifiForgetNetwork(n['networkId'])
+            removed.append(n['networkId'])
             try:
                 event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                         SHORT_TIMEOUT)
