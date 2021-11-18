@@ -157,11 +157,12 @@ def validate_network(dut, ssid):
         dut: android device of interest
         ssid: expected ssid
     """
-    current_network = dut.droid.wifiGetConnectionInfo()
     try:
-        connected = wutils.validate_connection(dut, wait_time=15) is not None
+        connected = wutils.validate_connection(dut, wait_time=3) is not None
+        current_network = dut.droid.wifiGetConnectionInfo()
     except:
         connected = False
+        current_network = None
     if connected and current_network['SSID'] == ssid:
         return True
     else:
