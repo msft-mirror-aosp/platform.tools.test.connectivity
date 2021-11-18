@@ -425,7 +425,8 @@ class LinkLayerStats():
                                                   common_rx_mcs=None,
                                                   common_rx_mcs_count=0,
                                                   common_rx_mcs_freq=0,
-                                                  rx_per=None)
+                                                  rx_per=float('nan'))
+
         txmpdu_count = 0
         rxmpdu_count = 0
         for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
