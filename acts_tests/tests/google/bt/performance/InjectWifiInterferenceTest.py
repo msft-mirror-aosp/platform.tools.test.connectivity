@@ -101,7 +101,6 @@ class InjectWifiInterferenceTest(BaseTestClass):
         atten = int(input("Please enter the attenuation level for CHAN1 :"))
         self.attenuator.set_atten(atten)
         self.log.info("Attenuation for CHAN1 set to:{} dB".format(atten))
-        self.set_atten_all_channel(attenuation)
         interference_rssi = None
         self.channel_change_interval = self.dynamic_wifi_interference[
             'channel_change_interval_second']
