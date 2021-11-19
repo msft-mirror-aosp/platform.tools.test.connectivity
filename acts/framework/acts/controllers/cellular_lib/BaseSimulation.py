@@ -120,8 +120,8 @@ class BaseSimulation(object):
         self.attach_timeout = test_config.get(self.KEY_ATTACH_TIMEOUT,
                                               self.DEFAULT_ATTACH_TIMEOUT)
 
-        # Configuration object for the primary base station
-        self.primary_config = BaseCellConfig(self.log)
+        # Create an empty list for cell configs.
+        self.cell_configs = []
 
         # Store the current calibrated band
         self.current_calibrated_band = None
@@ -178,7 +178,7 @@ class BaseSimulation(object):
         new_config.input_power = -10
         new_config.output_power = -30
         self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        self.cell_configs[0].incorporate(new_config)
 
         # Try to attach the phone.
         for i in range(self.attach_retries):
@@ -331,9 +331,9 @@ class BaseSimulation(object):
         """
         new_config = BaseCellConfig(self.log)
         new_config.input_power = self.calibrated_uplink_tx_power(
-            self.primary_config, signal_level)
+            self.cell_configs[0], signal_level)
         self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        self.cell_configs[0].incorporate(new_config)
 
     def set_downlink_rx_power(self, signal_level):
         """ Configure the downlink rx power level
@@ -343,9 +343,9 @@ class BaseSimulation(object):
         """
         new_config = BaseCellConfig(self.log)
         new_config.output_power = self.calibrated_downlink_rx_power(
-            self.primary_config, signal_level)
+            self.cell_configs[0], signal_level)
         self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        self.cell_configs[0].incorporate(new_config)
 
     def get_uplink_power_from_parameters(self, parameters):
         """ Reads uplink power from the parameter dictionary. """
@@ -560,7 +560,7 @@ class BaseSimulation(object):
 
         # Save initial output level to restore it after calibration
         restoration_config = BaseCellConfig(self.log)
-        restoration_config.output_power = self.primary_config.output_power
+        restoration_config.output_power = self.cell_configs[0].output_power
 
         # Set BTS to a good output level to minimize measurement error
         new_config = BaseCellConfig(self.log)
@@ -590,7 +590,7 @@ class BaseSimulation(object):
         # Convert from RSRP to signal power
         if power_units_conversion_func:
             avg_down_power = power_units_conversion_func(
-                reported_asu_power, self.primary_config)
+                reported_asu_power, self.cell_configs[0])
         else:
             avg_down_power = reported_asu_power
 
@@ -621,7 +621,7 @@ class BaseSimulation(object):
 
         # Save initial input level to restore it after calibration
         restoration_config = BaseCellConfig(self.log)
-        restoration_config.input_power = self.primary_config.input_power
+        restoration_config.input_power = self.cell_configs[0].input_power
 
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
@@ -692,7 +692,7 @@ class BaseSimulation(object):
         # Load the new ones
         if self.calibration_required:
 
-            band = self.primary_config.band
+            band = self.cell_configs[0].band
 
             # Try loading the path loss values from the calibration table. If
             # they are not available, use the automated calibration procedure.
