@@ -113,7 +113,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
             self.check_network()
             if self._enable_wifi_calling(wfc_mode):
-                if not self._voice_call(self.android_devices, WFC_CALL, False):
+                if not self._voice_call(self.android_devices, WFC_CALL, True):
                     self.log.info("VoWiFi call failure")
                     return False
                 self.log.info("Move to no service area and wifi area")
