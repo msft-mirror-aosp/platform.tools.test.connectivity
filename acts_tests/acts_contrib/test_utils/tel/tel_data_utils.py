@@ -35,6 +35,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_dat
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
@@ -61,6 +62,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
