@@ -15,11 +15,13 @@
 # the License.
 """Stream music through connected device from phone across different
 attenuations."""
-from acts.signals import TestPass
+
 from acts_contrib.test_utils.bt.BtInterferenceBaseTest import BtInterferenceBaseTest
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts_contrib.test_utils.bt.BtInterferenceBaseTest import get_iperf_results
+from acts_contrib.test_utils.bt.BtInterferenceBaseTest import inject_static_wifi_interference
 from multiprocessing import Process, Queue
+from acts.signals import TestPass
 
 DEFAULT_THDN_THRESHOLD = 0.9
 MAX_ATTENUATION = 95
@@ -68,44 +70,6 @@ class BtInterferenceStaticTest(BtInterferenceBaseTest):
                                               str_channel_test))
         setattr(self, test_case_name, test_case_fn)
 
-    def inject_static_wifi_interference(self, interference_level, channels):
-        """Function to inject wifi interference to bt link and read rssi.
-
-        Interference of IPERF traffic is always running, by setting attenuation,
-        the gate is opened to release the interference to the setup.
-        Args:
-            interference_level: the signal strength of wifi interference, use
-                attenuation level to represent this
-            channels: wifi channels where interference will
-                be injected, list
-        """
-        all_pair = range(len(self.wifi_int_pairs))
-        interference_pair_indices = self.locate_interference_pair_by_channel(
-            channels)
-        inactive_interference_pairs_indices = [
-            item for item in all_pair if item not in interference_pair_indices
-        ]
-        self.log.info(
-            'WiFi interference at {} and inactive channels at {}'.format(
-                interference_pair_indices,
-                inactive_interference_pairs_indices))
-        for i in interference_pair_indices:
-            self.wifi_int_pairs[i].attenuator.set_atten(interference_level)
-            self.log.info('Set attenuation {} dB on attenuator {}'.format(
-                self.wifi_int_pairs[i].attenuator.get_atten(), i + 1))
-        for i in inactive_interference_pairs_indices:
-            self.wifi_int_pairs[i].attenuator.set_atten(MAX_ATTENUATION)
-            self.log.info('Set attenuation {} dB on attenuator {}'.format(
-                self.wifi_int_pairs[i].attenuator.get_atten(), i + 1))
-        #Read interference RSSI
-        self.get_interference_rssi()
-        self.wifi_chan1_rssi_metric.metric_value = self.interference_rssi[0][
-            'rssi']
-        self.wifi_chan6_rssi_metric.metric_value = self.interference_rssi[1][
-            'rssi']
-        self.wifi_chan11_rssi_metric.metric_value = self.interference_rssi[2][
-            'rssi']
-
     def bt_range_with_static_wifi_interference(self, interference_level,
                                                channels):
         """Test function to measure bt range under interference.
@@ -115,7 +79,16 @@ class BtInterferenceStaticTest(BtInterferenceBaseTest):
             channels: wifi interference channels
         """
         #setup wifi interference by setting the correct attenuator
-        self.inject_static_wifi_interference(interference_level, channels)
+        inject_static_wifi_interference(self.wifi_int_pairs,
+                                        interference_level, channels)
+        # Read interference RSSI
+        self.get_interference_rssi()
+        self.wifi_chan1_rssi_metric.metric_value = self.interference_rssi[0][
+            'rssi']
+        self.wifi_chan6_rssi_metric.metric_value = self.interference_rssi[1][
+            'rssi']
+        self.wifi_chan11_rssi_metric.metric_value = self.interference_rssi[2][
+            'rssi']
         for atten in self.bt_attenuation_range:
             # Set attenuation for BT link
             self.attenuator.set_atten(atten)
