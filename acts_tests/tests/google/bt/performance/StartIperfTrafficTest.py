@@ -24,14 +24,13 @@ from acts_contrib.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.signals import TestPass
 
 
-iperf_duration = 10000
-
-
 class StartIperfTrafficTest(BtInterferenceBaseTest):
     """
     """
     def __init__(self, configs):
         super().__init__(configs)
+        req_params =["IperfDuration"]
+        self.unpack_userparams(req_params)
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -83,14 +82,14 @@ class StartIperfTrafficTest(BtInterferenceBaseTest):
         for wifi_level in self.wifi_int_levels:
             interference_atten_level = self.dynamic_wifi_interference[
                 'interference_level'][wifi_level]
-            end_time = time.time() + iperf_duration
+            end_time = time.time() + self.IperfDuration
             while time.time() < end_time:
                 procs_iperf = []
                 # Start IPERF on all three interference pairs
                 for obj in self.wifi_int_pairs:
                     obj.iperf_server.start()
                     iperf_args = '-i 1 -t {} -p {} -J -R'.format(
-                        iperf_duration, obj.iperf_server.port)
+                        self.IperfDuration, obj.iperf_server.port)
                     tag = 'chan_{}'.format(obj.channel)
                     proc_iperf = Process(target=obj.iperf_client.start,
                                          args=(obj.server_address, iperf_args,
