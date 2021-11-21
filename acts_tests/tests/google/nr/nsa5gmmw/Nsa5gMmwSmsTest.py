@@ -23,6 +23,7 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
 
 
@@ -175,7 +176,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         """ Test MO SMS for 1 phone in APM,
         WiFi connected, WFC Cell Preferred mode.
 
-        Disable APM on PhoneA
+        Disable APM on both devices
         Provision PhoneA in 5g NSA MMW
         Provision PhoneA for WFC Cell Pref with APM ON
         Send and Verify SMS from PhoneA to PhoneB
@@ -183,6 +184,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        apm_mode = [toggle_airplane_mode(self.log, ad, False) for ad in self.android_devices]
         return message_test(
             self.log,
             self.android_devices[0],
@@ -201,7 +203,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         """ Test MT SMS for 1 phone in APM,
         WiFi connected, WFC Cell Preferred mode.
 
-        Disable APM on PhoneA
+        Disable APM on both devices
         Provision PhoneA in 5g NSA MMW
         Provision PhoneA for WFC Cell Pref with APM ON
         Send and Verify SMS from PhoneB to PhoneA
@@ -209,6 +211,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        apm_mode = [toggle_airplane_mode(self.log, ad, False) for ad in self.android_devices]
         return message_test(
             self.log,
             self.android_devices[1],
@@ -227,7 +230,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         """ Test MO SMS for 1 Phone in APM off, WiFi connected,
         WFC WiFi Preferred mode.
 
-        Disable APM on PhoneA
+        Disable APM on both devices
         Provision PhoneA in 5g NSA MMW
         Provision PhoneA for WFC Wifi Pref with APM OFF
         Send and Verify SMS from PhoneA to PhoneB
@@ -236,6 +239,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        apm_mode = [toggle_airplane_mode(self.log, ad, False) for ad in self.android_devices]
         return message_test(
             self.log,
             self.android_devices[0],
@@ -253,7 +257,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         """ Test MT SMS for 1 Phone in APM off, WiFi connected,
         WFC WiFi Preferred mode.
 
-        Disable APM on PhoneA
+        Disable APM on both devices
         Provision PhoneA in 5g NSA MMW
         Provision PhoneA for WFC Wifi Pref with APM OFF
         Send and Verify SMS from PhoneB to PhoneA
@@ -262,6 +266,7 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        apm_mode = [toggle_airplane_mode(self.log, ad, False) for ad in self.android_devices]
         return message_test(
             self.log,
             self.android_devices[1],

@@ -25,42 +25,31 @@ from acts.libs.utils.multithread import multithread_func
 
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import \
-    phone_setup_volte_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ims_registered
-from acts_contrib.test_utils.tel.gft_inout_utils import check_no_service_time
-from acts_contrib.test_utils.tel.gft_inout_utils import check_back_to_service_time
-from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
-from acts_contrib.test_utils.tel.gft_inout_utils import get_voice_call_type
-from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
-from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
-from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_POWER_LEVEL
-from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import WIFI_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import NO_WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_TIME
 from acts_contrib.test_utils.tel.gft_inout_defines import WAIT_FOR_SERVICE_TIME
+from acts_contrib.test_utils.tel.gft_inout_utils import check_back_to_service_time
+from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
+from acts_contrib.test_utils.tel.gft_inout_utils import get_voice_call_type
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 WAIT_TIME_AT_NO_SERVICE_AREA = 300
 
@@ -124,7 +113,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
             self.check_network()
             if self._enable_wifi_calling(wfc_mode):
-                if not self._voice_call(self.android_devices, WFC_CALL, False):
+                if not self._voice_call(self.android_devices, WFC_CALL, True):
                     self.log.info("VoWiFi call failure")
                     return False
                 self.log.info("Move to no service area and wifi area")
