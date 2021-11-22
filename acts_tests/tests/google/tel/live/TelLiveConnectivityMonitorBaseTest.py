@@ -29,10 +29,13 @@ from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import bring_up_connectivity_monitor
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import get_model_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
@@ -41,9 +44,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_volte
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem

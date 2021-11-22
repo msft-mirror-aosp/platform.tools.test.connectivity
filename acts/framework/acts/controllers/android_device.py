@@ -57,6 +57,7 @@ CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/vendor/ramdump/bluetooth", "/data/vendor/log/cbd")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
+ALWAYS_ON_LOG_PATH = "/data/vendor/radio/logs/always-on"
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
 DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
 DEFAULT_SCREENSHOT_PATH = "/sdcard/Pictures/screencap"
@@ -1169,9 +1170,14 @@ class AndroidDevice:
         """Get sdm logs."""
         # Sleep 10 seconds for the buffered log to be written in sdm log file
         time.sleep(10)
-        log_path = getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
-        sdm_logs = self.get_file_names(
-            log_path, begin_time=begin_time, match_string="*.sdm*")
+        log_paths = [
+            ALWAYS_ON_LOG_PATH,
+            getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
+        ]
+        sdm_logs = []
+        for path in log_paths:
+            sdm_logs += self.get_file_names(
+                path, begin_time=begin_time, match_string="*.sdm*")
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
                                         "SDM_%s" % self.serial)
@@ -1429,10 +1435,9 @@ class AndroidDevice:
     def get_my_current_focus_window(self):
         """Get the current focus window on screen"""
         output = self.adb.shell(
-            'dumpsys window displays | grep -E mCurrentFocus',
+            'dumpsys window displays | grep -E mCurrentFocus | grep -v null',
             ignore_status=True)
-        if not output or "not found" in output or "Can't find" in output or (
-                "mCurrentFocus=null" in output):
+        if not output or "not found" in output or "Can't find" in output:
             result = ''
         else:
             result = output.split(' ')[-1].strip("}")

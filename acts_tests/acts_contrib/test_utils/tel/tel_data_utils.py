@@ -51,6 +51,8 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
+from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -64,7 +66,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_usage
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
 from acts_contrib.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
@@ -87,7 +88,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
 from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ims_registered
 from acts_contrib.test_utils.tel.tel_5g_test_utils import check_current_network_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices

@@ -30,6 +30,11 @@ from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
+from acts_contrib.test_utils.tel.tel_ss_utils import erase_call_forwarding_by_mmi
+from acts_contrib.test_utils.tel.tel_ss_utils import set_call_forwarding_by_mmi
+from acts_contrib.test_utils.tel.tel_ss_utils import set_call_waiting
+from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc_for_subscription
+from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
@@ -43,7 +48,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import erase_call_forwarding_by_mmi
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
@@ -51,12 +55,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
 from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
-from acts_contrib.test_utils.tel.tel_test_utils import set_call_forwarding_by_mmi
-from acts_contrib.test_utils.tel.tel_test_utils import set_call_waiting
-from acts_contrib.test_utils.tel.tel_test_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_wfc_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_and_reject_call_for_subscription
