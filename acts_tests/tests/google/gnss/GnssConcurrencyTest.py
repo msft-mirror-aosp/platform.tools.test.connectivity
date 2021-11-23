@@ -118,6 +118,9 @@ class GnssConcurrencyTest(BaseTestClass):
         start_time = utils.epoch_to_human_time(begin_time)
         start_time = datetime.datetime.strptime(start_time,
                                                 "%m-%d-%Y %H:%M:%S ")
+        if not search_results:
+            raise signals.TestFailure(f"No log entry found for keyword:"
+                                      f"{CONCURRENCY_TYPE[type]}")
         results.append(
             (search_results[0]["datetime_obj"] - start_time).total_seconds())
         samples = len(search_results) - 1
