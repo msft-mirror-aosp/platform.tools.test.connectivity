@@ -51,6 +51,7 @@ class GnssConcurrencyTest(BaseTestClass):
         gutils.reboot(self.ad)
 
     def setup_test(self):
+        gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.start_pixel_logger(self.ad)
         start_adb_tcpdump(self.ad)
         # related properties
