@@ -430,13 +430,6 @@ class LteSimulation(BaseSimulation):
         self.dut.set_preferred_network_type(
             BaseCellularDut.PreferredNetworkType.LTE_ONLY)
 
-        # Create a list with the primary and secondary cells.
-        self.bts_configs = [self.primary_config]
-        self.bts_configs.extend([
-            LteCellConfig(self.log)
-            for _ in range(1, self.simulator.LTE_MAX_CARRIERS)
-        ])
-
         # Get LTE CA frequency bands setting from the test configuration
         if self.KEY_FREQ_BANDS not in test_config:
             self.log.warning("The key '{}' is not set in the config file. "
@@ -509,17 +502,16 @@ class LteSimulation(BaseSimulation):
 
         self.num_carriers = len(new_cell_list)
 
-        # Setup the base station with the obtained configuration and then save
-        # these parameters in the current configuration object
-        for bts_index in range(self.num_carriers):
-            band = new_cell_list[bts_index][LteCellConfig.PARAM_BAND]
+        # Setup the base stations with the obtain configuration
+        self.cell_configs = []
+        for i in range(self.num_carriers):
+            band = new_cell_list[i][LteCellConfig.PARAM_BAND]
             if isinstance(band, str) and band[0] == 'n':
-                cell_config = NrCellConfig(self.log)
+                self.cell_configs.append(NrCellConfig(self.log))
             else:
-                cell_config = LteCellConfig(self.log)
-            cell_config.configure(new_cell_list[bts_index])
-            self.simulator.configure_bts(cell_config, bts_index)
-            self.bts_configs[bts_index].incorporate(cell_config)
+                self.cell_configs.append(LteCellConfig(self.log))
+            self.cell_configs[i].configure(new_cell_list[i])
+            self.simulator.configure_bts(self.cell_configs[i], i)
 
         # Now that the band is set, calibrate the link if necessary
         self.load_pathloss_if_required()
@@ -614,7 +606,7 @@ class LteSimulation(BaseSimulation):
 
         """
         return sum(
-            self.bts_maximum_downlink_throughtput(self.bts_configs[bts_index])
+            self.bts_maximum_downlink_throughtput(self.cell_configs[bts_index])
             for bts_index in range(self.num_carriers))
 
     def bts_maximum_downlink_throughtput(self, bts_config):
@@ -739,7 +731,7 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        return self.bts_maximum_uplink_throughtput(self.primary_config)
+        return self.bts_maximum_uplink_throughtput(self.cell_configs[0])
 
     def bts_maximum_uplink_throughtput(self, bts_config):
         """ Calculates maximum achievable uplink throughput for the selected
@@ -824,9 +816,10 @@ class LteSimulation(BaseSimulation):
 
         # Save initial values in a configuration object so they can be restored
         restore_config = LteCellConfig(self.log)
-        restore_config.mimo_mode = self.primary_config.mimo_mode
-        restore_config.transmission_mode = self.primary_config.transmission_mode
-        restore_config.bandwidth = self.primary_config.bandwidth
+        restore_config.mimo_mode = self.cell_configs[0].mimo_mode
+        restore_config.transmission_mode = \
+            self.cell_configs[0].transmission_mode
+        restore_config.bandwidth = self.cell_configs[0].bandwidth
 
         # Set up a temporary calibration configuration.
         temporary_config = LteCellConfig(self.log)
@@ -835,22 +828,22 @@ class LteSimulation(BaseSimulation):
         temporary_config.bandwidth = max(
             self.allowed_bandwidth_dictionary[int(band)])
         self.simulator.configure_bts(temporary_config)
-        self.primary_config.incorporate(temporary_config)
+        self.cell_configs[0].incorporate(temporary_config)
 
         super().calibrate(band)
 
         # Restore values as they were before changing them for calibration.
         self.simulator.configure_bts(restore_config)
-        self.primary_config.incorporate(restore_config)
+        self.cell_configs[0].incorporate(restore_config)
 
     def start_traffic_for_calibration(self):
         """ If MAC padding is enabled, there is no need to start IP traffic. """
-        if not self.primary_config.mac_padding:
+        if not self.cell_configs[0].mac_padding:
             super().start_traffic_for_calibration()
 
     def stop_traffic_for_calibration(self):
         """ If MAC padding is enabled, IP traffic wasn't started. """
-        if not self.primary_config.mac_padding:
+        if not self.cell_configs[0].mac_padding:
             super().stop_traffic_for_calibration()
 
     def get_measured_ul_power(self, samples=5, wait_after_sample=3):
@@ -897,8 +890,8 @@ class LteSimulation(BaseSimulation):
                 for bts_index in range(1, self.num_carriers):
                     new_config = LteCellConfig(self.log)
                     new_config.output_power = self.calibrated_downlink_rx_power(
-                        self.bts_configs[bts_index], self.sim_dl_power)
+                        self.cell_configs[bts_index], self.sim_dl_power)
                     self.simulator.configure_bts(new_config, bts_index)
-                    self.bts_configs[bts_index].incorporate(new_config)
+                    self.cell_configs[bts_index].incorporate(new_config)
 
             self.simulator.lte_attach_secondary_carriers(self.freq_bands)
