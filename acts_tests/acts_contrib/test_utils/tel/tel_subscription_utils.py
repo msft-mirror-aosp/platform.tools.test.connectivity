@@ -20,6 +20,7 @@ import re
 import time
 
 from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
+from acts_contrib.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from future import standard_library
@@ -228,6 +229,7 @@ def get_carrierid_from_slot_index(ad, sim_slot_index):
             return info['carrierId']
     return None
 
+
 def get_isopportunistic_from_slot_index(ad, sim_slot_index):
     """ Get the isOppotunistic field for a particular slot
 
@@ -243,6 +245,7 @@ def get_isopportunistic_from_slot_index(ad, sim_slot_index):
         if info['simSlotIndex'] == sim_slot_index:
             return info['isOpportunistic']
     return None
+
 
 def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
     """Set subId for data
@@ -338,6 +341,7 @@ def set_voice_sub_id(ad, sub_id):
         ad.incoming_voice_sub_id = sub_id
     if hasattr(ad, "outgoing_voice_sub_id"):
         ad.outgoing_voice_sub_id = sub_id
+
 
 def set_default_sub_for_all_services(ad, slot_id=0):
     """Set subId for all services
@@ -559,6 +563,15 @@ def get_subid_on_same_network_of_host_ad(ads, host_sub_id=None, type="voice"):
 
     return host_sub_id, p1_sub_id, p2_sub_id
 
+
+def get_slot_index_from_subid(ad, sub_id):
+    try:
+        info = ad.droid.subscriptionGetSubInfoForSubscriber(sub_id)
+        return info['simSlotIndex']
+    except KeyError:
+        return INVALID_SIM_SLOT_INDEX
+
+
 def get_slot_index_from_data_sub_id(ad):
     """Get slot index from given sub ID for data
 
@@ -574,6 +587,7 @@ def get_slot_index_from_data_sub_id(ad):
         if info['subscriptionId'] == data_sub_id:
             return info['simSlotIndex']
     return INVALID_SUB_ID
+
 
 def get_slot_index_from_voice_sub_id(ad):
     """Get slot index from the current voice sub ID.
@@ -592,6 +606,7 @@ def get_slot_index_from_voice_sub_id(ad):
         if info['subscriptionId'] == voice_sub_id:
             return info['simSlotIndex']
     return INVALID_SUB_ID
+
 
 def get_all_sub_id(ad):
     """Return all valid subscription IDs.

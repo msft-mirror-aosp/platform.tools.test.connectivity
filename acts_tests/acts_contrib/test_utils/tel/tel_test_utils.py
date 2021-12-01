@@ -153,6 +153,7 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_for_generat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
@@ -490,14 +491,6 @@ def get_user_config_profile(ad):
         "WFC Mode":
         ad.droid.imsGetWfcMode()
     }
-
-
-def get_slot_index_from_subid(log, ad, sub_id):
-    try:
-        info = ad.droid.subscriptionGetSubInfoForSubscriber(sub_id)
-        return info['simSlotIndex']
-    except KeyError:
-        return INVALID_SIM_SLOT_INDEX
 
 
 def get_num_active_sims(log, ad):
@@ -1645,7 +1638,7 @@ def dial_phone_number(ad, callee_number):
 
 
 def get_call_state_by_adb(ad):
-    slot_index_of_default_voice_subid = get_slot_index_from_subid(ad.log, ad,
+    slot_index_of_default_voice_subid = get_slot_index_from_subid(ad,
         get_incoming_voice_sub_id(ad))
     output = ad.adb.shell("dumpsys telephony.registry | grep mCallState")
     if "mCallState" in output:
