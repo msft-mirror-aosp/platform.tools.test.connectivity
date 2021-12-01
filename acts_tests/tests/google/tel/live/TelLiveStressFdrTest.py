@@ -34,20 +34,20 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_FDR
 from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
