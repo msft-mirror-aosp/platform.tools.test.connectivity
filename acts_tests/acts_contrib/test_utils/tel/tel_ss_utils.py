@@ -26,6 +26,7 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import _phone_number_remove_prefix
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_ring_by_adb
@@ -33,7 +34,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_idle_by_
 from acts_contrib.test_utils.tel.tel_test_utils import dial_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import disconnect_call_by_id
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
-from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import get_user_config_profile
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
@@ -551,7 +551,7 @@ def get_call_forwarding_by_adb(log, ad, call_forwarding_type="unconditional"):
     if call_forwarding_type != "unconditional":
         return "unknown"
 
-    slot_index_of_default_voice_subid = get_slot_index_from_subid(log, ad,
+    slot_index_of_default_voice_subid = get_slot_index_from_subid(ad,
         get_incoming_voice_sub_id(ad))
     output = ad.adb.shell("dumpsys telephony.registry | grep mCallForwarding")
     if "mCallForwarding" in output:
