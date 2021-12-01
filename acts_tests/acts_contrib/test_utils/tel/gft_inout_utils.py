@@ -16,23 +16,23 @@
 
 import time
 
-from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_IN_SERVICE
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_OUT_OF_SERVICE
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
+from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_CONNECTED
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_IN_SERVICE
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_OUT_OF_SERVICE
+from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 
 
 def check_no_service_time(ad, timeout=60):

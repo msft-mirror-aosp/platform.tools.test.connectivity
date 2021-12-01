@@ -27,32 +27,27 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_ss_utils import three_phone_call_forwarding_short_seq
+from acts_contrib.test_utils.tel.tel_ss_utils import three_phone_call_waiting_short_seq
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_forwarding_short_seq
-from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_waiting_short_seq
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _get_expected_call_state
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_first_call_from_host
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_first_call_from_participant
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_second_call_from_host
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_second_call_from_participant
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_first_call_from_host
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_first_call_from_participant
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_second_call_from_host
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_second_call_from_participant
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mo_mo_add_swap_x
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mo_mt_add_swap_x
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mt_mt_add_swap_x
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _three_phone_hangup_call_verify_call_state
-from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_hangup_call_verify_call_state
 
 
 class Nsa5gVoiceConfTest(TelephonyBaseTest):

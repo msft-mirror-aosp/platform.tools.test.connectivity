@@ -24,19 +24,20 @@ from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_2g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_call_uri
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import is_uri_equivalent
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_reject_call_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_reject_call_for_subscription
+
 
 def _three_phone_call_mo_add_mo(log, ads, phone_setups, verify_funcs):
     """Use 3 phones to make MO calls.
