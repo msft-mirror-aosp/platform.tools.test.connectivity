@@ -22,7 +22,6 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 
-
 class TelLiveRcsTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()

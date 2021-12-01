@@ -17,8 +17,6 @@
     Test Script for 5G IMS Settings scenarios
 """
 
-import time
-
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -29,11 +27,11 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_NR
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import dumpsys_carrier_config
 from acts_contrib.test_utils.tel.tel_voice_utils import change_ims_setting
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 
 class Nsa5gImsSettingsTest(TelephonyBaseTest):

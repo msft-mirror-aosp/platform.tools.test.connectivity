@@ -22,27 +22,28 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_data_utils import activate_and_verify_cellular_data
+from acts_contrib.test_utils.tel.tel_data_utils import deactivate_and_verify_cellular_data
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_disabled
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_data_sub_id
-from acts_contrib.test_utils.tel.tel_data_utils import deactivate_and_verify_cellular_data
-from acts_contrib.test_utils.tel.tel_data_utils import activate_and_verify_cellular_data
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_4g_for_subscription
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_parse_utils import print_nested_dict
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_setup_data_call
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_deactivate_data_call
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_setup_data_call_on_iwlan
 from acts_contrib.test_utils.tel.tel_parse_utils import parse_deactivate_data_call_on_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_4g_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_data_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.utils import get_current_epoch_time
 from acts.libs.utils.multithread import multithread_func
 
 CALCULATE_EVERY_N_CYCLES = 10
+
 
 class TelLiveRilDataKpiTest(TelephonyBaseTest):
     def setup_class(self):
