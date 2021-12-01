@@ -18,8 +18,8 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_dsds_utils import dds_switch_during_data_transfer_test
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):

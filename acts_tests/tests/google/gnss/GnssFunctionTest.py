@@ -36,8 +36,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connectio
 from acts_contrib.test_utils.tel.tel_test_utils import abort_all_tests
 from acts_contrib.test_utils.tel.tel_test_utils import stop_qxdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import http_file_download_by_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash

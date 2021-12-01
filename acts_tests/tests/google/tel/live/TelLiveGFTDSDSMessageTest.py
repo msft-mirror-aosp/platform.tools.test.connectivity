@@ -20,6 +20,9 @@ from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import Tele
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
@@ -33,10 +36,7 @@ from acts_contrib.test_utils.tel.tel_message_utils import sms_in_collision_send_
 from acts_contrib.test_utils.tel.tel_message_utils import sms_rx_power_off_multiple_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import voice_call_in_collision_with_mt_sms_msim
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
-from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
 from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func
 
