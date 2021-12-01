@@ -39,6 +39,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
@@ -49,7 +50,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
-from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
@@ -257,11 +257,11 @@ def dsds_voice_call_test(
     result = two_phone_call_msim_for_slot(
         log,
         ad_mo,
-        get_slot_index_from_subid(log, ad_mo, mo_sub_id),
+        get_slot_index_from_subid(ad_mo, mo_sub_id),
         None,
         is_mo_in_call,
         ad_mt,
-        get_slot_index_from_subid(log, ad_mt, mt_sub_id),
+        get_slot_index_from_subid(ad_mt, mt_sub_id),
         None,
         is_mt_in_call)
 
@@ -662,10 +662,8 @@ def dds_switch_during_data_transfer_test(
 
             if call_or_sms_or_mms == "call":
                 log.info("Step 4: Make voice call.")
-                mo_slot = get_slot_index_from_subid(
-                    log, ad_mo, mo_sub_id)
-                mt_slot = get_slot_index_from_subid(
-                    log, ad_mt, mt_sub_id)
+                mo_slot = get_slot_index_from_subid(ad_mo, mo_sub_id)
+                mt_slot = get_slot_index_from_subid(ad_mt, mt_sub_id)
                 result = two_phone_call_msim_for_slot(
                     log,
                     ad_mo,
@@ -883,11 +881,11 @@ def enable_slot_after_voice_call_test(
     result = two_phone_call_msim_for_slot(
         log,
         ad_mo,
-        get_slot_index_from_subid(log, ad_mo, mo_sub_id),
+        get_slot_index_from_subid(ad_mo, mo_sub_id),
         None,
         is_mo_in_call,
         ad_mt,
-        get_slot_index_from_subid(log, ad_mt, mt_sub_id),
+        get_slot_index_from_subid(ad_mt, mt_sub_id),
         None,
         is_mt_in_call)
 
