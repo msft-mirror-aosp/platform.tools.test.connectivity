@@ -24,15 +24,7 @@ from acts.libs.utils.multithread import multithread_func
 
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_default_state
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
-from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
-
+from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_utils import check_no_service_time
 from acts_contrib.test_utils.tel.gft_inout_utils import check_back_to_service_time
 from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
@@ -42,9 +34,14 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import GEN_3G
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
-from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
-
-
+from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_default_state
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 
 AIRPLANE_MODE_ON_TIME = 60
 AIRPLANE_MODE_OFF_TIME = 60

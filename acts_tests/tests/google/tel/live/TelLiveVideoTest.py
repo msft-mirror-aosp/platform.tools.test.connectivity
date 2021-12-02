@@ -45,29 +45,27 @@ from acts_contrib.test_utils.tel.tel_defines import EventTelecomVideoCallSession
 from acts_contrib.test_utils.tel.tel_defines import SESSION_EVENT_RX_PAUSE
 from acts_contrib.test_utils.tel.tel_defines import SESSION_EVENT_RX_RESUME
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_video_enabled
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import disconnect_call_by_id
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_video_utils import get_call_id_in_video_state
-from acts_contrib.test_utils.tel.tel_video_utils import \
-    is_phone_in_call_video_bidirectional
+from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_voice_hd
 from acts_contrib.test_utils.tel.tel_video_utils import phone_setup_video
-from acts_contrib.test_utils.tel.tel_video_utils import \
-    verify_video_call_in_expected_state
+from acts_contrib.test_utils.tel.tel_video_utils import verify_video_call_in_expected_state
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_downgrade
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_modify_video
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_voice_utils import disconnect_call_by_id
 from acts_contrib.test_utils.tel.tel_voice_utils import get_audio_route
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import set_audio_route
 from acts_contrib.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import set_audio_route
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default 1 hour
 

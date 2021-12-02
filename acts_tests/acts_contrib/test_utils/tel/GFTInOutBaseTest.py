@@ -35,8 +35,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
 from acts_contrib.test_utils.tel.gft_inout_utils import get_voice_call_type
 from acts_contrib.test_utils.tel.gft_inout_utils import verify_data_connection

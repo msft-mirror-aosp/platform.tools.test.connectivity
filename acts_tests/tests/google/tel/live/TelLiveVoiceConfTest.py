@@ -25,24 +25,29 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_MERGE_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
-from acts_contrib.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
-from acts_contrib.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_2g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_ss_utils import three_phone_call_forwarding_short_seq
+from acts_contrib.test_utils.tel.tel_ss_utils import three_phone_call_waiting_short_seq
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import call_reject
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_voice_utils import call_reject
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -50,32 +55,19 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
-from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_forwarding_short_seq
-from acts_contrib.test_utils.tel.tel_voice_utils import three_phone_call_waiting_short_seq
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _get_expected_call_state
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _hangup_call
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_first_call_from_host
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_first_call_from_participant
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_second_call_from_host
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import \
-    _test_ims_conference_merge_drop_second_call_from_participant
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_first_call_from_host
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_first_call_from_participant
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_second_call_from_host
+from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_second_call_from_participant
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mo_mo_add_swap_x
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mo_mt_add_swap_x
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_call_mt_mt_add_swap_x
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mo
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mt
-from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mt_add_mt
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_hangup_call_verify_call_state
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_wcdma_conference_merge_drop
 

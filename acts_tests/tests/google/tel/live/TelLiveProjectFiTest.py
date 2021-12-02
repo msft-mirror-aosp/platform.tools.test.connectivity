@@ -26,8 +26,8 @@ from acts_contrib.test_utils.tel.tel_defines import CARRIER_SPT
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_TMO
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_USCC
 from acts_contrib.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import abort_all_tests
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import is_sim_ready
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot

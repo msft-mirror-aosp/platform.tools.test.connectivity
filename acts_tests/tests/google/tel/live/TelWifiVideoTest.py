@@ -22,9 +22,9 @@ from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_viwifi_bidirectional
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default 1 hour
 
