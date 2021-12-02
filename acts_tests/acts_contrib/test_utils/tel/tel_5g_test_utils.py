@@ -15,13 +15,8 @@
 #   limitations under the License.
 
 import time
-import random
-import re
 
-from queue import Empty
-from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func
-from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
@@ -30,17 +25,17 @@ from acts_contrib.test_utils.tel.tel_defines import GEN_4G
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_sa
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_sa
 
 
 def provision_device_for_5g(log, ads, nr_type=None):

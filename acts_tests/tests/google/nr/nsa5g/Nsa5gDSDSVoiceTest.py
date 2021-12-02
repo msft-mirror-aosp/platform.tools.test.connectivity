@@ -19,10 +19,11 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
 from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_voice_call_test
 from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_data_call_test
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+
 
 class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
     def setup_class(self):

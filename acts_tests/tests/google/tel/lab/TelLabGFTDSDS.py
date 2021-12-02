@@ -29,7 +29,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1

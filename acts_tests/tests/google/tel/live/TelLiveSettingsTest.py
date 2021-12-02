@@ -28,10 +28,10 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import dumpsys_carrier_config
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import is_sim_locked
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
 from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
@@ -258,7 +258,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             old_carrier_id, old_carrier_name)
         self.dut.log.info(self.result_detail)
         sub_id = get_outgoing_voice_sub_id(self.dut)
-        slot_index = get_slot_index_from_subid(self.log, self.dut, sub_id)
+        slot_index = get_slot_index_from_subid(self.dut, sub_id)
 
         if self.dut.model in ("angler", "bullhead", "marlin", "sailfish"):
             msg = "Power off SIM slot is not supported"

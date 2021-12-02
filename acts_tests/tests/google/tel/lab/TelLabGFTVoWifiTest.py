@@ -45,11 +45,11 @@ from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 
 WAIT_TIME_AT_NO_SERVICE_AREA = 300
 
