@@ -50,10 +50,10 @@ from acts_contrib.test_utils.car.car_telecom_utils import wait_for_dialing
 from acts_contrib.test_utils.car.car_telecom_utils import wait_for_not_in_call
 from acts_contrib.test_utils.car.car_telecom_utils import wait_for_ringing
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call
 from acts_contrib.test_utils.wifi.wifi_power_test_utils import get_phone_ip
 from acts_contrib.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_connect
