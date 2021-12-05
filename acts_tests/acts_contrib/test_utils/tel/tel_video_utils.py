@@ -43,16 +43,16 @@ from acts_contrib.test_utils.tel.tel_ims_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_video_enabled
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_call_hd
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call_for_subscription
 
 
 def phone_setup_video(

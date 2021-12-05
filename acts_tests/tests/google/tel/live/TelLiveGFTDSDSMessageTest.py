@@ -20,23 +20,23 @@ from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import Tele
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_message_utils import sms_in_collision_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import sms_rx_power_off_multiple_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import voice_call_in_collision_with_mt_sms_msim
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
-from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
 from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func
 
@@ -196,7 +196,7 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
         _, mt_voice_sub_id, _ = get_subid_on_same_network_of_host_ad(ads)
         set_voice_sub_id(ad_mt_voice, mt_voice_sub_id)
         ad_mt_voice.log.info("Sub ID for incoming call at slot %s: %s",
-            get_slot_index_from_subid(self.log, ad_mt_voice, mt_voice_sub_id),
+            get_slot_index_from_subid(ad_mt_voice, mt_voice_sub_id),
             get_incoming_voice_sub_id(ad_mt_voice))
 
         set_message_subid(
@@ -284,7 +284,7 @@ class TelLiveGFTDSDSMessageTest(TelephonyBaseTest):
                 mo_voice_slot,
                 ad_mt_voice.serial,
                 get_slot_index_from_subid(
-                    self.log, ad_mt_voice, mt_voice_sub_id))
+                    ad_mt_voice, mt_voice_sub_id))
             extras = {"call_fail_reason": str(result.result_value)}
 
         if not sms_result or not call_result:
