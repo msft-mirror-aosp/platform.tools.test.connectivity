@@ -21,7 +21,6 @@ import time
 
 from acts import utils
 from acts import asserts
-from acts.base_test import BaseTestClass
 from acts.controllers import iperf_server
 from acts.controllers import iperf_client
 from acts.controllers.access_point import setup_ap, AccessPoint
@@ -29,6 +28,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 CONNECTIVITY_MODE_LOCAL = 'local_only'
 CONNECTIVITY_MODE_UNRESTRICTED = 'unrestricted'
@@ -132,7 +132,7 @@ class StressTestIterationFailure(Exception):
     pass
 
 
-class SoftApTest(BaseTestClass):
+class SoftApTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests for Fuchsia SoftAP
 
     Testbed requirement:
@@ -145,7 +145,6 @@ class SoftApTest(BaseTestClass):
         tests), a physical AP (whirlwind) is also required. Those tests will be
         skipped if physical AP is not present.
     """
-
     def setup_class(self):
         self.soft_ap_test_params = self.user_params.get(
             'soft_ap_test_params', {})
@@ -211,10 +210,6 @@ class SoftApTest(BaseTestClass):
         if self.access_point:
             self.access_point.stop_all_aps()
         self.dut.disconnect()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
 
     def start_soft_ap(self, settings):
         """Starts a softAP on Fuchsia device.
@@ -1002,9 +997,9 @@ class SoftApTest(BaseTestClass):
                 'Err: %s' % err)
 
     def soft_ap_toggle_with_client_mode_iteration(
-            self,
-            settings,
-            current_state,
+        self,
+        settings,
+        current_state,
     ):
         """Runs single iteration of SoftAP toggle stress with client mode test.
 
