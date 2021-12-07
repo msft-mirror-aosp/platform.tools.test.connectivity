@@ -464,7 +464,7 @@ class WifiPingTest(base_test.BaseTestClass):
                 'channel']
             wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],
-                                num_of_tries=1,
+                                num_of_tries=5,
                                 check_connectivity=True)
 
     def setup_dut(self, testcase_params):
