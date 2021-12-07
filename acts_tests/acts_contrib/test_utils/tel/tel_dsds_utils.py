@@ -52,7 +52,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
@@ -61,7 +60,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_ims_conference_merge_drop_second_call_from_participant
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _test_wcdma_conference_merge_drop
 from acts_contrib.test_utils.tel.tel_voice_conf_utils import _three_phone_call_mo_add_mt
@@ -72,6 +70,8 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import swap_calls
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_reject_call_for_subscription
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 

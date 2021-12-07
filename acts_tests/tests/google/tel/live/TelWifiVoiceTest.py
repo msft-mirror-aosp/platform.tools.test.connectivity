@@ -23,7 +23,6 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_atten_utils import set_rssi
 from acts_contrib.test_utils.tel.tel_defines import ATTEN_MIN_VALUE
-from acts_contrib.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
 from acts_contrib.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
@@ -36,12 +35,8 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts_contrib.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
-from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
-from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
-from acts_contrib.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
 from acts_contrib.test_utils.tel.tel_defines import RAT_LTE
 from acts_contrib.test_utils.tel.tel_defines import RAT_IWLAN
-from acts_contrib.test_utils.tel.tel_defines import RAT_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
@@ -69,17 +64,13 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_not_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_volte
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_droid_not_in_call
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import is_network_call_back_event_match
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_signal_strength
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
@@ -90,6 +81,10 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import get_wifi_signal_strength
+from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 # Attenuator name
 ATTEN_NAME_FOR_WIFI_2G = 'wifi0'

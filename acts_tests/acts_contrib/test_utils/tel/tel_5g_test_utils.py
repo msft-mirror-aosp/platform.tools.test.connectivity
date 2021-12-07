@@ -32,10 +32,10 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 
 def provision_device_for_5g(log, ads, nr_type=None):

@@ -41,7 +41,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4
 from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_detection
 from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_test_utils import check_network_validation_fail
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import iperf_test_by_adb
@@ -52,8 +51,9 @@ from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failur
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 
 class Nsa5gDataTest(TelephonyBaseTest):
