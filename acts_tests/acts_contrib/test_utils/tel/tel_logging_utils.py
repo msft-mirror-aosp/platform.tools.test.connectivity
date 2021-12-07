@@ -69,7 +69,7 @@ def start_pixellogger_always_on_logging(ad):
         return True
 
 
-def start_sdm_logger(ad):
+def start_sdm_logger(ad, retry=5):
     """Start SDM logger."""
     if not getattr(ad, "sdm_log", True): return
     # Delete existing SDM logs which were created 15 mins prior
@@ -87,8 +87,15 @@ def start_sdm_logger(ad):
         ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
-    ad.log.debug("start sdm logging")
-    ad.adb.shell(cmd, ignore_status=True)
+    for _ in range(retry):
+        disable_complete = not ad.adb.shell(
+            "find %s -type f -iname sbuff_profile.sdm" % ad.sdm_log_path)
+        if disable_complete:
+            ad.log.debug("start sdm logging")
+            ad.adb.shell(cmd, ignore_status=True)
+            break
+        time.sleep(5)
+        ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
     time.sleep(5)
 
 
