@@ -34,7 +34,6 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_video_utils import phone_setup_video
@@ -48,6 +47,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import last_call_drop_reason
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func

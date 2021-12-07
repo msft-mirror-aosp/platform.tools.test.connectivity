@@ -72,7 +72,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_out
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_mms_data
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import extract_test_log
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
@@ -99,6 +98,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_call_id_clearing
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_in_call_active
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import run_multithread_func

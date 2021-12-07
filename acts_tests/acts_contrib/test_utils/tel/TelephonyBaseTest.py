@@ -62,7 +62,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_sl
 from acts_contrib.test_utils.tel.tel_test_utils import build_id_override
 from acts_contrib.test_utils.tel.tel_test_utils import enable_connectivity_metrics
 from acts_contrib.test_utils.tel.tel_test_utils import enable_radio_log_on
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
@@ -84,6 +83,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import activate_google_fi_accoun
 from acts_contrib.test_utils.tel.tel_test_utils import check_google_fi_activated
 from acts_contrib.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
 from acts_contrib.test_utils.tel.tel_test_utils import activate_esim_using_suw
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 
 
 class TelephonyBaseTest(BaseTestClass):
