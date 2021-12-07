@@ -62,7 +62,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts_contrib.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
@@ -72,8 +71,8 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
 from acts_contrib.test_utils.tel.tel_video_utils import phone_setup_video
-from acts_contrib.test_utils.tel.tel_video_utils import \
-    is_phone_in_call_video_bidirectional
+from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
+from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str

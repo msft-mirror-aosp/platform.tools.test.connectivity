@@ -62,7 +62,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
@@ -84,11 +83,13 @@ from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_in_call_active
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_ringing_call
+from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
 from acts.libs.utils.multithread import multithread_func
 
 DEFAULT_PING_DURATION = 120  # in seconds
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
+
 
 class TelLiveVoiceTest(TelephonyBaseTest):
     def setup_class(self):
