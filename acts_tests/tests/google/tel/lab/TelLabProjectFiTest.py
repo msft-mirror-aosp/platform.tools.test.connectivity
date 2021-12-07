@@ -38,7 +38,6 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_preferred_n
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import abort_all_tests
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import is_sim_ready
 from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
@@ -49,6 +48,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_a
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import add_google_account
 from acts_contrib.test_utils.tel.tel_test_utils import remove_google_account
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 
 WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
 CARRIER = None

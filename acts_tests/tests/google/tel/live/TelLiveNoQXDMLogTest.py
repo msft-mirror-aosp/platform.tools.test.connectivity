@@ -63,10 +63,10 @@ from acts_contrib.test_utils.tel.tel_test_utils import install_googleaccountutil
 from acts_contrib.test_utils.tel.tel_test_utils import add_whitelisted_account
 from acts_contrib.test_utils.tel.tel_test_utils import adb_disable_verity
 from acts_contrib.test_utils.tel.tel_test_utils import install_carriersettings_apk
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import cleanup_configupdater
 from acts_contrib.test_utils.tel.tel_test_utils import pull_carrier_id_files
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 from acts.utils import get_current_epoch_time
 from acts.keys import Config
 
