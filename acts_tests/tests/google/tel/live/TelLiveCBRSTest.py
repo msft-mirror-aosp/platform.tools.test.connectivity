@@ -53,7 +53,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call_by_adb
 from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
@@ -65,12 +64,14 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 from acts.utils import get_current_epoch_time
 from queue import Empty
 
 WAIT_TIME_BETWEEN_ITERATION = 5
 WAIT_TIME_BETWEEN_HANDOVER = 10
 TIME_PERMITTED_FOR_CBRS_SWITCH = 2
+
 
 class TelLiveCBRSTest(TelephonyBaseTest):
     def setup_class(self):
