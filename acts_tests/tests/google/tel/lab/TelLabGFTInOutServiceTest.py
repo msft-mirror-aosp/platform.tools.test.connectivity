@@ -14,54 +14,33 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import time
-import datetime
-import logging
 from acts import asserts
-from acts.test_decorators import test_info
 from acts.test_decorators import test_tracker_info
-from acts.base_test import BaseTestClass
 from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
 from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
-from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_POWER_LEVEL
-from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import WIFI_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import NO_WIFI_AREA
-from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_TIME
-from acts_contrib.test_utils.tel.gft_inout_defines import WAIT_FOR_SERVICE_TIME
 from acts_contrib.test_utils.tel.gft_inout_utils import check_no_service_time
 from acts_contrib.test_utils.tel.gft_inout_utils import check_back_to_service_time
 from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
-from acts_contrib.test_utils.tel.gft_inout_utils import get_voice_call_type
 from acts_contrib.test_utils.tel.gft_inout_utils import check_ims_state
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_UNKNOWN
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
-from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
-from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 
 IDLE_CASE = 1
 DATA_TRANSFER_CASE = 2
 PDP_OFF_CASE = 3
 IN_CALL_CASE = 4
 CALL_DATA_CASE = 5
+
 
 class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
     def __init__(self, controllers):

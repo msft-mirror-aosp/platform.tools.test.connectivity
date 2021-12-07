@@ -26,8 +26,8 @@ from acts_contrib.test_utils.tel.tel_dsds_utils import msim_volte_wfc_call_voice
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
 
 
 class Nsa5gDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
