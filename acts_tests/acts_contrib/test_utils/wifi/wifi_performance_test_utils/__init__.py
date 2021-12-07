@@ -52,6 +52,7 @@ CHANNEL_TO_BAND_MAP = {
 # Decorators
 def nonblocking(f):
     """Creates a decorator transforming function calls to non-blocking"""
+
     def wrap(*args, **kwargs):
         executor = ThreadPoolExecutor(max_workers=1)
         thread_future = executor.submit(f, *args, **kwargs)
@@ -74,6 +75,7 @@ def detect_wifi_platform(dut):
 
 
 def detect_wifi_decorator(f):
+
     def wrap(*args, **kwargs):
         if 'dut' in kwargs:
             dut = kwargs['dut']
@@ -275,7 +277,8 @@ def get_iperf_arg_string(duration,
                          socket_size=None,
                          num_processes=1,
                          udp_throughput='1000M',
-                         ipv6=False):
+                         ipv6=False,
+                         udp_length=1470):
     """Function to format iperf client arguments.
 
     This function takes in iperf client parameters and returns a properly
@@ -297,8 +300,8 @@ def get_iperf_arg_string(duration,
     if ipv6:
         iperf_args = iperf_args + '-6 '
     if traffic_type.upper() == 'UDP':
-        iperf_args = iperf_args + '-u -b {} -l 1470 -P {} '.format(
-            udp_throughput, num_processes)
+        iperf_args = iperf_args + '-u -b {} -l {} -P {} '.format(
+            udp_throughput, udp_length, num_processes)
     elif traffic_type.upper() == 'TCP':
         iperf_args = iperf_args + '-P {} '.format(num_processes)
     if socket_size:
@@ -740,6 +743,7 @@ def set_chain_mask(dut, chain_mask):
 
 # Link layer stats utilities
 class LinkLayerStats():
+
     def __new__(self, dut, llstats_enabled=True):
         if detect_wifi_platform(dut) == 'qcom':
             return qcom_utils.LinkLayerStats(dut, llstats_enabled)
