@@ -16,7 +16,7 @@
 
 from acts_contrib.test_utils.gnss import LabTtffTestBase as lttb
 from acts_contrib.test_utils.gnss.gnss_test_utils import launch_eecoexer
-from acts_contrib.test_utils.gnss.gnss_test_utils import excute_eecoexer_function
+from acts_contrib.test_utils.gnss.gnss_test_utils import execute_eecoexer_function
 
 
 class LabTtffGeneralCoexTest(lttb.LabTtffTestBase):
@@ -43,7 +43,7 @@ class LabTtffGeneralCoexTest(lttb.LabTtffTestBase):
         """
         for cmd in cmd_list:
             self.log.info('Execute EEcoexer Command: {}'.format(cmd))
-            excute_eecoexer_function(self.dut, cmd)
+            execute_eecoexer_function(self.dut, cmd)
 
     def gnss_ttff_ffpe_coex_base(self, mode):
         """

@@ -932,7 +932,8 @@ def start_ttff_by_gtw_gpstool(ad,
                               raninterval=False,
                               mininterval=10,
                               maxinterval=40,
-                              hot_warm_sleep=300):
+                              hot_warm_sleep=300,
+                              timeout=60):
     """Identify which TTFF mode for different test items.
 
     Args:
@@ -944,6 +945,7 @@ def start_ttff_by_gtw_gpstool(ad,
         mininterval: Minimum value of random interval pool. The unit is second.
         maxinterval: Maximum value of random interval pool. The unit is second.
         hot_warm_sleep: Wait time for acquiring Almanac.
+        timeout: TTFF time out. The unit is second.
     Returns:
         latest_start_time: (Datetime) the start time of latest successful TTFF
     """
@@ -2185,7 +2187,7 @@ def launch_eecoexer(ad):
         raise signals.TestError("Failed to launch EEcoexer.")
 
 
-def excute_eecoexer_function(ad, eecoexer_args):
+def execute_eecoexer_function(ad, eecoexer_args):
     """Execute EEcoexer commands.
 
     Args:
@@ -2705,7 +2707,9 @@ def bcm_gps_ignore_rom_alm(ad):
         ad: An AndroidDevice object.
     """
     search_line_tag = '<gll\n'
-    append_line_str = ['       IgnoreRomAlm=\"true\"\n']
+    append_line_str = ['       IgnoreRomAlm=\"true\"\n',
+                       '       AutoColdStartSignal=\"SIMULATED\"\n',
+                       '       IgnoreJniTime=\"true\"\n']
     bcm_gps_xml_update_option(ad, "add", search_line_tag, append_line_str)
 
 
