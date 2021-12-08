@@ -55,12 +55,12 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 
 
 class Nsa5gTetheringTest(TelephonyBaseTest):

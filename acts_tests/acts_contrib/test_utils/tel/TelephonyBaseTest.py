@@ -44,6 +44,7 @@ from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
 from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_ims_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
@@ -62,9 +63,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_sl
 from acts_contrib.test_utils.tel.tel_test_utils import build_id_override
 from acts_contrib.test_utils.tel.tel_test_utils import enable_connectivity_metrics
 from acts_contrib.test_utils.tel.tel_test_utils import enable_radio_log_on
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_sim_state
 from acts_contrib.test_utils.tel.tel_test_utils import install_apk
 from acts_contrib.test_utils.tel.tel_test_utils import print_radio_info
@@ -84,6 +83,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import activate_google_fi_accoun
 from acts_contrib.test_utils.tel.tel_test_utils import check_google_fi_activated
 from acts_contrib.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
 from acts_contrib.test_utils.tel.tel_test_utils import activate_esim_using_suw
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 
 
 class TelephonyBaseTest(BaseTestClass):
