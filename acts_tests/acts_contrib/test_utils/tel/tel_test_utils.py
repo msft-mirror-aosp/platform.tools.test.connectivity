@@ -27,7 +27,6 @@ import acts.controllers.iperf_server as ipf
 import struct
 
 from acts import signals
-from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb_lib.error import AdbError
@@ -35,7 +34,6 @@ from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 
 from acts.controllers.android_device import SL4A_APK_NAME
-from acts.libs.proc import job
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.tel_defines import CarrierConfigs
 from acts_contrib.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -3973,27 +3971,6 @@ def power_on_sim(ad, sim_slot_id=None):
         return False
 
 
-def extract_test_log(log, src_file, dst_file, test_tag):
-    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
-    cmd = "grep -n '%s' %s" % (test_tag, src_file)
-    result = job.run(cmd, ignore_status=True)
-    if not result.stdout or result.exit_status == 1:
-        log.warning("Command %s returns %s", cmd, result)
-        return
-    line_nums = re.findall(r"(\d+).*", result.stdout)
-    if line_nums:
-        begin_line = int(line_nums[0])
-        end_line = int(line_nums[-1])
-        if end_line - begin_line <= 5:
-            result = job.run("wc -l < %s" % src_file)
-            if result.stdout:
-                end_line = int(result.stdout)
-        log.info("Extract %s from line %s to line %s to %s", src_file,
-                 begin_line, end_line, dst_file)
-        job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
-                                                        src_file, dst_file))
-
-
 def get_device_epoch_time(ad):
     return int(1000 * float(ad.adb.shell("date +%s.%N")))
 
@@ -4066,32 +4043,6 @@ def verify_default_telephony_setting(ad):
                      network_preference, default_network_preference)
         result = False
     return result
-
-
-def log_screen_shot(ad, test_name=""):
-    file_name = "/sdcard/Pictures/screencap"
-    if test_name:
-        file_name = "%s_%s" % (file_name, test_name)
-    file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
-    try:
-        ad.adb.shell("screencap -p %s" % file_name)
-    except:
-        ad.log.error("Fail to log screen shot to %s", file_name)
-
-
-def get_screen_shot_log(ad, test_name="", begin_time=None):
-    logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
-    if logs:
-        ad.log.info("Pulling %s", logs)
-        log_path = os.path.join(ad.device_log_path, "Screenshot_%s" % ad.serial)
-        os.makedirs(log_path, exist_ok=True)
-        ad.pull_files(logs, log_path)
-    ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
-
-
-def get_screen_shot_logs(ads, test_name="", begin_time=None):
-    for ad in ads:
-        get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
 
 
 def get_carrier_id_version(ad):
