@@ -87,7 +87,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_idle_by_
 from acts_contrib.test_utils.tel.tel_test_utils import check_phone_number_match
 from acts_contrib.test_utils.tel.tel_test_utils import check_voice_mail_count
 from acts_contrib.test_utils.tel.tel_test_utils import check_voice_network_type
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_call_uri
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_gen_for_subscription
@@ -105,7 +104,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_a
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 result_dict ={}

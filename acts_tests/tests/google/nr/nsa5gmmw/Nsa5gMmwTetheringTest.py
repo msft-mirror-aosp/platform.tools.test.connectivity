@@ -29,8 +29,8 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_PASSWORD_HAS_ESCAPE
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_SSID_LIST
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_PASSWORD_LIST
-from acts_contrib.test_utils.tel.tel_defines import \
-    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_start_wifi_tethering_connect_teardown
@@ -44,10 +44,9 @@ from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_con
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_data_during_wifi_tethering
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 
 
 class Nsa5gMmwTetheringTest(TelephonyBaseTest):

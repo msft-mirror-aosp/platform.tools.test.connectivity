@@ -51,13 +51,13 @@ from acts_contrib.test_utils.tel.tel_test_utils import revert_default_telephony_
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_default_telephony_setting
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_PWD_KEY
 from acts_contrib.test_utils.tel.tel_voice_utils import change_ims_setting
 from acts_contrib.test_utils.tel.tel_voice_utils import verify_default_ims_setting
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_SSID_KEY
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_PWD_KEY
+from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 
 class TelLiveImsSettingsTest(TelephonyBaseTest):

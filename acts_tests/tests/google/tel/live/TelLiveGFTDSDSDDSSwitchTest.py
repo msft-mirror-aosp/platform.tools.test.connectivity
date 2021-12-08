@@ -53,13 +53,14 @@ from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connec
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
+from acts_contrib.test_utils.tel.tel_wifi_utils import check_is_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts.utils import rand_ascii_str
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
+
 
 class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
     def setup_class(self):
