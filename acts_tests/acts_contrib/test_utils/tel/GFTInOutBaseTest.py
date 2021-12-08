@@ -31,10 +31,10 @@ from acts.utils import get_current_epoch_time
 from acts.libs.utils.multithread import multithread_func
 from acts.base_test import BaseTestClass
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
+from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_logs
+from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_logs
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call

@@ -20,6 +20,8 @@ import re
 import shutil
 import time
 
+from acts import utils
+from acts.libs.proc import job
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.libs.utils.multithread import run_multithread_func
@@ -500,3 +502,50 @@ def wait_for_log(ad, pattern, begin_time=None, end_time=None, max_wait_time=120)
         passed_time = (stop_time - start_time).total_seconds()
         if passed_time > max_wait_time:
             return
+
+
+def extract_test_log(log, src_file, dst_file, test_tag):
+    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+    cmd = "grep -n '%s' %s" % (test_tag, src_file)
+    result = job.run(cmd, ignore_status=True)
+    if not result.stdout or result.exit_status == 1:
+        log.warning("Command %s returns %s", cmd, result)
+        return
+    line_nums = re.findall(r"(\d+).*", result.stdout)
+    if line_nums:
+        begin_line = int(line_nums[0])
+        end_line = int(line_nums[-1])
+        if end_line - begin_line <= 5:
+            result = job.run("wc -l < %s" % src_file)
+            if result.stdout:
+                end_line = int(result.stdout)
+        log.info("Extract %s from line %s to line %s to %s", src_file,
+                 begin_line, end_line, dst_file)
+        job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
+                                                        src_file, dst_file))
+
+
+def log_screen_shot(ad, test_name=""):
+    file_name = "/sdcard/Pictures/screencap"
+    if test_name:
+        file_name = "%s_%s" % (file_name, test_name)
+    file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
+    try:
+        ad.adb.shell("screencap -p %s" % file_name)
+    except:
+        ad.log.error("Fail to log screen shot to %s", file_name)
+
+
+def get_screen_shot_log(ad, test_name="", begin_time=None):
+    logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
+    if logs:
+        ad.log.info("Pulling %s", logs)
+        log_path = os.path.join(ad.device_log_path, "Screenshot_%s" % ad.serial)
+        os.makedirs(log_path, exist_ok=True)
+        ad.pull_files(logs, log_path)
+    ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
+
+
+def get_screen_shot_logs(ads, test_name="", begin_time=None):
+    for ad in ads:
+        get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
