@@ -108,6 +108,8 @@ from acts_contrib.test_utils.tel.tel_defines import ServiceStateContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
+from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_valid_rat
