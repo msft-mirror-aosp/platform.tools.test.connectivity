@@ -68,7 +68,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_sl
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_cell_data_roaming_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
@@ -80,11 +79,12 @@ from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_rat_family_li
 from acts_contrib.test_utils.tel.tel_test_utils import reset_preferred_network_type_to_allowable_range
 from acts_contrib.test_utils.tel.tel_test_utils import set_cell_data_roaming_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
-from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
 from acts.libs.utils.multithread import multithread_func
 
 

@@ -42,14 +42,13 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_volte
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_all_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
-
+from acts_contrib.test_utils.tel.tel_wifi_utils import check_is_wifi_connected
 from acts.utils import get_current_epoch_time
 
 SETUP_PHONE_FAIL = 'SETUP_PHONE_FAIL'
