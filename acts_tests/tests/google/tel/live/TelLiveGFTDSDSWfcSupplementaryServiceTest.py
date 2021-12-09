@@ -59,6 +59,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_psim_cellular_preferred_apm_on_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -72,6 +73,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_psim_wifi_preferred_apm_off_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -85,6 +87,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_psim_cellular_preferred_apm_on_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -98,6 +101,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_psim_wifi_preferred_apm_off_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -111,6 +115,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_psim_cellular_preferred_wifi_on_dds_slot_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -124,6 +129,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_esim_cellular_preferred_apm_on_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -137,6 +143,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_esim_wifi_preferred_apm_off_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -150,6 +157,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_esim_cellular_preferred_apm_on_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -163,6 +171,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_wfc_esim_wifi_preferred_apm_off_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -176,6 +185,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_forwarding_unconditional_volte_esim_cellular_preferred_wifi_on_dds_slot_0(self):
         return msim_volte_wfc_call_forwarding(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -189,6 +199,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_psim_cellular_preferred_apm_on_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -204,6 +215,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_psim_wifi_preferred_apm_off_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -219,6 +231,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_psim_cellular_preferred_apm_on_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -234,6 +247,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_psim_wifi_preferred_apm_off_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -249,6 +263,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_volte_psim_cellular_preferred_wifi_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -265,6 +280,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_esim_cellular_preferred_apm_on_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -280,6 +296,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_esim_wifi_preferred_apm_off_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -295,6 +312,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_esim_cellular_preferred_apm_on_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -310,6 +328,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_wfc_esim_wifi_preferred_apm_off_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -325,6 +344,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_call_waiting_hold_swap_volte_esim_cellular_preferred_wifi_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -341,6 +361,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_psim_cellular_preferred_apm_on_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -354,6 +375,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_psim_wifi_preferred_apm_off_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -367,6 +389,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_psim_cellular_preferred_apm_on_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -380,6 +403,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_psim_wifi_preferred_apm_off_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             1,
@@ -393,6 +417,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_volte_psim_cellular_preferred_wifi_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             0,
@@ -406,6 +431,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_esim_cellular_preferred_apm_on_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -419,6 +445,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_esim_wifi_preferred_apm_off_with_volte_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
@@ -432,6 +459,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_esim_cellular_preferred_apm_on_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -445,6 +473,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_wfc_esim_wifi_preferred_apm_off_with_volte_on_dds_slot_1(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             1,
@@ -458,6 +487,7 @@ class TelLiveGFTDSDSWfcSupplementaryServiceTest(TelephonyBaseTest):
     def test_msim_voice_conf_call_volte_esim_cellular_preferred_wifi_on_dds_slot_0(self):
         return msim_volte_wfc_call_voice_conf(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             0,
