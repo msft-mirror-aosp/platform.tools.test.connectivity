@@ -88,9 +88,9 @@ from acts_contrib.test_utils.tel.tel_defines import DUMPSYS_VIBRATION
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_SOUND_TIME
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_VIBRATION_TIME
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_OFFSET
+from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.net import ui_utils as uutils
 
