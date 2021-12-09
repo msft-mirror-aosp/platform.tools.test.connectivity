@@ -43,9 +43,9 @@ This is all to say this documentation pattern is expected.
 
 """
 
-from acts.test_utils.audio_analysis_lib.check_quality import quality_analysis
-from acts.test_utils.bt.bt_constants import audio_bits_per_sample_32
-from acts.test_utils.bt.bt_constants import audio_sample_rate_48000
+from acts_contrib.test_utils.audio_analysis_lib.check_quality import quality_analysis
+from acts_contrib.test_utils.bt.bt_constants import audio_bits_per_sample_32
+from acts_contrib.test_utils.bt.bt_constants import audio_sample_rate_48000
 from acts_contrib.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
 from acts_contrib.test_utils.bt.bt_constants import bt_attribute_values
 from acts_contrib.test_utils.bt.bt_constants import sig_appearance_constants
@@ -2376,7 +2376,7 @@ class CommandInput(cmd.Cmd):
         cmd = "Lists connected peers"
         try:
             result = self.pri_dut.hfp_lib.listPeers()
-            self.log.info(result)
+            self.log.info(pprint.pformat(result))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -2412,7 +2412,7 @@ class CommandInput(cmd.Cmd):
         cmd = "Lists all calls"
         try:
             result = self.pri_dut.hfp_lib.listCalls()
-            self.log.info(result)
+            self.log.info(pprint.pformat(result))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -2850,7 +2850,7 @@ class CommandInput(cmd.Cmd):
                 )
             number, status = info[0], int(info[1])
             result = self.pri_dut.hfp_lib.setDialResult(number, status)
-            self.log.info(result)
+            self.log.info(pprint.pformat(result))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -2865,7 +2865,7 @@ class CommandInput(cmd.Cmd):
         cmd = "Get the call manager's state"
         try:
             result = self.pri_dut.hfp_lib.getState()
-            self.log.info(result)
+            self.log.info(pprint.pformat(result))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
