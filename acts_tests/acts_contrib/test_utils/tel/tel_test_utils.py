@@ -102,7 +102,6 @@ from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventServiceStateChanged
 from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
-from acts_contrib.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts_contrib.test_utils.tel.tel_defines import ServiceStateContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
@@ -1279,13 +1278,6 @@ def get_capability_for_subscription(ad, capability, subid):
         ad.log.info('Capability "%s" is NOT available for sub ID %s.',
             capability, subid)
         return False
-
-
-def _is_on_message_waiting_event_true(event):
-    """Private function to return if the received EventMessageWaitingIndicatorChanged
-    event MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING field is True.
-    """
-    return event['data'][MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING]
 
 
 def phone_number_formatter(input_string, formatter=None):
