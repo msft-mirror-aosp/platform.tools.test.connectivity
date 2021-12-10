@@ -48,6 +48,7 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_PASSWORD_HAS_ESCAPE
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_SSID_LIST
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_PASSWORD_LIST
+from acts_contrib.test_utils.tel.tel_bt_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
@@ -58,7 +59,6 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_data_connectivity_mu
 from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_tethering_wifi_and_voice_call
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
-from acts_contrib.test_utils.tel.tel_data_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_apm_tethering_internet_connection
