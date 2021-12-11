@@ -55,6 +55,7 @@ from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaR
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.ram_lib import FuchsiaRamLib
+from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.sysinfo_lib import FuchsiaSysInfoLib
@@ -219,6 +220,7 @@ class FuchsiaDevice:
         self.sl4f_port = fd_conf_data.get("sl4f_port", 80)
         self.ssh_port = fd_conf_data.get("ssh_port", 22)
         self.ssh_config = fd_conf_data.get("ssh_config", None)
+        self.ssh_priv_key = fd_conf_data.get("ssh_priv_key", None)
         self.authorized_file = fd_conf_data.get("authorized_file_loc", None)
         self.serial_number = fd_conf_data.get("serial_number", None)
         self.device_type = fd_conf_data.get("device_type", None)
@@ -228,6 +230,8 @@ class FuchsiaDevice:
         self.build_type = fd_conf_data.get("build_type", None)
         self.server_path = fd_conf_data.get("server_path", None)
         self.specific_image = fd_conf_data.get("specific_image", None)
+        self.ffx_binary_path = fd_conf_data.get("ffx_binary_path", None)
+        self.mdns_name = fd_conf_data.get("mdns_name", None)
 
         # Instead of the input ssh_config, a new config is generated with proper
         # ControlPath to the test output directory.
@@ -281,6 +285,9 @@ class FuchsiaDevice:
                 else:
                     time.sleep(1)
             if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
+                # self.ip was actually an mdns name. Use it for self.mdns_name
+                # unless one was explicitly provided.
+                self.mdns_name = self.mdns_name or self.ip
                 self.ip = mdns_ip
                 self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
             else:
@@ -313,6 +320,7 @@ class FuchsiaDevice:
         self.start_services(skip_sl4f=self.skip_sl4f)
         # Init server
         self.init_server_connection()
+        self.init_ffx_connection()
 
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
@@ -438,6 +446,9 @@ class FuchsiaDevice:
         self.sysinfo_lib = FuchsiaSysInfoLib(self.address, self.test_counter,
                                              self.client_id)
 
+        # Grab commands from FuchsiaSessionManagerLib
+        self.session_manager_lib = FuchsiaSessionManagerLib(self)
+
         # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
         self.wlan_deprecated_configuration_lib = (
             FuchsiaWlanDeprecatedConfigurationLib(self.address,
@@ -485,6 +496,58 @@ class FuchsiaDevice:
 
         requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
+
+    def init_ffx_connection(self):
+        """Initializes ffx's connection to the device."""
+        self.log.debug("Initializing ffx connection")
+
+        # ffx looks for the private key in several default locations. For testbeds
+        # which have the private key in another location, set it now.
+        if self.ssh_priv_key:
+            self.ffx_command(f"config set ssh.priv {self.ssh_priv_key}")
+
+        # Wait for the device to be available. If the device isn't available within
+        # a short time (e.g. 5 seconds), log a warning before waiting longer.
+        try:
+            self.ffx_command("target wait", timeout_sec=5)
+        except job.TimeoutError as e:
+            longer_wait_sec = 60
+            self.log.info(
+                "Device is not immediately available via ffx." +
+                f" Waiting up to {longer_wait_sec} seconds for device to be reachable."
+            )
+            self.ffx_command("target wait", timeout_sec=longer_wait_sec)
+
+        # Test actual connectivity to the device by getting device information.
+        # Use a shorter timeout than default because this command can hang for
+        # a long time if the device is not actually connectable.
+        try:
+            result = self.ffx_command("target show --json", timeout_sec=15)
+        except Exception as e:
+            self.log.error(
+                f'Failed to reach target device. Try running "{self.ffx_binary_path}'
+                + ' doctor" to diagnose issues.')
+            raise e
+
+        # Compare the device's version to the ffx version
+        result_json = json.loads(result.stdout)
+        build_info = next(
+            filter(lambda s: s.get('label') == 'build', result_json))
+        version_info = next(
+            filter(lambda s: s.get('label') == 'version', build_info['child']))
+        device_version = version_info.get('value')
+        ffx_version = self.ffx_command("version").stdout
+
+        if not getattr(self, '_have_logged_ffx_version', False):
+            self._have_logged_ffx_version = True
+            self.log.info(
+                f"Device version: {device_version}, ffx version: {ffx_version}"
+            )
+            if device_version != ffx_version:
+                self.log.warning(
+                    "ffx versions that differ from device versions may" +
+                    " have compatibility issues. It is recommended to" +
+                    " use versions within 6 weeks of each other.")
 
     def run_commands_from_config(self, cmd_dicts):
         """Runs commands on the Fuchsia device from the config file. Useful for
@@ -701,6 +764,7 @@ class FuchsiaDevice:
                               'SL4F.')
                 self.start_services()
                 self.init_server_connection()
+                self.init_ffx_connection()
                 raise ConnectionError('Device never went down.')
             self.log.info('Device is unreachable as expected.')
         if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
@@ -746,6 +810,7 @@ class FuchsiaDevice:
             'Initiating connection to SL4F and verifying commands can run.')
         try:
             self.init_server_connection()
+            self.init_ffx_connection()
             self.hwinfo_lib.getDeviceInfo()
         except Exception as err:
             raise ConnectionError(
@@ -1284,6 +1349,56 @@ class FuchsiaDevice:
         bt_snoop_file = open(full_out_path, 'wb')
         bt_snoop_file.write(bt_snoop_data)
         bt_snoop_file.close()
+
+    def ffx_command(self,
+                    command,
+                    timeout_sec=FUCHSIA_DEFAULT_COMMAND_TIMEOUT,
+                    skip_status_code_check=False):
+        """Runs an ffx command.
+
+        Args:
+            command: string, command to run with ffx.
+            timeout_sec: Seconds to wait for a command to complete.
+            skip_status_code_check: Whether to check for the status code.
+
+        Raises:
+            ValueError: if necessary attributes are not set.
+            job.TimeoutError: when the command times out.
+            Error: when the command returns non-zero and skip_status_code_check is False.
+            FuchsiaDeviceError: when stderr has contents and skip_status_code_check is False.
+
+        Returns:
+            A job.Result object containing the results of the command.
+        """
+        if not self.ffx_binary_path:
+            raise ValueError(
+                'Must provide "ffx_binary_path: path_to_ffx" in the device config'
+            )
+        if not self.mdns_name:
+            raise ValueError(
+                'Must provide "mdns_name: device_MDNS_name" in the device config'
+            )
+
+        self.log.debug(f'Running "ffx {command}".')
+
+        full_command = f'{self.ffx_binary_path} --target {self.mdns_name} {command}'
+        result = job.run(command=full_command,
+                         timeout=timeout_sec,
+                         ignore_status=skip_status_code_check)
+
+        if isinstance(result, Exception):
+            raise result
+
+        elif not skip_status_code_check and result.stderr:
+            self.log.warning(
+                f'Ran "{full_command}", exit status {result.exit_status}')
+            self.log.warning(f'stdout: {result.stdout}')
+            self.log.warning(f'stderr: {result.stderr}')
+
+            raise FuchsiaDeviceError(
+                f'Error when running "{full_command}": {result.stderr}')
+
+        return result
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
