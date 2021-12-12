@@ -63,6 +63,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import EventCallStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventMessageWaitingIndicatorChanged
 from acts_contrib.test_utils.tel.tel_defines import CallStateContainer
+from acts_contrib.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_ims_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
@@ -80,14 +81,12 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voic
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts_contrib.test_utils.tel.tel_test_utils import _is_on_message_waiting_event_true
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_idle_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import check_phone_number_match
 from acts_contrib.test_utils.tel.tel_test_utils import check_voice_mail_count
 from acts_contrib.test_utils.tel.tel_test_utils import check_voice_network_type
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_call_uri
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_gen_for_subscription
@@ -105,7 +104,8 @@ from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_a
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 result_dict ={}
@@ -529,6 +529,13 @@ def check_reject_needed_for_voice_mail(log, ad_callee):
     operator_name = get_operator_name(log, ad_callee)
 
     return operator_name not in operators_no_reject
+
+
+def _is_on_message_waiting_event_true(event):
+    """Private function to return if the received EventMessageWaitingIndicatorChanged
+    event MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING field is True.
+    """
+    return event['data'][MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING]
 
 
 def call_reject_leave_message_for_subscription(

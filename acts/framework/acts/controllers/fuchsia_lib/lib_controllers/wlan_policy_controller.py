@@ -20,6 +20,10 @@ import time
 from acts import logger
 from acts import signals
 
+import typing
+if typing.TYPE_CHECKING:
+    from acts.controllers.fuchsia_device import FuchsiaDevice
+
 SAVED_NETWORKS = "saved_networks"
 CLIENT_STATE = "client_connections_state"
 CONNECTIONS_ENABLED = "ConnectionsEnabled"
@@ -41,12 +45,13 @@ class WlanPolicyController:
     """
 
     def __init__(self, fuchsia_device):
-        self.device = fuchsia_device
+        self.device: FuchsiaDevice = fuchsia_device
         self.log = logger.create_tagged_trace_logger(
             'WlanPolicyController for FuchsiaDevice | %s' % self.device.ip)
         self.client_controller = False
         self.preserved_networks_and_client_state = None
         self.policy_configured = False
+        self._paused_session = False
 
     def _configure_wlan(self, preserve_saved_networks, timeout=15):
         """Sets up wlan policy layer.
@@ -57,7 +62,7 @@ class WlanPolicyController:
         """
         end_time = time.time() + timeout
 
-        # Kill basemgr
+        # Kill basemgr (Component v1 version of session manager)
         while time.time() < end_time:
             response = self.device.basemgr_lib.killBasemgr()
             if not response.get('error'):
@@ -68,6 +73,16 @@ class WlanPolicyController:
         else:
             raise WlanPolicyControllerError(
                 'Failed to issue successful basemgr kill call.')
+
+        # Stop the session manager, which also holds the Policy controller.
+        response = self.device.session_manager_lib.pauseSession()
+        if response.get('error'):
+            self.log.error('Failed to stop the session.')
+            raise WlanPolicyControllerError(response['error'])
+        else:
+            if response.get('result') == 'Success':
+                self._paused_session = True
+            self.log.debug(f"Paused session: {response.get('result')}")
 
         # Acquire control of policy layer
         while time.time() < end_time:
@@ -114,6 +129,13 @@ class WlanPolicyController:
             if not self.policy_configured:
                 self._configure_wlan()
             self.restore_preserved_networks_and_client_state()
+        if self._paused_session:
+            response = self.device.session_manager_lib.resumeSession()
+            if response.get('error'):
+                self.log.warning('Failed to resume the session.')
+                self.log.warning(response['error'])
+            else:
+                self.log.debug(f"Resumed session: {response.get('result')}")
 
     def start_client_connections(self):
         """Allow device to connect to networks via policy layer (including

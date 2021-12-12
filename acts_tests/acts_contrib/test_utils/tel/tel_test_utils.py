@@ -27,7 +27,6 @@ import acts.controllers.iperf_server as ipf
 import struct
 
 from acts import signals
-from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb_lib.error import AdbError
@@ -35,7 +34,6 @@ from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 
 from acts.controllers.android_device import SL4A_APK_NAME
-from acts.libs.proc import job
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.tel_defines import CarrierConfigs
 from acts_contrib.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -70,7 +68,6 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_7_DIGIT
@@ -99,19 +96,19 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import TYPE_MOBILE
-from acts_contrib.test_utils.tel.tel_defines import TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
 from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventServiceStateChanged
 from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
-from acts_contrib.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts_contrib.test_utils.tel.tel_defines import ServiceStateContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts_contrib.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
+from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts_contrib.test_utils.tel.tel_lookup_tables import is_valid_rat
@@ -130,18 +127,12 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_sl
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_incoming_voice_sub_id
-from acts_contrib.test_utils.wifi import wifi_test_utils
 from acts.utils import adb_shell_ping
 from acts.utils import load_config
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import exe_cmd
 
-WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
-WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
-WIFI_CONFIG_APBAND_2G = 1
-WIFI_CONFIG_APBAND_5G = 2
-WIFI_CONFIG_APBAND_AUTO = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_AUTO
 log = logging
 STORY_LINE = "+19523521350"
 CallResult = TelephonyVoiceTestResult.CallResult.Value
@@ -544,12 +535,6 @@ def get_telephony_signal_strength(ad):
     except Exception as e:
         ad.log.error(e)
         signal_strength = {}
-    return signal_strength
-
-
-def get_wifi_signal_strength(ad):
-    signal_strength = ad.droid.wifiGetConnectionInfo()['rssi']
-    ad.log.info("WiFi Signal Strength is %s" % signal_strength)
     return signal_strength
 
 
@@ -1293,13 +1278,6 @@ def get_capability_for_subscription(ad, capability, subid):
         ad.log.info('Capability "%s" is NOT available for sub ID %s.',
             capability, subid)
         return False
-
-
-def _is_on_message_waiting_event_true(event):
-    """Private function to return if the received EventMessageWaitingIndicatorChanged
-    event MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING field is True.
-    """
-    return event['data'][MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING]
 
 
 def phone_number_formatter(input_string, formatter=None):
@@ -2070,37 +2048,6 @@ def http_file_download_by_sl4a(ad,
             ad.adb.shell("rm %s" % file_path, ignore_status=True)
 
 
-def get_wifi_usage(ad, sid=None, apk=None):
-    if not sid:
-        sid = ad.droid.subscriptionGetDefaultDataSubId()
-    current_time = int(time.time() * 1000)
-    begin_time = current_time - 10 * 24 * 60 * 60 * 1000
-    end_time = current_time + 10 * 24 * 60 * 60 * 1000
-
-    if apk:
-        uid = ad.get_apk_uid(apk)
-        ad.log.debug("apk %s uid = %s", apk, uid)
-        try:
-            return ad.droid.connectivityQueryDetailsForUid(
-                TYPE_WIFI,
-                ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                begin_time, end_time, uid)
-        except:
-            return ad.droid.connectivityQueryDetailsForUid(
-                ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                begin_time, end_time, uid)
-    else:
-        try:
-            return ad.droid.connectivityQuerySummaryForDevice(
-                TYPE_WIFI,
-                ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                begin_time, end_time)
-        except:
-            return ad.droid.connectivityQuerySummaryForDevice(
-                ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                begin_time, end_time)
-
-
 def get_mobile_data_usage(ad, sid=None, apk=None):
     if not sid:
         sid = ad.droid.subscriptionGetDefaultDataSubId()
@@ -2455,28 +2402,6 @@ def wait_for_cell_data_connection_for_subscription(
     finally:
         ad.droid.telephonyStopTrackingDataConnectionStateChangeForSubscription(
             sub_id)
-
-
-def wait_for_wifi_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value and connection is by WiFi.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_NW_SELECTION
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    ad.log.info("wait_for_wifi_data_connection")
-    return _wait_for_nw_data_connection(
-        log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
 
 
 def wait_for_data_connection(
@@ -3153,183 +3078,6 @@ def get_voice_mail_number(log, ad):
     if voice_mail_number is None:
         return get_phone_number(log, ad)
     return voice_mail_number
-
-
-def check_is_wifi_connected(log, ad, wifi_ssid):
-    """Check if ad is connected to wifi wifi_ssid.
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        wifi_ssid: WiFi network SSID.
-
-    Returns:
-        True if wifi is connected to wifi_ssid
-        False if wifi is not connected to wifi_ssid
-    """
-    wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
-        ad.log.info("Wifi is connected to %s", wifi_ssid)
-        ad.on_mobile_data = False
-        return True
-    else:
-        ad.log.info("Wifi is not connected to %s", wifi_ssid)
-        ad.log.debug("Wifi connection_info=%s", wifi_info)
-        ad.on_mobile_data = True
-        return False
-
-
-def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3, apm=False):
-    """Ensure ad connected to wifi on network wifi_ssid.
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        wifi_ssid: WiFi network SSID.
-        wifi_pwd: optional secure network password.
-        retries: the number of retries.
-
-    Returns:
-        True if wifi is connected to wifi_ssid
-        False if wifi is not connected to wifi_ssid
-    """
-    if not toggle_airplane_mode(log, ad, apm, strict_checking=False):
-        return False
-
-    network = {WIFI_SSID_KEY: wifi_ssid}
-    if wifi_pwd:
-        network[WIFI_PWD_KEY] = wifi_pwd
-    for i in range(retries):
-        if not ad.droid.wifiCheckState():
-            ad.log.info("Wifi state is down. Turn on Wifi")
-            ad.droid.wifiToggleState(True)
-        if check_is_wifi_connected(log, ad, wifi_ssid):
-            ad.log.info("Wifi is connected to %s", wifi_ssid)
-            return verify_internet_connection(log, ad, retries=3)
-        else:
-            ad.log.info("Connecting to wifi %s", wifi_ssid)
-            try:
-                ad.droid.wifiConnectByConfig(network)
-            except Exception:
-                ad.log.info("Connecting to wifi by wifiConnect instead")
-                ad.droid.wifiConnect(network)
-            time.sleep(20)
-            if check_is_wifi_connected(log, ad, wifi_ssid):
-                ad.log.info("Connected to Wifi %s", wifi_ssid)
-                return verify_internet_connection(log, ad, retries=3)
-    ad.log.info("Fail to connected to wifi %s", wifi_ssid)
-    return False
-
-
-def forget_all_wifi_networks(log, ad):
-    """Forget all stored wifi network information
-
-    Args:
-        log: log object
-        ad: AndroidDevice object
-
-    Returns:
-        boolean success (True) or failure (False)
-    """
-    if not ad.droid.wifiGetConfiguredNetworks():
-        ad.on_mobile_data = True
-        return True
-    try:
-        old_state = ad.droid.wifiCheckState()
-        wifi_test_utils.reset_wifi(ad)
-        wifi_toggle_state(log, ad, old_state)
-    except Exception as e:
-        log.error("forget_all_wifi_networks with exception: %s", e)
-        return False
-    ad.on_mobile_data = True
-    return True
-
-
-def wifi_reset(log, ad, disable_wifi=True):
-    """Forget all stored wifi networks and (optionally) disable WiFi
-
-    Args:
-        log: log object
-        ad: AndroidDevice object
-        disable_wifi: boolean to disable wifi, defaults to True
-    Returns:
-        boolean success (True) or failure (False)
-    """
-    if not forget_all_wifi_networks(log, ad):
-        ad.log.error("Unable to forget all networks")
-        return False
-    if not wifi_toggle_state(log, ad, not disable_wifi):
-        ad.log.error("Failed to toggle WiFi state to %s!", not disable_wifi)
-        return False
-    return True
-
-
-def set_wifi_to_default(log, ad):
-    """Set wifi to default state (Wifi disabled and no configured network)
-
-    Args:
-        log: log object
-        ad: AndroidDevice object
-
-    Returns:
-        boolean success (True) or failure (False)
-    """
-    ad.droid.wifiFactoryReset()
-    ad.droid.wifiToggleState(False)
-    ad.on_mobile_data = True
-
-
-def wifi_toggle_state(log, ad, state, retries=3):
-    """Toggle the WiFi State
-
-    Args:
-        log: log object
-        ad: AndroidDevice object
-        state: True, False, or None
-
-    Returns:
-        boolean success (True) or failure (False)
-    """
-    for i in range(retries):
-        if wifi_test_utils.wifi_toggle_state(ad, state, assert_on_fail=False):
-            ad.on_mobile_data = not state
-            return True
-        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
-    return False
-
-
-def start_wifi_tethering(log, ad, ssid, password, ap_band=None):
-    """Start a Tethering Session
-
-    Args:
-        log: log object
-        ad: AndroidDevice object
-        ssid: the name of the WiFi network
-        password: optional password, used for secure networks.
-        ap_band=DEPRECATED specification of 2G or 5G tethering
-    Returns:
-        boolean success (True) or failure (False)
-    """
-    return wifi_test_utils._assert_on_fail_handler(
-        wifi_test_utils.start_wifi_tethering,
-        False,
-        ad,
-        ssid,
-        password,
-        band=ap_band)
-
-
-def stop_wifi_tethering(log, ad):
-    """Stop a Tethering Session
-
-    Args:
-        log: log object
-        ad: AndroidDevice object
-    Returns:
-        boolean success (True) or failure (False)
-    """
-    return wifi_test_utils._assert_on_fail_handler(
-        wifi_test_utils.stop_wifi_tethering, False, ad)
 
 
 def reset_preferred_network_type_to_allowable_range(log, ad):
@@ -4217,27 +3965,6 @@ def power_on_sim(ad, sim_slot_id=None):
         return False
 
 
-def extract_test_log(log, src_file, dst_file, test_tag):
-    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
-    cmd = "grep -n '%s' %s" % (test_tag, src_file)
-    result = job.run(cmd, ignore_status=True)
-    if not result.stdout or result.exit_status == 1:
-        log.warning("Command %s returns %s", cmd, result)
-        return
-    line_nums = re.findall(r"(\d+).*", result.stdout)
-    if line_nums:
-        begin_line = int(line_nums[0])
-        end_line = int(line_nums[-1])
-        if end_line - begin_line <= 5:
-            result = job.run("wc -l < %s" % src_file)
-            if result.stdout:
-                end_line = int(result.stdout)
-        log.info("Extract %s from line %s to line %s to %s", src_file,
-                 begin_line, end_line, dst_file)
-        job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
-                                                        src_file, dst_file))
-
-
 def get_device_epoch_time(ad):
     return int(1000 * float(ad.adb.shell("date +%s.%N")))
 
@@ -4310,32 +4037,6 @@ def verify_default_telephony_setting(ad):
                      network_preference, default_network_preference)
         result = False
     return result
-
-
-def log_screen_shot(ad, test_name=""):
-    file_name = "/sdcard/Pictures/screencap"
-    if test_name:
-        file_name = "%s_%s" % (file_name, test_name)
-    file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
-    try:
-        ad.adb.shell("screencap -p %s" % file_name)
-    except:
-        ad.log.error("Fail to log screen shot to %s", file_name)
-
-
-def get_screen_shot_log(ad, test_name="", begin_time=None):
-    logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
-    if logs:
-        ad.log.info("Pulling %s", logs)
-        log_path = os.path.join(ad.device_log_path, "Screenshot_%s" % ad.serial)
-        os.makedirs(log_path, exist_ok=True)
-        ad.pull_files(logs, log_path)
-    ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
-
-
-def get_screen_shot_logs(ads, test_name="", begin_time=None):
-    for ad in ads:
-        get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
 
 
 def get_carrier_id_version(ad):

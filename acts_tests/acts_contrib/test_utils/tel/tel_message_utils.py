@@ -49,7 +49,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_mes
 from acts_contrib.test_utils.tel.tel_test_utils import CallResult
 from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
 from acts_contrib.test_utils.tel.tel_test_utils import check_phone_number_match
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
@@ -64,6 +63,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_call_offhook_fo
 from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
 from acts_contrib.test_utils.tel.tel_video_utils import phone_idle_video
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 
 
 def send_message_with_random_message_body(
