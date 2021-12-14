@@ -32,18 +32,25 @@ class AbstractDeviceWlanDeviceBaseTest(WifiBaseTest):
             device.take_bug_report(STAGE_NAME_TEARDOWN_CLASS, begin_time)
 
     def on_fail(self, test_name, begin_time):
-        try:
-            self.dut.get_log(test_name, begin_time)
-            if (not hasattr(self.dut.device, "take_bug_report_on_fail")
-                    or self.dut.device.take_bug_report_on_fail):
-                # Take a bug report if device does not have a take bug report flag,
-                # or if the flag is true
-                self.dut.take_bug_report(test_name, begin_time)
-        except Exception:
-            pass
+        """Gets a wlan_device log and calls the generic device fail on DUT."""
+        self.dut.get_log(test_name, begin_time)
+        self.on_device_fail(self.dut.device, test_name, begin_time)
 
-        try:
-            if self.dut.device.hard_reboot_on_fail:
-                self.dut.hard_power_cycle(self.pdu_devices)
-        except AttributeError:
-            pass
+    def on_device_fail(self, device, test_name, begin_time):
+        """Gets a generic device DUT bug report.
+
+        This method takes a bug report if the generic device does not have a
+        'take_bug_report_on_fail', or if the flag is true. This method also
+        power cycles if 'hard_reboot_on_fail' is True.
+
+        Args:
+            device: Generic device to gather logs from.
+            test_name: Name of the test that triggered this function.
+            begin_time: Logline format timestamp taken when the test started.
+        """
+        if (not hasattr(device, "take_bug_report_on_fail")
+                or device.take_bug_report_on_fail):
+            device.take_bug_report(test_name, begin_time)
+
+        if device.hard_reboot_on_fail:
+            device.reboot(reboot_type='hard', testbed_pdus=self.pdu_devices)
