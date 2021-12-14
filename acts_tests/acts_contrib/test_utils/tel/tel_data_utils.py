@@ -1159,36 +1159,38 @@ def test_wifi_connect_disconnect(log, ad, wifi_network_ssid=None, wifi_network_p
         True, False, True, False, False, True, False, False, False, False,
         True, False, False, False, False, False, False, False, False
     ]
+    try:
+        for toggle in wifi_toggles:
 
-    for toggle in wifi_toggles:
+            wifi_reset(log, ad, toggle)
 
-        wifi_reset(log, ad, toggle)
+            if not wait_for_cell_data_connection(
+                    log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
+                log.error("Failed data connection, aborting!")
+                return False
 
-        if not wait_for_cell_data_connection(
-                log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
-            log.error("Failed wifi connection, aborting!")
-            return False
+            if not verify_internet_connection(log, ad):
+                log.error("Failed to get user-plane traffic, aborting!")
+                return False
 
-        if not verify_internet_connection(log, ad):
-            log.error("Failed to get user-plane traffic, aborting!")
-            return False
+            if toggle:
+                wifi_toggle_state(log, ad, True)
 
-        if toggle:
-            wifi_toggle_state(log, ad, True)
+            ensure_wifi_connected(log, ad, wifi_network_ssid,
+                        wifi_network_pass)
 
-        ensure_wifi_connected(log, ad, wifi_network_ssid,
-                     wifi_network_pass)
+            if not wait_for_wifi_data_connection(
+                    log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
+                log.error("Failed wifi connection, aborting!")
+                return False
 
-        if not wait_for_wifi_data_connection(
-                log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
-            log.error("Failed wifi connection, aborting!")
-            return False
-
-        if not verify_http_connection(
-                log, ad, 'http://www.google.com', 100, .1):
-            log.error("Failed to get user-plane traffic, aborting!")
-            return False
-    return True
+            if not verify_http_connection(
+                    log, ad, 'http://www.google.com', 100, .1):
+                log.error("Failed to get user-plane traffic, aborting!")
+                return False
+        return True
+    finally:
+        wifi_toggle_state(log, ad, False)
 
 
 def test_call_setup_in_active_data_transfer(
