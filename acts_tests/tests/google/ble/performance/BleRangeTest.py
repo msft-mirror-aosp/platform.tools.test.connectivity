@@ -26,14 +26,15 @@ import acts_contrib.test_utils.bt.bt_test_utils as btutils
 import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
 from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_coc_connection
 from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_gatt_disconnection
-from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts_contrib.test_utils.bt.ble_performance_test_utils import bt5_start_advertise_and_scan
 from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts_contrib.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
 from acts_contrib.test_utils.bt.ble_performance_test_utils import establish_ble_connection
-from acts_contrib.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts_contrib.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
 from acts_contrib.test_utils.bt.ble_performance_test_utils import run_ble_throughput
 from acts_contrib.test_utils.bt.ble_performance_test_utils import read_ble_rssi
 from acts_contrib.test_utils.bt.ble_performance_test_utils import read_ble_scan_rssi
+from acts_contrib.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts_contrib.test_utils.power.PowerBTBaseTest import ramp_attenuation
 from acts_contrib.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.signals import TestPass
@@ -44,6 +45,9 @@ MAX_RSSI = 92
 
 
 class BleRangeTest(BluetoothBaseTest):
+    active_adv_callback_list = []
+    active_scan_callback_list = []
+
     def __init__(self, configs):
         super().__init__(configs)
         req_params = ['attenuation_vector', 'system_path_loss']
@@ -87,6 +91,10 @@ class BleRangeTest(BluetoothBaseTest):
             self.attenuator.set_atten(INIT_ATTEN)
         # Give sufficient time for the physical LE link to be disconnected.
         time.sleep(l2cap_max_inactivity_delay_after_disconnect)
+        cleanup_scanners_and_advertisers(self.client_ad,
+                                         self.active_scan_callback_list,
+                                         self.server_ad,
+                                         self.active_adv_callback_list)
 
     def test_ble_gatt_connection_range(self):
         """Test GATT connection over LE and read RSSI.
@@ -213,15 +221,10 @@ class BleRangeTest(BluetoothBaseTest):
                 '{}_attenuation_{}.csv'.format(self.current_test_name, atten))
             ramp_attenuation(self.attenuator, atten)
             self.log.info('Set attenuation to %d dB', atten)
-            try:
-                self.client_ad.droid.bleSetScanSettingsScanMode(
-                    ble_scan_settings_modes['low_latency'])
-                mac_address, adv_callback, scan_callback = (
-                    get_mac_address_of_generic_advertisement(
-                        self.client_ad, self.server_ad))
-            except BtTestUtilsError as err:
-                raise GattTestUtilsError(
-                    "Error in getting mac address: {}".format(err))
+            adv_callback, scan_callback = bt5_start_advertise_and_scan(
+                self.client_ad, self.server_ad)
+            self.active_adv_callback_list.append(adv_callback)
+            self.active_scan_callback_list.append(scan_callback)
             average_rssi, raw_rssi = read_ble_scan_rssi(
                 self.client_ad, scan_callback)
             self.log.info(
@@ -244,7 +247,12 @@ class BleRangeTest(BluetoothBaseTest):
             data_points.append(data_point)
             df = pd.DataFrame({'raw rssi': raw_rssi})
             df.to_csv(csv_path, encoding='utf-8', index=False)
-            self.server_ad.droid.bleStopBleAdvertising(adv_callback)
+            try:
+                self.server_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
+            except Exception as err:
+                self.log.warning(
+                    "Failed to stop advertisement: {}".format(err))
+                reset_bluetooth([self.server_ad])
             self.client_ad.droid.bleStopBleScan(scan_callback)
         filepath = os.path.join(
             self.log_path, '{}_summary.csv'.format(self.current_test_name))
