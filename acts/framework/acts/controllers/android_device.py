@@ -1185,7 +1185,7 @@ class AndroidDevice:
             self.log.info("Pull SDM Log %s to %s", sdm_logs, sdm_log_path)
             self.pull_files(sdm_logs, sdm_log_path)
         else:
-            self.log.error("Didn't find SDM logs in %s." % log_path)
+            self.log.error("Didn't find SDM logs in %s." % log_paths)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
