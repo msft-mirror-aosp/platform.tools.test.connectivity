@@ -29,7 +29,6 @@ import time
 from acts import asserts
 from acts import signals
 from acts import utils
-from acts.base_test import BaseTestClass
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 
