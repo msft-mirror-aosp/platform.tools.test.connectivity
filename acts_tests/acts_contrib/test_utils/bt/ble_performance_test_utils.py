@@ -18,18 +18,22 @@ import logging
 import time
 import statistics
 import os
+from acts_contrib.test_utils.bt.bt_constants import advertising_set_started
 import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
-from queue import Empty
-from concurrent.futures import ThreadPoolExecutor
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_phys
+from acts_contrib.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts_contrib.test_utils.bt.bt_gatt_utils import close_gatt_client
 from acts_contrib.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
 from acts_contrib.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
+from queue import Empty
 from acts_contrib.test_utils.bt.bt_constants import gatt_cb_err
 from acts_contrib.test_utils.bt.bt_constants import gatt_cb_strings
 from acts_contrib.test_utils.bt.bt_constants import l2cap_coc_header_size
 from acts_contrib.test_utils.bt.bt_gatt_utils import GattTestUtilsError
+from acts_contrib.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts_contrib.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
 from acts_contrib.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
+from concurrent.futures import ThreadPoolExecutor
 
 default_event_timeout = 10
 rssi_read_duration = 25
@@ -276,3 +280,42 @@ def plot_graph(df, plot_data, bokeh_data, secondary_y_label=None):
         '{}.html'.format(bokeh_data['current_test_name']))
     plot.generate_figure()
     bokeh_figure.BokehFigure.save_figures([plot], results_file_path)
+
+
+def bt5_start_advertise_and_scan(client_ad, server_ad):
+    """Function to start bt5 advertisement.
+
+        Args:
+            client_ad: the Android device performing the scanning.
+            server_ad: he Android device performing the bt advertising
+        Returns:
+          adv_callback: the advertising callback
+          scan_callback: the scan_callback
+        """
+    adv_callback = server_ad.droid.bleAdvSetGenCallback()
+    adv_data = {
+        "includeDeviceName": True,
+    }
+    server_ad.droid.bleAdvSetStartAdvertisingSet(
+        {
+            "connectable": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_1M",
+            "interval": 320
+        }, adv_data, None, None, None, 0, 0, adv_callback)
+    server_ad.ed.pop_event(advertising_set_started.format(adv_callback),
+                           default_event_timeout)
+    logging.info("Bt5 Advertiser Started Successfully")
+    client_ad.droid.bleSetScanSettingsLegacy(False)
+    client_ad.droid.bleSetScanSettingsScanMode(
+        ble_scan_settings_modes['low_latency'])
+    client_ad.droid.bleSetScanSettingsPhy(ble_scan_settings_phys['1m'])
+
+    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+        client_ad.droid)
+    adv_device_name = server_ad.droid.bluetoothGetLocalName()
+    client_ad.droid.bleSetScanFilterDeviceName(adv_device_name)
+    client_ad.droid.bleBuildScanFilter(filter_list)
+    client_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
+    return adv_callback, scan_callback
