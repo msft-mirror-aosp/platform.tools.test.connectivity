@@ -16,6 +16,7 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
@@ -70,7 +71,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         for ad in self.android_devices:
             wifi_utils.reset_wifi(ad)
             ad.droid.telephonyToggleDataConnection(False)
-        tele_utils.ensure_phones_idle(self.log, self.android_devices)
+        ensure_phones_idle(self.log, self.android_devices)
         nutil.stop_usb_tethering(self.dut)
 
     """Helper Functions"""
