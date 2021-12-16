@@ -126,6 +126,7 @@ class GSS7000(AbstractInstGss7000):
         super().__init__(ip_addr, engine_ip_port)
         self.idn = ''
         self.connected = False
+        self.capability = []
         self.gss7000_ctrl_daemon = GSS7000Ctrl(ip_addr, ctrl_ip_port)
         # Close control daemon and engine sockets at the beginning
         self.gss7000_ctrl_daemon._close_socket()
@@ -151,39 +152,36 @@ class GSS7000(AbstractInstGss7000):
         self._logger.debug('Closed connection to GSS7000 engine daemon')
 
     def _parse_hw_cap(self, xml):
-        """Parse GSS7000 hardware capability xml to dict.
+        """Parse GSS7000 hardware capability xml to list.
             Args:
                 xml: hardware capability xml,
                     Type, str.
+
             Returns:
                 capability: Hardware capability dictionary
-                    Type, dict.
+                    Type, list.
         """
         root = ET.fromstring(xml)
-        capability_dict = dict()
+        capability_ls = list()
         sig_cap_list = root.find('data').find('Signal_capabilities').findall(
             'Signal')
         for signal in sig_cap_list:
-            key = signal.attrib['ID']
             value = str(signal.text).rstrip().lstrip()
-            capability_dict.setdefault(key, value)
-        return capability_dict
+            capability_ls.extend(value.upper().split(' '))
+        return capability_ls
 
     def get_hw_capability(self):
         """Check GSS7000 hardware capability
 
             Returns:
                 capability: Hardware capability dictionary,
-                    Type, dict.
+                    Type, list.
         """
         if self.connected:
             capability_xml = self._query('GET_LICENCED_HARDWARE_CAPABILITY')
-            capability = self._parse_hw_cap(capability_xml)
+            self.capability = self._parse_hw_cap(capability_xml)
 
-        else:
-            capability = dict()
-        self._logger.debug(capability)
-        return capability
+        return self.capability
 
     def get_idn(self):
         """Get the SimREPLAYplus Version
@@ -257,19 +255,17 @@ class GSS7000(AbstractInstGss7000):
                 Decimal, unit [dB]
 
         Raises:
-            GSS7000Error: raise when power offset level is not in [-40, 15] range.
+            GSS7000Error: raise when power offset level is not in [-49, 15] range.
         """
-        if not -40 <= power_offset <= 15:
-            errmsg = ('"power_offset" must be within [-40, 15], '
-                      'current input is {}').format(str(power_offset))
+        if not -49 <= power_offset <= 15:
+            errmsg = (f'"power_offset" must be within [-49, 15], '
+                      f'current input is {power_offset}')
             raise GSS7000Error(error=errmsg, command='set_power_offset')
 
-        cmd = '-,POW_LEV,V1_A{},{},GPS,0,0,1,1,1,1,0'.format(
-            str(ant), str(round(power_offset, 1)))
+        cmd = f'-,POW_LEV,V1_A{ant},{power_offset},GPS,0,0,1,1,1,1,0'
         self._query(cmd)
 
-        infmsg = 'Set veichel 1 antenna {} power offset: {}'.format(
-            str(ant), str(round(power_offset, 1)))
+        infmsg = f'Set veichel 1 antenna {ant} power offset: {power_offset}'
         self._logger.debug(infmsg)
 
     def set_ref_power(self, ref_dBm=-130):
@@ -301,24 +297,16 @@ class GSS7000(AbstractInstGss7000):
         status = get_xml_text(status_xml, 'status')
         if return_txt:
             status_dict = {
-                '0':
-                    'No Scenario loaded',
-                '1':
-                    'Not completed loading a scenario',
-                '2':
-                    'Idle, ready to run a scenario',
-                '3':
-                    'Arming the scenario',
-                '4':
-                    'Completed arming; or waiting for a command or'
-                    'trigger signal to start the scenario',
-                '5':
-                    'Scenario running',
-                '6':
-                    'Current scenario is paused.',
-                '7':
-                    'Active scenario has stopped and has not been reset.'
-                    'Waiting for further commands.'
+                '0': 'No Scenario loaded',
+                '1': 'Not completed loading a scenario',
+                '2': 'Idle, ready to run a scenario',
+                '3': 'Arming the scenario',
+                '4': 'Completed arming; or waiting for a command or'
+                     'trigger signal to start the scenario',
+                '5': 'Scenario running',
+                '6': 'Current scenario is paused.',
+                '7': 'Active scenario has stopped and has not been reset.'
+                     'Waiting for further commands.'
             }
             return status_dict.get(status)
         else:
@@ -335,8 +323,8 @@ class GSS7000(AbstractInstGss7000):
             GSS7000Error: raise when power level is not in [-170, -115] range.
         """
         if not -170 <= power_level <= -115:
-            errmsg = ('"power_level" must be within [-170, -115], '
-                      'current input is {}').format(str(power_level))
+            errmsg = (f'"power_level" must be within [-170, -115], '
+                      f'current input is {power_level}')
             raise GSS7000Error(error=errmsg, command='set_power')
 
         power_offset = power_level + 130
@@ -346,3 +334,157 @@ class GSS7000(AbstractInstGss7000):
         infmsg = 'Set GSS7000 transmit power to "{}"'.format(
             round(power_level, 1))
         self._logger.debug(infmsg)
+
+    def power_lev_offset_cal(self, power_level=-130, sat='GPS', band='L1'):
+        """Convert target power level to power offset for GSS7000 power setting
+        Args:
+            power_level: transmit power level
+                Type, float.
+                Decimal, unit [dBm]
+                Default. -130
+            sat_system: to set power level for all Satellites
+                Type, str
+                Option 'GPS/GLO/GAL'
+                Type, str
+            freq_band: Frequency band to set the power level
+                Type, str
+                Option 'L1/L5/B1I/B1C/B2A/E5'
+                Default, '', assumed to be L1.
+        Return:
+            power_offset: The calculated power offset for setting GSS7000 GNSS target power.
+        """
+        gss7000_tx_pwr = {
+            'GPS_L1': -130,
+            'GPS_L5': -127.9,
+            'GLONASS_F1': -131,
+            'GALILEO_L1': -127,
+            'GALILEO_E5': -122,
+            'BEIDOU_B1I': -133,
+            'BEIDOU_B1C': -130,
+            'BEIDOU_B2A': -127,
+            'QZSS_L1': -128.5,
+            'QZSS_L5': -124.9,
+            'IRNSS_L5': -130
+        }
+
+        sat_band = f'{sat}_{band}'
+        infmsg = f'Target satellite system and band: {sat_band}'
+        self._logger.debug(infmsg)
+        default_pwr_lev = gss7000_tx_pwr.get(sat_band, -130)
+        power_offset = power_level - default_pwr_lev
+        infmsg = (
+            f'Targer power: {power_level}; Default power: {default_pwr_lev};'
+            f' Power offset: {power_offset}')
+        self._logger.debug(infmsg)
+
+        return power_offset
+
+    def sat_band_convert(self, sat, band):
+        """Satellite system and operation band conversion and check.
+        Args:
+            sat: to set power level for all Satellites
+                Type, str
+                Option 'GPS/GLO/GAL/BDS'
+                Type, str
+            band: Frequency band to set the power level
+                Type, str
+                Option 'L1/L5/B1I/B1C/B2A/F1/E5'
+                Default, '', assumed to be L1.
+        """
+        sat_system_dict = {
+            'GPS': 'GPS',
+            'GLO': 'GLONASS',
+            'GAL': 'GALILEO',
+            'BDS': 'BEIDOU',
+            'IRNSS': 'IRNSS',
+            'ALL': 'GPS'
+        }
+        sat = sat_system_dict.get(sat, 'GPS')
+        if band == '':
+            infmsg = 'No band is set. Set to default band = L1'
+            self._logger.debug(infmsg)
+            band = 'L1'
+        if sat == '':
+            infmsg = 'No satellite system is set. Set to default sat = GPS'
+            self._logger.debug(infmsg)
+            sat = 'GPS'
+        sat_band = f'{sat}_{band}'
+        self._logger.debug(f'Current band: {sat_band}')
+        self._logger.debug(f'Capability: {self.capability}')
+        # Check if satellite standard and band are supported
+        # If not in support list, return GPS_L1 as default
+        if not sat_band in self.capability:
+            errmsg = (
+                f'Satellite system and band ({sat_band}) are not supported.'
+                f'The GSS7000 support list: {self.capability}')
+            raise GSS7000Error(error=errmsg, command='set_scenario_power')
+        else:
+            sat_band_tp = tuple(sat_band.split('_'))
+
+        return sat_band_tp
+
+    def set_scenario_power(self,
+                           power_level=-130,
+                           sat_id='',
+                           sat_system='',
+                           freq_band='L1'):
+        """Set dynamic power for the running scenario.
+        Args:
+            power_level: transmit power level
+                Type, float.
+                Decimal, unit [dBm]
+                Default. -130
+            sat_id: set power level for specific satellite identifiers
+                Type, int.
+            sat_system: to set power level for all Satellites
+                Type, str
+                Option 'GPS/GLO/GAL/BDS'
+                Type, str
+                Default, '', assumed to be GPS.
+            freq_band: Frequency band to set the power level
+                Type, str
+                Option 'L1/L5/B1I/B1C/B2A/F1/E5/ALL'
+                Default, '', assumed to be L1.
+        Raises:
+            GSS7000Error: raise when power offset is not in [-49, -15] range.
+        """
+        band_dict = {
+            'L1': 1,
+            'L5': 2,
+            'B2A': 2,
+            'B1I': 1,
+            'B1C': 1,
+            'F1': 1,
+            'E5': 2,
+            'ALL': 3
+        }
+
+        # Convert and check satellite system and band
+        sat, band = self.sat_band_convert(sat_system, freq_band)
+        # Get freq band setting
+        band_cmd = band_dict.get(band, 1)
+
+        if not sat_id:
+            sat_id = 0
+            all_tx_type = 1
+        else:
+            all_tx_type = 0
+
+        # Convert absolute power level to absolute power offset.
+        power_offset = self.power_lev_offset_cal(power_level, sat, band)
+
+        if not -49 <= power_offset <= 15:
+            errmsg = (f'"power_offset" must be within [-49, 15], '
+                      f'current input is {power_offset}')
+            raise GSS7000Error(error=errmsg, command='set_power_offset')
+
+        if band_cmd == 1:
+            cmd = f'-,POW_LEV,v1_a1,{power_offset},{sat},{sat_id},0,0,0,1,1,{all_tx_type}'
+            self._query(cmd)
+        elif band_cmd == 2:
+            cmd = f'-,POW_LEV,v1_a2,{power_offset},{sat},{sat_id},0,0,0,1,1,{all_tx_type}'
+            self._query(cmd)
+        elif band_cmd == 3:
+            cmd = f'-,POW_LEV,v1_a1,{power_offset},{sat},{sat_id},0,0,0,1,1,{all_tx_type}'
+            self._query(cmd)
+            cmd = f'-,POW_LEV,v1_a2,{power_offset},{sat},{sat_id},0,0,0,1,1,{all_tx_type}'
