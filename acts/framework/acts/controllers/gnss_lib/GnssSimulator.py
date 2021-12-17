@@ -112,3 +112,65 @@ class AbstractGnssSimulator:
             self.simulator.set_power_offset(gss7000_ant, pwr_offset)
         else:
             self._logger.error('No GNSS simulator is available')
+
+    def set_scenario_power(self,
+                           power_level,
+                           sat_id='',
+                           sat_system='',
+                           freq_band=''):
+        """Set dynamic power for the running scenario.
+
+        Args:
+            power_level: transmit power level
+                Type, float.
+                Decimal, unit [dBm]
+            sat_id: set power level for specific satellite identifiers
+                Type, str.
+                Option
+                    For GSG-6: 'Gxx/Rxx/Exx/Cxx/Jxx/Ixx/Sxxx'
+                    where xx is satellite identifiers number
+                    e.g.: G10
+                    For GSS7000: Provide SVID.
+                Default, '', assumed All.
+            sat_system: to set power level for all Satellites
+                Type, str
+                Option [GPS, GLO, GAL, BDS, QZSS, IRNSS, SBAS]
+                Default, '', assumed All.
+            freq_band: Frequency band to set the power level
+                Type, str
+                Default, '', assumed to be L1.
+         Raises:
+            RuntimeError: raise when instrument does not support this function.
+        """
+        self.simulator.set_scenario_power(power_level=power_level,
+                                          sat_id=sat_id,
+                                          sat_system=sat_system,
+                                          freq_band=freq_band)
+
+    def toggle_scenario_power(self,
+                              toggle_onoff='ON',
+                              sat_id='',
+                              sat_system=''):
+        """Toggle ON OFF scenario.
+
+        Args:
+            toggle_onoff: turn on or off the satellites
+                Type, str. Option ON/OFF
+                Default, 'ON'
+            sat_id: satellite identifiers
+                Type, str.
+                Option 'Gxx/Rxx/Exx/Cxx/Jxx/Ixx/Sxxx'
+                where xx is satellite identifiers no.
+                e.g.: G10
+            sat_system: to toggle On/OFF for all Satellites
+                Type, str
+                Option 'GPS/GLO/GAL'
+        """
+        # TODO: [b/208719212] Currently only support GSG-6. Will implement GSS7000 feature.
+        if self.simulator_name == 'gsg6':
+            self.simulator.toggle_scenario_power(toggle_onoff=toggle_onoff,
+                                                 sat_id=sat_id,
+                                                 sat_system=sat_system)
+        else:
+            raise RuntimeError('{} does not support this function'.format(
+                self.simulator_name))
