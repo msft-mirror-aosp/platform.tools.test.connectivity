@@ -29,6 +29,7 @@ from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
+from acts_contrib.test_utils.tel.tel_defines import MULTISIM_CONFIG_ADB_PROPERTY
 from acts_contrib.test_utils.tel.tel_defines import CLEAR_NOTIFICATION_BAR
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_ALERT_TYPE
 from acts_contrib.test_utils.tel.tel_defines import EXPAND_NOTIFICATION_BAR
@@ -92,6 +93,8 @@ from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.net import ui_utils as uutils
 
 
@@ -121,9 +124,23 @@ class CellBroadcastTest(TelephonyBaseTest):
                 self.emergency_alert_channels = os.path.join(
                     self.user_params[Config.key_config_path.value],
                     self.emergency_alert_channels)
+
+        subInfo = self.android_devices[0].droid.subscriptionGetAllSubInfoList()
+        self.slot_sub_id_list = {}
+        for info in subInfo:
+            if info["simSlotIndex"] >= 0:
+                self.slot_sub_id_list[info["subscriptionId"]] = info["simSlotIndex"]
+        if len(subInfo) > 1:
+            self.android_devices[0].log.info("device is operated at DSDS!")
+        else:
+            self.android_devices[0].log.info("device is operated at single SIM!")
+        self.current_sub_id = get_default_data_sub_id(self.android_devices[0])
+        self.android_devices[0].log.info("Active slot: %d, active subscription id: %d",
+                                         self.slot_sub_id_list[self.current_sub_id], self.current_sub_id)
+
         if hasattr(self, "carrier_test_conf"):
             if isinstance(self.carrier_test_conf, list):
-                self.carrier_test_conf = self.carrier_test_conf[0]
+                self.carrier_test_conf = self.carrier_test_conf[self.slot_sub_id_list[self.current_sub_id]]
             if not os.path.isfile(self.carrier_test_conf):
                 self.carrier_test_conf = os.path.join(
                     self.user_params[Config.key_config_path.value],
@@ -154,7 +171,9 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     def _verify_device_in_specific_region(self, ad, region=None):
         mccmnc = self.region_plmn_dict[region][MCC_MNC]
-        current_plmn = ad.adb.getprop(PLMN_ADB_PROPERTY)
+        plmns = ad.adb.getprop(PLMN_ADB_PROPERTY)
+        plmn_list = plmns.split(",")
+        current_plmn = plmn_list[self.slot_sub_id_list[self.current_sub_id]]
         if current_plmn == mccmnc:
             ad.log.info("device in %s region", region.upper())
             return True
@@ -214,6 +233,7 @@ class CellBroadcastTest(TelephonyBaseTest):
         tree.write(self.carrier_test_conf)
 
         # push carrier xml to device
+        ad.log.info("push %s to %s" % (self.carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
         ad.adb.push("%s %s" % (self.carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
 
         # reboot device
