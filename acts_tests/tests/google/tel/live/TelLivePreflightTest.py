@@ -29,6 +29,7 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
@@ -44,7 +45,6 @@ from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 

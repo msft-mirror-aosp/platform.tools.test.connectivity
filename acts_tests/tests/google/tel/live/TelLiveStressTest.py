@@ -81,7 +81,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mod
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection_by_ping
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
 from acts_contrib.test_utils.tel.tel_test_utils import check_voice_network_type
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
