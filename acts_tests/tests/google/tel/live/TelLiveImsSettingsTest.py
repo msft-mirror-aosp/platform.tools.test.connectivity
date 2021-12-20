@@ -35,6 +35,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
@@ -55,7 +56,6 @@ from acts_contrib.test_utils.tel.tel_voice_utils import change_ims_setting
 from acts_contrib.test_utils.tel.tel_voice_utils import verify_default_ims_setting
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_SSID_KEY
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_PWD_KEY
-from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
