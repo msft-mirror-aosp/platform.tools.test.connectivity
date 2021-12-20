@@ -38,7 +38,7 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
