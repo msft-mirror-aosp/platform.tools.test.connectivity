@@ -49,7 +49,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection_for_subscription
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
