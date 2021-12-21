@@ -50,8 +50,6 @@ from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts_contrib.test_utils.tel.tel_defines import DIALER_PACKAGE_NAME
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_DISABLE
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
@@ -60,14 +58,11 @@ from acts_contrib.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts_contrib.test_utils.tel.tel_defines import MESSAGE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_7_DIGIT
@@ -98,10 +93,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts_contrib.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
-from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
-from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventServiceStateChanged
-from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts_contrib.test_utils.tel.tel_defines import ServiceStateContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
@@ -120,7 +112,6 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import operator_name_from_net
 from acts_contrib.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
@@ -2266,254 +2257,6 @@ def lock_lte_band_by_mds(ad, band):
     reboot_device(ad)
 
 
-def _connection_state_change(_event, target_state, connection_type):
-    if connection_type:
-        if 'TypeName' not in _event['data']:
-            return False
-        connection_type_string_in_event = _event['data']['TypeName']
-        cur_type = connection_type_from_type_string(
-            connection_type_string_in_event)
-        if cur_type != connection_type:
-            log.info(
-                "_connection_state_change expect: %s, received: %s <type %s>",
-                connection_type, connection_type_string_in_event, cur_type)
-            return False
-
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
-        return True
-    return False
-
-
-def wait_for_cell_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value for default
-       data subscription.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for cell data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
-
-
-def _is_data_connection_state_match(log, ad, expected_data_connection_state):
-    return (expected_data_connection_state ==
-            ad.droid.telephonyGetDataConnectionState())
-
-
-def _is_network_connected_state_match(log, ad,
-                                      expected_network_connected_state):
-    return (expected_network_connected_state ==
-            ad.droid.connectivityNetworkIsConnected())
-
-
-def wait_for_cell_data_connection_for_subscription(
-        log,
-        ad,
-        sub_id,
-        state,
-        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value for specified
-       subscrption id.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        sub_id: subscription Id
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for cell data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    state_str = {
-        True: DATA_STATE_CONNECTED,
-        False: DATA_STATE_DISCONNECTED
-    }[state]
-
-    data_state = ad.droid.telephonyGetDataConnectionState()
-    if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
-        return True
-
-    ad.ed.clear_events(EventDataConnectionStateChanged)
-    ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
-        sub_id)
-    ad.droid.connectivityStartTrackingConnectivityStateChange()
-    try:
-        ad.log.info("User data enabled for sub_id %s: %s", sub_id,
-                    ad.droid.telephonyIsDataEnabledForSubscription(sub_id))
-        data_state = ad.droid.telephonyGetDataConnectionState()
-        ad.log.info("Data connection state is %s", data_state)
-        ad.log.info("Network is connected: %s",
-                    ad.droid.connectivityNetworkIsConnected())
-        if data_state == state_str:
-            return _wait_for_nw_data_connection(
-                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
-
-        try:
-            ad.ed.wait_for_event(
-                EventDataConnectionStateChanged,
-                is_event_match,
-                timeout=timeout_value,
-                field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
-                value=state_str)
-        except Empty:
-            ad.log.info("No expected event EventDataConnectionStateChanged %s",
-                        state_str)
-
-        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
-        # data connection state.
-        # Otherwise, the network state will not be correct.
-        # The bug is tracked here: b/20921915
-
-        # Previously we use _is_data_connection_state_match,
-        # but telephonyGetDataConnectionState sometimes return wrong value.
-        # The bug is tracked here: b/22612607
-        # So we use _is_network_connected_state_match.
-
-        if _wait_for_droid_in_state(log, ad, timeout_value,
-                                    _is_network_connected_state_match, state):
-            return _wait_for_nw_data_connection(
-                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
-        else:
-            return False
-
-    finally:
-        ad.droid.telephonyStopTrackingDataConnectionStateChangeForSubscription(
-            sub_id)
-
-
-def wait_for_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    return _wait_for_nw_data_connection(log, ad, state, None, timeout_value)
-
-
-def _wait_for_nw_data_connection(
-        log,
-        ad,
-        is_connected,
-        connection_type=None,
-        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        is_connected: Expected connection status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        connection_type: expected connection type.
-            This is optional, if it is None, then any connection type will return True.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    ad.ed.clear_events(EventConnectivityChanged)
-    ad.droid.connectivityStartTrackingConnectivityStateChange()
-    try:
-        cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
-        if is_connected == cur_data_connection_state:
-            current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current data connection type: %s", current_type)
-            if not connection_type:
-                return True
-            else:
-                if not is_connected and current_type != connection_type:
-                    ad.log.info("data connection not on %s!", connection_type)
-                    return True
-                elif is_connected and current_type == connection_type:
-                    ad.log.info("data connection on %s as expected",
-                                connection_type)
-                    return True
-        else:
-            ad.log.info("current data connection state: %s target: %s",
-                        cur_data_connection_state, is_connected)
-
-        try:
-            event = ad.ed.wait_for_event(
-                EventConnectivityChanged, _connection_state_change,
-                timeout_value, is_connected, connection_type)
-            ad.log.info("Got event: %s", event)
-        except Empty:
-            pass
-
-        log.info(
-            "_wait_for_nw_data_connection: check connection after wait event.")
-        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
-        # data connection state.
-        # Otherwise, the network state will not be correct.
-        # The bug is tracked here: b/20921915
-        if _wait_for_droid_in_state(log, ad, timeout_value,
-                                    _is_network_connected_state_match,
-                                    is_connected):
-            current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current data connection type: %s", current_type)
-            if not connection_type:
-                return True
-            else:
-                if not is_connected and current_type != connection_type:
-                    ad.log.info("data connection not on %s", connection_type)
-                    return True
-                elif is_connected and current_type == connection_type:
-                    ad.log.info("after event wait, data connection on %s",
-                                connection_type)
-                    return True
-                else:
-                    return False
-        else:
-            return False
-    except Exception as e:
-        ad.log.error("Exception error %s", str(e))
-        return False
-    finally:
-        ad.droid.connectivityStopTrackingConnectivityStateChange()
-
-
 def get_cell_data_roaming_state_by_adb(ad):
     """Get Cell Data Roaming state. True for enabled, False for disabled"""
     state_mapping = {"1": True, "0": False}
@@ -3182,61 +2925,6 @@ def set_preferred_network_mode_pref(log,
     return False
 
 
-def set_preferred_subid_for_sms(log, ad, sub_id):
-    """set subscription id for SMS
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-
-    """
-    ad.log.info("Setting subscription %s as preferred SMS SIM", sub_id)
-    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
-    # Wait to make sure settings take effect
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    return sub_id == ad.droid.subscriptionGetDefaultSmsSubId()
-
-
-def set_preferred_subid_for_data(log, ad, sub_id):
-    """set subscription id for data
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-
-    """
-    ad.log.info("Setting subscription %s as preferred Data SIM", sub_id)
-    ad.droid.subscriptionSetDefaultDataSubId(sub_id)
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    # Wait to make sure settings take effect
-    # Data SIM change takes around 1 min
-    # Check whether data has changed to selected sim
-    if not wait_for_data_connection(log, ad, True,
-                                    MAX_WAIT_TIME_DATA_SUB_CHANGE):
-        log.error("Data Connection failed - Not able to switch Data SIM")
-        return False
-    return True
-
-
-def set_preferred_subid_for_voice(log, ad, sub_id):
-    """set subscription id for voice
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-
-    """
-    ad.log.info("Setting subscription %s as Voice SIM", sub_id)
-    ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
-    ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
-    # Wait to make sure settings take effect
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    return True
-
-
 def set_call_state_listen_level(log, ad, value, sub_id):
     """Set call state listen level for subscription id.
 
@@ -3258,34 +2946,6 @@ def set_call_state_listen_level(log, ad, value, sub_id):
         "Ringing", value, sub_id)
     ad.droid.telephonyAdjustPreciseCallStateListenLevelForSubscription(
         "Background", value, sub_id)
-    return True
-
-
-def setup_sim(log, ad, sub_id, voice=False, sms=False, data=False):
-    """set subscription id for voice, sms and data
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-        voice: True if to set subscription as default voice subscription
-        sms: True if to set subscription as default sms subscription
-        data: True if to set subscription as default data subscription
-
-    """
-    if sub_id == INVALID_SUB_ID:
-        log.error("Invalid Subscription ID")
-        return False
-    else:
-        if voice:
-            if not set_preferred_subid_for_voice(log, ad, sub_id):
-                return False
-        if sms:
-            if not set_preferred_subid_for_sms(log, ad, sub_id):
-                return False
-        if data:
-            if not set_preferred_subid_for_data(log, ad, sub_id):
-                return False
     return True
 
 

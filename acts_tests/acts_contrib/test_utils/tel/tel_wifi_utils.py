@@ -20,7 +20,7 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
-from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_nw_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import _wait_for_nw_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.wifi import wifi_test_utils

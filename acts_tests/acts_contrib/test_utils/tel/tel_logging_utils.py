@@ -90,7 +90,7 @@ def start_sdm_logger(ad, retry=5):
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
     for _ in range(retry):
-        disable_complete = '0\n' in ad.adb.shell(
+        disable_complete = '0' in ad.adb.shell(
             "find %s -type f -iname sbuff_profile.sdm | wc -l" % ad.sdm_log_path)
         if disable_complete:
             ad.log.debug("start sdm logging")
