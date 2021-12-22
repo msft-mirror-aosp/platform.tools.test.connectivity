@@ -90,6 +90,7 @@ class NetworkSettings(object):
             "ipv6_prefer_option": self.remove_ipv6_prefer_option,
             "block_dns_response": self.unblock_dns_response,
             "setup_mdns": self.remove_mdns,
+            "add_dhcp_rapid_commit": self.remove_dhcp_rapid_commit,
             "setup_captive_portal": self.remove_cpative_portal
         }
         # This map contains cleanup functions to restore the configuration to
@@ -851,6 +852,18 @@ class NetworkSettings(object):
     def remove_ipv6_prefer_option(self):
         self._remove_dhcp_option("108,1800i")
         self.config.discard("ipv6_prefer_option")
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def add_dhcp_rapid_commit(self):
+        self.create_config_file("dhcp-rapid-commit\n","/etc/dnsmasq.conf")
+        self.config.add("add_dhcp_rapid_commit")
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def remove_dhcp_rapid_commit(self):
+        self.create_config_file("","/etc/dnsmasq.conf")
+        self.config.discard("add_dhcp_rapid_commit")
         self.service_manager.need_restart(SERVICE_DNSMASQ)
         self.commit_changes()
 
