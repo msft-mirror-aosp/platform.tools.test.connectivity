@@ -50,6 +50,7 @@ from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackAvailable
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackLost
 from acts_contrib.test_utils.tel.tel_defines import SignalStrengthContainer
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_disabled
@@ -68,7 +69,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import is_network_call_back_event_match
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
@@ -83,7 +84,6 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import get_wifi_signal_strength
-from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 # Attenuator name

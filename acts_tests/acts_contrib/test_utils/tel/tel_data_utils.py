@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+
+import logging
 import time
 import random
 from queue import Empty
@@ -29,14 +31,20 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_mess
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
+from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
+from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import RAT_5G
@@ -48,11 +56,14 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHEC
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
+from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
+from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts_contrib.test_utils.tel.tel_5g_test_utils import check_current_network_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
+from acts_contrib.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation_for_subscription
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_idle
@@ -61,17 +72,19 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_defa
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
+from acts_contrib.test_utils.tel.tel_test_utils import get_internet_connection_type
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import is_event_match
 from acts_contrib.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
@@ -90,7 +103,6 @@ from acts_contrib.test_utils.tel.tel_wifi_utils import get_wifi_usage
 from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_wifi_utils import start_wifi_tethering
 from acts_contrib.test_utils.tel.tel_wifi_utils import stop_wifi_tethering
-from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
@@ -1159,36 +1171,38 @@ def test_wifi_connect_disconnect(log, ad, wifi_network_ssid=None, wifi_network_p
         True, False, True, False, False, True, False, False, False, False,
         True, False, False, False, False, False, False, False, False
     ]
+    try:
+        for toggle in wifi_toggles:
 
-    for toggle in wifi_toggles:
+            wifi_reset(log, ad, toggle)
 
-        wifi_reset(log, ad, toggle)
+            if not wait_for_cell_data_connection(
+                    log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
+                log.error("Failed data connection, aborting!")
+                return False
 
-        if not wait_for_cell_data_connection(
-                log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
-            log.error("Failed wifi connection, aborting!")
-            return False
+            if not verify_internet_connection(log, ad):
+                log.error("Failed to get user-plane traffic, aborting!")
+                return False
 
-        if not verify_internet_connection(log, ad):
-            log.error("Failed to get user-plane traffic, aborting!")
-            return False
+            if toggle:
+                wifi_toggle_state(log, ad, True)
 
-        if toggle:
-            wifi_toggle_state(log, ad, True)
+            ensure_wifi_connected(log, ad, wifi_network_ssid,
+                        wifi_network_pass)
 
-        ensure_wifi_connected(log, ad, wifi_network_ssid,
-                     wifi_network_pass)
+            if not wait_for_wifi_data_connection(
+                    log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
+                log.error("Failed wifi connection, aborting!")
+                return False
 
-        if not wait_for_wifi_data_connection(
-                log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
-            log.error("Failed wifi connection, aborting!")
-            return False
-
-        if not verify_http_connection(
-                log, ad, 'http://www.google.com', 100, .1):
-            log.error("Failed to get user-plane traffic, aborting!")
-            return False
-    return True
+            if not verify_http_connection(
+                    log, ad, 'http://www.google.com', 100, .1):
+                log.error("Failed to get user-plane traffic, aborting!")
+                return False
+        return True
+    finally:
+        wifi_toggle_state(log, ad, False)
 
 
 def test_call_setup_in_active_data_transfer(
@@ -2078,3 +2092,273 @@ def wait_for_network_service(
         else:
             return False
     return False
+
+
+def wait_for_cell_data_connection(
+        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+    """Wait for data connection status to be expected value for default
+       data subscription.
+
+    Wait for the data connection status to be DATA_STATE_CONNECTED
+        or DATA_STATE_DISCONNECTED.
+
+    Args:
+        log: Log object.
+        ad: Android Device Object.
+        state: Expected status: True or False.
+            If True, it will wait for status to be DATA_STATE_CONNECTED.
+            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
+        timeout_value: wait for cell data timeout value.
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    sub_id = get_default_data_sub_id(ad)
+    return wait_for_cell_data_connection_for_subscription(
+        log, ad, sub_id, state, timeout_value)
+
+
+def _is_data_connection_state_match(log, ad, expected_data_connection_state):
+    return (expected_data_connection_state ==
+            ad.droid.telephonyGetDataConnectionState())
+
+
+def _is_network_connected_state_match(log, ad,
+                                      expected_network_connected_state):
+    return (expected_network_connected_state ==
+            ad.droid.connectivityNetworkIsConnected())
+
+
+def wait_for_cell_data_connection_for_subscription(
+        log,
+        ad,
+        sub_id,
+        state,
+        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+    """Wait for data connection status to be expected value for specified
+       subscrption id.
+
+    Wait for the data connection status to be DATA_STATE_CONNECTED
+        or DATA_STATE_DISCONNECTED.
+
+    Args:
+        log: Log object.
+        ad: Android Device Object.
+        sub_id: subscription Id
+        state: Expected status: True or False.
+            If True, it will wait for status to be DATA_STATE_CONNECTED.
+            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
+        timeout_value: wait for cell data timeout value.
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    state_str = {
+        True: DATA_STATE_CONNECTED,
+        False: DATA_STATE_DISCONNECTED
+    }[state]
+
+    data_state = ad.droid.telephonyGetDataConnectionState()
+    if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
+        return True
+
+    ad.ed.clear_events(EventDataConnectionStateChanged)
+    ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
+        sub_id)
+    ad.droid.connectivityStartTrackingConnectivityStateChange()
+    try:
+        ad.log.info("User data enabled for sub_id %s: %s", sub_id,
+                    ad.droid.telephonyIsDataEnabledForSubscription(sub_id))
+        data_state = ad.droid.telephonyGetDataConnectionState()
+        ad.log.info("Data connection state is %s", data_state)
+        ad.log.info("Network is connected: %s",
+                    ad.droid.connectivityNetworkIsConnected())
+        if data_state == state_str:
+            return _wait_for_nw_data_connection(
+                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
+
+        try:
+            ad.ed.wait_for_event(
+                EventDataConnectionStateChanged,
+                is_event_match,
+                timeout=timeout_value,
+                field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
+                value=state_str)
+        except Empty:
+            ad.log.info("No expected event EventDataConnectionStateChanged %s",
+                        state_str)
+
+        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
+        # data connection state.
+        # Otherwise, the network state will not be correct.
+        # The bug is tracked here: b/20921915
+
+        # Previously we use _is_data_connection_state_match,
+        # but telephonyGetDataConnectionState sometimes return wrong value.
+        # The bug is tracked here: b/22612607
+        # So we use _is_network_connected_state_match.
+
+        if _wait_for_droid_in_state(log, ad, timeout_value,
+                                    _is_network_connected_state_match, state):
+            return _wait_for_nw_data_connection(
+                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
+        else:
+            return False
+
+    finally:
+        ad.droid.telephonyStopTrackingDataConnectionStateChangeForSubscription(
+            sub_id)
+
+
+def wait_for_data_connection(
+        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+    """Wait for data connection status to be expected value.
+
+    Wait for the data connection status to be DATA_STATE_CONNECTED
+        or DATA_STATE_DISCONNECTED.
+
+    Args:
+        log: Log object.
+        ad: Android Device Object.
+        state: Expected status: True or False.
+            If True, it will wait for status to be DATA_STATE_CONNECTED.
+            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
+        timeout_value: wait for network data timeout value.
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    return _wait_for_nw_data_connection(log, ad, state, None, timeout_value)
+
+
+def wait_for_wifi_data_connection(
+        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+    """Wait for data connection status to be expected value and connection is by WiFi.
+
+    Args:
+        log: Log object.
+        ad: Android Device Object.
+        state: Expected status: True or False.
+            If True, it will wait for status to be DATA_STATE_CONNECTED.
+            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
+        timeout_value: wait for network data timeout value.
+            This is optional, default value is MAX_WAIT_TIME_NW_SELECTION
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    ad.log.info("wait_for_wifi_data_connection")
+    return _wait_for_nw_data_connection(
+        log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
+
+
+def _connection_state_change(_event, target_state, connection_type):
+    if connection_type:
+        if 'TypeName' not in _event['data']:
+            return False
+        connection_type_string_in_event = _event['data']['TypeName']
+        cur_type = connection_type_from_type_string(
+            connection_type_string_in_event)
+        if cur_type != connection_type:
+            logging.info(
+                "_connection_state_change expect: %s, received: %s <type %s>",
+                connection_type, connection_type_string_in_event, cur_type)
+            return False
+
+    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
+        return True
+    return False
+
+
+def _wait_for_nw_data_connection(
+        log,
+        ad,
+        is_connected,
+        connection_type=None,
+        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+    """Wait for data connection status to be expected value.
+
+    Wait for the data connection status to be DATA_STATE_CONNECTED
+        or DATA_STATE_DISCONNECTED.
+
+    Args:
+        log: Log object.
+        ad: Android Device Object.
+        is_connected: Expected connection status: True or False.
+            If True, it will wait for status to be DATA_STATE_CONNECTED.
+            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
+        connection_type: expected connection type.
+            This is optional, if it is None, then any connection type will return True.
+        timeout_value: wait for network data timeout value.
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    ad.ed.clear_events(EventConnectivityChanged)
+    ad.droid.connectivityStartTrackingConnectivityStateChange()
+    try:
+        cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
+        if is_connected == cur_data_connection_state:
+            current_type = get_internet_connection_type(log, ad)
+            ad.log.info("current data connection type: %s", current_type)
+            if not connection_type:
+                return True
+            else:
+                if not is_connected and current_type != connection_type:
+                    ad.log.info("data connection not on %s!", connection_type)
+                    return True
+                elif is_connected and current_type == connection_type:
+                    ad.log.info("data connection on %s as expected",
+                                connection_type)
+                    return True
+        else:
+            ad.log.info("current data connection state: %s target: %s",
+                        cur_data_connection_state, is_connected)
+
+        try:
+            event = ad.ed.wait_for_event(
+                EventConnectivityChanged, _connection_state_change,
+                timeout_value, is_connected, connection_type)
+            ad.log.info("Got event: %s", event)
+        except Empty:
+            pass
+
+        log.info(
+            "_wait_for_nw_data_connection: check connection after wait event.")
+        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
+        # data connection state.
+        # Otherwise, the network state will not be correct.
+        # The bug is tracked here: b/20921915
+        if _wait_for_droid_in_state(log, ad, timeout_value,
+                                    _is_network_connected_state_match,
+                                    is_connected):
+            current_type = get_internet_connection_type(log, ad)
+            ad.log.info("current data connection type: %s", current_type)
+            if not connection_type:
+                return True
+            else:
+                if not is_connected and current_type != connection_type:
+                    ad.log.info("data connection not on %s", connection_type)
+                    return True
+                elif is_connected and current_type == connection_type:
+                    ad.log.info("after event wait, data connection on %s",
+                                connection_type)
+                    return True
+                else:
+                    return False
+        else:
+            return False
+    except Exception as e:
+        ad.log.error("Exception error %s", str(e))
+        return False
+    finally:
+        ad.droid.connectivityStopTrackingConnectivityStateChange()
