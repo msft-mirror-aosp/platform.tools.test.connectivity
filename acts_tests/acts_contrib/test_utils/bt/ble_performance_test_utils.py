@@ -16,6 +16,7 @@
 
 import logging
 import time
+import datetime
 import statistics
 import os
 from acts_contrib.test_utils.bt.bt_constants import advertising_set_started
@@ -106,6 +107,7 @@ def read_ble_scan_rssi(client_ad, scan_callback, rssi_read_duration=30):
       raw_rssi: RSSI list of remote BLE device
     """
     raw_rssi = []
+    timestamp = []
     end_time = time.time() + rssi_read_duration
     logging.info("Reading BLE Scan RSSI for {} sec".format(rssi_read_duration))
     while time.time() < end_time:
@@ -119,13 +121,17 @@ def read_ble_scan_rssi(client_ad, scan_callback, rssi_read_duration=30):
                 gatt_cb_err['rd_remote_rssi_err'].format(expected_event))
             return False
         rssi_value = event['data']['Result']['rssi']
+        epoch_time = event['time']
+        d = datetime.datetime.fromtimestamp(epoch_time / 1000)
+        tstamp = d.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        timestamp.append(tstamp)
         raw_rssi.append(rssi_value)
     logging.debug("First & Last reading of RSSI :{:03d} & {:03d}".format(
         raw_rssi[0], raw_rssi[-1]))
     ble_rssi = statistics.mean(raw_rssi)
     ble_rssi = round(ble_rssi, 2)
 
-    return ble_rssi, raw_rssi
+    return ble_rssi, raw_rssi, timestamp
 
 
 def ble_coc_connection(client_ad, server_ad):

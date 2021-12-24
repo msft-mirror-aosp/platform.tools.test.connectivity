@@ -225,7 +225,7 @@ class BleRangeTest(BluetoothBaseTest):
                 self.client_ad, self.server_ad)
             self.active_adv_callback_list.append(adv_callback)
             self.active_scan_callback_list.append(scan_callback)
-            average_rssi, raw_rssi = read_ble_scan_rssi(
+            average_rssi, raw_rssi, timestamp = read_ble_scan_rssi(
                 self.client_ad, scan_callback)
             self.log.info(
                 "Scanned rssi list of the remote device is :{}".format(
@@ -245,7 +245,7 @@ class BleRangeTest(BluetoothBaseTest):
                 'Standard_deviation': std_deviation
             }
             data_points.append(data_point)
-            df = pd.DataFrame({'raw rssi': raw_rssi})
+            df = pd.DataFrame({'timestamp': timestamp, 'raw rssi': raw_rssi})
             df.to_csv(csv_path, encoding='utf-8', index=False)
             try:
                 self.server_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)

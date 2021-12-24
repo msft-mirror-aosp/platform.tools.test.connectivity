@@ -29,7 +29,6 @@ from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
-from acts_contrib.test_utils.tel.tel_defines import MULTISIM_CONFIG_ADB_PROPERTY
 from acts_contrib.test_utils.tel.tel_defines import CLEAR_NOTIFICATION_BAR
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_ALERT_TYPE
 from acts_contrib.test_utils.tel.tel_defines import EXPAND_NOTIFICATION_BAR
