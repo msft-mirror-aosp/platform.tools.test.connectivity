@@ -41,6 +41,7 @@ PROC_NET_SNMP6 = '/proc/net/snmp6'
 LIFETIME_FRACTION = 6
 LIFETIME = 180
 INTERVAL = 2
+WLAN0= "wlan0"
 
 
 class ApfCountersTest(WifiBaseTest):
@@ -79,7 +80,7 @@ class ApfCountersTest(WifiBaseTest):
 
     def setup_test(self):
         if 'RTT' not in self.test_name:
-            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
+            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name, WLAN0)
 
     def teardown_test(self):
         if 'RTT' not in self.test_name:
@@ -212,7 +213,7 @@ class ApfCountersTest(WifiBaseTest):
         ra_count = self._get_icmp6intype134()
 
         # start tcpdump on the device
-        tcpdump_pid = start_tcpdump(self.dut, self.test_name)
+        tcpdump_pid = start_tcpdump(self.dut, self.test_name, WLAN0)
 
         # send RA with differnt re-trans time
         for rtt in rtt_list:
