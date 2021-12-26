@@ -59,6 +59,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import test_data_connectivity_mu
 from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_tethering_wifi_and_voice_call
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_apm_tethering_internet_connection
@@ -110,7 +111,6 @@ from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import stop_wifi_tethering
-from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
