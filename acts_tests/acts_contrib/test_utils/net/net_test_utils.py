@@ -287,7 +287,7 @@ def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
     return vpn_profile
 
 
-def start_tcpdump(ad, test_name):
+def start_tcpdump(ad, test_name, interface="any"):
     """Start tcpdump on all interfaces.
 
     Args:
@@ -301,8 +301,8 @@ def start_tcpdump(ad, test_name):
 
     file_name = "%s/tcpdump_%s_%s.pcap" % (TCPDUMP_PATH, ad.serial, test_name)
     ad.log.info("tcpdump file is %s", file_name)
-    cmd = "adb -s {} shell tcpdump -i any -s0 -w {}".format(ad.serial,
-                                                            file_name)
+    cmd = "adb -s {} shell tcpdump -i {} -s0 -w {}".format(ad.serial,
+                                                           interface, file_name)
     try:
         return start_standing_subprocess(cmd, 5)
     except Exception:
