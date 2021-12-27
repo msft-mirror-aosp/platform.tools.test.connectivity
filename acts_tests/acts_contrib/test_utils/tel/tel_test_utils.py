@@ -29,11 +29,12 @@ import struct
 from acts import signals
 from queue import Empty
 from acts.asserts import abort_all
-from acts.controllers.adb_lib.error import AdbError
+from acts.controllers.adb_lib.error import AdbCommandError, AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 
 from acts.controllers.android_device import SL4A_APK_NAME
+from acts.libs.proc.job import TimeoutError
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.tel_defines import CarrierConfigs
 from acts_contrib.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -1659,7 +1660,7 @@ def iperf_test_with_options(log,
                 log_file_path=log_file_path)
             return True
         result, data = ad.run_iperf_client(
-            iperf_server, iperf_option, timeout=timeout + 60)
+            iperf_server, iperf_option, timeout=timeout + 120)
         ad.log.info("iperf test result with server %s is %s", iperf_server,
                     result)
         if result:
@@ -1703,7 +1704,8 @@ def iperf_udp_test_by_adb(log,
                           ipv6=False,
                           rate_dict=None,
                           blocking=True,
-                          log_file_path=None):
+                          log_file_path=None,
+                          retry=5):
     """Iperf test by adb using UDP.
 
     Args:
@@ -1719,29 +1721,36 @@ def iperf_udp_test_by_adb(log,
         rate_dict: dictionary that can be passed in to save data
         blocking: run iperf in blocking mode if True
         log_file_path: location to save logs
+        retry: times of retry when the server is unavailable
     """
     iperf_option = "-u -i 1 -t %s -O %s -J" % (timeout, omit)
     if limit_rate:
         iperf_option += " -b %s" % limit_rate
     if pacing_timer:
         iperf_option += " --pacing-timer %s" % pacing_timer
-    if port_num:
-        iperf_option += " -p %s" % port_num
     if ipv6:
         iperf_option += " -6"
     if reverse:
         iperf_option += " -R"
-    try:
-        return iperf_test_with_options(log,
-                                        ad,
-                                        iperf_server,
-                                        iperf_option,
-                                        timeout,
-                                        rate_dict,
-                                        blocking,
-                                        log_file_path)
-    except AdbError:
-        return False
+    for _ in range(retry):
+        if port_num:
+            iperf_option_final = iperf_option + " -p %s" % port_num
+            port_num += 1
+        else:
+            iperf_option_final = iperf_option
+        try:
+            return iperf_test_with_options(log,
+                                           ad,
+                                           iperf_server,
+                                           iperf_option_final,
+                                           timeout,
+                                           rate_dict,
+                                           blocking,
+                                           log_file_path)
+        except (AdbCommandError, TimeoutError) as error:
+            continue
+        except AdbError:
+            return False
 
 
 def iperf_test_by_adb(log,
@@ -1755,7 +1764,8 @@ def iperf_test_by_adb(log,
                       ipv6=False,
                       rate_dict=None,
                       blocking=True,
-                      log_file_path=None):
+                      log_file_path=None,
+                      retry=5):
     """Iperf test by adb using TCP.
 
     Args:
@@ -1771,27 +1781,34 @@ def iperf_test_by_adb(log,
         rate_dict: dictionary that can be passed in to save data
         blocking: run iperf in blocking mode if True
         log_file_path: location to save logs
+        retry: times of retry when the server is unavailable
     """
     iperf_option = "-t %s -O %s -J" % (timeout, omit)
     if limit_rate:
         iperf_option += " -b %s" % limit_rate
-    if port_num:
-        iperf_option += " -p %s" % port_num
     if ipv6:
         iperf_option += " -6"
     if reverse:
         iperf_option += " -R"
-    try:
-        return iperf_test_with_options(log,
-                                        ad,
-                                        iperf_server,
-                                        iperf_option,
-                                        timeout,
-                                        rate_dict,
-                                        blocking,
-                                        log_file_path)
-    except AdbError:
-        return False
+    for _ in range(retry):
+        if port_num:
+            iperf_option_final = iperf_option + " -p %s" % port_num
+            port_num += 1
+        else:
+            iperf_option_final = iperf_option
+        try:
+            return iperf_test_with_options(log,
+                                           ad,
+                                           iperf_server,
+                                           iperf_option_final,
+                                           timeout,
+                                           rate_dict=rate_dict,
+                                           blocking=blocking,
+                                           log_file_path=log_file_path)
+        except (AdbCommandError, TimeoutError) as error:
+            continue
+        except AdbError:
+            return False
 
 
 def http_file_download_by_curl(ad,
