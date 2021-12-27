@@ -402,6 +402,34 @@ class AndroidDevice:
         if self._ssh_connection:
             self._ssh_connection.close()
 
+    def recreate_services(self, serial):
+        """Clean up the AndroidDevice object and re-create adb/sl4a services.
+
+        Unregister the existing services and re-create adb and sl4a services,
+        call this method when the connection break after certain API call
+        (e.g., enable USB tethering by #startTethering)
+
+        Args:
+            serial: the serial number of the AndroidDevice
+        """
+        # Clean the old services
+        for service in self._services:
+            service.unregister()
+        self._services.clear()
+        if self._ssh_connection:
+            self._ssh_connection.close()
+        self._sl4a_manager.stop_service()
+
+        # Wait for old services to stop
+        time.sleep(5)
+
+        # Re-create the new adb and sl4a services
+        self.register_service(services.AdbLogcatService(self))
+        self.register_service(services.Sl4aService(self))
+        self.adb.wait_for_device()
+        self.terminate_all_sessions()
+        self.start_services()
+
     def register_service(self, service):
         """Registers the service on the device. """
         service.register()

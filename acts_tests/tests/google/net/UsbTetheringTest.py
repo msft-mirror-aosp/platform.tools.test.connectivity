@@ -38,7 +38,9 @@ class UsbTetheringTest(base_test.BaseTestClass):
     self.unpack_userparams(req_params)
     # Enable USB tethering and get the USB network interface
     iflist_before = nutils.get_if_list()
+    serial = self.dut.device_info['serial']
     nutils.start_usb_tethering(self.dut)
+    self.dut.recreate_services(serial)
     self.iface = nutils.wait_for_new_iface(iflist_before)
     self.check_upstream_ready()
 
