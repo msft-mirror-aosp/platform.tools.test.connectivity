@@ -40,7 +40,8 @@ class UsbTetheringTest(base_test.BaseTestClass):
     iflist_before = nutils.get_if_list()
     nutils.start_usb_tethering(self.dut)
     self.iface = nutils.wait_for_new_iface(iflist_before)
-    self.check_upstream_ready()
+    if not self.check_upstream_ready():
+      raise asserts.fail("Upstream interface is not active.")
 
   def teardown_class(self):
     nutils.stop_usb_tethering(self.dut)
@@ -185,8 +186,9 @@ class UsbTetheringTest(base_test.BaseTestClass):
     for i in range(0, retry):
       output = self.dut.adb.shell(DUMSYS_CMD)
       for line in output.split("\n"):
-        if UPSTREAM_WANTED_STRING in line and "true" in line:
+        if UPSTREAM_WANTED_STRING in line:
           if "true" in line:
             self.log.info("Upstream interface is active")
           elif i == retry:
-            raise asserts.fail("Upstream interface is not active.")
+            return False
+    return True
