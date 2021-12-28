@@ -287,6 +287,28 @@ class _TelTables():
         '45004': tel_defines.CARRIER_KT,
         '45008': tel_defines.CARRIER_KT,
 
+        #Softbank (Japan)
+        '44004': tel_defines.CARRIER_SBM,
+        '44006': tel_defines.CARRIER_SBM,
+        '44020': tel_defines.CARRIER_SBM,
+        '44040': tel_defines.CARRIER_SBM,
+        '44041': tel_defines.CARRIER_SBM,
+        '44042': tel_defines.CARRIER_SBM,
+        '44043': tel_defines.CARRIER_SBM,
+        '44044': tel_defines.CARRIER_SBM,
+        '44045': tel_defines.CARRIER_SBM,
+        '44046': tel_defines.CARRIER_SBM,
+        '44047': tel_defines.CARRIER_SBM,
+        '44048': tel_defines.CARRIER_SBM,
+        '44090': tel_defines.CARRIER_SBM,
+        '44092': tel_defines.CARRIER_SBM,
+        '44093': tel_defines.CARRIER_SBM,
+        '44094': tel_defines.CARRIER_SBM,
+        '44095': tel_defines.CARRIER_SBM,
+        '44096': tel_defines.CARRIER_SBM,
+        '44097': tel_defines.CARRIER_SBM,
+        '44098': tel_defines.CARRIER_SBM,
+
         #SK Telecom (South Korea)
         '45005': tel_defines.CARRIER_SKT,
 
