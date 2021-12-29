@@ -72,6 +72,7 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_defa
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_voice_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_internet_connection_type
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
@@ -87,7 +88,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call

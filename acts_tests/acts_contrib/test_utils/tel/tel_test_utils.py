@@ -58,7 +58,6 @@ from acts_contrib.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts_contrib.test_utils.tel.tel_defines import MESSAGE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
@@ -69,7 +68,6 @@ from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_7
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_10_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_11_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_12_DIGIT
-from acts_contrib.test_utils.tel.tel_defines import RAT_1XRTT
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
@@ -82,7 +80,6 @@ from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
@@ -2437,48 +2434,6 @@ def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
 def is_voice_attached(log, ad):
     return _is_attached_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), NETWORK_SERVICE_VOICE)
-
-
-def wait_for_voice_attach(log, ad, max_time=MAX_WAIT_TIME_NW_SELECTION):
-    """Wait for android device to attach on voice.
-
-    Args:
-        log: log object.
-        ad:  android device.
-        max_time: maximal wait time.
-
-    Returns:
-        Return True if device attach voice within max_time.
-        Return False if timeout.
-    """
-    return _wait_for_droid_in_state(log, ad, max_time, _is_attached,
-                                    NETWORK_SERVICE_VOICE)
-
-
-def wait_for_voice_attach_for_subscription(
-        log, ad, sub_id, max_time=MAX_WAIT_TIME_NW_SELECTION):
-    """Wait for android device to attach on voice in subscription id.
-
-    Args:
-        log: log object.
-        ad:  android device.
-        sub_id: subscription id.
-        max_time: maximal wait time.
-
-    Returns:
-        Return True if device attach voice within max_time.
-        Return False if timeout.
-    """
-    if not _wait_for_droid_in_state_for_subscription(
-            log, ad, sub_id, max_time, _is_attached_for_subscription,
-            NETWORK_SERVICE_VOICE):
-        return False
-
-    # TODO: b/26295983 if pone attach to 1xrtt from unknown, phone may not
-    # receive incoming call immediately.
-    if ad.droid.telephonyGetCurrentVoiceNetworkType() == RAT_1XRTT:
-        time.sleep(WAIT_TIME_1XRTT_VOICE_ATTACH)
-    return True
 
 
 def wait_for_data_attach(log, ad, max_time):
