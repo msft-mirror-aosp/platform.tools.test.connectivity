@@ -37,6 +37,7 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
+from acts_contrib.test_utils.tel.tel_defines import RAT_1XRTT
 from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_LTE
@@ -45,6 +46,7 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WCDMA
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
@@ -66,6 +68,8 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_mess
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import _is_attached
+from acts_contrib.test_utils.tel.tel_test_utils import _is_attached_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_capability_for_subscription
@@ -82,7 +86,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mod
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
 from acts.libs.utils.multithread import multithread_func
@@ -1713,3 +1716,45 @@ def wait_for_droid_not_in_call(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP):
         Return False if timeout.
     """
     return _wait_for_droid_in_state(log, ad, max_time, is_phone_not_in_call)
+
+
+def wait_for_voice_attach(log, ad, max_time=MAX_WAIT_TIME_NW_SELECTION):
+    """Wait for android device to attach on voice.
+
+    Args:
+        log: log object.
+        ad:  android device.
+        max_time: maximal wait time.
+
+    Returns:
+        Return True if device attach voice within max_time.
+        Return False if timeout.
+    """
+    return _wait_for_droid_in_state(log, ad, max_time, _is_attached,
+                                    NETWORK_SERVICE_VOICE)
+
+
+def wait_for_voice_attach_for_subscription(
+        log, ad, sub_id, max_time=MAX_WAIT_TIME_NW_SELECTION):
+    """Wait for android device to attach on voice in subscription id.
+
+    Args:
+        log: log object.
+        ad:  android device.
+        sub_id: subscription id.
+        max_time: maximal wait time.
+
+    Returns:
+        Return True if device attach voice within max_time.
+        Return False if timeout.
+    """
+    if not _wait_for_droid_in_state_for_subscription(
+            log, ad, sub_id, max_time, _is_attached_for_subscription,
+            NETWORK_SERVICE_VOICE):
+        return False
+
+    # TODO: b/26295983 if pone attach to 1xrtt from unknown, phone may not
+    # receive incoming call immediately.
+    if ad.droid.telephonyGetCurrentVoiceNetworkType() == RAT_1XRTT:
+        time.sleep(WAIT_TIME_1XRTT_VOICE_ATTACH)
+    return True
