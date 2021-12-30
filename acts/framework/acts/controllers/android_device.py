@@ -58,7 +58,7 @@ CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 ALWAYS_ON_LOG_PATH = "/data/vendor/radio/logs/always-on"
-DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
+DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs/logs"
 DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
 DEFAULT_SCREENSHOT_PATH = "/sdcard/Pictures/screencap"
 BUG_REPORT_TIMEOUT = 1800
