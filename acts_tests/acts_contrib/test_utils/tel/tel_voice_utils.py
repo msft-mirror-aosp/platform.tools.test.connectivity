@@ -77,6 +77,7 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_rat
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_not_network_rat
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_voice_attach
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -103,7 +104,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
