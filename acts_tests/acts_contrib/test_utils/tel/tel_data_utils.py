@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 
 import logging
+import os
 import time
 import random
 from queue import Empty
 
+from acts.controllers.android_device import SL4A_APK_NAME
 from acts.utils import adb_shell_ping
 from acts.utils import rand_ascii_str
 from acts.utils import disable_doze
@@ -49,11 +51,15 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts_contrib.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
@@ -73,22 +79,21 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_voice_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import _check_file_existence
+from acts_contrib.test_utils.tel.tel_test_utils import _generate_file_directory_and_file_name
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
 from acts_contrib.test_utils.tel.tel_test_utils import get_internet_connection_type
-from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import is_event_match
 from acts_contrib.test_utils.tel.tel_test_utils import rat_generation_from_rat
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_active
@@ -2362,3 +2367,499 @@ def _wait_for_nw_data_connection(
         return False
     finally:
         ad.droid.connectivityStopTrackingConnectivityStateChange()
+
+
+def check_curl_availability(ad):
+    if not hasattr(ad, "curl_capable"):
+        try:
+            out = ad.adb.shell("/data/curl --version")
+            if not out or "not found" in out:
+                setattr(ad, "curl_capable", False)
+                ad.log.info("curl is unavailable, use chrome to download file")
+            else:
+                setattr(ad, "curl_capable", True)
+        except Exception:
+            setattr(ad, "curl_capable", False)
+            ad.log.info("curl is unavailable, use chrome to download file")
+    return ad.curl_capable
+
+
+def start_youtube_video(ad, url="vnd.youtube:watch?v=pSJoP0LR8CQ"):
+    ad.log.info("Open an youtube video")
+    for _ in range(3):
+        ad.ensure_screen_on()
+        ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+        if wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
+            ad.log.info("Started a video in youtube, audio is in MUSIC state")
+            return True
+        ad.log.info("Audio is not in MUSIC state. Quit Youtube.")
+        for _ in range(3):
+            ad.send_keycode("BACK")
+            time.sleep(1)
+        time.sleep(3)
+    return False
+
+
+def http_file_download_by_sl4a(ad,
+                               url,
+                               out_path=None,
+                               expected_file_size=None,
+                               remove_file_after_check=True,
+                               timeout=300):
+    """Download http file by sl4a RPC call.
+
+    Args:
+        ad: Android Device Object.
+        url: The url that file to be downloaded from".
+        out_path: Optional. Where to download file to.
+                  out_path is /sdcard/Download/ by default.
+        expected_file_size: Optional. Provided if checking the download file meet
+                            expected file size in unit of byte.
+        remove_file_after_check: Whether to remove the downloaded file after
+                                 check.
+        timeout: timeout for file download to complete.
+    """
+    file_folder, file_name = _generate_file_directory_and_file_name(
+        url, out_path)
+    file_path = os.path.join(file_folder, file_name)
+    ad.adb.shell("rm -f %s" % file_path)
+    accounting_apk = SL4A_APK_NAME
+    result = True
+    try:
+        if not getattr(ad, "data_droid", None):
+            ad.data_droid, ad.data_ed = ad.get_droid()
+            ad.data_ed.start()
+        else:
+            try:
+                if not ad.data_droid.is_live:
+                    ad.data_droid, ad.data_ed = ad.get_droid()
+                    ad.data_ed.start()
+            except Exception:
+                ad.log.info("Start new sl4a session for file download")
+                ad.data_droid, ad.data_ed = ad.get_droid()
+                ad.data_ed.start()
+        data_accounting = {
+            "mobile_rx_bytes":
+            ad.droid.getMobileRxBytes(),
+            "subscriber_mobile_data_usage":
+            get_mobile_data_usage(ad, None, None),
+            "sl4a_mobile_data_usage":
+            get_mobile_data_usage(ad, None, accounting_apk)
+        }
+        ad.log.debug("Before downloading: %s", data_accounting)
+        ad.log.info("Download file from %s to %s by sl4a RPC call", url,
+                    file_path)
+        try:
+            ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
+        except Exception as e:
+            ad.log.warning("SL4A file download error: %s", e)
+            ad.data_droid.terminate()
+            return False
+        if _check_file_existence(ad, file_path, expected_file_size):
+            ad.log.info("%s is downloaded successfully", url)
+            new_data_accounting = {
+                "mobile_rx_bytes":
+                ad.droid.getMobileRxBytes(),
+                "subscriber_mobile_data_usage":
+                get_mobile_data_usage(ad, None, None),
+                "sl4a_mobile_data_usage":
+                get_mobile_data_usage(ad, None, accounting_apk)
+            }
+            ad.log.debug("After downloading: %s", new_data_accounting)
+            accounting_diff = {
+                key: value - data_accounting[key]
+                for key, value in new_data_accounting.items()
+            }
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
+            if getattr(ad, "on_mobile_data", False):
+                for key, value in accounting_diff.items():
+                    if value < expected_file_size:
+                        ad.log.debug("%s diff is %s less than %s", key,
+                                       value, expected_file_size)
+                        ad.data_accounting["%s_failure"] += 1
+            else:
+                for key, value in accounting_diff.items():
+                    if value >= expected_file_size:
+                        ad.log.error("%s diff is %s. File download is "
+                                     "consuming mobile data", key, value)
+                        result = False
+            return result
+        else:
+            ad.log.warning("Fail to download %s", url)
+            return False
+    except Exception as e:
+        ad.log.error("Download %s failed with exception %s", url, e)
+        raise
+    finally:
+        if remove_file_after_check:
+            ad.log.info("Remove the downloaded file %s", file_path)
+            ad.adb.shell("rm %s" % file_path, ignore_status=True)
+
+
+def http_file_download_by_curl(ad,
+                               url,
+                               out_path=None,
+                               expected_file_size=None,
+                               remove_file_after_check=True,
+                               timeout=3600,
+                               limit_rate=None,
+                               retry=3):
+    """Download http file by adb curl.
+
+    Args:
+        ad: Android Device Object.
+        url: The url that file to be downloaded from".
+        out_path: Optional. Where to download file to.
+                  out_path is /sdcard/Download/ by default.
+        expected_file_size: Optional. Provided if checking the download file meet
+                            expected file size in unit of byte.
+        remove_file_after_check: Whether to remove the downloaded file after
+                                 check.
+        timeout: timeout for file download to complete.
+        limit_rate: download rate in bps. None, if do not apply rate limit.
+        retry: the retry request times provided in curl command.
+    """
+    file_directory, file_name = _generate_file_directory_and_file_name(
+        url, out_path)
+    file_path = os.path.join(file_directory, file_name)
+    curl_cmd = "/data/curl"
+    if limit_rate:
+        curl_cmd += " --limit-rate %s" % limit_rate
+    if retry:
+        curl_cmd += " --retry %s" % retry
+    curl_cmd += " --url %s > %s" % (url, file_path)
+    try:
+        ad.log.info("Download %s to %s by adb shell command %s", url,
+                    file_path, curl_cmd)
+
+        ad.adb.shell(curl_cmd, timeout=timeout)
+        if _check_file_existence(ad, file_path, expected_file_size):
+            ad.log.info("%s is downloaded to %s successfully", url, file_path)
+            return True
+        else:
+            ad.log.warning("Fail to download %s", url)
+            return False
+    except Exception as e:
+        ad.log.warning("Download %s failed with exception %s", url, e)
+        return False
+    finally:
+        if remove_file_after_check:
+            ad.log.info("Remove the downloaded file %s", file_path)
+            ad.adb.shell("rm %s" % file_path, ignore_status=True)
+
+
+def open_url_by_adb(ad, url):
+    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+
+
+def http_file_download_by_chrome(ad,
+                                 url,
+                                 expected_file_size=None,
+                                 remove_file_after_check=True,
+                                 timeout=3600):
+    """Download http file by chrome.
+
+    Args:
+        ad: Android Device Object.
+        url: The url that file to be downloaded from".
+        expected_file_size: Optional. Provided if checking the download file meet
+                            expected file size in unit of byte.
+        remove_file_after_check: Whether to remove the downloaded file after
+                                 check.
+        timeout: timeout for file download to complete.
+    """
+    chrome_apk = "com.android.chrome"
+    file_directory, file_name = _generate_file_directory_and_file_name(
+        url, "/sdcard/Download/")
+    file_path = os.path.join(file_directory, file_name)
+    # Remove pre-existing file
+    ad.force_stop_apk(chrome_apk)
+    file_to_be_delete = os.path.join(file_directory, "*%s*" % file_name)
+    ad.adb.shell("rm -f %s" % file_to_be_delete)
+    ad.adb.shell("rm -rf /sdcard/Download/.*")
+    ad.adb.shell("rm -f /sdcard/Download/.*")
+    data_accounting = {
+        "total_rx_bytes": ad.droid.getTotalRxBytes(),
+        "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
+        "subscriber_mobile_data_usage": get_mobile_data_usage(ad, None, None),
+        "chrome_mobile_data_usage": get_mobile_data_usage(
+            ad, None, chrome_apk)
+    }
+    ad.log.debug("Before downloading: %s", data_accounting)
+    ad.log.info("Download %s with timeout %s", url, timeout)
+    ad.ensure_screen_on()
+    open_url_by_adb(ad, url)
+    elapse_time = 0
+    result = True
+    while elapse_time < timeout:
+        time.sleep(30)
+        if _check_file_existence(ad, file_path, expected_file_size):
+            ad.log.info("%s is downloaded successfully", url)
+            if remove_file_after_check:
+                ad.log.info("Remove the downloaded file %s", file_path)
+                ad.adb.shell("rm -f %s" % file_to_be_delete)
+                ad.adb.shell("rm -rf /sdcard/Download/.*")
+                ad.adb.shell("rm -f /sdcard/Download/.*")
+            #time.sleep(30)
+            new_data_accounting = {
+                "mobile_rx_bytes":
+                ad.droid.getMobileRxBytes(),
+                "subscriber_mobile_data_usage":
+                get_mobile_data_usage(ad, None, None),
+                "chrome_mobile_data_usage":
+                get_mobile_data_usage(ad, None, chrome_apk)
+            }
+            ad.log.info("After downloading: %s", new_data_accounting)
+            accounting_diff = {
+                key: value - data_accounting[key]
+                for key, value in new_data_accounting.items()
+            }
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
+            if getattr(ad, "on_mobile_data", False):
+                for key, value in accounting_diff.items():
+                    if value < expected_file_size:
+                        ad.log.warning("%s diff is %s less than %s", key,
+                                       value, expected_file_size)
+                        ad.data_accounting["%s_failure" % key] += 1
+            else:
+                for key, value in accounting_diff.items():
+                    if value >= expected_file_size:
+                        ad.log.error("%s diff is %s. File download is "
+                                     "consuming mobile data", key, value)
+                        result = False
+            return result
+        elif _check_file_existence(ad, "%s.crdownload" % file_path):
+            ad.log.info("Chrome is downloading %s", url)
+        elif elapse_time < 60:
+            # download not started, retry download wit chrome again
+            open_url_by_adb(ad, url)
+        else:
+            ad.log.error("Unable to download file from %s", url)
+            break
+        elapse_time += 30
+    ad.log.warning("Fail to download file from %s", url)
+    ad.force_stop_apk("com.android.chrome")
+    ad.adb.shell("rm -f %s" % file_to_be_delete)
+    ad.adb.shell("rm -rf /sdcard/Download/.*")
+    ad.adb.shell("rm -f /sdcard/Download/.*")
+    return False
+
+
+def get_mobile_data_usage(ad, sid=None, apk=None):
+    if not sid:
+        sid = ad.droid.subscriptionGetDefaultDataSubId()
+    current_time = int(time.time() * 1000)
+    begin_time = current_time - 10 * 24 * 60 * 60 * 1000
+    end_time = current_time + 10 * 24 * 60 * 60 * 1000
+
+    if apk:
+        uid = ad.get_apk_uid(apk)
+        ad.log.debug("apk %s uid = %s", apk, uid)
+        try:
+            usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
+            ad.log.debug("Mobile data usage info for uid %s = %s", uid,
+                        usage_info)
+            return usage_info["UsageLevel"]
+        except:
+            try:
+                return ad.droid.connectivityQueryDetailsForUid(
+                    TYPE_MOBILE,
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time, uid)
+            except:
+                return ad.droid.connectivityQueryDetailsForUid(
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time, uid)
+    else:
+        try:
+            usage_info = ad.droid.getMobileDataUsageInfo(sid)
+            ad.log.debug("Mobile data usage info = %s", usage_info)
+            return usage_info["UsageLevel"]
+        except:
+            try:
+                return ad.droid.connectivityQuerySummaryForDevice(
+                    TYPE_MOBILE,
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time)
+            except:
+                return ad.droid.connectivityQuerySummaryForDevice(
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time)
+
+
+def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
+    if not subscriber_id:
+        subscriber_id = ad.droid.telephonyGetSubscriberId()
+    ad.log.debug("Set subscriber mobile data usage limit to %s", limit)
+    ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
+    try:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
+    except:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, limit)
+
+
+def remove_mobile_data_usage_limit(ad, subscriber_id=None):
+    if not subscriber_id:
+        subscriber_id = ad.droid.telephonyGetSubscriberId()
+    ad.log.debug("Remove subscriber mobile data usage limit")
+    ad.droid.logV(
+        "Setting subscriber mobile data usage limit to -1, unlimited")
+    try:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
+    except:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, -1)
+
+
+def active_file_download_task(log, ad, file_name="5MB", method="curl"):
+    # files available for download on the same website:
+    # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
+    # download file by adb command, as phone call will use sl4a
+    file_size_map = {
+        '1MB': 1000000,
+        '5MB': 5000000,
+        '10MB': 10000000,
+        '20MB': 20000000,
+        '50MB': 50000000,
+        '100MB': 100000000,
+        '200MB': 200000000,
+        '512MB': 512000000
+    }
+    url_map = {
+        "1MB": [
+            "http://146.148.91.8/download/1MB.zip",
+            "http://ipv4.download.thinkbroadband.com/1MB.zip"
+        ],
+        "5MB": [
+            "http://146.148.91.8/download/5MB.zip",
+            "http://212.183.159.230/5MB.zip",
+            "http://ipv4.download.thinkbroadband.com/5MB.zip"
+        ],
+        "10MB": [
+            "http://146.148.91.8/download/10MB.zip",
+            "http://212.183.159.230/10MB.zip",
+            "http://ipv4.download.thinkbroadband.com/10MB.zip",
+            "http://lax.futurehosting.com/test.zip",
+            "http://ovh.net/files/10Mio.dat"
+        ],
+        "20MB": [
+            "http://146.148.91.8/download/20MB.zip",
+            "http://212.183.159.230/20MB.zip",
+            "http://ipv4.download.thinkbroadband.com/20MB.zip"
+        ],
+        "50MB": [
+            "http://146.148.91.8/download/50MB.zip",
+            "http://212.183.159.230/50MB.zip",
+            "http://ipv4.download.thinkbroadband.com/50MB.zip"
+        ],
+        "100MB": [
+            "http://146.148.91.8/download/100MB.zip",
+            "http://212.183.159.230/100MB.zip",
+            "http://ipv4.download.thinkbroadband.com/100MB.zip",
+            "http://speedtest-ca.turnkeyinternet.net/100mb.bin",
+            "http://ovh.net/files/100Mio.dat",
+            "http://lax.futurehosting.com/test100.zip"
+        ],
+        "200MB": [
+            "http://146.148.91.8/download/200MB.zip",
+            "http://212.183.159.230/200MB.zip",
+            "http://ipv4.download.thinkbroadband.com/200MB.zip"
+        ],
+        "512MB": [
+            "http://146.148.91.8/download/512MB.zip",
+            "http://212.183.159.230/512MB.zip",
+            "http://ipv4.download.thinkbroadband.com/512MB.zip"
+        ]
+    }
+
+    file_size = file_size_map.get(file_name)
+    file_urls = url_map.get(file_name)
+    file_url = None
+    for url in file_urls:
+        url_splits = url.split("/")
+        if verify_http_connection(log, ad, url=url, retry=1):
+            output_path = "/sdcard/Download/%s" % url_splits[-1]
+            file_url = url
+            break
+    if not file_url:
+        ad.log.error("No url is available to download %s", file_name)
+        return False
+    timeout = min(max(file_size / 100000, 600), 3600)
+    if method == "sl4a":
+        return (http_file_download_by_sl4a, (ad, file_url, output_path,
+                                             file_size, True, timeout))
+    if method == "curl" and check_curl_availability(ad):
+        return (http_file_download_by_curl, (ad, file_url, output_path,
+                                             file_size, True, timeout))
+    elif method == "sl4a" or method == "curl":
+        return (http_file_download_by_sl4a, (ad, file_url, output_path,
+                                             file_size, True, timeout))
+    else:
+        return (http_file_download_by_chrome, (ad, file_url, file_size, True,
+                                               timeout))
+
+
+def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
+    task = active_file_download_task(log, ad, file_name, method=method)
+    if not task:
+        return False
+    return task[0](*task[1])
+
+
+def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
+    data_stall_detected = False
+    time_var = 1
+    try:
+        while (time_var < wait_time):
+            out = ad.adb.shell("dumpsys network_stack " \
+                              "| grep \"Suspecting data stall\"",
+                            ignore_status=True)
+            ad.log.debug("Output is %s", out)
+            if out:
+                ad.log.info("NetworkMonitor detected - %s", out)
+                data_stall_detected = True
+                break
+            time.sleep(30)
+            time_var += 30
+    except Exception as e:
+        ad.log.error(e)
+    return data_stall_detected
+
+
+def check_network_validation_fail(ad, begin_time=None,
+                                  wait_time=WAIT_TIME_FOR_NW_VALID_FAIL):
+    network_validation_fail = False
+    time_var = 1
+    try:
+        while (time_var < wait_time):
+            time_var += 30
+            nw_valid = ad.search_logcat("validation failed",
+                                         begin_time)
+            if nw_valid:
+                ad.log.info("Validation Failed received here - %s",
+                            nw_valid[0]["log_message"])
+                network_validation_fail = True
+                break
+            time.sleep(30)
+    except Exception as e:
+        ad.log.error(e)
+    return network_validation_fail
+
+
+def check_data_stall_recovery(ad, begin_time=None,
+                              wait_time=WAIT_TIME_FOR_DATA_STALL_RECOVERY):
+    data_stall_recovery = False
+    time_var = 1
+    try:
+        while (time_var < wait_time):
+            time_var += 30
+            recovery = ad.search_logcat("doRecovery() cleanup all connections",
+                                         begin_time)
+            if recovery:
+                ad.log.info("Recovery Performed here - %s",
+                            recovery[-1]["log_message"])
+                data_stall_recovery = True
+                break
+            time.sleep(30)
+    except Exception as e:
+        ad.log.error(e)
+    return data_stall_recovery
