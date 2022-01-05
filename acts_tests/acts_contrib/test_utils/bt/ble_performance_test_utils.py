@@ -147,10 +147,10 @@ def ble_coc_connection(client_ad, server_ad):
         client connection ID: Client connection ID
         and server connection ID : server connection ID
     """
-    #secured_conn: True if using secured connection
-    #le_connection_interval: LE Connection interval. 0 means use default.
-    #buffer_size : is the number of bytes per L2CAP data buffer
-    #le_tx_data_length: LE Data Length used by BT Controller to transmit.
+    # secured_conn: True if using secured connection
+    # le_connection_interval: LE Connection interval. 0 means use default.
+    # buffer_size : is the number of bytes per L2CAP data buffer
+    # le_tx_data_length: LE Data Length used by BT Controller to transmit.
     is_secured = False
     le_connection_interval = 30
     buffer_size = 240
@@ -288,12 +288,13 @@ def plot_graph(df, plot_data, bokeh_data, secondary_y_label=None):
     bokeh_figure.BokehFigure.save_figures([plot], results_file_path)
 
 
-def bt5_start_advertise_and_scan(client_ad, server_ad):
+def start_advertising_and_scanning(client_ad, server_ad, Legacymode=True):
     """Function to start bt5 advertisement.
 
         Args:
             client_ad: the Android device performing the scanning.
-            server_ad: he Android device performing the bt advertising
+            server_ad: the Android device performing the bt advertising
+            Legacymode: True for Legacy advertising mode, false for bt5 advertising mode
         Returns:
           adv_callback: the advertising callback
           scan_callback: the scan_callback
@@ -304,8 +305,8 @@ def bt5_start_advertise_and_scan(client_ad, server_ad):
     }
     server_ad.droid.bleAdvSetStartAdvertisingSet(
         {
-            "connectable": True,
-            "legacyMode": False,
+            "connectable": False,
+            "legacyMode": Legacymode,
             "primaryPhy": "PHY_LE_1M",
             "secondaryPhy": "PHY_LE_1M",
             "interval": 320

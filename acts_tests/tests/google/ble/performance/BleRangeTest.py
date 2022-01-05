@@ -26,7 +26,7 @@ import acts_contrib.test_utils.bt.bt_test_utils as btutils
 import acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure as bokeh_figure
 from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_coc_connection
 from acts_contrib.test_utils.bt.ble_performance_test_utils import ble_gatt_disconnection
-from acts_contrib.test_utils.bt.ble_performance_test_utils import bt5_start_advertise_and_scan
+from acts_contrib.test_utils.bt.ble_performance_test_utils import start_advertising_and_scanning
 from acts_contrib.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts_contrib.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
 from acts_contrib.test_utils.bt.ble_performance_test_utils import establish_ble_connection
@@ -221,8 +221,8 @@ class BleRangeTest(BluetoothBaseTest):
                 '{}_attenuation_{}.csv'.format(self.current_test_name, atten))
             ramp_attenuation(self.attenuator, atten)
             self.log.info('Set attenuation to %d dB', atten)
-            adv_callback, scan_callback = bt5_start_advertise_and_scan(
-                self.client_ad, self.server_ad)
+            adv_callback, scan_callback = start_advertising_and_scanning(
+                self.client_ad, self.server_ad, Legacymode=False)
             self.active_adv_callback_list.append(adv_callback)
             self.active_scan_callback_list.append(scan_callback)
             average_rssi, raw_rssi, timestamp = read_ble_scan_rssi(
