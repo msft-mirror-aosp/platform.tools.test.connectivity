@@ -320,17 +320,17 @@ class FuchsiaDevice:
         self.start_services(skip_sl4f=self.skip_sl4f)
         # Init server
         self.init_server_connection()
-        self.init_ffx_connection()
 
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
 
         try:
+            self.init_ffx_connection()
             self.run_commands_from_config(self.setup_commands)
-        except FuchsiaDeviceError:
+        except Exception as e:
             # Prevent a threading error, since controller isn't fully up yet.
             self.clean_up()
-            raise FuchsiaDeviceError('Failed to run setup commands.')
+            raise e
 
     def _set_control_path_config(self, old_config, new_config):
         """Given an input ssh_config, write to a new config with proper
