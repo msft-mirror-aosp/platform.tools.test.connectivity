@@ -175,6 +175,7 @@ class ChannelSweepTest(AbstractDeviceWlanDeviceBaseTest):
             ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
         self.dut.disconnect()
+        self.download_ap_logs()
         self.access_point.stop_all_aps()
 
     def set_dut_country_code(self, country_code):
