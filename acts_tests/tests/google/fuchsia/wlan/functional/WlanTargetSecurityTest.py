@@ -16,23 +16,22 @@
 
 from acts import asserts
 from acts import utils
-from acts.base_test import BaseTestClass
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 
 # TODO(fxb/68956): Add security protocol check to mixed mode tests when info is
 # available.
-class WlanTargetSecurityTest(BaseTestClass):
+class WlanTargetSecurityTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests Fuchsia's target security concept and security upgrading
 
     Testbed Requirements:
     * One Fuchsia device
     * One Whirlwind Access Point
     """
-
     def setup_class(self):
         if 'dut' in self.user_params and self.user_params[
                 'dut'] != 'fuchsia_devices':

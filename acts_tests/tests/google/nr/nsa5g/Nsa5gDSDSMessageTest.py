@@ -19,7 +19,7 @@ from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import Tele
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_message_test
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value

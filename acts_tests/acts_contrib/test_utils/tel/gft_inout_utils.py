@@ -16,26 +16,27 @@
 
 import time
 
-from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_IN_SERVICE
-from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_OUT_OF_SERVICE
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
+from acts_contrib.test_utils.tel.tel_defines  import DATA_STATE_CONNECTED
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_IN_SERVICE
+from acts_contrib.test_utils.tel.tel_defines  import SERVICE_STATE_OUT_OF_SERVICE
+from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 
 
-def check_no_service_time(ad, timeout=60):
+def check_no_service_time(ad, timeout=120):
     """ check device is no service or not
 
         Args:
@@ -60,7 +61,7 @@ def check_no_service_time(ad, timeout=60):
         %(timeout, service_state))
     return False
 
-def check_back_to_service_time(ad, timeout=30):
+def check_back_to_service_time(ad, timeout=120):
     """ check device is back to service or not
 
         Args:
@@ -75,7 +76,8 @@ def check_back_to_service_time(ad, timeout=30):
         if service_state == SERVICE_STATE_IN_SERVICE:
             if i==0:
                 check_network_service(ad)
-                ad.log.info("Skip check_back_to_service_time. Device is in-service and service_state=%s" %(service_state))
+                ad.log.info("Skip check_back_to_service_time. Service_state=%s"
+                    %(service_state))
                 return True
             else:
                 ad.log.info("device is back to service in %s sec and service_state=%s"
@@ -106,11 +108,13 @@ def check_network_service(ad):
     ad.log.info("networkType_data=%s" %(network_type_data))
     ad.log.info("service_state=%s" %(service_state))
     if service_state == SERVICE_STATE_OUT_OF_SERVICE:
+        log_screen_shot(ad, "device_out_of_service")
         return False
     return True
 
 
-def mo_voice_call(log, ad, call_type, end_call=True, talk_time=15):
+def mo_voice_call(log, ad, call_type, end_call=True, talk_time=15,
+    retries=1, retry_time=30):
     """ MO voice call and check call type.
         End call if necessary.
 
@@ -120,24 +124,32 @@ def mo_voice_call(log, ad, call_type, end_call=True, talk_time=15):
             call_type: WFC call, VOLTE call. CSFB call, voice call
             end_call: hangup call after voice call flag
             talk_time: in call duration in sec
+            retries: retry times
+            retry_time: wait for how many sec before next retry
 
         Returns:
             True if pass; False if fail.
     """
     callee_number = ad.mt_phone_number
-    ad.log.info("MO voice call")
+    ad.log.info("MO voice call. call_type=%s" %(call_type))
     if is_phone_in_call(log, ad):
         ad.log.info("%s is in call. hangup_call before initiate call" %(callee_number))
         hangup_call(log, ad)
         time.sleep(1)
 
-    if initiate_call(log, ad, callee_number):
-        time.sleep(5)
-        check_voice_call_type(ad,call_type)
-        get_voice_call_type(ad)
-    else:
-        ad.log.error("initiate_call fail")
-        return False
+    for i in range(retries):
+        ad.log.info("mo_voice_call attempt %d", i + 1)
+        if initiate_call(log, ad, callee_number):
+            time.sleep(5)
+            check_voice_call_type(ad,call_type)
+            get_voice_call_type(ad)
+            break
+        else:
+            ad.log.error("initiate_call fail attempt %d", i + 1)
+            time.sleep(retry_time)
+            if i+1 == retries:
+                ad.log.error("mo_voice_call retry failure")
+                return False
 
     time.sleep(10)
     if end_call:
@@ -146,10 +158,14 @@ def mo_voice_call(log, ad, call_type, end_call=True, talk_time=15):
             ad.log.info("end voice call")
             if not hangup_call(log, ad):
                 ad.log.error("end call fail")
+                ad.droid.telecomShowInCallScreen()
+                log_screen_shot(ad, "end_call_fail")
                 return False
         else:
             #Call drop is unexpected
             ad.log.error("%s Unexpected call drop" %(call_type))
+            ad.droid.telecomShowInCallScreen()
+            log_screen_shot(ad, "call_drop")
             return False
         ad.log.info("%s successful" %(call_type))
     return True
@@ -166,6 +182,7 @@ def check_voice_call_type(ad, call_type):
             True if pass; False if fail.
     """
     if is_phone_in_call(ad.log, ad):
+        ad.droid.telecomShowInCallScreen()
         log_screen_shot(ad, "expected_call_type_%s" %call_type)
         if call_type == CSFB_CALL:
             if not is_phone_in_call_csfb(ad.log, ad):
@@ -214,31 +231,36 @@ def get_voice_call_type(ad):
         ad.log.error("device is not in call")
     return "UNKNOWN"
 
-def verify_data_connection(ad):
+def verify_data_connection(ad, retries=1, retry_time=30):
     """ verify data connection
 
         Args:
             ad: android device
+            retries: retry times
+            retry_time: wait for how many sec before next retry
 
         Returns:
             True if pass; False if fail.
     """
-    data_state = ad.droid.telephonyGetDataConnectionState()
-    wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed":
-        ad.log.info("Wifi is connected=%s" %(wifi_info["SSID"]))
-    if data_state != DATA_STATE_CONNECTED:
-        ad.log.info("data is not connected. data_state=%s" %(data_state))
-        return False
-    else:
-        if not verify_internet_connection(ad.log, ad, retries=3):
-            data_state = ad.droid.telephonyGetDataConnectionState()
-            network_type_data = ad.droid.telephonyGetCurrentDataNetworkType()
-            ad.log.error("verify_internet fail. data_state=%s, network_type_data=%s"
-            %(data_state, network_type_data))
-            return False
-    ad.log.info("verify_data_connection pass")
-    return True
+    for i in range(retries):
+        data_state = ad.droid.telephonyGetDataConnectionState()
+        wifi_info = ad.droid.wifiGetConnectionInfo()
+        if wifi_info["supplicant_state"] == "completed":
+            ad.log.info("Wifi is connected=%s" %(wifi_info["SSID"]))
+        else:
+            ad.log.info("verify_data_connection attempt %d", i + 1)
+            if not verify_internet_connection(ad.log, ad, retries=3):
+                data_state = ad.droid.telephonyGetDataConnectionState()
+                network_type_data = ad.droid.telephonyGetCurrentDataNetworkType()
+                ad.log.error("verify_internet fail. data_state=%s, network_type_data=%s"
+                %(data_state, network_type_data))
+                ad.log.info("verify_data_connection fail attempt %d", i + 1)
+                log_screen_shot(ad, "verify_internet")
+                time.sleep(retry_time)
+            else:
+                ad.log.info("verify_data_connection pass")
+                return True
+    return False
 
 
 def check_ims_state(ad):
@@ -260,6 +282,25 @@ def check_ims_state(ad):
     ad.log.info("telephonyIsVolteAvailable=%s" %(r4))
     return r1
 
+def browsing_test_ping_retry(ad):
+    """ If browse test fails, use ping to test data connection
+
+        Args:
+            ad: android device
+
+        Returns:
+            True if pass; False if fail.
+    """
+    if not browsing_test(ad.log, ad):
+        ad.log.error("Failed to browse websites!")
+        if verify_data_connection(ad):
+            ad.log.info("Ping success!")
+            return True
+        else:
+            ad.log.info("Ping fail!")
+            return False
+    else:
+        ad.log.info("Successful to browse websites!")
 
 
 

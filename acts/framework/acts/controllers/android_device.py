@@ -58,7 +58,7 @@ CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 ALWAYS_ON_LOG_PATH = "/data/vendor/radio/logs/always-on"
-DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
+DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs/logs"
 DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
 DEFAULT_SCREENSHOT_PATH = "/sdcard/Pictures/screencap"
 BUG_REPORT_TIMEOUT = 1800
@@ -1185,7 +1185,7 @@ class AndroidDevice:
             self.log.info("Pull SDM Log %s to %s", sdm_logs, sdm_log_path)
             self.pull_files(sdm_logs, sdm_log_path)
         else:
-            self.log.error("Didn't find SDM logs in %s." % log_path)
+            self.log.error("Didn't find SDM logs in %s." % log_paths)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)

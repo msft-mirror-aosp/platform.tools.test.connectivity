@@ -18,10 +18,8 @@ import time
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import \
-    TelephonyVoiceTestResult
-from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import \
-    TelephonyMetricLogger
+from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
@@ -37,33 +35,32 @@ from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
 from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
-from acts_contrib.test_utils.tel.tel_subscription_utils import \
-    get_subid_on_same_network_of_host_ad
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
-from acts_contrib.test_utils.tel.tel_test_utils import \
-    wait_for_cell_data_connection_for_subscription
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_voice_utils import \
-    phone_setup_volte_for_subscription
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_msim_for_slot
+from acts_contrib.test_utils.tel.tel_wifi_utils import check_is_wifi_connected
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts.utils import rand_ascii_str
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
+
 
 class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
     def setup_class(self):
@@ -328,10 +325,8 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
 
                 if call_or_sms_or_mms == "call":
                     self.log.info("Step 4: Make voice call.")
-                    mo_slot = get_slot_index_from_subid(
-                        self.log, ad_mo, mo_sub_id)
-                    mt_slot = get_slot_index_from_subid(
-                        self.log, ad_mt, mt_sub_id)
+                    mo_slot = get_slot_index_from_subid(ad_mo, mo_sub_id)
+                    mt_slot = get_slot_index_from_subid(ad_mt, mt_sub_id)
                     result = two_phone_call_msim_for_slot(
                         self.log,
                         ad_mo,
@@ -661,8 +656,8 @@ class TelLiveGFTDSDSDDSSwitchTest(TelephonyBaseTest):
                         return False
 
                 self.log.info("Step 6: Make voice call.")
-                mo_slot = get_slot_index_from_subid(self.log, ad_mo, mo_sub_id)
-                mt_slot = get_slot_index_from_subid(self.log, ad_mt, mt_sub_id)
+                mo_slot = get_slot_index_from_subid(ad_mo, mo_sub_id)
+                mt_slot = get_slot_index_from_subid(ad_mt, mt_sub_id)
                 result = two_phone_call_msim_for_slot(
                     self.log,
                     ad_mo,

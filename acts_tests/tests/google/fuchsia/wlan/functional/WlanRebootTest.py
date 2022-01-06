@@ -35,6 +35,7 @@ from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 # Constants, for readibility
 AP = 'ap'
@@ -100,7 +101,7 @@ def get_test_name(settings):
     return settings['test_name']
 
 
-class WlanRebootTest(WifiBaseTest):
+class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests wlan reconnects in different reboot scenarios.
 
     Testbed Requirement:
@@ -108,7 +109,6 @@ class WlanRebootTest(WifiBaseTest):
     * One Whirlwind Access Point (will also serve as iperf server)
     * One PduDevice
     """
-
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
 
@@ -178,10 +178,6 @@ class WlanRebootTest(WifiBaseTest):
             ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
         self.dut.reset_wifi()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
 
     def setup_ap(self,
                  ssid,

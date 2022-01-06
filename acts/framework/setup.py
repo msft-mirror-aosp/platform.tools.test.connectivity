@@ -60,8 +60,12 @@ elif sys.version_info < (3, 7):
     # Python 3.6 uses scipy up to 1.5 and numpy up to 1.19.x
     install_requires.append('scipy<1.6')
     install_requires.append('numpy<1.20')
+elif sys.version_info < (3, 8):
+    # Python 3.7 uses latest scipy up to 1.7.x and numpy up to 1.21.x
+    install_requires.append('scipy<1.8')
+    install_requires.append('numpy<1.22')
 else:
-    # Python 3.7+ is supported by latest scipy and numpy
+    # Python 3.8+ is supported by latest scipy and numpy
     install_requires.append('scipy')
     install_requires.append('numpy')
 

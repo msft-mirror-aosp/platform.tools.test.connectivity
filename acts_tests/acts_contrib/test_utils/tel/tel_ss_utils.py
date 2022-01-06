@@ -22,30 +22,32 @@ from acts.utils import get_current_epoch_time
 from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts_contrib.test_utils.tel.tel_defines import NOT_CHECK_MCALLFORWARDING_OPERATOR_LIST
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import _phone_number_remove_prefix
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_ring_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_idle_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import dial_phone_number
-from acts_contrib.test_utils.tel.tel_test_utils import disconnect_call_by_id
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
-from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_test_utils import get_user_config_profile
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_msim
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_offhook_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import dial_phone_number
+from acts_contrib.test_utils.tel.tel_voice_utils import disconnect_call_by_id
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_voice_utils import last_call_drop_reason
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_call_id_clearing
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_call_offhook_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_in_call_active
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_ringing_call_for_subscription
 
 
 def call_setup_teardown_for_call_forwarding(
@@ -551,7 +553,7 @@ def get_call_forwarding_by_adb(log, ad, call_forwarding_type="unconditional"):
     if call_forwarding_type != "unconditional":
         return "unknown"
 
-    slot_index_of_default_voice_subid = get_slot_index_from_subid(log, ad,
+    slot_index_of_default_voice_subid = get_slot_index_from_subid(ad,
         get_incoming_voice_sub_id(ad))
     output = ad.adb.shell("dumpsys telephony.registry | grep mCallForwarding")
     if "mCallForwarding" in output:
@@ -1408,3 +1410,292 @@ def set_call_waiting(log, ad, enable=1, retry=1):
             retry = retry + 1
 
     return False
+
+
+def three_phone_call_forwarding_short_seq(log,
+                             phone_a,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_c,
+                             wait_time_in_call=WAIT_TIME_IN_CALL,
+                             call_forwarding_type="unconditional",
+                             retry=2):
+    """Short sequence of call process with call forwarding.
+    Test steps:
+        1. Ensure all phones are initially in idle state.
+        2. Enable call forwarding on Phone A.
+        3. Make a call from Phone B to Phone A, The call should be forwarded to
+           PhoneC. Accept the call on Phone C.
+        4. Ensure the call is connected and in correct phone state.
+        5. Hang up the call on Phone B.
+        6. Ensure all phones are in idle state.
+        7. Disable call forwarding on Phone A.
+        7. Make a call from Phone B to Phone A, The call should NOT be forwarded
+           to PhoneC. Accept the call on Phone A.
+        8. Ensure the call is connected and in correct phone state.
+        9. Hang up the call on Phone B.
+
+    Args:
+        phone_a: android object of Phone A
+        phone_a_idle_func: function to check idle state on Phone A
+        phone_a_in_call_check_func: function to check in-call state on Phone A
+        phone_b: android object of Phone B
+        phone_c: android object of Phone C
+        wait_time_in_call: time to wait in call.
+            This is optional, default is WAIT_TIME_IN_CALL
+        call_forwarding_type:
+            - "unconditional"
+            - "busy"
+            - "not_answered"
+            - "not_reachable"
+        retry: times of retry
+
+    Returns:
+        True: if call sequence succeed.
+        False: for errors
+    """
+    ads = [phone_a, phone_b, phone_c]
+
+    call_params = [
+        (ads[1], ads[0], ads[2], ads[1], phone_a_in_call_check_func, False)
+    ]
+
+    if call_forwarding_type != "unconditional":
+        call_params.append((
+            ads[1],
+            ads[0],
+            ads[2],
+            ads[1],
+            phone_a_in_call_check_func,
+            True))
+
+    for param in call_params:
+        ensure_phones_idle(log, ads)
+        if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
+            phone_a.log.error("Phone A Failed to Reselect")
+            return False
+
+        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+
+        log.info(
+            "---> Call forwarding %s (caller: %s, callee: %s, callee forwarded:"
+            " %s) <---",
+            call_forwarding_type,
+            param[0].serial,
+            param[1].serial,
+            param[2].serial)
+        while not call_setup_teardown_for_call_forwarding(
+                log,
+                *param,
+                wait_time_in_call=wait_time_in_call,
+                call_forwarding_type=call_forwarding_type) and retry >= 0:
+
+            if retry <= 0:
+                log.error("Call forwarding %s failed." % call_forwarding_type)
+                return False
+            else:
+                log.info(
+                    "RERUN the test case: 'Call forwarding %s'" %
+                    call_forwarding_type)
+
+            retry = retry - 1
+
+    return True
+
+def three_phone_call_waiting_short_seq(log,
+                             phone_a,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_c,
+                             wait_time_in_call=WAIT_TIME_IN_CALL,
+                             call_waiting=True,
+                             scenario=None,
+                             retry=2):
+    """Short sequence of call process with call waiting.
+    Test steps:
+        1. Ensure all phones are initially in idle state.
+        2. Enable call waiting on Phone A.
+        3. Make the 1st call from Phone B to Phone A. Accept the call on Phone B.
+        4. Ensure the call is connected and in correct phone state.
+        5. Make the 2nd call from Phone C to Phone A. The call should be able to
+           income correctly. Whether or not the 2nd call should be answered by
+           Phone A depends on the scenario listed in the next step.
+        6. Following 8 scenarios will be tested:
+           - 1st call ended first by Phone B during 2nd call incoming. 2nd call
+             ended by Phone C
+           - 1st call ended first by Phone B during 2nd call incoming. 2nd call
+             ended by Phone A
+           - 1st call ended first by Phone A during 2nd call incoming. 2nd call
+             ended by Phone C
+           - 1st call ended first by Phone A during 2nd call incoming. 2nd call
+             ended by Phone A
+           - 1st call ended by Phone B. 2nd call ended by Phone C
+           - 1st call ended by Phone B. 2nd call ended by Phone A
+           - 1st call ended by Phone A. 2nd call ended by Phone C
+           - 1st call ended by Phone A. 2nd call ended by Phone A
+        7. Ensure all phones are in idle state.
+
+    Args:
+        phone_a: android object of Phone A
+        phone_a_idle_func: function to check idle state on Phone A
+        phone_a_in_call_check_func: function to check in-call state on Phone A
+        phone_b: android object of Phone B
+        phone_c: android object of Phone C
+        wait_time_in_call: time to wait in call.
+            This is optional, default is WAIT_TIME_IN_CALL
+        call_waiting: True for call waiting enabled and False for disabled
+        scenario: 1-8 for scenarios listed above
+        retry: times of retry
+
+    Returns:
+        True: if call sequence succeed.
+        False: for errors
+    """
+    ads = [phone_a, phone_b, phone_c]
+
+    sub_test_cases = [
+        {
+            "description": "1st call ended first by caller1 during 2nd call"
+                " incoming. 2nd call ended by caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[2],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended first by caller1 during 2nd call"
+                " incoming. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[0],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended first by callee during 2nd call"
+                " incoming. 2nd call ended by caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[2],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended first by callee during 2nd call"
+                " incoming. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[0],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended by caller1. 2nd call ended by"
+                " caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[2],
+                phone_a_in_call_check_func,
+                False)},
+        {
+            "description": "1st call ended by caller1. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[0],
+                phone_a_in_call_check_func,
+                False)},
+        {
+            "description": "1st call ended by callee. 2nd call ended by caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[2],
+                phone_a_in_call_check_func,
+                False)},
+        {
+            "description": "1st call ended by callee. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[0],
+                phone_a_in_call_check_func,
+                False)}
+    ]
+
+    if call_waiting:
+        if not scenario:
+            test_cases = sub_test_cases
+        else:
+            test_cases = [sub_test_cases[scenario-1]]
+    else:
+        test_cases = [
+            {
+                "description": "Call waiting deactivated",
+                "params": (
+                    ads[1],
+                    ads[0],
+                    ads[2],
+                    ads[0],
+                    ads[0],
+                    phone_a_in_call_check_func,
+                    False)}
+        ]
+
+    results = []
+
+    for test_case in test_cases:
+        ensure_phones_idle(log, ads)
+        if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
+            phone_a.log.error("Phone A Failed to Reselect")
+            return False
+
+        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+
+        log.info(
+            "---> %s (caller1: %s, caller2: %s, callee: %s) <---",
+            test_case["description"],
+            test_case["params"][1].serial,
+            test_case["params"][2].serial,
+            test_case["params"][0].serial)
+
+        while not call_setup_teardown_for_call_waiting(
+            log,
+            *test_case["params"],
+            wait_time_in_call=wait_time_in_call,
+            call_waiting=call_waiting) and retry >= 0:
+
+            if retry <= 0:
+                log.error("Call waiting sub-case: '%s' failed." % test_case[
+                    "description"])
+                results.append(False)
+            else:
+                log.info("RERUN the sub-case: '%s'" % test_case["description"])
+
+            retry = retry - 1
+
+    for result in results:
+        if not result:
+            return False
+
+    return True

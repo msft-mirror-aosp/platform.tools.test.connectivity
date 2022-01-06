@@ -40,30 +40,31 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts_contrib.test_utils.tel.tel_test_utils import CallResult
-from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import check_phone_number_match
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
-from acts_contrib.test_utils.tel.tel_test_utils import last_call_drop_reason
-from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import wait_and_answer_call_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_end
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_call_offhook_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_on_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_message
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_on_rat
+from acts_contrib.test_utils.tel.tel_test_utils import CallResult
+from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
+from acts_contrib.test_utils.tel.tel_test_utils import check_phone_number_match
+from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
+from acts_contrib.test_utils.tel.tel_voice_utils import last_call_drop_reason
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_on_rat
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call_for_subscription
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_in_call_active
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_call_end
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_call_offhook_for_subscription
 from acts_contrib.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts_contrib.test_utils.tel.tel_video_utils import video_call_setup_teardown
 from acts_contrib.test_utils.tel.tel_video_utils import phone_idle_video
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+
 
 def send_message_with_random_message_body(
     log, ad_mo, ad_mt, msg_type='sms', long_msg=False, mms_expected_result=True):

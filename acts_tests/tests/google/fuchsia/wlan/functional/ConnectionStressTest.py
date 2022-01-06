@@ -17,7 +17,6 @@
 Script for testing WiFi connection and disconnection in a loop
 
 """
-from acts.base_test import BaseTestClass
 
 import os
 import uuid

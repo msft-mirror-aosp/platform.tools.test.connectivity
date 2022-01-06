@@ -35,10 +35,16 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_rat
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_not_network_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import dumpsys_carrier_config
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_rat_family
@@ -46,18 +52,12 @@ from acts_contrib.test_utils.tel.tel_test_utils import revert_default_telephony_
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_default_telephony_setting
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_rat
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_not_network_rat
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_voice_utils import change_ims_setting
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import verify_default_ims_setting
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_PWD_KEY
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_SSID_KEY
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_PWD_KEY
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 
 class TelLiveImsSettingsTest(TelephonyBaseTest):

@@ -17,12 +17,10 @@
 
 import time
 import logging
-
 from acts import asserts
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.libs.utils.multithread import multithread_func
-
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
 from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
@@ -36,6 +34,7 @@ from acts_contrib.test_utils.tel.gft_inout_defines import WAIT_FOR_SERVICE_TIME
 from acts_contrib.test_utils.tel.gft_inout_utils import check_back_to_service_time
 from acts_contrib.test_utils.tel.gft_inout_utils import mo_voice_call
 from acts_contrib.test_utils.tel.gft_inout_utils import get_voice_call_type
+from acts_contrib.test_utils.tel.gft_inout_utils import browsing_test_ping_retry
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
@@ -45,11 +44,13 @@ from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
+from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts_contrib.test_utils.tel.tel_test_utils import log_screen_shot
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.gft_inout_utils import verify_data_connection
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 
 WAIT_TIME_AT_NO_SERVICE_AREA = 300
 
@@ -74,17 +75,21 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         self.log.info("Turn on ims")
         tasks = [(phone_setup_volte, (self.log, ad, )) for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
+            for ad in self.android_devices:
+                log_screen_shot(ad, self.test_name)
             error_msg = "fail to setup volte"
-            self.log.info(error_msg)
+            asserts.assert_true(False, "Fail: %s." %(error_msg),
+                extras={"failure_cause": self.my_error_msg})
             asserts.skip(error_msg)
         # ensure WFC is enabled
         tasks = [(toggle_wfc, (self.log, ad,True)) for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
+            for ad in self.android_devices:
+                log_screen_shot(ad, self.test_name)
             error_msg = "device does not support WFC! Skip test"
             self.log.info(error_msg)
             asserts.skip(error_msg)
-        for ad in self.android_devices:
-            log_screen_shot(ad, self.test_name)
+
 
     def teardown_test(self):
         super().teardown_test()
@@ -113,7 +118,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
             self.check_network()
             if self._enable_wifi_calling(wfc_mode):
-                if not self._voice_call(self.android_devices, WFC_CALL, True):
+                if not self._voice_call(self.android_devices, WFC_CALL, end_call=True):
                     self.log.info("VoWiFi call failure")
                     return False
                 self.log.info("Move to no service area and wifi area")
@@ -125,6 +130,12 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                 self.log.info("Move back to service area and no wifi area")
                 self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
                 self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+                self.log.info("check cellular data")
+                # self._data_retry_mechanism()
+                tasks = [(verify_data_connection, (ad, 3))
+                    for ad in self.android_devices]
+                if not multithread_func(self.log, tasks):
+                    self.log.info("verify_data_connection failure")
             self.log.info("Verify device state after in-out service")
             tasks = [(check_back_to_service_time, (ad,)) for ad in self.android_devices]
             test_result = multithread_func(self.log, tasks)
@@ -153,7 +164,8 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             %(wfc_mode, is_airplane_mode))
         self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
         time.sleep(10)
-        tasks = [(phone_setup_iwlan, (self.log, ad, is_airplane_mode, wfc_mode ))
+        tasks = [(phone_setup_iwlan, (self.log, ad, is_airplane_mode, wfc_mode,
+            self.wifi_ssid))
             for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
@@ -164,7 +176,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                 return False
         return True
 
-    def _voice_call(self, ads, call_type, end_call=True, talk_time=30):
+    def _voice_call(self, ads, call_type, end_call=True, talk_time=15):
         """ Enable Wi-Fi calling in Wi-Fi Preferred mode and connect to a
             valid Wi-Fi AP.
             Args:
@@ -304,7 +316,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
 
             ad = self.android_devices[0]
             wfc_mode = ad.droid.imsGetWfcMode()
-            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode ))
+            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode, self.wifi_ssid))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
@@ -349,7 +361,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         '''
         tasks = [(check_back_to_service_time, (ad,))
             for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
+        if multithread_func(self.log, tasks):
             tasks = [(self.verify_device_status, (ad, call_type, end_call,
                 talk_time, verify_data, verify_voice)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
@@ -361,7 +373,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         return True
 
     def _move_in_out_wifi_cellular_area(self, cellular_power_level,
-        wifi_power_level, hangup_call=False):
+        wifi_power_level, hangup=False):
         '''
             Moves in out wifi/cellular area
 
@@ -382,7 +394,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             return False
-        if hangup_call:
+        if hangup:
             for ad in self.android_devices:
                 hangup_call(self.log, ad)
                 time.sleep(3)
@@ -416,6 +428,12 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
             time.sleep(WAIT_FOR_SERVICE_TIME)
+            self.log.info("check cellular data")
+            # self._data_retry_mechanism()
+            tasks = [(verify_data_connection, (ad, 3))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.log.info("verify_data_connection failure")
             for ad in self.android_devices:
                 hangup_call(self.log, ad)
             # Make a MO VoLTE call and verify data connection
@@ -558,8 +576,13 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             time.sleep(WAIT_FOR_SERVICE_TIME)
+            self.log.info("check cellular data")
+            # self._data_retry_mechanism()
+            tasks = [(verify_data_connection, (ad, 3))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.log.info("verify_data_connection failure")
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
-
             tasks = [(wait_for_ims_registered, (self.log, ad, )) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 raise signals.TestFailure("IMS is not registered: %s"
@@ -603,7 +626,12 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             if not multithread_func(self.log, tasks):
                 raise signals.TestFailure("IMS is not registered: %s"
                     %(self.my_error_msg))
-
+            self.log.info("check cellular data")
+            # self._data_retry_mechanism()
+            tasks = [(verify_data_connection, (ad, 3))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.log.info("verify_data_connection failure")
             self.log.info("Move back to Wi-Fi area when idle.")
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
 
@@ -657,7 +685,12 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             if not multithread_func(self.log, tasks):
                 raise signals.TestFailure("IMS is not registered: %s"
                     %(self.my_error_msg))
-
+            self.log.info("check cellular data")
+            # self._data_retry_mechanism()
+            tasks = [(verify_data_connection, (ad, 3))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.log.info("verify_data_connection failure")
             self.log.info("Move back to Wi-Fi area when idle.")
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
 
@@ -714,7 +747,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.log.info("Enable Wi-Fi calling in Airplane on")
             ad = self.android_devices[0]
             wfc_mode = ad.droid.imsGetWfcMode()
-            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode ))
+            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode, self.wifi_ssid))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
@@ -807,7 +840,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.log.info("Move back to service area")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             self.log.info("Verify device state after in-out service")
-            if not self._device_status_check(VOLTE):
+            if not self._device_status_check(call_type=VOLTE_CALL):
                 raise signals.TestFailure(self.my_error_msg)
         return True
 
@@ -877,7 +910,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                     %(self.my_error_msg))
             #Keep browsing then move out cellular area to Wi-Fi only area
             tasks_a = [(self._in_out_browse, ())]
-            tasks_b = [(browsing_test, (self.log, ad, )) for ad in self.android_devices]
+            tasks_b = [(browsing_test_ping_retry, (ad, )) for ad in self.android_devices]
             tasks_b.extend(tasks_a)
             if not multithread_func(self.log, tasks_b):
                 raise signals.TestFailure("in/out browsing failure: %s"
@@ -913,9 +946,11 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                     %(self.my_error_msg))
             # Keep browsing then move out cellular area to Wi-Fi only area
             tasks_a = [(self._in_out_browse, ())]
-            tasks_b = [(browsing_test, (self.log, ad, )) for ad in self.android_devices]
+            tasks_b = [(browsing_test_ping_retry, (ad, )) for ad in self.android_devices]
             tasks_b.extend(tasks_a)
             if not multithread_func(self.log, tasks_b):
+                for ad in self.android_devices:
+                    log_screen_shot(ad, "browsing_failure")
                 raise signals.TestFailure("in/out browsing failure: %s"
                     %(self.my_error_msg))
             if not self._device_status_check(call_type=VOICE_CALL):
@@ -934,6 +969,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         self.log.info("Move back to service area and no wifi area")
         self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
         self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+        return True
 
     @test_tracker_info(uuid="9029f3bb-3aca-42be-9241-ed21aab418ff")
     @TelephonyBaseTest.tel_test_wrap
@@ -1013,7 +1049,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.log.info("Enable Wi-Fi calling in Airplane on")
             ad = self.android_devices[0]
             wfc_mode = ad.droid.imsGetWfcMode()
-            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode ))
+            tasks = [(phone_setup_iwlan, (self.log, ad, True, wfc_mode, self.wifi_ssid))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
@@ -1027,18 +1063,26 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.log.info("Move out Wi-Fi area to VoLTE area when idle.")
             self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
             time.sleep(WAIT_FOR_SERVICE_TIME)
-            if not self._device_status_check(call_type=VOICE_CALL):
-                raise signals.TestFailure(self.my_error_msg)
+            # if not self._device_status_check(call_type=VOICE_CALL):
+            #    raise signals.TestFailure(self.my_error_msg)
             self.log.info("Move back to Wi-Fi area when idle.")
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
             self.log.info("Verify device status after in-out service")
-            time.sleep(160)
-            if not self._device_status_check(call_type=VOICE_CALL):
-                raise signals.TestFailure(self.my_error_msg)
+            self.log.info("Wait for maximum to 160 sec before IMS switched")
+            tasks = [(wait_for_ims_registered, (self.log, ad, 160))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                asserts.assert_true(False, "Fail: %s." %("wait_for_ims_registered failure"),
+                    extras={"failure_cause": self.my_error_msg})
+            # turn off APM
+            self.log.info("Turn off airplande mode")
+            tasks = [(toggle_airplane_mode, (self.log, ad, False))
+                for ad in self.android_devices]
+            multithread_func(self.log, tasks)
         return True
 
 
-    @test_tracker_info(uuid="6c82e447-1c16-4339-b526-e9e932ee0d72")
+    @test_tracker_info(uuid="fb431706-737d-4020-b3d1-347dc4d7ce03")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_rove_out_wfc(self,loop=1, wfc_mode=WFC_MODE_WIFI_PREFERRED, idle_time=180):
         '''
@@ -1071,6 +1115,13 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
 
             self.log.info("Move out Wi-Fi area to VoLTE area when idle.")
             self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(30)
+            self.log.info("check cellular data")
+            # self._data_retry_mechanism()
+            tasks = [(verify_data_connection, (ad, 3))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.log.info("verify_data_connection failure")
             if not self._voice_call(self.android_devices, VOLTE_CALL, ):
                 raise signals.TestFailure("VOLTE call failure: %s"
                     %(self.my_error_msg))
@@ -1117,6 +1168,13 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
 
             self.log.info("Move out Wi-Fi area to VoLTE area when idle.")
             self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            time.sleep(30)
+            self.log.info("check cellular data")
+            # self._data_retry_mechanism()
+            tasks = [(verify_data_connection, (ad, 3))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                self.log.info("verify_data_connection failure")
             if not self._voice_call(self.android_devices, VOLTE_CALL, ):
                 raise signals.TestFailure("VOLTE call failure: %s"
                     %(self.my_error_msg))
@@ -1156,11 +1214,11 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.log.info("Start test at wifi area and service area")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             self.adjust_wifi_signal(IN_SERVICE_POWER_LEVEL)
+            #Make a MO VoWiFi call and hold the call.
             if not self._enable_wifi_calling(wfc_mode, call_type=WFC_CALL,
                 end_call=False):
                 raise signals.TestFailure("VoWiFi call failure: %s"
                     %(self.my_error_msg))
-
             tasks = [(self._call_hold, (ad,)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 raise signals.TestFailure("fail to hold call: %s"
@@ -1170,6 +1228,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             self.log.info("Move out Wi-Fi area to VoLTE area")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             self.adjust_wifi_signal(NO_SERVICE_POWER_LEVEL)
+            # Unhold the call
             tasks = [(self._call_unhold, (ad,)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 raise signals.TestFailure("fail to unhold call: %s"
@@ -1178,11 +1237,10 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             for ad in self.android_devices:
                 hangup_call(self.log, ad)
 
-            # Make a MO VoLTE call and verify data connection
+            # Make a MO VoLTE call and hold the call.
             if not self._voice_call(self.android_devices, VOLTE_CALL, False):
                 raise signals.TestFailure("VoLTE call failure: %s"
                     %(self.my_error_msg))
-
             tasks = [(self._call_hold, (ad,)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 raise signals.TestFailure("fail to hold call: %s"
@@ -1205,7 +1263,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         return True
 
 
-    def _call_hold(self, ad, wait_time=5):
+    def _call_hold(self, ad, wait_time=WAIT_TIME_IN_CALL):
         '''
             Press call hold
 
@@ -1217,6 +1275,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                 True if pass; False if fail
         '''
         if ad.droid.telecomIsInCall():
+            ad.droid.telecomShowInCallScreen()
             call_list = ad.droid.telecomCallGetCallIds()
             ad.log.info("Calls in PhoneA %s", call_list)
             call_id = call_list[0]
@@ -1227,21 +1286,24 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                         ad.droid.telecomCallGetCallState(call_id))
                 return False
             ad.log.info("Hold call_id %s on PhoneA", call_id)
+            log_screen_shot(ad, "before_call_hold")
             ad.droid.telecomCallHold(call_id)
             time.sleep(wait_time)
 
             call_state = ad.droid.telecomCallGetCallState(call_id)
+            log_screen_shot(ad, "after_call_hold")
             if call_state != CALL_STATE_HOLDING:
                 ad.log.error("Call_id:%s, state:%s, expected: STATE_HOLDING",
                                 call_id,
                                 ad.droid.telecomCallGetCallState(call_id))
+                log_screen_shot(ad, "hold_failure")
                 return False
         else:
             ad.log.info("device is not in call")
             return False
         return True
 
-    def _call_unhold(self, ad, wait_time=5):
+    def _call_unhold(self, ad, wait_time=WAIT_TIME_IN_CALL):
         '''
             Press call unhold
 
@@ -1253,6 +1315,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                 True if pass; False if fail
         '''
         if ad.droid.telecomIsInCall():
+            ad.droid.telecomShowInCallScreen()
             call_list = ad.droid.telecomCallGetCallIds()
             ad.log.info("Calls in PhoneA %s", call_list)
             call_id = call_list[0]
@@ -1263,13 +1326,16 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                         ad.droid.telecomCallGetCallState(call_id))
                 return False
             ad.log.info("Unhold call_id %s on PhoneA", call_id)
+            log_screen_shot(ad, "before_unhold")
             ad.droid.telecomCallUnhold(call_id)
             time.sleep(wait_time)
             call_state = ad.droid.telecomCallGetCallState(call_id)
+            log_screen_shot(ad, "after_unhold")
             if call_state != CALL_STATE_ACTIVE:
                 ad.log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
                         call_id,
                         call_state)
+                log_screen_shot(ad, "_unhold_failure")
                 return False
         else:
             ad.log.info("device is not in call")

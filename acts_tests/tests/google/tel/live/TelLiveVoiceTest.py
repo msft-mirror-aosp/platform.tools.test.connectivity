@@ -24,7 +24,6 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_data_transfer
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
@@ -44,27 +43,30 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts_contrib.test_utils.tel.tel_subscription_utils import \
-    get_incoming_voice_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_test_utils import \
-    call_voicemail_erase_all_pending_voicemail
-from acts.utils import adb_shell_ping
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_2g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan_cellular_preferred
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_2g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
-from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_test_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
-from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_ringing_call
-from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_in_call_active
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
+from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -74,28 +76,20 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwl
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts_contrib.test_utils.tel.tel_voice_utils import _test_call_long_duration
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import \
-    phone_setup_iwlan_cellular_preferred
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_2g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_3g
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_voice_utils import call_voicemail_erase_all_pending_voicemail
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
-from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_in_call_active
+from acts_contrib.test_utils.tel.tel_voice_utils import wait_for_ringing_call
+from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
 from acts.libs.utils.multithread import multithread_func
 
 DEFAULT_PING_DURATION = 120  # in seconds
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
+
 
 class TelLiveVoiceTest(TelephonyBaseTest):
     def setup_class(self):

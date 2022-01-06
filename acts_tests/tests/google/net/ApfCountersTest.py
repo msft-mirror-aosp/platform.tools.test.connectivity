@@ -41,6 +41,7 @@ PROC_NET_SNMP6 = '/proc/net/snmp6'
 LIFETIME_FRACTION = 6
 LIFETIME = 180
 INTERVAL = 2
+WLAN0= "wlan0"
 
 
 class ApfCountersTest(WifiBaseTest):
@@ -79,7 +80,7 @@ class ApfCountersTest(WifiBaseTest):
 
     def setup_test(self):
         if 'RTT' not in self.test_name:
-            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
+            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name, WLAN0)
 
     def teardown_test(self):
         if 'RTT' not in self.test_name:
@@ -94,6 +95,7 @@ class ApfCountersTest(WifiBaseTest):
             del self.user_params["reference_networks"]
         self.access_points[0].cleanup_scapy()
         wutils.reset_wifi(self.dut)
+        self.dut.adb.shell("settings put global stay_on_while_plugged_in 7")
 
     """ Helper methods """
 
@@ -163,6 +165,8 @@ class ApfCountersTest(WifiBaseTest):
         ra_count_latest = self._get_icmp6intype134()
         asserts.assert_true(ra_count_latest == ra_count + 1,
                             "Device dropped the first RA in sequence")
+        self.dut.adb.shell("settings put global stay_on_while_plugged_in 0")
+        self.dut.droid.goToSleepNow()
 
         # Generate and send 'x' number of duplicate RAs, for 1/6th of the the
         # lifetime of the original RA. Test assumes that the original RA has a
@@ -212,7 +216,7 @@ class ApfCountersTest(WifiBaseTest):
         ra_count = self._get_icmp6intype134()
 
         # start tcpdump on the device
-        tcpdump_pid = start_tcpdump(self.dut, self.test_name)
+        tcpdump_pid = start_tcpdump(self.dut, self.test_name, WLAN0)
 
         # send RA with differnt re-trans time
         for rtt in rtt_list:

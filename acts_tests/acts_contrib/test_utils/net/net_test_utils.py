@@ -16,6 +16,7 @@
 import logging
 import os
 import re
+import subprocess
 import time
 import urllib.request
 
@@ -24,15 +25,17 @@ from acts import signals
 from acts import utils
 from acts.controllers import adb
 from acts.controllers.adb_lib.error import AdbError
+from acts.libs.proc import job
 from acts.utils import start_standing_subprocess
 from acts.utils import stop_standing_subprocess
 from acts_contrib.test_utils.net import connectivity_const as cconst
+from acts_contrib.test_utils.tel import tel_defines
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from scapy.all import get_if_list
-
+from scapy.config import conf
+from scapy.compat import plain_str
 
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
@@ -40,6 +43,7 @@ VPN_PARAMS = cconst.VpnReqParams
 TCPDUMP_PATH = "/data/local/tmp/"
 USB_CHARGE_MODE = "svc usb setFunctions"
 USB_TETHERING_MODE = "svc usb setFunctions rndis"
+USB_TETHERING_MODE_NCM = "svc usb setFunctions ncm"
 DEVICE_IP_ADDRESS = "ip address"
 LOCALHOST = "192.168.1.1"
 
@@ -287,7 +291,7 @@ def generate_ikev2_vpn_profile(ad, vpn_params, vpn_type, server_addr, log_path):
     return vpn_profile
 
 
-def start_tcpdump(ad, test_name):
+def start_tcpdump(ad, test_name, interface="any"):
     """Start tcpdump on all interfaces.
 
     Args:
@@ -301,8 +305,8 @@ def start_tcpdump(ad, test_name):
 
     file_name = "%s/tcpdump_%s_%s.pcap" % (TCPDUMP_PATH, ad.serial, test_name)
     ad.log.info("tcpdump file is %s", file_name)
-    cmd = "adb -s {} shell tcpdump -i any -s0 -w {}".format(ad.serial,
-                                                            file_name)
+    cmd = "adb -s {} shell tcpdump -i {} -s0 -w {}".format(ad.serial,
+                                                           interface, file_name)
     try:
         return start_standing_subprocess(cmd, 5)
     except Exception:
@@ -462,6 +466,34 @@ def carrier_supports_ipv6(dut):
     return operator in carrier_supports_ipv6
 
 
+def is_carrier_supports_entitlement(dut):
+    """Verify if carrier supports entitlement
+
+    Args:
+        dut: Android device
+
+    Return:
+        True if carrier supports entitlement, otherwise false
+    """
+
+    carriers_supports_entitlement = [
+        tel_defines.CARRIER_VZW,
+        tel_defines.CARRIER_ATT,
+        tel_defines.CARRIER_TMO,
+        tel_defines.CARRIER_SBM]
+    operator = get_operator_name("log", dut)
+    return operator in carriers_supports_entitlement
+
+
+def set_cap_net_raw_capability():
+    """Set the CAP_NET_RAW capability
+
+    To send the Scapy packets, we need to get the CAP_NET_RAW capability first.
+    """
+    cap_net_raw = "sudo setcap cap_net_raw=eip $(readlink -f $(which act.py))"
+    utils.exe_cmd(cap_net_raw)
+
+
 def supports_ipv6_tethering(self, dut):
     """Check if provider supports IPv6 tethering.
 
@@ -480,17 +512,57 @@ def supports_ipv6_tethering(self, dut):
 def start_usb_tethering(ad):
     """Start USB tethering.
 
+    Note: Start USB tethering with svc command will skip the entitlement check
+    flow, which is supported by carrier ATT, VZW, and SoftBank, and lead tests
+    to failed.
+    Since we're still using svc command to enable the USB tethering, make sure
+    your carrier doesn't support the entitlement.
+
     Args:
         ad: android device object
     """
     # TODO: test USB tethering by #startTethering API - b/149116235
-    ad.log.info("Starting USB Tethering")
+    if is_carrier_supports_entitlement(ad):
+        raise signals.TestFailure(
+            "Carrier supports entitlement, fail to enable the USB tethering.")
+    if not start_usb_tethering_rndis(ad) and not start_usb_tethering_ncm(ad):
+        raise signals.TestFailure("Unable to enable USB tethering.")
+
+
+def start_usb_tethering_rndis(ad):
+    """Start USB tethering using RNDIS.
+
+    Args:
+        ad: Android device object
+    Return:
+        true if USB tethering enabled
+    """
+    ad.log.info("Starting USB Tethering RNDIS")
     ad.stop_services()
     ad.adb.shell(USB_TETHERING_MODE, ignore_status=True)
     ad.adb.wait_for_device()
     ad.start_services()
     if "rndis" not in ad.adb.shell(DEVICE_IP_ADDRESS):
-        raise signals.TestFailure("Unable to enable USB tethering.")
+        return False
+    return True
+
+
+def start_usb_tethering_ncm(ad):
+    """Start USB tethering using NCM.
+
+    Args:
+        ad: Android device object
+    Return:
+        true if USB tethering enabled.
+    """
+    ad.log.info("Starting USB Tethering NCM")
+    ad.stop_services()
+    ad.adb.shell(USB_TETHERING_MODE_NCM, ignore_status=True)
+    ad.adb.wait_for_device()
+    ad.start_services()
+    if "ncm" not in ad.adb.shell(DEVICE_IP_ADDRESS):
+        return False
+    return True
 
 
 def stop_usb_tethering(ad):
@@ -524,3 +596,29 @@ def wait_for_new_iface(old_ifaces):
             return new_ifaces.pop()
         time.sleep(1)
     asserts.fail("Timeout waiting for tethering interface on host")
+
+
+def get_if_list():
+    """Returns a list containing all network interfaces.
+
+    The newest version of Scapy.get_if_list() returns the cached interfaces,
+    which might be out-dated, and unable to perceive the interface changes.
+    Use this method when need to monitoring the network interfaces changes.
+    Reference: https://github.com/secdev/scapy/pull/2707
+
+    Returns:
+        A list of the latest network interfaces. For example:
+        ['cvd-ebr', ..., 'eno1', 'enx4afa19a8dde1', 'lo', 'wlxd03745d68d88']
+    """
+
+    # Get ifconfig output
+    result = job.run([conf.prog.ifconfig])
+    if result.exit_status:
+        raise asserts.fail(
+            "Failed to execute ifconfig: {}".format(plain_str(result.stderr)))
+
+    interfaces = [
+        line[:line.find(':')] for line in plain_str(result.stdout).splitlines()
+        if ": flags" in line.lower()
+    ]
+    return interfaces

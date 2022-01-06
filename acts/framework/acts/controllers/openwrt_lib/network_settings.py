@@ -42,6 +42,7 @@ XL2TPD_CONFIG_PATH = "/etc/xl2tpd/xl2tpd.conf"
 XL2TPD_OPTION_CONFIG_PATH = "/etc/ppp/options.xl2tpd"
 FIREWALL_CUSTOM_OPTION_PATH = "/etc/firewall.user"
 PPP_CHAP_SECRET_PATH = "/etc/ppp/chap-secrets"
+IKEV2_VPN_CERT_KEYS_PATH = "/var/ikev2_cert.sh"
 TCPDUMP_DIR = "/tmp/tcpdump/"
 LOCALHOST = "192.168.1.1"
 DEFAULT_PACKAGE_INSTALL_TIMEOUT = 200
@@ -90,6 +91,7 @@ class NetworkSettings(object):
             "ipv6_prefer_option": self.remove_ipv6_prefer_option,
             "block_dns_response": self.unblock_dns_response,
             "setup_mdns": self.remove_mdns,
+            "add_dhcp_rapid_commit": self.remove_dhcp_rapid_commit,
             "setup_captive_portal": self.remove_cpative_portal
         }
         # This map contains cleanup functions to restore the configuration to
@@ -462,7 +464,11 @@ class NetworkSettings(object):
         # setup vpn server local ip
         self.setup_vpn_local_ip()
         # generate cert and key for rsa
-        self.generate_vpn_cert_keys(country, org)
+        if self.l2tp.name == "ikev2-server":
+            self.generate_ikev2_vpn_cert_keys(country, org)
+            self.add_resource_record(self.l2tp.hostname, LOCALHOST)
+        else:
+            self.generate_vpn_cert_keys(country, org)
         # restart service
         self.service_manager.need_restart(SERVICE_IPSEC)
         self.service_manager.need_restart(SERVICE_XL2TPD)
@@ -474,6 +480,8 @@ class NetworkSettings(object):
         self.config.discard("setup_vpn_l2tp_server")
         self.restore_firewall_rules_for_l2tp()
         self.remove_vpn_local_ip()
+        if self.l2tp.name == "ikev2-server":
+            self.clear_resource_record()
         self.service_manager.need_restart(SERVICE_IPSEC)
         self.service_manager.need_restart(SERVICE_XL2TPD)
         self.service_manager.need_restart(SERVICE_FIREWALL)
@@ -507,6 +515,12 @@ class NetworkSettings(object):
                 config.append("")
 
         config = []
+        load_ipsec_config(network_const.IPSEC_IKEV2_MSCHAPV2, True)
+        load_ipsec_config(network_const.IPSEC_IKEV2_PSK, True)
+        load_ipsec_config(network_const.IPSEC_IKEV2_RSA, True)
+        load_ipsec_config(network_const.IPSEC_IKEV2_MSCHAPV2_HOSTNAME, True)
+        load_ipsec_config(network_const.IPSEC_IKEV2_PSK_HOSTNAME, True)
+        load_ipsec_config(network_const.IPSEC_IKEV2_RSA_HOSTNAME, True)
         load_ipsec_config(network_const.IPSEC_CONF)
         load_ipsec_config(network_const.IPSEC_L2TP_PSK)
         load_ipsec_config(network_const.IPSEC_L2TP_RSA)
@@ -599,6 +613,54 @@ class NetworkSettings(object):
             self.ssh.run("mkdir /www/downloads/")
         self.ssh.run("mv clientPkcs.p12 /www/downloads/")
         self.ssh.run("chmod 664 /www/downloads/clientPkcs.p12")
+
+    def generate_ikev2_vpn_cert_keys(self, country, org):
+        rsa = "--type rsa"
+        lifetime = "--lifetime 365"
+        size = "--size 4096"
+
+        if not self.path_exists("/www/downloads/"):
+            self.ssh.run("mkdir /www/downloads/")
+
+        ikev2_vpn_cert_keys = [
+            "ipsec pki --gen %s %s --outform der > caKey.der" % (rsa, size),
+            "ipsec pki --self --ca %s --in caKey.der %s --dn "
+            "\"C=%s, O=%s, CN=%s\" --outform der > caCert.der" %
+            (lifetime, rsa, country, org, self.l2tp.hostname),
+            "ipsec pki --gen %s %s --outform der > serverKey.der" % (size, rsa),
+            "ipsec pki --pub --in serverKey.der %s | ipsec pki --issue %s "
+            r"--cacert caCert.der --cakey caKey.der --dn \"C=%s, O=%s, CN=%s\" "
+            "--san %s --san %s --flag serverAuth --flag ikeIntermediate "
+            "--outform der > serverCert.der" % (rsa, lifetime, country, org,
+                                                self.l2tp.hostname, LOCALHOST,
+                                                self.l2tp.hostname),
+            "ipsec pki --gen %s %s --outform der > clientKey.der" % (size, rsa),
+            "ipsec pki --pub --in clientKey.der %s | ipsec pki --issue %s "
+            r"--cacert caCert.der --cakey caKey.der --dn \"C=%s, O=%s, CN=%s@%s\" "
+            r"--san \"%s\" --san \"%s@%s\" --san \"%s@%s\" --outform der "
+            "> clientCert.der" % (rsa, lifetime, country, org, self.l2tp.username,
+                                  self.l2tp.hostname, self.l2tp.username,
+                                  self.l2tp.username, LOCALHOST,
+                                  self.l2tp.username, self.l2tp.hostname),
+            "openssl rsa -inform DER -in clientKey.der "
+            "-out clientKey.pem -outform PEM",
+            "openssl x509 -inform DER -in clientCert.der "
+            "-out clientCert.pem -outform PEM",
+            "openssl x509 -inform DER -in caCert.der "
+            "-out caCert.pem -outform PEM",
+            "openssl pkcs12 -in clientCert.pem -inkey  clientKey.pem "
+            "-certfile caCert.pem -export -out clientPkcs.p12 -passout pass:",
+            "mv caCert.pem /etc/ipsec.d/cacerts/",
+            "mv *Cert* /etc/ipsec.d/certs/",
+            "mv *Key* /etc/ipsec.d/private/",
+            "mv clientPkcs.p12 /www/downloads/",
+            "chmod 664 /www/downloads/clientPkcs.p12",
+        ]
+        file_string = "\n".join(ikev2_vpn_cert_keys)
+        self.create_config_file(file_string, IKEV2_VPN_CERT_KEYS_PATH)
+
+        self.ssh.run("chmod +x %s" % IKEV2_VPN_CERT_KEYS_PATH)
+        self.ssh.run("%s" % IKEV2_VPN_CERT_KEYS_PATH)
 
     def update_firewall_rules_list(self):
         """Update rule list in /etc/config/firewall."""
@@ -851,6 +913,18 @@ class NetworkSettings(object):
     def remove_ipv6_prefer_option(self):
         self._remove_dhcp_option("108,1800i")
         self.config.discard("ipv6_prefer_option")
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def add_dhcp_rapid_commit(self):
+        self.create_config_file("dhcp-rapid-commit\n","/etc/dnsmasq.conf")
+        self.config.add("add_dhcp_rapid_commit")
+        self.service_manager.need_restart(SERVICE_DNSMASQ)
+        self.commit_changes()
+
+    def remove_dhcp_rapid_commit(self):
+        self.create_config_file("","/etc/dnsmasq.conf")
+        self.config.discard("add_dhcp_rapid_commit")
         self.service_manager.need_restart(SERVICE_DNSMASQ)
         self.commit_changes()
 

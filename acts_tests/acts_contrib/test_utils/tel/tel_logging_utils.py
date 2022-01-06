@@ -20,11 +20,28 @@ import re
 import shutil
 import time
 
+from acts import utils
+from acts.libs.proc import job
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.libs.utils.multithread import run_multithread_func
 from acts.utils import get_current_epoch_time
 from acts.utils import start_standing_subprocess
+
+
+_LS_MASK_NAME = "Lassen default + TCP"
+
+_LS_ENABLE_LOG_SHELL = f"""\
+am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver \
+    -a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
+    -e intent_key_enable "true" -e intent_key_config "{_LS_MASK_NAME}" \
+    --ei intent_key_max_log_size_mb 100 --ei intent_key_max_number_of_files 100
+"""
+_LS_DISABLE_LOG_SHELL = """\
+am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver \
+    -a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
+    -e intent_key_enable "false"
+"""
 
 
 def check_if_tensor_platform(ad):
@@ -72,32 +89,50 @@ def start_pixellogger_always_on_logging(ad):
 def start_sdm_logger(ad):
     """Start SDM logger."""
     if not getattr(ad, "sdm_log", True): return
+
     # Delete existing SDM logs which were created 15 mins prior
     ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
     file_count = ad.adb.shell(
-        "find %s -type f -iname sbuff_[0-9]*.sdm* | wc -l" % ad.sdm_log_path)
+        f"find {ad.sdm_log_path} -type f -iname sbuff_[0-9]*.sdm* | wc -l")
     if int(file_count) > 3:
         seconds = 15 * 60
         # Remove sdm logs modified more than specified seconds ago
         ad.adb.shell(
-            "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
-            (ad.sdm_log_path, seconds))
-    # Disable any modem logging already running
-    if not getattr(ad, "enable_always_on_modem_logger", False):
-        ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
+            f"find {ad.sdm_log_path} -type f -iname sbuff_[0-9]*.sdm* "
+            f"-not -mtime -{seconds}s -delete")
+
+    # Disable modem logging already running
+    stop_sdm_logger(ad)
+
     # start logging
-    cmd = "setprop vendor.sys.modem.logging.enable true"
     ad.log.debug("start sdm logging")
-    ad.adb.shell(cmd, ignore_status=True)
-    time.sleep(5)
+    while int(
+        ad.adb.shell(f"find {ad.sdm_log_path} -type f "
+                     "-iname sbuff_profile.sdm | wc -l") == 0 or
+        int(
+            ad.adb.shell(f"find {ad.sdm_log_path} -type f "
+                         "-iname sbuff_[0-9]*.sdm* | wc -l")) == 0):
+        ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
+        time.sleep(5)
 
 
 def stop_sdm_logger(ad):
     """Stop SDM logger."""
-    cmd = "setprop vendor.sys.modem.logging.enable false"
+    cycle = 1
+
     ad.log.debug("stop sdm logging")
-    ad.adb.shell(cmd, ignore_status=True)
-    time.sleep(5)
+    while int(
+        ad.adb.shell(
+            f"find {ad.sdm_log_path} -type f -iname sbuff_profile.sdm -o "
+            "-iname sbuff_[0-9]*.sdm* | wc -l")) != 0:
+        if cycle == 1 and int(
+            ad.adb.shell(f"find {ad.sdm_log_path} -type f "
+                         "-iname sbuff_profile.sdm | wc -l")) == 0:
+            ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
+            time.sleep(5)
+        ad.adb.shell(_LS_DISABLE_LOG_SHELL, ignore_status=True)
+        cycle += 1
+        time.sleep(15)
 
 
 def start_sdm_loggers(log, ads):
@@ -493,3 +528,50 @@ def wait_for_log(ad, pattern, begin_time=None, end_time=None, max_wait_time=120)
         passed_time = (stop_time - start_time).total_seconds()
         if passed_time > max_wait_time:
             return
+
+
+def extract_test_log(log, src_file, dst_file, test_tag):
+    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+    cmd = "grep -n '%s' %s" % (test_tag, src_file)
+    result = job.run(cmd, ignore_status=True)
+    if not result.stdout or result.exit_status == 1:
+        log.warning("Command %s returns %s", cmd, result)
+        return
+    line_nums = re.findall(r"(\d+).*", result.stdout)
+    if line_nums:
+        begin_line = int(line_nums[0])
+        end_line = int(line_nums[-1])
+        if end_line - begin_line <= 5:
+            result = job.run("wc -l < %s" % src_file)
+            if result.stdout:
+                end_line = int(result.stdout)
+        log.info("Extract %s from line %s to line %s to %s", src_file,
+                 begin_line, end_line, dst_file)
+        job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
+                                                        src_file, dst_file))
+
+
+def log_screen_shot(ad, test_name=""):
+    file_name = "/sdcard/Pictures/screencap"
+    if test_name:
+        file_name = "%s_%s" % (file_name, test_name)
+    file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
+    try:
+        ad.adb.shell("screencap -p %s" % file_name)
+    except:
+        ad.log.error("Fail to log screen shot to %s", file_name)
+
+
+def get_screen_shot_log(ad, test_name="", begin_time=None):
+    logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
+    if logs:
+        ad.log.info("Pulling %s", logs)
+        log_path = os.path.join(ad.device_log_path, "Screenshot_%s" % ad.serial)
+        os.makedirs(log_path, exist_ok=True)
+        ad.pull_files(logs, log_path)
+    ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
+
+
+def get_screen_shot_logs(ads, test_name="", begin_time=None):
+    for ad in ads:
+        get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)

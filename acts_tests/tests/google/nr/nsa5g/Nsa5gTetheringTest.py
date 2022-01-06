@@ -20,8 +20,6 @@
 import time
 
 from acts.utils import rand_ascii_str
-from acts.utils import enable_doze
-from acts.utils import disable_doze
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -32,15 +30,15 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_5G
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_PASSWORD_HAS_ESCAPE
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_SSID_LIST
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_PASSWORD_LIST
-from acts_contrib.test_utils.tel.tel_defines import \
-    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_bt_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import run_stress_test
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_start_wifi_tethering_connect_teardown
 from acts_contrib.test_utils.tel.tel_data_utils import test_tethering_wifi_and_voice_call
 from acts_contrib.test_utils.tel.tel_data_utils import tethering_check_internet_connection
-from acts_contrib.test_utils.tel.tel_data_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_apm_tethering_internet_connection
 from acts_contrib.test_utils.tel.tel_data_utils import verify_tethering_entitlement_check
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
@@ -51,19 +49,18 @@ from acts_contrib.test_utils.tel.tel_data_utils import verify_wifi_tethering_whe
 from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_connection_then_reboot
 from acts_contrib.test_utils.tel.tel_data_utils import verify_internet_connection_in_doze_mode
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_data_during_wifi_tethering
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 
 
 class Nsa5gTetheringTest(TelephonyBaseTest):
