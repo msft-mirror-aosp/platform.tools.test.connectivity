@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import time
-
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
@@ -46,7 +45,6 @@ def check_no_service_time(ad, timeout=120):
         Returns:
             True if pass; False if fail.
     """
-
     for i in range (timeout):
         service_state = get_service_state_by_adb(ad.log,ad)
         if service_state != SERVICE_STATE_IN_SERVICE:
@@ -60,6 +58,7 @@ def check_no_service_time(ad, timeout=120):
     ad.log.info("device does not become no/limited service in %s sec and service_state=%s"
         %(timeout, service_state))
     return False
+
 
 def check_back_to_service_time(ad, timeout=120):
     """ check device is back to service or not
@@ -89,6 +88,7 @@ def check_back_to_service_time(ad, timeout=120):
     ad.log.info("device is not back in service in %s sec and service_state=%s"
         %(timeout, service_state))
     return False
+
 
 def check_network_service(ad):
     """ check network service
@@ -231,7 +231,8 @@ def get_voice_call_type(ad):
         ad.log.error("device is not in call")
     return "UNKNOWN"
 
-def verify_data_connection(ad, retries=1, retry_time=30):
+
+def verify_data_connection(ad, retries=3, retry_time=30):
     """ verify data connection
 
         Args:
@@ -247,19 +248,18 @@ def verify_data_connection(ad, retries=1, retry_time=30):
         wifi_info = ad.droid.wifiGetConnectionInfo()
         if wifi_info["supplicant_state"] == "completed":
             ad.log.info("Wifi is connected=%s" %(wifi_info["SSID"]))
-        else:
-            ad.log.info("verify_data_connection attempt %d", i + 1)
-            if not verify_internet_connection(ad.log, ad, retries=3):
-                data_state = ad.droid.telephonyGetDataConnectionState()
-                network_type_data = ad.droid.telephonyGetCurrentDataNetworkType()
-                ad.log.error("verify_internet fail. data_state=%s, network_type_data=%s"
+        ad.log.info("verify_data_connection attempt %d", i + 1)
+        if not verify_internet_connection(ad.log, ad, retries=3):
+            data_state = ad.droid.telephonyGetDataConnectionState()
+            network_type_data = ad.droid.telephonyGetCurrentDataNetworkType()
+            ad.log.error("verify_internet fail. data_state=%s, network_type_data=%s"
                 %(data_state, network_type_data))
-                ad.log.info("verify_data_connection fail attempt %d", i + 1)
-                log_screen_shot(ad, "verify_internet")
-                time.sleep(retry_time)
-            else:
-                ad.log.info("verify_data_connection pass")
-                return True
+            ad.log.info("verify_data_connection fail attempt %d", i + 1)
+            log_screen_shot(ad, "verify_internet")
+            time.sleep(retry_time)
+        else:
+            ad.log.info("verify_data_connection pass")
+            return True
     return False
 
 
@@ -282,6 +282,7 @@ def check_ims_state(ad):
     ad.log.info("telephonyIsVolteAvailable=%s" %(r4))
     return r1
 
+
 def browsing_test_ping_retry(ad):
     """ If browse test fails, use ping to test data connection
 
@@ -301,7 +302,6 @@ def browsing_test_ping_retry(ad):
             return False
     else:
         ad.log.info("Successful to browse websites!")
-
 
 
 
