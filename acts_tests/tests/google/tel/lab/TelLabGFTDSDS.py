@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - The Android Open Source Project
+#   Copyright 2022 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts_contrib.test_utils.tel.tel_data_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0

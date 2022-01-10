@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2016 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -24,6 +24,9 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_data_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_data_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_data_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_data_transfer
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
@@ -57,11 +60,8 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
-from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import hold_unhold_test
