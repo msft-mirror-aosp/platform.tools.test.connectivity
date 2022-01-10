@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2019 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
@@ -55,7 +56,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number
 from acts_contrib.test_utils.tel.tel_test_utils import get_phone_number_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
