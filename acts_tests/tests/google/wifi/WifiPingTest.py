@@ -106,6 +106,7 @@ class WifiPingTest(base_test.BaseTestClass):
         for attenuator in self.attenuators:
             attenuator.set_atten(0, strict=False, retry=True)
         # Turn WiFi OFF and reset AP
+        self.access_point.teardown()
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
             dev.go_to_sleep()

@@ -119,6 +119,8 @@ class WifiAwareRvrTest(WifiRvrTest):
             wutils.wifi_toggle_state(ad, True)
 
     def teardown_class(self):
+        for ap in self.access_points:
+            ap.teardown()
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
