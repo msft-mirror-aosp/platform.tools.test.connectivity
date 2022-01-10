@@ -503,6 +503,8 @@ class TelephonyBaseTest(BaseTestClass):
         stop_tcpdumps(self.android_devices)
 
     def on_fail(self, test_name, begin_time):
+        for ad in self.android_devices:
+            ad.screenshot(f"{ad.serial}_last_screen")
         self._take_bug_report(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
