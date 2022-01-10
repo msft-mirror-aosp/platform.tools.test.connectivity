@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2016 - The Android Open Source Project
+#   Copyright 2022 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -43,15 +43,15 @@ from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts_contrib.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts_contrib.test_utils.tel.tel_defines import POWER_LEVEL_OUT_OF_SERVICE
 from acts_contrib.test_utils.tel.tel_defines import POWER_LEVEL_FULL_SERVICE
+from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_detection
+from acts_contrib.test_utils.tel.tel_data_utils import check_network_validation_fail
+from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_rat
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_host_ip_address
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import iperf_test_by_adb
-from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_detection
-from acts_contrib.test_utils.tel.tel_test_utils import check_network_validation_fail
-from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
