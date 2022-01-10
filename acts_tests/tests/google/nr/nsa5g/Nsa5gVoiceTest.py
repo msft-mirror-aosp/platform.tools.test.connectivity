@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2020 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
+from acts_contrib.test_utils.tel.tel_data_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_data_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_data_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_data_transfer
 from acts_contrib.test_utils.tel.tel_data_utils import test_call_setup_in_active_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
@@ -50,10 +53,7 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
-from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_voice_utils import _test_call_long_duration
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - The Android Open Source Project
+#   Copyright 2022 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ from acts_contrib.test_utils.tel.gft_inout_utils import check_ims_state
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 

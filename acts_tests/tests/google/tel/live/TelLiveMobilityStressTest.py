@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2017 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.utils import get_current_epoch_time

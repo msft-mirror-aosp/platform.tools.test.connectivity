@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2021 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
