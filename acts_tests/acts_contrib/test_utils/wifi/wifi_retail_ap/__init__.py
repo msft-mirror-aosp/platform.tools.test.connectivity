@@ -265,7 +265,8 @@ class WifiRetailAP(object):
 
     def teardown(self):
         """Function to perform destroy operations."""
-        self._unlock_ap()
+        if self.ap_settings.get('lock_ap', 0):
+            self._unlock_ap()
 
     def reset(self):
         """Function that resets AP.
@@ -542,5 +543,9 @@ class WifiRetailAP(object):
         """Function to unlock the AP when tests are done."""
         self.log.info('Releasing AP lock.')
         if hasattr(self, 'lock_file'):
-            fcntl.flock(self.lock_file, fcntl.LOCK_UN)
-            self.lock_file.close()
+            try:
+                fcntl.flock(self.lock_file, fcntl.LOCK_UN)
+                self.lock_file.close()
+                self.log.info('Succussfully released AP lock file.')
+            except:
+                raise RuntimeError('Error occurred while unlocking AP.')
