@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2021 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -26,16 +26,16 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETT
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_data_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_data_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_data_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_message_utils import sms_in_collision_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import sms_rx_power_off_multiple_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
-from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.utils import rand_ascii_str
 from acts.libs.utils.multithread import multithread_func
 

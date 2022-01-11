@@ -114,6 +114,7 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def teardown_class(self):
         # Turn WiFi OFF
+        self.access_point.teardown()
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
             dev.go_to_sleep()
