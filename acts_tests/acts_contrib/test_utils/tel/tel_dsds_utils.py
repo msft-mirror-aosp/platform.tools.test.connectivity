@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_data_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_message_utils import log_messaging_screen_shot
 from acts_contrib.test_utils.tel.tel_message_utils import mms_send_receive_verify
 from acts_contrib.test_utils.tel.tel_message_utils import sms_send_receive_verify_for_subscription
@@ -51,12 +53,10 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
 from acts_contrib.test_utils.tel.tel_test_utils import power_on_sim
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
