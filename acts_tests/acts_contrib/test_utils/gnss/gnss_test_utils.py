@@ -2054,6 +2054,10 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
             with zipfile.ZipFile(zip_path, "r") as zip_file:
                 zip_file.extractall(tmp_log_path)
                 gl_logs = zip_file.namelist()
+                # b/214145973 check if hidden exists in pixel logger zip file
+                tmp_file = [name for name in gl_logs if 'tmp' in name]
+                if tmp_file:
+                    ad.log.warn(f"Hidden file {tmp_file} exists in pixel logger zip file")
             break
         elif os.path.isdir(zip_path):
             ad.log.info("BRCM logs didn't zip properly. Log path is directory.")
@@ -2107,6 +2111,9 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold, brcm_error_log_allowlist):
     power_save_count = 0
     pglor_list, brcm_error_log = parse_brcm_nmea_log(
         ad, "$PGLOR,11,STA", brcm_error_log_allowlist)
+    if not pglor_list:
+        raise signals.TestFailure("Fail to get DPO logs from pixel logger")
+
     for pglor in pglor_list:
         power_res = re.compile(r',P,(\w),').search(pglor).group(1)
         if power_res == "D":
