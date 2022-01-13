@@ -30,7 +30,7 @@ LOCAL_FRAMEWORK_DIR = '../acts/framework'
 
 acts_tests_dir = os.path.abspath(os.path.dirname(__file__))
 
-install_requires = []
+install_requires = ['soundfile']
 
 
 

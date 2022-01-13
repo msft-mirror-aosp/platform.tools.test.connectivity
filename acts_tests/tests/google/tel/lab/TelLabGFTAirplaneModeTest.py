@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - The Android Open Source Project
+#   Copyright 2022 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -35,11 +35,11 @@ from acts_contrib.test_utils.tel.tel_defines import GEN_3G
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
+from acts_contrib.test_utils.tel.tel_data_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_default_state
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 

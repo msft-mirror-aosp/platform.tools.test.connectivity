@@ -57,6 +57,7 @@ class TelLiveStressFdrTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
 
+        self.user_params["telephony_auto_rerun"] = 0
         self.stress_test_number = int(
             self.user_params.get("stress_test_number", 100))
         self.skip_reset_between_cases = False
