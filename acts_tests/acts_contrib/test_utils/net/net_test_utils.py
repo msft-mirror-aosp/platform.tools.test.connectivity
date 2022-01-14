@@ -16,7 +16,6 @@
 import logging
 import os
 import re
-import subprocess
 import time
 import urllib.request
 
@@ -33,6 +32,7 @@ from acts_contrib.test_utils.tel import tel_defines
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
+
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from scapy.config import conf
 from scapy.compat import plain_str
@@ -43,7 +43,6 @@ VPN_PARAMS = cconst.VpnReqParams
 TCPDUMP_PATH = "/data/local/tmp/"
 USB_CHARGE_MODE = "svc usb setFunctions"
 USB_TETHERING_MODE = "svc usb setFunctions rndis"
-USB_TETHERING_MODE_NCM = "svc usb setFunctions ncm"
 DEVICE_IP_ADDRESS = "ip address"
 LOCALHOST = "192.168.1.1"
 
@@ -510,59 +509,15 @@ def supports_ipv6_tethering(self, dut):
 
 
 def start_usb_tethering(ad):
-    """Start USB tethering.
+    """Start USB tethering using #startTethering API.
 
-    Note: Start USB tethering with svc command will skip the entitlement check
-    flow, which is supported by carrier ATT, VZW, and SoftBank, and lead tests
-    to failed.
-    Since we're still using svc command to enable the USB tethering, make sure
-    your carrier doesn't support the entitlement.
+    Enable USB tethering by #startTethering API will break the RPC session,
+    Make sure you call #ad.recreate_services after call this API - b/149116235
 
     Args:
-        ad: android device object
+        ad: AndroidDevice object
     """
-    # TODO: test USB tethering by #startTethering API - b/149116235
-    if is_carrier_supports_entitlement(ad):
-        raise signals.TestFailure(
-            "Carrier supports entitlement, fail to enable the USB tethering.")
-    if not start_usb_tethering_rndis(ad) and not start_usb_tethering_ncm(ad):
-        raise signals.TestFailure("Unable to enable USB tethering.")
-
-
-def start_usb_tethering_rndis(ad):
-    """Start USB tethering using RNDIS.
-
-    Args:
-        ad: Android device object
-    Return:
-        true if USB tethering enabled
-    """
-    ad.log.info("Starting USB Tethering RNDIS")
-    ad.stop_services()
-    ad.adb.shell(USB_TETHERING_MODE, ignore_status=True)
-    ad.adb.wait_for_device()
-    ad.start_services()
-    if "rndis" not in ad.adb.shell(DEVICE_IP_ADDRESS):
-        return False
-    return True
-
-
-def start_usb_tethering_ncm(ad):
-    """Start USB tethering using NCM.
-
-    Args:
-        ad: Android device object
-    Return:
-        true if USB tethering enabled.
-    """
-    ad.log.info("Starting USB Tethering NCM")
-    ad.stop_services()
-    ad.adb.shell(USB_TETHERING_MODE_NCM, ignore_status=True)
-    ad.adb.wait_for_device()
-    ad.start_services()
-    if "ncm" not in ad.adb.shell(DEVICE_IP_ADDRESS):
-        return False
-    return True
+    ad.droid.connectivityStartTethering(tel_defines.TETHERING_USB, False)
 
 
 def stop_usb_tethering(ad):
