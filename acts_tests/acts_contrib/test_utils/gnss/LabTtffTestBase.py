@@ -220,6 +220,11 @@ class LabTtffTestBase(BaseTestClass):
                                          iteration=self.ttff_iteration,
                                          raninterval=True,
                                          hot_warm_sleep=wait_time)
+        # Since Wear takes little longer to update the TTFF info.
+        # Workround to solve the wearable timing issue
+        if gutils.is_device_wearable(self.dut):
+            time.sleep(20)
+
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.dut, begin_time,
                                                        self.simulator_location)
 
