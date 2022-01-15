@@ -17,9 +17,12 @@
 Python module for General abstract GNSS Simulator.
 @author: Clay Liao (jianhsiungliao@)
 """
+from time import sleep
 from acts.controllers.spectracom_lib import gsg6
 from acts.controllers.spirent_lib import gss7000
 from acts import logger
+from acts.utils import ping
+from acts.libs.proc import job
 
 
 class AbstractGnssSimulator:
@@ -174,3 +177,24 @@ class AbstractGnssSimulator:
         else:
             raise RuntimeError('{} does not support this function'.format(
                 self.simulator_name))
+
+    def ping_inst(self, retry=3, wait=1):
+        """Ping IP of instrument to check if the connection is stable.
+        Args:
+            retry: Retry times.
+                Type, int.
+                Default, 3.
+            wait: Wait time between each ping command when ping fail is met.
+                Type, int.
+                Default, 1.
+        Return:
+            True/False of ping result.
+        """
+        for i in range(retry):
+            ret = ping(job, self.ip_addr)
+            self._logger.debug(f'Ping return results: {ret}')
+            if ret.get('packet_loss') == '0':
+                return True
+            self._logger.warning(f'Fail to ping GNSS Simulator: {i+1}')
+            sleep(wait)
+        return False
