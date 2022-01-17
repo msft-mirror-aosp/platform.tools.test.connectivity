@@ -126,7 +126,7 @@ class GFTInOutBaseTest(TelephonyBaseTest):
                 adjust_gradually = self.user_params.get('adjust_gradually')
             if adjust_gradually:
                 self.log.info("adjust wifi signal set mini-circuits to %s" %(power))
-                self.adjust_atten_slowly(10, NO_SERVICE_AREA)
+                self.adjust_atten_slowly(10, NO_WIFI_AREA)
             else:
                 self.log.info("adjust wifi signal and set mini-circuits to %s" %(power))
                 self.attenuators[WIFI_PORT].set_atten(power)
@@ -175,7 +175,7 @@ class GFTInOutBaseTest(TelephonyBaseTest):
         """adjust attenuator slowly
         Args:
             adjust_level: adjust power level for each cycle
-            move_to: no service area, in service area, wifi area
+            move_to: NO_SERVICE_AREA, IN_SERVICE_AREA , WIFI_AREA, NO_WIFI_AREA
             step: adjust attenuator how many time
             step_time: wait for how many sec for each loop
         Returns:
@@ -225,7 +225,7 @@ class GFTInOutBaseTest(TelephonyBaseTest):
         return True
 
     def verify_device_status(self, ad, call_type=None, end_call=True,
-        talk_time=30, verify_data=True, verify_voice=True, retry=True, data_retries=2):
+        talk_time=30, verify_data=True, verify_voice=True, data_retries=2, voice_retries=2):
         """verfiy device status includes network service, data connection and voice call
         Args:
             ad: android device
@@ -234,37 +234,39 @@ class GFTInOutBaseTest(TelephonyBaseTest):
             talk_time: in call duration in sec
             verify_data: flag to check data connection
             verify_voice: flag to check voice
+            data_retries: retry times for data verification
+            voice_retris:retry times for voice call
         Returns:
             return True if pass
         """
-        test_result = True
         tasks = [(check_network_service, (ad, )) for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             log_screen_shot(ad, "check_network_service_fail")
-            ad.log.info("check_network_service_fail")
-            test_result = False
-        if retry:
-            if call_type:
-                tasks = [(mo_voice_call, (self.log, ad, call_type, end_call, talk_time, 3))
-                    for ad in self.android_devices]
-                test_result = multithread_func(self.log, tasks)
-        elif verify_data and test_result:
+            ad.log.info("check_network_service fail")
+            return False
+        else:
+            self.log.info("check_network_service pass")
+        if verify_data:
             tasks = [(verify_data_connection, (ad, data_retries ))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 log_screen_shot(ad, "verify_data_connection_fail")
                 ad.log.info("verify_data_connection_fail")
-                test_result = False
-        elif verify_voice and test_result:
+                return False
+            else:
+                self.log.info("verify_data_connection pass")
+        if verify_voice:
             if call_type:
-                tasks = [(mo_voice_call, (self.log, ad, call_type, end_call, talk_time))
-                    for ad in self.android_devices]
+                tasks = [(mo_voice_call, (self.log, ad, call_type, end_call, talk_time,
+                    voice_retries)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 log_screen_shot(ad, "verify_voice_call_fail")
                 ad.log.info("verify_voice_call_fail")
-                test_result = False
-        return test_result
-
+                return False
+            else:
+                self.log.info("verify_voice_call pass")
+                return True
+        return True
 
     def _on_failure(self, error_msg="", assert_on_fail=True, test_result=False):
         """ operation on fail
@@ -279,3 +281,4 @@ class GFTInOutBaseTest(TelephonyBaseTest):
         for ad in self.android_devices:
             log_screen_shot(ad, error_msg)
         self.log.info(error_msg)
+

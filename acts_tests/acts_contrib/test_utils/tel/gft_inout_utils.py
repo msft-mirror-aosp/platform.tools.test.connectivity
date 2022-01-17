@@ -45,6 +45,7 @@ def check_no_service_time(ad, timeout=120):
         Returns:
             True if pass; False if fail.
     """
+
     for i in range (timeout):
         service_state = get_service_state_by_adb(ad.log,ad)
         if service_state != SERVICE_STATE_IN_SERVICE:
@@ -302,6 +303,3 @@ def browsing_test_ping_retry(ad):
             return False
     else:
         ad.log.info("Successful to browse websites!")
-
-
-
