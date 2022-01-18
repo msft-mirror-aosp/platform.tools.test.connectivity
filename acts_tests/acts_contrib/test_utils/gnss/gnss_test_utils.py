@@ -2256,6 +2256,7 @@ def compare_watch_phone_location(ad,watch_file, phone_file):
         return False
     else:
         ad.log.info("Watch's locations are using Phone's location.")
+        return True
 
 
 def check_tracking_file(ad):
