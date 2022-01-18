@@ -980,9 +980,11 @@ class NetworkSettings(object):
         return tcpdump_remote_path if pull_dir else None
 
     def clear_tcpdump(self):
-        self.ssh.run("killall tpcdump", ignore_status=True)
-        if self.ssh.run("pgrep tpcdump", ignore_status=True).stdout:
+        self.ssh.run("killall tcpdump", ignore_status=True)
+        if self.ssh.run("pgrep tcpdump", ignore_status=True).stdout:
             raise signals.TestFailure("Failed to clean up tcpdump process.")
+        if self.path_exists(TCPDUMP_DIR):
+            self.ssh.run("rm -f  %s/*" % TCPDUMP_DIR)
 
     def _get_tcpdump_pid(self, tcpdump_file_name):
         """Check tcpdump process on OpenWrt."""
