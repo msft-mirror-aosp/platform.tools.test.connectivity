@@ -48,8 +48,8 @@ class PingStressTest(AbstractDeviceWlanDeviceBaseTest):
 
         self.ssid = rand_ascii_str(10)
         self.dut = create_wlan_device(self.fuchsia_devices[0])
-        self.ap = self.access_points[0]
-        setup_ap(access_point=self.ap,
+        self.access_point = self.access_points[0]
+        setup_ap(access_point=self.access_point,
                  profile_name='whirlwind',
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
                  ssid=self.ssid,
@@ -59,7 +59,8 @@ class PingStressTest(AbstractDeviceWlanDeviceBaseTest):
     def teardown_class(self):
         self.dut.disconnect()
         self.dut.reset_wifi()
-        self.ap.stop_all_aps()
+        self.download_ap_logs()
+        self.access_point.stop_all_aps()
 
     def send_ping(self,
                   dest_ip,
@@ -97,7 +98,7 @@ class PingStressTest(AbstractDeviceWlanDeviceBaseTest):
         return self.send_ping('127.0.0.1')
 
     def test_ping_AP(self):
-        return self.send_ping(self.ap.ssh_settings.hostname)
+        return self.send_ping(self.access_point.ssh_settings.hostname)
 
     def test_ping_with_params(self):
         return self.send_ping(self.google_dns_1,

@@ -190,6 +190,7 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
                 tc.wlan_device.disconnect()
                 tc.wlan_device.reset_wifi()
             if tc.access_point:
+                self.download_ap_logs()
                 tc.access_point.stop_all_aps()
 
     def teardown_class(self):
