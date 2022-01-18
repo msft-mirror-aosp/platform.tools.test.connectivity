@@ -56,12 +56,12 @@ class DownloadStressTest(AbstractDeviceWlanDeviceBaseTest):
         super().setup_class()
         self.ssid = rand_ascii_str(10)
         self.dut = create_wlan_device(self.fuchsia_devices[0])
-        self.ap = self.access_points[0]
+        self.access_point = self.access_points[0]
         self.num_of_iterations = int(
             self.user_params.get("download_stress_test_iterations",
                                  self.num_of_iterations))
 
-        setup_ap(access_point=self.ap,
+        setup_ap(access_point=self.access_point,
                  profile_name='whirlwind',
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
                  ssid=self.ssid)
@@ -71,7 +71,8 @@ class DownloadStressTest(AbstractDeviceWlanDeviceBaseTest):
         self.download_threads_result.clear()
         self.dut.disconnect()
         self.dut.reset_wifi()
-        self.ap.stop_all_aps()
+        self.download_ap_logs()
+        self.access_point.stop_all_aps()
 
     def test_download_small(self):
         self.log.info("Downloading small file")
