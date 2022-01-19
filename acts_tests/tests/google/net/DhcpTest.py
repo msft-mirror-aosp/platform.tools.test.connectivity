@@ -50,11 +50,12 @@ class DhcpTest(WifiBaseTest):
                             "OpenWrt Wifi interface is not ready.")
 
     def teardown_class(self):
-        """Reset wifi to make sure VPN tears down cleanly."""
+        """Reset wifi and stop tcpdump cleanly."""
         wutils.reset_wifi(self.dut)
+        self.openwrt.network_setting.clear_tcpdump()
 
     def teardown_test(self):
-        """Reset wifi to make sure VPN tears down cleanly."""
+        """Reset wifi to make sure DUT tears down cleanly."""
         wutils.reset_wifi(self.dut)
 
     def _verify_ping(self, option="", dest=PING_ADDR):
