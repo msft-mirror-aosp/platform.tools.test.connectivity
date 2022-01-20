@@ -13,6 +13,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import os
+
+from acts import context
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 from mobly import utils
@@ -54,3 +57,24 @@ class AbstractDeviceWlanDeviceBaseTest(WifiBaseTest):
 
         if device.hard_reboot_on_fail:
             device.reboot(reboot_type='hard', testbed_pdus=self.pdu_devices)
+
+    def download_ap_logs(self):
+        """Downloads the DHCP and hostapad logs from the access_point.
+
+        Using the current TestClassContext and TestCaseContext this method pulls
+        the DHCP and hostapd logs and outputs them to the correct path.
+        """
+        current_path = context.get_current_context().get_full_output_path()
+        dhcp_full_out_path = os.path.join(current_path, "dhcp_log.txt")
+
+        dhcp_log_file = open(dhcp_full_out_path, 'w')
+        dhcp_log_file.write(self.access_point.get_dhcp_logs())
+        dhcp_log_file.close()
+
+        hostapd_logs = self.access_point.get_hostapd_logs()
+        for interface in hostapd_logs:
+            out_name = interface + "_hostapd_log.txt"
+            hostapd_full_out_path = os.path.join(current_path, out_name)
+            hostapd_log_file = open(hostapd_full_out_path, 'w')
+            hostapd_log_file.write(hostapd_logs[interface])
+            hostapd_log_file.close()

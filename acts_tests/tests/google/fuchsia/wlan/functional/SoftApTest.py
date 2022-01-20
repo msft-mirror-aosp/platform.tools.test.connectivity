@@ -208,6 +208,7 @@ class SoftApTest(AbstractDeviceWlanDeviceBaseTest):
             ad.droid.goToSleepNow()
         self.stop_all_soft_aps()
         if self.access_point:
+            self.download_ap_logs()
             self.access_point.stop_all_aps()
         self.dut.disconnect()
 
