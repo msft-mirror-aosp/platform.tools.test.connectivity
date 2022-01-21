@@ -25,7 +25,7 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_test_utils import install_message_apk
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
