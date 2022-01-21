@@ -72,74 +72,68 @@ lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
 FUCHSIA_INTERFACES = {
     'id':
     '1',
-    'result': [{
-        'features':
-        4,
-        'filepath':
-        '[none]',
-        'id':
-        1,
-        'ipv4_addresses': [[127, 0, 0, 1]],
-        'ipv6_addresses': [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]],
-        'is_administrative_status_enabled':
-        True,
-        'is_physical_status_up':
-        True,
-        'mac': [0, 0, 0, 0, 0, 0],
-        'mtu':
-        65536,
-        'name':
-        'lo',
-        'topopath':
-        'loopback'
-    }, {
-        'features':
-        0,
-        'filepath':
-        '/dev/class/ethernet/000',
-        'id':
-        2,
-        'ipv4_addresses': [[100, 127, 110, 79]],
-        'ipv6_addresses':
-        [[254, 128, 0, 0, 0, 0, 0, 0, 198, 109, 60, 117, 44, 236, 29, 114],
-         [36, 1, 250, 0, 4, 128, 122, 0, 141, 79, 133, 255, 204, 92, 120, 126],
-         [36, 1, 250, 0, 4, 128, 122, 0, 4, 89, 185, 147, 252, 191, 20, 25]],
-        'is_administrative_status_enabled':
-        True,
-        'is_physical_status_up':
-        True,
-        'mac': [0, 224, 76, 5, 76, 229],
-        'mtu':
-        1514,
-        'name':
-        'eno1',
-        'topopath':
-        '@/dev/xhci/xhci/usb-bus/001/001/ifc-000/usb-cdc-ecm/ethernet'
-    }, {
-        'features':
-        1,
-        'filepath':
-        '/dev/class/ethernet/001',
-        'id':
-        3,
-        'ipv4_addresses': [],
-        'ipv6_addresses':
-        [[254, 128, 0, 0, 0, 0, 0, 0, 96, 255, 93, 96, 52, 253, 253, 243],
-         [254, 128, 0, 0, 0, 0, 0, 0, 70, 7, 11, 255, 254, 118, 126, 192]],
-        'is_administrative_status_enabled':
-        False,
-        'is_physical_status_up':
-        False,
-        'mac': [68, 7, 11, 118, 126, 192],
-        'mtu':
-        1500,
-        'name':
-        'wlanxc0',
-        'topopath':
-        '@/dev/wifi/wlanphy/wlanif-client/wlan-ethernet/ethernet'
-    }],
+    'result': [
+        {
+            'id': 1,
+            'name': 'lo',
+            'ipv4_addresses': [
+                [127, 0, 0, 1],
+            ],
+            'ipv6_addresses': [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            ],
+            'online': True,
+            'mac': [0, 0, 0, 0, 0, 0],
+        },
+        {
+            'id':
+            2,
+            'name':
+            'eno1',
+            'ipv4_addresses': [
+                [100, 127, 110, 79],
+            ],
+            'ipv6_addresses': [
+                [
+                    254, 128, 0, 0, 0, 0, 0, 0, 198, 109, 60, 117, 44, 236, 29,
+                    114
+                ],
+                [
+                    36, 1, 250, 0, 4, 128, 122, 0, 141, 79, 133, 255, 204, 92,
+                    120, 126
+                ],
+                [
+                    36, 1, 250, 0, 4, 128, 122, 0, 4, 89, 185, 147, 252, 191,
+                    20, 25
+                ],
+            ],
+            'online':
+            True,
+            'mac': [0, 224, 76, 5, 76, 229],
+        },
+        {
+            'id':
+            3,
+            'name':
+            'wlanxc0',
+            'ipv4_addresses': [],
+            'ipv6_addresses': [
+                [
+                    254, 128, 0, 0, 0, 0, 0, 0, 96, 255, 93, 96, 52, 253, 253,
+                    243
+                ],
+                [
+                    254, 128, 0, 0, 0, 0, 0, 0, 70, 7, 11, 255, 254, 118, 126,
+                    192
+                ],
+            ],
+            'online':
+            False,
+            'mac': [68, 7, 11, 118, 126, 192],
+        },
+    ],
     'error':
-    None
+    None,
 }
 
 CORRECT_FULL_IP_LIST = {
