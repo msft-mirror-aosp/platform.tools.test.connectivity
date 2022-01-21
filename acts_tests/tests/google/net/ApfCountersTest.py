@@ -51,6 +51,7 @@ class ApfCountersTest(WifiBaseTest):
                       "test_IPv6_RA_with_RTT", )
 
     def setup_class(self):
+        super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = []
