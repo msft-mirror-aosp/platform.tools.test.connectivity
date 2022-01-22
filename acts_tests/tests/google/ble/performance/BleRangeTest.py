@@ -181,7 +181,7 @@ class BleRangeTest(BluetoothBaseTest):
                 ble_rssi.append(rssi_primary)
                 dut_pwlv.append(pwlv_primary)
                 throughput.append(datarate)
-                path_loss.append(atten + self.system_path_loss['pathloss'])
+                path_loss.append(atten + self.system_path_loss)
                 df = pd.DataFrame({
                     'Attenuation': attenuation,
                     'BLE_RSSI': ble_rssi,

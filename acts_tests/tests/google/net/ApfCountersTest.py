@@ -56,7 +56,7 @@ class ApfCountersTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = []
-        opt_param = ["reference_networks", ]
+        opt_param = ["reference_networks", "scapy"]
 
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -75,7 +75,7 @@ class ApfCountersTest(WifiBaseTest):
         # install scapy
         current_dir = os.path.dirname(os.path.realpath(__file__))
         send_ra = os.path.join(current_dir, RA_SCRIPT)
-        send_scapy = os.path.join(current_dir, SCAPY)
+        send_scapy = getattr(self, "scapy", os.path.join(current_dir, SCAPY))
         self.access_points[0].install_scapy(send_scapy, send_ra)
         self.tcpdump_pid = None
 
