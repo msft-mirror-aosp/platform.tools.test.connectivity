@@ -185,15 +185,14 @@ class AccessPoint(object):
         ssh_settings: The ssh settings being used by the ssh connection.
         dhcp_settings: The dhcp server settings being used.
     """
-
     def __init__(self, configs):
         """
         Args:
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
-        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
-            self.ssh_settings.hostname, msg))
+        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
+                                        (self.ssh_settings.hostname, msg))
         self.device_pdu_config = configs.get('PduDevice', None)
         self.identifier = self.ssh_settings.hostname
 
@@ -429,10 +428,24 @@ class AccessPoint(object):
     def get_dhcp_logs(self):
         """Get DHCP logs for this AP object.
 
-        This allows consumers of the access point objects validate DHCP
+        This allows consumers of the access point objects to validate DHCP
         behavior.
         """
         return self._dhcp.get_logs()
+
+    def get_hostapd_logs(self):
+        """Get hostapd logs for all interfaces on AP object.
+
+        This allows consumers of the access point objects to validate hostapd
+        behavior.
+
+        Returns: A dict with {interface: log} from hostapd instances.
+        """
+        hostapd_logs = dict()
+        for identifier in self._aps:
+            hostapd_logs[identifier] = self._aps.get(
+                identifier).hostapd.pull_logs()
+        return hostapd_logs
 
     def start_nat(self):
         """Start NAT on the AP.

@@ -168,8 +168,14 @@ class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
         self.ssid = utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G)
 
     def teardown_test(self):
+        self.download_ap_logs()
         self.access_point.stop_all_aps()
         if self.router_adv_daemon:
+            output_path = context.get_current_context().get_base_output_path()
+            full_output_path = os.path.join(output_path, "radvd_log.txt")
+            radvd_log_file = open(full_output_path, 'w')
+            radvd_log_file.write(self.router_adv_daemon.pull_logs())
+            radvd_log_file.close()
             self.router_adv_daemon.stop()
             self.router_adv_daemon = None
         self.dut.disconnect()

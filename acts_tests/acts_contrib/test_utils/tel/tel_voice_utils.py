@@ -64,7 +64,6 @@ from acts_contrib.test_utils.tel.tel_defines import EventCallStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventMessageWaitingIndicatorChanged
 from acts_contrib.test_utils.tel.tel_defines import CallStateContainer
 from acts_contrib.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_ims_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
@@ -351,15 +350,8 @@ def initiate_call(log,
                   ad,
                   callee_number,
                   emergency=False,
-                  timeout=MAX_WAIT_TIME_CALL_INITIATION,
-                  checking_interval=5,
                   incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-                  video=False,
-                  voice_type_init=None,
-                  call_stats_check=False,
-                  result_info=result_dict,
-                  nw_gen_5g=False,
-                  nr_type= None):
+                  video=False):
     """Make phone call from caller to callee.
 
     Args:
@@ -399,10 +391,6 @@ def initiate_call(log,
             ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
             ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
-
-        if nw_gen_5g:
-            if not is_current_network_5g(ad, nr_type= nr_type):
-                ad.log.error("Phone is not attached on 5G")
 
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
             ad.droid.telecomShowInCallScreen()
@@ -738,9 +726,7 @@ def call_setup_teardown(log,
                         slot_id_callee=None,
                         voice_type_init=None,
                         call_stats_check=False,
-                        result_info=result_dict,
-                        nsa_5g_for_stress=False,
-                        nr_type= None):
+                        result_info=result_dict):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -779,8 +765,7 @@ def call_setup_teardown(log,
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state,
-        voice_type_init, call_stats_check, result_info, nsa_5g_for_stress,
-        nr_type)
+        voice_type_init, call_stats_check, result_info)
 
 
 def call_setup_teardown_for_subscription(
@@ -798,9 +783,7 @@ def call_setup_teardown_for_subscription(
         video_state=None,
         voice_type_init=None,
         call_stats_check=False,
-        result_info=result_dict,
-        nsa_5g_for_stress=False,
-        nr_type= None):
+        result_info=result_dict):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -991,11 +974,6 @@ def call_setup_teardown_for_subscription(
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
-
-        if nsa_5g_for_stress:
-            for ad in (ad_caller, ad_callee):
-                if not is_current_network_5g(ad, nr_type):
-                    ad.log.error("Phone not attached on 5G")
 
         if ad_hangup or not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):

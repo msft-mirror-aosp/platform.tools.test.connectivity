@@ -118,6 +118,7 @@ def start_sdm_logger(ad):
 
 def stop_sdm_logger(ad):
     """Stop SDM logger."""
+    ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
     cycle = 1
 
     ad.log.debug("stop sdm logging")

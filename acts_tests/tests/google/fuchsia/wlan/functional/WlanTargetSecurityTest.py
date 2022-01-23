@@ -49,8 +49,9 @@ class WlanTargetSecurityTest(AbstractDeviceWlanDeviceBaseTest):
         self.dut.disconnect()
         self.access_point.stop_all_aps()
 
-    def setup_test(self):
+    def teardown_test(self):
         self.dut.disconnect()
+        self.download_ap_logs()
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
