@@ -33,7 +33,7 @@ class FuchsiaSessionManagerLib():
         """
         try:
             self.device.ffx_command(
-                "component bind /core/session-manager/session:session")
+                "component start /core/session-manager/session:session")
             return {'error': None, 'result': 'Success'}
         except Exception as e:
             return {'error': e, 'result': None}
