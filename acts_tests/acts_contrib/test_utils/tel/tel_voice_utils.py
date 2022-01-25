@@ -857,131 +857,91 @@ def call_setup_teardown_for_subscription(
         setattr(ad, "call_ids", call_ids)
         if call_ids:
             ad.log.info("Pre-exist CallId %s before making call", call_ids)
-    try:
-        if not initiate_call(
-                log,
-                ad_caller,
-                callee_number,
-                incall_ui_display=incall_ui_display,
-                video=video):
-            ad_caller.log.error("Initiate call failed.")
-            tel_result_wrapper.result_value = CallResult('INITIATE_FAILED')
-            return tel_result_wrapper
-        else:
-            ad_caller.log.info("Caller initate call successfully")
-        if not wait_and_answer_call_for_subscription(
-                log,
-                ad_callee,
-                subid_callee,
-                incoming_number=caller_number,
-                caller=ad_caller,
-                incall_ui_display=incall_ui_display,
-                video_state=video_state):
-            ad_callee.log.error("Answer call fail.")
-            tel_result_wrapper.result_value = CallResult(
-                'NO_RING_EVENT_OR_ANSWER_FAILED')
-            return tel_result_wrapper
-        else:
-            ad_callee.log.info("Callee answered the call successfully")
 
-        for ad, call_func in zip([ad_caller, ad_callee],
-                                 [verify_caller_func, verify_callee_func]):
-            call_ids = ad.droid.telecomCallGetCallIds()
-            new_call_ids = set(call_ids) - set(ad.call_ids)
-            if not new_call_ids:
-                ad.log.error(
-                    "No new call ids are found after call establishment")
-                ad.log.error("telecomCallGetCallIds returns %s",
-                             ad.droid.telecomCallGetCallIds())
-                tel_result_wrapper.result_value = CallResult('NO_CALL_ID_FOUND')
-            for new_call_id in new_call_ids:
-                if not wait_for_in_call_active(ad, call_id=new_call_id):
-                    tel_result_wrapper.result_value = CallResult(
-                        'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
-                else:
-                    ad.log.info("callProperties = %s",
-                                ad.droid.telecomCallGetProperties(new_call_id))
+    if not initiate_call(
+            log,
+            ad_caller,
+            callee_number,
+            incall_ui_display=incall_ui_display,
+            video=video):
+        ad_caller.log.error("Initiate call failed.")
+        tel_result_wrapper.result_value = CallResult('INITIATE_FAILED')
+        return tel_result_wrapper
+    else:
+        ad_caller.log.info("Caller initate call successfully")
+    if not wait_and_answer_call_for_subscription(
+            log,
+            ad_callee,
+            subid_callee,
+            incoming_number=caller_number,
+            caller=ad_caller,
+            incall_ui_display=incall_ui_display,
+            video_state=video_state):
+        ad_callee.log.error("Answer call fail.")
+        tel_result_wrapper.result_value = CallResult(
+            'NO_RING_EVENT_OR_ANSWER_FAILED')
+        return tel_result_wrapper
+    else:
+        ad_callee.log.info("Callee answered the call successfully")
 
-            if not ad.droid.telecomCallGetAudioState():
-                ad.log.error("Audio is not in call state")
+    for ad, call_func in zip([ad_caller, ad_callee],
+                                [verify_caller_func, verify_callee_func]):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        new_call_ids = set(call_ids) - set(ad.call_ids)
+        if not new_call_ids:
+            ad.log.error(
+                "No new call ids are found after call establishment")
+            ad.log.error("telecomCallGetCallIds returns %s",
+                            ad.droid.telecomCallGetCallIds())
+            tel_result_wrapper.result_value = CallResult('NO_CALL_ID_FOUND')
+        for new_call_id in new_call_ids:
+            if not wait_for_in_call_active(ad, call_id=new_call_id):
                 tel_result_wrapper.result_value = CallResult(
-                    'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
-
-            if call_func(log, ad):
-                ad.log.info("Call is in %s state", call_func.__name__)
+                    'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
             else:
-                ad.log.error("Call is not in %s state, voice in RAT %s",
-                             call_func.__name__,
-                             ad.droid.telephonyGetCurrentVoiceNetworkType())
-                tel_result_wrapper.result_value = CallResult(
-                    'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
-        if not tel_result_wrapper:
-            return tel_result_wrapper
+                ad.log.info("callProperties = %s",
+                            ad.droid.telecomCallGetProperties(new_call_id))
 
-        if call_stats_check:
-            voice_type_in_call = check_voice_network_type([ad_caller, ad_callee], voice_init=False)
-            phone_a_call_type = check_call_status(ad_caller,
-                                                  voice_type_init[0],
-                                                  voice_type_in_call[0])
-            result_info["Call Stats"] = phone_a_call_type
-            ad_caller.log.debug("Voice Call Type: %s", phone_a_call_type)
-            phone_b_call_type = check_call_status(ad_callee,
-                                                  voice_type_init[1],
-                                                  voice_type_in_call[1])
-            result_info["Call Stats"] = phone_b_call_type
-            ad_callee.log.debug("Voice Call Type: %s", phone_b_call_type)
+        if not ad.droid.telecomCallGetAudioState():
+            ad.log.error("Audio is not in call state")
+            tel_result_wrapper.result_value = CallResult(
+                'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
 
-        elapsed_time = 0
-        while (elapsed_time < wait_time_in_call):
-            CHECK_INTERVAL = min(CHECK_INTERVAL,
-                                 wait_time_in_call - elapsed_time)
-            time.sleep(CHECK_INTERVAL)
-            elapsed_time += CHECK_INTERVAL
-            time_message = "at <%s>/<%s> second." % (elapsed_time,
-                                                     wait_time_in_call)
-            for ad, call_func in [(ad_caller, verify_caller_func),
-                                  (ad_callee, verify_callee_func)]:
-                if not call_func(log, ad):
-                    ad.log.error(
-                        "NOT in correct %s state at %s, voice in RAT %s",
-                        call_func.__name__, time_message,
-                        ad.droid.telephonyGetCurrentVoiceNetworkType())
-                    tel_result_wrapper.result_value = CallResult(
-                        'CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED')
-                else:
-                    ad.log.info("In correct %s state at %s",
-                                call_func.__name__, time_message)
-                if not ad.droid.telecomCallGetAudioState():
-                    ad.log.error("Audio is not in call state at %s",
-                                 time_message)
-                    tel_result_wrapper.result_value = CallResult(
-                        'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
-            if not tel_result_wrapper:
-                return tel_result_wrapper
+        if call_func(log, ad):
+            ad.log.info("Call is in %s state", call_func.__name__)
+        else:
+            ad.log.error("Call is not in %s state, voice in RAT %s",
+                            call_func.__name__,
+                            ad.droid.telephonyGetCurrentVoiceNetworkType())
+            tel_result_wrapper.result_value = CallResult(
+                'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
+    if not tel_result_wrapper:
+        return tel_result_wrapper
 
-        if ad_hangup:
-            if not hangup_call(log, ad_hangup):
-                ad_hangup.log.info("Failed to hang up the call")
-                tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
-                return tel_result_wrapper
-    finally:
-        if not tel_result_wrapper:
-            for ad in (ad_caller, ad_callee):
-                last_call_drop_reason(ad, begin_time)
-                try:
-                    if ad.droid.telecomIsInCall():
-                        ad.log.info("In call. End now.")
-                        ad.droid.telecomEndCall()
-                except Exception as e:
-                    log.error(str(e))
+    if call_stats_check:
+        voice_type_in_call = check_voice_network_type([ad_caller, ad_callee], voice_init=False)
+        phone_a_call_type = check_call_status(ad_caller,
+                                                voice_type_init[0],
+                                                voice_type_in_call[0])
+        result_info["Call Stats"] = phone_a_call_type
+        ad_caller.log.debug("Voice Call Type: %s", phone_a_call_type)
+        phone_b_call_type = check_call_status(ad_callee,
+                                                voice_type_init[1],
+                                                voice_type_in_call[1])
+        result_info["Call Stats"] = phone_b_call_type
+        ad_callee.log.debug("Voice Call Type: %s", phone_b_call_type)
 
-        if ad_hangup or not tel_result_wrapper:
-            for ad in (ad_caller, ad_callee):
-                if not wait_for_call_id_clearing(
-                        ad, getattr(ad, "caller_ids", [])):
-                    tel_result_wrapper.result_value = CallResult(
-                        'CALL_ID_CLEANUP_FAIL')
-    return tel_result_wrapper
+    return wait_for_call_end(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_hangup,
+        verify_caller_func,
+        verify_callee_func,
+        begin_time,
+        check_interval=CHECK_INTERVAL,
+        tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
+        wait_time_in_call=WAIT_TIME_IN_CALL)
 
 
 def two_phone_call_leave_voice_mail(
@@ -2439,13 +2399,9 @@ def wait_for_call_end(
                 ad.log.error("Audio is not in call state at %s", time_message)
                 tel_result_wrapper.result_value = CallResult(
                         'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
-        if not tel_result_wrapper:
-            return tel_result_wrapper
 
-    if ad_hangup:
-        if not hangup_call(log, ad_hangup):
-            ad_hangup.log.info("Failed to hang up the call")
-            tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+        if not tel_result_wrapper:
+            break
 
     if not tel_result_wrapper:
         for ad in (ad_caller, ad_callee):
@@ -2456,6 +2412,12 @@ def wait_for_call_end(
                     ad.droid.telecomEndCall()
             except Exception as e:
                 log.error(str(e))
+    else:
+        if ad_hangup:
+            if not hangup_call(log, ad_hangup):
+                ad_hangup.log.info("Failed to hang up the call")
+                tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+
     if ad_hangup or not tel_result_wrapper:
         for ad in (ad_caller, ad_callee):
             if not wait_for_call_id_clearing(ad, getattr(ad, "caller_ids", [])):
