@@ -50,7 +50,7 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_for_subscription
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
@@ -753,8 +753,7 @@ def phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G,
         nr_type: NR network type e.g. NSA, SA, MMWAVE
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id,
-                                            nr_type=nr_type):
+        if not is_current_network_5g(ad, sub_id=sub_id, nr_type=nr_type):
             ad.log.error("Not in 5G coverage.")
             return False
     else:
@@ -839,7 +838,7 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id, nw_gen=GEN_4G, nr_type=Non
         nw_gen: GEN_4G or GEN_5G
     """
     if nw_gen == GEN_5G:
-        if not is_current_network_5g_for_subscription(ad, sub_id=sub_id, nr_type=nr_type):
+        if not is_current_network_5g(ad, sub_id=sub_id, nr_type=nr_type):
             ad.log.error("Not in 5G coverage.")
             return False
     else:
@@ -1406,8 +1405,7 @@ def ensure_network_generation_for_subscription(
         return True
 
     if (generation == GEN_5G) or (generation == RAT_5G):
-        if is_current_network_5g_for_subscription(ad, sub_id=sub_id,
-                                        nr_type=nr_type):
+        if is_current_network_5g(ad, sub_id=sub_id, nr_type=nr_type):
             ad.log.info("Current network type is 5G.")
             return True
         else:
@@ -1532,7 +1530,7 @@ def wait_for_network_generation_for_subscription(
         nr_type=None):
 
     if generation == GEN_5G:
-        if is_current_network_5g_for_subscription(ad, sub_id=sub_id, nr_type=nr_type):
+        if is_current_network_5g(ad, sub_id=sub_id, nr_type=nr_type):
             ad.log.info("Current network type is 5G.")
             return True
         else:
