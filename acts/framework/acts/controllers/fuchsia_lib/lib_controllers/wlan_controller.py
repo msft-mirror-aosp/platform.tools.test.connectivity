@@ -111,7 +111,12 @@ class WlanController:
         net_ifaces = self.device.netstack_controller.list_interfaces()
         wlan_ifaces_by_role = {'client': {}, 'ap': {}}
         for iface in net_ifaces:
-            iface_mac = utils.mac_address_list_to_str(iface['mac'])
+            try:
+                # Some interfaces might not have a MAC
+                iface_mac = utils.mac_address_list_to_str(iface['mac'])
+            except Exception as e:
+                self.log.debug(f'Error {e} getting MAC for iface {iface}')
+                continue
             if iface_mac in wlan_ifaces_by_mac:
                 wlan_ifaces_by_mac[iface_mac]['netstack_id'] = iface['id']
 
