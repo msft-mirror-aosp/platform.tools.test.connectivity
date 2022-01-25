@@ -90,8 +90,8 @@ class WifiPasspointTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         passpoint_configs = self.dut.droid.getPasspointConfigs()
-        for config in passpoint_configs:
-            wutils.delete_passpoint(self.dut, config)
+        for config in range(len(passpoint_configs)):
+            wutils.delete_passpoint(self.dut, passpoint_config[config])
         wutils.reset_wifi(self.dut)
 
 
@@ -142,9 +142,10 @@ class WifiPasspointTest(WifiBaseTest):
         if not len(passpoint_config):
             raise signals.TestFailure("Failed to fetch the list of configured"
                                       "passpoint networks.")
-        if not wutils.delete_passpoint(self.dut, passpoint_config[0]):
-            raise signals.TestFailure("Failed to delete Passpoint configuration"
-                                      " with FQDN = %s" % passpoint_config[0])
+        for i in range(len(passpoint_config)):
+            if not wutils.delete_passpoint(self.dut, passpoint_config[i]):
+                raise signals.TestFailure("Failed to delete Passpoint configuration"
+                                        " with FQDN = %s" % passpoint_config[i])
 
     def ui_automator_boingo(self):
         """Run UI automator for boingo passpoint."""
