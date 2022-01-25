@@ -19,6 +19,7 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_long_call_streaming_test
 from acts_contrib.test_utils.tel.tel_dsds_utils import dsds_voice_call_test
 from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_voice_call_test
 from acts_contrib.test_utils.tel.tel_dsds_utils import enable_slot_after_data_call_test
@@ -2150,3 +2151,707 @@ class Nsa5gDSDSVoiceTest(TelephonyBaseTest):
             wifi_network_pass=self.wifi_network_pass,
             turn_off_wifi_in_the_end=True,
             turn_off_airplane_mode_in_the_end=True)
+
+    @test_tracker_info(uuid="f07a4924-0752-41fd-8e52-e75c3c78c538")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mo_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="cac09fa6-5db1-4523-910a-7fe9918a04ac")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mt_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="a0039ac0-9d3d-4acf-801b-4b0d01971153")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mo_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="9cf03491-df27-4eda-9e3d-7782a44c0674")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mt_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="6c8c7e67-3bec-49b4-8164-963e488df14f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mo_5g_nsa_volte_psim_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="9a2bc9a2-18a2-471f-9b21-fd0aea1b126b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mt_5g_nsa_volte_psim_volte_dds_0(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="c88a0ed6-f8b6-4033-93db-b160c29d4b9e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mo_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="b4aa294d-679d-4a0e-8cc9-9261bfe8b392")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mt_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="2e20f05f-9434-410f-a40a-a01c0303d1a0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mo_5g_nsa_volte_esim_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="3f89b354-0cdc-4522-8a67-76773219e5af")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mt_5g_nsa_volte_esim_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="f18c61c5-3c3b-4645-90eb-e7bdef9b7c74")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mo_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="8324ffe2-1332-47fc-af92-a3ed7be9b629")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mt_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="e6760078-2a5e-4182-8ba1-57788fc607f1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mo_volte_psim_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="c736e4f0-8dbc-480a-8da6-68453cc13d07")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_esim_mt_volte_psim_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="19dc55b5-b989-481d-a980-fcd0ff56abc2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mo_volte_esim_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="494e9c90-6c56-4fa1-9fac-ac8f2b1c0dba")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_psim_mt_volte_esim_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=False)
+
+    @test_tracker_info(uuid="d253553d-7dc9-4e38-8e20-0839326c20aa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mo_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="80a201c5-0bfe-4d7f-b08b-52b7c53b6468")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mt_5g_nsa_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="8938575b-2544-4075-9cf9-3d938ad4d9cb")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mo_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="200c7cce-aba2-40f8-a274-9b05177d00e0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mt_volte_psim_5g_nsa_volte_dds_0(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="26bb9415-44f4-43df-b2e6-abbdfacf33c2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mo_5g_nsa_volte_psim_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="8a8dc1ca-6a85-4dc8-9e34-e17abe61f7b8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mt_5g_nsa_volte_psim_volte_dds_0(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 0)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="903a2813-6b27-4020-aaf2-b5ab8b29fa13")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mo_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="33d8ba2c-fa45-4ec0-aef5-b191b6ddd9a6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mt_5g_nsa_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="6db23c84-13d9-47fa-b8f1-45c56e2d6428")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mo_5g_nsa_volte_esim_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="3a77b38f-c327-4c43-addf-48832bca7148")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mt_5g_nsa_volte_esim_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 5G NSA VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["5g_volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="2898eb67-3dfe-4322-8c69-817e0a95dfda")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mo_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="780e8187-2068-4eca-a9de-e5f2f3491403")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mt_volte_esim_5g_nsa_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 5G NSA VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "5g_volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="9b84bd00-fae3-45c0-9e44-dd57d1719bb9")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mo_volte_psim_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="813c6059-bcef-42d3-b70b-9b0ba67ffc20")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_esim_mt_volte_psim_volte_dds_0(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=1,
+            dds_slot=0,
+            direction="mt",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="970b1d31-195b-4599-80bc-bc46ede43a90")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mo_volte_esim_volte_dds_1(self):
+        """ A MO VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mo",
+            duration=360,
+            streaming=True)
+
+    @test_tracker_info(uuid="62843f60-5d1c-44ed-9936-e10d2691e787")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_long_voice_streaming_psim_mt_volte_esim_volte_dds_1(self):
+        """ A MT VoLTE long call at eSIM during streaming, where
+            - pSIM 4G VoLTE
+            - eSIM 4G VoLTE
+            - DDS at pSIM (slot 1)
+
+            After call end will check the eSIM if is attach to the network
+            with assigned RAT successfully and data works fine.
+        """
+        return dsds_long_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            test_rat=["volte", "volte"],
+            test_slot=0,
+            dds_slot=1,
+            direction="mt",
+            duration=360,
+            streaming=True)
