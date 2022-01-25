@@ -38,29 +38,37 @@ from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 
-def provision_device_for_5g(log, ads, nr_type=None):
+def provision_device_for_5g(log, ads, nr_type = None, sub_id = None,
+                            mmwave = None):
     """Provision Devices for 5G
 
     Args:
         log: Log object.
         ads: android device object(s).
-        nr_type: NR network type
+        nr_type: NR network type.
+        sub_id: The target SIM for querying.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         True: Device(s) are provisioned on 5G
         False: Device(s) are not provisioned on 5G
     """
     if nr_type == 'sa':
-        if not provision_device_for_5g_sa(log, ads):
+        if not provision_device_for_5g_sa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     elif nr_type == 'nsa':
-        if not provision_device_for_5g_nsa(log, ads, nr_type='nsa'):
+        if not provision_device_for_5g_nsa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     elif nr_type == 'mmwave':
-        if not provision_device_for_5g_nsa(log, ads, nr_type='mmwave'):
+        if not provision_device_for_5g_nsa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     else:
-        if not provision_device_for_5g_nsa(log, ads, nr_type='nsa'):
+        if not provision_device_for_5g_nsa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     return True
 
