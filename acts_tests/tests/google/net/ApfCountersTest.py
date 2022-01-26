@@ -75,7 +75,9 @@ class ApfCountersTest(WifiBaseTest):
         # install scapy
         current_dir = os.path.dirname(os.path.realpath(__file__))
         send_ra = os.path.join(current_dir, RA_SCRIPT)
-        send_scapy = getattr(self, "scapy", os.path.join(current_dir, SCAPY))
+        send_scapy = os.path.join(current_dir, SCAPY)
+        if hasattr(self, "scapy"):
+            send_scapy = self.scapy[0]
         self.access_points[0].install_scapy(send_scapy, send_ra)
         self.tcpdump_pid = None
 

@@ -504,6 +504,9 @@ class TelephonyBaseTest(BaseTestClass):
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
+            # open Phone information page
+            ad.adb.shell("am start -n com.android.phone/.settings.RadioInfo")
+            time.sleep(3)
             ad.screenshot(f"{ad.serial}_last_screen")
         self._take_bug_report(test_name, begin_time)
 
