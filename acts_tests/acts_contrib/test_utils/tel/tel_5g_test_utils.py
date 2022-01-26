@@ -38,46 +38,57 @@ from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
 
-def provision_device_for_5g(log, ads, nr_type=None):
+def provision_device_for_5g(log, ads, nr_type = None, sub_id = None,
+                            mmwave = None):
     """Provision Devices for 5G
 
     Args:
         log: Log object.
         ads: android device object(s).
-        nr_type: NR network type
+        nr_type: NR network type.
+        sub_id: The target SIM for querying.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         True: Device(s) are provisioned on 5G
         False: Device(s) are not provisioned on 5G
     """
     if nr_type == 'sa':
-        if not provision_device_for_5g_sa(log, ads):
+        if not provision_device_for_5g_sa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     elif nr_type == 'nsa':
-        if not provision_device_for_5g_nsa(log, ads, nr_type='nsa'):
+        if not provision_device_for_5g_nsa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     elif nr_type == 'mmwave':
-        if not provision_device_for_5g_nsa(log, ads, nr_type='mmwave'):
+        if not provision_device_for_5g_nsa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     else:
-        if not provision_device_for_5g_nsa(log, ads, nr_type='nsa'):
+        if not provision_device_for_5g_nsa(
+            log, ads, sub_id=sub_id, mmwave=mmwave):
             return False
     return True
 
 
-def provision_device_for_5g_nsa(log, ads, nr_type=None):
+def provision_device_for_5g_nsa(log, ads, sub_id = None, mmwave = None):
     """Provision Devices for 5G NSA
 
     Args:
         log: Log object.
         ads: android device object(s).
-        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
-                wave
+        sub_id: The target SIM for querying.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         True: Device(s) are provisioned on 5G NSA
         False: Device(s) are not provisioned on 5G NSA
     """
+    sub_id = sub_id if sub_id else ad.droid.subscriptionGetDefaultDataSubId()
+
     if isinstance(ads, list):
         # Mode Pref
         tasks = [(set_preferred_mode_for_5g, [ad]) for ad in ads]
@@ -85,7 +96,7 @@ def provision_device_for_5g_nsa(log, ads, nr_type=None):
             log.error("failed to set preferred network mode on 5g")
             return False
         # Attach
-        tasks = [(is_current_network_5g_nsa, [ad, nr_type]) for ad in ads]
+        tasks = [(is_current_network_5g_nsa, [ad, sub_id, mmwave]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g")
             return False
@@ -95,7 +106,7 @@ def provision_device_for_5g_nsa(log, ads, nr_type=None):
         set_preferred_mode_for_5g(ads)
 
         # Attach nsa5g
-        if not is_current_network_5g_nsa(ads, nr_type):
+        if not is_current_network_5g_nsa(ads, sub_id, mmwave):
             ads.log.error("Phone not attached on 5g")
             return False
         return True
@@ -177,29 +188,35 @@ def connect_both_devices_to_wifi(log,
     return True
 
 
-def verify_5g_attach_for_both_devices(log, ads, nr_type=None):
+def verify_5g_attach_for_both_devices(log, ads, sub_id = None, nr_type = None,
+                                      mmwave = None):
     """Verify the network is attached
 
     Args:
         log: Log object.
         ads: android device object(s).
-        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
-                wave
+        sub_id: The target SIM for querying.
+        nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone,
+            'mmwave' for 5G millimeter wave.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         True: Device(s) are attached on 5G
         False: Device(s) are not attached on 5G NSA
     """
+    sub_id = sub_id if sub_id else ad.droid.subscriptionGetDefaultDataSubId()
+
     if nr_type=='sa':
         # Attach
-        tasks = [(is_current_network_5g_sa, [ad]) for ad in ads]
+        tasks = [(is_current_network_5g_sa, [ad, sub_id, mmwave]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g sa")
             return False
         return True
     else:
         # Attach
-        tasks = [(is_current_network_5g_nsa, [ad, nr_type]) for ad in ads]
+        tasks = [(is_current_network_5g_nsa, [ad, sub_id, mmwave]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g nsa")
             return False
@@ -220,17 +237,22 @@ def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
     return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
 
 
-def provision_device_for_5g_sa(log, ads):
+def provision_device_for_5g_sa(log, ads, sub_id = None, mmwave = None):
     """Provision Devices for 5G SA
 
     Args:
         log: Log object.
         ads: android device object(s).
+        sub_id: The target SIM for querying.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         True: Device(s) are provisioned on 5G SA
         False: Device(s) are not provisioned on 5G SA
     """
+    sub_id = sub_id if sub_id else ad.droid.subscriptionGetDefaultDataSubId()
+
     if isinstance(ads, list):
         # Mode Pref
         tasks = [(set_preferred_mode_for_5g, [ad, None, NETWORK_MODE_NR_ONLY]) for ad in ads]
@@ -238,7 +260,7 @@ def provision_device_for_5g_sa(log, ads):
             log.error("failed to set preferred network mode on 5g SA")
             return False
 
-        tasks = [(is_current_network_5g_sa, [ad]) for ad in ads]
+        tasks = [(is_current_network_5g_sa, [ad, sub_id, mmwave]) for ad in ads]
         if not multithread_func(log, tasks):
             log.error("phone not on 5g SA")
             return False
@@ -247,46 +269,59 @@ def provision_device_for_5g_sa(log, ads):
         # Mode Pref
         set_preferred_mode_for_5g(ads, None, NETWORK_MODE_NR_ONLY)
 
-        if not is_current_network_5g_sa(ads):
+        if not is_current_network_5g_sa(ads, sub_id, mmwave):
             ads.log.error("Phone not attached on SA 5g")
             return False
         return True
 
 
-def check_current_network_5g(ad, timeout=30, nr_type=None):
+def check_current_network_5g(
+    ad, sub_id = None, nr_type = None, mmwave = None, timeout = 30):
     """Verifies data network type is on 5G
 
     Args:
         ad: android device object.
+        sub_id: The target SIM for querying.
         timeout: max time to wait for event
         nr_type: 'sa' for 5G standalone, 'nsa' for 5G non-standalone, 'mmwave' for 5G millimeter
-                wave
+                wave.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         True: if data is on 5g
         False: if data is not on 5g
     """
+    sub_id = sub_id if sub_id else ad.droid.subscriptionGetDefaultDataSubId()
+
     if nr_type == 'sa':
-        if not is_current_network_5g_sa(ad):
+        if not is_current_network_5g_sa(ad, sub_id, mmwave=mmwave):
             return False
     else:
-        if not is_current_network_5g_nsa(ad, nr_type= nr_type, timeout=timeout):
+        if not is_current_network_5g_nsa(ad, sub_id, mmwave=mmwave,
+                                         timeout=timeout):
             return False
     return True
 
 
-def test_activation_by_condition(ad, from_3g=False, nr_type=None, precond_func=None):
+def test_activation_by_condition(ad, sub_id=None, from_3g=False, nr_type=None,
+                                 precond_func=None, mmwave=None):
     """Test 5G activation based on various pre-conditions.
 
     Args:
         ad: android device object.
+        sub_id: The target SIM for querying.
         from_3g: If true, test 5G activation from 3G attaching. Otherwise, starting from 5G attaching.
         nr_type: check the band of NR network. Default is to check sub-6.
         precond_func: A function to execute pre conditions before testing 5G activation.
+        mmwave: True to detect 5G millimeter wave, False to detect sub-6,
+            None to detect both.
 
     Returns:
         If success, return true. Otherwise, return false.
     """
+    sub_id = sub_id if sub_id else ad.droid.subscriptionGetDefaultDataSubId()
+
     wifi_toggle_state(ad.log, ad, False)
     toggle_airplane_mode(ad.log, ad, False)
     if not from_3g:
@@ -313,7 +348,7 @@ def test_activation_by_condition(ad, from_3g=False, nr_type=None, precond_func=N
             ad.log.error("Fail to ensure initial data in 4G")
         # 5G attach
         ad.log.info("Waiting for 5g NSA attach for 60 secs")
-        if is_current_network_5g_nsa(ad, nr_type= nr_type, timeout=60):
+        if is_current_network_5g_nsa(ad, sub_id, mmwave=mmwave, timeout=60):
             ad.log.info("Success! attached on 5g NSA")
             return True
         else:

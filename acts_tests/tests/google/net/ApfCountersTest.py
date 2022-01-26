@@ -35,8 +35,6 @@ import time
 WifiEnums = wutils.WifiEnums
 
 RA_SCRIPT = 'sendra.py'
-SCAPY = 'scapy-2.2.0.tar.gz'
-SCAPY_INSTALL_COMMAND = 'sudo python setup.py install'
 PROC_NET_SNMP6 = '/proc/net/snmp6'
 LIFETIME_FRACTION = 6
 LIFETIME = 180
@@ -55,8 +53,8 @@ class ApfCountersTest(WifiBaseTest):
         super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = []
-        opt_param = ["reference_networks", "scapy"]
+        req_params = ["scapy"]
+        opt_param = ["reference_networks"]
 
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -75,8 +73,7 @@ class ApfCountersTest(WifiBaseTest):
         # install scapy
         current_dir = os.path.dirname(os.path.realpath(__file__))
         send_ra = os.path.join(current_dir, RA_SCRIPT)
-        send_scapy = getattr(self, "scapy", os.path.join(current_dir, SCAPY))
-        self.access_points[0].install_scapy(send_scapy, send_ra)
+        self.access_points[0].install_scapy(self.scapy[0], send_ra)
         self.tcpdump_pid = None
 
     def setup_test(self):
