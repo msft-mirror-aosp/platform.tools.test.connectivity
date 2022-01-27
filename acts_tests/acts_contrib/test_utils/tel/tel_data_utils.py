@@ -527,7 +527,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, nr_type=None):
             return False
 
         if nw_gen == GEN_5G:
-            if not check_current_network_5g(ad, timeout=60, nr_type=nr_type):
+            if not check_current_network_5g(ad, nr_type=nr_type, timeout=60):
                 return False
         else:
             if not is_droid_in_network_generation_for_subscription(
@@ -876,7 +876,7 @@ def test_data_connectivity_multi_bearer(
     ensure_phones_idle(log, ad_list)
 
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, android_devices, nr_type= nr_type):
+        if not provision_device_for_5g(log, android_devices, nr_type=nr_type):
             return False
     elif nw_gen:
         if not ensure_network_generation_for_subscription(
@@ -1032,7 +1032,7 @@ def test_setup_tethering(log,
     ensure_phones_idle(log, clients)
     wifi_toggle_state(log, provider, False)
     if network_generation == RAT_5G:
-        if not provision_device_for_5g(log, provider, nr_type= nr_type):
+        if not provision_device_for_5g(log, provider, nr_type=nr_type):
             return False
     elif network_generation:
         if not ensure_network_generation(
@@ -1102,7 +1102,7 @@ def test_tethering_wifi_and_voice_call(log, provider, clients,
         return False
 
     if provider_setup_func == RAT_5G:
-        if not provision_device_for_5g(log, provider, nr_type= nr_type):
+        if not provision_device_for_5g(log, provider, nr_type=nr_type):
             return False
     try:
         log.info("1. Setup WiFi Tethering.")
@@ -1249,7 +1249,7 @@ def test_call_setup_in_active_data_transfer(
                                    wait_time_in_call)
 
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, ads[0], nr_type= nr_type):
+        if not provision_device_for_5g(log, ads[0], nr_type=nr_type):
             return False
     elif nw_gen:
         if not ensure_network_generation(log, ads[0], nw_gen,
@@ -1304,7 +1304,8 @@ def test_call_setup_in_active_data_transfer(
             return False
     # Disable airplane mode if test under apm on.
     toggle_airplane_mode(log, ads[0], False)
-    if nw_gen == GEN_5G and not check_current_network_5g(ads[0], nr_type= nr_type):
+    if nw_gen == GEN_5G and not check_current_network_5g(ads[0],
+                                                         nr_type=nr_type):
         ads[0].log.error("Phone not attached on 5G after call.")
         return False
     return True
@@ -1335,7 +1336,7 @@ def test_call_setup_in_active_youtube_video(
         False if failed.
     """
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, ads[0], nr_type= nr_type):
+        if not provision_device_for_5g(log, ads[0], nr_type=nr_type):
             return False
     elif nw_gen:
         if not ensure_network_generation(log, ads[0], nw_gen,
@@ -1382,7 +1383,8 @@ def test_call_setup_in_active_youtube_video(
     ad_download.force_stop_apk("com.google.android.youtube")
     # Disable airplane mode if test under apm on.
     toggle_airplane_mode(log, ads[0], False)
-    if nw_gen == GEN_5G and not check_current_network_5g(ads[0], nr_type= nr_type):
+    if nw_gen == GEN_5G and not check_current_network_5g(ads[0],
+                                                         nr_type=nr_type):
         ads[0].log.error("Phone not attached on 5G after call.")
         result = False
     return result
@@ -1452,7 +1454,8 @@ def call_epdg_to_epdg_wfc(log,
 
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-    if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(log, ads, nr_type= nr_type):
+    if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(
+        log, ads, nr_type=nr_type):
         log.error("Phone not attached on 5G after epdg call.")
         return False
 
@@ -1553,7 +1556,7 @@ def test_wifi_tethering(log, provider,
                         ssid=None,
                         password=None,
                         pre_teardown_func=None,
-                        nr_type= None):
+                        nr_type=None):
     """WiFi Tethering test
     Args:
         log: log object.
@@ -1579,7 +1582,7 @@ def test_wifi_tethering(log, provider,
         nr_type: NR network type e.g. NSA, SA, MMWAVE.
 
     """
-    if not test_setup_tethering(log, provider, clients, nw_gen, nr_type= nr_type):
+    if not test_setup_tethering(log, provider, clients, nw_gen, nr_type=nr_type):
         log.error("Verify %s Internet access failed.", nw_gen)
         return False
 
@@ -1880,7 +1883,7 @@ def verify_toggle_data_during_wifi_tethering(log,
                                              provider,
                                              clients,
                                              new_gen=None,
-                                             nr_type= None):
+                                             nr_type=None):
     """Verify toggle Data network during WiFi Tethering.
     Args:
         log: log object.
@@ -1905,7 +1908,7 @@ def verify_toggle_data_during_wifi_tethering(log,
                                    check_iteration=2,
                                    do_cleanup=False,
                                    ssid=ssid,
-                                   nr_type= nr_type):
+                                   nr_type=nr_type):
             log.error("WiFi Tethering failed.")
             return False
         if not provider.droid.wifiIsApEnabled():
