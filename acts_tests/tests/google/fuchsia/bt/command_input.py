@@ -2469,6 +2469,27 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_hfp_waiting_call(self, line):
+        """
+        Description: Simulate an incoming call on the call manager when there is
+        an onging active call already.
+
+        Input(s):
+            remote: The number of the remote party on the incoming call
+
+        Usage:
+          Examples:
+            hfp_waiting_call <remote>
+            hfp_waiting_call 14085555555
+        """
+        cmd = "Simulates an incoming call"
+        try:
+            remote = line.strip()
+            result = self.pri_dut.hfp_lib.initiateIncomingWaitingCall(remote)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_hfp_outgoing_call(self, line):
         """
         Description: Simulate an outgoing call on the call manager
