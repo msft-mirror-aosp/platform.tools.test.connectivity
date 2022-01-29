@@ -128,6 +128,23 @@ class FuchsiaHfpLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def initiateIncomingWaitingCall(self, remote):
+        """Opens an incoming call when there is an onging call and alerts
+        the HFP peer.
+
+        Args:
+            remote: The number of the remote party.
+
+        Returns:
+            Dictionary, call_id if success, error if error.
+        """
+        test_cmd = "hfp_facade.IncomingWaitingCall"
+        test_args = {"remote": remote }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def initiateOutgoingCall(self, remote):
         """Opens an outgoing call channel and alerts the HFP peer.
 
