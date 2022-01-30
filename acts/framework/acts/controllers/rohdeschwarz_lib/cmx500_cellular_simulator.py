@@ -42,14 +42,6 @@ CMX_MIMO_MAPPING = {
     LteSimulation.MimoMode.MIMO_4x4: cmx500.MimoModes.MIMO4x4,
 }
 
-MHZ_UPPER_BOUND_TO_RB = [
-    (1.5, 6),
-    (4.0, 15),
-    (7.5, 25),
-    (12.5, 50),
-    (17.5, 75),
-]
-
 
 class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMX 500
@@ -87,7 +79,8 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
 
     def setup_nr_nsa_scenario(self):
         """ Configures the equipment for an NR non stand alone simulation. """
-        raise NotImplementedError()
+        self.log.info('setup nsa scenario (start lte cell and nr cell')
+        self.cmx.switch_on_nsa_signalling()
 
     def set_band_combination(self, bands):
         """ Prepares the test equipment for the indicated band combination.
@@ -110,7 +103,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.cmx.lte_rrc_state_change_timer = time
 
 
-    def set_band(self, bts_index, band):
+    def set_band(self, bts_index, band, frequency_range=None):
         """ Sets the band for the indicated base station.
 
         Args:
@@ -118,7 +111,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             band: the new band
         """
         self.log.info('set band to {}'.format(band))
-        self.bts[bts_index].set_band(int(band))
+        if frequency_range:
+            self.bts[bts_index].set_band(
+                    int(band), frequency_range=frequency_range)
+        else:
+            self.bts[bts_index].set_band(int(band))
 
     def get_duplex_mode(self, band):
         """ Determines if the band uses FDD or TDD duplex mode
@@ -177,24 +174,18 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             ssf_config: the new ssf config number (from 0 to 9)
         """
         self.log.info('set ssf config to {}'.format(ssf_config))
-        self.bts[bts_index].set_tdd_config(ssf_config)
+        self.bts[bts_index].set_ssf_config(ssf_config)
 
     def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the bandwidth for the indicated base station.
 
         Args:
             bts_index: the base station number
-            bandwidth: the new bandwidth in rb
+            bandwidth: the new bandwidth in MHz
         """
         self.log.info('set bandwidth of bts {} to {}'.format(
                 bts_index, bandwidth))
-        self.bts[bts_index].set_bandwidth(self._to_rb_bandwidth(bandwidth))
-
-    def _to_rb_bandwidth(self, bandwidth):
-        for idx in range(5):
-            if bandwidth < MHZ_UPPER_BOUND_TO_RB[idx][0]:
-                return LteBandwidth(MHZ_UPPER_BOUND_TO_RB[idx][1])
-        return LteBandwidth(100)
+        self.bts[bts_index].set_bandwidth(int(bandwidth))
 
     def set_downlink_channel_number(self, bts_index, channel_number):
         """ Sets the downlink channel number for the indicated base station.
@@ -338,7 +329,8 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             ue_capability_enquiry: UE capability enquiry message to be sent to
         the UE before starting carrier aggregation.
         """
-        raise NotImplementedError()
+        self.wait_until_communication_state()
+        self.bts[1].attach_as_secondary_cell()
 
     def wait_until_attached(self, timeout=120):
         """ Waits until the DUT is attached to the primary carrier.
