@@ -1440,7 +1440,6 @@ def get_interface_ip_addresses(comm_channel, interface):
         ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
     elif type(comm_channel) is FuchsiaDevice:
         all_interfaces_and_addresses = []
-        comm_channel.netstack_lib.init()
         interfaces = comm_channel.netstack_lib.netstackListInterfaces()
         if interfaces.get('error') is not None:
             raise ActsUtilsError('Failed with {}'.format(

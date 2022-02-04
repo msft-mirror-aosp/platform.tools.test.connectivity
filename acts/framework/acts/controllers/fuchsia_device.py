@@ -596,13 +596,6 @@ class FuchsiaDevice:
         """
         return self.client_id + "." + str(test_id)
 
-    def configure_netstack(self):
-        """Readies device for Netstack functionality, including initializing
-        facade connection."""
-        err = self.netstack_lib.init().get('error')
-        if err:
-            raise FuchsiaDeviceError('Failed to init netstack_lib: %s' % err)
-
     def configure_wlan(self,
                        association_mechanism=None,
                        preserve_saved_networks=None):
@@ -662,7 +655,6 @@ class FuchsiaDevice:
                 preserve_saved_networks)
 
         # Retrieve WLAN client and AP interfaces
-        self.configure_netstack()
         self.wlan_controller.update_wlan_interfaces()
 
     def deconfigure_wlan(self):
