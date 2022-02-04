@@ -167,8 +167,6 @@ FUCHSIA_NETSTACK_LIST_INTERFACES = (
     'acts.controllers.'
     'fuchsia_lib.netstack.netstack_lib.'
     'FuchsiaNetstackLib.netstackListInterfaces')
-FUCHSIA_INIT_NETSTACK = ('acts.controllers.fuchsia_lib.netstack.'
-                         'netstack_lib.FuchsiaNetstackLib.init')
 
 
 class ByPassSetupWizardTests(unittest.TestCase):
@@ -531,14 +529,12 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
     @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
-    @mock.patch(FUCHSIA_INIT_NETSTACK)
     def test_fuchsia_get_interface_ip_addresses_full(
-            self, init_mock, list_interfaces_mock, start_services_mock,
-            control_path_mock, ffx_mock, fuchsia_device_mock):
+            self, list_interfaces_mock, start_services_mock, control_path_mock,
+            ffx_mock, fuchsia_device_mock):
         # Will never actually be created/used.
         logging.log_path = '/tmp/unit_test_garbage'
 
-        init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
         self.assertEqual(
@@ -551,14 +547,12 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
     @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
-    @mock.patch(FUCHSIA_INIT_NETSTACK)
     def test_fuchsia_get_interface_ip_addresses_empty(
-            self, init_mock, list_interfaces_mock, start_services_mock,
-            control_path_mock, ffx_mock, fuchsia_device_mock):
+            self, list_interfaces_mock, start_services_mock, control_path_mock,
+            ffx_mock, fuchsia_device_mock):
         # Will never actually be created/used.
         logging.log_path = '/tmp/unit_test_garbage'
 
-        init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
         self.assertEqual(
