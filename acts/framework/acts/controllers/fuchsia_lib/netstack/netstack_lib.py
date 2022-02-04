@@ -36,19 +36,6 @@ class FuchsiaNetstackLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def init(self):
-        """ListInterfaces command
-
-        Returns:
-            Dictionary, None if success, error if error.
-        """
-        test_cmd = "netstack_facade.InitNetstack"
-        test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
     def enableInterface(self, id):
         """Enable Interface
 
