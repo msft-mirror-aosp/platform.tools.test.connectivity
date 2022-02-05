@@ -33,7 +33,6 @@ class NetstackIfaceTest(BaseTestClass):
                 "NetstackFuchsiaTest Init: Not enough fuchsia devices.")
         self.log.info("Running testbed setup with one fuchsia devices")
         self.dut = self.fuchsia_devices[0]
-        self.dut.netstack_lib.init()
 
     def _enable_all_interfaces(self):
         interfaces = self.dut.netstack_lib.netstackListInterfaces()
