@@ -498,12 +498,11 @@ class WifiP2pRvrTest(WifiRvrTest):
                 traffic_direction=traffic_direction,
                 concurrency_state=concurrency_state)
             test_class = self.__class__.__name__
-            if hasattr(
-                    self,
-                    "uuid_list") and test_name in self.uuid_list[test_class]:
-                test_case = test_tracker_info(
-                    uuid=self.uuid_list[test_class][test_name])(partial(
-                        self._test_p2p_rvr, test_params))
+            if "uuid_list" in self.user_params:
+                test_tracker_uuid = self.user_params["uuid_list"][
+                    test_class][test_name]
+                test_case = test_tracker_info(uuid=test_tracker_uuid)(
+                    lambda: self._test_p2p_rvr(test_params))
             else:
                 test_case = partial(self._test_p2p_rvr, test_params)
             setattr(self, test_name, test_case)
