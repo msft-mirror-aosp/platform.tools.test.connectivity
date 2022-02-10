@@ -25,6 +25,7 @@ import tempfile
 import zipfile
 from collections import namedtuple
 from datetime import datetime
+from xml.etree import ElementTree
 
 from acts import utils
 from acts import asserts
@@ -283,6 +284,7 @@ def _init_device(ad):
     """
     enable_gnss_verbose_logging(ad)
     enable_compact_and_particle_fusion_log(ad)
+    prepare_gps_overlay(ad)
     if check_chipset_vendor_by_qualcomm(ad):
         disable_xtra_throttle(ad)
     enable_supl_mode(ad)
@@ -300,6 +302,59 @@ def _init_device(ad):
     init_gtw_gpstool(ad)
     if not is_mobile_data_on(ad):
         set_mobile_data(ad, True)
+
+
+def prepare_gps_overlay(ad):
+    """Set pixellogger gps log mask to
+    resolve gps logs unreplayable from brcm vendor
+    """
+    if not check_chipset_vendor_by_qualcomm(ad):
+        overlay_file = "/data/vendor/gps/overlay/gps_overlay.xml"
+        xml_file = generate_gps_overlay_xml(ad)
+        try:
+            ad.log.info("Push gps_overlay to device")
+            ad.adb.push(xml_file, overlay_file)
+            ad.adb.shell(f"chmod 777 {overlay_file}")
+        finally:
+            xml_folder = os.path.abspath(os.path.join(xml_file, os.pardir))
+            shutil.rmtree(xml_folder)
+
+
+def generate_gps_overlay_xml(ad):
+    """For r11 devices, the overlay setting is 'Replayable default'
+    For other brcm devices, the setting is 'Replayable debug'
+
+    Returns:
+        path to the xml file
+    """
+    root_attrib = {
+        "xmlns": "http://www.glpals.com/",
+        "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation": "http://www.glpals.com/ glconfig.xsd",
+    }
+    sub_attrib = {"EnableOnChipStopNotification": "true"}
+    if not is_device_wearable(ad):
+        sub_attrib["LogPriMask"] = "LOG_DEBUG"
+        sub_attrib["LogFacMask"] = "LOG_GLLIO | LOG_GLLAPI | LOG_NMEA | LOG_RAWDATA"
+        sub_attrib["OnChipLogPriMask"] = "LOG_DEBUG"
+        sub_attrib["OnChipLogFacMask"] = "LOG_GLLIO | LOG_GLLAPI | LOG_NMEA | LOG_RAWDATA"
+
+    temp_path = tempfile.mkdtemp()
+    xml_file = os.path.join(temp_path, "gps_overlay.xml")
+
+    root = ElementTree.Element('glgps')
+    for key, value in root_attrib.items():
+        root.attrib[key] = value
+
+    ad.log.debug("Sub attrib is %s", sub_attrib)
+
+    sub = ElementTree.SubElement(root, 'gll')
+    for key, value in sub_attrib.items():
+        sub.attrib[key] = value
+
+    xml = ElementTree.ElementTree(root)
+    xml.write(xml_file, xml_declaration=True, encoding="utf-8", method="xml")
+    return xml_file
 
 
 def connect_to_wifi_network(ad, network):
