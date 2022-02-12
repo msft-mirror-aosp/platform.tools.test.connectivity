@@ -822,24 +822,12 @@ def call_setup_teardown_for_subscription(
         'phone_num']
     callee_number = ad_callee.telephony['subscription'][subid_callee][
         'phone_num']
-    if dialing_number_length:
-        skip_test = False
-        trunc_position = 0 - int(dialing_number_length)
-        try:
-            caller_area_code = caller_number[:trunc_position]
-            callee_area_code = callee_number[:trunc_position]
-            callee_dial_number = callee_number[trunc_position:]
-        except:
-            skip_test = True
-        if caller_area_code != callee_area_code:
-            skip_test = True
-        if skip_test:
-            msg = "Cannot make call from %s to %s by %s digits" % (
-                caller_number, callee_number, dialing_number_length)
-            ad_caller.log.info(msg)
-            raise signals.TestSkip(msg)
-        else:
-            callee_number = callee_dial_number
+
+    callee_number = truncate_phone_number(
+        log,
+        caller_number,
+        callee_number,
+        dialing_number_length)
 
     tel_result_wrapper = TelResultWrapper(CallResult('SUCCESS'))
     msg = "Call from %s to %s" % (caller_number, callee_number)
@@ -2644,3 +2632,52 @@ def verify_default_ims_setting(log,
         ad.log.info("user_config_profile = %s ",
                           sorted(user_config_profile.items()))
     return result
+
+
+def truncate_phone_number(
+    log,
+    caller_number,
+    callee_number,
+    dialing_number_length,
+    skip_inter_area_call=True):
+    """This function truncates the phone number of the caller/callee to test
+    7/10/11/12 digit dialing for North American numbering plan, and distinguish
+    if this is an inter-area call by comparing the area code.
+
+    Args:
+        log: logger object
+        caller_number: phone number of the caller
+        callee_number: phone number of the callee
+        dialing_number_length: the length of phone number (usually 7/10/11/12)
+        skip_inter_area_call: True to raise a TestSkip exception to skip dialing
+            the inter-area call. Otherwise False.
+
+    Returns:
+        The truncated phone number of the callee
+    """
+
+    if not dialing_number_length:
+        return callee_number
+
+    trunc_position = 0 - int(dialing_number_length)
+    try:
+        caller_area_code = caller_number[:trunc_position]
+        callee_area_code = callee_number[:trunc_position]
+        callee_dial_number = callee_number[trunc_position:]
+
+        if caller_area_code != callee_area_code:
+            skip_inter_area_call = True
+
+    except:
+        skip_inter_area_call = True
+
+    if skip_inter_area_call:
+        msg = "Cannot make call from %s to %s by %s digits since inter-area "
+        "call is not allowed" % (
+            caller_number, callee_number, dialing_number_length)
+        log.info(msg)
+        raise signals.TestSkip(msg)
+    else:
+        callee_number = callee_dial_number
+
+    return callee_number
