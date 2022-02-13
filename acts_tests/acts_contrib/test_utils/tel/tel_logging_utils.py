@@ -343,13 +343,13 @@ def start_nexuslogger(ad):
     if not qxdm_logger_apk: return
     if ad.is_apk_running(qxdm_logger_apk):
         if "granted=true" in ad.adb.shell(
-                "dumpsys package %s | grep WRITE_EXTERN" % qxdm_logger_apk):
+                "dumpsys package %s | grep READ_EXTERN" % qxdm_logger_apk):
             return True
         else:
             ad.log.info("Kill %s" % qxdm_logger_apk)
             ad.force_stop_apk(qxdm_logger_apk)
             time.sleep(5)
-    for perm in ("READ", "WRITE"):
+    for perm in ("READ"):
         ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
                      (qxdm_logger_apk, perm))
     time.sleep(2)
