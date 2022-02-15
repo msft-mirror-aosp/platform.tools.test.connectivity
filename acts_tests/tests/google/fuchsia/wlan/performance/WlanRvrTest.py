@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import os
 import time
 
 from acts import asserts
@@ -226,6 +227,11 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
         """
 
         if self.router_adv_daemon:
+            output_path = context.get_current_context().get_base_output_path()
+            full_output_path = os.path.join(output_path, "radvd_log.txt")
+            radvd_log_file = open(full_output_path, 'w')
+            radvd_log_file.write(self.router_adv_daemon.pull_logs())
+            radvd_log_file.close()
             self.router_adv_daemon.stop()
         if hasattr(self, "android_devices"):
             for ad in self.android_devices:
@@ -236,6 +242,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
         self.dut.turn_location_off_and_scan_toggle_off()
         self.dut.disconnect()
         self.dut.reset_wifi()
+        self.download_ap_logs()
         self.access_point.stop_all_aps()
 
     def _wait_for_ipv4_addrs(self):

@@ -106,6 +106,7 @@ class WifiPingTest(base_test.BaseTestClass):
         for attenuator in self.attenuators:
             attenuator.set_atten(0, strict=False, retry=True)
         # Turn WiFi OFF and reset AP
+        self.access_point.teardown()
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
             dev.go_to_sleep()
@@ -464,7 +465,7 @@ class WifiPingTest(base_test.BaseTestClass):
                 'channel']
             wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],
-                                num_of_tries=1,
+                                num_of_tries=5,
                                 check_connectivity=True)
 
     def setup_dut(self, testcase_params):

@@ -16,11 +16,8 @@
 
 import time
 
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
-from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_nw_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.wifi import wifi_test_utils
@@ -67,28 +64,6 @@ def get_wifi_usage(ad, sid=None, apk=None):
             return ad.droid.connectivityQuerySummaryForDevice(
                 ad.droid.telephonyGetSubscriberIdForSubscription(sid),
                 begin_time, end_time)
-
-
-def wait_for_wifi_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value and connection is by WiFi.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_NW_SELECTION
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    ad.log.info("wait_for_wifi_data_connection")
-    return _wait_for_nw_data_connection(
-        log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
 
 
 def check_is_wifi_connected(log, ad, wifi_ssid):

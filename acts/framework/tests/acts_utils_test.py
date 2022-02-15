@@ -72,74 +72,68 @@ lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
 FUCHSIA_INTERFACES = {
     'id':
     '1',
-    'result': [{
-        'features':
-        4,
-        'filepath':
-        '[none]',
-        'id':
-        1,
-        'ipv4_addresses': [[127, 0, 0, 1]],
-        'ipv6_addresses': [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]],
-        'is_administrative_status_enabled':
-        True,
-        'is_physical_status_up':
-        True,
-        'mac': [0, 0, 0, 0, 0, 0],
-        'mtu':
-        65536,
-        'name':
-        'lo',
-        'topopath':
-        'loopback'
-    }, {
-        'features':
-        0,
-        'filepath':
-        '/dev/class/ethernet/000',
-        'id':
-        2,
-        'ipv4_addresses': [[100, 127, 110, 79]],
-        'ipv6_addresses':
-        [[254, 128, 0, 0, 0, 0, 0, 0, 198, 109, 60, 117, 44, 236, 29, 114],
-         [36, 1, 250, 0, 4, 128, 122, 0, 141, 79, 133, 255, 204, 92, 120, 126],
-         [36, 1, 250, 0, 4, 128, 122, 0, 4, 89, 185, 147, 252, 191, 20, 25]],
-        'is_administrative_status_enabled':
-        True,
-        'is_physical_status_up':
-        True,
-        'mac': [0, 224, 76, 5, 76, 229],
-        'mtu':
-        1514,
-        'name':
-        'eno1',
-        'topopath':
-        '@/dev/xhci/xhci/usb-bus/001/001/ifc-000/usb-cdc-ecm/ethernet'
-    }, {
-        'features':
-        1,
-        'filepath':
-        '/dev/class/ethernet/001',
-        'id':
-        3,
-        'ipv4_addresses': [],
-        'ipv6_addresses':
-        [[254, 128, 0, 0, 0, 0, 0, 0, 96, 255, 93, 96, 52, 253, 253, 243],
-         [254, 128, 0, 0, 0, 0, 0, 0, 70, 7, 11, 255, 254, 118, 126, 192]],
-        'is_administrative_status_enabled':
-        False,
-        'is_physical_status_up':
-        False,
-        'mac': [68, 7, 11, 118, 126, 192],
-        'mtu':
-        1500,
-        'name':
-        'wlanxc0',
-        'topopath':
-        '@/dev/wifi/wlanphy/wlanif-client/wlan-ethernet/ethernet'
-    }],
+    'result': [
+        {
+            'id': 1,
+            'name': 'lo',
+            'ipv4_addresses': [
+                [127, 0, 0, 1],
+            ],
+            'ipv6_addresses': [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            ],
+            'online': True,
+            'mac': [0, 0, 0, 0, 0, 0],
+        },
+        {
+            'id':
+            2,
+            'name':
+            'eno1',
+            'ipv4_addresses': [
+                [100, 127, 110, 79],
+            ],
+            'ipv6_addresses': [
+                [
+                    254, 128, 0, 0, 0, 0, 0, 0, 198, 109, 60, 117, 44, 236, 29,
+                    114
+                ],
+                [
+                    36, 1, 250, 0, 4, 128, 122, 0, 141, 79, 133, 255, 204, 92,
+                    120, 126
+                ],
+                [
+                    36, 1, 250, 0, 4, 128, 122, 0, 4, 89, 185, 147, 252, 191,
+                    20, 25
+                ],
+            ],
+            'online':
+            True,
+            'mac': [0, 224, 76, 5, 76, 229],
+        },
+        {
+            'id':
+            3,
+            'name':
+            'wlanxc0',
+            'ipv4_addresses': [],
+            'ipv6_addresses': [
+                [
+                    254, 128, 0, 0, 0, 0, 0, 0, 96, 255, 93, 96, 52, 253, 253,
+                    243
+                ],
+                [
+                    254, 128, 0, 0, 0, 0, 0, 0, 70, 7, 11, 255, 254, 118, 126,
+                    192
+                ],
+            ],
+            'online':
+            False,
+            'mac': [68, 7, 11, 118, 126, 192],
+        },
+    ],
     'error':
-    None
+    None,
 }
 
 CORRECT_FULL_IP_LIST = {
@@ -173,8 +167,6 @@ FUCHSIA_NETSTACK_LIST_INTERFACES = (
     'acts.controllers.'
     'fuchsia_lib.netstack.netstack_lib.'
     'FuchsiaNetstackLib.netstackListInterfaces')
-FUCHSIA_INIT_NETSTACK = ('acts.controllers.fuchsia_lib.netstack.'
-                         'netstack_lib.FuchsiaNetstackLib.init')
 
 
 class ByPassSetupWizardTests(unittest.TestCase):
@@ -537,14 +529,12 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
     @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
-    @mock.patch(FUCHSIA_INIT_NETSTACK)
     def test_fuchsia_get_interface_ip_addresses_full(
-            self, init_mock, list_interfaces_mock, start_services_mock,
-            control_path_mock, ffx_mock, fuchsia_device_mock):
+            self, list_interfaces_mock, start_services_mock, control_path_mock,
+            ffx_mock, fuchsia_device_mock):
         # Will never actually be created/used.
         logging.log_path = '/tmp/unit_test_garbage'
 
-        init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
         self.assertEqual(
@@ -557,14 +547,12 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
     @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
-    @mock.patch(FUCHSIA_INIT_NETSTACK)
     def test_fuchsia_get_interface_ip_addresses_empty(
-            self, init_mock, list_interfaces_mock, start_services_mock,
-            control_path_mock, ffx_mock, fuchsia_device_mock):
+            self, list_interfaces_mock, start_services_mock, control_path_mock,
+            ffx_mock, fuchsia_device_mock):
         # Will never actually be created/used.
         logging.log_path = '/tmp/unit_test_garbage'
 
-        init_mock.return_value = None
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
         fuchsia_device_mock.return_value = None
         self.assertEqual(

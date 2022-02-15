@@ -29,6 +29,21 @@ from acts.utils import get_current_epoch_time
 from acts.utils import start_standing_subprocess
 
 
+_LS_MASK_NAME = "Lassen default + TCP"
+
+_LS_ENABLE_LOG_SHELL = f"""\
+am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver \
+    -a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
+    -e intent_key_enable "true" -e intent_key_config "{_LS_MASK_NAME}" \
+    --ei intent_key_max_log_size_mb 100 --ei intent_key_max_number_of_files 100
+"""
+_LS_DISABLE_LOG_SHELL = """\
+am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver \
+    -a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
+    -e intent_key_enable "false"
+"""
+
+
 def check_if_tensor_platform(ad):
     """Check if current platform belongs to the Tensor platform
 
@@ -71,42 +86,54 @@ def start_pixellogger_always_on_logging(ad):
         return True
 
 
-def start_sdm_logger(ad, retry=5):
+def start_sdm_logger(ad):
     """Start SDM logger."""
     if not getattr(ad, "sdm_log", True): return
+
     # Delete existing SDM logs which were created 15 mins prior
     ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
     file_count = ad.adb.shell(
-        "find %s -type f -iname sbuff_[0-9]*.sdm* | wc -l" % ad.sdm_log_path)
+        f"find {ad.sdm_log_path} -type f -iname sbuff_[0-9]*.sdm* | wc -l")
     if int(file_count) > 3:
         seconds = 15 * 60
         # Remove sdm logs modified more than specified seconds ago
         ad.adb.shell(
-            "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
-            (ad.sdm_log_path, seconds))
-    # Disable any modem logging already running
-    if not getattr(ad, "enable_always_on_modem_logger", False):
-        ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
+            f"find {ad.sdm_log_path} -type f -iname sbuff_[0-9]*.sdm* "
+            f"-not -mtime -{seconds}s -delete")
+
+    # Disable modem logging already running
+    stop_sdm_logger(ad)
+
     # start logging
-    cmd = "setprop vendor.sys.modem.logging.enable true"
-    for _ in range(retry):
-        disable_complete = not ad.adb.shell(
-            "find %s -type f -iname sbuff_profile.sdm | wc -l" % ad.sdm_log_path)
-        if disable_complete:
-            ad.log.debug("start sdm logging")
-            ad.adb.shell(cmd, ignore_status=True)
-            break
+    ad.log.debug("start sdm logging")
+    while int(
+        ad.adb.shell(f"find {ad.sdm_log_path} -type f "
+                     "-iname sbuff_profile.sdm | wc -l") == 0 or
+        int(
+            ad.adb.shell(f"find {ad.sdm_log_path} -type f "
+                         "-iname sbuff_[0-9]*.sdm* | wc -l")) == 0):
+        ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
         time.sleep(5)
-        ad.adb.shell("setprop persist.vendor.sys.modem.logging.enable false")
-    time.sleep(5)
 
 
 def stop_sdm_logger(ad):
     """Stop SDM logger."""
-    cmd = "setprop vendor.sys.modem.logging.enable false"
+    ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
+    cycle = 1
+
     ad.log.debug("stop sdm logging")
-    ad.adb.shell(cmd, ignore_status=True)
-    time.sleep(5)
+    while int(
+        ad.adb.shell(
+            f"find {ad.sdm_log_path} -type f -iname sbuff_profile.sdm -o "
+            "-iname sbuff_[0-9]*.sdm* | wc -l")) != 0:
+        if cycle == 1 and int(
+            ad.adb.shell(f"find {ad.sdm_log_path} -type f "
+                         "-iname sbuff_profile.sdm | wc -l")) == 0:
+            ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
+            time.sleep(5)
+        ad.adb.shell(_LS_DISABLE_LOG_SHELL, ignore_status=True)
+        cycle += 1
+        time.sleep(15)
 
 
 def start_sdm_loggers(log, ads):
@@ -316,13 +343,13 @@ def start_nexuslogger(ad):
     if not qxdm_logger_apk: return
     if ad.is_apk_running(qxdm_logger_apk):
         if "granted=true" in ad.adb.shell(
-                "dumpsys package %s | grep WRITE_EXTERN" % qxdm_logger_apk):
+                "dumpsys package %s | grep READ_EXTERN" % qxdm_logger_apk):
             return True
         else:
             ad.log.info("Kill %s" % qxdm_logger_apk)
             ad.force_stop_apk(qxdm_logger_apk)
             time.sleep(5)
-    for perm in ("READ", "WRITE"):
+    for perm in ("READ"):
         ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
                      (qxdm_logger_apk, perm))
     time.sleep(2)

@@ -185,15 +185,14 @@ class AccessPoint(object):
         ssh_settings: The ssh settings being used by the ssh connection.
         dhcp_settings: The dhcp server settings being used.
     """
-
     def __init__(self, configs):
         """
         Args:
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
-        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
-            self.ssh_settings.hostname, msg))
+        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
+                                        (self.ssh_settings.hostname, msg))
         self.device_pdu_config = configs.get('PduDevice', None)
         self.identifier = self.ssh_settings.hostname
 
@@ -221,10 +220,14 @@ class AccessPoint(object):
         self._dhcp = None
         self._dhcp_bss = dict()
         self.bridge = bridge_interface.BridgeInterface(self)
-        self.interfaces = ap_get_interface.ApInterfaces(self)
         self.iwconfig = ap_iwconfig.ApIwconfig(self)
 
-        # Get needed interface names and initialize the unneccessary ones.
+        # Check to see if wan_interface is specified in acts_config for tests
+        # isolated from the internet and set this override.
+        self.interfaces = ap_get_interface.ApInterfaces(
+            self, configs.get('wan_interface'))
+
+        # Get needed interface names and initialize the unnecessary ones.
         self.wan = self.interfaces.get_wan_interface()
         self.wlan = self.interfaces.get_wlan_interface()
         self.wlan_2g = self.wlan[0]
@@ -429,10 +432,24 @@ class AccessPoint(object):
     def get_dhcp_logs(self):
         """Get DHCP logs for this AP object.
 
-        This allows consumers of the access point objects validate DHCP
+        This allows consumers of the access point objects to validate DHCP
         behavior.
         """
         return self._dhcp.get_logs()
+
+    def get_hostapd_logs(self):
+        """Get hostapd logs for all interfaces on AP object.
+
+        This allows consumers of the access point objects to validate hostapd
+        behavior.
+
+        Returns: A dict with {interface: log} from hostapd instances.
+        """
+        hostapd_logs = dict()
+        for identifier in self._aps:
+            hostapd_logs[identifier] = self._aps.get(
+                identifier).hostapd.pull_logs()
+        return hostapd_logs
 
     def start_nat(self):
         """Start NAT on the AP.

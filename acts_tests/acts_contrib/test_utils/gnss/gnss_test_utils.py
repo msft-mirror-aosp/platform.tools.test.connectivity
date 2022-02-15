@@ -25,6 +25,7 @@ import tempfile
 import zipfile
 from collections import namedtuple
 from datetime import datetime
+from xml.etree import ElementTree
 
 from acts import utils
 from acts import asserts
@@ -283,6 +284,7 @@ def _init_device(ad):
     """
     enable_gnss_verbose_logging(ad)
     enable_compact_and_particle_fusion_log(ad)
+    prepare_gps_overlay(ad)
     if check_chipset_vendor_by_qualcomm(ad):
         disable_xtra_throttle(ad)
     enable_supl_mode(ad)
@@ -300,6 +302,59 @@ def _init_device(ad):
     init_gtw_gpstool(ad)
     if not is_mobile_data_on(ad):
         set_mobile_data(ad, True)
+
+
+def prepare_gps_overlay(ad):
+    """Set pixellogger gps log mask to
+    resolve gps logs unreplayable from brcm vendor
+    """
+    if not check_chipset_vendor_by_qualcomm(ad):
+        overlay_file = "/data/vendor/gps/overlay/gps_overlay.xml"
+        xml_file = generate_gps_overlay_xml(ad)
+        try:
+            ad.log.info("Push gps_overlay to device")
+            ad.adb.push(xml_file, overlay_file)
+            ad.adb.shell(f"chmod 777 {overlay_file}")
+        finally:
+            xml_folder = os.path.abspath(os.path.join(xml_file, os.pardir))
+            shutil.rmtree(xml_folder)
+
+
+def generate_gps_overlay_xml(ad):
+    """For r11 devices, the overlay setting is 'Replayable default'
+    For other brcm devices, the setting is 'Replayable debug'
+
+    Returns:
+        path to the xml file
+    """
+    root_attrib = {
+        "xmlns": "http://www.glpals.com/",
+        "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation": "http://www.glpals.com/ glconfig.xsd",
+    }
+    sub_attrib = {"EnableOnChipStopNotification": "true"}
+    if not is_device_wearable(ad):
+        sub_attrib["LogPriMask"] = "LOG_DEBUG"
+        sub_attrib["LogFacMask"] = "LOG_GLLIO | LOG_GLLAPI | LOG_NMEA | LOG_RAWDATA"
+        sub_attrib["OnChipLogPriMask"] = "LOG_DEBUG"
+        sub_attrib["OnChipLogFacMask"] = "LOG_GLLIO | LOG_GLLAPI | LOG_NMEA | LOG_RAWDATA"
+
+    temp_path = tempfile.mkdtemp()
+    xml_file = os.path.join(temp_path, "gps_overlay.xml")
+
+    root = ElementTree.Element('glgps')
+    for key, value in root_attrib.items():
+        root.attrib[key] = value
+
+    ad.log.debug("Sub attrib is %s", sub_attrib)
+
+    sub = ElementTree.SubElement(root, 'gll')
+    for key, value in sub_attrib.items():
+        sub.attrib[key] = value
+
+    xml = ElementTree.ElementTree(root)
+    xml.write(xml_file, xml_declaration=True, encoding="utf-8", method="xml")
+    return xml_file
 
 
 def connect_to_wifi_network(ad, network):
@@ -2054,6 +2109,10 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
             with zipfile.ZipFile(zip_path, "r") as zip_file:
                 zip_file.extractall(tmp_log_path)
                 gl_logs = zip_file.namelist()
+                # b/214145973 check if hidden exists in pixel logger zip file
+                tmp_file = [name for name in gl_logs if 'tmp' in name]
+                if tmp_file:
+                    ad.log.warn(f"Hidden file {tmp_file} exists in pixel logger zip file")
             break
         elif os.path.isdir(zip_path):
             ad.log.info("BRCM logs didn't zip properly. Log path is directory.")
@@ -2107,6 +2166,9 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold, brcm_error_log_allowlist):
     power_save_count = 0
     pglor_list, brcm_error_log = parse_brcm_nmea_log(
         ad, "$PGLOR,11,STA", brcm_error_log_allowlist)
+    if not pglor_list:
+        raise signals.TestFailure("Fail to get DPO logs from pixel logger")
+
     for pglor in pglor_list:
         power_res = re.compile(r',P,(\w),').search(pglor).group(1)
         if power_res == "D":
@@ -2249,6 +2311,7 @@ def compare_watch_phone_location(ad,watch_file, phone_file):
         return False
     else:
         ad.log.info("Watch's locations are using Phone's location.")
+        return True
 
 
 def check_tracking_file(ad):

@@ -57,14 +57,15 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
         else:
             # Default is an android device, just like the other tests
             self.dut = create_wlan_device(self.android_devices[0])
-        self.ap = self.access_points[0]
+        self.access_point = self.access_points[0]
         self._stop_all_soft_aps()
         self.in_use_interface = None
 
     def teardown_test(self) -> None:
         self.dut.disconnect()
         self.dut.reset_wifi()
-        self.ap.stop_all_aps()
+        self.download_ap_logs()
+        self.access_point.stop_all_aps()
 
     # TODO(fxbug.dev/85738): Change band type to an enum.
     def channel_switch(self,
@@ -98,15 +99,15 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
 
         self.current_channel_num = starting_channel
         if band == hostapd_constants.BAND_5G:
-            self.in_use_interface = self.ap.wlan_5g
+            self.in_use_interface = self.access_point.wlan_5g
         elif band == hostapd_constants.BAND_2G:
-            self.in_use_interface = self.ap.wlan_2g
+            self.in_use_interface = self.access_point.wlan_2g
         asserts.assert_true(
             self._channels_valid_for_band([self.current_channel_num], band),
             'starting channel {} not a valid channel for band {}'.format(
                 self.current_channel_num, band))
 
-        setup_ap(access_point=self.ap,
+        setup_ap(access_point=self.access_point,
                  profile_name='whirlwind',
                  channel=self.current_channel_num,
                  ssid=self.ssid)
@@ -128,8 +129,9 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
                 continue
             self.log.info('channel switch: {} -> {}'.format(
                 self.current_channel_num, channel_num))
-            self.ap.channel_switch(self.in_use_interface, channel_num)
-            channel_num_after_switch = self.ap.get_current_channel(
+            self.access_point.channel_switch(self.in_use_interface,
+                                             channel_num)
+            channel_num_after_switch = self.access_point.get_current_channel(
                 self.in_use_interface)
             asserts.assert_true(channel_num_after_switch == channel_num,
                                 'AP failed to channel switch')

@@ -143,6 +143,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.iperf_server.stop()
 
     def teardown_class(self):
+        self.access_point.teardown()
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)

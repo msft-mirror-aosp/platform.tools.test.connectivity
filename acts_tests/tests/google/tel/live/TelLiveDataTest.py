@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2016 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -49,16 +49,24 @@ from acts_contrib.test_utils.tel.tel_defines import TETHERING_PASSWORD_HAS_ESCAP
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_SSID_LIST
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_PASSWORD_LIST
 from acts_contrib.test_utils.tel.tel_bt_utils import verify_bluetooth_tethering_connection
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
+from acts_contrib.test_utils.tel.tel_data_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
 from acts_contrib.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
+from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_detection
+from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_recovery
+from acts_contrib.test_utils.tel.tel_data_utils import check_network_validation_fail
 from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
+from acts_contrib.test_utils.tel.tel_data_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_data_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_data_utils import tethering_check_internet_connection
 from acts_contrib.test_utils.tel.tel_data_utils import test_data_connectivity_multi_bearer
 from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_tethering_wifi_and_voice_call
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_apm_tethering_internet_connection
@@ -84,19 +92,12 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_4g
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
-from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
-from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_detection
-from acts_contrib.test_utils.tel.tel_test_utils import check_network_validation_fail
 from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import set_time_sync_from_network
@@ -110,7 +111,6 @@ from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import stop_wifi_tethering
-from acts_contrib.test_utils.tel.tel_wifi_utils import wait_for_wifi_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 

@@ -112,7 +112,6 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
 
     For accurate results, must be performed in an RF isolated environment.
     """
-
     def setup_class(self):
         super().setup_class()
 
@@ -191,6 +190,7 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
                 tc.wlan_device.disconnect()
                 tc.wlan_device.reset_wifi()
             if tc.access_point:
+                self.download_ap_logs()
                 tc.access_point.stop_all_aps()
 
     def teardown_class(self):
@@ -199,7 +199,8 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
         super().teardown_class()
 
     def on_fail(self, test_name, begin_time):
-        super().on_fail(test_name, begin_time)
+        for wlan_device in self.wlan_devices:
+            super().on_device_fail(wlan_device.device, test_name, begin_time)
 
     def start_ap_with_wmm_params(self, ap_parameters, wmm_parameters):
         """Sets up WMM network on AP.
@@ -658,7 +659,6 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
 # External Traffic Differentiation
 
     """Single station, STAUT transmits high priority"""
-
     def test_external_traffic_diff_staut_VO_ap_VI(self):
         self.run_wmm_test(
             wmm_test_cases.test_external_traffic_diff_staut_VO_ap_VI)
@@ -770,7 +770,6 @@ class WlanWmmTest(AbstractDeviceWlanDeviceBaseTest):
 # WFA Test Plan Tests
 
     """Traffic Differentiation in Single BSS (Single Station)"""
-
     def test_wfa_traffic_diff_single_station_staut_BE_ap_VI_BE(self):
         self.run_wmm_test(
             wmm_test_cases.

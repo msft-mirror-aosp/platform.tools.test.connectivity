@@ -26,6 +26,7 @@ from acts.controllers import iperf_server as ipf
 from acts.controllers import iperf_client as ipc
 from acts.controllers.adb_lib.error import AdbCommandError
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
+from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
@@ -119,6 +120,8 @@ class WifiAwareRvrTest(WifiRvrTest):
             wutils.wifi_toggle_state(ad, True)
 
     def teardown_class(self):
+        for ap in self.access_points:
+            ap.teardown()
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
@@ -433,8 +436,15 @@ class WifiAwareRvrTest(WifiRvrTest):
                 traffic_type=traffic_type,
                 traffic_direction=traffic_direction,
                 concurrency_state=concurrency_state)
-            setattr(self, test_name, partial(self._test_aware_rvr,
-                                             test_params))
+            test_class = self.__class__.__name__
+            if "uuid_list" in self.user_params:
+                test_tracker_uuid = self.user_params["uuid_list"][
+                    test_class][test_name]
+                test_case = test_tracker_info(uuid=test_tracker_uuid)(
+                    lambda: self._test_aware_rvr(test_params))
+            else:
+                test_case = partial(self._test_aware_rvr,test_params)
+            setattr(self, test_name, test_case)
             test_cases.append(test_name)
         return test_cases
 

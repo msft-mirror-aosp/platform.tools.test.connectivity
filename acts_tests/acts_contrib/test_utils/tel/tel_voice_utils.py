@@ -64,7 +64,6 @@ from acts_contrib.test_utils.tel.tel_defines import EventCallStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventMessageWaitingIndicatorChanged
 from acts_contrib.test_utils.tel.tel_defines import CallStateContainer
 from acts_contrib.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_ims_utils import is_wfc_enabled
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_wfc
@@ -77,6 +76,7 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_network_rat
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_subscription
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_not_network_rat
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_voice_attach
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -103,7 +103,6 @@ from acts_contrib.test_utils.tel.tel_test_utils import TelResultWrapper
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_voice_attach
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 
@@ -351,15 +350,8 @@ def initiate_call(log,
                   ad,
                   callee_number,
                   emergency=False,
-                  timeout=MAX_WAIT_TIME_CALL_INITIATION,
-                  checking_interval=5,
                   incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-                  video=False,
-                  voice_type_init=None,
-                  call_stats_check=False,
-                  result_info=result_dict,
-                  nw_gen_5g=False,
-                  nr_type= None):
+                  video=False):
     """Make phone call from caller to callee.
 
     Args:
@@ -399,10 +391,6 @@ def initiate_call(log,
             ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
             ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
-
-        if nw_gen_5g:
-            if not is_current_network_5g(ad, nr_type= nr_type):
-                ad.log.error("Phone is not attached on 5G")
 
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
             ad.droid.telecomShowInCallScreen()
@@ -738,9 +726,7 @@ def call_setup_teardown(log,
                         slot_id_callee=None,
                         voice_type_init=None,
                         call_stats_check=False,
-                        result_info=result_dict,
-                        nsa_5g_for_stress=False,
-                        nr_type= None):
+                        result_info=result_dict):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -779,8 +765,7 @@ def call_setup_teardown(log,
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state,
-        voice_type_init, call_stats_check, result_info, nsa_5g_for_stress,
-        nr_type)
+        voice_type_init, call_stats_check, result_info)
 
 
 def call_setup_teardown_for_subscription(
@@ -798,9 +783,7 @@ def call_setup_teardown_for_subscription(
         video_state=None,
         voice_type_init=None,
         call_stats_check=False,
-        result_info=result_dict,
-        nsa_5g_for_stress=False,
-        nr_type= None):
+        result_info=result_dict):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -839,24 +822,12 @@ def call_setup_teardown_for_subscription(
         'phone_num']
     callee_number = ad_callee.telephony['subscription'][subid_callee][
         'phone_num']
-    if dialing_number_length:
-        skip_test = False
-        trunc_position = 0 - int(dialing_number_length)
-        try:
-            caller_area_code = caller_number[:trunc_position]
-            callee_area_code = callee_number[:trunc_position]
-            callee_dial_number = callee_number[trunc_position:]
-        except:
-            skip_test = True
-        if caller_area_code != callee_area_code:
-            skip_test = True
-        if skip_test:
-            msg = "Cannot make call from %s to %s by %s digits" % (
-                caller_number, callee_number, dialing_number_length)
-            ad_caller.log.info(msg)
-            raise signals.TestSkip(msg)
-        else:
-            callee_number = callee_dial_number
+
+    callee_number = truncate_phone_number(
+        log,
+        caller_number,
+        callee_number,
+        dialing_number_length)
 
     tel_result_wrapper = TelResultWrapper(CallResult('SUCCESS'))
     msg = "Call from %s to %s" % (caller_number, callee_number)
@@ -874,136 +845,91 @@ def call_setup_teardown_for_subscription(
         setattr(ad, "call_ids", call_ids)
         if call_ids:
             ad.log.info("Pre-exist CallId %s before making call", call_ids)
-    try:
-        if not initiate_call(
-                log,
-                ad_caller,
-                callee_number,
-                incall_ui_display=incall_ui_display,
-                video=video):
-            ad_caller.log.error("Initiate call failed.")
-            tel_result_wrapper.result_value = CallResult('INITIATE_FAILED')
-            return tel_result_wrapper
-        else:
-            ad_caller.log.info("Caller initate call successfully")
-        if not wait_and_answer_call_for_subscription(
-                log,
-                ad_callee,
-                subid_callee,
-                incoming_number=caller_number,
-                caller=ad_caller,
-                incall_ui_display=incall_ui_display,
-                video_state=video_state):
-            ad_callee.log.error("Answer call fail.")
-            tel_result_wrapper.result_value = CallResult(
-                'NO_RING_EVENT_OR_ANSWER_FAILED')
-            return tel_result_wrapper
-        else:
-            ad_callee.log.info("Callee answered the call successfully")
 
-        for ad, call_func in zip([ad_caller, ad_callee],
-                                 [verify_caller_func, verify_callee_func]):
-            call_ids = ad.droid.telecomCallGetCallIds()
-            new_call_ids = set(call_ids) - set(ad.call_ids)
-            if not new_call_ids:
-                ad.log.error(
-                    "No new call ids are found after call establishment")
-                ad.log.error("telecomCallGetCallIds returns %s",
-                             ad.droid.telecomCallGetCallIds())
-                tel_result_wrapper.result_value = CallResult('NO_CALL_ID_FOUND')
-            for new_call_id in new_call_ids:
-                if not wait_for_in_call_active(ad, call_id=new_call_id):
-                    tel_result_wrapper.result_value = CallResult(
-                        'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
-                else:
-                    ad.log.info("callProperties = %s",
-                                ad.droid.telecomCallGetProperties(new_call_id))
+    if not initiate_call(
+            log,
+            ad_caller,
+            callee_number,
+            incall_ui_display=incall_ui_display,
+            video=video):
+        ad_caller.log.error("Initiate call failed.")
+        tel_result_wrapper.result_value = CallResult('INITIATE_FAILED')
+        return tel_result_wrapper
+    else:
+        ad_caller.log.info("Caller initate call successfully")
+    if not wait_and_answer_call_for_subscription(
+            log,
+            ad_callee,
+            subid_callee,
+            incoming_number=caller_number,
+            caller=ad_caller,
+            incall_ui_display=incall_ui_display,
+            video_state=video_state):
+        ad_callee.log.error("Answer call fail.")
+        tel_result_wrapper.result_value = CallResult(
+            'NO_RING_EVENT_OR_ANSWER_FAILED')
+        return tel_result_wrapper
+    else:
+        ad_callee.log.info("Callee answered the call successfully")
 
-            if not ad.droid.telecomCallGetAudioState():
-                ad.log.error("Audio is not in call state")
+    for ad, call_func in zip([ad_caller, ad_callee],
+                                [verify_caller_func, verify_callee_func]):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        new_call_ids = set(call_ids) - set(ad.call_ids)
+        if not new_call_ids:
+            ad.log.error(
+                "No new call ids are found after call establishment")
+            ad.log.error("telecomCallGetCallIds returns %s",
+                            ad.droid.telecomCallGetCallIds())
+            tel_result_wrapper.result_value = CallResult('NO_CALL_ID_FOUND')
+        for new_call_id in new_call_ids:
+            if not wait_for_in_call_active(ad, call_id=new_call_id):
                 tel_result_wrapper.result_value = CallResult(
-                    'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
-
-            if call_func(log, ad):
-                ad.log.info("Call is in %s state", call_func.__name__)
+                    'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
             else:
-                ad.log.error("Call is not in %s state, voice in RAT %s",
-                             call_func.__name__,
-                             ad.droid.telephonyGetCurrentVoiceNetworkType())
-                tel_result_wrapper.result_value = CallResult(
-                    'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
-        if not tel_result_wrapper:
-            return tel_result_wrapper
+                ad.log.info("callProperties = %s",
+                            ad.droid.telecomCallGetProperties(new_call_id))
 
-        if call_stats_check:
-            voice_type_in_call = check_voice_network_type([ad_caller, ad_callee], voice_init=False)
-            phone_a_call_type = check_call_status(ad_caller,
-                                                  voice_type_init[0],
-                                                  voice_type_in_call[0])
-            result_info["Call Stats"] = phone_a_call_type
-            ad_caller.log.debug("Voice Call Type: %s", phone_a_call_type)
-            phone_b_call_type = check_call_status(ad_callee,
-                                                  voice_type_init[1],
-                                                  voice_type_in_call[1])
-            result_info["Call Stats"] = phone_b_call_type
-            ad_callee.log.debug("Voice Call Type: %s", phone_b_call_type)
+        if not ad.droid.telecomCallGetAudioState():
+            ad.log.error("Audio is not in call state")
+            tel_result_wrapper.result_value = CallResult(
+                'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
 
-        elapsed_time = 0
-        while (elapsed_time < wait_time_in_call):
-            CHECK_INTERVAL = min(CHECK_INTERVAL,
-                                 wait_time_in_call - elapsed_time)
-            time.sleep(CHECK_INTERVAL)
-            elapsed_time += CHECK_INTERVAL
-            time_message = "at <%s>/<%s> second." % (elapsed_time,
-                                                     wait_time_in_call)
-            for ad, call_func in [(ad_caller, verify_caller_func),
-                                  (ad_callee, verify_callee_func)]:
-                if not call_func(log, ad):
-                    ad.log.error(
-                        "NOT in correct %s state at %s, voice in RAT %s",
-                        call_func.__name__, time_message,
-                        ad.droid.telephonyGetCurrentVoiceNetworkType())
-                    tel_result_wrapper.result_value = CallResult(
-                        'CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED')
-                else:
-                    ad.log.info("In correct %s state at %s",
-                                call_func.__name__, time_message)
-                if not ad.droid.telecomCallGetAudioState():
-                    ad.log.error("Audio is not in call state at %s",
-                                 time_message)
-                    tel_result_wrapper.result_value = CallResult(
-                        'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
-            if not tel_result_wrapper:
-                return tel_result_wrapper
+        if call_func(log, ad):
+            ad.log.info("Call is in %s state", call_func.__name__)
+        else:
+            ad.log.error("Call is not in %s state, voice in RAT %s",
+                            call_func.__name__,
+                            ad.droid.telephonyGetCurrentVoiceNetworkType())
+            tel_result_wrapper.result_value = CallResult(
+                'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
+    if not tel_result_wrapper:
+        return tel_result_wrapper
 
-        if ad_hangup:
-            if not hangup_call(log, ad_hangup):
-                ad_hangup.log.info("Failed to hang up the call")
-                tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
-                return tel_result_wrapper
-    finally:
-        if not tel_result_wrapper:
-            for ad in (ad_caller, ad_callee):
-                last_call_drop_reason(ad, begin_time)
-                try:
-                    if ad.droid.telecomIsInCall():
-                        ad.log.info("In call. End now.")
-                        ad.droid.telecomEndCall()
-                except Exception as e:
-                    log.error(str(e))
+    if call_stats_check:
+        voice_type_in_call = check_voice_network_type([ad_caller, ad_callee], voice_init=False)
+        phone_a_call_type = check_call_status(ad_caller,
+                                                voice_type_init[0],
+                                                voice_type_in_call[0])
+        result_info["Call Stats"] = phone_a_call_type
+        ad_caller.log.debug("Voice Call Type: %s", phone_a_call_type)
+        phone_b_call_type = check_call_status(ad_callee,
+                                                voice_type_init[1],
+                                                voice_type_in_call[1])
+        result_info["Call Stats"] = phone_b_call_type
+        ad_callee.log.debug("Voice Call Type: %s", phone_b_call_type)
 
-        if nsa_5g_for_stress:
-            for ad in (ad_caller, ad_callee):
-                if not is_current_network_5g(ad, nr_type):
-                    ad.log.error("Phone not attached on 5G")
-
-        if ad_hangup or not tel_result_wrapper:
-            for ad in (ad_caller, ad_callee):
-                if not wait_for_call_id_clearing(
-                        ad, getattr(ad, "caller_ids", [])):
-                    tel_result_wrapper.result_value = CallResult(
-                        'CALL_ID_CLEANUP_FAIL')
-    return tel_result_wrapper
+    return wait_for_call_end(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_hangup,
+        verify_caller_func,
+        verify_callee_func,
+        begin_time,
+        check_interval=CHECK_INTERVAL,
+        tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
+        wait_time_in_call=WAIT_TIME_IN_CALL)
 
 
 def two_phone_call_leave_voice_mail(
@@ -2461,13 +2387,9 @@ def wait_for_call_end(
                 ad.log.error("Audio is not in call state at %s", time_message)
                 tel_result_wrapper.result_value = CallResult(
                         'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
-        if not tel_result_wrapper:
-            return tel_result_wrapper
 
-    if ad_hangup:
-        if not hangup_call(log, ad_hangup):
-            ad_hangup.log.info("Failed to hang up the call")
-            tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+        if not tel_result_wrapper:
+            break
 
     if not tel_result_wrapper:
         for ad in (ad_caller, ad_callee):
@@ -2478,6 +2400,12 @@ def wait_for_call_end(
                     ad.droid.telecomEndCall()
             except Exception as e:
                 log.error(str(e))
+    else:
+        if ad_hangup:
+            if not hangup_call(log, ad_hangup):
+                ad_hangup.log.info("Failed to hang up the call")
+                tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+
     if ad_hangup or not tel_result_wrapper:
         for ad in (ad_caller, ad_callee):
             if not wait_for_call_id_clearing(ad, getattr(ad, "caller_ids", [])):
@@ -2704,3 +2632,52 @@ def verify_default_ims_setting(log,
         ad.log.info("user_config_profile = %s ",
                           sorted(user_config_profile.items()))
     return result
+
+
+def truncate_phone_number(
+    log,
+    caller_number,
+    callee_number,
+    dialing_number_length,
+    skip_inter_area_call=True):
+    """This function truncates the phone number of the caller/callee to test
+    7/10/11/12 digit dialing for North American numbering plan, and distinguish
+    if this is an inter-area call by comparing the area code.
+
+    Args:
+        log: logger object
+        caller_number: phone number of the caller
+        callee_number: phone number of the callee
+        dialing_number_length: the length of phone number (usually 7/10/11/12)
+        skip_inter_area_call: True to raise a TestSkip exception to skip dialing
+            the inter-area call. Otherwise False.
+
+    Returns:
+        The truncated phone number of the callee
+    """
+
+    if not dialing_number_length:
+        return callee_number
+
+    trunc_position = 0 - int(dialing_number_length)
+    try:
+        caller_area_code = caller_number[:trunc_position]
+        callee_area_code = callee_number[:trunc_position]
+        callee_dial_number = callee_number[trunc_position:]
+
+        if caller_area_code != callee_area_code:
+            skip_inter_area_call = True
+
+    except:
+        skip_inter_area_call = True
+
+    if skip_inter_area_call:
+        msg = "Cannot make call from %s to %s by %s digits since inter-area "
+        "call is not allowed" % (
+            caller_number, callee_number, dialing_number_length)
+        log.info(msg)
+        raise signals.TestSkip(msg)
+    else:
+        callee_number = callee_dial_number
+
+    return callee_number

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2020 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
+from acts_contrib.test_utils.tel.tel_data_utils import start_youtube_video
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_cell_data_connection_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import is_volte_enabled
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte_for_subscription
@@ -48,8 +50,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
-from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode

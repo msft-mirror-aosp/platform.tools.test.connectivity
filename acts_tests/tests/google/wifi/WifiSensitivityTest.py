@@ -181,6 +181,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         self.user_params['retry_tests'] = [self.__class__.__name__]
 
     def teardown_class(self):
+        self.access_point.teardown()
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)

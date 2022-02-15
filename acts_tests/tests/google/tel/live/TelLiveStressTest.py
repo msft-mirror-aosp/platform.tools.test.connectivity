@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2017 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_MESSAGE_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_VOICE_SUB_ID
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_logging_utils import extract_test_log
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
@@ -72,7 +74,6 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_mes
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_always_allow_mms_data
 from acts_contrib.test_utils.tel.tel_test_utils import STORY_LINE
-from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import get_telephony_signal_strength
@@ -81,7 +82,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mod
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection_by_ping
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
 from acts_contrib.test_utils.tel.tel_test_utils import check_voice_network_type
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
@@ -477,9 +478,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
-                result_info = self.result_info,
-                nw_gen_5g=self.nsa_5g_for_stress,
-                nr_type= self.nr_type
+                result_info = self.result_info
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
@@ -494,9 +493,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 slot_id_callee=slot_id_callee,
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
-                result_info = self.result_info,
-                nsa_5g_for_stress=self.nsa_5g_for_stress,
-                nr_type= self.nr_type)
+                result_info = self.result_info)
             self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
@@ -563,6 +560,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not hangup_call(self.log, ads[0]):
             failure_reasons.add("Teardown")
             result = False
+        else:
+            if self.nsa_5g_for_stress:
+                for ad in (ads[0], ads[1]):
+                    if not is_current_network_5g(ad, self.nr_type):
+                        ad.log.error("Phone not attached on 5G")
         for ad in ads:
             if not wait_for_call_id_clearing(ad,
                                              []) or ad.droid.telecomIsInCall():

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import struct
 from acts import signals
 from queue import Empty
 from acts.asserts import abort_all
-from acts.controllers.adb_lib.error import AdbError
+from acts.controllers.adb_lib.error import AdbCommandError, AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 
-from acts.controllers.android_device import SL4A_APK_NAME
+from acts.libs.proc.job import TimeoutError
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.tel_defines import CarrierConfigs
 from acts_contrib.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -50,8 +50,6 @@ from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts_contrib.test_utils.tel.tel_defines import DIALER_PACKAGE_NAME
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
 from acts_contrib.test_utils.tel.tel_defines import DATA_ROAMING_DISABLE
 from acts_contrib.test_utils.tel.tel_defines import GEN_4G
@@ -60,21 +58,13 @@ from acts_contrib.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts_contrib.test_utils.tel.tel_defines import MESSAGE_PACKAGE_NAME
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_7_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_10_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_11_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_12_DIGIT
-from acts_contrib.test_utils.tel.tel_defines import RAT_1XRTT
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
@@ -87,7 +77,6 @@ from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts_contrib.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
@@ -95,13 +84,9 @@ from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_SYNC_DATE_TIME_FRO
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts_contrib.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts_contrib.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
 from acts_contrib.test_utils.tel.tel_defines import EventDisplayInfoChanged
-from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
-from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts_contrib.test_utils.tel.tel_defines import EventServiceStateChanged
-from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts_contrib.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts_contrib.test_utils.tel.tel_defines import ServiceStateContainer
 from acts_contrib.test_utils.tel.tel_defines import DisplayInfoContainer
@@ -120,7 +105,6 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import operator_name_from_net
 from acts_contrib.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
@@ -560,66 +544,6 @@ def get_lte_rsrp(ad):
     except Exception as e:
         ad.log.error(e)
     return None
-
-
-def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
-    data_stall_detected = False
-    time_var = 1
-    try:
-        while (time_var < wait_time):
-            out = ad.adb.shell("dumpsys network_stack " \
-                              "| grep \"Suspecting data stall\"",
-                            ignore_status=True)
-            ad.log.debug("Output is %s", out)
-            if out:
-                ad.log.info("NetworkMonitor detected - %s", out)
-                data_stall_detected = True
-                break
-            time.sleep(30)
-            time_var += 30
-    except Exception as e:
-        ad.log.error(e)
-    return data_stall_detected
-
-
-def check_network_validation_fail(ad, begin_time=None,
-                                  wait_time=WAIT_TIME_FOR_NW_VALID_FAIL):
-    network_validation_fail = False
-    time_var = 1
-    try:
-        while (time_var < wait_time):
-            time_var += 30
-            nw_valid = ad.search_logcat("validation failed",
-                                         begin_time)
-            if nw_valid:
-                ad.log.info("Validation Failed received here - %s",
-                            nw_valid[0]["log_message"])
-                network_validation_fail = True
-                break
-            time.sleep(30)
-    except Exception as e:
-        ad.log.error(e)
-    return network_validation_fail
-
-
-def check_data_stall_recovery(ad, begin_time=None,
-                              wait_time=WAIT_TIME_FOR_DATA_STALL_RECOVERY):
-    data_stall_recovery = False
-    time_var = 1
-    try:
-        while (time_var < wait_time):
-            time_var += 30
-            recovery = ad.search_logcat("doRecovery() cleanup all connections",
-                                         begin_time)
-            if recovery:
-                ad.log.info("Recovery Performed here - %s",
-                            recovery[-1]["log_message"])
-                data_stall_recovery = True
-                break
-            time.sleep(30)
-    except Exception as e:
-        ad.log.error(e)
-    return data_stall_recovery
 
 
 def break_internet_except_sl4a_port(ad, sl4a_port):
@@ -1412,7 +1336,7 @@ def _generate_file_directory_and_file_name(url, out_path):
     return file_directory, file_name
 
 
-def _check_file_existance(ad, file_path, expected_file_size=None):
+def _check_file_existence(ad, file_path, expected_file_size=None):
     """Check file existance by file_path. If expected_file_size
        is provided, then also check if the file meet the file size requirement.
     """
@@ -1438,132 +1362,6 @@ def _check_file_existance(ad, file_path, expected_file_size=None):
     else:
         ad.log.info("File %s does not exist.", file_path)
         return False
-
-
-def check_curl_availability(ad):
-    if not hasattr(ad, "curl_capable"):
-        try:
-            out = ad.adb.shell("/data/curl --version")
-            if not out or "not found" in out:
-                setattr(ad, "curl_capable", False)
-                ad.log.info("curl is unavailable, use chrome to download file")
-            else:
-                setattr(ad, "curl_capable", True)
-        except Exception:
-            setattr(ad, "curl_capable", False)
-            ad.log.info("curl is unavailable, use chrome to download file")
-    return ad.curl_capable
-
-
-def start_youtube_video(ad, url="vnd.youtube:watch?v=pSJoP0LR8CQ"):
-    ad.log.info("Open an youtube video")
-    for _ in range(3):
-        ad.ensure_screen_on()
-        ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
-        if wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
-            ad.log.info("Started a video in youtube, audio is in MUSIC state")
-            return True
-        ad.log.info("Audio is not in MUSIC state. Quit Youtube.")
-        for _ in range(3):
-            ad.send_keycode("BACK")
-            time.sleep(1)
-        time.sleep(3)
-    return False
-
-
-def active_file_download_task(log, ad, file_name="5MB", method="curl"):
-    # files available for download on the same website:
-    # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
-    # download file by adb command, as phone call will use sl4a
-    file_size_map = {
-        '1MB': 1000000,
-        '5MB': 5000000,
-        '10MB': 10000000,
-        '20MB': 20000000,
-        '50MB': 50000000,
-        '100MB': 100000000,
-        '200MB': 200000000,
-        '512MB': 512000000
-    }
-    url_map = {
-        "1MB": [
-            "http://146.148.91.8/download/1MB.zip",
-            "http://ipv4.download.thinkbroadband.com/1MB.zip"
-        ],
-        "5MB": [
-            "http://146.148.91.8/download/5MB.zip",
-            "http://212.183.159.230/5MB.zip",
-            "http://ipv4.download.thinkbroadband.com/5MB.zip"
-        ],
-        "10MB": [
-            "http://146.148.91.8/download/10MB.zip",
-            "http://212.183.159.230/10MB.zip",
-            "http://ipv4.download.thinkbroadband.com/10MB.zip",
-            "http://lax.futurehosting.com/test.zip",
-            "http://ovh.net/files/10Mio.dat"
-        ],
-        "20MB": [
-            "http://146.148.91.8/download/20MB.zip",
-            "http://212.183.159.230/20MB.zip",
-            "http://ipv4.download.thinkbroadband.com/20MB.zip"
-        ],
-        "50MB": [
-            "http://146.148.91.8/download/50MB.zip",
-            "http://212.183.159.230/50MB.zip",
-            "http://ipv4.download.thinkbroadband.com/50MB.zip"
-        ],
-        "100MB": [
-            "http://146.148.91.8/download/100MB.zip",
-            "http://212.183.159.230/100MB.zip",
-            "http://ipv4.download.thinkbroadband.com/100MB.zip",
-            "http://speedtest-ca.turnkeyinternet.net/100mb.bin",
-            "http://ovh.net/files/100Mio.dat",
-            "http://lax.futurehosting.com/test100.zip"
-        ],
-        "200MB": [
-            "http://146.148.91.8/download/200MB.zip",
-            "http://212.183.159.230/200MB.zip",
-            "http://ipv4.download.thinkbroadband.com/200MB.zip"
-        ],
-        "512MB": [
-            "http://146.148.91.8/download/512MB.zip",
-            "http://212.183.159.230/512MB.zip",
-            "http://ipv4.download.thinkbroadband.com/512MB.zip"
-        ]
-    }
-
-    file_size = file_size_map.get(file_name)
-    file_urls = url_map.get(file_name)
-    file_url = None
-    for url in file_urls:
-        url_splits = url.split("/")
-        if verify_http_connection(log, ad, url=url, retry=1):
-            output_path = "/sdcard/Download/%s" % url_splits[-1]
-            file_url = url
-            break
-    if not file_url:
-        ad.log.error("No url is available to download %s", file_name)
-        return False
-    timeout = min(max(file_size / 100000, 600), 3600)
-    if method == "sl4a":
-        return (http_file_download_by_sl4a, (ad, file_url, output_path,
-                                             file_size, True, timeout))
-    if method == "curl" and check_curl_availability(ad):
-        return (http_file_download_by_curl, (ad, file_url, output_path,
-                                             file_size, True, timeout))
-    elif method == "sl4a" or method == "curl":
-        return (http_file_download_by_sl4a, (ad, file_url, output_path,
-                                             file_size, True, timeout))
-    else:
-        return (http_file_download_by_chrome, (ad, file_url, file_size, True,
-                                               timeout))
-
-
-def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
-    task = active_file_download_task(log, ad, file_name, method=method)
-    if not task:
-        return False
-    return task[0](*task[1])
 
 
 def verify_internet_connection_by_ping(log,
@@ -1668,7 +1466,7 @@ def iperf_test_with_options(log,
                 log_file_path=log_file_path)
             return True
         result, data = ad.run_iperf_client(
-            iperf_server, iperf_option, timeout=timeout + 60)
+            iperf_server, iperf_option, timeout=timeout + 120)
         ad.log.info("iperf test result with server %s is %s", iperf_server,
                     result)
         if result:
@@ -1712,7 +1510,8 @@ def iperf_udp_test_by_adb(log,
                           ipv6=False,
                           rate_dict=None,
                           blocking=True,
-                          log_file_path=None):
+                          log_file_path=None,
+                          retry=5):
     """Iperf test by adb using UDP.
 
     Args:
@@ -1728,29 +1527,36 @@ def iperf_udp_test_by_adb(log,
         rate_dict: dictionary that can be passed in to save data
         blocking: run iperf in blocking mode if True
         log_file_path: location to save logs
+        retry: times of retry when the server is unavailable
     """
     iperf_option = "-u -i 1 -t %s -O %s -J" % (timeout, omit)
     if limit_rate:
         iperf_option += " -b %s" % limit_rate
     if pacing_timer:
         iperf_option += " --pacing-timer %s" % pacing_timer
-    if port_num:
-        iperf_option += " -p %s" % port_num
     if ipv6:
         iperf_option += " -6"
     if reverse:
         iperf_option += " -R"
-    try:
-        return iperf_test_with_options(log,
-                                        ad,
-                                        iperf_server,
-                                        iperf_option,
-                                        timeout,
-                                        rate_dict,
-                                        blocking,
-                                        log_file_path)
-    except AdbError:
-        return False
+    for _ in range(retry):
+        if port_num:
+            iperf_option_final = iperf_option + " -p %s" % port_num
+            port_num += 1
+        else:
+            iperf_option_final = iperf_option
+        try:
+            return iperf_test_with_options(log,
+                                           ad,
+                                           iperf_server,
+                                           iperf_option_final,
+                                           timeout,
+                                           rate_dict,
+                                           blocking,
+                                           log_file_path)
+        except (AdbCommandError, TimeoutError) as error:
+            continue
+        except AdbError:
+            return False
 
 
 def iperf_test_by_adb(log,
@@ -1764,7 +1570,8 @@ def iperf_test_by_adb(log,
                       ipv6=False,
                       rate_dict=None,
                       blocking=True,
-                      log_file_path=None):
+                      log_file_path=None,
+                      retry=5):
     """Iperf test by adb using TCP.
 
     Args:
@@ -1780,337 +1587,34 @@ def iperf_test_by_adb(log,
         rate_dict: dictionary that can be passed in to save data
         blocking: run iperf in blocking mode if True
         log_file_path: location to save logs
+        retry: times of retry when the server is unavailable
     """
     iperf_option = "-t %s -O %s -J" % (timeout, omit)
     if limit_rate:
         iperf_option += " -b %s" % limit_rate
-    if port_num:
-        iperf_option += " -p %s" % port_num
     if ipv6:
         iperf_option += " -6"
     if reverse:
         iperf_option += " -R"
-    try:
-        return iperf_test_with_options(log,
-                                        ad,
-                                        iperf_server,
-                                        iperf_option,
-                                        timeout,
-                                        rate_dict,
-                                        blocking,
-                                        log_file_path)
-    except AdbError:
-        return False
-
-
-def http_file_download_by_curl(ad,
-                               url,
-                               out_path=None,
-                               expected_file_size=None,
-                               remove_file_after_check=True,
-                               timeout=3600,
-                               limit_rate=None,
-                               retry=3):
-    """Download http file by adb curl.
-
-    Args:
-        ad: Android Device Object.
-        url: The url that file to be downloaded from".
-        out_path: Optional. Where to download file to.
-                  out_path is /sdcard/Download/ by default.
-        expected_file_size: Optional. Provided if checking the download file meet
-                            expected file size in unit of byte.
-        remove_file_after_check: Whether to remove the downloaded file after
-                                 check.
-        timeout: timeout for file download to complete.
-        limit_rate: download rate in bps. None, if do not apply rate limit.
-        retry: the retry request times provided in curl command.
-    """
-    file_directory, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
-    file_path = os.path.join(file_directory, file_name)
-    curl_cmd = "/data/curl"
-    if limit_rate:
-        curl_cmd += " --limit-rate %s" % limit_rate
-    if retry:
-        curl_cmd += " --retry %s" % retry
-    curl_cmd += " --url %s > %s" % (url, file_path)
-    try:
-        ad.log.info("Download %s to %s by adb shell command %s", url,
-                    file_path, curl_cmd)
-
-        ad.adb.shell(curl_cmd, timeout=timeout)
-        if _check_file_existance(ad, file_path, expected_file_size):
-            ad.log.info("%s is downloaded to %s successfully", url, file_path)
-            return True
+    for _ in range(retry):
+        if port_num:
+            iperf_option_final = iperf_option + " -p %s" % port_num
+            port_num += 1
         else:
-            ad.log.warning("Fail to download %s", url)
-            return False
-    except Exception as e:
-        ad.log.warning("Download %s failed with exception %s", url, e)
-        return False
-    finally:
-        if remove_file_after_check:
-            ad.log.info("Remove the downloaded file %s", file_path)
-            ad.adb.shell("rm %s" % file_path, ignore_status=True)
-
-
-def open_url_by_adb(ad, url):
-    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
-
-
-def http_file_download_by_chrome(ad,
-                                 url,
-                                 expected_file_size=None,
-                                 remove_file_after_check=True,
-                                 timeout=3600):
-    """Download http file by chrome.
-
-    Args:
-        ad: Android Device Object.
-        url: The url that file to be downloaded from".
-        expected_file_size: Optional. Provided if checking the download file meet
-                            expected file size in unit of byte.
-        remove_file_after_check: Whether to remove the downloaded file after
-                                 check.
-        timeout: timeout for file download to complete.
-    """
-    chrome_apk = "com.android.chrome"
-    file_directory, file_name = _generate_file_directory_and_file_name(
-        url, "/sdcard/Download/")
-    file_path = os.path.join(file_directory, file_name)
-    # Remove pre-existing file
-    ad.force_stop_apk(chrome_apk)
-    file_to_be_delete = os.path.join(file_directory, "*%s*" % file_name)
-    ad.adb.shell("rm -f %s" % file_to_be_delete)
-    ad.adb.shell("rm -rf /sdcard/Download/.*")
-    ad.adb.shell("rm -f /sdcard/Download/.*")
-    data_accounting = {
-        "total_rx_bytes": ad.droid.getTotalRxBytes(),
-        "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-        "subscriber_mobile_data_usage": get_mobile_data_usage(ad, None, None),
-        "chrome_mobile_data_usage": get_mobile_data_usage(
-            ad, None, chrome_apk)
-    }
-    ad.log.debug("Before downloading: %s", data_accounting)
-    ad.log.info("Download %s with timeout %s", url, timeout)
-    ad.ensure_screen_on()
-    open_url_by_adb(ad, url)
-    elapse_time = 0
-    result = True
-    while elapse_time < timeout:
-        time.sleep(30)
-        if _check_file_existance(ad, file_path, expected_file_size):
-            ad.log.info("%s is downloaded successfully", url)
-            if remove_file_after_check:
-                ad.log.info("Remove the downloaded file %s", file_path)
-                ad.adb.shell("rm -f %s" % file_to_be_delete)
-                ad.adb.shell("rm -rf /sdcard/Download/.*")
-                ad.adb.shell("rm -f /sdcard/Download/.*")
-            #time.sleep(30)
-            new_data_accounting = {
-                "mobile_rx_bytes":
-                ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None),
-                "chrome_mobile_data_usage":
-                get_mobile_data_usage(ad, None, chrome_apk)
-            }
-            ad.log.info("After downloading: %s", new_data_accounting)
-            accounting_diff = {
-                key: value - data_accounting[key]
-                for key, value in new_data_accounting.items()
-            }
-            ad.log.debug("Data accounting difference: %s", accounting_diff)
-            if getattr(ad, "on_mobile_data", False):
-                for key, value in accounting_diff.items():
-                    if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key,
-                                       value, expected_file_size)
-                        ad.data_accounting["%s_failure" % key] += 1
-            else:
-                for key, value in accounting_diff.items():
-                    if value >= expected_file_size:
-                        ad.log.error("%s diff is %s. File download is "
-                                     "consuming mobile data", key, value)
-                        result = False
-            return result
-        elif _check_file_existance(ad, "%s.crdownload" % file_path):
-            ad.log.info("Chrome is downloading %s", url)
-        elif elapse_time < 60:
-            # download not started, retry download wit chrome again
-            open_url_by_adb(ad, url)
-        else:
-            ad.log.error("Unable to download file from %s", url)
-            break
-        elapse_time += 30
-    ad.log.warning("Fail to download file from %s", url)
-    ad.force_stop_apk("com.android.chrome")
-    ad.adb.shell("rm -f %s" % file_to_be_delete)
-    ad.adb.shell("rm -rf /sdcard/Download/.*")
-    ad.adb.shell("rm -f /sdcard/Download/.*")
-    return False
-
-
-def http_file_download_by_sl4a(ad,
-                               url,
-                               out_path=None,
-                               expected_file_size=None,
-                               remove_file_after_check=True,
-                               timeout=300):
-    """Download http file by sl4a RPC call.
-
-    Args:
-        ad: Android Device Object.
-        url: The url that file to be downloaded from".
-        out_path: Optional. Where to download file to.
-                  out_path is /sdcard/Download/ by default.
-        expected_file_size: Optional. Provided if checking the download file meet
-                            expected file size in unit of byte.
-        remove_file_after_check: Whether to remove the downloaded file after
-                                 check.
-        timeout: timeout for file download to complete.
-    """
-    file_folder, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
-    file_path = os.path.join(file_folder, file_name)
-    ad.adb.shell("rm -f %s" % file_path)
-    accounting_apk = SL4A_APK_NAME
-    result = True
-    try:
-        if not getattr(ad, "data_droid", None):
-            ad.data_droid, ad.data_ed = ad.get_droid()
-            ad.data_ed.start()
-        else:
-            try:
-                if not ad.data_droid.is_live:
-                    ad.data_droid, ad.data_ed = ad.get_droid()
-                    ad.data_ed.start()
-            except Exception:
-                ad.log.info("Start new sl4a session for file download")
-                ad.data_droid, ad.data_ed = ad.get_droid()
-                ad.data_ed.start()
-        data_accounting = {
-            "mobile_rx_bytes":
-            ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":
-            get_mobile_data_usage(ad, None, None),
-            "sl4a_mobile_data_usage":
-            get_mobile_data_usage(ad, None, accounting_apk)
-        }
-        ad.log.debug("Before downloading: %s", data_accounting)
-        ad.log.info("Download file from %s to %s by sl4a RPC call", url,
-                    file_path)
+            iperf_option_final = iperf_option
         try:
-            ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
-        except Exception as e:
-            ad.log.warning("SL4A file download error: %s", e)
-            ad.data_droid.terminate()
+            return iperf_test_with_options(log,
+                                           ad,
+                                           iperf_server,
+                                           iperf_option_final,
+                                           timeout,
+                                           rate_dict=rate_dict,
+                                           blocking=blocking,
+                                           log_file_path=log_file_path)
+        except (AdbCommandError, TimeoutError) as error:
+            continue
+        except AdbError:
             return False
-        if _check_file_existance(ad, file_path, expected_file_size):
-            ad.log.info("%s is downloaded successfully", url)
-            new_data_accounting = {
-                "mobile_rx_bytes":
-                ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None),
-                "sl4a_mobile_data_usage":
-                get_mobile_data_usage(ad, None, accounting_apk)
-            }
-            ad.log.debug("After downloading: %s", new_data_accounting)
-            accounting_diff = {
-                key: value - data_accounting[key]
-                for key, value in new_data_accounting.items()
-            }
-            ad.log.debug("Data accounting difference: %s", accounting_diff)
-            if getattr(ad, "on_mobile_data", False):
-                for key, value in accounting_diff.items():
-                    if value < expected_file_size:
-                        ad.log.debug("%s diff is %s less than %s", key,
-                                       value, expected_file_size)
-                        ad.data_accounting["%s_failure"] += 1
-            else:
-                for key, value in accounting_diff.items():
-                    if value >= expected_file_size:
-                        ad.log.error("%s diff is %s. File download is "
-                                     "consuming mobile data", key, value)
-                        result = False
-            return result
-        else:
-            ad.log.warning("Fail to download %s", url)
-            return False
-    except Exception as e:
-        ad.log.error("Download %s failed with exception %s", url, e)
-        raise
-    finally:
-        if remove_file_after_check:
-            ad.log.info("Remove the downloaded file %s", file_path)
-            ad.adb.shell("rm %s" % file_path, ignore_status=True)
-
-
-def get_mobile_data_usage(ad, sid=None, apk=None):
-    if not sid:
-        sid = ad.droid.subscriptionGetDefaultDataSubId()
-    current_time = int(time.time() * 1000)
-    begin_time = current_time - 10 * 24 * 60 * 60 * 1000
-    end_time = current_time + 10 * 24 * 60 * 60 * 1000
-
-    if apk:
-        uid = ad.get_apk_uid(apk)
-        ad.log.debug("apk %s uid = %s", apk, uid)
-        try:
-            usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
-            ad.log.debug("Mobile data usage info for uid %s = %s", uid,
-                        usage_info)
-            return usage_info["UsageLevel"]
-        except:
-            try:
-                return ad.droid.connectivityQueryDetailsForUid(
-                    TYPE_MOBILE,
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time, uid)
-            except:
-                return ad.droid.connectivityQueryDetailsForUid(
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time, uid)
-    else:
-        try:
-            usage_info = ad.droid.getMobileDataUsageInfo(sid)
-            ad.log.debug("Mobile data usage info = %s", usage_info)
-            return usage_info["UsageLevel"]
-        except:
-            try:
-                return ad.droid.connectivityQuerySummaryForDevice(
-                    TYPE_MOBILE,
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time)
-            except:
-                return ad.droid.connectivityQuerySummaryForDevice(
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time)
-
-
-def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
-    if not subscriber_id:
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.debug("Set subscriber mobile data usage limit to %s", limit)
-    ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
-    try:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
-    except:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, limit)
-
-
-def remove_mobile_data_usage_limit(ad, subscriber_id=None):
-    if not subscriber_id:
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.debug("Remove subscriber mobile data usage limit")
-    ad.droid.logV(
-        "Setting subscriber mobile data usage limit to -1, unlimited")
-    try:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
-    except:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, -1)
 
 
 def trigger_modem_crash(ad, timeout=120):
@@ -2264,254 +1768,6 @@ def lock_lte_band_by_mds(ad, band):
         return False
     time.sleep(5)
     reboot_device(ad)
-
-
-def _connection_state_change(_event, target_state, connection_type):
-    if connection_type:
-        if 'TypeName' not in _event['data']:
-            return False
-        connection_type_string_in_event = _event['data']['TypeName']
-        cur_type = connection_type_from_type_string(
-            connection_type_string_in_event)
-        if cur_type != connection_type:
-            log.info(
-                "_connection_state_change expect: %s, received: %s <type %s>",
-                connection_type, connection_type_string_in_event, cur_type)
-            return False
-
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
-        return True
-    return False
-
-
-def wait_for_cell_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value for default
-       data subscription.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for cell data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
-
-
-def _is_data_connection_state_match(log, ad, expected_data_connection_state):
-    return (expected_data_connection_state ==
-            ad.droid.telephonyGetDataConnectionState())
-
-
-def _is_network_connected_state_match(log, ad,
-                                      expected_network_connected_state):
-    return (expected_network_connected_state ==
-            ad.droid.connectivityNetworkIsConnected())
-
-
-def wait_for_cell_data_connection_for_subscription(
-        log,
-        ad,
-        sub_id,
-        state,
-        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value for specified
-       subscrption id.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        sub_id: subscription Id
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for cell data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    state_str = {
-        True: DATA_STATE_CONNECTED,
-        False: DATA_STATE_DISCONNECTED
-    }[state]
-
-    data_state = ad.droid.telephonyGetDataConnectionState()
-    if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
-        return True
-
-    ad.ed.clear_events(EventDataConnectionStateChanged)
-    ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
-        sub_id)
-    ad.droid.connectivityStartTrackingConnectivityStateChange()
-    try:
-        ad.log.info("User data enabled for sub_id %s: %s", sub_id,
-                    ad.droid.telephonyIsDataEnabledForSubscription(sub_id))
-        data_state = ad.droid.telephonyGetDataConnectionState()
-        ad.log.info("Data connection state is %s", data_state)
-        ad.log.info("Network is connected: %s",
-                    ad.droid.connectivityNetworkIsConnected())
-        if data_state == state_str:
-            return _wait_for_nw_data_connection(
-                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
-
-        try:
-            ad.ed.wait_for_event(
-                EventDataConnectionStateChanged,
-                is_event_match,
-                timeout=timeout_value,
-                field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
-                value=state_str)
-        except Empty:
-            ad.log.info("No expected event EventDataConnectionStateChanged %s",
-                        state_str)
-
-        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
-        # data connection state.
-        # Otherwise, the network state will not be correct.
-        # The bug is tracked here: b/20921915
-
-        # Previously we use _is_data_connection_state_match,
-        # but telephonyGetDataConnectionState sometimes return wrong value.
-        # The bug is tracked here: b/22612607
-        # So we use _is_network_connected_state_match.
-
-        if _wait_for_droid_in_state(log, ad, timeout_value,
-                                    _is_network_connected_state_match, state):
-            return _wait_for_nw_data_connection(
-                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
-        else:
-            return False
-
-    finally:
-        ad.droid.telephonyStopTrackingDataConnectionStateChangeForSubscription(
-            sub_id)
-
-
-def wait_for_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    return _wait_for_nw_data_connection(log, ad, state, None, timeout_value)
-
-
-def _wait_for_nw_data_connection(
-        log,
-        ad,
-        is_connected,
-        connection_type=None,
-        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        is_connected: Expected connection status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        connection_type: expected connection type.
-            This is optional, if it is None, then any connection type will return True.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    ad.ed.clear_events(EventConnectivityChanged)
-    ad.droid.connectivityStartTrackingConnectivityStateChange()
-    try:
-        cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
-        if is_connected == cur_data_connection_state:
-            current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current data connection type: %s", current_type)
-            if not connection_type:
-                return True
-            else:
-                if not is_connected and current_type != connection_type:
-                    ad.log.info("data connection not on %s!", connection_type)
-                    return True
-                elif is_connected and current_type == connection_type:
-                    ad.log.info("data connection on %s as expected",
-                                connection_type)
-                    return True
-        else:
-            ad.log.info("current data connection state: %s target: %s",
-                        cur_data_connection_state, is_connected)
-
-        try:
-            event = ad.ed.wait_for_event(
-                EventConnectivityChanged, _connection_state_change,
-                timeout_value, is_connected, connection_type)
-            ad.log.info("Got event: %s", event)
-        except Empty:
-            pass
-
-        log.info(
-            "_wait_for_nw_data_connection: check connection after wait event.")
-        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
-        # data connection state.
-        # Otherwise, the network state will not be correct.
-        # The bug is tracked here: b/20921915
-        if _wait_for_droid_in_state(log, ad, timeout_value,
-                                    _is_network_connected_state_match,
-                                    is_connected):
-            current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current data connection type: %s", current_type)
-            if not connection_type:
-                return True
-            else:
-                if not is_connected and current_type != connection_type:
-                    ad.log.info("data connection not on %s", connection_type)
-                    return True
-                elif is_connected and current_type == connection_type:
-                    ad.log.info("after event wait, data connection on %s",
-                                connection_type)
-                    return True
-                else:
-                    return False
-        else:
-            return False
-    except Exception as e:
-        ad.log.error("Exception error %s", str(e))
-        return False
-    finally:
-        ad.droid.connectivityStopTrackingConnectivityStateChange()
 
 
 def get_cell_data_roaming_state_by_adb(ad):
@@ -2694,48 +1950,6 @@ def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
 def is_voice_attached(log, ad):
     return _is_attached_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), NETWORK_SERVICE_VOICE)
-
-
-def wait_for_voice_attach(log, ad, max_time=MAX_WAIT_TIME_NW_SELECTION):
-    """Wait for android device to attach on voice.
-
-    Args:
-        log: log object.
-        ad:  android device.
-        max_time: maximal wait time.
-
-    Returns:
-        Return True if device attach voice within max_time.
-        Return False if timeout.
-    """
-    return _wait_for_droid_in_state(log, ad, max_time, _is_attached,
-                                    NETWORK_SERVICE_VOICE)
-
-
-def wait_for_voice_attach_for_subscription(
-        log, ad, sub_id, max_time=MAX_WAIT_TIME_NW_SELECTION):
-    """Wait for android device to attach on voice in subscription id.
-
-    Args:
-        log: log object.
-        ad:  android device.
-        sub_id: subscription id.
-        max_time: maximal wait time.
-
-    Returns:
-        Return True if device attach voice within max_time.
-        Return False if timeout.
-    """
-    if not _wait_for_droid_in_state_for_subscription(
-            log, ad, sub_id, max_time, _is_attached_for_subscription,
-            NETWORK_SERVICE_VOICE):
-        return False
-
-    # TODO: b/26295983 if pone attach to 1xrtt from unknown, phone may not
-    # receive incoming call immediately.
-    if ad.droid.telephonyGetCurrentVoiceNetworkType() == RAT_1XRTT:
-        time.sleep(WAIT_TIME_1XRTT_VOICE_ATTACH)
-    return True
 
 
 def wait_for_data_attach(log, ad, max_time):
@@ -3182,61 +2396,6 @@ def set_preferred_network_mode_pref(log,
     return False
 
 
-def set_preferred_subid_for_sms(log, ad, sub_id):
-    """set subscription id for SMS
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-
-    """
-    ad.log.info("Setting subscription %s as preferred SMS SIM", sub_id)
-    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
-    # Wait to make sure settings take effect
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    return sub_id == ad.droid.subscriptionGetDefaultSmsSubId()
-
-
-def set_preferred_subid_for_data(log, ad, sub_id):
-    """set subscription id for data
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-
-    """
-    ad.log.info("Setting subscription %s as preferred Data SIM", sub_id)
-    ad.droid.subscriptionSetDefaultDataSubId(sub_id)
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    # Wait to make sure settings take effect
-    # Data SIM change takes around 1 min
-    # Check whether data has changed to selected sim
-    if not wait_for_data_connection(log, ad, True,
-                                    MAX_WAIT_TIME_DATA_SUB_CHANGE):
-        log.error("Data Connection failed - Not able to switch Data SIM")
-        return False
-    return True
-
-
-def set_preferred_subid_for_voice(log, ad, sub_id):
-    """set subscription id for voice
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-
-    """
-    ad.log.info("Setting subscription %s as Voice SIM", sub_id)
-    ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
-    ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
-    # Wait to make sure settings take effect
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    return True
-
-
 def set_call_state_listen_level(log, ad, value, sub_id):
     """Set call state listen level for subscription id.
 
@@ -3258,34 +2417,6 @@ def set_call_state_listen_level(log, ad, value, sub_id):
         "Ringing", value, sub_id)
     ad.droid.telephonyAdjustPreciseCallStateListenLevelForSubscription(
         "Background", value, sub_id)
-    return True
-
-
-def setup_sim(log, ad, sub_id, voice=False, sms=False, data=False):
-    """set subscription id for voice, sms and data
-
-    Args:
-        log: Log object.
-        ad: Android device object.
-        sub_id :Subscription ID.
-        voice: True if to set subscription as default voice subscription
-        sms: True if to set subscription as default sms subscription
-        data: True if to set subscription as default data subscription
-
-    """
-    if sub_id == INVALID_SUB_ID:
-        log.error("Invalid Subscription ID")
-        return False
-    else:
-        if voice:
-            if not set_preferred_subid_for_voice(log, ad, sub_id):
-                return False
-        if sms:
-            if not set_preferred_subid_for_sms(log, ad, sub_id):
-                return False
-        if data:
-            if not set_preferred_subid_for_data(log, ad, sub_id):
-                return False
     return True
 
 
