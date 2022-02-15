@@ -349,7 +349,7 @@ def start_nexuslogger(ad):
             ad.log.info("Kill %s" % qxdm_logger_apk)
             ad.force_stop_apk(qxdm_logger_apk)
             time.sleep(5)
-    for perm in ("READ"):
+    for perm in ("READ",):
         ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
                      (qxdm_logger_apk, perm))
     time.sleep(2)
