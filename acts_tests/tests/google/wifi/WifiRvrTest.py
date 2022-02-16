@@ -30,7 +30,6 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.wifi import ota_chamber
 from acts_contrib.test_utils.wifi import ota_sniffer
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
-from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from functools import partial
@@ -63,7 +62,6 @@ class WifiRvrTest(base_test.BaseTestClass):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
-        self.sta_dut = self.android_devices[0]
         req_params = [
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
             'RemoteServer', 'main_network'
@@ -79,11 +77,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         if hasattr(self,
                    'OTASniffer') and self.testbed_params['sniffer_enable']:
-            try:
-                self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
-            except:
-                self.log.warning('Could not start sniffer. Disabling sniffs.')
-                self.testbed_params['sniffer_enable'] = 0
+            self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
@@ -106,18 +100,15 @@ class WifiRvrTest(base_test.BaseTestClass):
                 self.log.info('Turning on airplane mode.')
                 asserts.assert_true(utils.force_airplane_mode(dev, True),
                                     'Can not turn on airplane mode.')
-                wutils.reset_wifi(dev)
-                wutils.wifi_toggle_state(dev, True)
+        wutils.wifi_toggle_state(dev, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
 
     def teardown_class(self):
         # Turn WiFi OFF
-        self.access_point.teardown()
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
-            dev.go_to_sleep()
         self.process_testclass_results()
 
     def process_testclass_results(self):
@@ -128,7 +119,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             plot_id = (result['testcase_params']['channel'],
                        result['testcase_params']['mode'])
             if plot_id not in plots:
-                plots[plot_id] = BokehFigure(
+                plots[plot_id] = wputils.BokehFigure(
                     title='Channel {} {} ({})'.format(
                         result['testcase_params']['channel'],
                         result['testcase_params']['mode'],
@@ -138,20 +129,13 @@ class WifiRvrTest(base_test.BaseTestClass):
             plots[plot_id].add_line(result['total_attenuation'],
                                     result['throughput_receive'],
                                     result['test_name'],
-                                    hover_text=result['hover_text'],
                                     marker='circle')
-            plots[plot_id].add_line(result['total_attenuation'],
-                                    result['avg_phy_rate'],
-                                    result['test_name'] + ' (PHY)',
-                                    hover_text=result['hover_text'],
-                                    marker='circle')
-
         figure_list = []
         for plot_id, plot in plots.items():
             plot.generate_figure()
             figure_list.append(plot)
         output_file_path = os.path.join(self.log_path, 'results.html')
-        BokehFigure.save_figures(figure_list, output_file_path)
+        wputils.BokehFigure.save_figures(figure_list, output_file_path)
 
     def pass_fail_check(self, rvr_result):
         """Check the test result and decide if it passed or failed.
@@ -258,20 +242,19 @@ class WifiRvrTest(base_test.BaseTestClass):
             data
         """
         # Save output as text file
+        test_name = self.current_test_name
         results_file_path = os.path.join(
             self.log_path, '{}.json'.format(self.current_test_name))
         with open(results_file_path, 'w') as results_file:
-            json.dump(wputils.serialize_dict(rvr_result),
-                      results_file,
-                      indent=4)
+            json.dump(rvr_result, results_file, indent=4)
         # Plot and save
-        figure = BokehFigure(title=self.current_test_name,
-                             x_label='Attenuation (dB)',
-                             primary_y_label='Throughput (Mbps)')
+        figure = wputils.BokehFigure(title=test_name,
+                                     x_label='Attenuation (dB)',
+                                     primary_y_label='Throughput (Mbps)')
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
-                               if self.current_test_name in file_name)
+                               if test_name in file_name)
             with open(golden_path, 'r') as golden_file:
                 golden_results = json.load(golden_file)
             golden_attenuation = [
@@ -294,52 +277,23 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.log.warning('ValueError: Golden file not found')
 
         # Generate graph annotatios
-        rvr_result['hover_text'] = {
-            'llstats': [
-                'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
-                    curr_llstats['summary']['common_tx_mcs'],
-                    curr_llstats['summary']['common_tx_mcs_freq'] * 100,
-                    curr_llstats['summary']['common_rx_mcs'],
-                    curr_llstats['summary']['common_rx_mcs_freq'] * 100)
-                for curr_llstats in rvr_result['llstats']
-            ],
-            'rssi': [
-                '{0:.2f} [{1:.2f},{2:.2f}]'.format(
-                    rssi['signal_poll_rssi'],
-                    rssi['chain_0_rssi'],
-                    rssi['chain_1_rssi'],
-                ) for rssi in rvr_result['rssi']
-            ]
-        }
-        if 'DL' in self.current_test_name:
-            rvr_result['avg_phy_rate'] = [
-                curr_llstats['summary'].get('mean_rx_phy_rate', 0)
-                for curr_llstats in rvr_result['llstats']
-            ]
-        else:
-            rvr_result['avg_phy_rate'] = [
-                curr_llstats['summary'].get('mean_tx_phy_rate', 0)
-                for curr_llstats in rvr_result['llstats']
-            ]
+        hover_text = [
+            'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
+                curr_llstats['summary']['common_tx_mcs'],
+                curr_llstats['summary']['common_tx_mcs_freq'] * 100,
+                curr_llstats['summary']['common_rx_mcs'],
+                curr_llstats['summary']['common_rx_mcs_freq'] * 100)
+            for curr_llstats in rvr_result['llstats']
+        ]
         figure.add_line(rvr_result['total_attenuation'],
                         rvr_result['throughput_receive'],
-                        'Measured Throughput',
-                        hover_text=rvr_result['hover_text'],
+                        'Test Results',
+                        hover_text=hover_text,
                         color='red',
                         marker='circle')
-        rvr_result['avg_phy_rate'].extend(
-            [0] * (len(rvr_result['total_attenuation']) -
-                   len(rvr_result['avg_phy_rate'])))
-        figure.add_line(rvr_result['total_attenuation'],
-                        rvr_result['avg_phy_rate'],
-                        'Average PHY Rate',
-                        hover_text=rvr_result['hover_text'],
-                        color='red',
-                        style='dashed',
-                        marker='square')
 
-        output_file_path = os.path.join(
-            self.log_path, '{}.html'.format(self.current_test_name))
+        output_file_path = os.path.join(self.log_path,
+                                        '{}.html'.format(test_name))
         figure.generate_figure(output_file_path)
 
     def compute_test_metrics(self, rvr_result):
@@ -419,14 +373,14 @@ class WifiRvrTest(base_test.BaseTestClass):
                     asserts.skip('DUT health check failed. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
-                attenuator.set_atten(atten, strict=False, retry=True)
+                attenuator.set_atten(atten, strict=False)
             # Refresh link layer stats
             llstats_obj.update_stats()
             # Setup sniffer
             if self.testbed_params['sniffer_enable']:
                 self.sniffer.start_capture(
                     network=testcase_params['test_network'],
-                    chan=testcase_params['channel'],
+                    chan=int(testcase_params['channel']),
                     bw=testcase_params['bandwidth'],
                     duration=self.testclass_params['iperf_duration'] / 5)
             # Start iperf session
@@ -485,7 +439,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                      atten, curr_throughput, current_rssi['signal_poll_rssi'],
                      current_rssi['chain_0_rssi'],
                      current_rssi['chain_1_rssi']))
-            if curr_throughput == 0:
+            if curr_throughput == 0 and (
+                    current_rssi['signal_poll_rssi'] < -80
+                    or numpy.isnan(current_rssi['signal_poll_rssi'])):
                 zero_counter = zero_counter + 1
             else:
                 zero_counter = 0
@@ -497,7 +453,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     (len(testcase_params['atten_range']) - len(throughput)))
                 break
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False, retry=True)
+            attenuator.set_atten(0, strict=False)
         # Compile test result and meta data
         rvr_result = collections.OrderedDict()
         rvr_result['test_name'] = self.current_test_name
@@ -521,25 +477,20 @@ class WifiRvrTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        band = self.access_point.band_lookup_by_channel(
-            testcase_params['channel'])
-        if '6G' in band:
-            frequency = wutils.WifiEnums.channel_6G_to_freq[int(
-                testcase_params['channel'].strip('6g'))]
+        if '2G' in testcase_params['band']:
+            frequency = wutils.WifiEnums.channel_2G_to_freq[
+                testcase_params['channel']]
         else:
-            if testcase_params['channel'] < 13:
-                frequency = wutils.WifiEnums.channel_2G_to_freq[
-                    testcase_params['channel']]
-            else:
-                frequency = wutils.WifiEnums.channel_5G_to_freq[
-                    testcase_params['channel']]
+            frequency = wutils.WifiEnums.channel_5G_to_freq[
+                testcase_params['channel']]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
             self.access_point.set_region(self.testbed_params['default_region'])
-        self.access_point.set_channel_and_bandwidth(testcase_params['band'],
-                                                    testcase_params['channel'],
-                                                    testcase_params['mode'])
+        self.access_point.set_channel(testcase_params['band'],
+                                      testcase_params['channel'])
+        self.access_point.set_bandwidth(testcase_params['band'],
+                                        testcase_params['mode'])
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
 
@@ -549,24 +500,19 @@ class WifiRvrTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
+        self.sta_dut = self.android_devices[0]
+        # Check battery level before test
+        if not wputils.health_check(
+                self.sta_dut,
+                20) and testcase_params['traffic_direction'] == 'UL':
+            asserts.skip('Overheating or Battery level low. Skipping test.')
         # Turn screen off to preserve battery
-        if self.testbed_params.get('screen_on',
-                                   False) or self.testclass_params.get(
-                                       'screen_on', False):
-            self.sta_dut.droid.wakeLockAcquireDim()
-        else:
-            self.sta_dut.go_to_sleep()
+        self.sta_dut.go_to_sleep()
         if wputils.validate_network(self.sta_dut,
                                     testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
-            wutils.wifi_toggle_state(self.sta_dut, False)
-            wutils.set_wifi_country_code(self.sta_dut,
-                                         self.testclass_params['country_code'])
-            wutils.wifi_toggle_state(self.sta_dut, True)
             wutils.reset_wifi(self.sta_dut)
-            if self.testbed_params.get('txbf_off', False):
-                wputils.disable_beamforming(self.sta_dut)
             wutils.set_wifi_country_code(self.sta_dut,
                                          self.testclass_params['country_code'])
             if self.testbed_params['sniffer_enable']:
@@ -580,8 +526,6 @@ class WifiRvrTest(base_test.BaseTestClass):
                                     testcase_params['test_network'],
                                     num_of_tries=5,
                                     check_connectivity=True)
-                if self.testclass_params.get('num_streams', 2) == 1:
-                    wputils.set_nss_capability(self.sta_dut, 1)
             finally:
                 if self.testbed_params['sniffer_enable']:
                     self.sniffer.stop_capture(tag='connection_setup')
@@ -596,7 +540,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
-            attenuator.set_atten(0, strict=False, retry=True)
+            attenuator.set_atten(0, strict=False)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
         # Wait before running the first wifi test
@@ -621,7 +565,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                         self.remote_server, sta_dut_ip, 'public')
         # Set DUT to monitor RSSI and LLStats on
         self.monitored_dut = self.sta_dut
-        self.monitored_interface = 'wlan0'
+        self.monitored_interface = None
 
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
@@ -629,18 +573,12 @@ class WifiRvrTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing test-specific parameters
         """
-        # Check if test should be skipped based on parameters.
-        wputils.check_skip_conditions(testcase_params, self.sta_dut,
-                                      self.access_point,
-                                      getattr(self, 'ota_chamber', None))
-
-        band = wputils.CHANNEL_TO_BAND_MAP[testcase_params['channel']]
-        start_atten = self.testclass_params['atten_start'].get(band, 0)
-        num_atten_steps = int(
-            (self.testclass_params['atten_stop'] - start_atten) /
-            self.testclass_params['atten_step'])
+        num_atten_steps = int((self.testclass_params['atten_stop'] -
+                               self.testclass_params['atten_start']) /
+                              self.testclass_params['atten_step'])
         testcase_params['atten_range'] = [
-            start_atten + x * self.testclass_params['atten_step']
+            self.testclass_params['atten_start'] +
+            x * self.testclass_params['atten_step']
             for x in range(0, num_atten_steps)
         ]
         band = self.access_point.band_lookup_by_channel(
@@ -707,11 +645,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         allowed_configs = {
             20: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
+                116, 132, 140, 149, 153, 157, 161
             ],
-            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
-            80: [36, 100, 149, '6g37', '6g117', '6g213'],
-            160: [36, '6g37', '6g117', '6g213']
+            40: [36, 44, 100, 149, 157],
+            80: [36, 100, 149],
+            160: [36]
         }
 
         for channel, mode, traffic_type, traffic_direction in itertools.product(
@@ -736,10 +674,7 @@ class WifiRvr_TCP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            channels=[
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
-                '6g213'
-            ],
+            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
             modes=['bw20', 'bw40', 'bw80', 'bw160'],
             traffic_types=['TCP'],
             traffic_directions=['DL', 'UL'])
@@ -759,10 +694,7 @@ class WifiRvr_HE_TCP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            channels=[
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
-                '6g213'
-            ],
+            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
             modes=['HE20', 'HE40', 'HE80', 'HE160'],
             traffic_types=['TCP'],
             traffic_directions=['DL', 'UL'])
@@ -772,7 +704,7 @@ class WifiRvr_SampleUDP_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            channels=[6, 36, 149, '6g37'],
+            channels=[6, 36, 149],
             modes=['bw20', 'bw40', 'bw80', 'bw160'],
             traffic_types=['UDP'],
             traffic_directions=['DL', 'UL'])
@@ -793,7 +725,7 @@ class WifiRvr_HE_SampleUDP_Test(WifiRvrTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             channels=[6, 36, 149],
-            modes=['HE20', 'HE40', 'HE80', 'HE160', '6g37'],
+            modes=['HE20', 'HE40', 'HE80', 'HE160'],
             traffic_types=['UDP'],
             traffic_directions=['DL', 'UL'])
 
@@ -806,57 +738,6 @@ class WifiRvr_SampleDFS_Test(WifiRvrTest):
             modes=['bw20', 'bw40', 'bw80'],
             traffic_types=['TCP'],
             traffic_directions=['DL', 'UL'])
-
-
-class WifiRvr_SingleChain_TCP_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            channels=[
-                1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37', '6g117',
-                '6g213'
-            ],
-            modes=['bw20', 'bw40', 'bw80', 'bw160'],
-            traffic_types=['TCP'],
-            traffic_directions=['DL', 'UL'],
-            chains=[0, 1, '2x2'])
-
-    def setup_dut(self, testcase_params):
-        self.sta_dut = self.android_devices[0]
-        wputils.set_chain_mask(self.sta_dut, testcase_params['chain'])
-        WifiRvrTest.setup_dut(self, testcase_params)
-
-    def generate_test_cases(self, channels, modes, traffic_types,
-                            traffic_directions, chains):
-        """Function that auto-generates test cases for a test class."""
-        test_cases = []
-        allowed_configs = {
-            20: [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161, '6g37', '6g117', '6g213'
-            ],
-            40: [36, 44, 100, 149, 157, '6g37', '6g117', '6g213'],
-            80: [36, 100, 149, '6g37', '6g117', '6g213'],
-            160: [36, '6g37', '6g117', '6g213']
-        }
-
-        for channel, mode, chain, traffic_type, traffic_direction in itertools.product(
-                channels, modes, chains, traffic_types, traffic_directions):
-            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
-            if channel not in allowed_configs[bandwidth]:
-                continue
-            test_name = 'test_rvr_{}_{}_ch{}_{}_ch{}'.format(
-                traffic_type, traffic_direction, channel, mode, chain)
-            test_params = collections.OrderedDict(
-                channel=channel,
-                mode=mode,
-                bandwidth=bandwidth,
-                traffic_type=traffic_type,
-                traffic_direction=traffic_direction,
-                chain=chain)
-            setattr(self, test_name, partial(self._test_rvr, test_params))
-            test_cases.append(test_name)
-        return test_cases
 
 
 # Over-the air version of RVR tests
@@ -886,7 +767,7 @@ class WifiOtaRvrTest(WifiRvrTest):
 
     def extract_test_id(self, testcase_params, id_fields):
         test_id = collections.OrderedDict(
-            (param, testcase_params.get(param, None)) for param in id_fields)
+            (param, testcase_params[param]) for param in id_fields)
         return test_id
 
     def process_testclass_results(self):
@@ -896,10 +777,10 @@ class WifiOtaRvrTest(WifiRvrTest):
         compiled_data = collections.OrderedDict()
         for result in self.testclass_results:
             test_id = tuple(
-                self.extract_test_id(result['testcase_params'], [
-                    'channel', 'mode', 'traffic_type', 'traffic_direction',
-                    'chain'
-                ]).items())
+                self.extract_test_id(
+                    result['testcase_params'],
+                    ['channel', 'mode', 'traffic_type', 'traffic_direction'
+                     ]).items())
             if test_id not in plots:
                 # Initialize test id data when not present
                 compiled_data[test_id] = {'throughput': [], 'metrics': {}}
@@ -907,7 +788,7 @@ class WifiOtaRvrTest(WifiRvrTest):
                     key: []
                     for key in result['metrics'].keys()
                 }
-                plots[test_id] = BokehFigure(
+                plots[test_id] = wputils.BokehFigure(
                     title='Channel {} {} ({} {})'.format(
                         result['testcase_params']['channel'],
                         result['testcase_params']['mode'],
@@ -915,15 +796,6 @@ class WifiOtaRvrTest(WifiRvrTest):
                         result['testcase_params']['traffic_direction']),
                     x_label='Attenuation (dB)',
                     primary_y_label='Throughput (Mbps)')
-                test_id_phy = test_id + tuple('PHY')
-                plots[test_id_phy] = BokehFigure(
-                    title='Channel {} {} ({} {}) (PHY Rate)'.format(
-                        result['testcase_params']['channel'],
-                        result['testcase_params']['mode'],
-                        result['testcase_params']['traffic_type'],
-                        result['testcase_params']['traffic_direction']),
-                    x_label='Attenuation (dB)',
-                    primary_y_label='PHY Rate (Mbps)')
             # Compile test id data and metrics
             compiled_data[test_id]['throughput'].append(
                 result['throughput_receive'])
@@ -936,19 +808,11 @@ class WifiOtaRvrTest(WifiRvrTest):
             plots[test_id].add_line(result['total_attenuation'],
                                     result['throughput_receive'],
                                     result['test_name'],
-                                    hover_text=result['hover_text'],
                                     width=1,
                                     style='dashed',
                                     marker='circle')
-            plots[test_id_phy].add_line(result['total_attenuation'],
-                                        result['avg_phy_rate'],
-                                        result['test_name'] + ' PHY',
-                                        hover_text=result['hover_text'],
-                                        width=1,
-                                        style='dashed',
-                                        marker='circle')
 
-        # Compute average RvRs and compute metrics over orientations
+        # Compute average RvRs and compount metrics over orientations
         for test_id, test_data in compiled_data.items():
             test_id_dict = dict(test_id)
             metric_tag = '{}_{}_ch{}_{}'.format(
@@ -976,17 +840,17 @@ class WifiOtaRvrTest(WifiRvrTest):
                                     marker='square')
 
         figure_list = []
-        for plot_id, plot in plots.items():
+        for test_id, plot in plots.items():
             plot.generate_figure()
             figure_list.append(plot)
         output_file_path = os.path.join(self.log_path, 'results.html')
-        BokehFigure.save_figures(figure_list, output_file_path)
+        wputils.BokehFigure.save_figures(figure_list, output_file_path)
 
     def setup_rvr_test(self, testcase_params):
-        # Continue test setup
-        WifiRvrTest.setup_rvr_test(self, testcase_params)
         # Set turntable orientation
         self.ota_chamber.set_orientation(testcase_params['orientation'])
+        # Continue test setup
+        WifiRvrTest.setup_rvr_test(self, testcase_params)
 
     def generate_test_cases(self, channels, modes, angles, traffic_types,
                             directions):
@@ -998,7 +862,7 @@ class WifiOtaRvrTest(WifiRvrTest):
             ],
             40: [36, 44, 100, 149, 157],
             80: [36, 100, 149],
-            160: [36, '6g37', '6g117', '6g213']
+            160: [36]
         }
         for channel, mode, angle, traffic_type, direction in itertools.product(
                 channels, modes, angles, traffic_types, directions):
@@ -1022,9 +886,8 @@ class WifiOtaRvr_StandardOrientation_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
         WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, '6g37'],
-            ['bw20', 'bw40', 'bw80', 'bw160'], list(range(0, 360, 45)),
-            ['TCP'], ['DL', 'UL'])
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
+            ['bw20', 'bw40', 'bw80'], list(range(0, 360, 45)), ['TCP'], ['DL'])
 
 
 class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
@@ -1034,10 +897,7 @@ class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
                                               list(range(0, 360, 45)), ['TCP'],
                                               ['DL'])
         self.tests.extend(
-            self.generate_test_cases([36, 149], ['bw80', 'bw160'],
-                                     list(range(0, 360, 45)), ['TCP'], ['DL']))
-        self.tests.extend(
-            self.generate_test_cases(['6g37'], ['bw160'],
+            self.generate_test_cases([36, 149], ['bw80'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
 
 
@@ -1045,56 +905,5 @@ class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
         WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [6, 36, 40, 44, 48, 149, 153, 157, 161, '6g37'],
-            ['bw20', 'bw40', 'bw80', 'bw160'], [0], ['TCP'], ['DL', 'UL'])
-
-
-class WifiOtaRvr_SingleChain_Test(WifiOtaRvrTest):
-    def __init__(self, controllers):
-        WifiOtaRvrTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6], ['bw20'],
-                                              list(range(0, 360, 45)), ['TCP'],
-                                              ['DL', 'UL'], [0, 1])
-        self.tests.extend(
-            self.generate_test_cases([36, 149], ['bw20', 'bw80', 'bw160'],
-                                     list(range(0, 360, 45)), ['TCP'],
-                                     ['DL', 'UL'], [0, 1, '2x2']))
-        self.tests.extend(
-            self.generate_test_cases(['6g37'], ['bw20', 'bw80', 'bw160'],
-                                     list(range(0, 360, 45)), ['TCP'],
-                                     ['DL', 'UL'], [0, 1, '2x2']))
-
-    def setup_dut(self, testcase_params):
-        self.sta_dut = self.android_devices[0]
-        wputils.set_chain_mask(self.sta_dut, testcase_params['chain'])
-        WifiRvrTest.setup_dut(self, testcase_params)
-
-    def generate_test_cases(self, channels, modes, angles, traffic_types,
-                            directions, chains):
-        test_cases = []
-        allowed_configs = {
-            20: [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 64, 100,
-                116, 132, 140, 149, 153, 157, 161
-            ],
-            40: [36, 44, 100, 149, 157],
-            80: [36, 100, 149],
-            160: [36, '6g37', '6g117', '6g213']
-        }
-        for channel, mode, chain, angle, traffic_type, direction in itertools.product(
-                channels, modes, chains, angles, traffic_types, directions):
-            bandwidth = int(''.join([x for x in mode if x.isdigit()]))
-            if channel not in allowed_configs[bandwidth]:
-                continue
-            testcase_name = 'test_rvr_{}_{}_ch{}_{}_ch{}_{}deg'.format(
-                traffic_type, direction, channel, mode, chain, angle)
-            test_params = collections.OrderedDict(channel=channel,
-                                                  mode=mode,
-                                                  bandwidth=bandwidth,
-                                                  chain=chain,
-                                                  traffic_type=traffic_type,
-                                                  traffic_direction=direction,
-                                                  orientation=angle)
-            setattr(self, testcase_name, partial(self._test_rvr, test_params))
-            test_cases.append(testcase_name)
-        return test_cases
+            [6, 36, 40, 44, 48, 149, 153, 157, 161], ['bw20', 'bw40', 'bw80'],
+            [0], ['TCP'], ['DL', 'UL'])

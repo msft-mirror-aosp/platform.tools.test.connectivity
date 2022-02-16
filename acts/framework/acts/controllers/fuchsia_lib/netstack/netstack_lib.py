@@ -16,7 +16,6 @@
 
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
-
 class FuchsiaNetstackLib(BaseLib):
     def __init__(self, addr, tc, client_id):
         self.address = addr
@@ -36,6 +35,37 @@ class FuchsiaNetstackLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def init(self):
+        """ListInterfaces command
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "netstack_facade.InitNetstack"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def getInterfaceInfo(self, id):
+        """Get interface info.
+
+        Args:
+            id: The interface ID.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "netstack_facade.GetInterfaceInfo"
+        test_args = {
+            "identifier": id
+        }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def enableInterface(self, id):
         """Enable Interface
 
@@ -46,7 +76,9 @@ class FuchsiaNetstackLib(BaseLib):
             Dictionary, None if success, error if error.
         """
         test_cmd = "netstack_facade.EnableInterface"
-        test_args = {"identifier": id}
+        test_args = {
+            "identifier": id
+        }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
@@ -62,8 +94,11 @@ class FuchsiaNetstackLib(BaseLib):
             Dictionary, None if success, error if error.
         """
         test_cmd = "netstack_facade.DisableInterface"
-        test_args = {"identifier": id}
+        test_args = {
+            "identifier": id
+        }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
