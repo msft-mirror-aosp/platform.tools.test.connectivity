@@ -35,7 +35,6 @@ from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 # Constants, for readibility
 AP = 'ap'
@@ -101,7 +100,7 @@ def get_test_name(settings):
     return settings['test_name']
 
 
-class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanRebootTest(WifiBaseTest):
     """Tests wlan reconnects in different reboot scenarios.
 
     Testbed Requirement:
@@ -144,9 +143,9 @@ class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
         self.iperf_server_on_ap = None
         self.iperf_client_on_dut = None
         if not self.skip_iperf:
-            if hasattr(self, "iperf_clients") and self.iperf_clients:
+            try:
                 self.iperf_client_on_dut = self.iperf_clients[0]
-            else:
+            except AttributeError:
                 self.iperf_client_on_dut = self.dut.create_iperf_client()
         else:
             self.log.info(
@@ -168,14 +167,8 @@ class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
         self.ssid = utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G)
 
     def teardown_test(self):
-        self.download_ap_logs()
         self.access_point.stop_all_aps()
         if self.router_adv_daemon:
-            output_path = context.get_current_context().get_base_output_path()
-            full_output_path = os.path.join(output_path, "radvd_log.txt")
-            radvd_log_file = open(full_output_path, 'w')
-            radvd_log_file.write(self.router_adv_daemon.pull_logs())
-            radvd_log_file.close()
             self.router_adv_daemon.stop()
             self.router_adv_daemon = None
         self.dut.disconnect()
@@ -184,6 +177,10 @@ class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
             ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
         self.dut.reset_wifi()
+
+    def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+        self.dut.get_log(test_name, begin_time)
 
     def setup_ap(self,
                  ssid,
