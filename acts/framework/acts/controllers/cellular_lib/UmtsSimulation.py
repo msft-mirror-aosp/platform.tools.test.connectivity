@@ -39,11 +39,13 @@ class UmtsSimulation(BaseSimulation):
 
     UMTS_R8_CELL_FILE = 'CELL_WCDMA_R8_config.wnscp'
 
-    # Configuration dictionary keys
+    # Test name parameters
     PARAM_RELEASE_VERSION = "r"
     PARAM_RELEASE_VERSION_99 = "99"
     PARAM_RELEASE_VERSION_8 = "8"
     PARAM_RELEASE_VERSION_7 = "7"
+    PARAM_UL_PW = 'pul'
+    PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
@@ -90,7 +92,7 @@ class UmtsSimulation(BaseSimulation):
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the cellular simulator for a UMTS simulation.
 
-        Loads a simple UMTS simulation environment with 1 basestation. It also
+        Loads a simple UMTS simulation enviroment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
 
         Args:
@@ -134,49 +136,71 @@ class UmtsSimulation(BaseSimulation):
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
 
-    def configure(self, parameters):
-        """ Configures simulation using a dictionary of parameters.
+    def parse_parameters(self, parameters):
+        """ Configs an UMTS simulation using a list of parameters.
 
-        Processes UMTS configuration parameters.
+        Calls the parent method and consumes parameters specific to UMTS.
 
         Args:
-            parameters: a configuration dictionary
+            parameters: list of parameters
         """
-        super().configure(parameters)
 
         # Setup band
-        if self.PARAM_BAND not in parameters:
+
+        values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+
+        if not values:
             raise ValueError(
-                "The configuration dictionary must include a key '{}' with "
+                "The test name needs to include parameter '{}' followed by "
                 "the required band number.".format(self.PARAM_BAND))
 
-        self.set_band(self.bts1, parameters[self.PARAM_BAND])
+        self.set_band(self.bts1, values[1])
         self.load_pathloss_if_required()
 
         # Setup release version
-        if (self.PARAM_RELEASE_VERSION not in parameters
-                or parameters[self.PARAM_RELEASE_VERSION] not in [
-                    self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8,
-                    self.PARAM_RELEASE_VERSION_99
-                ]):
+
+        values = self.consume_parameter(parameters, self.PARAM_RELEASE_VERSION,
+                                        1)
+
+        if not values or values[1] not in [
+                self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8,
+                self.PARAM_RELEASE_VERSION_99
+        ]:
             raise ValueError(
-                "The configuration dictionary must include a key '{}' with a "
+                "The test name needs to include the parameter {} followed by a "
                 "valid release version.".format(self.PARAM_RELEASE_VERSION))
 
-        self.set_release_version(self.bts1,
-                                 parameters[self.PARAM_RELEASE_VERSION])
+        self.set_release_version(self.bts1, values[1])
 
         # Setup W-CDMA RRC status change and CELL_DCH timer for idle test case
-        if self.PARAM_RRC_STATUS_CHANGE_TIMER not in parameters:
+
+        values = self.consume_parameter(parameters,
+                                        self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+        if not values:
             self.log.info(
-                "The config dictionary does not include a '{}' key. Disabled "
+                "The test name does not include the '{}' parameter. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
             self.anritsu.set_umts_rrc_status_change(False)
         else:
-            self.rrc_sc_timer = int(
-                parameters[self.PARAM_RRC_STATUS_CHANGE_TIMER])
+            self.rrc_sc_timer = int(values[1])
             self.anritsu.set_umts_rrc_status_change(True)
             self.anritsu.set_umts_dch_stat_timer(self.rrc_sc_timer)
+
+        # Setup uplink power
+
+        ul_power = self.get_uplink_power_from_parameters(parameters)
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
+
+        # Setup downlink power
+
+        dl_power = self.get_downlink_power_from_parameters(parameters)
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
 
     def set_release_version(self, bts, release_version):
         """ Sets the release version.

@@ -19,7 +19,6 @@ import logging
 import math
 import os
 import re
-import shutil
 import socket
 import time
 from builtins import open
@@ -48,10 +47,6 @@ MOBLY_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
-# Key name for SL4A extra params in config file
-ANDROID_DEVICE_SL4A_CLIENT_PORT_KEY = "sl4a_client_port"
-ANDROID_DEVICE_SL4A_FORWARDED_PORT_KEY = "sl4a_forwarded_port"
-ANDROID_DEVICE_SL4A_SERVER_PORT_KEY = "sl4a_server_port"
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
@@ -61,10 +56,8 @@ CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/vendor/ramdump/bluetooth", "/data/vendor/log/cbd")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
-ALWAYS_ON_LOG_PATH = "/data/vendor/radio/logs/always-on"
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
 DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
-DEFAULT_SCREENSHOT_PATH = "/sdcard/Pictures/screencap"
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
@@ -239,41 +232,12 @@ def get_instances_with_configs(configs):
             raise errors.AndroidDeviceConfigError(
                 "Required value 'serial' is missing in AndroidDevice config %s."
                 % c)
-        client_port = 0
-        if ANDROID_DEVICE_SL4A_CLIENT_PORT_KEY in c:
-            try:
-                client_port = int(c.pop(ANDROID_DEVICE_SL4A_CLIENT_PORT_KEY))
-            except ValueError:
-                raise errors.AndroidDeviceConfigError(
-                    "'%s' is not a valid number for config %s" %
-                    (ANDROID_DEVICE_SL4A_CLIENT_PORT_KEY, c))
-        server_port = None
-        if ANDROID_DEVICE_SL4A_SERVER_PORT_KEY in c:
-            try:
-                server_port = int(c.pop(ANDROID_DEVICE_SL4A_SERVER_PORT_KEY))
-            except ValueError:
-                raise errors.AndroidDeviceConfigError(
-                    "'%s' is not a valid number for config %s" %
-                    (ANDROID_DEVICE_SL4A_SERVER_PORT_KEY, c))
-        forwarded_port = 0
-        if ANDROID_DEVICE_SL4A_FORWARDED_PORT_KEY in c:
-            try:
-                forwarded_port = int(
-                    c.pop(ANDROID_DEVICE_SL4A_FORWARDED_PORT_KEY))
-            except ValueError:
-                raise errors.AndroidDeviceConfigError(
-                    "'%s' is not a valid number for config %s" %
-                    (ANDROID_DEVICE_SL4A_FORWARDED_PORT_KEY, c))
         ssh_config = c.pop('ssh_config', None)
         ssh_connection = None
         if ssh_config is not None:
             ssh_settings = settings.from_config(ssh_config)
             ssh_connection = connection.SshConnection(ssh_settings)
-        ad = AndroidDevice(serial,
-                           ssh_connection=ssh_connection,
-                           client_port=client_port,
-                           forwarded_port=forwarded_port,
-                           server_port=server_port)
+        ad = AndroidDevice(serial, ssh_connection=ssh_connection)
         ad.load_config(c)
         results.append(ad)
     return results
@@ -393,27 +357,14 @@ class AndroidDevice:
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
                   via fastboot.
-        client_port: Preferred client port number on the PC host side for SL4A
-        forwarded_port: Preferred server port number forwarded from Android
-                        to the host PC via adb for SL4A connections
-        server_port: Preferred server port used by SL4A on Android device
-
     """
 
-    def __init__(self,
-                 serial='',
-                 ssh_connection=None,
-                 client_port=0,
-                 forwarded_port=0,
-                 server_port=None):
+    def __init__(self, serial='', ssh_connection=None):
         self.serial = serial
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_dir = 'AndroidDevice%s' % serial
         self.log_path = os.path.join(log_path_base, self.log_dir)
-        self.client_port = client_port
-        self.forwarded_port = forwarded_port
-        self.server_port = server_port
         self.log = tracelogger.TraceLogger(
             AndroidDeviceLoggerAdapter(logging.getLogger(),
                                        {'serial': serial}))
@@ -423,15 +374,15 @@ class AndroidDevice:
         self.register_service(services.Sl4aService(self))
         self.adb_logcat_process = None
         self.adb = adb.AdbProxy(serial, ssh_connection=ssh_connection)
-        self.fastboot = fastboot.FastbootProxy(serial,
-                                               ssh_connection=ssh_connection)
+        self.fastboot = fastboot.FastbootProxy(
+            serial, ssh_connection=ssh_connection)
         if not self.is_bootloader:
             self.root_adb()
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
         self.crash_report = None
         self.data_accounting = collections.defaultdict(int)
-        self._sl4a_manager = sl4a_manager.create_sl4a_manager(self.adb)
+        self._sl4a_manager = sl4a_manager.Sl4aManager(self.adb)
         self.last_logcat_timestamp = None
         # Device info cache.
         self._user_added_device_info = {}
@@ -447,34 +398,6 @@ class AndroidDevice:
         self._services.clear()
         if self._ssh_connection:
             self._ssh_connection.close()
-
-    def recreate_services(self, serial):
-        """Clean up the AndroidDevice object and re-create adb/sl4a services.
-
-        Unregister the existing services and re-create adb and sl4a services,
-        call this method when the connection break after certain API call
-        (e.g., enable USB tethering by #startTethering)
-
-        Args:
-            serial: the serial number of the AndroidDevice
-        """
-        # Clean the old services
-        for service in self._services:
-            service.unregister()
-        self._services.clear()
-        if self._ssh_connection:
-            self._ssh_connection.close()
-        self._sl4a_manager.stop_service()
-
-        # Wait for old services to stop
-        time.sleep(5)
-
-        # Re-create the new adb and sl4a services
-        self.register_service(services.AdbLogcatService(self))
-        self.register_service(services.Sl4aService(self))
-        self.adb.wait_for_device()
-        self.terminate_all_sessions()
-        self.start_services()
 
     def register_service(self, service):
         """Registers the service on the device. """
@@ -502,8 +425,8 @@ class AndroidDevice:
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        event_bus.post(android_events.AndroidStopServicesEvent(self),
-                       ignore_errors=True)
+        event_bus.post(
+            android_events.AndroidStopServicesEvent(self), ignore_errors=True)
 
     def is_connected(self):
         out = self.adb.devices()
@@ -728,13 +651,7 @@ class AndroidDevice:
             >>> ad = AndroidDevice()
             >>> droid, ed = ad.get_droid()
         """
-        self.log.debug(
-            "Creating RPC client_port={}, forwarded_port={}, server_port={}".
-            format(self.client_port, self.forwarded_port, self.server_port))
-        session = self._sl4a_manager.create_session(
-            client_port=self.client_port,
-            forwarded_port=self.forwarded_port,
-            server_port=self.server_port)
+        session = self._sl4a_manager.create_session()
         droid = session.rpc_client
         if handle_event:
             ed = session.get_event_dispatcher()
@@ -754,8 +671,9 @@ class AndroidDevice:
         """
         for cmd in ("ps -A", "ps"):
             try:
-                out = self.adb.shell('%s | grep "S %s"' % (cmd, package_name),
-                                     ignore_status=True)
+                out = self.adb.shell(
+                    '%s | grep "S %s"' % (cmd, package_name),
+                    ignore_status=True)
                 if package_name not in out:
                     continue
                 try:
@@ -765,11 +683,11 @@ class AndroidDevice:
                 except (IndexError, ValueError) as e:
                     # Possible ValueError from string to int cast.
                     # Possible IndexError from split.
-                    self.log.warning(
+                    self.log.warn(
                         'Command \"%s\" returned output line: '
                         '\"%s\".\nError: %s', cmd, out, e)
             except Exception as e:
-                self.log.warning(
+                self.log.warn(
                     'Device fails to check if %s running with \"%s\"\n'
                     'Exception %s', package_name, cmd, e)
         self.log.debug("apk %s is not running", package_name)
@@ -847,10 +765,10 @@ class AndroidDevice:
         return adb_excerpt_path
 
     def search_logcat(self,
-                      matching_string,
-                      begin_time=None,
-                      end_time=None,
-                      logcat_path=None):
+                    matching_string,
+                    begin_time=None,
+                    end_time=None,
+                    logcat_path=None):
         """Search logcat message with given string.
 
         Args:
@@ -880,12 +798,13 @@ class AndroidDevice:
         """
         if not logcat_path:
             logcat_path = os.path.join(self.device_log_path,
-                                       'adblog_%s_debug.txt' % self.serial)
+                                    'adblog_%s_debug.txt' % self.serial)
         if not os.path.exists(logcat_path):
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
-        output = job.run("grep '%s' %s" % (matching_string, logcat_path),
-                         ignore_status=True)
+        output = job.run(
+            "grep '%s' %s" % (matching_string, logcat_path),
+            ignore_status=True)
         if not output.stdout or output.exit_status != 0:
             return []
         if begin_time:
@@ -893,13 +812,13 @@ class AndroidDevice:
                 log_begin_time = acts_logger.epoch_to_log_line_timestamp(
                     begin_time)
                 begin_time = datetime.strptime(log_begin_time,
-                                               "%Y-%m-%d %H:%M:%S.%f")
+                                            "%Y-%m-%d %H:%M:%S.%f")
         if end_time:
             if not isinstance(end_time, datetime):
                 log_end_time = acts_logger.epoch_to_log_line_timestamp(
                     end_time)
                 end_time = datetime.strptime(log_end_time,
-                                             "%Y-%m-%d %H:%M:%S.%f")
+                                            "%Y-%m-%d %H:%M:%S.%f")
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
         for log in logs:
@@ -931,7 +850,7 @@ class AndroidDevice:
         save the logcat in a file.
         """
         if self.is_adb_logcat_on:
-            self.log.warning(
+            self.log.warn(
                 'Android device %s already has a running adb logcat thread. ' %
                 self.serial)
             return
@@ -952,7 +871,7 @@ class AndroidDevice:
         """Stops the adb logcat collection subprocess.
         """
         if not self.is_adb_logcat_on:
-            self.log.warning(
+            self.log.warn(
                 'Android device %s does not have an ongoing adb logcat ' %
                 self.serial)
             return
@@ -971,36 +890,13 @@ class AndroidDevice:
         Returns:
         Linux UID for the apk.
         """
-        output = self.adb.shell("dumpsys package %s | grep userId=" % apk_name,
-                                ignore_status=True)
+        output = self.adb.shell(
+            "dumpsys package %s | grep userId=" % apk_name, ignore_status=True)
         result = re.search(r"userId=(\d+)", output)
         if result:
             return result.group(1)
         else:
             None
-
-    @record_api_usage
-    def get_apk_version(self, package_name):
-        """Get the version of the given apk.
-
-        Args:
-            package_name: Name of the package, e.g., com.android.phone.
-
-        Returns:
-            Version of the given apk.
-        """
-        try:
-            output = self.adb.shell("dumpsys package %s | grep versionName" %
-                                    package_name)
-            pattern = re.compile(r"versionName=(.+)", re.I)
-            result = pattern.findall(output)
-            if result:
-                return result[0]
-        except Exception as e:
-            self.log.warning("Fail to get the version of package %s: %s",
-                             package_name, e)
-        self.log.debug("apk %s is not found", package_name)
-        return None
 
     def is_apk_installed(self, package_name):
         """Check if the given apk is already installed.
@@ -1038,13 +934,14 @@ class AndroidDevice:
         """
         for cmd in ("ps -A", "ps"):
             try:
-                out = self.adb.shell('%s | grep "S %s"' % (cmd, package_name),
-                                     ignore_status=True)
+                out = self.adb.shell(
+                    '%s | grep "S %s"' % (cmd, package_name),
+                    ignore_status=True)
                 if package_name in out:
                     self.log.info("apk %s is running", package_name)
                     return True
             except Exception as e:
-                self.log.warning(
+                self.log.warn(
                     "Device fails to check is %s running by %s "
                     "Exception %s", package_name, cmd, e)
                 continue
@@ -1064,10 +961,17 @@ class AndroidDevice:
         True if package is installed. False otherwise.
         """
         try:
-            self.adb.shell('am force-stop %s' % package_name,
-                           ignore_status=True)
+            self.adb.shell(
+                'am force-stop %s' % package_name, ignore_status=True)
         except Exception as e:
-            self.log.warning("Fail to stop package %s: %s", package_name, e)
+            self.log.warn("Fail to stop package %s: %s", package_name, e)
+
+    def stop_sl4a(self):
+        # TODO(markdr): Move this into sl4a_manager.
+        return self.force_stop_apk(SL4A_APK_NAME)
+
+    def start_sl4a(self):
+        self._sl4a_manager.start_sl4a_service()
 
     def take_bug_report(self, test_name, begin_time):
         """Takes a bug report on the device and stores it in a file.
@@ -1106,8 +1010,8 @@ class AndroidDevice:
             br_out_path = out.split(':')[1].strip().split()[0]
             self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
-            self.adb.bugreport(" > {}".format(full_out_path),
-                               timeout=BUG_REPORT_TIMEOUT)
+            self.adb.bugreport(
+                " > {}".format(full_out_path), timeout=BUG_REPORT_TIMEOUT)
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
@@ -1169,10 +1073,10 @@ class AndroidDevice:
         if not host_path:
             host_path = self.log_path
         for device_path in device_paths:
-            self.log.info('Pull from device: %s -> %s' %
-                          (device_path, host_path))
-            self.adb.pull("%s %s" % (device_path, host_path),
-                          timeout=PULL_TIMEOUT)
+            self.log.info(
+                'Pull from device: %s -> %s' % (device_path, host_path))
+            self.adb.pull(
+                "%s %s" % (device_path, host_path), timeout=PULL_TIMEOUT)
 
     def check_crash_report(self,
                            test_name=None,
@@ -1187,9 +1091,10 @@ class AndroidDevice:
             except Exception as e:
                 self.log.debug("received exception %s", e)
                 continue
-            crashes = self.get_file_names(crash_path,
-                                          skip_files=CRASH_REPORT_SKIPS,
-                                          begin_time=begin_time)
+            crashes = self.get_file_names(
+                crash_path,
+                skip_files=CRASH_REPORT_SKIPS,
+                begin_time=begin_time)
             if crash_path == "/data/tombstones/" and crashes:
                 tombstones = crashes[:]
                 for tombstone in tombstones:
@@ -1212,23 +1117,18 @@ class AndroidDevice:
         # Sleep 10 seconds for the buffered log to be written in qxdm log file
         time.sleep(10)
         log_path = getattr(self, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
-        qxdm_logs = self.get_file_names(log_path,
-                                        begin_time=begin_time,
-                                        match_string="*.qmdl")
+        qxdm_logs = self.get_file_names(
+            log_path, begin_time=begin_time, match_string="*.qmdl")
         if qxdm_logs:
             qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
             os.makedirs(qxdm_log_path, exist_ok=True)
-
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
-
-            self.adb.pull("/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
-                          timeout=PULL_TIMEOUT,
-                          ignore_status=True)
-            # Zip Folder
-            utils.zip_directory('%s.zip' % qxdm_log_path, qxdm_log_path)
-            shutil.rmtree(qxdm_log_path)
+            self.adb.pull(
+                "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
@@ -1246,15 +1146,9 @@ class AndroidDevice:
         """Get sdm logs."""
         # Sleep 10 seconds for the buffered log to be written in sdm log file
         time.sleep(10)
-        log_paths = [
-            ALWAYS_ON_LOG_PATH,
-            getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
-        ]
-        sdm_logs = []
-        for path in log_paths:
-            sdm_logs += self.get_file_names(path,
-                                            begin_time=begin_time,
-                                            match_string="*.sdm*")
+        log_path = getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
+        sdm_logs = self.get_file_names(
+            log_path, begin_time=begin_time, match_string="*.sdm*")
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
                                         "SDM_%s" % self.serial)
@@ -1340,8 +1234,8 @@ class AndroidDevice:
             status: true if iperf client start successfully.
             results: results have data flow information
         """
-        out = self.adb.shell("iperf3 -c {} {}".format(server_host, extra_args),
-                             timeout=timeout)
+        out = self.adb.shell(
+            "iperf3 -c {} {}".format(server_host, extra_args), timeout=timeout)
         clean_out = out.split('\n')
         if "error" in clean_out[0].lower():
             return False, clean_out
@@ -1392,9 +1286,7 @@ class AndroidDevice:
             'Device %s booting process timed out.' % self.serial,
             serial=self.serial)
 
-    def reboot(self,
-               stop_at_lock_screen=False,
-               timeout=180,
+    def reboot(self, stop_at_lock_screen=False, timeout=180,
                wait_after_reboot_complete=1):
         """Reboots the device.
 
@@ -1431,8 +1323,8 @@ class AndroidDevice:
                 # want the device to be missing to prove the device has kicked
                 # off the reboot.
                 break
-        self.wait_for_boot_completion(timeout=(timeout - time.time() +
-                                               timeout_start))
+        self.wait_for_boot_completion(
+            timeout=(timeout - time.time() + timeout_start))
 
         self.log.debug('Wait for a while after boot completion.')
         time.sleep(wait_after_reboot_complete)
@@ -1467,8 +1359,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning('Unable to find IP address for %s.' %
-                                     interface)
+                    self.log.warning(
+                        'Unable to find IP address for %s.' % interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1514,9 +1406,10 @@ class AndroidDevice:
     def get_my_current_focus_window(self):
         """Get the current focus window on screen"""
         output = self.adb.shell(
-            'dumpsys window displays | grep -E mCurrentFocus | grep -v null',
+            'dumpsys window displays | grep -E mCurrentFocus',
             ignore_status=True)
-        if not output or "not found" in output or "Can't find" in output:
+        if not output or "not found" in output or "Can't find" in output or (
+                "mCurrentFocus=null" in output):
             result = ''
         else:
             result = output.split(' ')[-1].strip("}")
@@ -1533,7 +1426,7 @@ class AndroidDevice:
         for cmd in dumpsys_cmd:
             output = self.adb.shell(cmd, ignore_status=True)
             if not output or "not found" in output or "Can't find" in output or (
-                    "mFocusedApp=null" in output):
+                "mFocusedApp=null" in output):
                 result = ''
             else:
                 result = output.split(' ')[-2]
@@ -1590,9 +1483,16 @@ class AndroidDevice:
     @record_api_usage
     def is_screen_lock_enabled(self):
         """Check if screen lock is enabled"""
-        cmd = ("dumpsys window policy | grep showing=")
+        cmd = ("sqlite3 /data/system/locksettings.db .dump"
+               " | grep lockscreen.password_type | grep -v alternate")
         out = self.adb.shell(cmd, ignore_status=True)
-        return "true" in out
+        if "unable to open" in out:
+            self.root_adb()
+            out = self.adb.shell(cmd, ignore_status=True)
+        if ",0,'0'" not in out and out != "":
+            self.log.info("Screen lock is enabled")
+            return True
+        return False
 
     @record_api_usage
     def is_waiting_for_unlock_pin(self):
@@ -1658,23 +1558,6 @@ class AndroidDevice:
             self.send_keycode("BACK")
 
     @record_api_usage
-    def screenshot(self, name=""):
-        """Take a screenshot on the device.
-
-        Args:
-            name: additional information of screenshot on the file name.
-        """
-        if name:
-            file_name = "%s_%s" % (DEFAULT_SCREENSHOT_PATH, name)
-        file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
-        self.ensure_screen_on()
-        self.log.info("Log screenshot to %s", file_name)
-        try:
-            self.adb.shell("screencap -p %s" % file_name)
-        except:
-            self.log.error("Fail to log screenshot to %s", file_name)
-
-    @record_api_usage
     def exit_setup_wizard(self):
         # Handling Android TV's setupwizard is ignored for now.
         if 'feature:android.hardware.type.television' in self.adb.shell(
@@ -1682,11 +1565,11 @@ class AndroidDevice:
             return
         if not self.is_user_setup_complete() or self.is_setupwizard_on():
             # b/116709539 need this to prevent reboot after skip setup wizard
-            self.adb.shell("am start -a com.android.setupwizard.EXIT",
-                           ignore_status=True)
-            self.adb.shell("pm disable %s" %
-                           self.get_setupwizard_package_name(),
-                           ignore_status=True)
+            self.adb.shell(
+                "am start -a com.android.setupwizard.EXIT", ignore_status=True)
+            self.adb.shell(
+                "pm disable %s" % self.get_setupwizard_package_name(),
+                ignore_status=True)
         # Wait up to 5 seconds for user_setup_complete to be updated
         end_time = time.time() + 5
         while time.time() < end_time:
@@ -1736,8 +1619,8 @@ class AndroidDevice:
         try:
             self.ensure_verity_disabled()
             self.adb.remount()
-            out = self.adb.push('%s %s' % (src_file_path, dst_file_path),
-                                timeout=push_timeout)
+            out = self.adb.push(
+                '%s %s' % (src_file_path, dst_file_path), timeout=push_timeout)
             if 'error' in out:
                 self.log.error('Unable to push system file %s to %s due to %s',
                                src_file_path, dst_file_path, out)
