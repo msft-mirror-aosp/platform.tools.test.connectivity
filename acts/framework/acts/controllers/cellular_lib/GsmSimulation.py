@@ -26,7 +26,6 @@ from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.cellular_lib import BaseCellularDut
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
-from acts.controllers.cellular_lib.BaseCellConfig import BaseCellConfig
 
 
 class GsmSimulation(BaseSimulation):
@@ -40,7 +39,8 @@ class GsmSimulation(BaseSimulation):
 
     GSM_CELL_FILE = 'CELL_GSM_config.wnscp'
 
-    # Configuration dictionary keys
+    # Test name parameters
+
     PARAM_BAND = "band"
     PARAM_GPRS = "gprs"
     PARAM_EGPRS = "edge"
@@ -57,7 +57,7 @@ class GsmSimulation(BaseSimulation):
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier GSM simulation.
 
-        Loads a simple LTE simulation environment with 1 basestation. It also
+        Loads a simple LTE simulation enviroment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
 
         Args:
@@ -100,48 +100,52 @@ class GsmSimulation(BaseSimulation):
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
 
-    def configure(self, parameters):
-        """ Configures simulation using a dictionary of parameters.
+    def parse_parameters(self, parameters):
+        """ Configs a GSM simulation using a list of parameters.
 
-        Processes GSM configuration parameters.
+        Calls the parent method first, then consumes parameters specific to GSM.
 
         Args:
-            parameters: a configuration dictionary
+            parameters: list of parameters
         """
-        # Don't call super() because Gsm doesn't control Tx power.
 
         # Setup band
-        if self.PARAM_BAND not in parameters:
-            raise ValueError(
-                "The configuration dictionary must include key '{}' with the "
-                "required band number.".format(self.PARAM_BAND))
 
-        self.set_band(self.bts1, parameters[self.PARAM_BAND])
+        values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+
+        if not values:
+            raise ValueError(
+                "The test name needs to include parameter '{}' followed by "
+                "the required band number.".format(self.PARAM_BAND))
+
+        self.set_band(self.bts1, values[1])
         self.load_pathloss_if_required()
 
         # Setup GPRS mode
 
-        if self.PARAM_GPRS in parameters:
+        if self.consume_parameter(parameters, self.PARAM_GPRS):
             self.bts1.gsm_gprs_mode = BtsGprsMode.GPRS
-        elif self.PARAM_EGPRS in parameters:
+        elif self.consume_parameter(parameters, self.PARAM_EGPRS):
             self.bts1.gsm_gprs_mode = BtsGprsMode.EGPRS
-        elif self.PARAM_NO_GPRS in parameters:
+        elif self.consume_parameter(parameters, self.PARAM_NO_GPRS):
             self.bts1.gsm_gprs_mode = BtsGprsMode.NO_GPRS
         else:
             raise ValueError(
-                "GPRS mode needs to be indicated in the config dictionary by "
-                "including either {}, {} or {} as a key.".format(
-                    self.PARAM_GPRS, self.PARAM_EGPRS, self.PARAM_NO_GPRS))
+                "GPRS mode needs to be indicated in the test name with either "
+                "{}, {} or {}.".format(self.PARAM_GPRS, self.PARAM_EGPRS,
+                                       self.PARAM_NO_GPRS))
 
         # Setup slot allocation
-        if self.PARAM_SLOTS not in parameters or len(
-                parameters[self.PARAM_SLOTS]) != 2:
+
+        values = self.consume_parameter(parameters, self.PARAM_SLOTS, 2)
+
+        if not values:
             raise ValueError(
-                "The config dictionary must include key {} with a list of two "
+                "The test name needs to include parameter {} followed by two "
                 "int values indicating DL and UL slots.".format(
                     self.PARAM_SLOTS))
-        values = parameters[self.PARAM_SLOTS]
-        self.bts1.gsm_slots = (int(values[0]), int(values[1]))
+
+        self.bts1.gsm_slots = (int(values[1]), int(values[2]))
 
     def set_band(self, bts, band):
         """ Sets the band used for communication.
