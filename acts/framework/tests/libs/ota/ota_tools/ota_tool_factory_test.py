@@ -47,7 +47,3 @@ class OtaToolFactoryTests(unittest.TestCase):
         ret_a = ota_tool_factory.create(MockOtaTool.__name__, 'command')
         ret_b = ota_tool_factory.create(MockOtaTool.__name__, 'command')
         self.assertEqual(ret_a, ret_b)
-
-
-if __name__ == '__main__':
-    unittest.main()

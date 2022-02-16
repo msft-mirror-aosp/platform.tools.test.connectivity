@@ -1688,7 +1688,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
         dd_s_id = dut2.droid.wifiAwareSubscribe(
             dut2_id,
             autils.create_discovery_config(
-                "DD", aconsts.SUBSCRIBE_TYPE_ACTIVE), True)
+                "AA", aconsts.SUBSCRIBE_TYPE_ACTIVE), True)
         autils.wait_for_event(
             dut2,
             autils.decorate_event(aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
@@ -1745,16 +1745,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
             dut1,
             autils.decorate_event(aconsts.SESSION_CB_ON_SERVICE_DISCOVERED,
                                   ee_s_id))
-        # When device has ranging role concurrency limitation, device could not be initiator
-        # and responder at the same time. There are two supported schemas:
-        # 1. Concurrency fixed mode: the role of the device depends on first Publish/Subscribe,
-        # will keep the same role until the service is terminated
-        # 2. Concurrency flexible mode: the role of the device changes with the active ranging
-        # session, when a publish/subscribe session is active but the ranging session for this
-        # service is terminated, will change the role based on the next publish/subscribe service.
-        if self.RANGING_INITIATOR_RESPONDER_CONCURRENCY_LIMITATION and \
-                (not hasattr(self, "ranging_role_concurrency_flexible_models") or
-                 dut2.model not in self.ranging_role_concurrency_flexible_models):
+        if self.RANGING_INITIATOR_RESPONDER_CONCURRENCY_LIMITATION:
             asserts.assert_false(
                 aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
                 "Discovery with ranging for EE NOT expected!")

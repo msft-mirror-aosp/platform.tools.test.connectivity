@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2022 - Google
+#   Copyright 2016 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -23,8 +23,13 @@ import time
 import os
 
 from acts import signals
+from acts.utils import disable_doze
+from acts.utils import enable_doze
 from acts.utils import rand_ascii_str
 from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
@@ -43,30 +48,25 @@ from acts_contrib.test_utils.tel.tel_defines import SIM2_SLOT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import \
+    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_PASSWORD_HAS_ESCAPE
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_SSID_LIST
 from acts_contrib.test_utils.tel.tel_defines import TETHERING_SPECIAL_PASSWORD_LIST
-from acts_contrib.test_utils.tel.tel_bt_utils import verify_bluetooth_tethering_connection
-from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
-from acts_contrib.test_utils.tel.tel_data_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
 from acts_contrib.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
-from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_detection
-from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_recovery
-from acts_contrib.test_utils.tel.tel_data_utils import check_network_validation_fail
 from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
-from acts_contrib.test_utils.tel.tel_data_utils import remove_mobile_data_usage_limit
-from acts_contrib.test_utils.tel.tel_data_utils import set_mobile_data_usage_limit
 from acts_contrib.test_utils.tel.tel_data_utils import tethering_check_internet_connection
 from acts_contrib.test_utils.tel.tel_data_utils import test_data_connectivity_multi_bearer
 from acts_contrib.test_utils.tel.tel_data_utils import test_setup_tethering
 from acts_contrib.test_utils.tel.tel_data_utils import test_tethering_wifi_and_voice_call
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
-from acts_contrib.test_utils.tel.tel_data_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import verify_bluetooth_tethering_connection
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_apm_tethering_internet_connection
@@ -81,38 +81,53 @@ from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_con
 from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_connection_then_reboot
 from acts_contrib.test_utils.tel.tel_data_utils import verify_internet_connection_in_doze_mode
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_data_during_wifi_tethering
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
-from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_3g
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_3g
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_4g
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_test
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    ensure_network_generation_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
+from acts_contrib.test_utils.tel.tel_test_utils import get_slot_index_from_subid
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
+from acts_contrib.test_utils.tel.tel_test_utils import stop_wifi_tethering
+from acts_contrib.test_utils.tel.tel_test_utils import start_wifi_tethering
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    wait_for_data_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
+from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_detection
+from acts_contrib.test_utils.tel.tel_test_utils import check_network_validation_fail
 from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
-from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
+from acts_contrib.test_utils.tel.tel_test_utils import check_data_stall_recovery
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    test_data_browsing_success_using_sl4a
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    test_data_browsing_failure_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import set_time_sync_from_network
 from acts_contrib.test_utils.tel.tel_test_utils import datetime_handle
-from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_wifi_utils import stop_wifi_tethering
-from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_4g
 
 
 class TelLiveDataTest(TelephonyBaseTest):
@@ -150,8 +165,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             if test_data_browsing_success_using_sl4a(ad.log, ad):
-                ad.log.info("Data Browsing test PASS in iteration %d",
-                            iteration + 1)
+                ad.log.info("Call test PASS in iteration %d", iteration + 1)
                 return True
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ad.log.info("Data Browsing test FAIL for all 3 iterations")
@@ -178,8 +192,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         for iteration in range(3):
             ad.log.info("Attempt %d", iteration + 1)
             if test_data_browsing_success_using_sl4a(ad.log, ad):
-                ad.log.info("Data Browsing test PASS in iteration %d",
-                            iteration + 1)
+                ad.log.info("Call test PASS in iteration %d", iteration + 1)
                 wifi_toggle_state(ad.log, ad, False)
                 return True
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
@@ -1876,7 +1889,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
         current_sim_slot_index = get_slot_index_from_subid(
-            ad, current_data_sub_id)
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2168,7 +2181,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         current_data_sub_id = self.provider.droid.subscriptionGetDefaultDataSubId(
         )
         current_sim_slot_index = get_slot_index_from_subid(
-            self.provider, current_data_sub_id)
+            self.log, self.provider, current_data_sub_id)
         self.provider.log.info("Current Data is on subId: %s, SIM slot: %s",
                                current_data_sub_id, current_sim_slot_index)
         if not test_setup_tethering(self.log, self.provider, self.clients, None):
@@ -2229,7 +2242,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
         current_sim_slot_index = get_slot_index_from_subid(
-            ad, current_data_sub_id)
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2380,7 +2393,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
         current_sim_slot_index = get_slot_index_from_subid(
-            ad, current_data_sub_id)
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             non_active_sim_slot_index = SIM2_SLOT_INDEX
         else:
