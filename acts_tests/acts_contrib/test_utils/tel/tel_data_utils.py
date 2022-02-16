@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2022 - Google
+#   Copyright 2016 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -14,102 +14,94 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
-import logging
-import os
 import time
 import random
+import re
 from queue import Empty
 
-from acts.controllers.android_device import SL4A_APK_NAME
 from acts.utils import adb_shell_ping
 from acts.utils import rand_ascii_str
 from acts.utils import disable_doze
 from acts.utils import enable_doze
-from acts.libs.utils.multithread import multithread_func
-from acts.libs.utils.multithread import run_multithread_func
+from acts_contrib.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts_contrib.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts_contrib.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
-from acts_contrib.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
-from acts_contrib.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts_contrib.test_utils.tel.tel_defines import EventNetworkCallback
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import RAT_5G
-from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
-from acts_contrib.test_utils.tel.tel_defines import TYPE_MOBILE
+from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
+from acts_contrib.test_utils.tel.tel_defines import \
+    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts_contrib.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
-from acts_contrib.test_utils.tel.tel_defines import DataConnectionStateContainer
-from acts_contrib.test_utils.tel.tel_defines import EventDataConnectionStateChanged
-from acts_contrib.test_utils.tel.tel_5g_test_utils import check_current_network_5g
-from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
-from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
-from acts_contrib.test_utils.tel.tel_ims_utils import is_ims_registered
-from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_ims_registered
-from acts_contrib.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation_for_subscription
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_idle
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_iwlan
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
-from acts_contrib.test_utils.tel.tel_phone_setup_utils import wait_for_voice_attach_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import _check_file_existence
-from acts_contrib.test_utils.tel.tel_test_utils import _generate_file_directory_and_file_name
-from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
-from acts_contrib.test_utils.tel.tel_test_utils import get_internet_connection_type
+from acts_contrib.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_test_utils import check_is_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phone_idle
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts_contrib.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import get_wifi_usage
+from acts_contrib.test_utils.tel.tel_test_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
-from acts_contrib.test_utils.tel.tel_test_utils import is_event_match
+from acts_contrib.test_utils.tel.tel_test_utils import is_ims_registered
+from acts_contrib.test_utils.tel.tel_test_utils import multithread_func
 from acts_contrib.test_utils.tel.tel_test_utils import rat_generation_from_rat
+from acts_contrib.test_utils.tel.tel_test_utils import set_wifi_to_default
+from acts_contrib.test_utils.tel.tel_test_utils import start_youtube_video
+from acts_contrib.test_utils.tel.tel_test_utils import start_wifi_tethering
+from acts_contrib.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_http_connection
 from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_network_service
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
-from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
-from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_active
-from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts_contrib.test_utils.tel.tel_test_utils import \
+    wait_for_voice_attach_for_subscription
+from acts_contrib.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_reset
+from acts_contrib.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import active_file_download_task
+from acts_contrib.test_utils.tel.tel_test_utils import run_multithread_func
+from acts_contrib.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
+from acts_contrib.test_utils.tel.tel_test_utils import is_phone_in_call_active
+from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
+from acts_contrib.test_utils.tel.tel_5g_test_utils import check_current_network_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
-from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
-from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
-from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_SSID_KEY
-from acts_contrib.test_utils.tel.tel_wifi_utils import check_is_wifi_connected
-from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_wifi_utils import get_wifi_usage
-from acts_contrib.test_utils.tel.tel_wifi_utils import set_wifi_to_default
-from acts_contrib.test_utils.tel.tel_wifi_utils import start_wifi_tethering
-from acts_contrib.test_utils.tel.tel_wifi_utils import stop_wifi_tethering
-from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_reset
-from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 
 
 def wifi_tethering_cleanup(log, provider, client_list):
@@ -295,12 +287,7 @@ def tethering_check_internet_connection(log, provider, client_list,
     return False
 
 
-def wifi_cell_switching(log,
-                        ad,
-                        nw_gen,
-                        wifi_network_ssid=None,
-                        wifi_network_pass=None,
-                        nr_type=None):
+def wifi_cell_switching(log, ad, nw_gen, wifi_network_ssid=None, wifi_network_pass=None, sa_5g=False):
     """Test data connection network switching when phone on <nw_gen>.
 
     Ensure phone is on <nw_gen>
@@ -316,14 +303,13 @@ def wifi_cell_switching(log,
         wifi_network_ssid: ssid for live wifi network.
         wifi_network_pass: password for live wifi network.
         nw_gen: network generation the phone should be camped on.
-        nr_type: check NR network.
 
     Returns:
         True if pass.
     """
     try:
         if nw_gen == GEN_5G:
-            if not provision_device_for_5g(log, ad, nr_type):
+            if not provision_device_for_5g(log, ad, sa_5g):
                 return False
         elif nw_gen:
             if not ensure_network_generation_for_subscription(
@@ -457,7 +443,7 @@ def airplane_mode_test(log, ad, wifi_ssid=None, retries=3):
         toggle_airplane_mode(log, ad, False)
 
 
-def data_connectivity_single_bearer(log, ad, nw_gen=None, nr_type=None):
+def data_connectivity_single_bearer(log, ad, nw_gen=None, sa_5g=False):
     """Test data connection: single-bearer (no voice).
 
     Turn off airplane mode, enable Cellular Data.
@@ -470,7 +456,6 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, nr_type=None):
         log: log object.
         ad: android object.
         nw_gen: network generation the phone should on.
-        nr_type: NR network type e.g. NSA, SA, MMWAVE
 
     Returns:
         True if success.
@@ -482,7 +467,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, nr_type=None):
         wait_time = 2 * wait_time
 
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, ad, nr_type):
+        if not provision_device_for_5g(log, ad, sa_5g):
             return False
     elif nw_gen:
         if not ensure_network_generation_for_subscription(
@@ -527,7 +512,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen=None, nr_type=None):
             return False
 
         if nw_gen == GEN_5G:
-            if not check_current_network_5g(ad, nr_type=nr_type, timeout=60):
+            if not check_current_network_5g(ad, sa_5g):
                 return False
         else:
             if not is_droid_in_network_generation_for_subscription(
@@ -850,7 +835,7 @@ def test_data_connectivity_multi_bearer(
         nw_gen=None,
         simultaneous_voice_data=True,
         call_direction=DIRECTION_MOBILE_ORIGINATED,
-        nr_type=None):
+        sa_5g=False):
     """Test data connection before call and in call.
 
     Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -876,7 +861,7 @@ def test_data_connectivity_multi_bearer(
     ensure_phones_idle(log, ad_list)
 
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, android_devices, nr_type=nr_type):
+        if not provision_device_for_5g(log, android_devices, sa_5g):
             return False
     elif nw_gen:
         if not ensure_network_generation_for_subscription(
@@ -1010,18 +995,13 @@ def test_internet_connection(log, provider, clients,
     return True
 
 
-def test_setup_tethering(log,
-                        provider,
-                        clients,
-                        network_generation=None,
-                        nr_type=None):
+def test_setup_tethering(log, provider, clients, network_generation=None, sa_5g=False):
     """Pre setup steps for WiFi tethering test.
 
     Ensure all ads are idle.
     Ensure tethering provider:
         turn off APM, turn off WiFI, turn on Data.
         have Internet connection, no active ongoing WiFi tethering.
-    nr_type: NR network type.
 
     Returns:
         True if success.
@@ -1032,7 +1012,7 @@ def test_setup_tethering(log,
     ensure_phones_idle(log, clients)
     wifi_toggle_state(log, provider, False)
     if network_generation == RAT_5G:
-        if not provision_device_for_5g(log, provider, nr_type=nr_type):
+        if not provision_device_for_5g(log, provider, sa_5g):
             return False
     elif network_generation:
         if not ensure_network_generation(
@@ -1056,7 +1036,7 @@ def test_setup_tethering(log,
         provider.log.info("Disable provider wifi tethering")
         stop_wifi_tethering(log, provider)
     provider.log.info("Provider disable bluetooth")
-    provider.droid.bluetoothToggleState(False)
+    disable_bluetooth(provider.droid)
     time.sleep(10)
 
     for ad in clients:
@@ -1066,7 +1046,7 @@ def test_setup_tethering(log,
         ad.log.info("Client disable data")
         ad.droid.telephonyToggleDataConnection(False)
         ad.log.info("Client disable bluetooth")
-        ad.droid.bluetoothToggleState(False)
+        disable_bluetooth(ad.droid)
         ad.log.info("Client disable wifi")
         wifi_toggle_state(log, ad, False)
 
@@ -1085,11 +1065,169 @@ def test_setup_tethering(log,
     return True
 
 
+def enable_bluetooth_tethering_connection(log, provider, clients):
+    for ad in [provider] + clients:
+        if not bluetooth_enabled_check(ad):
+            ad.log.info("Bluetooth is not enabled")
+            return False
+        else:
+            ad.log.info("Bluetooth is enabled")
+    time.sleep(5)
+    provider.log.info("Provider enabling bluetooth tethering")
+    try:
+        provider.droid.bluetoothPanSetBluetoothTethering(True)
+    except Exception as e:
+        provider.log.warning(
+            "Failed to enable provider Bluetooth tethering with %s", e)
+        provider.droid.bluetoothPanSetBluetoothTethering(True)
+
+    if wait_for_state(provider.droid.bluetoothPanIsTetheringOn, True):
+        provider.log.info("Provider Bluetooth tethering is enabled.")
+    else:
+        provider.log.error(
+            "Failed to enable provider Bluetooth tethering.")
+        provider.log.error("bluetoothPanIsTetheringOn = %s",
+                           provider.droid.bluetoothPanIsTetheringOn())
+        return False
+    for client in clients:
+        if not (pair_pri_to_sec(provider, client)):
+            client.log.error("Client failed to pair with provider")
+            return False
+        else:
+            client.log.info("Client paired with provider")
+
+    time.sleep(5)
+    for client in clients:
+        client.droid.bluetoothConnectBonded(provider.droid.bluetoothGetLocalAddress())
+
+    time.sleep(20)
+    return True
+
+
+def verify_bluetooth_tethering_connection(log, provider, clients,
+                                           change_rat=None,
+                                           toggle_data=False,
+                                           toggle_tethering=False,
+                                           voice_call=False,
+                                           toggle_bluetooth=True):
+    """Setups up a bluetooth tethering connection between two android devices.
+
+    Returns:
+        True if PAN connection and verification is successful,
+        false if unsuccessful.
+    """
+
+
+    if not enable_bluetooth_tethering_connection(log, provider, clients):
+        return False
+
+    if not test_internet_connection(log, provider, clients):
+        log.error("Internet connection check failed")
+        return False
+    if voice_call:
+        log.info("====== Voice call test =====")
+        for caller, callee in [(provider, clients[0]),
+                               (clients[0], provider)]:
+            if not call_setup_teardown(
+                    log, caller, callee, ad_hangup=None):
+                log.error("Setup Call Failed.")
+                hangup_call(log, caller)
+                return False
+            log.info("Verify data.")
+            if not verify_internet_connection(
+                    log, clients[0], retries=1):
+                clients[0].log.warning(
+                    "client internet connection state is not on")
+            else:
+                clients[0].log.info(
+                    "client internet connection state is on")
+            hangup_call(log, caller)
+            if not verify_internet_connection(
+                    log, clients[0], retries=1):
+                clients[0].log.warning(
+                    "client internet connection state is not on")
+                return False
+            else:
+                clients[0].log.info(
+                    "client internet connection state is on")
+    if toggle_tethering:
+        log.info("====== Toggling provider bluetooth tethering =====")
+        provider.log.info("Disable bluetooth tethering")
+        provider.droid.bluetoothPanSetBluetoothTethering(False)
+        if not test_internet_connection(log, provider, clients, False, True):
+            log.error(
+                "Internet connection check failed after disable tethering")
+            return False
+        provider.log.info("Enable bluetooth tethering")
+        if not enable_bluetooth_tethering_connection(log,
+                provider, clients):
+            provider.log.error(
+                "Fail to re-enable bluetooth tethering")
+            return False
+        if not test_internet_connection(log, provider, clients, True, True):
+            log.error(
+                "Internet connection check failed after enable tethering")
+            return False
+    if toggle_bluetooth:
+        log.info("====== Toggling provider bluetooth =====")
+        provider.log.info("Disable provider bluetooth")
+        disable_bluetooth(provider.droid)
+        time.sleep(10)
+        if not test_internet_connection(log, provider, clients, False, True):
+            log.error(
+                "Internet connection check failed after disable bluetooth")
+            return False
+        if not enable_bluetooth_tethering_connection(log,
+                provider, clients):
+            provider.log.error(
+                "Fail to re-enable bluetooth tethering")
+            return False
+        if not test_internet_connection(log, provider, clients, True, True):
+            log.error(
+                "Internet connection check failed after enable bluetooth")
+            return False
+    if toggle_data:
+        log.info("===== Toggling provider data connection =====")
+        provider.log.info("Disable provider data connection")
+        provider.droid.telephonyToggleDataConnection(False)
+        time.sleep(10)
+        if not test_internet_connection(log, provider, clients, False, False):
+            return False
+        provider.log.info("Enable provider data connection")
+        provider.droid.telephonyToggleDataConnection(True)
+        if not wait_for_cell_data_connection(log, provider,
+                                             True):
+            provider.log.error(
+                "Provider failed to enable data connection.")
+            return False
+        if not test_internet_connection(log, provider, clients, True, True):
+            log.error(
+                "Internet connection check failed after enable data")
+            return False
+    if change_rat:
+        log.info("===== Change provider RAT to %s =====", change_rat)
+        if not ensure_network_generation(
+                log,
+                provider,
+                change_rat,
+                voice_or_data=NETWORK_SERVICE_DATA,
+                toggle_apm_after_setting=False):
+            provider.log.error("Provider failed to reselect to %s.",
+                                    change_rat)
+            return False
+        if not test_internet_connection(log, provider, clients, True, True):
+            log.error(
+                "Internet connection check failed after RAT change to %s",
+                change_rat)
+            return False
+    return True
+
+
 def test_tethering_wifi_and_voice_call(log, provider, clients,
                                         provider_data_rat,
                                         provider_setup_func,
                                         provider_in_call_check_func,
-                                        nr_type=None):
+                                        sa_5g=False):
 
     if not test_setup_tethering(log, provider, clients, provider_data_rat):
         log.error("Verify 4G Internet access failed.")
@@ -1102,7 +1240,7 @@ def test_tethering_wifi_and_voice_call(log, provider, clients,
         return False
 
     if provider_setup_func == RAT_5G:
-        if not provision_device_for_5g(log, provider, nr_type=nr_type):
+        if not provision_device_for_5g(log, provider, sa_5g):
             return False
     try:
         log.info("1. Setup WiFi Tethering.")
@@ -1176,38 +1314,36 @@ def test_wifi_connect_disconnect(log, ad, wifi_network_ssid=None, wifi_network_p
         True, False, True, False, False, True, False, False, False, False,
         True, False, False, False, False, False, False, False, False
     ]
-    try:
-        for toggle in wifi_toggles:
 
-            wifi_reset(log, ad, toggle)
+    for toggle in wifi_toggles:
 
-            if not wait_for_cell_data_connection(
-                    log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
-                log.error("Failed data connection, aborting!")
-                return False
+        wifi_reset(log, ad, toggle)
 
-            if not verify_internet_connection(log, ad):
-                log.error("Failed to get user-plane traffic, aborting!")
-                return False
+        if not wait_for_cell_data_connection(
+                log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
+            log.error("Failed wifi connection, aborting!")
+            return False
 
-            if toggle:
-                wifi_toggle_state(log, ad, True)
+        if not verify_internet_connection(log, ad):
+            log.error("Failed to get user-plane traffic, aborting!")
+            return False
 
-            ensure_wifi_connected(log, ad, wifi_network_ssid,
-                        wifi_network_pass)
+        if toggle:
+            wifi_toggle_state(log, ad, True)
 
-            if not wait_for_wifi_data_connection(
-                    log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
-                log.error("Failed wifi connection, aborting!")
-                return False
+        ensure_wifi_connected(log, ad, wifi_network_ssid,
+                     wifi_network_pass)
 
-            if not verify_http_connection(
-                    log, ad, 'http://www.google.com', 100, .1):
-                log.error("Failed to get user-plane traffic, aborting!")
-                return False
-        return True
-    finally:
-        wifi_toggle_state(log, ad, False)
+        if not wait_for_wifi_data_connection(
+                log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
+            log.error("Failed wifi connection, aborting!")
+            return False
+
+        if not verify_http_connection(
+                log, ad, 'http://www.google.com', 100, .1):
+            log.error("Failed to get user-plane traffic, aborting!")
+            return False
+    return True
 
 
 def test_call_setup_in_active_data_transfer(
@@ -1216,7 +1352,7 @@ def test_call_setup_in_active_data_transfer(
         nw_gen=None,
         call_direction=DIRECTION_MOBILE_ORIGINATED,
         allow_data_transfer_interruption=False,
-        nr_type=None):
+        sa_5g=False):
     """Test call can be established during active data connection.
 
     Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -1249,7 +1385,7 @@ def test_call_setup_in_active_data_transfer(
                                    wait_time_in_call)
 
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, ads[0], nr_type=nr_type):
+        if not provision_device_for_5g(log, ads[0], sa_5g):
             return False
     elif nw_gen:
         if not ensure_network_generation(log, ads[0], nw_gen,
@@ -1304,8 +1440,7 @@ def test_call_setup_in_active_data_transfer(
             return False
     # Disable airplane mode if test under apm on.
     toggle_airplane_mode(log, ads[0], False)
-    if nw_gen == GEN_5G and not check_current_network_5g(ads[0],
-                                                         nr_type=nr_type):
+    if nw_gen == GEN_5G and not check_current_network_5g(ads[0], sa_5g):
         ads[0].log.error("Phone not attached on 5G after call.")
         return False
     return True
@@ -1317,7 +1452,7 @@ def test_call_setup_in_active_youtube_video(
         nw_gen=None,
         call_direction=DIRECTION_MOBILE_ORIGINATED,
         allow_data_transfer_interruption=False,
-        nr_type=None):
+        sa_5g=False):
     """Test call can be established during active data connection.
 
     Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -1336,7 +1471,7 @@ def test_call_setup_in_active_youtube_video(
         False if failed.
     """
     if nw_gen == GEN_5G:
-        if not provision_device_for_5g(log, ads[0], nr_type=nr_type):
+        if not provision_device_for_5g(log, ads[0], sa_5g):
             return False
     elif nw_gen:
         if not ensure_network_generation(log, ads[0], nw_gen,
@@ -1383,8 +1518,7 @@ def test_call_setup_in_active_youtube_video(
     ad_download.force_stop_apk("com.google.android.youtube")
     # Disable airplane mode if test under apm on.
     toggle_airplane_mode(log, ads[0], False)
-    if nw_gen == GEN_5G and not check_current_network_5g(ads[0],
-                                                         nr_type=nr_type):
+    if nw_gen == GEN_5G and not check_current_network_5g(ads[0], sa_5g):
         ads[0].log.error("Phone not attached on 5G after call.")
         result = False
     return result
@@ -1397,7 +1531,7 @@ def call_epdg_to_epdg_wfc(log,
                           wifi_ssid,
                           wifi_pwd,
                           nw_gen=None,
-                          nr_type=None):
+                          sa_5g=False):
     """ Test epdg<->epdg call functionality.
 
     Make Sure PhoneA is set to make epdg call.
@@ -1431,7 +1565,7 @@ def call_epdg_to_epdg_wfc(log,
         if not multithread_func(log, tasks):
             log.error("Failed to turn off airplane mode")
             return False
-        if not provision_device_for_5g(log, ads, nr_type):
+        if not provision_device_for_5g(log, ad, sa_5g):
             return False
 
     tasks = [(phone_setup_iwlan, (log, ads[0], apm_mode, wfc_mode,
@@ -1454,8 +1588,7 @@ def call_epdg_to_epdg_wfc(log,
 
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-    if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(
-        log, ads, nr_type=nr_type):
+    if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(log, ads, sa_5g):
         log.error("Phone not attached on 5G after epdg call.")
         return False
 
@@ -1555,8 +1688,7 @@ def test_wifi_tethering(log, provider,
                         do_cleanup=True,
                         ssid=None,
                         password=None,
-                        pre_teardown_func=None,
-                        nr_type=None):
+                        pre_teardown_func=None):
     """WiFi Tethering test
     Args:
         log: log object.
@@ -1579,10 +1711,9 @@ def test_wifi_tethering(log, provider,
             This is optional. Default value is None.
             If it's None, a random string will be generated.
         pre_teardown_func: execute custom actions between tethering setup adn teardown.
-        nr_type: NR network type e.g. NSA, SA, MMWAVE.
 
     """
-    if not test_setup_tethering(log, provider, clients, nw_gen, nr_type=nr_type):
+    if not test_setup_tethering(log, provider, clients, nw_gen):
         log.error("Verify %s Internet access failed.", nw_gen)
         return False
 
@@ -1882,16 +2013,13 @@ def test_wifi_cell_switching_in_call(log,
 def verify_toggle_data_during_wifi_tethering(log,
                                              provider,
                                              clients,
-                                             new_gen=None,
-                                             nr_type=None):
+                                             new_gen=None):
     """Verify toggle Data network during WiFi Tethering.
     Args:
         log: log object.
         provider: android device object for provider.
         clients: android device objects for clients.
         new_gen: network generation.
-        nr_type: NR network type e.g. NSA, SA, MMWAVE.
-
     Returns:
         True if pass, otherwise False.
 
@@ -1907,8 +2035,7 @@ def verify_toggle_data_during_wifi_tethering(log,
                                    check_interval=10,
                                    check_iteration=2,
                                    do_cleanup=False,
-                                   ssid=ssid,
-                                   nr_type=nr_type):
+                                   ssid=ssid):
             log.error("WiFi Tethering failed.")
             return False
         if not provider.droid.wifiIsApEnabled():
@@ -1955,914 +2082,3 @@ def verify_toggle_data_during_wifi_tethering(log,
                                       clients):
             return False
     return True
-
-def deactivate_and_verify_cellular_data(log, ad):
-    """Toggle off cellular data and ensure there is no internet connection.
-
-    Args:
-        ad: Android object
-
-    Returns:
-        True if cellular data is deactivated successfully. Otherwise False.
-    """
-    ad.log.info('Deactivating cellular data......')
-    ad.droid.telephonyToggleDataConnection(False)
-
-    if not wait_for_cell_data_connection(log, ad, False):
-        ad.log.error("Failed to deactivate cell data connection.")
-        return False
-
-    if not verify_internet_connection(log, ad, expected_state=False):
-        ad.log.error("Internet connection is still available.")
-        return False
-
-    return True
-
-def activate_and_verify_cellular_data(log, ad):
-    """Toggle on cellular data and ensure there is internet connection.
-
-    Args:
-        ad: Android object
-
-    Returns:
-        True if cellular data is activated successfully. Otherwise False.
-    """
-    ad.log.info('Activating cellular data......')
-    ad.droid.telephonyToggleDataConnection(True)
-
-    if not wait_for_cell_data_connection(log, ad, True):
-        ad.log.error("Failed to activate data connection.")
-        return False
-
-    if not verify_internet_connection(log, ad, retries=3):
-        ad.log.error("Internet connection is NOT available.")
-        return False
-
-    return True
-
-
-def wait_for_network_service(
-    log,
-    ad,
-    wifi_connected=False,
-    wifi_ssid=None,
-    ims_reg=True,
-    recover=False,
-    retry=3):
-    """ Wait for multiple network services in sequence, including:
-        - service state
-        - network connection
-        - wifi connection
-        - cellular data
-        - internet connection
-        - IMS registration
-
-        The mechanism (cycling airplane mode) to recover network services is
-        also provided if any service is not available.
-
-        Args:
-            log: log object
-            ad: android device
-            wifi_connected: True if wifi should be connected. Otherwise False.
-            ims_reg: True if IMS should be registered. Otherwise False.
-            recover: True if the mechanism (cycling airplane mode) to recover
-            network services should be enabled (by default False).
-            retry: times of retry.
-    """
-    times = 1
-    while times <= retry:
-        while True:
-            if not wait_for_state(
-                    get_service_state_by_adb,
-                    "IN_SERVICE",
-                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                    WAIT_TIME_BETWEEN_STATE_CHECK,
-                    log,
-                    ad):
-                ad.log.error("Current service state is not 'IN_SERVICE'.")
-                break
-
-            if not wait_for_state(
-                    ad.droid.connectivityNetworkIsConnected,
-                    True,
-                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                    WAIT_TIME_BETWEEN_STATE_CHECK):
-                ad.log.error("Network is NOT connected!")
-                break
-
-            if wifi_connected and wifi_ssid:
-                if not wait_for_state(
-                        check_is_wifi_connected,
-                        True,
-                        MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                        WAIT_TIME_BETWEEN_STATE_CHECK,
-                        log,
-                        ad,
-                        wifi_ssid):
-                    ad.log.error("Failed to connect Wi-Fi SSID '%s'.", wifi_ssid)
-                    break
-            else:
-                if not wait_for_cell_data_connection(log, ad, True):
-                    ad.log.error("Failed to enable data connection.")
-                    break
-
-            if not wait_for_state(
-                    verify_internet_connection,
-                    True,
-                    MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                    WAIT_TIME_BETWEEN_STATE_CHECK,
-                    log,
-                    ad):
-                ad.log.error("Data not available on cell.")
-                break
-
-            if ims_reg:
-                if not wait_for_ims_registered(log, ad):
-                    ad.log.error("IMS is not registered.")
-                    break
-                ad.log.info("IMS is registered.")
-            return True
-
-        if recover:
-            ad.log.warning("Trying to recover by cycling airplane mode...")
-            if not toggle_airplane_mode(log, ad, True):
-                ad.log.error("Failed to enable airplane mode")
-                break
-
-            time.sleep(5)
-
-            if not toggle_airplane_mode(log, ad, False):
-                ad.log.error("Failed to disable airplane mode")
-                break
-
-            times = times + 1
-
-        else:
-            return False
-    return False
-
-
-def wait_for_cell_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value for default
-       data subscription.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for cell data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
-
-
-def _is_data_connection_state_match(log, ad, expected_data_connection_state):
-    return (expected_data_connection_state ==
-            ad.droid.telephonyGetDataConnectionState())
-
-
-def _is_network_connected_state_match(log, ad,
-                                      expected_network_connected_state):
-    return (expected_network_connected_state ==
-            ad.droid.connectivityNetworkIsConnected())
-
-
-def wait_for_cell_data_connection_for_subscription(
-        log,
-        ad,
-        sub_id,
-        state,
-        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value for specified
-       subscrption id.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        sub_id: subscription Id
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for cell data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    state_str = {
-        True: DATA_STATE_CONNECTED,
-        False: DATA_STATE_DISCONNECTED
-    }[state]
-
-    data_state = ad.droid.telephonyGetDataConnectionState()
-    if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
-        return True
-
-    ad.ed.clear_events(EventDataConnectionStateChanged)
-    ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
-        sub_id)
-    ad.droid.connectivityStartTrackingConnectivityStateChange()
-    try:
-        ad.log.info("User data enabled for sub_id %s: %s", sub_id,
-                    ad.droid.telephonyIsDataEnabledForSubscription(sub_id))
-        data_state = ad.droid.telephonyGetDataConnectionState()
-        ad.log.info("Data connection state is %s", data_state)
-        ad.log.info("Network is connected: %s",
-                    ad.droid.connectivityNetworkIsConnected())
-        if data_state == state_str:
-            return _wait_for_nw_data_connection(
-                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
-
-        try:
-            ad.ed.wait_for_event(
-                EventDataConnectionStateChanged,
-                is_event_match,
-                timeout=timeout_value,
-                field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
-                value=state_str)
-        except Empty:
-            ad.log.info("No expected event EventDataConnectionStateChanged %s",
-                        state_str)
-
-        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
-        # data connection state.
-        # Otherwise, the network state will not be correct.
-        # The bug is tracked here: b/20921915
-
-        # Previously we use _is_data_connection_state_match,
-        # but telephonyGetDataConnectionState sometimes return wrong value.
-        # The bug is tracked here: b/22612607
-        # So we use _is_network_connected_state_match.
-
-        if _wait_for_droid_in_state(log, ad, timeout_value,
-                                    _is_network_connected_state_match, state):
-            return _wait_for_nw_data_connection(
-                log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
-        else:
-            return False
-
-    finally:
-        ad.droid.telephonyStopTrackingDataConnectionStateChangeForSubscription(
-            sub_id)
-
-
-def wait_for_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    return _wait_for_nw_data_connection(log, ad, state, None, timeout_value)
-
-
-def wait_for_wifi_data_connection(
-        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value and connection is by WiFi.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        state: Expected status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_NW_SELECTION
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    ad.log.info("wait_for_wifi_data_connection")
-    return _wait_for_nw_data_connection(
-        log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
-
-
-def _connection_state_change(_event, target_state, connection_type):
-    if connection_type:
-        if 'TypeName' not in _event['data']:
-            return False
-        connection_type_string_in_event = _event['data']['TypeName']
-        cur_type = connection_type_from_type_string(
-            connection_type_string_in_event)
-        if cur_type != connection_type:
-            logging.info(
-                "_connection_state_change expect: %s, received: %s <type %s>",
-                connection_type, connection_type_string_in_event, cur_type)
-            return False
-
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
-        return True
-    return False
-
-
-def _wait_for_nw_data_connection(
-        log,
-        ad,
-        is_connected,
-        connection_type=None,
-        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
-    """Wait for data connection status to be expected value.
-
-    Wait for the data connection status to be DATA_STATE_CONNECTED
-        or DATA_STATE_DISCONNECTED.
-
-    Args:
-        log: Log object.
-        ad: Android Device Object.
-        is_connected: Expected connection status: True or False.
-            If True, it will wait for status to be DATA_STATE_CONNECTED.
-            If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
-        connection_type: expected connection type.
-            This is optional, if it is None, then any connection type will return True.
-        timeout_value: wait for network data timeout value.
-            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
-
-    Returns:
-        True if success.
-        False if failed.
-    """
-    ad.ed.clear_events(EventConnectivityChanged)
-    ad.droid.connectivityStartTrackingConnectivityStateChange()
-    try:
-        cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
-        if is_connected == cur_data_connection_state:
-            current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current data connection type: %s", current_type)
-            if not connection_type:
-                return True
-            else:
-                if not is_connected and current_type != connection_type:
-                    ad.log.info("data connection not on %s!", connection_type)
-                    return True
-                elif is_connected and current_type == connection_type:
-                    ad.log.info("data connection on %s as expected",
-                                connection_type)
-                    return True
-        else:
-            ad.log.info("current data connection state: %s target: %s",
-                        cur_data_connection_state, is_connected)
-
-        try:
-            event = ad.ed.wait_for_event(
-                EventConnectivityChanged, _connection_state_change,
-                timeout_value, is_connected, connection_type)
-            ad.log.info("Got event: %s", event)
-        except Empty:
-            pass
-
-        log.info(
-            "_wait_for_nw_data_connection: check connection after wait event.")
-        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
-        # data connection state.
-        # Otherwise, the network state will not be correct.
-        # The bug is tracked here: b/20921915
-        if _wait_for_droid_in_state(log, ad, timeout_value,
-                                    _is_network_connected_state_match,
-                                    is_connected):
-            current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current data connection type: %s", current_type)
-            if not connection_type:
-                return True
-            else:
-                if not is_connected and current_type != connection_type:
-                    ad.log.info("data connection not on %s", connection_type)
-                    return True
-                elif is_connected and current_type == connection_type:
-                    ad.log.info("after event wait, data connection on %s",
-                                connection_type)
-                    return True
-                else:
-                    return False
-        else:
-            return False
-    except Exception as e:
-        ad.log.error("Exception error %s", str(e))
-        return False
-    finally:
-        ad.droid.connectivityStopTrackingConnectivityStateChange()
-
-
-def check_curl_availability(ad):
-    if not hasattr(ad, "curl_capable"):
-        try:
-            out = ad.adb.shell("/data/curl --version")
-            if not out or "not found" in out:
-                setattr(ad, "curl_capable", False)
-                ad.log.info("curl is unavailable, use chrome to download file")
-            else:
-                setattr(ad, "curl_capable", True)
-        except Exception:
-            setattr(ad, "curl_capable", False)
-            ad.log.info("curl is unavailable, use chrome to download file")
-    return ad.curl_capable
-
-
-def start_youtube_video(ad, url="vnd.youtube:watch?v=pSJoP0LR8CQ"):
-    ad.log.info("Open an youtube video")
-    for _ in range(3):
-        ad.ensure_screen_on()
-        ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
-        if wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
-            ad.log.info("Started a video in youtube, audio is in MUSIC state")
-            return True
-        ad.log.info("Audio is not in MUSIC state. Quit Youtube.")
-        for _ in range(3):
-            ad.send_keycode("BACK")
-            time.sleep(1)
-        time.sleep(3)
-    return False
-
-
-def http_file_download_by_sl4a(ad,
-                               url,
-                               out_path=None,
-                               expected_file_size=None,
-                               remove_file_after_check=True,
-                               timeout=300):
-    """Download http file by sl4a RPC call.
-
-    Args:
-        ad: Android Device Object.
-        url: The url that file to be downloaded from".
-        out_path: Optional. Where to download file to.
-                  out_path is /sdcard/Download/ by default.
-        expected_file_size: Optional. Provided if checking the download file meet
-                            expected file size in unit of byte.
-        remove_file_after_check: Whether to remove the downloaded file after
-                                 check.
-        timeout: timeout for file download to complete.
-    """
-    file_folder, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
-    file_path = os.path.join(file_folder, file_name)
-    ad.adb.shell("rm -f %s" % file_path)
-    accounting_apk = SL4A_APK_NAME
-    result = True
-    try:
-        if not getattr(ad, "data_droid", None):
-            ad.data_droid, ad.data_ed = ad.get_droid()
-            ad.data_ed.start()
-        else:
-            try:
-                if not ad.data_droid.is_live:
-                    ad.data_droid, ad.data_ed = ad.get_droid()
-                    ad.data_ed.start()
-            except Exception:
-                ad.log.info("Start new sl4a session for file download")
-                ad.data_droid, ad.data_ed = ad.get_droid()
-                ad.data_ed.start()
-        data_accounting = {
-            "mobile_rx_bytes":
-            ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":
-            get_mobile_data_usage(ad, None, None),
-            "sl4a_mobile_data_usage":
-            get_mobile_data_usage(ad, None, accounting_apk)
-        }
-        ad.log.debug("Before downloading: %s", data_accounting)
-        ad.log.info("Download file from %s to %s by sl4a RPC call", url,
-                    file_path)
-        try:
-            ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
-        except Exception as e:
-            ad.log.warning("SL4A file download error: %s", e)
-            ad.data_droid.terminate()
-            return False
-        if _check_file_existence(ad, file_path, expected_file_size):
-            ad.log.info("%s is downloaded successfully", url)
-            new_data_accounting = {
-                "mobile_rx_bytes":
-                ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None),
-                "sl4a_mobile_data_usage":
-                get_mobile_data_usage(ad, None, accounting_apk)
-            }
-            ad.log.debug("After downloading: %s", new_data_accounting)
-            accounting_diff = {
-                key: value - data_accounting[key]
-                for key, value in new_data_accounting.items()
-            }
-            ad.log.debug("Data accounting difference: %s", accounting_diff)
-            if getattr(ad, "on_mobile_data", False):
-                for key, value in accounting_diff.items():
-                    if value < expected_file_size:
-                        ad.log.debug("%s diff is %s less than %s", key,
-                                       value, expected_file_size)
-                        ad.data_accounting["%s_failure"] += 1
-            else:
-                for key, value in accounting_diff.items():
-                    if value >= expected_file_size:
-                        ad.log.error("%s diff is %s. File download is "
-                                     "consuming mobile data", key, value)
-                        result = False
-            return result
-        else:
-            ad.log.warning("Fail to download %s", url)
-            return False
-    except Exception as e:
-        ad.log.error("Download %s failed with exception %s", url, e)
-        raise
-    finally:
-        if remove_file_after_check:
-            ad.log.info("Remove the downloaded file %s", file_path)
-            ad.adb.shell("rm %s" % file_path, ignore_status=True)
-
-
-def http_file_download_by_curl(ad,
-                               url,
-                               out_path=None,
-                               expected_file_size=None,
-                               remove_file_after_check=True,
-                               timeout=3600,
-                               limit_rate=None,
-                               retry=3):
-    """Download http file by adb curl.
-
-    Args:
-        ad: Android Device Object.
-        url: The url that file to be downloaded from".
-        out_path: Optional. Where to download file to.
-                  out_path is /sdcard/Download/ by default.
-        expected_file_size: Optional. Provided if checking the download file meet
-                            expected file size in unit of byte.
-        remove_file_after_check: Whether to remove the downloaded file after
-                                 check.
-        timeout: timeout for file download to complete.
-        limit_rate: download rate in bps. None, if do not apply rate limit.
-        retry: the retry request times provided in curl command.
-    """
-    file_directory, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
-    file_path = os.path.join(file_directory, file_name)
-    curl_cmd = "/data/curl"
-    if limit_rate:
-        curl_cmd += " --limit-rate %s" % limit_rate
-    if retry:
-        curl_cmd += " --retry %s" % retry
-    curl_cmd += " --url %s > %s" % (url, file_path)
-    try:
-        ad.log.info("Download %s to %s by adb shell command %s", url,
-                    file_path, curl_cmd)
-
-        ad.adb.shell(curl_cmd, timeout=timeout)
-        if _check_file_existence(ad, file_path, expected_file_size):
-            ad.log.info("%s is downloaded to %s successfully", url, file_path)
-            return True
-        else:
-            ad.log.warning("Fail to download %s", url)
-            return False
-    except Exception as e:
-        ad.log.warning("Download %s failed with exception %s", url, e)
-        return False
-    finally:
-        if remove_file_after_check:
-            ad.log.info("Remove the downloaded file %s", file_path)
-            ad.adb.shell("rm %s" % file_path, ignore_status=True)
-
-
-def open_url_by_adb(ad, url):
-    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
-
-
-def http_file_download_by_chrome(ad,
-                                 url,
-                                 expected_file_size=None,
-                                 remove_file_after_check=True,
-                                 timeout=3600):
-    """Download http file by chrome.
-
-    Args:
-        ad: Android Device Object.
-        url: The url that file to be downloaded from".
-        expected_file_size: Optional. Provided if checking the download file meet
-                            expected file size in unit of byte.
-        remove_file_after_check: Whether to remove the downloaded file after
-                                 check.
-        timeout: timeout for file download to complete.
-    """
-    chrome_apk = "com.android.chrome"
-    file_directory, file_name = _generate_file_directory_and_file_name(
-        url, "/sdcard/Download/")
-    file_path = os.path.join(file_directory, file_name)
-    # Remove pre-existing file
-    ad.force_stop_apk(chrome_apk)
-    file_to_be_delete = os.path.join(file_directory, "*%s*" % file_name)
-    ad.adb.shell("rm -f %s" % file_to_be_delete)
-    ad.adb.shell("rm -rf /sdcard/Download/.*")
-    ad.adb.shell("rm -f /sdcard/Download/.*")
-    data_accounting = {
-        "total_rx_bytes": ad.droid.getTotalRxBytes(),
-        "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-        "subscriber_mobile_data_usage": get_mobile_data_usage(ad, None, None),
-        "chrome_mobile_data_usage": get_mobile_data_usage(
-            ad, None, chrome_apk)
-    }
-    ad.log.debug("Before downloading: %s", data_accounting)
-    ad.log.info("Download %s with timeout %s", url, timeout)
-    ad.ensure_screen_on()
-    open_url_by_adb(ad, url)
-    elapse_time = 0
-    result = True
-    while elapse_time < timeout:
-        time.sleep(30)
-        if _check_file_existence(ad, file_path, expected_file_size):
-            ad.log.info("%s is downloaded successfully", url)
-            if remove_file_after_check:
-                ad.log.info("Remove the downloaded file %s", file_path)
-                ad.adb.shell("rm -f %s" % file_to_be_delete)
-                ad.adb.shell("rm -rf /sdcard/Download/.*")
-                ad.adb.shell("rm -f /sdcard/Download/.*")
-            #time.sleep(30)
-            new_data_accounting = {
-                "mobile_rx_bytes":
-                ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None),
-                "chrome_mobile_data_usage":
-                get_mobile_data_usage(ad, None, chrome_apk)
-            }
-            ad.log.info("After downloading: %s", new_data_accounting)
-            accounting_diff = {
-                key: value - data_accounting[key]
-                for key, value in new_data_accounting.items()
-            }
-            ad.log.debug("Data accounting difference: %s", accounting_diff)
-            if getattr(ad, "on_mobile_data", False):
-                for key, value in accounting_diff.items():
-                    if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key,
-                                       value, expected_file_size)
-                        ad.data_accounting["%s_failure" % key] += 1
-            else:
-                for key, value in accounting_diff.items():
-                    if value >= expected_file_size:
-                        ad.log.error("%s diff is %s. File download is "
-                                     "consuming mobile data", key, value)
-                        result = False
-            return result
-        elif _check_file_existence(ad, "%s.crdownload" % file_path):
-            ad.log.info("Chrome is downloading %s", url)
-        elif elapse_time < 60:
-            # download not started, retry download wit chrome again
-            open_url_by_adb(ad, url)
-        else:
-            ad.log.error("Unable to download file from %s", url)
-            break
-        elapse_time += 30
-    ad.log.warning("Fail to download file from %s", url)
-    ad.force_stop_apk("com.android.chrome")
-    ad.adb.shell("rm -f %s" % file_to_be_delete)
-    ad.adb.shell("rm -rf /sdcard/Download/.*")
-    ad.adb.shell("rm -f /sdcard/Download/.*")
-    return False
-
-
-def get_mobile_data_usage(ad, sid=None, apk=None):
-    if not sid:
-        sid = ad.droid.subscriptionGetDefaultDataSubId()
-    current_time = int(time.time() * 1000)
-    begin_time = current_time - 10 * 24 * 60 * 60 * 1000
-    end_time = current_time + 10 * 24 * 60 * 60 * 1000
-
-    if apk:
-        uid = ad.get_apk_uid(apk)
-        ad.log.debug("apk %s uid = %s", apk, uid)
-        try:
-            usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
-            ad.log.debug("Mobile data usage info for uid %s = %s", uid,
-                        usage_info)
-            return usage_info["UsageLevel"]
-        except:
-            try:
-                return ad.droid.connectivityQueryDetailsForUid(
-                    TYPE_MOBILE,
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time, uid)
-            except:
-                return ad.droid.connectivityQueryDetailsForUid(
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time, uid)
-    else:
-        try:
-            usage_info = ad.droid.getMobileDataUsageInfo(sid)
-            ad.log.debug("Mobile data usage info = %s", usage_info)
-            return usage_info["UsageLevel"]
-        except:
-            try:
-                return ad.droid.connectivityQuerySummaryForDevice(
-                    TYPE_MOBILE,
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time)
-            except:
-                return ad.droid.connectivityQuerySummaryForDevice(
-                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
-                    begin_time, end_time)
-
-
-def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
-    if not subscriber_id:
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.debug("Set subscriber mobile data usage limit to %s", limit)
-    ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
-    try:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
-    except:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, limit)
-
-
-def remove_mobile_data_usage_limit(ad, subscriber_id=None):
-    if not subscriber_id:
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.debug("Remove subscriber mobile data usage limit")
-    ad.droid.logV(
-        "Setting subscriber mobile data usage limit to -1, unlimited")
-    try:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
-    except:
-        ad.droid.connectivitySetDataUsageLimit(subscriber_id, -1)
-
-
-def active_file_download_task(log, ad, file_name="5MB", method="curl"):
-    # files available for download on the same website:
-    # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
-    # download file by adb command, as phone call will use sl4a
-    file_size_map = {
-        '1MB': 1000000,
-        '5MB': 5000000,
-        '10MB': 10000000,
-        '20MB': 20000000,
-        '50MB': 50000000,
-        '100MB': 100000000,
-        '200MB': 200000000,
-        '512MB': 512000000
-    }
-    url_map = {
-        "1MB": [
-            "http://146.148.91.8/download/1MB.zip",
-            "http://ipv4.download.thinkbroadband.com/1MB.zip"
-        ],
-        "5MB": [
-            "http://146.148.91.8/download/5MB.zip",
-            "http://212.183.159.230/5MB.zip",
-            "http://ipv4.download.thinkbroadband.com/5MB.zip"
-        ],
-        "10MB": [
-            "http://146.148.91.8/download/10MB.zip",
-            "http://212.183.159.230/10MB.zip",
-            "http://ipv4.download.thinkbroadband.com/10MB.zip",
-            "http://lax.futurehosting.com/test.zip",
-            "http://ovh.net/files/10Mio.dat"
-        ],
-        "20MB": [
-            "http://146.148.91.8/download/20MB.zip",
-            "http://212.183.159.230/20MB.zip",
-            "http://ipv4.download.thinkbroadband.com/20MB.zip"
-        ],
-        "50MB": [
-            "http://146.148.91.8/download/50MB.zip",
-            "http://212.183.159.230/50MB.zip",
-            "http://ipv4.download.thinkbroadband.com/50MB.zip"
-        ],
-        "100MB": [
-            "http://146.148.91.8/download/100MB.zip",
-            "http://212.183.159.230/100MB.zip",
-            "http://ipv4.download.thinkbroadband.com/100MB.zip",
-            "http://speedtest-ca.turnkeyinternet.net/100mb.bin",
-            "http://ovh.net/files/100Mio.dat",
-            "http://lax.futurehosting.com/test100.zip"
-        ],
-        "200MB": [
-            "http://146.148.91.8/download/200MB.zip",
-            "http://212.183.159.230/200MB.zip",
-            "http://ipv4.download.thinkbroadband.com/200MB.zip"
-        ],
-        "512MB": [
-            "http://146.148.91.8/download/512MB.zip",
-            "http://212.183.159.230/512MB.zip",
-            "http://ipv4.download.thinkbroadband.com/512MB.zip"
-        ]
-    }
-
-    file_size = file_size_map.get(file_name)
-    file_urls = url_map.get(file_name)
-    file_url = None
-    for url in file_urls:
-        url_splits = url.split("/")
-        if verify_http_connection(log, ad, url=url, retry=1):
-            output_path = "/sdcard/Download/%s" % url_splits[-1]
-            file_url = url
-            break
-    if not file_url:
-        ad.log.error("No url is available to download %s", file_name)
-        return False
-    timeout = min(max(file_size / 100000, 600), 3600)
-    if method == "sl4a":
-        return (http_file_download_by_sl4a, (ad, file_url, output_path,
-                                             file_size, True, timeout))
-    if method == "curl" and check_curl_availability(ad):
-        return (http_file_download_by_curl, (ad, file_url, output_path,
-                                             file_size, True, timeout))
-    elif method == "sl4a" or method == "curl":
-        return (http_file_download_by_sl4a, (ad, file_url, output_path,
-                                             file_size, True, timeout))
-    else:
-        return (http_file_download_by_chrome, (ad, file_url, file_size, True,
-                                               timeout))
-
-
-def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
-    task = active_file_download_task(log, ad, file_name, method=method)
-    if not task:
-        return False
-    return task[0](*task[1])
-
-
-def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
-    data_stall_detected = False
-    time_var = 1
-    try:
-        while (time_var < wait_time):
-            out = ad.adb.shell("dumpsys network_stack " \
-                              "| grep \"Suspecting data stall\"",
-                            ignore_status=True)
-            ad.log.debug("Output is %s", out)
-            if out:
-                ad.log.info("NetworkMonitor detected - %s", out)
-                data_stall_detected = True
-                break
-            time.sleep(30)
-            time_var += 30
-    except Exception as e:
-        ad.log.error(e)
-    return data_stall_detected
-
-
-def check_network_validation_fail(ad, begin_time=None,
-                                  wait_time=WAIT_TIME_FOR_NW_VALID_FAIL):
-    network_validation_fail = False
-    time_var = 1
-    try:
-        while (time_var < wait_time):
-            time_var += 30
-            nw_valid = ad.search_logcat("validation failed",
-                                         begin_time)
-            if nw_valid:
-                ad.log.info("Validation Failed received here - %s",
-                            nw_valid[0]["log_message"])
-                network_validation_fail = True
-                break
-            time.sleep(30)
-    except Exception as e:
-        ad.log.error(e)
-    return network_validation_fail
-
-
-def check_data_stall_recovery(ad, begin_time=None,
-                              wait_time=WAIT_TIME_FOR_DATA_STALL_RECOVERY):
-    data_stall_recovery = False
-    time_var = 1
-    try:
-        while (time_var < wait_time):
-            time_var += 30
-            recovery = ad.search_logcat("doRecovery() cleanup all connections",
-                                         begin_time)
-            if recovery:
-                ad.log.info("Recovery Performed here - %s",
-                            recovery[-1]["log_message"])
-                data_stall_recovery = True
-                break
-            time.sleep(30)
-    except Exception as e:
-        ad.log.error(e)
-    return data_stall_recovery
