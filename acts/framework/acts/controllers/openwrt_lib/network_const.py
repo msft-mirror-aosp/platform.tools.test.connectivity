@@ -1,5 +1,3 @@
-LOCALHOST = "192.168.1.1"
-
 # params for ipsec.conf
 IPSEC_CONF = {
     "config setup": {
@@ -17,7 +15,7 @@ IPSEC_L2TP_PSK = {
     "conn L2TP_PSK": {
         "keyexchange": "ikev1",
         "type": "transport",
-        "left": LOCALHOST,
+        "left": "192.168.1.1",
         "leftprotoport": "17/1701",
         "leftauth": "psk",
         "right": "%any",
@@ -32,7 +30,7 @@ IPSEC_L2TP_RSA = {
     "conn L2TP_RSA": {
         "keyexchange": "ikev1",
         "type": "transport",
-        "left": LOCALHOST,
+        "left": "192.168.1.1",
         "leftprotoport": "17/1701",
         "leftauth": "pubkey",
         "leftcert": "serverCert.der",
@@ -44,149 +42,9 @@ IPSEC_L2TP_RSA = {
     }
 }
 
-IPSEC_HYBRID_RSA = {
-    "conn HYBRID_RSA": {
-        "keyexchange": "ikev1",
-        "left": LOCALHOST,
-        "leftsubnet": "0.0.0.0/0",
-        "leftauth": "pubkey",
-        "leftcert": "serverCert.der",
-        "leftsendcert": "always",
-        "right": "%any",
-        "rightsubnet": "0.0.0.0/0",
-        "rightauth": "pubkey",
-        "rightauth2": "xauth",
-        "xauth": "server",
-        "auto": "add",
-    }
-}
-
-IPSEC_XAUTH_PSK = {
-    "conn XAUTH_PSK": {
-        "keyexchange": "ikev1",
-        "left": LOCALHOST,
-        "leftsubnet": "0.0.0.0/0",
-        "leftauth": "psk",
-        "right": "%any",
-        "rightsubnet": "0.0.0.0/0",
-        "rightauth": "psk",
-        "rightauth2": "xauth",
-        "auto": "add",
-    }
-}
-
-IPSEC_XAUTH_RSA = {
-    "conn XAUTH_RSA": {
-        "keyexchange": "ikev1",
-        "left": LOCALHOST,
-        "leftsubnet": "0.0.0.0/0",
-        "leftcert": "serverCert.der",
-        "leftsendcert": "always",
-        "right": "%any",
-        "rightsubnet": "0.0.0.0/0",
-        "rightauth": "xauth",
-        "xauth": "server",
-        "auto": "add",
-    }
-}
-
-IPSEC_IKEV2_MSCHAPV2 = {
-    "conn IKEV2_MSCHAPV2": {
-        "keyexchange": "ikev2",
-        "left": LOCALHOST,
-        "leftid": LOCALHOST,
-        "leftcert": "serverCert.der",
-        "leftsubnet": "0.0.0.0/0",
-        "leftauth": "pubkey",
-        "leftsendcert": "always",
-        "right": "%any",
-        "rightid": "vpntest",
-        "rightauth": "eap-mschapv2",
-        "auto": "add"
-    }
-}
-
-IPSEC_IKEV2_PSK = {
-    "conn IKEV2_PSK": {
-        "keyexchange": "ikev2",
-        "left": LOCALHOST,
-        "leftid": LOCALHOST,
-        "leftauth": "psk",
-        "leftsubnet": "0.0.0.0/0",
-        "right": "%any",
-        "rightid": "vpntest",
-        "rightauth": "psk",
-        "auto": "add"
-    }
-}
-
-IPSEC_IKEV2_RSA = {
-    "conn IKEV2_RSA": {
-        "keyexchange": "ikev2",
-        "left": LOCALHOST,
-        "leftid": LOCALHOST,
-        "leftcert": "serverCert.der",
-        "leftsubnet": "0.0.0.0/0",
-        "leftauth": "pubkey",
-        "leftsendcert": "always",
-        "right": "%any",
-        "rightid": "vpntest@%s" % LOCALHOST,
-        "rightauth": "pubkey",
-        "rightcert": "clientCert.pem",
-        "auto": "add"
-    }
-}
-
-IPSEC_IKEV2_MSCHAPV2_HOSTNAME = {
-    "conn IKEV2_MSCHAPV2_HOSTNAME": {
-        "keyexchange": "ikev2",
-        "left": LOCALHOST,
-        "leftid": "strongswan-vpn-server.android-iperf.com",
-        "leftcert": "serverCert.der",
-        "leftsubnet": "0.0.0.0/0",
-        "leftauth": "pubkey",
-        "leftsendcert": "always",
-        "right": "%any",
-        "rightid": "vpntest",
-        "rightauth": "eap-mschapv2",
-        "auto": "add"
-    }
-}
-
-IPSEC_IKEV2_PSK_HOSTNAME = {
-    "conn IKEV2_PSK_HOSTNAME": {
-        "keyexchange": "ikev2",
-        "left": LOCALHOST,
-        "leftid": "strongswan-vpn-server.android-iperf.com",
-        "leftauth": "psk",
-        "leftsubnet": "0.0.0.0/0",
-        "right": "%any",
-        "rightid": "vpntest",
-        "rightauth": "psk",
-        "auto": "add"
-    }
-}
-
-IPSEC_IKEV2_RSA_HOSTNAME = {
-    "conn IKEV2_RSA_HOSTNAME": {
-        "keyexchange": "ikev2",
-        "left": LOCALHOST,
-        "leftid": "strongswan-vpn-server.android-iperf.com",
-        "leftcert": "serverCert.der",
-        "leftsubnet": "0.0.0.0/0",
-        "leftauth": "pubkey",
-        "leftsendcert": "always",
-        "right": "%any",
-        "rightid": "vpntest@strongswan-vpn-server.android-iperf.com",
-        "rightauth": "pubkey",
-        "rightcert": "clientCert.pem",
-        "auto": "add"
-    }
-}
-
 # parmas for lx2tpd
 
-XL2TPD_CONF_GLOBAL = (
+XL2TPD_CONF_GLOBAL = [
     "[global]",
     "ipsec saref = no",
     "debug tunnel = no",
@@ -196,9 +54,9 @@ XL2TPD_CONF_GLOBAL = (
     "access control = no",
     "rand source = dev",
     "port = 1701",
-)
+]
 
-XL2TPD_CONF_INS = (
+XL2TPD_CONF_INS = [
     "[lns default]",
     "require authentication = yes",
     "pass peer = yes",
@@ -206,9 +64,9 @@ XL2TPD_CONF_INS = (
     "length bit = yes",
     "refuse pap = yes",
     "refuse chap = yes",
-)
+]
 
-XL2TPD_OPTION = (
+XL2TPD_OPTION = [
     "require-mschap-v2",
     "refuse-mschap",
     "ms-dns 8.8.8.8",
@@ -229,22 +87,23 @@ XL2TPD_OPTION = (
     "lcp-echo-interval 30",
     "lcp-echo-failure 4",
     "nomppe"
-)
+]
 
 # iptable rules for vpn_pptp
-FIREWALL_RULES_FOR_PPTP = (
+FIREWALL_RULES_FOR_PPTP = [
     "iptables -A input_rule -i ppp+ -j ACCEPT",
     "iptables -A output_rule -o ppp+ -j ACCEPT",
     "iptables -A forwarding_rule -i ppp+ -j ACCEPT"
-)
+]
 
 # iptable rules for vpn_l2tp
-FIREWALL_RULES_FOR_L2TP = (
+FIREWALL_RULES_FOR_L2TP = [
     "iptables -I INPUT  -m policy --dir in --pol ipsec --proto esp -j ACCEPT",
     "iptables -I FORWARD  -m policy --dir in --pol ipsec --proto esp -j ACCEPT",
     "iptables -I FORWARD  -m policy --dir out --pol ipsec --proto esp -j ACCEPT",
     "iptables -I OUTPUT   -m policy --dir out --pol ipsec --proto esp -j ACCEPT",
     "iptables -t nat -I POSTROUTING -m policy --pol ipsec --dir out -j ACCEPT",
+    "iptables -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT",
     "iptables -A INPUT -p esp -j ACCEPT",
     "iptables -A INPUT -i eth0.2 -p udp --dport 500 -j ACCEPT",
     "iptables -A INPUT -i eth0.2 -p tcp --dport 500 -j ACCEPT",
@@ -252,14 +111,7 @@ FIREWALL_RULES_FOR_L2TP = (
     "iptables -A INPUT -p udp --dport 500 -j ACCEPT",
     "iptables -A INPUT -p udp --dport 4500 -j ACCEPT",
     "iptables -A INPUT -p udp -m policy --dir in --pol ipsec -m udp --dport 1701 -j ACCEPT"
-)
-
-FIREWALL_RULES_DISABLE_DNS_RESPONSE = (
-    "iptables -I OUTPUT -p udp --sport 53 -j DROP",
-    "iptables -I OUTPUT -p tcp --sport 53 -j DROP",
-    "ip6tables -I OUTPUT -p udp --sport 53 -j DROP",
-    "ip6tables -I OUTPUT -p tcp --sport 53 -j DROP",
-)
+]
 
 
 # Object for vpn profile

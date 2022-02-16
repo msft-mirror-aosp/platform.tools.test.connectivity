@@ -28,6 +28,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import setup_droid_properties
 
 
 class Sl4fSanityTest(BaseTestClass):
+
     def setup_class(self):
         super().setup_class()
 
@@ -43,3 +44,4 @@ class Sl4fSanityTest(BaseTestClass):
     def test_example(self):
         self.log.info("Congratulations! You've run your first test.")
         return True
+
