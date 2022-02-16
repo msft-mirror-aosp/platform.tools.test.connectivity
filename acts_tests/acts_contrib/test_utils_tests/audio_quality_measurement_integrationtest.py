@@ -22,6 +22,11 @@ import math
 import numpy
 import unittest
 
+# TODO(markdr): Remove this after soundfile is added to setup.py
+import sys
+import mock
+sys.modules['soundfile'] = mock.Mock()
+
 import acts_contrib.test_utils.audio_analysis_lib.audio_quality_measurement as audio_quality_measurement
 
 
