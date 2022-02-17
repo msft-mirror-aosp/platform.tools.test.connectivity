@@ -105,6 +105,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_incall_state
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_state
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_task
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 result_dict ={}
@@ -2681,3 +2682,43 @@ def truncate_phone_number(
         callee_number = callee_dial_number
 
     return callee_number
+
+
+def initiate_call_verify_operation(log,
+                                    caller,
+                                    callee,
+                                    download=False):
+    """Initiate call and verify operations with an option of data idle or data download
+
+    Args:
+        log: log object.
+        caller:  android device object as caller.
+        callee:  android device object as callee.
+        download: True if download operation is to be performed else False
+
+    Return:
+        True: if call initiated and verified operations successfully
+        False: for errors
+    """
+    caller_number = caller.telephony['subscription'][
+        get_outgoing_voice_sub_id(caller)]['phone_num']
+    callee_number = callee.telephony['subscription'][
+        get_outgoing_voice_sub_id(callee)]['phone_num']
+    if not initiate_call(log, caller, callee_number):
+        caller.log.error("Phone was unable to initate a call")
+        return False
+
+    if not wait_and_answer_call(log, callee, caller_number):
+        callee.log.error("Callee failed to receive incoming call or answered the call.")
+        return False
+
+    if download:
+        if not active_file_download_task(log, caller, "10MB"):
+            caller.log.error("Unable to download file")
+            return False
+
+    if not hangup_call(log, caller):
+        caller.log.error("Unable to hang up the call")
+        return False
+    return True
+
