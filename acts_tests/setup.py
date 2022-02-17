@@ -30,8 +30,7 @@ LOCAL_FRAMEWORK_DIR = '../acts/framework'
 
 acts_tests_dir = os.path.abspath(os.path.dirname(__file__))
 
-install_requires = []
-
+install_requires = ['soundfile']
 
 
 def _setup_acts_framework(option, *args):
@@ -69,8 +68,11 @@ class ActsContribInstall(install):
     repository.
     """
     def run(self):
-        super().run()
         _setup_acts_framework('install')
+        # Calling install.run() directly fails to install the dependencies as
+        # listed in install_requires. Use install.do_egg_install() instead.
+        # Ref: https://stackoverflow.com/questions/21915469
+        self.do_egg_install()
 
 
 class ActsContribDevelop(develop):
