@@ -439,7 +439,7 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def get_default_wlan_test_interface(self):
         """Returns name of the WLAN client interface"""
-        return self.device.wlan_controller.get_wlan_interface_name()
+        return self.device.wlan_client_test_interface_name
 
     def destroy_wlan_interface(self, iface_id):
         """Function to associate a Fuchsia WLAN device.
@@ -483,14 +483,23 @@ class FuchsiaWlanDevice(WlanDevice):
         if response.get('error'):
             raise ConnectionError(
                 'Failed to get client network connection status')
+        result = response.get('result')
+        if isinstance(result, dict):
+            connected_to = result.get('Connected')
+            # TODO(https://fxbug.dev/85938): Remove backwards compatibility once
+            # ACTS is versioned with Fuchsia.
+            if not connected_to:
+                connected_to = result.get('connected_to')
+            if not connected_to:
+                return False
 
-        status = response.get('result')
-        if status and status.get('connected_to'):
             if ssid:
-                connected_ssid = ''.join(
-                    chr(i) for i in status['connected_to']['ssid'])
-                if ssid != connected_ssid:
-                    return False
+                # Replace encoding errors instead of raising an exception.
+                # Since `ssid` is a string, this will not affect the test
+                # for equality.
+                connected_ssid = bytearray(connected_to['ssid']).decode(
+                    encoding='utf-8', errors='replace')
+                return ssid == connected_ssid
             return True
         return False
 

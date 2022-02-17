@@ -439,6 +439,14 @@ class WifiEnums():
         165: 5825
     }
 
+    channel_6G_to_freq = {4 * x + 1: 5955 + 20 * x for x in range(59)}
+
+    channel_to_freq = {
+        '2G': channel_2G_to_freq,
+        '5G': channel_5G_to_freq,
+        '6G': channel_6G_to_freq
+    }
+
 
 class WifiChannelBase:
     ALL_2G_FREQUENCIES = []
@@ -744,6 +752,7 @@ def reset_wifi(ad):
         "Failed to remove these configured Wi-Fi networks: %s" % networks)
 
 
+
 def toggle_airplane_mode_on_and_off(ad):
     """Turn ON and OFF Airplane mode.
 
@@ -909,13 +918,18 @@ def start_wifi_connection_scan_and_check_for_network(ad,
         True: if network_ssid is found in scan results.
         False: if network_ssid is not found in scan results.
     """
+    start_time = time.time()
     for num_tries in range(max_tries):
         if start_wifi_connection_scan_and_return_status(ad):
             scan_results = ad.droid.wifiGetScanResults()
             match_results = match_networks({WifiEnums.SSID_KEY: network_ssid},
                                            scan_results)
             if len(match_results) > 0:
+                ad.log.debug("Found network in %s seconds." %
+                             (time.time() - start_time))
                 return True
+    ad.log.debug("Did not find network in %s seconds." %
+                 (time.time() - start_time))
     return False
 
 
@@ -1466,11 +1480,9 @@ def ensure_no_disconnect(ad, duration=10):
         ad.droid.wifiStopTrackingStateChange()
 
 
-def connect_to_wifi_network(ad,
-                            network,
-                            assert_on_fail=True,
-                            check_connectivity=True,
-                            hidden=False):
+def connect_to_wifi_network(ad, network, assert_on_fail=True,
+                            check_connectivity=True, hidden=False,
+                            num_of_scan_tries=3, num_of_connect_tries=3):
     """Connection logic for open and psk wifi networks.
 
     Args:
@@ -1479,16 +1491,20 @@ def connect_to_wifi_network(ad,
         assert_on_fail: If true, errors from wifi_connect will raise
                         test failure signals.
         hidden: Is the Wifi network hidden.
+        num_of_scan_tries: The number of times to try scan
+                           interface before declaring failure.
+        num_of_connect_tries: The number of times to try
+                              connect wifi before declaring failure.
     """
     if hidden:
         start_wifi_connection_scan_and_ensure_network_not_found(
-            ad, network[WifiEnums.SSID_KEY])
+            ad, network[WifiEnums.SSID_KEY], max_tries=num_of_scan_tries)
     else:
         start_wifi_connection_scan_and_ensure_network_found(
-            ad, network[WifiEnums.SSID_KEY])
+            ad, network[WifiEnums.SSID_KEY], max_tries=num_of_scan_tries)
     wifi_connect(ad,
                  network,
-                 num_of_tries=3,
+                 num_of_tries=num_of_connect_tries,
                  assert_on_fail=assert_on_fail,
                  check_connectivity=check_connectivity)
 
@@ -1705,7 +1721,8 @@ def wifi_connect_using_network_request(ad,
     # Need a delay here because UI interaction should only start once wifi
     # starts processing the request.
     time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
-    _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries)
+    _wait_for_wifi_connect_after_network_request(ad, network, key,
+                                                 num_of_tries)
     return key
 
 
@@ -1741,7 +1758,10 @@ def wait_for_wifi_connect_after_network_request(ad,
                             assert_on_fail, ad, network, key, num_of_tries)
 
 
-def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=3):
+def _wait_for_wifi_connect_after_network_request(ad,
+                                                 network,
+                                                 key,
+                                                 num_of_tries=3):
     """
     Simulate and verify the connection flow after initiating the network
     request.
@@ -1793,13 +1813,11 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
 
         # Wait for the platform to connect to the network.
         autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            60,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 60,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_AVAILABLE))
         on_capabilities_changed = autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            10,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 10,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED))
@@ -1816,8 +1834,7 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
         asserts.assert_equal(
             connected_network[WifiEnums.SSID_KEY], expected_ssid,
             "Connected to the wrong network."
-            "Expected %s, but got %s."
-            % (network, connected_network))
+            "Expected %s, but got %s." % (network, connected_network))
     except Empty:
         asserts.fail("Failed to connect to %s" % expected_ssid)
     except Exception as error:
