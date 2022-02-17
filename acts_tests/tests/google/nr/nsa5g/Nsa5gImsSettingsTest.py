@@ -17,26 +17,21 @@
     Test Script for 5G IMS Settings scenarios
 """
 
-import time
-
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CarrierConfigs
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts_contrib.test_utils.tel.tel_defines import CAPABILITY_WFC
-from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts_contrib.test_utils.tel.tel_defines import RAT_NR
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_csfb
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_test_utils import dumpsys_carrier_config
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g_nsa
-from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
-from acts_contrib.test_utils.tel.tel_5g_test_utils import set_preferred_mode_for_5g
-from acts_contrib.test_utils.tel.tel_ims_utils import change_ims_setting
+from acts_contrib.test_utils.tel.tel_voice_utils import change_ims_setting
 
 
 class Nsa5gImsSettingsTest(TelephonyBaseTest):
@@ -86,7 +81,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup VoLTE")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -155,7 +150,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.log.error("Phone Failed to setup Properly")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -222,7 +217,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             return False
 
         ads = self.android_devices
-        if not provision_device_for_5g(self.log, ads):
+        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -288,7 +283,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup CSFB")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -360,7 +355,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.dut.log.error("Phone Failed to setup properly")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -433,7 +428,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.dut.log.error("Phone Failed to setup properly.")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -492,7 +487,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.dut.log.error("Failed to setup properly")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -551,7 +546,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.dut.log.error("Phone Failed to setup properly")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
@@ -610,7 +605,7 @@ class Nsa5gImsSettingsTest(TelephonyBaseTest):
             self.dut.log.error("Phone Failed to setup properly")
             return False
 
-        if not provision_device_for_5g(self.log, self.dut):
+        if not provision_device_for_5g(self.log, self.dut, nr_type='nsa'):
             return False
 
         if not change_ims_setting(log=self.log,
