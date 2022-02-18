@@ -63,6 +63,32 @@ ON_IMS_MM_TEL_CONNECTED_4G_SLOT1 = r'ImsPhone: \[1\].*onImsMmTelConnected imsRad
 ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT0 = r'ImsPhone: \[0\].*onImsMmTelConnected imsRadioTech=WLAN'
 ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT1 = r'ImsPhone: \[1\].*onImsMmTelConnected imsRadioTech=WLAN'
 
+DEFAULT_MO_SMS_BODY = 'MO SMS body not yet found'
+DEFAULT_MT_SMS_BODY = 'MT SMS body not yet found'
+
+MMS_SERVICE = 'MmsService:'
+MMS_SEND_REQUEST_ID_PATTERN = r'SendRequest@(\S+)'
+MMS_DOWNLOAD_REQUEST_ID_PATTERN = r'DownloadRequest@(\S+)'
+MMS_START_NEW_NW_REQUEST = 'start new network request'
+MMS_200_OK = '200 OK'
+
+SMS_SEND_TEXT_MESSAGE = 'smsSendTextMessage'
+MO_SMS_LOGCAT_PATTERN = r'smsSendTextMessage.*"(\S+)", true|false'
+SEND_SMS = 'SEND_SMS'
+SEND_SMS_REQUEST = '> SEND_SMS'
+SEND_SMS_RESPONSE = '< SEND_SMS'
+SEND_SMS_EXPECT_MORE = 'SEND_SMS_EXPECT_MORE'
+UNSOL_RESPONSE_NEW_SMS = '< UNSOL_RESPONSE_NEW_SMS'
+SMS_RECEIVED = 'SmsReceived'
+MT_SMS_CONTENT_PATTERN = 'sl4a.*?SmsReceived.*?"Text":"(.*?)"'
+
+SEND_SMS_OVER_IMS = r'ImsSmsDispatcher \[(\d)\]'
+SEND_SMS_REQUEST_OVER_IMS = 'sendSms:  mRetryCount'
+SEND_SMS_RESPONSE_OVER_IMS = 'onSendSmsResult token'
+SMS_RECEIVED_OVER_IMS = 'SMS received'
+SMS_RECEIVED_OVER_IMS_SLOT0 = r'ImsSmsDispatcher \[0\]: SMS received'
+SMS_RECEIVED_OVER_IMS_SLOT1 = r'ImsSmsDispatcher \[1\]: SMS received'
+
 
 def print_nested_dict(ad, d):
     divider = "------"
@@ -72,6 +98,7 @@ def print_nested_dict(ad, d):
             print_nested_dict(ad, v)
         else:
             ad.log.info('%s: %s', k, v)
+
 
 def get_slot_from_logcat(msg):
     """Get slot index from specific pattern in logcat
@@ -89,6 +116,7 @@ def get_slot_from_logcat(msg):
         phone = None
     return phone
 
+
 def get_apn_from_logcat(msg):
     """Get APN from logcat
 
@@ -104,6 +132,7 @@ def get_apn_from_logcat(msg):
     except:
         apn = None
     return apn
+
 
 def parse_setup_data_call(ad, apn='internet', dds_switch=False):
     """Search in logcat for lines containing data call setup procedure.
@@ -428,6 +457,7 @@ def parse_setup_data_call(ad, apn='internet', dds_switch=False):
         avg_data_call_setup_time,
         avg_validation_time_on_lte)
 
+
 def parse_setup_data_call_on_iwlan(ad):
     """Search in logcat for lines containing data call setup procedure.
         Calculate the data call setup time with given APN on iwlan.
@@ -671,6 +701,7 @@ def parse_setup_data_call_on_iwlan(ad):
         data_call_setup_time_list,
         avg_data_call_setup_time)
 
+
 def parse_deactivate_data_call(ad):
     """Search in logcat for lines containing data call deactivation procedure.
         Calculate the data call deactivation time on LTE.
@@ -857,6 +888,7 @@ def parse_deactivate_data_call(ad):
         deactivate_data_call,
         deactivate_data_call_time_list,
         avg_deactivate_data_call_time)
+
 
 def parse_deactivate_data_call_on_iwlan(ad):
     """Search in logcat for lines containing data call deactivation procedure.
@@ -1076,6 +1108,7 @@ def parse_deactivate_data_call_on_iwlan(ad):
         deactivate_data_call_time_list,
         avg_deactivate_data_call_time)
 
+
 def parse_ims_reg(
     ad,
     search_intervals=None,
@@ -1241,3 +1274,571 @@ def parse_ims_reg(
         avg_ims_reg_duration = None
 
     return ims_reg, parsing_fail, avg_ims_reg_duration
+
+
+def parse_mo_sms(logcat):
+    """Search in logcat for lines containing messages about SMS sending on
+        LTE.
+
+    Args:
+        logcat: List containing lines of logcat
+
+    Returns:
+        send_sms: Dictionary containing found lines for each SMS
+            request and response messages together with their time stamps.
+            {
+                'message_id':{
+                    'request':{
+                        'message': logcat message body of SMS request
+                        'time_stamp': time stamp in text format
+                        'datetime_obj': datetime object of the time stamp
+                    },
+                    'response':{
+                        'message': logcat message body of SMS response
+                        'time_stamp': time stamp in text format
+                        'datetime_obj': datetime object of the time stamp
+                        'sms_delivery_time': time between SMS request and
+                            response
+                    }
+                }
+            }
+
+        summary: the format is listed below:
+            {
+                'request': logcat message body of SMS request
+                'response': logcat message body of SMS response
+                'unsol_response_new_sms': unsolicited response message upon
+                    SMS receiving on MT UE
+                'sms_body': message body of SMS
+                'mo_start': time stamp of MO SMS request message
+                'mo_end': time stamp of MO SMS response message
+                'mo_signal_duration': time between MO SMS request and response
+                'delivery_time': time between MO SMS request and
+                    unsol_response_new_sms on MT UE
+            }
+
+        avg_setup_time: average of mo_signal_duration
+    """
+    send_sms = {}
+    summary = []
+    sms_body = DEFAULT_MO_SMS_BODY
+    msg_id = None
+    if not logcat:
+        return False
+
+    for line in logcat:
+        res = re.findall(MO_SMS_LOGCAT_PATTERN, line['log_message'])
+        if res:
+            try:
+                sms_body = res[0]
+            except:
+                sms_body = 'Cannot find MO SMS body'
+
+        if line['message_id']:
+            msg_id = line['message_id']
+            if SEND_SMS_REQUEST in line[
+                'log_message'] and SEND_SMS_EXPECT_MORE not in line[
+                    'log_message']:
+                if msg_id not in send_sms:
+                    send_sms[msg_id] = {}
+
+                send_sms[msg_id]['sms_body'] = sms_body
+                sms_body = DEFAULT_MO_SMS_BODY
+                send_sms[msg_id]['request'] = {
+                    'message': line['log_message'],
+                    'time_stamp': line['time_stamp'],
+                    'datetime_obj': line['datetime_obj']}
+
+            if SEND_SMS_RESPONSE in line[
+                'log_message'] and SEND_SMS_EXPECT_MORE not in line[
+                    'log_message']:
+                if msg_id not in send_sms:
+                    continue
+
+                if 'request' not in send_sms[msg_id]:
+                    continue
+
+                if "error" in line['log_message']:
+                    continue
+
+                send_sms[msg_id]['response'] = {
+                    'message': line['log_message'],
+                    'time_stamp': line['time_stamp'],
+                    'datetime_obj': line['datetime_obj'],
+                    'sms_delivery_time': None}
+
+                mo_sms_start_time = send_sms[msg_id]['request'][
+                    'datetime_obj']
+                mo_sms_end_time = line['datetime_obj']
+                sms_delivery_time = mo_sms_end_time - mo_sms_start_time
+                send_sms[msg_id]['response'][
+                    'sms_delivery_time'] = sms_delivery_time.total_seconds()
+                summary.append(
+                    {'request': send_sms[msg_id]['request']['message'],
+                    'response': send_sms[msg_id]['response']['message'],
+                    'unsol_response_new_sms': None,
+                    'sms_body': send_sms[msg_id]['sms_body'],
+                    'mo_start': mo_sms_start_time,
+                    'mo_end': mo_sms_end_time,
+                    'mo_signal_duration': sms_delivery_time.total_seconds(),
+                    'delivery_time': None})
+
+    duration_list = []
+    for item in summary:
+        if 'mo_signal_duration' in item:
+            duration_list.append(item['mo_signal_duration'])
+
+    try:
+        avg_setup_time = statistics.mean(duration_list)
+    except:
+        avg_setup_time = None
+
+    return send_sms, summary, avg_setup_time
+
+
+def parse_mo_sms_iwlan(logcat):
+    """Search in logcat for lines containing messages about SMS sending on
+        iwlan.
+
+    Args:
+        logcat: List containing lines of logcat
+
+    Returns:
+        send_sms: Dictionary containing found lines for each SMS
+            request and response messages together with their time stamps.
+            {
+                'message_id':{
+                    'request':{
+                        'message': logcat message body of SMS request
+                        'time_stamp': time stamp in text format
+                        'datetime_obj': datetime object of the time stamp
+                    },
+                    'response':{
+                        'message': logcat message body of SMS response
+                        'time_stamp': time stamp in text format
+                        'datetime_obj': datetime object of the time stamp
+                        'sms_delivery_time': time between SMS request and
+                            response
+                    }
+                }
+            }
+
+        summary: List containing dictionaries for each SMS. The format is
+            listed below:
+            [
+                {
+                    'request': logcat message body of SMS request
+                    'response': logcat message body of SMS response
+                    'sms_body': message body of SMS
+                    'mo_start': time stamp of MO SMS request message
+                    'mo_end': time stamp of MO SMS response message
+                    'mo_signal_duration': time between MO SMS request and
+                        response
+                    'delivery_time': time between MO SMS request and
+                        MT SMS received message
+                }
+            ]
+
+        avg_setup_time: average of mo_signal_duration
+    """
+    send_sms = {}
+    summary = []
+    sms_body = DEFAULT_MO_SMS_BODY
+    msg_id = None
+
+    if not logcat:
+        return False
+
+    for line in logcat:
+        res = re.findall(MO_SMS_LOGCAT_PATTERN, line['log_message'])
+        if res:
+            try:
+                sms_body = res[0]
+            except:
+                sms_body = 'Cannot find MO SMS body'
+
+        if SEND_SMS_REQUEST_OVER_IMS in line['log_message']:
+            if msg_id is None:
+                msg_id = '0'
+            else:
+                msg_id = str(int(msg_id) + 1)
+
+            if msg_id not in send_sms:
+                send_sms[msg_id] = {}
+
+            send_sms[msg_id]['sms_body'] = sms_body
+            sms_body = DEFAULT_MO_SMS_BODY
+            send_sms[msg_id]['request'] = {
+                'message': line['log_message'],
+                'time_stamp': line['time_stamp'],
+                'datetime_obj': line['datetime_obj']}
+
+        if SEND_SMS_RESPONSE_OVER_IMS in line['log_message']:
+
+            if msg_id not in send_sms:
+                continue
+
+            if 'request' not in send_sms[msg_id]:
+                continue
+
+            if "error" in line['log_message']:
+                continue
+
+            send_sms[msg_id]['response'] = {
+                'message': line['log_message'],
+                'time_stamp': line['time_stamp'],
+                'datetime_obj': line['datetime_obj'],
+                'sms_delivery_time': None}
+
+            mo_sms_start_time = send_sms[msg_id]['request'][
+                'datetime_obj']
+            mo_sms_end_time = line['datetime_obj']
+            sms_delivery_time = mo_sms_end_time - mo_sms_start_time
+            send_sms[msg_id]['response'][
+                'sms_delivery_time'] = sms_delivery_time.total_seconds()
+            summary.append(
+                {'request': send_sms[msg_id]['request']['message'],
+                'response': send_sms[msg_id]['response']['message'],
+                'unsol_response_new_sms': None,
+                'sms_body': send_sms[msg_id]['sms_body'],
+                'mo_start': mo_sms_start_time,
+                'mo_end': mo_sms_end_time,
+                'mo_signal_duration': sms_delivery_time.total_seconds(),
+                'delivery_time': None})
+
+    duration_list = []
+    for item in summary:
+        if 'mo_signal_duration' in item:
+            duration_list.append(item['mo_signal_duration'])
+
+    try:
+        avg_setup_time = statistics.mean(duration_list)
+    except:
+        avg_setup_time = None
+
+    return send_sms, summary, avg_setup_time
+
+
+def parse_mt_sms(logcat):
+    """Search in logcat for lines containing messages about SMS receiving on
+        LTE.
+
+    Args:
+        logcat: List containing lines of logcat
+
+    Returns:
+        received_sms_list: List containing dictionaries for each received
+            SMS. The format is listed below:
+        [
+            {
+                'message': logcat message body of unsolicited response
+                    message
+                'sms_body': message body of SMS
+                'time_stamp': time stamp of unsolicited response message in
+                        text format
+                'datetime_obj': datetime object of the time stamp
+                'sms_delivery_time': time between SMS request and
+                    response
+            }
+        ]
+    """
+    received_sms_list = []
+    if not logcat:
+        return False
+
+    for line in logcat:
+        if UNSOL_RESPONSE_NEW_SMS in line['log_message']:
+
+            # if received_sms_list:
+            #     if received_sms_list[-1]['sms_body'] is None:
+            #         del received_sms_list[-1]
+
+            received_sms_list.append(
+                {'message': line['log_message'],
+                'sms_body': DEFAULT_MT_SMS_BODY,
+                'time_stamp': line['time_stamp'],
+                'datetime_obj': line['datetime_obj']})
+        else:
+            res = re.findall(MT_SMS_CONTENT_PATTERN, line['log_message'])
+
+            if res:
+                try:
+                    sms_body = res[0]
+                except:
+                    sms_body = 'Cannot find MT SMS body'
+
+                if received_sms_list[-1]['sms_body'] == DEFAULT_MT_SMS_BODY:
+                    received_sms_list[-1]['sms_body'] = sms_body
+                    continue
+
+    return received_sms_list
+
+
+def parse_mt_sms_iwlan(logcat):
+    """Search in logcat for lines containing messages about SMS receiving on
+        iwlan.
+
+    Args:
+        logcat: List containing lines of logcat
+
+    Returns:
+        received_sms_list: List containing dictionaries for each received
+            SMS. The format is listed below:
+        [
+            {
+                'message': logcat message body of SMS received message
+                'sms_body': message body of SMS
+                'time_stamp': time stamp of SMS received message in
+                        text format
+                'datetime_obj': datetime object of the time stamp
+            }
+        ]
+    """
+    received_sms_list = []
+    if not logcat:
+        return False
+
+    for line in logcat:
+        if re.findall(
+            SMS_RECEIVED_OVER_IMS_SLOT0 + '|' + SMS_RECEIVED_OVER_IMS_SLOT1,
+            line['log_message']):
+            received_sms_list.append(
+                {'message': line['log_message'],
+                'sms_body': DEFAULT_MT_SMS_BODY,
+                'time_stamp': line['time_stamp'],
+                'datetime_obj': line['datetime_obj']})
+        else:
+            res = re.findall(MT_SMS_CONTENT_PATTERN, line['log_message'])
+
+            if res:
+                try:
+                    sms_body = res[0]
+                except:
+                    sms_body = 'Cannot find MT SMS body'
+
+                if received_sms_list[-1]['sms_body'] == DEFAULT_MT_SMS_BODY:
+                    received_sms_list[-1]['sms_body'] = sms_body
+                    continue
+
+    return received_sms_list
+
+
+def parse_sms_delivery_time(log, ad_mo, ad_mt, rat='4g'):
+    """Calculate the SMS delivery time (time between MO SMS request and MT
+        unsolicited response message or MT SMS received message) from logcat
+        of both MO and MT UE.
+
+    Args:
+        ad_mo: MO Android object
+        ad_mt: MT Android object
+        rat: '4g' for LTE and 'iwlan' for iwlan
+
+    Returns:
+        None
+    """
+    ad_mo.log.info('====== Start to search logcat ====== ')
+    mo_logcat = ad_mo.search_logcat(
+        r'%s\|%s\|%s\|%s' % (
+            SMS_SEND_TEXT_MESSAGE,
+            SEND_SMS,
+            SEND_SMS_REQUEST_OVER_IMS,
+            SEND_SMS_RESPONSE_OVER_IMS))
+    ad_mt.log.info('====== Start to search logcat ====== ')
+    mt_logcat = ad_mt.search_logcat(
+        r'%s\|%s\|%s' % (
+            UNSOL_RESPONSE_NEW_SMS, SMS_RECEIVED, SMS_RECEIVED_OVER_IMS))
+
+    for msg in mo_logcat:
+        ad_mo.log.info(msg["log_message"])
+    for msg in mt_logcat:
+        ad_mt.log.info(msg["log_message"])
+
+    if rat == 'iwlan':
+        _, mo_sms_summary, avg = parse_mo_sms_iwlan(mo_logcat)
+        received_sms_list = parse_mt_sms_iwlan(mt_logcat)
+    else:
+        _, mo_sms_summary, avg = parse_mo_sms(mo_logcat)
+        received_sms_list = parse_mt_sms(mt_logcat)
+
+    sms_delivery_time = []
+    for mo_sms in mo_sms_summary:
+        for mt_sms in received_sms_list:
+            if mo_sms['sms_body'] == mt_sms['sms_body']:
+                mo_sms['delivery_time'] = (
+                    mt_sms['datetime_obj'] - mo_sms['mo_start']).total_seconds()
+                mo_sms['unsol_response_new_sms'] = mt_sms['message']
+                sms_delivery_time.append(mo_sms['delivery_time'])
+
+    try:
+        avg_sms_delivery_time = statistics.mean(sms_delivery_time)
+    except:
+        avg_sms_delivery_time = None
+
+    ad_mo.log.info('====== MO SMS summary ======')
+    for item in mo_sms_summary:
+        ad_mo.log.info('------------------')
+        print_nested_dict(ad_mo, item)
+    ad_mt.log.info('====== Received SMS list ======')
+    for item in received_sms_list:
+        ad_mt.log.info('------------------')
+        print_nested_dict(ad_mt, item)
+
+    ad_mo.log.info('%s SMS were actually sent.', len(mo_sms_summary))
+    ad_mt.log.info('%s SMS were actually received.', len(received_sms_list))
+    ad_mo.log.info('Average MO SMS setup time: %.2f sec.', avg)
+    log.info(
+        'Average SMS delivery time: %.2f sec.', avg_sms_delivery_time)
+
+
+def parse_mms(ad_mo, ad_mt):
+    """Search in logcat for lines containing messages about SMS sending and
+        receiving. Calculate MO & MT MMS setup time.
+
+    Args:
+        ad_mo: MO Android object
+        ad_mt: MT Android object
+
+    Returns:
+        send_mms: Dictionary containing each sent MMS. The format is shown
+            as below:
+            {
+                mms_msg_id:
+                {
+                    MMS_START_NEW_NW_REQUEST:
+                    {
+                        'time_stamp': time stamp of MMS request on MO UE in
+                        text format
+                        'datetime_obj': datetime object of time stamp
+                    },
+                    MMS_200_OK:
+                    {
+                        'time_stamp': time stamp of '200 OK' for MMS request
+                        in text format
+                        'datetime_obj': datetime object of time stamp
+                        'setup_time': MO MMS setup time. Time between MMS
+                        request and 200 OK
+                    }
+                }
+
+            }
+
+        mo_avg_setup_time: average of MO MMS setup time
+
+        receive_mms： Dictionary containing each received MMS. The format is
+            shown as below:
+            {
+                mms_msg_id:
+                {
+                    MMS_START_NEW_NW_REQUEST:
+                    {
+                        'time_stamp': time stamp of MMS request on MT UE in
+                        text format
+                        'datetime_obj': datetime object of time stamp
+                    },
+                    MMS_200_OK:
+                    {
+                        'time_stamp': time stamp of '200 OK' for MMS request
+                        in text format
+                        'datetime_obj': datetime object of time stamp
+                        'setup_time': MT MMS setup time. Time between MMS
+                        request and 200 OK
+                    }
+                }
+
+            }
+
+        mt_avg_setup_time: average of MT MMS setup time
+    """
+    send_mms = {}
+    receive_mms = {}
+    mo_setup_time_list = []
+    mt_setup_time_list = []
+
+    ad_mo.log.info('====== Start to search logcat ====== ')
+    mo_logcat = ad_mo.search_logcat(MMS_SERVICE)
+    for msg in mo_logcat:
+        ad_mo.log.info(msg["log_message"])
+
+    ad_mt.log.info('====== Start to search logcat ====== ')
+    mt_logcat = ad_mt.search_logcat(MMS_SERVICE)
+    for msg in mt_logcat:
+        ad_mt.log.info(msg["log_message"])
+
+    if not mo_logcat or not mt_logcat:
+        return False
+
+    for line in mo_logcat:
+        find_res = re.findall(
+            MMS_SEND_REQUEST_ID_PATTERN, line['log_message'])
+
+        message_id = None
+        try:
+            message_id = find_res[0]
+        except:
+            pass
+
+        if message_id:
+            mms_msg_id = message_id
+            if mms_msg_id not in send_mms:
+                send_mms[mms_msg_id] = {}
+            if MMS_START_NEW_NW_REQUEST in line['log_message']:
+                send_mms[mms_msg_id][MMS_START_NEW_NW_REQUEST] = {
+                    'time_stamp': line['time_stamp'],
+                    'datetime_obj': line['datetime_obj']}
+
+            if MMS_200_OK in line['log_message']:
+                send_mms[mms_msg_id][MMS_200_OK] = {
+                    'time_stamp': line['time_stamp'],
+                    'datetime_obj': line['datetime_obj'],
+                    'setup_time': None}
+
+                if MMS_START_NEW_NW_REQUEST in send_mms[mms_msg_id]:
+                    setup_time = line['datetime_obj'] - send_mms[mms_msg_id][
+                        MMS_START_NEW_NW_REQUEST]['datetime_obj']
+                    send_mms[mms_msg_id][MMS_200_OK][
+                        'setup_time'] = setup_time.total_seconds()
+                    mo_setup_time_list.append(setup_time.total_seconds())
+
+    for line in mt_logcat:
+        find_res = re.findall(
+            MMS_DOWNLOAD_REQUEST_ID_PATTERN, line['log_message'])
+
+        message_id = None
+        try:
+            message_id = find_res[0]
+        except:
+            pass
+
+        if message_id:
+            mms_msg_id = message_id
+            if mms_msg_id not in receive_mms:
+                receive_mms[mms_msg_id] = {}
+            if MMS_START_NEW_NW_REQUEST in line['log_message']:
+                receive_mms[mms_msg_id][MMS_START_NEW_NW_REQUEST] = {
+                    'time_stamp': line['time_stamp'],
+                    'datetime_obj': line['datetime_obj']}
+
+            if MMS_200_OK in line['log_message']:
+                receive_mms[mms_msg_id][MMS_200_OK] = {
+                    'time_stamp': line['time_stamp'],
+                    'datetime_obj': line['datetime_obj'],
+                    'setup_time': None}
+
+                if MMS_START_NEW_NW_REQUEST in receive_mms[mms_msg_id]:
+                    setup_time = line['datetime_obj'] - receive_mms[
+                        mms_msg_id][MMS_START_NEW_NW_REQUEST]['datetime_obj']
+                    receive_mms[mms_msg_id][MMS_200_OK][
+                        'setup_time'] = setup_time.total_seconds()
+                    mt_setup_time_list.append(setup_time.total_seconds())
+
+    try:
+        mo_avg_setup_time = statistics.mean(mo_setup_time_list)
+    except:
+        mo_avg_setup_time = None
+
+    try:
+        mt_avg_setup_time = statistics.mean(mt_setup_time_list)
+    except:
+        mt_avg_setup_time = None
+
+    return send_mms, mo_avg_setup_time, receive_mms, mt_avg_setup_time
