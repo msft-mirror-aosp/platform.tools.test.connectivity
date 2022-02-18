@@ -62,7 +62,6 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call_verify_operation
 from acts_contrib.test_utils.tel.tel_voice_utils import phone_setup_call_hold_unhold_test
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_voice_utils import call_voicemail_erase_all_pending_voicemail
@@ -71,6 +70,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts_contrib.test_utils.tel.tel_ops_utils import initiate_call_verify_operation
 
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
