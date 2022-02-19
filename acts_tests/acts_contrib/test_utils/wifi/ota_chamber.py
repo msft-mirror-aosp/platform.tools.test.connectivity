@@ -52,6 +52,7 @@ class OtaChamber(object):
     Base class provides functions whose implementation is shared by all
     chambers.
     """
+
     def reset_chamber(self):
         """Resets the chamber to its zero/home state."""
         raise NotImplementedError
@@ -83,6 +84,7 @@ class OtaChamber(object):
 
 class MockChamber(OtaChamber):
     """Class that implements mock chamber for test development and debug."""
+
     def __init__(self, config):
         self.config = config.copy()
         self.device_id = self.config['device_id']
@@ -120,6 +122,7 @@ class MockChamber(OtaChamber):
 
 class OctoboxChamber(OtaChamber):
     """Class that implements Octobox chamber."""
+
     def __init__(self, config):
         self.config = config.copy()
         self.device_id = self.config['device_id']
@@ -129,7 +132,9 @@ class OctoboxChamber(OtaChamber):
         utils.exe_cmd('sudo {} -d {} -i 0'.format(self.TURNTABLE_FILE_PATH,
                                                   self.device_id))
         self.current_mode = None
-        self.SUPPORTED_BANDS = ['2.4GHz', 'UNII-1', 'UNII-2', 'UNII-3', '6GHz']
+        self.SUPPORTED_BANDS = [
+            '2.4GHz', 'UNII-1', 'UNII-2', 'UNII-3', 'UNII-4', '6GHz'
+        ]
 
     def set_orientation(self, orientation):
         self.log.info('Setting orientation to {} degrees.'.format(orientation))
@@ -143,11 +148,13 @@ class OctoboxChamber(OtaChamber):
 
 
 class ChamberAutoConnect(object):
+
     def __init__(self, chamber, chamber_config):
         self._chamber = chamber
         self._config = chamber_config
 
     def __getattr__(self, item):
+
         def chamber_call(*args, **kwargs):
             self._chamber.connect(self._config['ip_address'],
                                   self._config['username'],
@@ -159,6 +166,7 @@ class ChamberAutoConnect(object):
 
 class BluetestChamber(OtaChamber):
     """Class that implements Octobox chamber."""
+
     def __init__(self, config):
         import flow
         self.config = config.copy()
@@ -167,7 +175,9 @@ class BluetestChamber(OtaChamber):
         self.chamber = ChamberAutoConnect(flow.Flow(), self.config)
         self.stirrer_ids = [0, 1, 2]
         self.current_mode = None
-        self.SUPPORTED_BANDS = ['2.4GHz', 'UNII-1', 'UNII-2', 'UNII-3']
+        self.SUPPORTED_BANDS = [
+            '2.4GHz', 'UNII-1', 'UNII-2', 'UNII-3', 'UNII-4', '6GHz'
+        ]
 
     # Capture print output decorator
     @staticmethod
@@ -248,6 +258,7 @@ class BluetestChamber(OtaChamber):
 
 class EInstrumentChamber(OtaChamber):
     """Class that implements Einstrument Chamber."""
+
     def __init__(self, config):
         self.config = config.copy()
         self.device_id = self.config['device_id']
