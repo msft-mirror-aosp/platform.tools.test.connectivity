@@ -24,9 +24,9 @@ import immutabledict
 import websockets
 
 _CONFIG_DIR_MAPPING = immutabledict.immutabledict({
-    'enb': '/root/enb/config/enb.cfg',
-    'mme': '/root/mme/config/mme.cfg',
-    'ims': '/root/mme/config/ims.cfg',
+    'enb': '/config/enb.cfg',
+    'mme': '/config/mme.cfg',
+    'ims': '/config/ims.cfg',
     'mbms': '/config/mbmsgw.cfg',
     'ots': '/config/ots.cfg'
 })
@@ -76,7 +76,7 @@ class AmariSoftClient(ssh_utils.RemoteClient):
         self._send_message_to_callbox(f'ws://{self.host}:{port}/', msg))
 
   def verify_response(self, func: str, head: str,
-                      body: str) -> Mapping[str, Any]:
+                      body: str) -> Tuple[Mapping[str, Any], Mapping[str, Any]]:
     """Makes sure there are no error messages in Amarisoft's response.
 
     If a message produces an error, response will have an error string field
@@ -117,23 +117,23 @@ class AmariSoftClient(ssh_utils.RemoteClient):
 
   def lte_service_stop(self) -> None:
     """Stops to output signal."""
-    self.ssh.run_cmd('systemctl stop lte')
+    self.run_cmd('systemctl stop lte')
 
   def lte_service_start(self):
     """Starts to output signal."""
-    self.ssh.run_cmd('systemctl start lte')
+    self.run_cmd('systemctl start lte')
 
   def lte_service_restart(self):
     """Restarts to output signal."""
-    self.ssh.run_cmd('systemctl restart lte')
+    self.run_cmd('systemctl restart lte')
 
   def lte_service_enable(self):
     """lte service remains enable until next reboot."""
-    self.ssh.run_cmd('systemctl enable lte')
+    self.run_cmd('systemctl enable lte')
 
   def lte_service_disable(self):
     """lte service remains disable until next reboot."""
-    self.ssh.run_cmd('systemctl disable lte')
+    self.run_cmd('systemctl disable lte')
 
   def lte_service_is_active(self) -> bool:
     """Checks lte service is active or not.
@@ -142,7 +142,7 @@ class AmariSoftClient(ssh_utils.RemoteClient):
       True if service active, False otherwise.
     """
     return not any('inactive' in line
-                   for line in self.ssh.run_cmd('systemctl is-active lte'))
+                   for line in self.run_cmd('systemctl is-active lte'))
 
   def set_config_dir(self, cfg_type: str, path: str) -> None:
     """Sets the path of target configuration file.
@@ -155,7 +155,7 @@ class AmariSoftClient(ssh_utils.RemoteClient):
     path_old = self.get_config_dir(cfg_type)
     if path != path_old:
       logging.info('set new path %s (was %s)', path, path_old)
-      self.ssh.run_cmd(f'ln -sfn {path} /root/{cfg_type}')
+      self.run_cmd(f'ln -sfn {path} /root/{cfg_type}')
     else:
       logging.info('path %s does not change.', path_old)
 
@@ -168,7 +168,7 @@ class AmariSoftClient(ssh_utils.RemoteClient):
     Returns:
       The path of configuration.
     """
-    result = self.ssh.run_cmd(f'readlink /root/{cfg_type}')
+    result = self.run_cmd(f'readlink /root/{cfg_type}')
     if result:
       path = result[0].strip()
     else:
@@ -189,9 +189,9 @@ class AmariSoftClient(ssh_utils.RemoteClient):
       doesn’t exist.
     """
     cfg_link = self.get_config_dir(cfg_type) + _CONFIG_DIR_MAPPING[cfg_type]
-    if not self.ssh.is_file_exist(cfg_file):
+    if not self.is_file_exist(cfg_file):
       raise FileNotFoundError("The command file doesn't exist")
-    self.ssh.run_cmd(f'ln -sfn {cfg_file} {cfg_link}')
+    self.run_cmd(f'ln -sfn {cfg_file} {cfg_link}')
 
   def get_config_file(self, cfg_type: str) -> Optional[str]:
     """Gets the current configuration of specific configuration type.
@@ -204,7 +204,7 @@ class AmariSoftClient(ssh_utils.RemoteClient):
     """
     cfg_path = self.get_config_dir(cfg_type) + _CONFIG_DIR_MAPPING[cfg_type]
     if cfg_path:
-      result = self.ssh.run_cmd(f'readlink {cfg_path}')
+      result = self.run_cmd(f'readlink {cfg_path}')
       if result:
         return result[0].strip()
 
@@ -219,4 +219,3 @@ class AmariSoftClient(ssh_utils.RemoteClient):
       config_dir[cfg_type] = self.get_config_dir(cfg_type)
       logging.debug('get path of %s: %s', cfg_type, config_dir[cfg_type])
     return config_dir
-

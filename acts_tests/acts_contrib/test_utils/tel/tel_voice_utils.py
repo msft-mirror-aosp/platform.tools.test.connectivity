@@ -2681,3 +2681,4 @@ def truncate_phone_number(
         callee_number = callee_dial_number
 
     return callee_number
+

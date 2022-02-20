@@ -19,6 +19,7 @@
 
 from acts import signals
 from acts.libs.utils.multithread import multithread_func
+from acts.libs.utils.multithread import run_multithread_func
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
@@ -34,6 +35,7 @@ from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_both_devices_for_volte
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_test_utils import verify_5g_attach_for_both_devices
+from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_data_utils import call_epdg_to_epdg_wfc
 from acts_contrib.test_utils.tel.tel_data_utils import get_mobile_data_usage
 from acts_contrib.test_utils.tel.tel_data_utils import remove_mobile_data_usage_limit
@@ -68,6 +70,9 @@ from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_active
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
+from acts_contrib.test_utils.tel.tel_ops_utils import initiate_call_verify_operation
+
+
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 
@@ -1130,5 +1135,110 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                                                 ads,
                                                 self.wifi_network_ssid,
                                                 self.wifi_network_pass)
+
+    @test_tracker_info(uuid="e42cb2bc-db0b-4053-a052-7d95e55bc815")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_volte_call_during_data_idle_and_transfer_mo(self):
+        """Test 5G NSA for VoLTE call during data idle and data transfer.
+
+        Steps:
+	    (1) Provision both devices on 5G NSA.
+	    (2) Initiate MO VoLTE call during data idle.
+	    (3) End call.
+	    (4) Initiate a MO VoLTE call and start a download.
+	    (5) Start another download and initiate MO VoLTE call during data transferring.
+	    (6) End call.
+	    (7) Initiate a MO VoLTE call and start a download.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        cell_1 = self.android_devices[0]
+        cell_2 = self.android_devices[1]
+
+        if not provision_device_for_5g(self.log, [cell_1, cell_2], nr_type='nsa'):
+            cell_1.log.error("Failed to setup on 5G NSA")
+            return False
+
+        # Initiate call during data idle and end call
+        if not initiate_call_verify_operation(self.log, cell_1, cell_2):
+            cell_1.log.error("Phone was unable to initate a call")
+            return False
+
+        # Initiate call and start a download
+        if not initiate_call_verify_operation(self.log, cell_1, cell_2, True):
+            cell_1.log.error("Phone was unable to initate a call and verify download")
+            return False
+
+        download_task = active_file_download_task(self.log, cell_1, "10MB")
+        call_task = (initiate_call_verify_operation, (self.log, cell_1, cell_2))
+
+        results = run_multithread_func(self.log, [download_task, call_task])
+
+        if ((results[0]) & (results[1])):
+            self.log.info("PASS - Validate VoLTE call during data transferring")
+        elif ((results[0] == False) & (results[1] == True)):
+            self.log.error("FAIL - Data Transfer failed")
+        elif ((results[0] == True) & (results[1] == False)):
+            self.log.error("FAIL - Call Initiation failed")
+        else:
+            self.log.error("FAILED - Validate VoLTE call during data transferring")
+
+        if not initiate_call_verify_operation(self.log, cell_1, cell_2, True):
+            cell_1.log.error("Phone was unable to initate a call and verify download")
+            return False
+
+
+    @test_tracker_info(uuid="c69ec37d-133f-42c5-babd-91f763dd5b21")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_volte_call_during_data_idle_and_transfer_mt(self):
+        """Test 5G NSA for VoLTE call during data idle and data transfer.
+
+        Steps:
+	    (1) Provision both devices on 5G NSA.
+	    (2) Initiate MT VoLTE call during data idle.
+	    (3) End call.
+	    (4) Initiate a MO VoLTE call and start a download.
+	    (5) Start another download and initiate MT VoLTE call during data transferring.
+	    (6) End call.
+	    (7) Initiate a MO VoLTE call and start a download.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        cell_1 = self.android_devices[0]
+        cell_2 = self.android_devices[1]
+
+        if not provision_device_for_5g(self.log, [cell_1, cell_2], nr_type='nsa'):
+            cell_1.log.error("Failed to setup on 5G NSA")
+            return False
+
+        # Initiate call during data idle and end call
+        if not initiate_call_verify_operation(self.log, cell_2, cell_1):
+            cell_2.log.error("Phone was unable to initate a call")
+            return False
+
+        # Initiate call and start a download
+        if not initiate_call_verify_operation(self.log, cell_1, cell_2, True):
+            cell_1.log.error("Phone was unable to initate a call and verify download")
+            return False
+
+        download_task = active_file_download_task(self.log, cell_2, "10MB")
+        call_task = (initiate_call_verify_operation, (self.log, cell_2, cell_1))
+
+        results = run_multithread_func(self.log, [download_task, call_task])
+
+        if ((results[0]) & (results[1])):
+            self.log.info("PASS - Validate MT VoLTE call during data transferring")
+        elif ((results[0] == False) & (results[1] == True)):
+            self.log.error("FAIL - Data Transfer failed")
+        elif ((results[0] == True) & (results[1] == False)):
+            self.log.error("FAIL - Call Initiation failed")
+        else:
+            self.log.error("FAILED - Validate MT VoLTE call during data transferring")
+
+        if not initiate_call_verify_operation(self.log, cell_1, cell_2, True):
+            cell_1.log.error("Phone was unable to initate a call and verify download")
+            return False
 
     """ Tests End """
