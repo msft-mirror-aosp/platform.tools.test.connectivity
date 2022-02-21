@@ -48,7 +48,6 @@ class GnssConcurrencyTest(BaseTestClass):
         gutils._init_device(self.ad)
         self.ad.adb.shell("setprop persist.vendor.radio.adb_log_on 0")
         self.ad.adb.shell("sync")
-        gutils.reboot(self.ad)
 
     def setup_test(self):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
@@ -79,7 +78,7 @@ class GnssConcurrencyTest(BaseTestClass):
             try:
                 self.ad.log.info("Start to load the nanoapp")
                 res = self.ad.adb.shell("chre_power_test_client load")
-                if "success: 1" in res:
+                if "result 1" in res:
                     self.ad.log.info("Nano app loaded successfully")
                     break
             except Exception as e:
