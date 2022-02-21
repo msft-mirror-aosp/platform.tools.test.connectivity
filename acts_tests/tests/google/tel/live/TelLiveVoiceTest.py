@@ -3538,8 +3538,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan_cellular_preferred(self.log,
+        if not phone_setup_iwlan(self.log,
                                  self.android_devices[0],
+                                 True,
+                                 WFC_MODE_CELLULAR_PREFERRED,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3564,8 +3566,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan_cellular_preferred(self.log,
+        if not phone_setup_iwlan(self.log,
                                  self.android_devices[0],
+                                 True,
+                                 WFC_MODE_CELLULAR_PREFERRED,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3973,8 +3977,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan_cellular_preferred(self.log,
+        if not phone_setup_iwlan(self.log,
                                  self.android_devices[0],
+                                 True,
+                                 WFC_MODE_CELLULAR_PREFERRED,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
@@ -3998,8 +4004,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan_cellular_preferred(self.log,
+        if not phone_setup_iwlan(self.log,
                                  self.android_devices[0],
+                                 True,
+                                 WFC_MODE_CELLULAR_PREFERRED,
                                  self.wifi_network_ssid,
                                  self.wifi_network_pass):
             self.android_devices[0].log.error(
