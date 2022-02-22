@@ -46,7 +46,7 @@ from acts_contrib.test_utils.tel.tel_ims_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
-from acts_contrib.test_utils.tel.tel_logging_utils import start_dsp_log_p21
+from acts_contrib.test_utils.tel.tel_logging_utils import start_dsp_logger_p21
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_qxdm_logger
@@ -282,7 +282,7 @@ class TelephonyBaseTest(BaseTestClass):
                 reboot_device(ad)
 
         if ad.dsp_log_p21:
-            start_dsp_log_p21(ad)
+            start_dsp_logger_p21(ad)
         stop_qxdm_logger(ad)
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
