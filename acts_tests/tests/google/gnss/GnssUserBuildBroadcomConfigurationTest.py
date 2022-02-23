@@ -273,6 +273,7 @@ class GnssUserBuildBroadcomConfigurationTest(BaseTestClass):
     def setup_test(self):
         if gutils.check_chipset_vendor_by_qualcomm(self.ad):
             raise signals.TestSkip("Device is Qualcomm, skip the test")
+        gutils.get_baseband_and_gms_version(self.ad)
         gutils.clear_logd_gnss_qxdm_log(self.ad)
 
     def teardown_test(self):
