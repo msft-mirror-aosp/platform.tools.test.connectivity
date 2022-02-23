@@ -929,7 +929,7 @@ def call_setup_teardown_for_subscription(
         begin_time,
         check_interval=CHECK_INTERVAL,
         tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
-        wait_time_in_call=WAIT_TIME_IN_CALL)
+        wait_time_in_call=wait_time_in_call)
 
 
 def two_phone_call_leave_voice_mail(
