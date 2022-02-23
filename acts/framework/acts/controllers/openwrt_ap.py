@@ -215,7 +215,7 @@ class OpenWrtAP(object):
     ssid_ifname_map = {}
     str_output = self.ssh.run("wifi status %s" % radio).stdout
     wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
-                            Loader=yaml.FullLoader)
+                            Loader=yaml.SafeLoader)
     wifi_status = wifi_status[radio]
     if wifi_status["up"]:
       interfaces = wifi_status["interfaces"]
@@ -246,7 +246,7 @@ class OpenWrtAP(object):
     """
     str_output = self.ssh.run("wifi status").stdout
     wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
-                            Loader=yaml.FullLoader)
+                            Loader=yaml.SafeLoader)
 
     # Counting how many interface are enabled.
     total_interface = 0
@@ -360,7 +360,7 @@ class OpenWrtAP(object):
     """
     str_output = self.ssh.run("wifi status").stdout
     wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
-                            Loader=yaml.FullLoader)
+                            Loader=yaml.SafeLoader)
     # Check if the radio is up.
     if iface == OpenWrtWifiSetting.IFACE_2G:
       if wifi_status[self.radios[1]]["up"]:
@@ -596,7 +596,7 @@ class OpenWrtAP(object):
     for radio in self.radios:
       str_output = self.ssh.run("wifi status %s" % radio).stdout
       wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
-                              Loader=yaml.FullLoader)
+                              Loader=yaml.SafeLoader)
       status = wifi_status[radio]["up"] and status
     return status
 
