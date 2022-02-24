@@ -251,8 +251,8 @@ class LhdConf(GpsConfig):
         return False
 
 
-class GnssUserBuildBroadcomConfigurationTest(BaseTestClass):
-    """ GNSS user build configuration Tests on Broadcom device."""
+class GnssdBroadcomConfigurationTest(BaseTestClass):
+    """ GNSS configuration Tests on Broadcom device."""
     def setup_class(self):
         super().setup_class()
         self.ad = self.android_devices[0]
