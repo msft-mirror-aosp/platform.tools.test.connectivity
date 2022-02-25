@@ -251,7 +251,7 @@ class LhdConf(GpsConfig):
         return False
 
 
-class GnssdBroadcomConfigurationTest(BaseTestClass):
+class GnssBroadcomConfigurationTest(BaseTestClass):
     """ GNSS configuration Tests on Broadcom device."""
     def setup_class(self):
         super().setup_class()
