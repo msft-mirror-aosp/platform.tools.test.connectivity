@@ -99,7 +99,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
@@ -150,8 +150,9 @@ class CellBroadcastTest(TelephonyBaseTest):
             self.android_devices[0].log.info("device is operated at DSDS!")
         else:
             self.android_devices[0].log.info("device is operated at single SIM!")
-        self.current_sub_id = get_default_data_sub_id(self.android_devices[0])
-        self.android_devices[0].log.info("Active slot: %d, active subscription id: %d",
+        self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
+
+        self.android_devices[0].log.info("Active slot: %d, active voice subscription id: %d",
                                          self.slot_sub_id_list[self.current_sub_id], self.current_sub_id)
 
         if hasattr(self, "carrier_test_conf"):
@@ -2122,3 +2123,4 @@ class CellBroadcastTest(TelephonyBaseTest):
 
         get_screen_shot_log(self.android_devices[0])
         return result
+

@@ -42,6 +42,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4
 from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
+from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -58,6 +59,8 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         self.iperf_tcp_port = self.user_params.get("iperf_tcp_port", 0)
         self.iperf_udp_port = self.user_params.get("iperf_udp_port", 0)
         self.iperf_duration = self.user_params.get("iperf_duration", 60)
+        for ad in self.android_devices:
+            set_phone_silent_mode(self.log, ad, True)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
