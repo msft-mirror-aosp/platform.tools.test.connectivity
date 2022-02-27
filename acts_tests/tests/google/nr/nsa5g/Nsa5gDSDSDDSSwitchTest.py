@@ -33,16 +33,41 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
         self.android_devices[0].force_stop_apk(YOUTUBE_PACKAGE_NAME)
         ensure_phones_idle(self.log, self.android_devices)
 
+    @test_tracker_info(uuid="0514be56-48b1-4ae9-967f-2326939ef386")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_sms_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap SMS test(Initial DDS is on SIM1).
+
+        1. Make MO/MT SMS via SIM1 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Make MO/MT SMS via SIM2 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive SMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
+        """
+        return dsds_dds_swap_message_streaming_test(
+            self.log,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=[0, 1],
+            init_dds=0,
+            msg_type="SMS",
+            direction="mt",
+            streaming=False)
+
     @test_tracker_info(uuid="d04fca02-881c-4089-bfdf-b1d84c301ff1")
     @TelephonyBaseTest.tel_test_wrap
-    def test_dds_switch_sms_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
-        """ A MO VoLTE call at pSIM before and after dds switch, where
-            - pSIM 5G NSA VoLTE
-            - eSIM 5G NSA VoLTE
-            - DDS at pSIM (slot 0) in the beginning
+    def test_dds_switch_sms_non_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap SMS test(Initial DDS is on SIM1).
 
-            After call end will check the dds slot if is attach to the network
-            with assigned RAT successfully and data works fine.
+        1. Make MO/MT SMS via SIM2 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Make MO/MT SMS via SIM1 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive SMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
         """
         return dsds_dds_swap_message_streaming_test(
             self.log,
@@ -54,16 +79,95 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
             direction="mt",
             streaming=False)
 
+    @test_tracker_info(uuid="e5562a55-788a-4c33-9b97-8eeb8e412052")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_youtube_sms_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap SMS test(Initial DDS is on SIM1).
+
+        1. Start Youtube streaming.
+        2. Make MO/MT SMS via SIM1 when DDS is on SIM1 and idle.
+        3. Stop Youtube streaming.
+        4. Switch DDS to SIM2.
+        5. Start Youtube streaming.
+        6. Make MO/MT SMS via SIM2 when DDS is on SIM2 and idle.
+        7. Stop Youtube streaming.
+        8. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive SMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
+        """
+        return dsds_dds_swap_message_streaming_test(
+            self.log,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=[0, 1],
+            init_dds=0,
+            msg_type="SMS",
+            direction="mt",
+            streaming=True)
+
+    @test_tracker_info(uuid="71fb524f-4777-4aa5-aa94-28d6d46dc253")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_youtube_sms_non_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap SMS test(Initial DDS is on SIM1).
+
+        1. Start Youtube streaming.
+        2. Make MO/MT SMS via SIM2 when DDS is on SIM1 and idle.
+        3. Stop Youtube streaming.
+        4. Switch DDS to SIM2.
+        5. Start Youtube streaming.
+        6. Make MO/MT SMS via SIM1 when DDS is on SIM2 and idle.
+        7. Stop Youtube streaming.
+        8. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive SMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
+        """
+        return dsds_dds_swap_message_streaming_test(
+            self.log,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=[1, 0],
+            init_dds=0,
+            msg_type="SMS",
+            direction="mt",
+            streaming=True)
+
+    @test_tracker_info(uuid="3f7cf6ff-a3ec-471b-8a13-e3035dd791c6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_mms_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap MMS test(Initial DDS is on SIM1).
+
+        1. Make MO/MT MMS via SIM1 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Make MO/MT MMS via SIM2 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive MMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
+        """
+        return dsds_dds_swap_message_streaming_test(
+            self.log,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=[0, 1],
+            init_dds=0,
+            msg_type="MMS",
+            direction="mt",
+            streaming=False)
+
     @test_tracker_info(uuid="311205dd-f484-407c-bd4a-93c25a78b02a")
     @TelephonyBaseTest.tel_test_wrap
-    def test_dds_switch_mms_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
-        """ A MO VoLTE call at pSIM before and after dds switch, where
-            - pSIM 5G NSA VoLTE
-            - eSIM 5G NSA VoLTE
-            - DDS at pSIM (slot 0) in the beginning
+    def test_dds_switch_mms_non_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap MMS test(Initial DDS is on SIM1).
 
-            After call end will check the dds slot if is attach to the network
-            with assigned RAT successfully and data works fine.
+        1. Make MO/MT MMS via SIM2 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Make MO/MT MMS via SIM1 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive MMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
         """
         return dsds_dds_swap_message_streaming_test(
             self.log,
@@ -75,16 +179,72 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
             direction="mt",
             streaming=False)
 
+    @test_tracker_info(uuid="d817ee1d-8825-4614-abb1-f813c5f4c7de")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_youtube_mms_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap MMS test(Initial DDS is on SIM1).
+
+        1. Start Youtube streaming.
+        2. Make MO/MT MMS via SIM1 when DDS is on SIM1 and idle.
+        3. Stop Youtube streaming.
+        4. Switch DDS to SIM2.
+        5. Start Youtube streaming.
+        6. Make MO/MT MMS via SIM2 when DDS is on SIM2 and idle.
+        7. Stop Youtube streaming.
+        8. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive MMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
+        """
+        return dsds_dds_swap_message_streaming_test(
+            self.log,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=[0, 1],
+            init_dds=0,
+            msg_type="MMS",
+            direction="mt",
+            streaming=True)
+
+    @test_tracker_info(uuid="131f68c6-e0b6-41cb-85c5-a2df125e01b3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_dds_switch_youtube_mms_non_dds_psim_5g_nsa_volte_esim_5g_nsa_volte(self):
+        """ 5G NSA DDS swap MMS test(Initial DDS is on SIM1).
+
+        1. Start Youtube streaming.
+        2. Make MO/MT MMS via SIM2 when DDS is on SIM1 and idle.
+        3. Stop Youtube streaming.
+        4. Switch DDS to SIM2.
+        5. Start Youtube streaming.
+        6. Make MO/MT MMS via SIM1 when DDS is on SIM2 and idle.
+        7. Stop Youtube streaming.
+        8. Switch DDS to SIM1, make sure data works fine.
+
+        After Make/Receive MMS will check the dds slot if is attach to the
+        network with assigned RAT successfully and data works fine.
+        """
+        return dsds_dds_swap_message_streaming_test(
+            self.log,
+            self.android_devices,
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=[1, 0],
+            init_dds=0,
+            msg_type="MMS",
+            direction="mt",
+            streaming=True)
+
     @test_tracker_info(uuid="1c3ba14c-d7f6-4737-8ac2-f55fa3b6cc46")
     @TelephonyBaseTest.tel_test_wrap
     def test_dds_switch_voice_psim_mo_5g_nsa_volte_esim_5g_nsa_volte(self):
-        """ A MO VoLTE call at pSIM before and after dds switch, where
-            - pSIM 5G NSA VoLTE
-            - eSIM 5G NSA VoLTE
-            - DDS at pSIM (slot 0) in the beginning
+        """ 5G NSA DDS swap call test(Initial DDS is on SIM1).
 
-            After call end will check the dds slot if is attach to the network
-            with assigned RAT successfully and data works fine.
+        1. Make MO call via SIM1 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Make MO call via SIM1 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After call end will check the dds slot if is attach to the network
+        with assigned RAT successfully and data works fine.
         """
         return dsds_dds_swap_call_streaming_test(
             self.log,
@@ -100,13 +260,15 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     @test_tracker_info(uuid="55c3fbd0-0b8b-4275-81a0-1e1715b66ec1")
     @TelephonyBaseTest.tel_test_wrap
     def test_dds_switch_voice_psim_mt_5g_nsa_volte_esim_5g_nsa_volte(self):
-        """ A MT VoLTE call at pSIM before and after dds switch, where
-            - pSIM 5G NSA VoLTE
-            - eSIM 5G NSA VoLTE
-            - DDS at pSIM (slot 0) in the beginning
+        """ 5G NSA DDS swap call test(Initial DDS is on SIM1).
 
-            After call end will check the dds slot if is attach to the network
-            with assigned RAT successfully and data works fine.
+        1. Receive MT call via SIM1 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Receive MT call via SIM1 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After call end will check the dds slot if is attach to the network
+        with assigned RAT successfully and data works fine.
         """
         return dsds_dds_swap_call_streaming_test(
             self.log,
@@ -122,13 +284,15 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     @test_tracker_info(uuid="1359b4a9-7e3e-4b34-b512-4638ab4ab4a7")
     @TelephonyBaseTest.tel_test_wrap
     def test_dds_switch_voice_esim_mo_5g_nsa_volte_psim_5g_nsa_volte(self):
-        """ A MO VoLTE call at eSIM before and after dds switch, where
-            - pSIM 5G NSA VoLTE
-            - eSIM 5G NSA VoLTE
-            - DDS at pSIM (slot 0) in the beginning
+        """ 5G NSA DDS swap call test(Initial DDS is on SIM1).
 
-            After call end will check the dds slot if is attach to the network
-            with assigned RAT successfully and data works fine.
+        1. Make MO call via SIM2 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Make MO call via SIM2 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After call end will check the dds slot if is attach to the network
+        with assigned RAT successfully and data works fine.
         """
         return dsds_dds_swap_call_streaming_test(
             self.log,
@@ -144,13 +308,15 @@ class Nsa5gDSDSDDSSwitchTest(TelephonyBaseTest):
     @test_tracker_info(uuid="f4a290dc-3a8b-4364-8b6e-35275a6b8f92")
     @TelephonyBaseTest.tel_test_wrap
     def test_dds_switch_voice_esim_mt_5g_nsa_volte_psim_5g_nsa_volte(self):
-        """ A MT VoLTE call at eSIM before and after dds switch, where
-            - pSIM 5G NSA VoLTE
-            - eSIM 5G NSA VoLTE
-            - DDS at pSIM (slot 0) in the beginning
+        """ 5G NSA DDS swap call test(Initial DDS is on SIM1).
 
-            After call end will check the dds slot if is attach to the network
-            with assigned RAT successfully and data works fine.
+        1. Receive MT call via SIM2 when DDS is on SIM1 and idle.
+        2. Switch DDS to SIM2.
+        3. Receive MT call via SIM2 when DDS is on SIM2 and idle.
+        4. Switch DDS to SIM1, make sure data works fine.
+
+        After call end will check the dds slot if is attach to the network
+        with assigned RAT successfully and data works fine.
         """
         return dsds_dds_swap_call_streaming_test(
             self.log,
