@@ -113,7 +113,7 @@ def start_dsp_logger_p21(ad, retry=3):
             time.sleep(3)
         else:
             ad.log.info("DSP logger is enabled, reboot to start.")
-            ad.adb.reboot()
+            ad.reboot()
             return True
     ad.log.warning("DSP logger enable failed")
     return False
