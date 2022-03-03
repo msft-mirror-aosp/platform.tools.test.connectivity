@@ -43,6 +43,8 @@ VPN_PARAMS = cconst.VpnReqParams
 TCPDUMP_PATH = "/data/local/tmp/"
 USB_CHARGE_MODE = "svc usb setFunctions"
 USB_TETHERING_MODE = "svc usb setFunctions rndis"
+ENABLE_HARDWARE_OFFLOAD = "settings put global tether_offload_disabled 0"
+DISABLE_HARDWARE_OFFLOAD = "settings put global tether_offload_disabled 1"
 DEVICE_IP_ADDRESS = "ip address"
 LOCALHOST = "192.168.1.1"
 
@@ -577,3 +579,28 @@ def get_if_list():
         if ": flags" in line.lower()
     ]
     return interfaces
+
+
+def enable_hardware_offload(ad):
+    """Enable hardware offload using adb shell command.
+
+    Args:
+        ad: Android device object
+    """
+    ad.log.info("Enabling hardware offload.")
+    ad.adb.shell(ENABLE_HARDWARE_OFFLOAD, ignore_status=True)
+    ad.reboot()
+    time.sleep(tel_defines.WAIT_TIME_AFTER_REBOOT)
+
+
+def disable_hardware_offload(ad):
+    """Disable hardware offload using adb shell command.
+
+    Args:
+        ad: Android device object
+    """
+    ad.log.info("Disabling hardware offload.")
+    ad.adb.shell(DISABLE_HARDWARE_OFFLOAD, ignore_status=True)
+    ad.reboot()
+    time.sleep(tel_defines.WAIT_TIME_AFTER_REBOOT)
+
