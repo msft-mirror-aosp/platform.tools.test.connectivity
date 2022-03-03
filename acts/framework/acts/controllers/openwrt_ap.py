@@ -641,3 +641,8 @@ class OpenWrtAP(object):
   def close_ssh(self):
     """Close SSH connection to AP."""
     self.ssh.close()
+
+  def reboot(self):
+    """Reboot Openwrt."""
+    self.ssh.run("reboot")
+
