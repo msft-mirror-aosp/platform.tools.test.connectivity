@@ -220,10 +220,14 @@ class AccessPoint(object):
         self._dhcp = None
         self._dhcp_bss = dict()
         self.bridge = bridge_interface.BridgeInterface(self)
-        self.interfaces = ap_get_interface.ApInterfaces(self)
         self.iwconfig = ap_iwconfig.ApIwconfig(self)
 
-        # Get needed interface names and initialize the unneccessary ones.
+        # Check to see if wan_interface is specified in acts_config for tests
+        # isolated from the internet and set this override.
+        self.interfaces = ap_get_interface.ApInterfaces(
+            self, configs.get('wan_interface'))
+
+        # Get needed interface names and initialize the unnecessary ones.
         self.wan = self.interfaces.get_wan_interface()
         self.wlan = self.interfaces.get_wlan_interface()
         self.wlan_2g = self.wlan[0]

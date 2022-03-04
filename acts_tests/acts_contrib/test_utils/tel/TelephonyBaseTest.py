@@ -46,6 +46,7 @@ from acts_contrib.test_utils.tel.tel_ims_utils import activate_wfc_on_device
 from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
+from acts_contrib.test_utils.tel.tel_logging_utils import start_dsp_logger_p21
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_qxdm_logger
@@ -157,6 +158,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.log_path = getattr(logging, "log_path", None)
         self.qxdm_log = self.user_params.get("qxdm_log", True)
         self.sdm_log = self.user_params.get("sdm_log", False)
+        self.dsp_log_p21 = self.user_params.get("dsp_log_p21", False)
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
@@ -256,6 +258,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         ad.sdm_log = getattr(ad, "sdm_log", self.sdm_log)
+        ad.dsp_log_p21 = getattr(ad, "dsp_log_p21", self.dsp_log_p21)
         if self.user_params.get("enable_connectivity_metrics", False):
             enable_connectivity_metrics(ad)
         if self.user_params.get("build_id_override", False):
@@ -278,6 +281,8 @@ class TelephonyBaseTest(BaseTestClass):
                              % phone_mode)
                 reboot_device(ad)
 
+        if ad.dsp_log_p21:
+            start_dsp_logger_p21(ad)
         stop_qxdm_logger(ad)
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)

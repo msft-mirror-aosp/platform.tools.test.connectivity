@@ -32,7 +32,7 @@ class FuchsiaSessionManagerLib():
                 result: 'Success' or None if error
         """
         try:
-            self.device.ffx_command(
+            self.device.ffx.run(
                 "component start /core/session-manager/session:session")
             return {'error': None, 'result': 'Success'}
         except Exception as e:
@@ -46,7 +46,7 @@ class FuchsiaSessionManagerLib():
                 error: None, unless an error occurs
                 result: 'Success', 'NoSessionToPause', or None if error
         """
-        result = self.device.ffx_command(
+        result = self.device.ffx.run(
             "component stop -r /core/session-manager/session:session",
             skip_status_code_check=True)
 

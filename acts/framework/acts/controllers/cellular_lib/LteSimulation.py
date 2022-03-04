@@ -199,17 +199,18 @@ class LteSimulation(BaseSimulation):
         29: 9660,
         30: 9770,
         31: 9870,
-        32: 36000,
-        33: 36200,
-        34: 36350,
-        35: 36950,
-        36: 37550,
-        37: 37750,
-        38: 38250,
-        39: 38650,
-        40: 39650,
-        41: 41590,
-        42: 45590,
+        32: 9920,
+        33: 36000,
+        34: 36200,
+        35: 36350,
+        36: 36950,
+        37: 37550,
+        38: 37750,
+        39: 38250,
+        40: 38650,
+        41: 39650,
+        42: 41590,
+        43: 45590,
         66: 66436
     }
 
@@ -518,7 +519,7 @@ class LteSimulation(BaseSimulation):
 
         # This shouldn't be a cell parameter but instead a simulation config
         # Setup LTE RRC status change function and timer for LTE idle test case
-        if self.PARAM_RRC_STATUS_CHANGE_TIMER not in parameters:
+        if self.PARAM_RRC_STATUS_CHANGE_TIMER not in parameters[0]:
             self.log.info(
                 "The test config does not include the '{}' key. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
