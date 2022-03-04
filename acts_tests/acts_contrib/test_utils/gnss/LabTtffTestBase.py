@@ -13,13 +13,14 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+'''GNSS Base Class for Lab TTFF/FFPE'''
 
 import os
 import time
 import errno
 import re
 from collections import namedtuple
-from pandas import DataFrame
+from pandas import DataFrame, merge
 from acts_contrib.test_utils.gnss.gnss_defines import DEVICE_GPSLOG_FOLDER
 from acts_contrib.test_utils.gnss.gnss_defines import GPS_PKG_NAME
 from acts_contrib.test_utils.gnss.gnss_defines import BCM_GPS_XML_PATH
@@ -28,14 +29,15 @@ from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.gnss import gnss_testlog_utils as glogutils
 from acts import utils
 from acts import signals
-from acts.base_test import BaseTestClass
 from acts.controllers.gnss_lib import GnssSimulator
 from acts.context import get_current_context
+from acts.base_test import BaseTestClass
 
-def glob_re(ad, directory, regex_tag):
+
+def glob_re(dut, directory, regex_tag):
     """glob with regular expression method.
     Args:
-        ad: An AndroidDevice object.
+        dut: An AndroidDevice object.
         directory: Target directory path.
            Type, str
         regex_tag: regular expression format string.
@@ -44,11 +46,11 @@ def glob_re(ad, directory, regex_tag):
         result_ls: list of glob result
     """
     all_files_in_dir = os.listdir(directory)
-    ad.log.debug(f'glob_re dir: {all_files_in_dir}')
+    dut.log.debug(f'glob_re dir: {all_files_in_dir}')
     target_log_name_regx = re.compile(regex_tag)
     tmp_ls = list(filter(target_log_name_regx.match, all_files_in_dir))
     result_ls = [os.path.join(directory, file) for file in tmp_ls]
-    ad.log.debug(f'glob_re list: {result_ls}')
+    dut.log.debug(f'glob_re list: {result_ls}')
     return result_ls
 
 
@@ -83,6 +85,19 @@ class LabTtffTestBase(BaseTestClass):
         self.gnss_log_path = self.log_path
         self.gps_xml_bk_path = BCM_GPS_XML_PATH + '.bk'
         self.gpstool_ver = ''
+        self.test_params = None
+        self.custom_files = None
+        self.maskfile = None
+        self.mdsapp = None
+        self.modemparfile = None
+        self.nv_dict = None
+        self.gtw_gpstool_apk = None
+        self.scenario_power = None
+        self.ttff_timeout = None
+        self.test_types = None
+        self.simulator_location = None
+        self.gnss_simulator_scenario = None
+        self.gnss_simulator_power_level = None
 
     def setup_class(self):
         super().setup_class()
@@ -271,11 +286,6 @@ class LabTtffTestBase(BaseTestClass):
             raise signals.TestError(f'Unrecognized mode {mode}')
         test_type = self.test_types.get(mode)
 
-        if mode != 'cs':
-            wait_time = 900
-        else:
-            wait_time = 300
-
         gutils.process_gnss_by_gtw_gpstool(self.dut,
                                            self.test_types['cs'].criteria)
         begin_time = gutils.get_current_epoch_time()
@@ -283,7 +293,7 @@ class LabTtffTestBase(BaseTestClass):
                                          ttff_mode=mode,
                                          iteration=self.ttff_iteration,
                                          raninterval=True,
-                                         hot_warm_sleep=wait_time,
+                                         hot_warm_sleep=3,
                                          timeout=self.ttff_timeout)
         # Since Wear takes little longer to update the TTFF info.
         # Workround to solve the wearable timing issue
@@ -306,31 +316,33 @@ class LabTtffTestBase(BaseTestClass):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                                     gps_log_path)
 
-        df = DataFrame(glogutils.parse_gpstool_ttfflog_to_df(gps_api_log[0]))
+        df_ttff_ffpe = DataFrame(glogutils.parse_gpstool_ttfflog_to_df(gps_api_log[0]))
 
         ttff_dict = {}
         for i in ttff_data:
-            d = ttff_data[i]._asdict()
-            ttff_dict[i] = dict(d)
+            data = ttff_data[i]._asdict()
+            ttff_dict[i] = dict(data)
 
-        ttff_time = []
-        ttff_pe = []
-        ttff_haccu = []
-        for i in ttff_dict.keys():
-            ttff_time.append(ttff_dict[i]['ttff_sec'])
-            ttff_pe.append(ttff_dict[i]['ttff_pe'])
-            ttff_haccu.append(ttff_dict[i]['ttff_haccu'])
-        df['ttff_sec'] = ttff_time
-        df['ttff_pe'] = ttff_pe
-        df['ttff_haccu'] = ttff_haccu
-        df.to_json(gps_log_path + '/gps_log.json', orient='table')
+        ttff_data_df = DataFrame(ttff_dict).transpose()
+        ttff_data_df = ttff_data_df[[
+            'ttff_loop', 'ttff_sec', 'ttff_pe', 'ttff_haccu'
+        ]]
+        try:
+            df_ttff_ffpe = merge(df_ttff_ffpe, ttff_data_df, left_on='loop', right_on='ttff_loop')
+        except: # pylint: disable=bare-except
+            self.log.warning("Can't merge ttff_data and df.")
+        ttff_data_df.to_json(gps_log_path + '/gps_log_ttff_data.json',
+                             orient='table',
+                             index=False)
+        df_ttff_ffpe.to_json(gps_log_path + '/gps_log.json', orient='table', index=False)
         result = gutils.check_ttff_data(self.dut,
                                         ttff_data,
                                         ttff_mode=test_type.command,
                                         criteria=test_type.criteria)
         if not result:
-            raise signals.TestFailure(f'{test_type.command} TTFF fails to reach '
-                                      'designated criteria')
+            raise signals.TestFailure(
+                f'{test_type.command} TTFF fails to reach '
+                'designated criteria')
         return ttff_data
 
     def verify_pe(self, mode):
@@ -358,8 +370,9 @@ class LabTtffTestBase(BaseTestClass):
                                       ttff_mode=test_type.command,
                                       pe_criteria=test_type.pecriteria)
         if not result:
-            raise signals.TestFailure(f'{test_type.command} TTFF fails to reach '
-                                      'designated criteria')
+            raise signals.TestFailure(
+                f'{test_type.command} TTFF fails to reach '
+                'designated criteria')
         return ttff_data
 
     def clear_gps_log(self):
@@ -370,6 +383,7 @@ class LabTtffTestBase(BaseTestClass):
         self.dut.adb.shell(f'rm -rf {DEVICE_GPSLOG_FOLDER}')
 
     def start_dut_gnss_log(self):
+        """Start GNSS chip log according to different diag_option"""
         # Start GNSS chip log
         if self.diag_option == "QCOM":
             diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
@@ -397,7 +411,46 @@ class LabTtffTestBase(BaseTestClass):
                                             gnss_vendor_log_path,
                                             keep_logs=False)
 
-    def gnss_ttff_ffpe(self, mode, sub_context_path=''):
+    def start_gnss_and_wait(self, wait=60):
+        """
+        The process of enable gnss and spend the wait time for GNSS to
+        gather enoung information that make sure the stability of testing.
+
+        Args:
+            wait: wait time between power sweep.
+                Type, int.
+                Default, 60.
+        """
+        # Create log path for waiting section logs of GPStool.
+        gnss_wait_log_dir = os.path.join(self.gnss_log_path, 'GNSS_wait')
+
+        # Enable GNSS to receive satellites' signals for "wait_between_pwr" seconds.
+        self.log.info('Enable GNSS for searching satellites')
+        gutils.start_gnss_by_gtw_gpstool(self.dut, state=True)
+        self.log.info(f'Wait for {wait} seconds')
+        time.sleep(wait)
+
+        # Stop GNSS and pull the logs.
+        gutils.start_gnss_by_gtw_gpstool(self.dut, state=False)
+        diaglog.get_gpstool_logs(self.dut, gnss_wait_log_dir, False)
+
+    def exe_eecoexer_loop_cmd(self, cmd_list=None):
+        """
+        Function for execute EECoexer command list
+            Args:
+                cmd_list: a list of EECoexer function command.
+                Type, list.
+        """
+        if cmd_list:
+            for cmd in cmd_list:
+                self.log.info('Execute EEcoexer Command: {}'.format(cmd))
+                gutils.execute_eecoexer_function(self.dut, cmd)
+
+    def gnss_ttff_ffpe(self,
+                       mode,
+                       sub_context_path='',
+                       coex_cmd='',
+                       stop_coex_cmd=''):
         """
         Base ttff and ffpe function
             Args:
@@ -414,8 +467,19 @@ class LabTtffTestBase(BaseTestClass):
         # Start and set GNSS simulator
         self.start_set_gnss_power()
 
-        ## Start GNSS chip log
+        # Start GNSS chip log
         self.start_dut_gnss_log()
+
+        # Wait for acquiring almanac
+        if mode != 'cs':
+            wait_time = 900
+        else:
+            wait_time = 3
+        self.start_gnss_and_wait(wait=wait_time)
+
+        # Start Coex if available
+        if coex_cmd and stop_coex_cmd:
+            self.exe_eecoexer_loop_cmd(coex_cmd)
 
         # Start verifying TTFF and FFPE
         self.verify_pe(mode)
@@ -427,3 +491,7 @@ class LabTtffTestBase(BaseTestClass):
 
         # Stop GNSS chip log and pull the logs to local file system
         self.stop_and_pull_dut_gnss_log(gnss_vendor_log_path)
+
+        # Stop Coex if available
+        if coex_cmd and stop_coex_cmd:
+            self.exe_eecoexer_loop_cmd(stop_coex_cmd)

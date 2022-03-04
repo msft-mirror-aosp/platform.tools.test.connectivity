@@ -13,19 +13,15 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+'''GNSS Base Class for Blanking and Hot Start Sensitivity Search'''
 
 import os
 import re
-from glob import glob
 from time import sleep
 from collections import namedtuple
 from itertools import product
 from numpy import arange
-from pandas import DataFrame
-from acts.signals import TestError
-from acts.signals import TestFailure
-from acts.logger import epoch_to_log_line_timestamp
-from acts.context import get_current_context
+from pandas import DataFrame, merge
 from acts_contrib.test_utils.gnss import LabTtffTestBase as lttb
 from acts_contrib.test_utils.gnss.LabTtffTestBase import glob_re
 from acts_contrib.test_utils.gnss.gnss_test_utils import launch_eecoexer
@@ -36,20 +32,20 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import check_current_focus_app
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
-from acts_contrib.test_utils.gnss.gnss_test_utils import start_pixel_logger
-from acts_contrib.test_utils.gnss.gnss_test_utils import stop_pixel_logger
-from acts_contrib.test_utils.gnss.dut_log_test_utils import start_diagmdlog_background
 from acts_contrib.test_utils.gnss.dut_log_test_utils import get_gpstool_logs
-from acts_contrib.test_utils.gnss.dut_log_test_utils import stop_background_diagmdlog
-from acts_contrib.test_utils.gnss.dut_log_test_utils import get_pixellogger_bcm_log
 from acts_contrib.test_utils.gnss.gnss_testlog_utils import parse_gpstool_ttfflog_to_df
+from acts.signals import TestError
+from acts.signals import TestFailure
+from acts.logger import epoch_to_log_line_timestamp
+from acts.context import get_current_context
 
 
-def range_wi_end(ad, start, stop, step):
+def range_wi_end(dut, start, stop, step):
     """
     Generate a list of data from start to stop with the step. The list includes start and stop value
     and also supports floating point.
     Args:
+        dut: An AndroidDevice object.
         start: start value.
             Type, int or float.
         stop: stop value.
@@ -60,7 +56,7 @@ def range_wi_end(ad, start, stop, step):
         range_ls: the list of data.
     """
     if step == 0:
-        ad.log.warn('Step is 0. Return empty list')
+        dut.log.warn('Step is 0. Return empty list')
         range_ls = []
     else:
         if start == stop:
@@ -71,15 +67,15 @@ def range_wi_end(ad, start, stop, step):
                 if (step < 0 and range_ls[-1] > stop) or (step > 0 and
                                                           range_ls[-1] < stop):
                     range_ls.append(stop)
-    ad.log.debug(f'The range list is: {range_ls}')
+    dut.log.debug(f'The range list is: {range_ls}')
     return range_ls
 
 
-def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
+def check_ttff_pe(dut, ttff_data, ttff_mode, pe_criteria):
     """Verify all TTFF results from ttff_data.
 
     Args:
-        ad: An AndroidDevice object.
+        dut: An AndroidDevice object.
         ttff_data: TTFF data of secs, position error and signal strength.
         ttff_mode: TTFF Test mode for current test item.
         pe_criteria: Criteria for current test item.
@@ -87,24 +83,24 @@ def check_ttff_pe(ad, ttff_data, ttff_mode, pe_criteria):
     """
     ret = True
     no_iteration = len(ttff_data.keys())
-    ad.log.info(
+    dut.log.info(
         f'{no_iteration} iterations of TTFF {ttff_mode} tests finished.')
-    ad.log.info(f'{ttff_mode} PASS criteria is {pe_criteria} meters')
-    ad.log.debug(f'{ttff_mode} TTFF data: {ttff_data}')
+    dut.log.info(f'{ttff_mode} PASS criteria is {pe_criteria} meters')
+    dut.log.debug(f'{ttff_mode} TTFF data: {ttff_data}')
 
     if len(ttff_data.keys()) == 0:
-        ad.log.error("GTW_GPSTool didn't process TTFF properly.")
+        dut.log.error("GTW_GPSTool didn't process TTFF properly.")
         raise TestFailure("GTW_GPSTool didn't process TTFF properly.")
 
     if any(
             float(ttff_data[key].ttff_pe) >= pe_criteria
             for key in ttff_data.keys()):
-        ad.log.error(
+        dut.log.error(
             f'One or more TTFF {ttff_mode} are over test criteria {pe_criteria} meters'
         )
         ret = False
     else:
-        ad.log.info(
+        dut.log.info(
             f'All TTFF {ttff_mode} are within test criteria {pe_criteria} meters.'
         )
         ret = True
@@ -183,6 +179,12 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         self.dut.force_stop_apk("com.google.eecoexer")
 
     def derive_sweep_list(self, data):
+        """
+        Derive sweep list from config
+        Args:
+            data: GNSS simulator scenario power setting.
+                type, dictionary.
+        """
         match_tag = r'(?P<sat>[a-z]+)_(?P<band>[a-z]+\d\S*)'
         sweep_all_ls = []
         set_all_ls = []
@@ -192,7 +194,8 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
             result = regex_match.search(key)
             if result:
                 set_all_ls.append(result.groupdict())
-                sweep_all_ls.append(range_wi_end(self.dut, value[0], value[1], value[2]))
+                sweep_all_ls.append(
+                    range_wi_end(self.dut, value[0], value[1], value[2]))
         if method == 'product':
             swp_result_ls = list(product(*sweep_all_ls))
         else:
@@ -249,41 +252,47 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
 
         # Parsing the log of GTW GPStool into pandas dataframe.
         target_dir = os.path.join(gps_log_path, 'GPSLogs', 'files')
-        gps_api_log_ls = glob_re(self.dut, target_dir, 'GNSS_\d+')
+        gps_api_log_ls = glob_re(self.dut, target_dir, r'GNSS_\d+')
         latest_gps_api_log = max(gps_api_log_ls, key=os.path.getctime)
         self.log.info(f'Get latest GPStool log is: {latest_gps_api_log}')
+        df_ttff_ffpe = DataFrame(
+            parse_gpstool_ttfflog_to_df(latest_gps_api_log))
+        # Add test case, TTFF and FFPE data into the dataframe.
+        ttff_dict = {}
+        for i in ttff_data:
+            data = ttff_data[i]._asdict()
+            ttff_dict[i] = dict(data)
+
+        ttff_data_df = DataFrame(ttff_dict).transpose()
+        ttff_data_df = ttff_data_df[[
+            'ttff_loop', 'ttff_sec', 'ttff_pe', 'ttff_haccu'
+        ]]
         try:
-            df_ttff_ffpe = DataFrame(
-                parse_gpstool_ttfflog_to_df(latest_gps_api_log))
+            df_ttff_ffpe = merge(df_ttff_ffpe,
+                                 ttff_data_df,
+                                 left_on='loop',
+                                 right_on='ttff_loop')
+        except: # pylint: disable=bare-except
+            self.log.warning("Can't merge ttff_data and df.")
+        df_ttff_ffpe['test_case'] = json_tag
 
-            # Add test case, TTFF and FFPE data into the dataframe.
-            ttff_dict = {}
-            for i in ttff_data:
-                data = ttff_data[i]._asdict()
-                ttff_dict[i] = dict(data)
-            ttff_time = []
-            ttff_pe = []
-            test_case = []
-            for value in ttff_dict.values():
-                ttff_time.append(value['ttff_sec'])
-                ttff_pe.append(value['ttff_pe'])
-                test_case.append(json_tag)
-            no_test_case = len(test_case)
-            self.log.info(f'test_case length {no_test_case}')
+        json_file = f'gps_log_{json_tag}.json'
+        ttff_data_json_file = f'gps_log_{json_tag}_ttff_data.json'
+        json_path = os.path.join(gps_log_path, json_file)
+        ttff_data_json_path = os.path.join(gps_log_path, ttff_data_json_file)
+        # Save dataframe into json file.
+        df_ttff_ffpe.to_json(json_path, orient='table', index=False)
+        ttff_data_df.to_json(ttff_data_json_path, orient='table', index=False)
 
-            df_ttff_ffpe['test_case'] = test_case
-            df_ttff_ffpe['ttff_sec'] = ttff_time
-            df_ttff_ffpe['ttff_pe'] = ttff_pe
-            json_file = f'gps_log_{json_tag}.json'
-            json_path = os.path.join(gps_log_path, json_file)
-            # Save dataframe into json file.
-            df_ttff_ffpe.to_json(json_path, orient='table', index=False)
-        except ValueError:
-            self.log.warning('Can\'t create the parsed the log data in file.')
-
-    def hot_start_ttff_ffpe_process(self,
-                                    iteration,
-                                    wait):
+    def hot_start_ttff_ffpe_process(self, iteration, wait):
+        """
+        Function to run hot start TTFF/FFPE by GTW GPSTool
+        Args:
+            iteration: TTFF/FFPE test iteration.
+                type, integer.
+            wait: wait time before the hot start TTFF/FFPE test.
+                type, integer.
+        """
         # Start GTW GPStool.
         self.dut.log.info("Restart GTW GPSTool")
         start_gnss_by_gtw_gpstool(self.dut, state=True)
@@ -342,15 +351,15 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         test_type_pe = test_type('Hot Start', self.hs_ttff_pecriteria)
 
         # Verify hot start TTFF results
-        begin_time = self.hot_start_ttff_ffpe_process(iteration,wait)
+        begin_time = self.hot_start_ttff_ffpe_process(iteration, wait)
         try:
             ttff_data = process_ttff_by_gtw_gpstool(self.dut, begin_time,
-                                                self.simulator_location)
-        except:
+                                                    self.simulator_location)
+        except: # pylint: disable=bare-except
             self.log.warning('Fail to acquire TTFF data. Retry again.')
-            begin_time = self.hot_start_ttff_ffpe_process(iteration,wait)
+            begin_time = self.hot_start_ttff_ffpe_process(iteration, wait)
             ttff_data = process_ttff_by_gtw_gpstool(self.dut, begin_time,
-                                                self.simulator_location)
+                                                    self.simulator_location)
 
         # Stop GTW GPSTool
         self.dut.log.info("Stop GTW GPSTool")
@@ -424,6 +433,7 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         gnss_pwr_params = (self.gnss_simulator_power_level)
         previous_pwr_lvl = gnss_pwr_params
         current_pwr_lvl = ()
+        return_pwr_lvl = {}
         for j, gnss_pwr_params in enumerate(sweep_ls[1]):
             json_tag = f'{title}_'
             current_pwr_lvl = gnss_pwr_params
@@ -445,9 +455,14 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
             # GNSS hot start test
             if not self.gnss_hot_start_ttff_ffpe_test(iteration, sweep_enable,
                                                       json_tag, wait):
-                return False, previous_pwr_lvl
+                result = False
+                break
             previous_pwr_lvl = current_pwr_lvl
-        return True, previous_pwr_lvl
+        result = True
+        for i, pwr in enumerate(previous_pwr_lvl):
+            key = f'{sweep_ls[0][i].get("sat").upper()}_{sweep_ls[0][i].get("band").upper()}'
+            return_pwr_lvl.setdefault(key, pwr)
+        return result, return_pwr_lvl
 
     def gnss_init_power_setting(self, first_wait=180):
         """
@@ -480,28 +495,30 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
 
         return ret, gnss_pwr_lvl
 
-    def start_gnss_and_wait(self, wait=60):
-        """
-        The process of enable gnss and spend the wait time for GNSS to
-        gather enoung information that make sure the stability of testing.
+    #def start_gnss_and_wait(self, wait=60):
+    #    """
+    #    The process of enable gnss and spend the wait time for GNSS to
+    #    gather enoung information that make sure the stability of testing.
 
-        Args:
-            wait: wait time between power sweep.
-                Type, int.
-                Default, 60.
-        """
-        # Create log path for waiting section logs of GPStool.
-        gnss_wait_log_dir = os.path.join(self.gnss_log_path, 'GNSS_wait')
 
-        # Enable GNSS to receive satellites' signals for "wait_between_pwr" seconds.
-        self.log.info('Enable GNSS for searching satellites')
-        start_gnss_by_gtw_gpstool(self.dut, state=True)
-        self.log.info(f'Wait for {wait} seconds')
-        sleep(wait)
-
-        # Stop GNSS and pull the logs.
-        start_gnss_by_gtw_gpstool(self.dut, state=False)
-        get_gpstool_logs(self.dut, gnss_wait_log_dir, False)
+#
+#    Args:
+#        wait: wait time between power sweep.
+#            Type, int.
+#            Default, 60.
+#    """
+#    # Create log path for waiting section logs of GPStool.
+#    gnss_wait_log_dir = os.path.join(self.gnss_log_path, 'GNSS_wait')
+#
+#    # Enable GNSS to receive satellites' signals for "wait_between_pwr" seconds.
+#    self.log.info('Enable GNSS for searching satellites')
+#    start_gnss_by_gtw_gpstool(self.dut, state=True)
+#    self.log.info(f'Wait for {wait} seconds')
+#    sleep(wait)
+#
+#    # Stop GNSS and pull the logs.
+#    start_gnss_by_gtw_gpstool(self.dut, state=False)
+#    get_gpstool_logs(self.dut, gnss_wait_log_dir, False)
 
     def cell_power_sweep(self):
         """
