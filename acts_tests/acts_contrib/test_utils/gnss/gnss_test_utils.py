@@ -38,6 +38,7 @@ from acts.controllers.android_device import SL4A_APK_NAME
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.tel import tel_logging_utils as tlutils
 from acts_contrib.test_utils.tel import tel_test_utils as tutils
+from acts_contrib.test_utils.gnss import gnssstatus_utils
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationCommandBuilder
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 from acts.utils import get_current_epoch_time
@@ -809,7 +810,8 @@ def process_gnss_by_gtw_gpstool(ad,
                                 criteria,
                                 type="gnss",
                                 clear_data=True,
-                                meas_flag=False):
+                                meas_flag=False,
+                                freq=0):
     """Launch GTW GPSTool and Clear all GNSS aiding data
        Start GNSS tracking on GTW_GPSTool.
 
@@ -821,6 +823,7 @@ def process_gnss_by_gtw_gpstool(ad,
         set to True.
         meas_flag: True to enable GnssMeasurement. False is not to. Default
         set to False.
+        freq: An integer to set location update frequency. Default set to 0.
 
     Returns:
         True: First fix TTFF are within criteria.
@@ -838,7 +841,7 @@ def process_gnss_by_gtw_gpstool(ad,
             clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start %s on GTW_GPSTool - attempt %d" % (type.upper(),
                                                               i+1))
-        start_gnss_by_gtw_gpstool(ad, state=True, type=type, meas=meas_flag)
+        start_gnss_by_gtw_gpstool(ad, state=True, type=type, meas=meas_flag, freq=freq)
         for _ in range(10 + criteria):
             logcat_results = ad.search_logcat("First fixed", begin_time)
             if logcat_results:
@@ -910,7 +913,8 @@ def gnss_tracking_via_gtw_gpstool(ad,
                                   criteria,
                                   type="gnss",
                                   testtime=60,
-                                  meas_flag=False):
+                                  meas_flag=False,
+                                  freq=0):
     """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
 
     Args:
@@ -920,9 +924,10 @@ def gnss_tracking_via_gtw_gpstool(ad,
         testtime: Tracking test time for minutes. Default set to 60 minutes.
         meas_flag: True to enable GnssMeasurement. False is not to. Default
         set to False.
+        freq: An integer to set location update frequency. Default set to 0.
     """
     process_gnss_by_gtw_gpstool(
-        ad, criteria=criteria, type=type, meas_flag=meas_flag)
+        ad, criteria=criteria, type=type, meas_flag=meas_flag, freq=freq)
     ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
                                                            testtime))
     begin_time = get_current_epoch_time()
@@ -932,7 +937,7 @@ def gnss_tracking_via_gtw_gpstool(ad,
     start_gnss_by_gtw_gpstool(ad, state=False, type=type)
 
 
-def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
+def parse_gtw_gpstool_log(ad, true_position, type="gnss", gnssstatus=False):
     """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
     test_run_info for ACTS plugin to parse and display on MobileHarness as
     Property.
@@ -942,7 +947,9 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
         true_position: Coordinate as [latitude, longitude] to calculate
         position error.
         type: Different API for location fix. Use gnss/flp/nmea
+        gnssstatus: Validate gnssstatus or not
     """
+    gnssstatus_count = 0
     test_logfile = {}
     track_data = {}
     ant_top4_cn = 0
@@ -971,6 +978,9 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
         raise signals.TestError("Failed to get test log file in device.")
     lines = ad.adb.shell("cat %s" % test_logfile).split("\n")
     for line in lines:
+        if gnssstatus and line.startswith('Fix'):
+            gnssstatus_utils.parse_gnssstatus(line, ad)
+            gnssstatus_count += 1
         if "Antenna_History Avg Top4" in line:
             ant_top4_cn = float(line.split(":")[-1].strip())
         elif "Antenna_History Avg" in line:
@@ -996,6 +1006,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
                                                  ant_cn=ant_cn,
                                                  base_top4cn=base_top4_cn,
                                                  base_cn=base_cn)
+    ad.log.info("Total %d gnssstatus samples verified" %gnssstatus_count)
     ad.log.debug(track_data)
     prop_basename = "TestResult %s_tracking_" % type.upper()
     time_list = sorted(track_data.keys())
