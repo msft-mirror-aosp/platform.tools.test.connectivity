@@ -15,10 +15,11 @@
 #   limitations under the License.
 import re
 from acts import signals
+from collections import defaultdict
 
 SVID_RANGE = {
     'GPS': [(1, 32)],
-    'SBAS': [(120, 192)],
+    'SBA': [(120, 192)],
     'GLO': [(1, 24), (93, 106)],
     'QZS': [(193, 200)],
     'BDS': [(1, 63)],
@@ -27,24 +28,71 @@ SVID_RANGE = {
 }
 
 
-def parse_gnssstatus(line, ad):
-    """Parse gnssstatus with given raw line.
+def validate_gnssstatus(gnss_status_obj, ad):
+    """validate gnssstatus with given GnssStatus object.
 
     Args:
-        line: A string identify the gnssstatus raw line
+        gnss_status_obj: A GnssStatus object
         ad: An android device obj
     """
-    gnss_status_obj = GnssStatus(line)
+    gnss_status_obj.validate_gnssstatus()
     test_res = gnss_status_obj.get_gnssstatus_health()
     if test_res != '':
-        ad.log.info(line)
+        ad.log.info(gnss_status_obj.raw_message)
         raise signals.TestFailure('Gnsstatus validate failed:\n%s' % test_res)
 
 
+class GnssSvidContainer:
+    """A class to hold the satellite svid information
+    Attributes:
+        used_in_fix:
+            A dict contains unique svid used in fixing location
+        not_used_in_fix:
+            A dict contains unique svid not used in fixing location
+    """
+    def __init__(self):
+        self.used_in_fix = defaultdict(set)
+        self.not_used_in_fix = defaultdict(set)
+
+    def add_satellite(self, gnss_status):
+        """Add satellite svid into container
+        According to the attributes gnss_status.used_in_fix
+            True: add svid into self.used_in_fix container
+            False: add svid into self.not_used_in_fix container
+
+        Args:
+            gnss_status: A GnssStatus object
+        """
+        key = f"{gnss_status.constellation}_{gnss_status.frequency_band}"
+        if gnss_status.used_in_fix:
+            self.used_in_fix[key].add(gnss_status.svid)
+        else:
+            self.not_used_in_fix[key].add(gnss_status.svid)
+
+
 class GnssStatus:
-    """GnssStatus object, it will create an obj with a raw gnssstatus line."""
-    gnssstatus_re = (r'Type: (.*) SV: (.*) C/No: (.*), (.*) Elevation: (.*) '
-                     r'Azimuth: (.*) Signal')
+    """GnssStatus object, it will create an obj with a raw gnssstatus line.
+
+    Attributes:
+        raw_message: (string) The raw log from GSPTool
+            example:
+                Fix: true Type: NIC SV: 4 C/No: 45.10782, 40.9 Elevation: 78.0 Azimuth: 291.0
+                Signal: L5 Frequency: 1176.45 EPH: true ALM: false
+
+                Fix: false Type: GPS SV: 27 C/No: 34.728134, 30.5 Elevation: 76.0 Azimuth: 15.0
+                Signal: L1 Frequency: 1575.42 EPH: true ALM: true
+        used_in_fix: (boolean) Whether or not this satellite info is used to fix location
+        constellation: (string) The constellation type i.e. GPS
+        svid: (int) The unique id of the constellation
+        cn: (float) The C/No value from antenna
+        base_cn: (float) The C/No value from baseband
+        elev: (float) The value of elevation
+        azim: (float) The value of azimuth
+        frequency_band: (string) The frequency_type of the constellation i.e. L1 / L5
+    """
+
+    gnssstatus_re = (r'Fix: (.*) Type: (.*) SV: (.*) C/No: (.*), (.*) '
+                     r'Elevation: (.*) Azimuth: (.*) Signal: (.*) Frequency')
     failures = []
 
     def __init__(self, gnssstatus_raw):
@@ -52,15 +100,17 @@ class GnssStatus:
         if not status_res:
             raise signals.TestFailure('Fail to create GnssStatus obj: %s' %
                                     gnssstatus_raw)
-        self.sv = status_res.group(1)
-        self.svid = int(status_res.group(2))
-        self.cn = float(status_res.group(3))
-        self.base_cn = float(status_res.group(4))
-        self.elev = float(status_res.group(5))
-        self.azim = float(status_res.group(6))
-        self._validate_gnssstatus()
+        self.raw_message = gnssstatus_raw
+        self.used_in_fix = status_res.group(1).lower() == 'true'
+        self.constellation = status_res.group(2)
+        self.svid = int(status_res.group(3))
+        self.cn = float(status_res.group(4))
+        self.base_cn = float(status_res.group(5))
+        self.elev = float(status_res.group(6))
+        self.azim = float(status_res.group(7))
+        self.frequency_band = status_res.group(8)
 
-    def _validate_gnssstatus(self):
+    def validate_gnssstatus(self):
         """A validate function for each property."""
         self._validate_sv()
         self._validate_cn()
@@ -69,14 +119,14 @@ class GnssStatus:
 
     def _validate_sv(self):
         """A validate function for SV ID."""
-        if not SVID_RANGE.get(self.sv):
-            raise signals.TestError('Satellite identify fail: %s' % self.sv)
+        if not SVID_RANGE.get(self.constellation):
+            raise signals.TestError('Satellite identify fail: %s' % self.constellation)
 
-        for id_range in SVID_RANGE[self.sv]:
+        for id_range in SVID_RANGE[self.constellation]:
             if id_range[0] <= self.svid <= id_range[1]:
                 break
         else:
-            fail_details = '%s ID %s not in SV Range' % (self.sv, self.svid)
+            fail_details = '%s ID %s not in SV Range' % (self.constellation, self.svid)
             self.failures.append(fail_details)
 
     def _validate_cn(self):
