@@ -98,7 +98,7 @@ class GnssFunctionTest(BaseTestClass):
                       "gnss_init_error_allowlist", "pixel_lab_location",
                       "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
-                      "brcm_error_log_allowlist"]
+                      "brcm_error_log_allowlist", "onchip_interval"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -1378,3 +1378,37 @@ class GnssFunctionTest(BaseTestClass):
             standalone_cs_criteria.
         """
         self.ttff_with_assist("csa", self.standalone_cs_criteria)
+
+    @test_tracker_info(uuid="2dd0ed34-d06f-40c3-9e5d-e1a957924e81")
+    def test_host_gnssstatus_validation(self):
+        """Verify GnssStatus integrity during host tracking for 1 minute.
+
+        Steps:
+            1. Launch GTW_GPSTool.
+            2. GNSS tracking for 1 minute with 1 second frequency.
+            3. Validate all the GnssStatus raw data.(SV, SVID, Elev, Azim)
+
+        Expected Results:
+            GnssStatus obj should return no failures
+        """
+        gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
+                                      type="gnss", testtime=1)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss", gnssstatus=True)
+
+    @test_tracker_info(uuid="c85da9af-112f-4426-a80a-3e3f9c8df0d4")
+    def test_onchip_gnssstatus_validation(self):
+        """Verify GnssStatus integrity during onchip tracking for 1 minute.
+
+        Steps:
+            1. Launch GTW_GPSTool.
+            2. GNSS tracking for 1 minute with 6 second frequency.
+            3. Validate all the GnssStatus raw data.(SV, SVID, Elev, Azim)
+
+        Expected Results:
+            GnssStatus obj should return no failures
+        """
+        if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Not BRCM chipset. Skip the test.")
+        gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
+                                      type="gnss", testtime=1, freq=self.onchip_interval)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss", gnssstatus=True)
