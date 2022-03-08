@@ -34,7 +34,6 @@ from acts.libs.proc import job
 from acts.utils import get_fuchsia_mdns_ipv6_address
 
 from acts.controllers.fuchsia_lib.audio_lib import FuchsiaAudioLib
-from acts.controllers.fuchsia_lib.backlight_lib import FuchsiaBacklightLib
 from acts.controllers.fuchsia_lib.basemgr_lib import FuchsiaBasemgrLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
@@ -45,22 +44,13 @@ from acts.controllers.fuchsia_lib.bt.hfp_lib import FuchsiaHfpLib
 from acts.controllers.fuchsia_lib.bt.rfcomm_lib import FuchsiaRfcommLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
 from acts.controllers.fuchsia_lib.ffx import FFX
-from acts.controllers.fuchsia_lib.gpio_lib import FuchsiaGpioLib
-from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
-from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
-from acts.controllers.fuchsia_lib.i2c_lib import FuchsiaI2cLib
-from acts.controllers.fuchsia_lib.input_report_lib import FuchsiaInputReportLib
-from acts.controllers.fuchsia_lib.kernel_lib import FuchsiaKernelLib
 from acts.controllers.fuchsia_lib.lib_controllers.netstack_controller import NetstackController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
-from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
-from acts.controllers.fuchsia_lib.ram_lib import FuchsiaRamLib
 from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
-from acts.controllers.fuchsia_lib.sysinfo_lib import FuchsiaSysInfoLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
@@ -369,15 +359,6 @@ class FuchsiaDevice:
         self.rfcomm_lib = FuchsiaRfcommLib(self.address, self.test_counter,
                                            self.client_id)
 
-        # Grab commands from FuchsiaLightLib
-        self.light_lib = FuchsiaLightLib(self.address, self.test_counter,
-                                         self.client_id)
-
-        # Grab commands from FuchsiaBacklightLib
-        self.backlight_lib = FuchsiaBacklightLib(self.address,
-                                                 self.test_counter,
-                                                 self.client_id)
-
         # Grab commands from FuchsiaBasemgrLib
         self.basemgr_lib = FuchsiaBasemgrLib(self.address, self.test_counter,
                                              self.client_id)
@@ -394,33 +375,6 @@ class FuchsiaDevice:
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
 
-        # Grab commands from FuchsiaGpioLib
-        self.gpio_lib = FuchsiaGpioLib(self.address, self.test_counter,
-                                       self.client_id)
-
-        # Grab commands from FuchsiaHardwarePowerStatecontrolLib
-        self.hardware_power_statecontrol_lib = (
-            FuchsiaHardwarePowerStatecontrolLib(self.address,
-                                                self.test_counter,
-                                                self.client_id))
-
-        # Grab commands from FuchsiaHwinfoLib
-        self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
-                                           self.client_id)
-
-        # Grab commands from FuchsiaI2cLib
-        self.i2c_lib = FuchsiaI2cLib(self.address, self.test_counter,
-                                     self.client_id)
-
-        # Grab commands from FuchsiaInputReportLib
-        self.input_report_lib = FuchsiaInputReportLib(self.address,
-                                                      self.test_counter,
-                                                      self.client_id)
-
-        # Grab commands from FuchsiaKernelLib
-        self.kernel_lib = FuchsiaKernelLib(self.address, self.test_counter,
-                                           self.client_id)
-
         # Grab commands from FuchsiaLoggingLib
         self.logging_lib = FuchsiaLoggingLib(self.address, self.test_counter,
                                              self.client_id)
@@ -429,10 +383,6 @@ class FuchsiaDevice:
         self.netstack_lib = FuchsiaNetstackLib(self.address, self.test_counter,
                                                self.client_id)
 
-        # Grab commands from FuchsiaLightLib
-        self.ram_lib = FuchsiaRamLib(self.address, self.test_counter,
-                                     self.client_id)
-
         # Grab commands from FuchsiaProfileServerLib
         self.sdp_lib = FuchsiaProfileServerLib(self.address, self.test_counter,
                                                self.client_id)
@@ -440,10 +390,6 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaRegulatoryRegionLib
         self.regulatory_region_lib = FuchsiaRegulatoryRegionLib(
             self.address, self.test_counter, self.client_id)
-
-        # Grab commands from FuchsiaSysInfoLib
-        self.sysinfo_lib = FuchsiaSysInfoLib(self.address, self.test_counter,
-                                             self.client_id)
 
         # Grab commands from FuchsiaSessionManagerLib
         self.session_manager_lib = FuchsiaSessionManagerLib(self)
