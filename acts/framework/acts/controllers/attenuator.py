@@ -155,8 +155,8 @@ def get_attenuators_for_device(device_attenuator_configs, attenuators,
     for device_attenuator_config in device_attenuator_configs:
         for attenuator_port in device_attenuator_config[attenuator_key]:
             for attenuator in attenuators:
-                if (attenuator.instrument.address
-                        == device_attenuator_config['Address']
+                if (attenuator.instrument.address ==
+                        device_attenuator_config['Address']
                         and attenuator.idx is attenuator_port):
                     attenuator_list.append(attenuator)
     return attenuator_list
@@ -264,6 +264,7 @@ class Attenuator(object):
     the physical implementation and allows the user to think only of attenuators
     regardless of their location.
     """
+
     def __init__(self, instrument, idx=0, offset=0):
         """This is the constructor for Attenuator
 
@@ -309,7 +310,10 @@ class Attenuator(object):
             raise ValueError(
                 'Attenuator Value+Offset greater than Max Attenuation!')
 
-        self.instrument.set_atten(self.idx, value + self.offset, strict, retry)
+        self.instrument.set_atten(self.idx,
+                                  value + self.offset,
+                                  strict=strict,
+                                  retry=retry)
 
     def get_atten(self, retry=False):
         """Returns the attenuation as a float, normalized by the offset."""
@@ -333,6 +337,7 @@ class AttenuatorGroup(object):
     convenience to the user and avoid re-implementation of helper functions and
     small loops scattered throughout user code.
     """
+
     def __init__(self, name=''):
         """This constructor for AttenuatorGroup
 
