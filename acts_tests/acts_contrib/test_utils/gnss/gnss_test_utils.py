@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 import time
 import re
 import os
@@ -21,6 +20,7 @@ import math
 import shutil
 import fnmatch
 import posixpath
+import subprocess
 import tempfile
 import zipfile
 from collections import namedtuple
@@ -304,6 +304,7 @@ def _init_device(ad):
     init_gtw_gpstool(ad)
     if not is_mobile_data_on(ad):
         set_mobile_data(ad, True)
+    disable_ramdump(ad)
 
 
 def prepare_gps_overlay(ad):
@@ -1068,7 +1069,7 @@ def validate_location_fix_rate(ad, location_reported, run_time, fix_rate_criteri
 
     fail_message = (f"Fail to meet criteria. Expect to have at least {pass_criteria} location count"
                     f" Actual: {actual_location_count}")
-    asserts.assert_true(pass_criteria < actual_location_count, msg=fail_message)
+    asserts.assert_true(pass_criteria <= actual_location_count, msg=fail_message)
 
 
 def _log_svid_info(container, log_prefix, ad):
@@ -2591,3 +2592,165 @@ def push_lhd_overlay(ad):
         f.write(lhd_content)
     ad.log.info("Push lhd_overlay to device")
     ad.adb.push(file_path, overlay_path)
+
+
+def disable_ramdump(ad):
+    """Disable ramdump so device will reboot when about to enter ramdump
+
+    Once device enter ramdump, it will take a while to generate dump file
+    The process may take a while and block all the tests.
+    By disabling the ramdump mode, device will reboot instead of entering ramdump mode
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    ad.log.info("Enter bootloader mode")
+    ad.stop_services()
+    ad.adb.reboot("bootloader")
+    for _ in range(1,9):
+        if ad.is_bootloader:
+            break
+        time.sleep(1)
+    else:
+        raise signals.TestFailure("can't enter bootloader mode")
+    ad.log.info("Disable ramdump")
+    ad.fastboot.oem("ramdump disable")
+    ad.fastboot.reboot()
+    ad.wait_for_boot_completion()
+    ad.root_adb()
+    tutils.bring_up_sl4a(ad)
+    ad.start_adb_logcat()
+
+
+def deep_suspend_device(ad):
+    """Force DUT to enter deep suspend mode
+
+    When DUT is connected to PCs, it won't enter deep suspend mode
+    by pressing power button.
+
+    To force DUT enter deep suspend mode, we need to send the
+    following command to DUT  "echo mem >/sys/power/state"
+
+    To make sure the DUT stays in deep suspend mode for a while,
+    it will send the suspend command 3 times with 15s interval
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    ad.log.info("Ready to go to deep suspend mode")
+    begin_time = get_device_time(ad)
+    ad.droid.goToSleepNow()
+    ensure_power_manager_is_dozing(ad, begin_time)
+    ad.stop_services()
+    try:
+        command = "echo mem >/sys/power/state"
+        for i in range(1, 4):
+            ad.log.debug(f"Send deep suspend command round {i}")
+            ad.adb.shell(command)
+            # sleep here to ensure the device stays enough time in deep suspend mode
+            time.sleep(15)
+            if not _is_device_enter_deep_suspend(ad):
+                raise signals.TestFailure("Device didn't enter deep suspend mode")
+        ad.log.info("Wake device up now")
+    except Exception:
+        # when exception happen, it's very likely the device is rebooting
+        # to ensure the test can go on, wait for the device is ready
+        ad.log.warn("Device may be rebooting, wait for it")
+        ad.wait_for_boot_completion()
+        ad.root_adb()
+        raise
+    finally:
+        tutils.bring_up_sl4a(ad)
+        ad.start_adb_logcat()
+        ad.droid.wakeUpNow()
+
+
+def get_device_time(ad):
+    """Get current datetime from device
+
+    Args:
+        ad: An AndroidDevice object.
+
+    Returns:
+        datetime object
+    """
+    result = ad.adb.shell("date +\"%Y-%m-%d %T.%3N\"")
+    return datetime.strptime(result, "%Y-%m-%d %H:%M:%S.%f")
+
+
+def ensure_power_manager_is_dozing(ad, begin_time):
+    """Check if power manager is in dozing
+    When device is sleeping, power manager should goes to doze mode.
+    To ensure that, we check the log every 1 second (maximum to 3 times)
+
+    Args:
+        ad: An AndroidDevice object.
+        begin_time: datetime, used as the starting point to search log
+    """
+    keyword = "PowerManagerService: Dozing"
+    ad.log.info(begin_time)
+    for i in range(0,3):
+        result = ad.search_logcat(keyword, begin_time)
+        if result:
+            break
+        ad.log.debug("Power manager is not dozing... retry in 1 second")
+        time.sleep(1)
+    else:
+        ad.log.warn("Power manager didn't enter dozing")
+
+
+
+def _is_device_enter_deep_suspend(ad):
+    """Check device has been enter deep suspend mode
+
+    If device has entered deep suspend mode, we should be able to find keyword
+    "suspend entry (deep)"
+
+    Args:
+        ad: An AndroidDevice object.
+
+    Returns:
+        bool: True / False -> has / has not entered deep suspend
+    """
+    cmd = f"adb -s {ad.serial} logcat -d|grep \"suspend entry (deep)\""
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, shell=True)
+    result, _ = process.communicate()
+    ad.log.debug(f"suspend result = {result}")
+
+    return bool(result)
+
+
+def check_location_report_interval(ad, location_reported_time_src, total_seconds, tolerance):
+    """Validate the interval between two location reported time
+    Normally the interval should be around 1 second but occasionally it may up to nearly 2 seconds
+    So we set up a tolerance - 99% of reported interval should be less than 1.3 seconds
+
+    We validate the interval backward, because the wrong interval mostly happened at the end
+    Args:
+        ad: An AndroidDevice object.
+        location_reported_time_src: A list of reported time(in string) from GPS tool
+        total_seconds: (int) how many seconds has the GPS been enabled
+        tolerance: (float) set how many ratio of error should be accepted
+                   if we want to set tolerance to be 1% then pass 0.01 as tolerance value
+    """
+    ad.log.info("Checking location report frequency")
+    error_count = 0
+    error_tolerance = max(1, int(total_seconds * tolerance))
+    expected_longest_interval = 1.3
+    location_reported_time = list(map(lambda x: datetime.strptime(x, "%Y/%m/%d %H:%M:%S.%f"),
+                                      location_reported_time_src))
+    location_reported_time = sorted(location_reported_time)
+    last_gps_report_time = location_reported_time[-1]
+    ad.log.debug("Location report time: %s" % location_reported_time)
+
+    for reported_time in reversed(location_reported_time):
+        time_diff = last_gps_report_time - reported_time
+        if time_diff.total_seconds() > expected_longest_interval:
+            error_count += 1
+        last_gps_report_time = reported_time
+
+    if error_count > error_tolerance:
+        fail_message = (f"Interval longer than {expected_longest_interval}s "
+                        f"exceed tolerance count: {error_tolerance}, error count: {error_count}")
+        ad.log.error(fail_message)
