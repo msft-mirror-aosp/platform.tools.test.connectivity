@@ -41,13 +41,13 @@ def _log_line_func(log, timestamp_tracker):
     return log_line
 
 
-def start_syslog(serial,
-                 base_path,
-                 ip_address,
-                 ssh_username,
-                 ssh_config,
-                 ssh_port=22,
-                 extra_params=''):
+def create_syslog_process(serial,
+                          base_path,
+                          ip_address,
+                          ssh_username,
+                          ssh_config,
+                          ssh_port=22,
+                          extra_params=''):
     """Creates a FuchsiaSyslogProcess that automatically attempts to reconnect.
 
     Args:
