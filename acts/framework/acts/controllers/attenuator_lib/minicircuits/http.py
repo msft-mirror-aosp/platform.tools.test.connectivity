@@ -35,6 +35,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
     With the exception of HTTP-specific commands, all functionality is defined
     by the AttenuatorInstrument class.
     """
+
     def __init__(self, num_atten=1):
         super(AttenuatorInstrument, self).__init__(num_atten)
         self._ip_address = None
@@ -111,10 +112,11 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
+        adjusted_value = min(max(0, value), self.max_atten)
         att_req = urllib.request.urlopen(
             'http://{}:{}/CHAN:{}:SETATT:{}'.format(self._ip_address,
                                                     self._port, idx + 1,
-                                                    value),
+                                                    adjusted_value),
             timeout=self._timeout)
         att_resp = att_req.read().decode('utf-8').strip()
         if att_resp != '1':
