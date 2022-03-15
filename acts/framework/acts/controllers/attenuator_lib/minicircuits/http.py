@@ -59,7 +59,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
 
         att_req = urllib.request.urlopen('http://{}:{}/MN?'.format(
             self._ip_address, self._port))
-        config_str = att_req.read().decode('utf-8')
+        config_str = att_req.read().decode('utf-8').strip()
         if not config_str.startswith('MN='):
             raise attenuator.InvalidDataError(
                 'Attenuator returned invalid data. Attenuator returned: {}'.
@@ -117,11 +117,11 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
                                                     self._port, idx + 1,
                                                     adjusted_value),
             timeout=self._timeout)
-        att_resp = att_req.read().decode('utf-8')
+        att_resp = att_req.read().decode('utf-8').strip()
         if att_resp != '1':
             raise attenuator.InvalidDataError(
-                'Attenuator returned invalid data. Attenuator returned: {}'.
-                format(att_resp))
+                f"Attenuator returned invalid data. Attenuator returned: {att_resp}"
+            )
 
     def get_atten(self, idx, **_):
         """Returns the current attenuation of the attenuator at the given index.
@@ -143,7 +143,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             'http://{}:{}/CHAN:{}:ATT?'.format(self._ip_address, self.port,
                                                idx + 1),
             timeout=self._timeout)
-        att_resp = att_req.read().decode('utf-8')
+        att_resp = att_req.read().decode('utf-8').strip()
         try:
             atten_val = float(att_resp)
         except:
