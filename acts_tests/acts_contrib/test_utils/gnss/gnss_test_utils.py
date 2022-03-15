@@ -47,6 +47,7 @@ from acts_contrib.test_utils.gnss.gnss_defines import BCM_GPS_XML_PATH
 from acts_contrib.test_utils.gnss.gnss_defines import BCM_NVME_STO_PATH
 
 WifiEnums = wutils.WifiEnums
+UPLOAD_TO_SPONGE_PREFIX = "TestResult "
 PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
     "/storage/emulated/0/Android/data/com.android.gpstool/files/")
@@ -948,6 +949,10 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=Fa
         position error.
         type: Different API for location fix. Use gnss/flp/nmea
         validate_gnssstatus: Validate gnssstatus or not
+
+    Returns:
+        A dict of location reported from GPSTool
+            {<utc_time>: TRACK_REPORT, ...}
     """
     gnssstatus_count = 0
     test_logfile = {}
@@ -1012,7 +1017,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=Fa
                                                  base_cn=base_cn)
     ad.log.info("Total %d gnssstatus samples verified" %gnssstatus_count)
     ad.log.debug(track_data)
-    prop_basename = "TestResult %s_tracking_" % type.upper()
+    prop_basename = UPLOAD_TO_SPONGE_PREFIX + f"{type.upper()}_tracking_"
     time_list = sorted(track_data.keys())
     l5flag_list = [track_data[key].l5flag for key in time_list]
     pe_list = [float(track_data[key].pe) for key in time_list]
@@ -1032,6 +1037,38 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=Fa
     ad.log.info(prop_basename+"Base_AvgTop4Signal %.1f" % base_top4cn_list[-1])
     ad.log.info(prop_basename+"Base_AvgSignal %.1f" % base_cn_list[-1])
     _log_svid_info(gnss_svid_container, prop_basename, ad)
+
+    return track_data
+
+def validate_location_fix_rate(ad, location_reported, run_time, fix_rate_criteria):
+    """Check location reported count
+
+    The formula is "total_fix_points / (run_time * 60)"
+    When the result is lower than fix_rate_criteria, fail the test case
+
+    Args:
+        ad: AndroidDevice object
+        location_reported: (Enumerate) Contains the reported location
+        run_time: (int) How many minutes do we need to verify
+        fix_rate_criteria: The threshold of the pass criteria
+            if we expect fix rate to be 99%, then fix_rate_criteria should be 0.99
+    """
+    ad.log.info("Validating fix rate")
+    pass_criteria = run_time * 60 * fix_rate_criteria
+    actual_location_count = len(location_reported)
+
+    # The fix rate may exceed 100% occasionally, to standardlize the result
+    # set maximum fix rate to 100%
+    actual_fix_rate = min(1, (actual_location_count / (run_time * 60)))
+    actual_fix_rate_percentage = f"{actual_fix_rate:.0%}"
+
+    log_prefix = UPLOAD_TO_SPONGE_PREFIX + f"FIX_RATE_"
+    ad.log.info("%sresult %s" % (log_prefix, actual_fix_rate_percentage))
+    ad.log.debug("Actual location count %s" % actual_location_count)
+
+    fail_message = (f"Fail to meet criteria. Expect to have at least {pass_criteria} location count"
+                    f" Actual: {actual_location_count}")
+    asserts.assert_true(pass_criteria < actual_location_count, msg=fail_message)
 
 
 def _log_svid_info(container, log_prefix, ad):
