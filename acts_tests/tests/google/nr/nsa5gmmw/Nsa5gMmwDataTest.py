@@ -35,6 +35,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_detectio
 from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_data_utils import check_network_validation_fail
 from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
+from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
 from acts_contrib.test_utils.tel.tel_data_utils import verify_for_network_callback
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
@@ -346,6 +347,26 @@ class Nsa5gMmwDataTest(TelephonyBaseTest):
         if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='mmwave'):
             return False
         return airplane_mode_test(self.log, self.android_devices[0])
+
+
+    @test_tracker_info(uuid="b99967b9-96da-4f1b-90cb-6dbd6578236b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_reboot(self):
+        """Test 5G NSA MMWAVE service availability after reboot.
+
+        Ensure phone is on 5G NSA MMWAVE.
+        Ensure phone attach, data on, WiFi off and verify Internet.
+        Reboot Device.
+        Verify Network Connection.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='mmwave'):
+            return False
+        if not verify_internet_connection(self.log, self.android_devices[0]):
+            return False
+        return reboot_test(self.log, self.android_devices[0])
 
 
     """ Tests End """

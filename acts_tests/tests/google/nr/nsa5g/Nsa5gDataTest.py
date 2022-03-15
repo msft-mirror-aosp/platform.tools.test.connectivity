@@ -464,7 +464,16 @@ class Nsa5gDataTest(TelephonyBaseTest):
     @test_tracker_info(uuid="091cde37-0bac-4399-83aa-cbd5a83b07a1")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_reboot(self):
-        """Test 5G NSA service availability after reboot."""
+        """Test 5G NSA service availability after reboot.
+
+        Ensure phone is on 5G NSA.
+        Ensure phone attach, data on, WiFi off and verify Internet.
+        Reboot Device.
+        Verify Network Connection.
+
+        Returns:
+            True if pass; False if fail.
+        """
         if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='nsa'):
             return False
         if not verify_internet_connection(self.log, self.android_devices[0]):
