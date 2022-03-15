@@ -937,7 +937,7 @@ def gnss_tracking_via_gtw_gpstool(ad,
     start_gnss_by_gtw_gpstool(ad, state=False, type=type)
 
 
-def parse_gtw_gpstool_log(ad, true_position, type="gnss", gnssstatus=False):
+def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=False):
     """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
     test_run_info for ACTS plugin to parse and display on MobileHarness as
     Property.
@@ -947,7 +947,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", gnssstatus=False):
         true_position: Coordinate as [latitude, longitude] to calculate
         position error.
         type: Different API for location fix. Use gnss/flp/nmea
-        gnssstatus: Validate gnssstatus or not
+        validate_gnssstatus: Validate gnssstatus or not
     """
     gnssstatus_count = 0
     test_logfile = {}
@@ -977,10 +977,14 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", gnssstatus=False):
     if not test_logfile:
         raise signals.TestError("Failed to get test log file in device.")
     lines = ad.adb.shell("cat %s" % test_logfile).split("\n")
+    gnss_svid_container = gnssstatus_utils.GnssSvidContainer()
     for line in lines:
-        if gnssstatus and line.startswith('Fix'):
-            gnssstatus_utils.parse_gnssstatus(line, ad)
-            gnssstatus_count += 1
+        if line.startswith('Fix'):
+            gnss_status = gnssstatus_utils.GnssStatus(line)
+            if validate_gnssstatus:
+                gnssstatus_utils.validate_gnssstatus(gnss_status, ad)
+                gnssstatus_count += 1
+            gnss_svid_container.add_satellite(gnss_status)
         if "Antenna_History Avg Top4" in line:
             ant_top4_cn = float(line.split(":")[-1].strip())
         elif "Antenna_History Avg" in line:
@@ -1027,6 +1031,24 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", gnssstatus=False):
     ad.log.info(prop_basename+"Ant_AvgSignal %.1f" % ant_cn_list[-1])
     ad.log.info(prop_basename+"Base_AvgTop4Signal %.1f" % base_top4cn_list[-1])
     ad.log.info(prop_basename+"Base_AvgSignal %.1f" % base_cn_list[-1])
+    _log_svid_info(gnss_svid_container, prop_basename, ad)
+
+
+def _log_svid_info(container, log_prefix, ad):
+    """Write GnssSvidContainer svid information into logger
+    Args:
+        container: A GnssSvidContainer object
+        log_prefix:
+            A prefix used to specify the log will be upload to dashboard
+        ad: An AndroidDevice object
+    """
+    for sv_type, svids in container.used_in_fix.items():
+        message = f"{log_prefix}{sv_type} {len(svids)}"
+        ad.log.info(message)
+        ad.log.debug("Satellite used in fix %s ids are: %s", sv_type, svids)
+
+    for sv_type, svids in container.not_used_in_fix.items():
+        ad.log.debug("Satellite not used in fix %s ids are: %s", sv_type, svids)
 
 
 def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):

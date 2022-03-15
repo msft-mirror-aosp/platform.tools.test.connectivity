@@ -1393,7 +1393,8 @@ class GnssFunctionTest(BaseTestClass):
         """
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                       type="gnss", testtime=1)
-        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss", gnssstatus=True)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss",
+                              validate_gnssstatus=True)
 
     @test_tracker_info(uuid="c85da9af-112f-4426-a80a-3e3f9c8df0d4")
     def test_onchip_gnssstatus_validation(self):
@@ -1411,4 +1412,5 @@ class GnssFunctionTest(BaseTestClass):
             raise signals.TestSkip("Not BRCM chipset. Skip the test.")
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                       type="gnss", testtime=1, freq=self.onchip_interval)
-        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss", gnssstatus=True)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss",
+                              validate_gnssstatus=True)
