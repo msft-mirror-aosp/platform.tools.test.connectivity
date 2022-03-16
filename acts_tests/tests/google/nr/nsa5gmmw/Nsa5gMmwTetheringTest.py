@@ -43,6 +43,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import wait_and_verify_device_in
 from acts_contrib.test_utils.tel.tel_data_utils import setup_device_internet_connection
 from acts_contrib.test_utils.tel.tel_data_utils import verify_toggle_data_during_wifi_tethering
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
+from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_5G
 from acts_contrib.test_utils.tel.tel_wifi_utils import WIFI_CONFIG_APBAND_2G
@@ -55,6 +56,8 @@ class Nsa5gMmwTetheringTest(TelephonyBaseTest):
         self.stress_test_number = self.get_stress_test_number()
         self.provider = self.android_devices[0]
         self.clients = self.android_devices[1:]
+        for ad in self.android_devices:
+            set_phone_silent_mode(self.log, ad, True)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)

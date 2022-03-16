@@ -28,7 +28,7 @@ from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
+from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH, GERMANY_TELEKOM, QATAR_VODAFONE
 from acts_contrib.test_utils.tel.tel_defines import CLEAR_NOTIFICATION_BAR
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_ALERT_TYPE
 from acts_contrib.test_utils.tel.tel_defines import EXPAND_NOTIFICATION_BAR
@@ -99,7 +99,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
-from acts_contrib.test_utils.tel.tel_test_utils import wait_for_data_connection
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
@@ -150,8 +150,9 @@ class CellBroadcastTest(TelephonyBaseTest):
             self.android_devices[0].log.info("device is operated at DSDS!")
         else:
             self.android_devices[0].log.info("device is operated at single SIM!")
-        self.current_sub_id = get_default_data_sub_id(self.android_devices[0])
-        self.android_devices[0].log.info("Active slot: %d, active subscription id: %d",
+        self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
+
+        self.android_devices[0].log.info("Active slot: %d, active voice subscription id: %d",
                                          self.slot_sub_id_list[self.current_sub_id], self.current_sub_id)
 
         if hasattr(self, "carrier_test_conf"):
@@ -1182,6 +1183,36 @@ class CellBroadcastTest(TelephonyBaseTest):
         return self._settings_test_flow(US_VZW)
 
 
+    @test_tracker_info(uuid="fb4cda9e-7b4c-469e-a480-670bfb9dc6d7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_germany_telekom(self):
+        """ Verifies Wireless Emergency Alert settings for Germany telecom
+
+        configures the device to Germany telecom
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(GERMANY_TELEKOM)
+
+
+    @test_tracker_info(uuid="f4afbef9-c1d7-4fab-ad0f-e03bc961a689")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_qatar_vodafone(self):
+        """ Verifies Wireless Emergency Alert settings for Qatar vodafone
+
+        configures the device to Qatar vodafone
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(QATAR_VODAFONE)
+
+
     @test_tracker_info(uuid="f3a99475-a23f-427c-a371-d2a46d357d75")
     @TelephonyBaseTest.tel_test_wrap
     def test_send_receive_alerts_australia(self):
@@ -1794,6 +1825,40 @@ class CellBroadcastTest(TelephonyBaseTest):
         return self._send_receive_test_flow(US_VZW)
 
 
+    @test_tracker_info(uuid="b94cc715-d2e2-47a4-91cd-acb47d64e6b2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_germany_telekom(self):
+        """ Verifies Wireless Emergency Alerts for Germany telekom
+
+        configures the device to Germany telekom
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(GERMANY_TELEKOM)
+
+
+    @test_tracker_info(uuid="f0b0cdbf-32c4-4dfd-b8fb-03d8b6169fd1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_qatar_vodafone(self):
+        """ Verifies Wireless Emergency Alerts for Qatar vodafone.
+
+        configures the device to Qatar vodafone
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(QATAR_VODAFONE)
+
+
     @TelephonyBaseTest.tel_test_wrap
     def test_send_receive_alerts_5g_wifi_us_vzw(self):
         """ Verifies WEA with WiFi and 5G NSA data network enabled for US Verizon.
@@ -2122,3 +2187,4 @@ class CellBroadcastTest(TelephonyBaseTest):
 
         get_screen_shot_log(self.android_devices[0])
         return result
+

@@ -111,10 +111,11 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
+        adjusted_value = min(max(0, value), self.max_atten)
         att_req = urllib.request.urlopen(
             'http://{}:{}/CHAN:{}:SETATT:{}'.format(self._ip_address,
                                                     self._port, idx + 1,
-                                                    value),
+                                                    adjusted_value),
             timeout=self._timeout)
         att_resp = att_req.read().decode('utf-8').strip()
         if att_resp != '1':
