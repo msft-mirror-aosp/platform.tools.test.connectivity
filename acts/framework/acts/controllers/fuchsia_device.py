@@ -1264,14 +1264,15 @@ class FuchsiaDevice:
         pass
 
     def take_bug_report(self,
-                        test_name,
-                        begin_time,
+                        test_name=None,
+                        begin_time=None,
                         additional_log_objects=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
             test_name: Name of the test case that triggered this bug report.
-            begin_time: Epoch time when the test started.
+            begin_time: Epoch time when the test started. If not specified, the
+                current time will be used.
             additional_log_objects: A list of additional objects in Fuchsia to
                 query in the bug report.  Must be in the following format:
                 /hub/c/scenic.cmx/[0-9]*/out/objects
@@ -1285,16 +1286,22 @@ class FuchsiaDevice:
                 matching_log_items.append(additional_log_object)
         sn_path = context.get_current_context().get_full_output_path()
         os.makedirs(sn_path, exist_ok=True)
+
+        epoch = begin_time if begin_time else utils.get_current_epoch_time()
         time_stamp = acts_logger.normalize_log_line_timestamp(
-            acts_logger.epoch_to_log_line_timestamp(begin_time))
-        out_name = "FuchsiaDevice%s_%s" % (
-            self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
+            acts_logger.epoch_to_log_line_timestamp(epoch))
+        out_name = f"{self.mdns_name}_{time_stamp}"
         snapshot_out_name = f"{out_name}.zip"
         out_name = "%s.txt" % out_name
         full_out_path = os.path.join(sn_path, out_name)
         full_sn_out_path = os.path.join(sn_path, snapshot_out_name)
-        self.log.info("Taking snapshot for %s on FuchsiaDevice%s." %
-                      (test_name, self.serial))
+
+        if test_name:
+            self.log.info(
+                f"Taking snapshot of {self.mdns_name} for {test_name}")
+        else:
+            self.log.info(f"Taking snapshot of {self.mdns_name}")
+
         if self.ssh_config is not None:
             try:
                 subprocess.run([
