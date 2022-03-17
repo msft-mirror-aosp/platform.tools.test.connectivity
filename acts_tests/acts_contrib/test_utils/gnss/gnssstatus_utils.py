@@ -27,6 +27,34 @@ SVID_RANGE = {
     'NIC': [(1, 14)]
 }
 
+CARRIER_FREQUENCIES = {
+    'GPS': {
+        'L1': [1575.42],
+        'L5': [1176.45]
+    },
+    'SBA': {
+        'L1': [1575.42]
+    },
+    'GLO': {
+        'L1': [round((1602 + i * 0.5625), 3) for i in range(-7, 7)]
+    },
+    'QZS': {
+        'L1': [1575.42],
+        'L5': [1176.45]
+    },
+    'BDS': {
+        'B1': [1561.098],
+        'B2a': [1176.45]
+    },
+    'GAL': {
+        'E1': [1575.42],
+        'E5a': [1176.45]
+    },
+    'NIC': {
+        'L5': [1176.45]
+    }
+}
+
 
 def validate_gnssstatus(gnss_status_obj, ad):
     """validate gnssstatus with given GnssStatus object.
@@ -44,18 +72,19 @@ def validate_gnssstatus(gnss_status_obj, ad):
 
 class GnssSvidContainer:
     """A class to hold the satellite svid information
+
     Attributes:
-        used_in_fix:
-            A dict contains unique svid used in fixing location
-        not_used_in_fix:
-            A dict contains unique svid not used in fixing location
+        used_in_fix: A dict contains unique svid used in fixing location
+        not_used_in_fix: A dict contains unique svid not used in fixing location
     """
+
     def __init__(self):
         self.used_in_fix = defaultdict(set)
         self.not_used_in_fix = defaultdict(set)
 
     def add_satellite(self, gnss_status):
         """Add satellite svid into container
+
         According to the attributes gnss_status.used_in_fix
             True: add svid into self.used_in_fix container
             False: add svid into self.not_used_in_fix container
@@ -63,7 +92,7 @@ class GnssSvidContainer:
         Args:
             gnss_status: A GnssStatus object
         """
-        key = f"{gnss_status.constellation}_{gnss_status.frequency_band}"
+        key = f'{gnss_status.constellation}_{gnss_status.frequency_band}'
         if gnss_status.used_in_fix:
             self.used_in_fix[key].add(gnss_status.svid)
         else:
@@ -76,30 +105,34 @@ class GnssStatus:
     Attributes:
         raw_message: (string) The raw log from GSPTool
             example:
-                Fix: true Type: NIC SV: 4 C/No: 45.10782, 40.9 Elevation: 78.0 Azimuth: 291.0
+                Fix: true Type: NIC SV: 4 C/No: 45.10782, 40.9 Elevation: 78.0
+                  Azimuth: 291.0
                 Signal: L5 Frequency: 1176.45 EPH: true ALM: false
-
-                Fix: false Type: GPS SV: 27 C/No: 34.728134, 30.5 Elevation: 76.0 Azimuth: 15.0
+                Fix: false Type: GPS SV: 27 C/No: 34.728134, 30.5 Elevation:
+                  76.0 Azimuth: 15.0
                 Signal: L1 Frequency: 1575.42 EPH: true ALM: true
-        used_in_fix: (boolean) Whether or not this satellite info is used to fix location
+        used_in_fix: (boolean) Whether or not this satellite info is used to fix
+          location
         constellation: (string) The constellation type i.e. GPS
         svid: (int) The unique id of the constellation
         cn: (float) The C/No value from antenna
         base_cn: (float) The C/No value from baseband
         elev: (float) The value of elevation
         azim: (float) The value of azimuth
-        frequency_band: (string) The frequency_type of the constellation i.e. L1 / L5
+        frequency_band: (string) The frequency_type of the constellation i.e. L1
+          / L5
     """
 
-    gnssstatus_re = (r'Fix: (.*) Type: (.*) SV: (.*) C/No: (.*), (.*) '
-                     r'Elevation: (.*) Azimuth: (.*) Signal: (.*) Frequency')
+    gnssstatus_re = (
+        r'Fix: (.*) Type: (.*) SV: (.*) C/No: (.*), (.*) '
+        r'Elevation: (.*) Azimuth: (.*) Signal: (.*) Frequency: (.*) EPH')
     failures = []
 
     def __init__(self, gnssstatus_raw):
         status_res = re.search(self.gnssstatus_re, gnssstatus_raw)
         if not status_res:
             raise signals.TestFailure('Fail to create GnssStatus obj: %s' %
-                                    gnssstatus_raw)
+                                      gnssstatus_raw)
         self.raw_message = gnssstatus_raw
         self.used_in_fix = status_res.group(1).lower() == 'true'
         self.constellation = status_res.group(2)
@@ -109,6 +142,7 @@ class GnssStatus:
         self.elev = float(status_res.group(6))
         self.azim = float(status_res.group(7))
         self.frequency_band = status_res.group(8)
+        self.carrier_frequency = float(status_res.group(9))
 
     def validate_gnssstatus(self):
         """A validate function for each property."""
@@ -116,17 +150,20 @@ class GnssStatus:
         self._validate_cn()
         self._validate_elev()
         self._validate_azim()
+        self._validate_carrier_frequency()
 
     def _validate_sv(self):
         """A validate function for SV ID."""
         if not SVID_RANGE.get(self.constellation):
-            raise signals.TestError('Satellite identify fail: %s' % self.constellation)
+            raise signals.TestError('Satellite identify fail: %s' %
+                                    self.constellation)
 
         for id_range in SVID_RANGE[self.constellation]:
             if id_range[0] <= self.svid <= id_range[1]:
                 break
         else:
-            fail_details = '%s ID %s not in SV Range' % (self.constellation, self.svid)
+            fail_details = '%s ID %s not in SV Range' % (self.constellation,
+                                                         self.svid)
             self.failures.append(fail_details)
 
     def _validate_cn(self):
@@ -145,6 +182,24 @@ class GnssStatus:
         """A validate function for Azimuth (should between 0-360)."""
         if not 0 <= self.azim <= 360:
             self.failures.append('Azimuth not in range: %s' % self.azim)
+
+    def _validate_carrier_frequency(self):
+        """A validate function for carrier frequency (should fall in below range).
+
+           'GPS': L1:1575.42, L5:1176.45
+           'SBA': L1:1575.42
+           'GLO': L1:Between 1598.0625 and 1605.375
+           'QZS': L1:1575.42, L5:1176.45
+           'BDS': B1:1561.098, B2a:1176.45
+           'GAL': E1:1575.42, E5a:1176.45
+           'NIC': L5:1176.45
+        """
+        target_freq = CARRIER_FREQUENCIES[self.constellation][
+            self.frequency_band]
+        if not self.carrier_frequency in target_freq:
+            self.failures.append(
+                f'{self.constellation}_{self.frequency_band} carrier'
+                f'frequency not in range: {self.carrier_frequency}')
 
     def get_gnssstatus_health(self):
         """A function return the obj property health state
