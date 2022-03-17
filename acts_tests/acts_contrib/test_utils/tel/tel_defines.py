@@ -860,6 +860,10 @@ NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
 
+# Constant for Settings
+USE_SIM = 'Use SIM'
+MOBILE_DATA = 'Mobile data'
+
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"
     SIGNAL_STRENGTH_GSM_DBM = "gsmDbm"
