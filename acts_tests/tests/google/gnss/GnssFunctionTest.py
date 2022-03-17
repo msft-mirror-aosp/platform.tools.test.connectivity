@@ -387,10 +387,13 @@ class GnssFunctionTest(BaseTestClass):
         Expected Results:
             DUT could finish 60 minutes test and output track data.
         """
+        test_time = 60
         self.start_qxdm_and_tcpdump_log()
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
-                                      type="gnss", testtime=60)
-        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+                                      type="gnss", testtime=test_time)
+        location_data = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+        gutils.validate_location_fix_rate(self.ad, location_data, run_time=test_time,
+                                          fix_rate_criteria=0.99)
 
     @test_tracker_info(uuid="623628ab-fdab-449d-9025-ebf4e9a404c2")
     def test_dpo_function(self):
