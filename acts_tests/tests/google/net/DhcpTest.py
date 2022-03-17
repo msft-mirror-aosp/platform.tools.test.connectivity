@@ -19,11 +19,14 @@ from acts.controllers.openwrt_ap import MOBLY_CONTROLLER_CONFIG_NAME as OPENWRT
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from scapy.all import rdpcap, DHCP
+from scapy.all import rdpcap, DHCP, IPv6
+from scapy.layers.inet6 import ICMPv6ND_NA as NA
+
 
 WLAN = "wlan0"
 PING_ADDR = "google.com"
 RAPID_COMMIT_OPTION = (80, b'')
+
 
 class DhcpTest(WifiBaseTest):
     """DHCP related test for Android."""
@@ -85,20 +88,34 @@ class DhcpTest(WifiBaseTest):
     def verify_dhcp_packet(self, packets, support_rapid_commit):
         for pkt in packets:
             if pkt.haslayer(DHCP):
-                if pkt[DHCP].options[0][1]==1:
+                if pkt[DHCP].options[0][1] == 1:
                     send_option = RAPID_COMMIT_OPTION in pkt[DHCP].options
                     asserts.assert_true(send_option == support_rapid_commit,
                                         "Unexpected result in DHCP DISCOVER.")
-                elif pkt[DHCP].options[0][1]==2:
-                    asserts.assert_true( not support_rapid_commit,
-                                         "Should not find DHCP OFFER when RAPID_COMMIT_OPTION supported.")
-                elif pkt[DHCP].options[0][1]==3:
-                    asserts.assert_true( not support_rapid_commit,
-                                         "Should not find DHCP REQUEST when RAPID_COMMIT_OPTION supported.")
-                elif pkt[DHCP].options[0][1]==5:
+                elif pkt[DHCP].options[0][1] == 2:
+                    asserts.assert_true(not support_rapid_commit,
+                                        "Should not find DHCP OFFER when RAPID_COMMIT_OPTION supported.")
+                elif pkt[DHCP].options[0][1] == 3:
+                    asserts.assert_true(not support_rapid_commit,
+                                        "Should not find DHCP REQUEST when RAPID_COMMIT_OPTION supported.")
+                elif pkt[DHCP].options[0][1] == 5:
                     send_option = RAPID_COMMIT_OPTION in pkt[DHCP].options
                     asserts.assert_true(send_option == support_rapid_commit,
-                                    "Unexpected result in DHCP ACK.")
+                                        "Unexpected result in DHCP ACK.")
+
+    def verify_gratuitous_na(self, packets):
+        ipv6localaddress = self.dut.droid.connectivityGetLinkLocalIpv6Address(WLAN).strip("%wlan0")
+        self.dut.log.info("Device local address : %s" % ipv6localaddress)
+        ipv6globaladdress = self.dut.droid.connectivityGetIPv6Addresses(WLAN)
+        self.dut.log.info("Device global address : %s" % ipv6globaladdress)
+        target_address = []
+        for pkt in packets:
+            if pkt.haslayer(NA) and pkt.haslayer(IPv6) and pkt[IPv6].src == ipv6localaddress:
+                # broadcast global address
+                target_address.append(pkt.tgt)
+        self.dut.log.info("Broadcast target address : %s" % target_address)
+        asserts.assert_equal(ipv6globaladdress, target_address,
+                             "Target address from NA is not match to device ipv6 address.")
 
     @test_tracker_info(uuid="01148659-6a3d-4a74-88b6-04b19c4acaaa")
     def test_ipv4_ipv6_network(self):
@@ -129,8 +146,7 @@ class DhcpTest(WifiBaseTest):
         """Verify DUT can run with rapid commit on IPv4."""
         self.dut.adb.shell("device_config put connectivity dhcp_rapid_commit_version 1")
         self.openwrt.network_setting.add_dhcp_rapid_commit()
-        remote_pcap_path = \
-            self.openwrt.network_setting.start_tcpdump(self.test_name)
+        remote_pcap_path = self.openwrt.network_setting.start_tcpdump(self.test_name)
         wutils.connect_to_wifi_network(self.dut, self.wifi_network)
         local_pcap_path = self.openwrt.network_setting.stop_tcpdump(
             remote_pcap_path, self.dut.device_log_path)
@@ -143,11 +159,22 @@ class DhcpTest(WifiBaseTest):
     def test_dhcp_4_way_handshake(self):
         """Verify DUT can run with rapid commit on IPv4."""
         self.dut.adb.shell("device_config put connectivity dhcp_rapid_commit_version 0")
-        remote_pcap_path = \
-            self.openwrt.network_setting.start_tcpdump(self.test_name)
+        remote_pcap_path = self.openwrt.network_setting.start_tcpdump(self.test_name)
         wutils.connect_to_wifi_network(self.dut, self.wifi_network)
         local_pcap_path = self.openwrt.network_setting.stop_tcpdump(
             remote_pcap_path, self.dut.device_log_path)
         self.dut.log.info("pcap file path : %s" % local_pcap_path)
         packets = rdpcap(local_pcap_path)
         self.verify_dhcp_packet(packets, False)
+
+    @test_tracker_info(uuid="69fd9619-db35-406a-96e2-8425f8f5e8bd")
+    def test_gratuitous_na(self):
+        """Verify DUT will send NA after ipv6 address set."""
+        self.dut.adb.shell("device_config put connectivity ipclient_gratuitous_na_version 1")
+        remote_pcap_path = self.openwrt.network_setting.start_tcpdump(self.test_name)
+        wutils.connect_to_wifi_network(self.dut, self.wifi_network)
+        local_pcap_path = self.openwrt.network_setting.stop_tcpdump(
+            remote_pcap_path, self.dut.device_log_path)
+        self.dut.log.info("pcap file path : %s" % local_pcap_path)
+        packets = rdpcap(local_pcap_path)
+        self.verify_gratuitous_na(packets)
