@@ -18,14 +18,12 @@ Script for to flash Fuchsia devices and reports the DUT's version of Fuchsia in
 the Sponge test result properties. Uses the built in flashing tool for
 fuchsia_devices.
 """
-import time
-
-import acts.libs.proc.job as job
-
-from acts import signals
+from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
 from acts.utils import get_device
+
+MAX_FLASH_ATTEMPTS = 3
 
 
 class FlashTest(BaseTestClass):
@@ -56,36 +54,35 @@ class FlashTest(BaseTestClass):
         return super().teardown_class()
 
     def test_flash_devices(self):
-        flash_retry_max = 3
-        flash_counter = 0
-        for fuchsia_device in self.fuchsia_devices:
-            while flash_counter < flash_retry_max:
-                try:
-                    fuchsia_device.reboot(reboot_type='flash',
-                                          use_ssh=True,
-                                          unreachable_timeout=120,
-                                          ping_timeout=120)
-                    flash_counter = flash_retry_max
-                except Exception as err:
-                    if fuchsia_device.device_pdu_config:
-                        self.log.info(
-                            'Flashing failed with error: {}'.format(err))
-                        self.log.info('Hard rebooting fuchsia_device({}) and '
-                                      'retrying.'.format(
-                                          fuchsia_device.orig_ip))
-                        fuchsia_device.reboot(reboot_type='hard',
-                                              testbed_pdus=self.pdu_devices)
-                        flash_counter = flash_counter + 1
-                        if flash_counter == flash_retry_max:
-                            raise err
-                        time.sleep(1)
-                    else:
-                        raise err
-                self.log.info("fuchsia_device(%s) has been flashed." %
-                              fuchsia_device.orig_ip)
+        for device in self.fuchsia_devices:
             flash_counter = 0
+            while True:
+                try:
+                    device.reboot(reboot_type='flash',
+                                  use_ssh=True,
+                                  unreachable_timeout=120,
+                                  ping_timeout=120)
+                    self.log.info(f'{device.orig_ip} has been flashed.')
+                    break
+                except Exception as err:
+                    self.log.error(
+                        f'Failed to flash {device.orig_ip} with error:\n{err}')
 
-        return True
+                    if not device.device_pdu_config:
+                        asserts.abort_all(
+                            f'Failed to flash {device.orig_ip} and no PDU available for hard reboot'
+                        )
+
+                    flash_counter = flash_counter + 1
+                    if flash_counter == MAX_FLASH_ATTEMPTS:
+                        asserts.abort_all(
+                            f'Failed to flash {device.orig_ip} after {MAX_FLASH_ATTEMPTS} attempts'
+                        )
+
+                    self.log.info(
+                        f'Hard rebooting {device.orig_ip} and retrying flash.')
+                    device.reboot(reboot_type='hard',
+                                  testbed_pdus=self.pdu_devices)
 
     def test_report_dut_version(self):
         """Empty test to ensure the version of the DUT is reported in the Sponge
