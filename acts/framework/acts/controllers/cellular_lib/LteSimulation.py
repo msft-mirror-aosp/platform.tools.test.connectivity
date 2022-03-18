@@ -211,7 +211,8 @@ class LteSimulation(BaseSimulation):
         41: 39650,
         42: 41590,
         43: 45590,
-        66: 66436
+        66: 66436,
+        67: 67836
     }
 
     # Peak throughput lookup tables for each TDD subframe
