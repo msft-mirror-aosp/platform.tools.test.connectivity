@@ -87,15 +87,19 @@ class GnssConcurrencyTest(BaseTestClass):
         else:
             raise signals.TestError("Failed to load CHRE nanoapp")
 
-    def enable_chre(self, freq):
+    def enable_chre(self, interval_sec):
         """ Enable or disable gnss concurrency via nanoapp.
 
         Args:
-            freq: an int for frequency, set 0 as disable.
+            interval_sec: an int for frequency, set 0 as disable.
         """
-        freq = freq * 1000
+        if interval_sec == 0:
+            self.ad.log.info(f"Stop CHRE request")
+        else:
+            self.ad.log.info(f"Initiate CHRE with {interval_sec} seconds interval")
+        interval_msec = interval_sec * 1000
         cmd = "chre_power_test_client"
-        option = "enable %d" % freq if freq != 0 else "disable"
+        option = "enable %d" % interval_msec if interval_msec != 0 else "disable"
 
         for type in CONCURRENCY_TYPE.keys():
             if "ap" not in type:
@@ -115,16 +119,12 @@ class GnssConcurrencyTest(BaseTestClass):
         outliers = []
         search_results = self.ad.search_logcat(CONCURRENCY_TYPE[type],
                                                begin_time)
-        start_time = utils.epoch_to_human_time(begin_time)
-        start_time = datetime.datetime.strptime(start_time,
-                                                "%m-%d-%Y %H:%M:%S ")
         if not search_results:
             raise signals.TestFailure(f"No log entry found for keyword:"
                                       f"{CONCURRENCY_TYPE[type]}")
-        results.append(
-            (search_results[0]["datetime_obj"] - start_time).total_seconds())
-        samples = len(search_results) - 1
-        for i in range(samples):
+        ttff = (search_results[0]["datetime_obj"] - begin_time).total_seconds()
+        results.append(ttff)
+        for i in range(len(search_results) - 1):
             target = search_results[i + 1]
             timedelt = target["datetime_obj"] - search_results[i]["datetime_obj"]
             timedelt_sec = timedelt.total_seconds()
@@ -141,7 +141,8 @@ class GnssConcurrencyTest(BaseTestClass):
 
         res_summary = " ".join([str(res) for res in results])
         self.ad.log.info("[%s]Overall Result: %s" % (type, res_summary))
-        self.ad.log.info("TestResult %s_samples %d" % (type, samples))
+        self.ad.log.info("TestResult %s_samples %d" %
+                         (type, len(search_results)))
         self.ad.log.info("TestResult %s_outliers %d" % (type, len(outliers)))
         self.ad.log.info("TestResult %s_failures %d" % (type, len(failures)))
         self.ad.log.info("TestResult %s_max_time %.2f" %
@@ -156,9 +157,8 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
-        begin_time = utils.get_current_epoch_time()
-        self.ad.log.info("Tests Start at %s" %
-                         utils.epoch_to_human_time(begin_time))
+        begin_time = datetime.datetime.now()
+        self.ad.log.info(f"Test Start at {begin_time}")
         gutils.start_gnss_by_gtw_gpstool(
             self.ad, True, freq=criteria["ap_location"])
         self.enable_chre(criteria["gnss"])
@@ -174,9 +174,8 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
-        begin_time = utils.get_current_epoch_time()
-        self.ad.log.info("Tests Start at %s" %
-                         utils.epoch_to_human_time(begin_time))
+        begin_time = datetime.datetime.now()
+        self.ad.log.info(f"Test Start at {begin_time}")
         self.enable_chre(criteria["gnss"])
         time.sleep(test_duration)
         self.enable_chre(0)
@@ -218,7 +217,7 @@ class GnssConcurrencyTest(BaseTestClass):
             freq: a list identify source1/2 frequency [freq1, freq2]
         """
         request = {"ap_location": self.max_interval}
-        begin_time = utils.get_current_epoch_time()
+        begin_time = datetime.datetime.now()
         self.ad.droid.startLocating(freq[0] * 1000, 0)
         time.sleep(10)
         for i in range(5):
@@ -251,6 +250,31 @@ class GnssConcurrencyTest(BaseTestClass):
             position_errors.append(pe)
         self.ad.log.info("TestResult max_position_error %.2f" %
                          max(position_errors))
+
+    def get_chre_ttff(self, interval_sec, duration):
+        """ Get the TTFF for the first CHRE report.
+
+        Args:
+            interval_sec: test interval in seconds for CHRE.
+            duration: test duration.
+        """
+        begin_time = datetime.datetime.now()
+        self.ad.log.info(f"Test start at {begin_time}")
+        self.enable_chre(interval_sec)
+        time.sleep(duration)
+        self.enable_chre(0)
+        for type, pattern in CONCURRENCY_TYPE.items():
+            if type == "ap_location":
+                continue
+            search_results = self.ad.search_logcat(pattern, begin_time)
+            if not search_results:
+                raise signals.TestFailure(
+                    f"Unable to receive {type} report in {duration} seconds")
+            else:
+                ttff_stamp = search_results[0]["datetime_obj"]
+                self.ad.log.info(search_results[0]["time_stamp"])
+                ttff = (ttff_stamp - begin_time).total_seconds()
+                self.ad.log.info(f"CHRE {type} TTFF = {ttff}")
 
     # Concurrency Test Cases
     @test_tracker_info(uuid="9b0daebf-461e-4005-9773-d5d10aaeaaa4")
@@ -300,25 +324,16 @@ class GnssConcurrencyTest(BaseTestClass):
     @test_tracker_info(uuid="53b161e5-335e-44a7-ae2e-eae7464a2b37")
     def test_variable_interval_via_chre(self):
         test_duration = 10
-        intervals = [{
-            "gnss": 0.1,
-            "gnss_meas": 0.1
-        }, {
-            "gnss": 0.5,
-            "gnss_meas": 0.5
-        }, {
-            "gnss": 1.5,
-            "gnss_meas": 1.5
-        }]
+        intervals = [0.1, 0.5, 1.5]
         for interval in intervals:
-            self.run_chre_only_test(interval, test_duration)
+            self.get_chre_ttff(interval, test_duration)
 
     @test_tracker_info(uuid="ee0a46fe-aa5f-4dfd-9cb7-d4924f9e9cea")
     def test_variable_interval_via_framework(self):
         test_duration = 10
         intervals = [0, 0.5, 1.5]
         for interval in intervals:
-            begin_time = utils.get_current_epoch_time()
+            begin_time = datetime.datetime.now()
             self.ad.droid.startLocating(interval * 1000, 0)
             time.sleep(test_duration)
             self.ad.droid.stopLocating()
