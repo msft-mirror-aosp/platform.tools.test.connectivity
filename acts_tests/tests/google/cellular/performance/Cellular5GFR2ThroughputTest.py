@@ -142,12 +142,13 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             'results.csv')
         with open(results_file_path, 'w', newline='') as csvfile:
             field_names = [
-                'Band', 'DL Carriers', 'UL Carriers', 'DL MCS', 'UL MCS',
-                'Cell Power', 'DL Min. Throughput', 'DL Max. Throughput',
-                'DL Avg. Throughput', 'DL Theoretical Throughput',
-                'UL Min. Throughput', 'UL Max. Throughput',
-                'UL Avg. Throughput', 'UL Theoretical Throughput',
-                'DL BLER (%)', 'UL BLER (%)', 'TCP/UDP Throughput'
+                'Band', 'Channel Preset', 'DL Carriers', 'UL Carriers',
+                'DL MCS', 'UL MCS', 'Cell Power', 'DL Min. Throughput',
+                'DL Max. Throughput', 'DL Avg. Throughput',
+                'DL Theoretical Throughput', 'UL Min. Throughput',
+                'UL Max. Throughput', 'UL Avg. Throughput',
+                'UL Theoretical Throughput', 'DL BLER (%)', 'UL BLER (%)',
+                'TCP/UDP Throughput'
             ]
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
@@ -158,6 +159,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                     writer.writerow({
                         'Band':
                         testcase_results['testcase_params']['band'],
+                        'Channel Preset':
+                        testcase_results['testcase_params']['channel_preset'],
                         'DL Carriers':
                         testcase_results['testcase_params']['num_dl_cells'],
                         'UL Carriers':
@@ -218,6 +221,9 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         for cell in testcase_params['dl_cell_list']:
             self.keysight_test_app.set_cell_band('NR5G', cell,
                                                  testcase_params['band'])
+        self.keysight_test_app.set_nr_cell_channel_preset(
+            testcase_params['dl_cell_list'][0], testcase_params['band'],
+            testcase_params['channel_preset'])
         # Consider configuring schedule quick config
         self.keysight_test_app.set_nr_cell_schedule_scenario(
             testcase_params['dl_cell_list'][0],
@@ -295,6 +301,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             for cell in testcase_params['dl_cell_list']:
                 self.keysight_test_app.set_cell_dl_power(
                     'NR5G', cell, result['cell_power'], 1)
+            self.keysight_test_app.select_display_tab(
+                'NR5G', testcase_params['dl_cell_list'][0], 'BTHR', 'OTAGRAPH')
             time.sleep(SHORT_SLEEP)
             # Start BLER and throughput measurements
             self.keysight_test_app.start_bler_measurement(
@@ -402,19 +410,24 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             testcase_params['use_client_output'] = False
         return testcase_params
 
-    def generate_test_cases(self, bands, mcs_pair_list, num_dl_cells_list,
-                            num_ul_cells_list, **kwargs):
+    def generate_test_cases(self, bands, channel_presets, mcs_pair_list,
+                            num_dl_cells_list, num_ul_cells_list, **kwargs):
         """Function that auto-generates test cases for a test class."""
         test_cases = ['test_load_scpi']
 
-        for band, num_ul_cells, num_dl_cells, mcs_pair in itertools.product(
-                bands, num_ul_cells_list, num_dl_cells_list, mcs_pair_list):
+        for band, channel_preset, num_ul_cells, num_dl_cells, mcs_pair in itertools.product(
+                bands, channel_presets, num_ul_cells_list, num_dl_cells_list,
+                mcs_pair_list):
             if num_ul_cells > num_dl_cells:
                 continue
-            test_name = 'test_nr_throughput_bler_{}_DL_{}CC_mcs{}_UL_{}CC_mcs{}'.format(
-                band, num_dl_cells, mcs_pair[0], num_ul_cells, mcs_pair[1])
+            if channel_preset not in cputils.PCC_PRESET_MAPPING[band]:
+                continue
+            test_name = 'test_nr_throughput_bler_{}_{}_DL_{}CC_mcs{}_UL_{}CC_mcs{}'.format(
+                band, channel_preset, num_dl_cells, mcs_pair[0], num_ul_cells,
+                mcs_pair[1])
             test_params = collections.OrderedDict(
                 band=band,
+                channel_preset=channel_preset,
                 dl_mcs=mcs_pair[0],
                 ul_mcs=mcs_pair[1],
                 num_dl_cells=num_dl_cells,
@@ -433,6 +446,7 @@ class Cellular5GFR2_DL_ThroughputTest(Cellular5GFR2ThroughputTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                              ['low', 'mid', 'high'],
                                               [(16, 4), (27, 4)],
                                               list(range(1, 9)),
                                               list(range(1, 3)),
@@ -446,6 +460,7 @@ class Cellular5GFR2_CP_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                              ['low', 'mid', 'high'],
                                               [(4, 16), (4, 27)],
                                               list(range(1, 3)),
                                               list(range(1, 3)),
@@ -459,6 +474,7 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                              ['low', 'mid', 'high'],
                                               [(4, 16), (4, 27)],
                                               list(range(1, 3)),
                                               list(range(1, 3)),
