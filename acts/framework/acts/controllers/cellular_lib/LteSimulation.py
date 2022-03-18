@@ -491,7 +491,7 @@ class LteSimulation(BaseSimulation):
 
                 # Class C means that there are two contiguous carriers
                 if ca_class == 'C':
-                    new_cell_list.append(cell)
+                    new_cell_list.append(dict(cell))
                     bw = int(cell[LteCellConfig.PARAM_BW])
                     dl_earfcn = LteCellConfig.PARAM_DL_EARFCN
                     new_cell_list[-1][dl_earfcn] = self.LOWEST_DL_CN_DICTIONARY[
@@ -499,6 +499,9 @@ class LteSimulation(BaseSimulation):
             else:
                 # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
+
+        # Logs new_cell_list for debug
+        self.log.info('new cell list: {}'.format(new_cell_list))
 
         self.simulator.set_band_combination(
             [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
