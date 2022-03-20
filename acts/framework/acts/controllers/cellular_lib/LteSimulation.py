@@ -211,7 +211,8 @@ class LteSimulation(BaseSimulation):
         41: 39650,
         42: 41590,
         43: 45590,
-        66: 66436
+        66: 66436,
+        67: 67836
     }
 
     # Peak throughput lookup tables for each TDD subframe
@@ -481,7 +482,7 @@ class LteSimulation(BaseSimulation):
 
                 if ca_class in ['A', 'C']:
                     # Remove the CA class label and add the cell
-                    cell[LteCellConfig.PARAM_BAND].band = band_num
+                    cell[LteCellConfig.PARAM_BAND] = band_num
                     new_cell_list.append(cell)
                 elif ca_class == 'B':
                     raise RuntimeError('Class B LTE CA not supported.')
@@ -492,8 +493,9 @@ class LteSimulation(BaseSimulation):
                 if ca_class == 'C':
                     new_cell_list.append(cell)
                     bw = int(cell[LteCellConfig.PARAM_BW])
-                    new_cell_list[-1].dl_earfcn = int(
-                        self.LOWEST_DL_CN_DICTIONARY[band_num] + bw * 10 - 2)
+                    dl_earfcn = LteCellConfig.PARAM_DL_EARFCN
+                    new_cell_list[-1][dl_earfcn] = self.LOWEST_DL_CN_DICTIONARY[
+                        int(band_num)] + bw * 10 - 2
             else:
                 # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
