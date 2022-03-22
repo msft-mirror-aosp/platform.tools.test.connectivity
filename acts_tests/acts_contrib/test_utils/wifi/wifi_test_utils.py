@@ -49,6 +49,8 @@ DEFAULT_TIMEOUT = 10
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
 WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
+DEFAULT_SCAN_TRIES = 3
+DEFAULT_CONNECT_TRIES = 3
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -1474,7 +1476,8 @@ def ensure_no_disconnect(ad, duration=10):
 
 def connect_to_wifi_network(ad, network, assert_on_fail=True,
                             check_connectivity=True, hidden=False,
-                            num_of_scan_tries=3, num_of_connect_tries=3):
+                            num_of_scan_tries=DEFAULT_SCAN_TRIES,
+                            num_of_connect_tries=DEFAULT_CONNECT_TRIES):
     """Connection logic for open and psk wifi networks.
 
     Args:
