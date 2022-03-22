@@ -329,13 +329,10 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
         self.number_of_devices = 1
 
-        if not phone_setup_volte(self.log, self.android_devices[0]):
-            self.log.error("Failed to setup VoLTE")
-            return False
-        return test_data_connectivity_multi_bearer(self.log, ads, GEN_4G)
+        return test_data_connectivity_multi_bearer(
+            self.log, self.android_devices, 'volte')
 
     @test_tracker_info(uuid="5c9cb076-0c26-4517-95dc-2ec4974e8ce3")
     @TelephonyBaseTest.tel_test_wrap
@@ -354,7 +351,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
 
-        return test_data_connectivity_multi_bearer(self.log, self.android_devices, GEN_3G)
+        return test_data_connectivity_multi_bearer(
+            self.log, self.android_devices, '3g')
 
     @test_tracker_info(uuid="314bbf1c-073f-4d48-9817-a6e14f96f3c0")
     @TelephonyBaseTest.tel_test_wrap
@@ -371,8 +369,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
 
-        return test_data_connectivity_multi_bearer(self.log, self.android_devices,
-            GEN_2G, False, DIRECTION_MOBILE_ORIGINATED)
+        return test_data_connectivity_multi_bearer(self.log,
+            self.android_devices, '2g', False, DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="549271ff-1034-4d02-8d92-b9d1b2bb912e")
     @TelephonyBaseTest.tel_test_wrap
@@ -389,8 +387,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
 
-        return test_data_connectivity_multi_bearer(self.log, self.android_devices,
-            GEN_2G, False, DIRECTION_MOBILE_TERMINATED)
+        return test_data_connectivity_multi_bearer(self.log,
+            self.android_devices, '2g', False, DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="111de471-559a-4bc3-9d3e-de18f098c162")
     @TelephonyBaseTest.tel_test_wrap
