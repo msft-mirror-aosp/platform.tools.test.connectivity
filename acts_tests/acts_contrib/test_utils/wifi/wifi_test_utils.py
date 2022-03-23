@@ -2051,7 +2051,7 @@ def validate_connection(ad,
     Returns:
         ping output if successful, NULL otherwise.
     """
-    android_version = ad.adb.shell("getprop ro.vendor.build.version.release")
+    android_version = int(ad.adb.shell("getprop ro.vendor.build.version.release"))
     # wait_time to allow for DHCP to complete.
     for i in range(wait_time):
         if ad.droid.connectivityNetworkIsConnected():
