@@ -241,11 +241,10 @@ class BtFuchsiaEPTest(BaseTestClass):
 
         input_capabilities = "NONE"
         output_capabilities = "NONE"
-
-        # Initialize a2dp on both devices.
         self.pri_dut.avdtp_lib.init()
-        self.sec_dut.avdtp_lib.init()
-
+        self.pri_dut.control_daemon("bt-avrcp.cmx", "start")
+        self.sec_dut.avdtp_lib.init(initiator_delay=2000)
+        self.sec_dut.control_daemon("bt-avrcp-target.cmx", "start")
         self.pri_dut.bts_lib.acceptPairing(input_capabilities,
                                            output_capabilities)
 
@@ -266,19 +265,6 @@ class BtFuchsiaEPTest(BaseTestClass):
             raise signals.TestFailure("Failed to connect with {}.".format(
                 connect_result.get("error")))
 
-        # We pair before checking the CONNECTED status because BR/EDR semantics
-        # were recently changed such that if pairing is not confirmed, then bt
-        # does not report connected = True.
-        security_level = "NONE"
-        bondable = True
-        transport = 1  #BREDR
-        pair_result = self.pri_dut.bts_lib.pair(unique_mac_addr_id,
-                                                security_level, bondable,
-                                                transport)
-        if pair_result.get("error") is not None:
-            raise signals.TestFailure("Failed to pair with {}.".format(
-                pair_result.get("error")))
-
         if not verify_device_state_by_name(
                 self.pri_dut, self.log, target_device_name, "CONNECTED", None):
             raise signals.TestFailure(
@@ -288,6 +274,16 @@ class BtFuchsiaEPTest(BaseTestClass):
                 self.sec_dut, self.log, source_device_name, "CONNECTED", None):
             raise signals.TestFailure(
                 "Failed to connect to device {}.".format(source_device_name))
+
+        security_level = "NONE"
+        bondable = True
+        transport = 1  #BREDR
+        pair_result = self.pri_dut.bts_lib.pair(unique_mac_addr_id,
+                                                security_level, bondable,
+                                                transport)
+        if pair_result.get("error") is not None:
+            raise signals.TestFailure("Failed to pair with {}.".format(
+                pair_result.get("error")))
 
         #TODO: Validation of services and paired devices (b/175641870)
         # A2DP sink: 0000110b-0000-1000-8000-00805f9b34fb
