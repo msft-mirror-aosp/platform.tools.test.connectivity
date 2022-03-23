@@ -29,7 +29,6 @@ class WlanMiscScenarioTest(AbstractDeviceWlanDeviceBaseTest):
     fit into a specific test category, but should still be run in CI to catch
     regressions.
     """
-
     def setup_class(self):
         super().setup_class()
         dut = self.user_params.get('dut', None)
@@ -50,9 +49,8 @@ class WlanMiscScenarioTest(AbstractDeviceWlanDeviceBaseTest):
         self.dut.disconnect()
         self.access_point.stop_all_aps()
 
-    def teardown_test(self):
+    def setup_test(self):
         self.dut.disconnect()
-        self.download_ap_logs()
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):

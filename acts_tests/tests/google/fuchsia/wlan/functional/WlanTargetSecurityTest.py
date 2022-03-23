@@ -16,16 +16,16 @@
 
 from acts import asserts
 from acts import utils
+from acts.base_test import BaseTestClass
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 
 # TODO(fxb/68956): Add security protocol check to mixed mode tests when info is
 # available.
-class WlanTargetSecurityTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanTargetSecurityTest(BaseTestClass):
     """Tests Fuchsia's target security concept and security upgrading
 
     Testbed Requirements:
@@ -49,9 +49,8 @@ class WlanTargetSecurityTest(AbstractDeviceWlanDeviceBaseTest):
         self.dut.disconnect()
         self.access_point.stop_all_aps()
 
-    def teardown_test(self):
+    def setup_test(self):
         self.dut.disconnect()
-        self.download_ap_logs()
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
@@ -289,14 +288,10 @@ class WlanTargetSecurityTest(AbstractDeviceWlanDeviceBaseTest):
 
     def test_associate_wpa3_ap_with_wpa_target_security(self):
         ssid, password = self.setup_ap(hostapd_constants.WPA3_STRING)
-        asserts.assert_false(
+        asserts.assert_true(
             self.dut.associate(ssid,
                                target_security=hostapd_constants.WPA_STRING,
-                               target_pwd=password),
-            'Expected failure to associate. WPA credentials for WPA3 was '
-            'temporarily disabled, see https://fxbug.dev/85817 for context. '
-            'If this feature was reenabled, please update this test\'s '
-            'expectation.')
+                               target_pwd=password), 'Failed to associate.')
 
     def test_associate_wpa3_ap_with_wpa2_target_security(self):
         ssid, password = self.setup_ap(hostapd_constants.WPA3_STRING)
@@ -330,14 +325,10 @@ class WlanTargetSecurityTest(AbstractDeviceWlanDeviceBaseTest):
     def test_associate_wpa2_wpa3_ap_with_wpa_target_security(self):
         ssid, password = self.setup_ap(
             hostapd_constants.WPA2_WPA3_MIXED_STRING)
-        asserts.assert_false(
+        asserts.assert_true(
             self.dut.associate(ssid,
                                target_security=hostapd_constants.WPA_STRING,
-                               target_pwd=password),
-            'Expected failure to associate. WPA credentials for WPA3 was '
-            'temporarily disabled, see https://fxbug.dev/85817 for context. '
-            'If this feature was reenabled, please update this test\'s '
-            'expectation.')
+                               target_pwd=password), 'Failed to associate.')
 
     def test_associate_wpa2_wpa3_ap_with_wpa2_target_security(self):
         ssid, password = self.setup_ap(
