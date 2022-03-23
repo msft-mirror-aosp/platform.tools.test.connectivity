@@ -2042,12 +2042,11 @@ def validate_connection(ad,
     Returns:
         ping output if successful, NULL otherwise.
     """
-    android_version = ad.adb.shell("getprop ro.vendor.build.version.release")
     # wait_time to allow for DHCP to complete.
     for i in range(wait_time):
-        if ad.droid.connectivityNetworkIsConnected():
-            if (android_version > 10 and ad.droid.connectivityGetIPv4DefaultGateway()) or android_version < 11:
-                break
+        if ad.droid.connectivityNetworkIsConnected(
+        ) and ad.droid.connectivityGetIPv4DefaultGateway():
+            break
         time.sleep(1)
     ping = False
     try:
@@ -2055,7 +2054,7 @@ def validate_connection(ad,
         ad.log.info("Http ping result: %s.", ping)
     except:
         pass
-    if android_version > 10 and not ping and ping_gateway:
+    if not ping and ping_gateway:
         ad.log.info("Http ping failed. Pinging default gateway")
         gw = ad.droid.connectivityGetIPv4DefaultGateway()
         result = ad.adb.shell("ping -c 6 {}".format(gw))
