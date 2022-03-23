@@ -35,11 +35,12 @@ import time
 WifiEnums = wutils.WifiEnums
 
 RA_SCRIPT = 'sendra.py'
+SCAPY = 'scapy-2.2.0.tar.gz'
+SCAPY_INSTALL_COMMAND = 'sudo python setup.py install'
 PROC_NET_SNMP6 = '/proc/net/snmp6'
 LIFETIME_FRACTION = 6
 LIFETIME = 180
 INTERVAL = 2
-WLAN0= "wlan0"
 
 
 class ApfCountersTest(WifiBaseTest):
@@ -53,8 +54,8 @@ class ApfCountersTest(WifiBaseTest):
         super().setup_class()
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["scapy"]
-        opt_param = ["reference_networks"]
+        req_params = []
+        opt_param = ["reference_networks", ]
 
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -73,12 +74,13 @@ class ApfCountersTest(WifiBaseTest):
         # install scapy
         current_dir = os.path.dirname(os.path.realpath(__file__))
         send_ra = os.path.join(current_dir, RA_SCRIPT)
-        self.access_points[0].install_scapy(self.scapy[0], send_ra)
+        send_scapy = os.path.join(current_dir, SCAPY)
+        self.access_points[0].install_scapy(send_scapy, send_ra)
         self.tcpdump_pid = None
 
     def setup_test(self):
         if 'RTT' not in self.test_name:
-            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name, WLAN0)
+            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
 
     def teardown_test(self):
         if 'RTT' not in self.test_name:
@@ -93,7 +95,6 @@ class ApfCountersTest(WifiBaseTest):
             del self.user_params["reference_networks"]
         self.access_points[0].cleanup_scapy()
         wutils.reset_wifi(self.dut)
-        self.dut.adb.shell("settings put global stay_on_while_plugged_in 7")
 
     """ Helper methods """
 
@@ -163,8 +164,6 @@ class ApfCountersTest(WifiBaseTest):
         ra_count_latest = self._get_icmp6intype134()
         asserts.assert_true(ra_count_latest == ra_count + 1,
                             "Device dropped the first RA in sequence")
-        self.dut.adb.shell("settings put global stay_on_while_plugged_in 0")
-        self.dut.droid.goToSleepNow()
 
         # Generate and send 'x' number of duplicate RAs, for 1/6th of the the
         # lifetime of the original RA. Test assumes that the original RA has a
@@ -214,7 +213,7 @@ class ApfCountersTest(WifiBaseTest):
         ra_count = self._get_icmp6intype134()
 
         # start tcpdump on the device
-        tcpdump_pid = start_tcpdump(self.dut, self.test_name, WLAN0)
+        tcpdump_pid = start_tcpdump(self.dut, self.test_name)
 
         # send RA with differnt re-trans time
         for rtt in rtt_list:

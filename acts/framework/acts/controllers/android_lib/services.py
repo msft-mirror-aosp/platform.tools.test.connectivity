@@ -108,3 +108,4 @@ class Sl4aService(AndroidService):
     def _stop(self, _):
         self.ad.terminate_all_sessions()
         self.ad._sl4a_manager.stop_service()
+        self.ad.stop_sl4a()

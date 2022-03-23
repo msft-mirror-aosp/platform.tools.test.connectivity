@@ -165,6 +165,5 @@ class NetstackIxiaTest(NetstackBaseTest):
             access_point.remove_bridge(bridge_name='ixia_bridge0')
 
     """Tests"""
-
     def test_do_nothing(self):
         return True
