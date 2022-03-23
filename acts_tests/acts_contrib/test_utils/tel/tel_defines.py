@@ -732,6 +732,8 @@ ELSALVADOR_TELEFONICA = "elsalvador_telefonica"
 ESTONIA = "estonia"
 FRANCE = "france"
 GREECE = "greece"
+GERMANY_TELEKOM = "germany_telekom"
+QATAR_VODAFONE = "qatar_vodafone"
 HONGKONG = "hongkong"
 ISRAEL = "israel"
 ITALY = "italy"
@@ -857,6 +859,10 @@ NetworkCallbackSuspended = "Suspended"
 NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
+
+# Constant for Settings
+USE_SIM = 'Use SIM'
+MOBILE_DATA = 'Mobile data'
 
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"

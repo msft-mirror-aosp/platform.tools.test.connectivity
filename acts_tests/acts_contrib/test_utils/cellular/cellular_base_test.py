@@ -41,6 +41,7 @@ class CellularBaseTest(base_test.BaseTestClass):
     PARAM_SIM_TYPE_LTE = "lte"
     PARAM_SIM_TYPE_LTE_CA = "lteca"
     PARAM_SIM_TYPE_LTE_IMS = "lteims"
+    PARAM_SIM_TYPE_NR = "nr"
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
@@ -220,6 +221,8 @@ class CellularBaseTest(base_test.BaseTestClass):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_CA)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_LTE_IMS):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_IMS)
+        elif self.consume_parameter(self.PARAM_SIM_TYPE_NR):
+            self.init_simulation(self.PARAM_SIM_TYPE_NR)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_UMTS):
             self.init_simulation(self.PARAM_SIM_TYPE_UMTS)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_GSM):
@@ -333,6 +336,9 @@ class CellularBaseTest(base_test.BaseTestClass):
         simulation_dictionary = {
             self.PARAM_SIM_TYPE_LTE: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_LTE_CA: lte_sim.LteSimulation,
+            # The LteSimulation class is able to handle NR cells as well.
+            # The long-term goal is to consolidate all simulation classes.
+            self.PARAM_SIM_TYPE_NR: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_UMTS: umts_sim.UmtsSimulation,
             self.PARAM_SIM_TYPE_GSM: gsm_sim.GsmSimulation,
             self.PARAM_SIM_TYPE_LTE_IMS: lteims_sim.LteImsSimulation
