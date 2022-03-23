@@ -14,9 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-SYSTEM_INFO_CMD = "ubus call system board"
-
-
 class OpenWrtWifiSecurity:
   # Used by OpenWrt AP
   WPA_PSK_DEFAULT = "psk"
@@ -28,11 +25,6 @@ class OpenWrtWifiSecurity:
   WPA2_PSK_TKIP = "psk2+tkip"
   WPA2_PSK_TKIP_AND_CCMP = "psk2+tkip+ccmp"
 
-
 class OpenWrtWifiSetting:
   IFACE_2G = 2
   IFACE_5G = 3
-
-
-class OpenWrtModelMap:
-  NETGEAR_R8000 = ("radio2", "radio1")
