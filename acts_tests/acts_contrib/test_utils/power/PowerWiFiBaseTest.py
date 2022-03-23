@@ -49,9 +49,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.iperf_server = self.iperf_servers[0]
         if self.iperf_duration:
             self.mon_duration = self.iperf_duration - self.mon_offset - IPERF_TAIL
-            self.mon_info = self.create_monsoon_info()
-
-        wutils.set_wifi_country_code(self.dut, 'US')
+            self.create_monsoon_info()
 
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
@@ -120,8 +118,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
                             network,
                             bandwidth=80,
                             connect=True,
-                            ap=None,
-                            dtim_period=None):
+                            ap=None):
         """Setup AP and connect DUT to it.
 
         Args:
@@ -129,23 +126,17 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             bandwidth: bandwidth of the WiFi network to be setup
             connect: indicator of if connect dut to the network after setup
             ap: access point object, default is None to find the main AP
-            dtim_period: the dtim period of access point
         Returns:
             self.brconfigs: dict for bridge interface configs
         """
         wutils.wifi_toggle_state(self.dut, True)
-        if not dtim_period:
-            dtim_period = self.ap_dtim_period
         if not ap:
             if hasattr(self, 'access_points'):
-                self.brconfigs = wputils.ap_setup(
-                    self.access_point,
-                    network,
-                    bandwidth=bandwidth,
-                    dtim_period=dtim_period)
+                self.brconfigs = wputils.ap_setup(self.access_point,
+                                                  network,
+                                                  bandwidth=bandwidth)
         else:
-            self.brconfigs = wputils.ap_setup(
-                ap, network, bandwidth=bandwidth, dtim_period=dtim_period)
+            self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
         if connect:
             wutils.wifi_connect(self.dut, network, num_of_tries=3)
 
@@ -161,23 +152,10 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
         tag = ''
         if self.iperf_duration:
             throughput = self.process_iperf_results()
-            plot_title = ('{0}_{1}_{2}_RSSI_{3:d}dBm_Throughput_{4:.2f}'
-                          'Mbps'.format(self.test_name,
-                                        self.dut.model,
-                                        self.dut.build_info['build_id'],
-                                        self.RSSI,
-                                        throughput))
+            plot_title = '{}_{}_{}_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
+                self.test_name, self.dut.model,
+                self.dut.build_info['build_id'], self.RSSI, throughput)
             plot_utils.current_waveform_plot(samples, self.mon_voltage,
                                              self.mon_info.data_path,
                                              plot_title)
         return samples
-
-    def setup_test(self):
-        """Set up test specific parameters or configs.
-
-        """
-        super().setup_test()
-
-        wutils.reset_wifi(self.dut)
-        wutils.wifi_toggle_state(self.dut, False)
-

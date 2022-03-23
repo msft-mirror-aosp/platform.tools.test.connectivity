@@ -79,9 +79,9 @@ class BtCarPairedConnectDisconnectTest(BluetoothBaseTest):
         self.car.droid.bluetoothHfpClientSetPriority(
             self.ph.droid.bluetoothGetLocalAddress(),
             BtEnum.BluetoothPriorityLevel.PRIORITY_OFF.value)
-        self.ph.droid.bluetoothHspSetConnectionPolicy(
+        self.ph.droid.bluetoothHspSetPriority(
             self.car.droid.bluetoothGetLocalAddress(),
-            BtEnum.BluetoothConnectionPolicy.CONNECTION_POLICY_FORBIDDEN.value)
+            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF.value)
         addr = self.ph.droid.bluetoothGetLocalAddress()
         if not bt_test_utils.connect_pri_to_sec(
                 self.car, self.ph,

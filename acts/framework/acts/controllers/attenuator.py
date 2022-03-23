@@ -228,7 +228,7 @@ class AttenuatorInstrument(object):
         self.max_atten = AttenuatorInstrument.INVALID_MAX_ATTEN
         self.properties = None
 
-    def set_atten(self, idx, value, strict=True, retry=False):
+    def set_atten(self, idx, value, strict=True):
         """Sets the attenuation given its index in the instrument.
 
         Args:
@@ -238,17 +238,15 @@ class AttenuatorInstrument(object):
             strict: if True, function raises an error when given out of
                 bounds attenuation values, if false, the function sets out of
                 bounds values to 0 or max_atten.
-            retry: if True, command will be retried if possible
         """
         raise NotImplementedError('Base class should not be called directly!')
 
-    def get_atten(self, idx, retry=False):
+    def get_atten(self, idx):
         """Returns the current attenuation of the attenuator at index idx.
 
         Args:
             idx: A zero based index used to identify a particular attenuator in
                 an instrument.
-            retry: if True, command will be retried if possible
 
         Returns:
             The current attenuation value as a floating point value
@@ -264,7 +262,6 @@ class Attenuator(object):
     the physical implementation and allows the user to think only of attenuators
     regardless of their location.
     """
-
     def __init__(self, instrument, idx=0, offset=0):
         """This is the constructor for Attenuator
 
@@ -293,7 +290,7 @@ class Attenuator(object):
             raise IndexError(
                 'Attenuator index out of range for attenuator instrument')
 
-    def set_atten(self, value, strict=True, retry=False):
+    def set_atten(self, value, strict=True):
         """Sets the attenuation.
 
         Args:
@@ -301,7 +298,6 @@ class Attenuator(object):
             strict: if True, function raises an error when given out of
                 bounds attenuation values, if false, the function sets out of
                 bounds values to 0 or max_atten.
-            retry: if True, command will be retried if possible
 
         Raises:
             ValueError if value + offset is greater than the maximum value.
@@ -310,14 +306,11 @@ class Attenuator(object):
             raise ValueError(
                 'Attenuator Value+Offset greater than Max Attenuation!')
 
-        self.instrument.set_atten(self.idx,
-                                  value + self.offset,
-                                  strict=strict,
-                                  retry=retry)
+        self.instrument.set_atten(self.idx, value + self.offset, strict)
 
-    def get_atten(self, retry=False):
+    def get_atten(self):
         """Returns the attenuation as a float, normalized by the offset."""
-        return self.instrument.get_atten(self.idx, retry) - self.offset
+        return self.instrument.get_atten(self.idx) - self.offset
 
     def get_max_atten(self):
         """Returns the max attenuation as a float, normalized by the offset."""
@@ -337,7 +330,6 @@ class AttenuatorGroup(object):
     convenience to the user and avoid re-implementation of helper functions and
     small loops scattered throughout user code.
     """
-
     def __init__(self, name=''):
         """This constructor for AttenuatorGroup
 
