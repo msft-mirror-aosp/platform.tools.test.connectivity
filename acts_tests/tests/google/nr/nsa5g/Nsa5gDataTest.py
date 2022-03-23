@@ -369,11 +369,8 @@ class Nsa5gDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_volte(ads[0].log, ads[0]):
-            ads[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_data_connectivity_multi_bearer(self.log, ads, GEN_5G, nr_type='nsa')
+        return test_data_connectivity_multi_bearer(
+            self.log, self.android_devices, '5g_volte', nr_type='nsa')
 
 
     @test_tracker_info(uuid="e88b226e-3842-4c45-a33e-d4fee7d8f6f0")
