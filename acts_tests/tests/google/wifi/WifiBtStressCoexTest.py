@@ -29,8 +29,9 @@ from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts_contrib.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts_contrib.test_utils.bt.bt_test_utils import factory_reset_bluetooth
+from acts_contrib.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts_contrib.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 WifiEnums = wutils.WifiEnums
 
@@ -43,6 +44,7 @@ BAND_5GHZ = 1
 WIFI_NETWORK_AP_CHANNEL_2G = 1
 WIFI_NETWORK_AP_CHANNEL_5G = 36
 
+
 class WifiBtStressCoexTest(WifiBaseTest):
     """WiFi BT Coex Stress test class.
 
@@ -52,6 +54,7 @@ class WifiBtStressCoexTest(WifiBaseTest):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network.
     """
+
     def __init__(self, configs):
         super().__init__(configs)
         self.enable_packet_log = True
@@ -70,9 +73,16 @@ class WifiBtStressCoexTest(WifiBaseTest):
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
             "stress_count", "stress_hours", "attn_vals", "pno_interval",
-            "iperf_server_port"]
+            "iperf_server_port", "dbs_supported_models",
+            "sta_sta_supported_models"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
+
+        self.ap_iface = 'wlan0'
+        if self.dut.model in self.dbs_supported_models:
+            self.ap_iface = 'wlan1'
+        if self.dut.model in self.sta_sta_supported_models:
+            self.ap_iface = 'wlan2'
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start(ap_count=2)
@@ -93,6 +103,7 @@ class WifiBtStressCoexTest(WifiBaseTest):
         super().setup_test()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+        wutils.wifi_toggle_state(self.dut_client, True)
 
     def teardown_test(self):
         super().teardown_test()
@@ -101,7 +112,9 @@ class WifiBtStressCoexTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        factory_reset_bluetooth([self.dut, self.headset])
+        wutils.reset_wifi(self.dut_client)
+        clear_bonded_devices(self.dut)
+        clear_bonded_devices(self.headset)
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
@@ -131,7 +144,7 @@ class WifiBtStressCoexTest(WifiBaseTest):
         """
         ssid = network[WifiEnums.SSID_KEY]
         wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
-            ssid)
+                                                                   ssid)
         wutils.wifi_connect_by_id(self.dut, net_id)
 
     def run_ping(self, sec):
@@ -142,8 +155,8 @@ class WifiBtStressCoexTest(WifiBaseTest):
 
         """
         self.log.info("Running ping for %d seconds" % sec)
-        result = self.dut.adb.shell("ping -w %d %s" %(sec, PING_ADDR),
-            timeout=sec+1)
+        result = self.dut.adb.shell("ping -w %d %s" % (sec, PING_ADDR),
+                                    timeout=sec+1)
         self.log.debug("Ping Result = %s" % result)
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
@@ -225,16 +238,42 @@ class WifiBtStressCoexTest(WifiBaseTest):
                 wutils.wifi_toggle_state(self.dut, True)
                 startup_time = time.time() - startTime
                 self.log.debug("WiFi was enabled on the device in %s s." %
-                    startup_time)
+                               startup_time)
             except:
-                raise signals.TestFailure(details="", extras={"Iterations":"%d" %
-                    self.stress_count, "Pass":"%d" %count})
-        raise signals.TestPass(details="", extras={"Iterations":"%d" %
-            self.stress_count, "Pass":"%d" %(count+1)})
+                raise signals.TestFailure(details="", extras={"Iterations": "%d" %
+                    self.stress_count, "Pass": "%d" % count})
+        raise signals.TestPass(details="", extras={"Iterations": "%d" %
+                    self.stress_count, "Pass": "%d" % (count+1)})
+
+    @test_tracker_info(uuid="ed5b77ff-8a64-4ea7-a481-96ad3a3b91d0")
+    def test_wifi_on_off_with_5g(self):
+        """Test wifi on/off state by connection to 5G network followed
+           with BT paired.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        self.scan_and_connect_by_ssid(self.dut, self.wpa_5g)
+        self.connect_BT_paired(self.dut, self.headset)
+        time.sleep(5)
+        for count in range(self.stress_count):
+            """Test toggling wifi"""
+            try:
+                self.log.debug("Going from on to off.")
+                wutils.wifi_toggle_state(self.dut, False)
+                self.log.debug("Going from off to on.")
+                startTime = time.time()
+                wutils.wifi_toggle_state(self.dut, True)
+                startup_time = time.time() - startTime
+                self.log.debug("WiFi was enabled on the device in %s s." %
+                               startup_time)
+            except:
+                raise signals.TestFailure(details="", extras={"Iterations": "%d" %
+                    self.stress_count, "Pass": "%d" % count})
+        raise signals.TestPass(details="", extras={"Iterations": "%d" %
+                    self.stress_count, "Pass": "%d" % (count+1)})
 
     @test_tracker_info(uuid="cc132d79-d0ea-4f99-ba6f-0f6fbd21eba0")
     def test_2g_sta_mode_and_hotspot_5g_on_off_stress_bt_paired(self):
-        """Tests connection to 2G network followed by SoftAp on 5G
+        """Tests connect to 2G network followed by SoftAp on 5G
            with BT paired.
         """
         wutils.wifi_toggle_state(self.dut, True)
@@ -245,3 +284,109 @@ class WifiBtStressCoexTest(WifiBaseTest):
             """Test toggling softap"""
             self.log.info("Iteration %d", count+1)
             self.verify_softap_full_on_off(self.open_2g, WIFI_CONFIG_APBAND_5G)
+
+    @test_tracker_info(uuid="de3903ec-9484-4302-814a-2027631d6ddb")
+    def test_2g_sta_mode_and_hotspot_2g_on_off_stress_bt_paired(self):
+        """Tests connect to 2G network followed by SoftAp on 2G
+           with BT paired.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        self.scan_and_connect_by_ssid(self.dut, self.open_2g)
+        self.connect_BT_paired(self.dut, self.headset)
+        time.sleep(5)
+        for count in range(self.stress_count):
+            """Test toggling softap"""
+            self.log.info("Iteration %d", count+1)
+            self.verify_softap_full_on_off(self.open_2g, WIFI_CONFIG_APBAND_2G)
+
+    @test_tracker_info(uuid="42a27ff4-aeb7-45f1-909b-e9695035fb95")
+    def test_5g_sta_mode_and_hotspot_2g_on_off_stress_bt_paired(self):
+        """Tests connect to 5G network followed by SoftAp on 2G
+           with BT paired.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        self.scan_and_connect_by_ssid(self.dut, self.open_5g)
+        self.connect_BT_paired(self.dut, self.headset)
+        time.sleep(5)
+        for count in range(self.stress_count):
+            """Test toggling softap"""
+            self.log.info("Iteration %d", count+1)
+            self.verify_softap_full_on_off(self.open_2g, WIFI_CONFIG_APBAND_2G)
+
+    @test_tracker_info(uuid="bae3c34b-34dd-47e4-8a6b-3b2dd97e169e")
+    def test_5g_sta_mode_and_hotspot_5g_on_off_stress_bt_paired(self):
+        """Tests connect to 5G network followed by SoftAp on 5G
+           with BT paired.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        self.scan_and_connect_by_ssid(self.dut, self.open_5g)
+        self.connect_BT_paired(self.dut, self.headset)
+        time.sleep(5)
+        for count in range(self.stress_count):
+            """Test toggling softap"""
+            self.log.info("Iteration %d", count+1)
+            self.verify_softap_full_on_off(self.open_2g, WIFI_CONFIG_APBAND_5G)
+
+    @test_tracker_info(uuid="4f39304b-18a1-4c54-8fa1-072ef3c1688d")
+    def test_2g_hotspot_on_off_with_bt_paired(self):
+        """Tests followed by turn on/off SoftAp on 2G with BT paired.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        self.connect_BT_paired(self.dut, self.headset)
+        time.sleep(5)
+        for count in range(self.stress_count):
+            """Test toggling softap"""
+            self.log.info("Iteration %d", count+1)
+            softap_config = wutils.create_softap_config()
+            wutils.start_wifi_tethering(
+            self.dut, softap_config[wutils.WifiEnums.SSID_KEY],
+            softap_config[wutils.WifiEnums.PWD_KEY],
+                wutils.WifiEnums.WIFI_CONFIG_APBAND_2G)
+            config = {
+                "SSID": softap_config[wutils.WifiEnums.SSID_KEY],
+                "password": softap_config[wutils.WifiEnums.PWD_KEY]
+            }
+            wutils.wifi_toggle_state(self.dut_client, True)
+            wutils.connect_to_wifi_network(self.dut_client, config,
+                check_connectivity=False)
+            # Ping the DUT
+            dut_addr = self.dut.droid.connectivityGetIPv4Addresses(
+                self.ap_iface)[0]
+            asserts.assert_true(
+                utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_addr,
+                 timeout=20),
+                "%s ping %s failed" % (self.dut_client.serial, dut_addr))
+            wutils.wifi_toggle_state(self.dut_client, True)
+            wutils.stop_wifi_tethering(self.dut)
+
+    @test_tracker_info(uuid="a6b1fa3d-be1f-4039-807b-4f117681b2dc")
+    def test_5g_hotspot_on_off_with_bt_paired(self):
+        """Tests followed by turn on/off SoftAp on 5G with BT paired.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        self.connect_BT_paired(self.dut, self.headset)
+        time.sleep(5)
+        for count in range(self.stress_count):
+            """Test toggling softap"""
+            self.log.info("Iteration %d", count+1)
+            softap_config = wutils.create_softap_config()
+            wutils.start_wifi_tethering(
+            self.dut, softap_config[wutils.WifiEnums.SSID_KEY],
+            softap_config[wutils.WifiEnums.PWD_KEY],
+                wutils.WifiEnums.WIFI_CONFIG_APBAND_5G)
+            config = {
+                "SSID": softap_config[wutils.WifiEnums.SSID_KEY],
+                "password": softap_config[wutils.WifiEnums.PWD_KEY]
+            }
+            wutils.wifi_toggle_state(self.dut_client, True)
+            wutils.connect_to_wifi_network(self.dut_client, config,
+                check_connectivity=False)
+            # Ping the DUT
+            dut_addr = self.dut.droid.connectivityGetIPv4Addresses(
+                self.ap_iface)[0]
+            asserts.assert_true(
+                utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_addr,
+                 timeout=20),
+                "%s ping %s failed" % (self.dut_client.serial, dut_addr))
+            wutils.wifi_toggle_state(self.dut_client, True)
+            wutils.stop_wifi_tethering(self.dut)
