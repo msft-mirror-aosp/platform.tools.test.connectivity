@@ -36,5 +36,4 @@ VOICE_CALL = "voice"
 VOLTE_CALL = "volte"
 CSFB_CALL = "csfb"
 WFC_CALL = "wfc_call"
-NO_VOICE_CALL = "no voice call"
 
