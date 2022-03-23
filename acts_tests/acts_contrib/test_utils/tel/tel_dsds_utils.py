@@ -80,6 +80,166 @@ from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 
+def dsds_dds_swap_message_streaming_test(
+    log: tracelogger.TraceLogger,
+    ads: Sequence[AndroidDevice],
+    test_rat: list,
+    test_slot: list,
+    init_dds: int,
+    msg_type: str = "SMS",
+    direction: str = "mt",
+    streaming: bool = True,
+    expected_result: bool = True) -> bool:
+    """Make MO and MT message at specific slot in specific RAT with DDS at
+    specific slot and do the same steps after dds swap.
+
+    Args:
+        log: Logger object.
+        ads: A list of Android device objects.
+        test_rat: RAT for both slots of primary device.
+        test_slot: The slot which make/receive MO/MT SMS/MMS of primary device.
+        dds_slot: Preferred data slot of primary device.
+        msg_type: SMS or MMS to send.
+        direction: The direction of message("mo" or "mt") at first.
+        streaming: True for playing Youtube before send/receive SMS/MMS and
+            False on the contrary.
+        expected_result: True or False
+
+    Returns:
+        TestFailure if failed.
+    """
+    result = True
+
+    for test_slot, dds_slot in zip(test_slot, [init_dds, 1-init_dds]):
+        ads[0].log.info("test_slot: %d, dds_slot: %d", test_slot, dds_slot)
+        result = result and dsds_message_streaming_test(
+            log=log,
+            ads=ads,
+            test_rat=test_rat,
+            test_slot=test_slot,
+            dds_slot=dds_slot,
+            msg_type=msg_type,
+            direction=direction,
+            streaming=streaming,
+            expected_result=expected_result
+        )
+        if not result:
+            return result
+
+    log.info("Switch DDS back.")
+    if not set_dds_on_slot(ads[0], init_dds):
+        ads[0].log.error(
+            "Failed to set DDS at slot %s on %s",(init_dds, ads[0].serial))
+        return False
+
+    log.info("Check phones is in desired RAT.")
+    phone_setup_on_rat(
+        log,
+        ads[0],
+        test_rat[test_slot],
+        get_subid_from_slot_index(log, ads[0], init_dds)
+    )
+
+    log.info("Check HTTP connection after DDS switch.")
+    if not verify_http_connection(log, ads[0]):
+        ads[0].log.error("Failed to verify http connection.")
+        return False
+    else:
+        ads[0].log.info("Verify http connection successfully.")
+
+    return result
+
+
+def dsds_dds_swap_call_streaming_test(
+    log: tracelogger.TraceLogger,
+    tel_logger: TelephonyMetricLogger.for_test_case,
+    ads: Sequence[AndroidDevice],
+    test_rat: list,
+    test_slot: list,
+    init_dds: int,
+    direction: str = "mo",
+    duration: int = 360,
+    streaming: bool = True,
+    is_airplane_mode: bool = False,
+    wfc_mode: Sequence[str] = [
+        WFC_MODE_CELLULAR_PREFERRED,
+        WFC_MODE_CELLULAR_PREFERRED],
+    wifi_network_ssid: Optional[str] = None,
+    wifi_network_pass: Optional[str] = None,
+    turn_off_wifi_in_the_end: bool = False,
+    turn_off_airplane_mode_in_the_end: bool = False) -> bool:
+    """Make MO/MT call at specific slot in specific RAT with DDS at specific
+    slot and do the same steps after dds swap.
+
+    Args:
+        log: Logger object.
+        tel_logger: Logger object for telephony proto.
+        ads: A list of Android device objects.
+        test_rat: RAT for both slots of primary device.
+        test_slot: The slot which make/receive MO/MT call of primary device.
+        init_dds: Initial preferred data slot of primary device.
+        direction: The direction of call("mo" or "mt").
+        streaming: True for playing Youtube and False on the contrary.
+        is_airplane_mode: True or False for WFC setup
+        wfc_mode: Cellular preferred or Wi-Fi preferred.
+        wifi_network_ssid: SSID of Wi-Fi AP.
+        wifi_network_pass: Password of Wi-Fi AP SSID.
+        turn_off_wifi_in_the_end: True to turn off Wi-Fi and False not to turn
+            off Wi-Fi in the end of the function.
+        turn_off_airplane_mode_in_the_end: True to turn off airplane mode and
+            False not to turn off airplane mode in the end of the function.
+
+    Returns:
+        TestFailure if failed.
+    """
+    result = True
+
+    for test_slot, dds_slot in zip(test_slot, [init_dds, 1-init_dds]):
+        ads[0].log.info("test_slot: %d, dds_slot: %d", test_slot, dds_slot)
+        result = result and dsds_long_call_streaming_test(
+            log=log,
+            tel_logger=tel_logger,
+            ads=ads,
+            test_rat=test_rat,
+            test_slot=test_slot,
+            dds_slot=dds_slot,
+            direction=direction,
+            duration=duration,
+            streaming=streaming,
+            is_airplane_mode=is_airplane_mode,
+            wfc_mode=wfc_mode,
+            wifi_network_ssid=wifi_network_ssid,
+            wifi_network_pass=wifi_network_pass,
+            turn_off_wifi_in_the_end=turn_off_wifi_in_the_end,
+            turn_off_airplane_mode_in_the_end=turn_off_airplane_mode_in_the_end
+        )
+        if not result:
+            return result
+
+    log.info("Switch DDS back.")
+    if not set_dds_on_slot(ads[0], init_dds):
+        ads[0].log.error(
+            "Failed to set DDS at slot %s on %s",(init_dds, ads[0].serial))
+        return False
+
+    log.info("Check phones is in desired RAT.")
+    phone_setup_on_rat(
+        log,
+        ads[0],
+        test_rat[test_slot],
+        get_subid_from_slot_index(log, ads[0], init_dds)
+    )
+
+    log.info("Check HTTP connection after DDS switch.")
+    if not verify_http_connection(log, ads[0]):
+        ads[0].log.error("Failed to verify http connection.")
+        return False
+    else:
+        ads[0].log.info("Verify http connection successfully.")
+
+    return result
+
+
 def dsds_long_call_streaming_test(
     log: tracelogger.TraceLogger,
     tel_logger: TelephonyMetricLogger.for_test_case,
@@ -90,8 +250,8 @@ def dsds_long_call_streaming_test(
     direction: str = "mo",
     duration: int = 360,
     streaming: bool = True,
-    is_airplane_mode = False,
-    wfc_mode: list[str, str] = [
+    is_airplane_mode: bool = False,
+    wfc_mode: Sequence[str] = [
         WFC_MODE_CELLULAR_PREFERRED,
         WFC_MODE_CELLULAR_PREFERRED],
     wifi_network_ssid: Optional[str] = None,
@@ -278,7 +438,6 @@ def dsds_long_call_streaming_test(
 
     # For the tese cases related to WFC in which Wi-Fi will be turned off in the
     # end.
-
     rat_list = [test_rat[test_slot], test_rat[1-test_slot]]
 
     if turn_off_wifi_in_the_end:
@@ -309,6 +468,8 @@ def dsds_long_call_streaming_test(
 
     if streaming:
         ads[0].force_stop_apk(YOUTUBE_PACKAGE_NAME)
+
+    return True
 
 
 def dsds_voice_call_test(
@@ -546,6 +707,195 @@ def dsds_voice_call_test(
                 extras={
                     "fail_reason": "Idle state of sub ID %s does not match the "
                     "given RAT %s." % (sub_id, rat)})
+
+
+def dsds_message_streaming_test(
+    log: tracelogger.TraceLogger,
+    ads: Sequence[AndroidDevice],
+    test_rat: list,
+    test_slot: int,
+    dds_slot: int,
+    msg_type: str = "SMS",
+    direction: str = "mt",
+    streaming: bool = True,
+    expected_result: bool = True) -> bool:
+    """Make MO and MT SMS/MMS at specific slot in specific RAT with DDS at
+    specific slot.
+
+    Test step:
+    1. Get sub IDs of specific slots of both MO and MT devices.
+    2. Switch DDS to specific slot.
+    3. Check HTTP connection after DDS switch.
+    4. Set up phones in desired RAT.
+    5. Receive and Send SMS/MMS.
+
+    Args:
+        log: Logger object.
+        ads: A list of Android device objects.
+        test_rat: RAT for both slots of primary device.
+        test_slot: The slot which make/receive MO/MT SMS/MMS of primary device.
+        dds_slot: Preferred data slot of primary device.
+        msg_type: SMS or MMS to send.
+        direction: The direction of message("mo" or "mt") at first.
+        streaming: True for playing Youtube before send/receive SMS/MMS and
+            False on the contrary.
+        expected_result: True or False
+
+    Returns:
+        TestFailure if failed.
+    """
+    log.info("Step 1: Switch DDS.")
+    if not set_dds_on_slot(ads[0], dds_slot):
+        ads[0].log.error(
+            "Failed to set DDS at slot %s on %s",(dds_slot, ads[0].serial))
+        return False
+
+    log.info("Step 2: Check HTTP connection after DDS switch.")
+    if not verify_http_connection(log, ads[0]):
+        ads[0].log.error("Failed to verify http connection.")
+        return False
+    else:
+        ads[0].log.info("Verify http connection successfully.")
+
+    log.info("Step 3: Set up phones in desired RAT.")
+    if direction == "mo":
+        # setup message subid on primary device.
+        ad_mo = ads[0]
+        mo_sub_id = get_subid_from_slot_index(log, ad_mo, test_slot)
+        if mo_sub_id == INVALID_SUB_ID:
+            ad_mo.log.warning("Failed to get sub ID at slot %s.", test_slot)
+            return False
+        mo_other_sub_id = get_subid_from_slot_index(
+            log, ad_mo, 1-test_slot)
+        sub_id_list = [mo_sub_id, mo_other_sub_id]
+        set_message_subid(ad_mo, mo_sub_id)
+        ad_mo.log.info("Sub ID for outgoing call at slot %s: %s", test_slot,
+            get_outgoing_message_sub_id(ad_mo))
+
+        # setup message subid on secondary device.
+        ad_mt = ads[1]
+        _, mt_sub_id, _ = get_subid_on_same_network_of_host_ad(ads, type="sms")
+        if mt_sub_id == INVALID_SUB_ID:
+            ad_mt.log.warning("Failed to get sub ID at default voice slot.")
+            return False
+        mt_slot = get_slot_index_from_subid(ad_mt, mt_sub_id)
+        set_message_subid(ad_mt, mt_sub_id)
+        ad_mt.log.info("Sub ID for incoming call at slot %s: %s", mt_slot,
+            get_outgoing_message_sub_id(ad_mt))
+
+        # setup the rat on non-test slot(primary device).
+        phone_setup_on_rat(
+            log,
+            ad_mo,
+            test_rat[1-test_slot],
+            mo_other_sub_id)
+        # assign phone setup argv for test slot.
+        mo_phone_setup_func_argv = (
+            log,
+            ad_mo,
+            test_rat[test_slot],
+            mo_sub_id)
+    else:
+        # setup message subid on primary device.
+        ad_mt = ads[0]
+        mt_sub_id = get_subid_from_slot_index(log, ad_mt, test_slot)
+        if mt_sub_id == INVALID_SUB_ID:
+            ad_mt.log.warning("Failed to get sub ID at slot %s.", test_slot)
+            return False
+        mt_other_sub_id = get_subid_from_slot_index(
+            log, ad_mt, 1-test_slot)
+        sub_id_list = [mt_sub_id, mt_other_sub_id]
+        set_message_subid(ad_mt, mt_sub_id)
+        ad_mt.log.info("Sub ID for incoming call at slot %s: %s", test_slot,
+            get_outgoing_message_sub_id(ad_mt))
+
+        # setup message subid on secondary device.
+        ad_mo = ads[1]
+        _, mo_sub_id, _ = get_subid_on_same_network_of_host_ad(ads, type="sms")
+        if mo_sub_id == INVALID_SUB_ID:
+            ad_mo.log.warning("Failed to get sub ID at default voice slot.")
+            return False
+        mo_slot = get_slot_index_from_subid(ad_mo, mo_sub_id)
+        set_message_subid(ad_mo, mo_sub_id)
+        ad_mo.log.info("Sub ID for outgoing call at slot %s: %s", mo_slot,
+            get_outgoing_message_sub_id(ad_mo))
+
+        # setup the rat on non-test slot(primary device).
+        phone_setup_on_rat(
+            log,
+            ad_mt,
+            test_rat[1-test_slot],
+            mt_other_sub_id)
+        # assign phone setup argv for test slot.
+        mt_phone_setup_func_argv = (
+            log,
+            ad_mt,
+            test_rat[test_slot],
+            mt_sub_id)
+        mo_phone_setup_func_argv = (log, ad_mo, 'general')
+
+    tasks = [(phone_setup_on_rat, mo_phone_setup_func_argv),
+             (phone_setup_on_rat, mt_phone_setup_func_argv)]
+    if not multithread_func(log, tasks):
+        log.error("Phone Failed to Set Up Properly.")
+        raise signals.TestFailure("Failed",
+            extras={"fail_reason": "Phone Failed to Set Up Properly."})
+    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+    if streaming:
+        log.info("Step 4-0: Start Youtube streaming.")
+        if not start_youtube_video(ads[0]):
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Fail to bring up youtube video."})
+        time.sleep(10)
+
+    log.info("Step 4: Send %s.", msg_type)
+    if msg_type == "MMS":
+        for ad, current_data_sub_id, current_msg_sub_id in [
+            [ ads[0],
+                get_default_data_sub_id(ads[0]),
+                get_outgoing_message_sub_id(ads[0]) ],
+            [ ads[1],
+                get_default_data_sub_id(ads[1]),
+                get_outgoing_message_sub_id(ads[1]) ]]:
+            if current_data_sub_id != current_msg_sub_id:
+                ad.log.warning(
+                    "Current data sub ID (%s) does not match message"
+                    " sub ID (%s). MMS should NOT be sent.",
+                    current_data_sub_id,
+                    current_msg_sub_id)
+                expected_result = False
+
+    result_first = msim_message_test(log, ad_mo, ad_mt, mo_sub_id, mt_sub_id,
+        msg=msg_type, expected_result=expected_result)
+
+    if not result_first:
+        log_messaging_screen_shot(ad_mo, test_name="%s_tx" % msg_type)
+        log_messaging_screen_shot(ad_mt, test_name="%s_rx" % msg_type)
+
+    result_second = msim_message_test(log, ad_mt, ad_mo, mt_sub_id, mo_sub_id,
+        msg=msg_type, expected_result=expected_result)
+
+    if not result_second:
+        log_messaging_screen_shot(ad_mt, test_name="%s_tx" % msg_type)
+        log_messaging_screen_shot(ad_mo, test_name="%s_rx" % msg_type)
+
+    result = result_first and result_second
+
+    log.info("Step 5: Verify RAT and HTTP connection.")
+    rat_list = [test_rat[test_slot], test_rat[1-test_slot]]
+    for rat, sub_id in zip(rat_list, sub_id_list):
+        if not wait_for_network_idle(log, ads[0], rat, sub_id):
+            raise signals.TestFailure(
+                "Failed",
+                extras={
+                    "fail_reason": "Idle state of sub ID %s does not match the "
+                    "given RAT %s." % (sub_id, rat)})
+
+    if streaming:
+        ads[0].force_stop_apk(YOUTUBE_PACKAGE_NAME)
+
+    return result
 
 
 def dsds_message_test(

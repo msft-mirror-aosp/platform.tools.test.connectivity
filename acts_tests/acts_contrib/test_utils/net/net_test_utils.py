@@ -43,6 +43,8 @@ VPN_PARAMS = cconst.VpnReqParams
 TCPDUMP_PATH = "/data/local/tmp/"
 USB_CHARGE_MODE = "svc usb setFunctions"
 USB_TETHERING_MODE = "svc usb setFunctions rndis"
+ENABLE_HARDWARE_OFFLOAD = "settings put global tether_offload_disabled 0"
+DISABLE_HARDWARE_OFFLOAD = "settings put global tether_offload_disabled 1"
 DEVICE_IP_ADDRESS = "ip address"
 LOCALHOST = "192.168.1.1"
 
@@ -491,6 +493,8 @@ def set_cap_net_raw_capability():
     """
     cap_net_raw = "sudo setcap cap_net_raw=eip $(readlink -f $(which act.py))"
     utils.exe_cmd(cap_net_raw)
+    cap_python = "sudo setcap cap_net_raw=eip $(readlink -f $(which python))"
+    utils.exe_cmd(cap_python)
 
 
 def supports_ipv6_tethering(self, dut):
@@ -548,7 +552,10 @@ def wait_for_new_iface(old_ifaces):
                             "Too many new interfaces after turning on "
                             "tethering")
         if len(new_ifaces) == 1:
-            return new_ifaces.pop()
+            # enable the new iface before return
+            new_iface = new_ifaces.pop()
+            enable_iface(new_iface)
+            return new_iface
         time.sleep(1)
     asserts.fail("Timeout waiting for tethering interface on host")
 
@@ -577,3 +584,42 @@ def get_if_list():
         if ": flags" in line.lower()
     ]
     return interfaces
+
+
+def enable_hardware_offload(ad):
+    """Enable hardware offload using adb shell command.
+
+    Args:
+        ad: Android device object
+    """
+    ad.log.info("Enabling hardware offload.")
+    ad.adb.shell(ENABLE_HARDWARE_OFFLOAD, ignore_status=True)
+    ad.reboot()
+    time.sleep(tel_defines.WAIT_TIME_AFTER_REBOOT)
+
+
+def disable_hardware_offload(ad):
+    """Disable hardware offload using adb shell command.
+
+    Args:
+        ad: Android device object
+    """
+    ad.log.info("Disabling hardware offload.")
+    ad.adb.shell(DISABLE_HARDWARE_OFFLOAD, ignore_status=True)
+    ad.reboot()
+    time.sleep(tel_defines.WAIT_TIME_AFTER_REBOOT)
+
+
+def enable_iface(iface):
+    """Enable network interfaces.
+
+    Some network interface might disabled as default, need to enable before
+    using it.
+
+    Args:
+        iface: network interface that need to enable
+    """
+    result = job.run("sudo ifconfig %s up" % (iface), ignore_status=True)
+    if result.exit_status:
+        raise asserts.fail(
+            "Failed to execute ifconfig: {}".format(plain_str(result.stderr)))
