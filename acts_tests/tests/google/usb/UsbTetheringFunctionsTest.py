@@ -28,7 +28,6 @@ from acts_contrib.test_utils.tel import tel_test_utils as tutils
 from acts_contrib.test_utils.tel import tel_defines
 from acts_contrib.test_utils.tel.anritsu_utils import wait_for_sms_sent_success
 from acts_contrib.test_utils.tel.tel_defines import EventMmsSentSuccess
-from acts_contrib.test_utils.tel.tel_bootloader_utils import fastboot_wipe
 
 # Time it takes for the usb tethering IP to
 # show up in ifconfig and function waiting.
@@ -408,7 +407,7 @@ class UsbTetheringFunctionsTest(base_test.BaseTestClass):
         5. Run ping test through usb tethering interface.
         """
         self.enable_usb_tethering()
-        fastboot_wipe(self.dut)
+        tutils.fastboot_wipe(self.dut)
         time.sleep(DEFAULT_SETTLE_TIME)
         # Skip setup wizard after wipe.
         self.dut.adb.shell(

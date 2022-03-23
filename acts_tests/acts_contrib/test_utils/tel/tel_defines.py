@@ -354,9 +354,6 @@ CARRIER_NTT_DOCOMO = 'ntt_docomo'
 CARRIER_KDDI = 'kddi'
 CARRIER_RAKUTEN = 'rakuten'
 CARRIER_SBM = 'sbm'
-CARRIER_SKT = 'skt'
-CARRIER_KT = 'kt'
-CARRIER_LG_UPLUS = 'lg_uplus'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
@@ -687,17 +684,10 @@ NETWORK_MODE_NR_LTE_TDSCDMA_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_WCDMA"
 NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
 
-# Constants for APP Package Name
-DIALER_PACKAGE_NAME = "com.google.android.dialer"
-MESSAGE_PACKAGE_NAME = "com.google.android.apps.messaging"
-YOUTUBE_PACKAGE_NAME = "com.google.android.youtube"
-SL4A_PACKAGE_NAME = "com.googlecode.android_scripting"
-
 # Constants for CellBroadcast module test
 CARRIER_TEST_CONF_XML_PATH = "/data/user_de/0/com.android.phone/files/"
 MAIN_ACTIVITY = "android.intent.action.MAIN"
 CBR_PACKAGE = "com.google.android.cellbroadcastreceiver"
-SYSUI_PACKAGE = "com.android.systemui"
 CBR_ACTIVITY = "com.android.cellbroadcastreceiver.CellBroadcastSettings"
 CBR_TEST_APK = "com.android.cellbroadcastreceiver.tests"
 MCC_MNC = "mccmnc"
@@ -706,34 +696,15 @@ PLMN_ADB_PROPERTY = "gsm.sim.operator.numeric"
 WAIT_TIME_FOR_ALERTS_TO_POPULATE = 60
 WAIT_TIME_FOR_UI = 5
 SCROLL_DOWN = "input swipe 300 900 300 300"
-WAIT_TIME_FOR_ALERT_TO_RECEIVE = 15
-DEFAULT_SOUND_TIME = 16
-DEFAULT_VIBRATION_TIME = 10
-DEFAULT_OFFSET = 1
-EXIT_ALERT_LIST = ["Got it", "OK", "Hide", "TO CLOSE", "Yes"]
-CMD_DND_OFF = "cmd notification set_dnd off"
-CMD_DND_ON = "cmd notification set_dnd on"
-DUMPSYS_VIBRATION = "dumpsys vibrator_manager | grep -i  com.google.android.cellbroadcastreceiver | tail -1"
-DEFAULT_ALERT_TYPE = "popup"
-EXPAND_NOTIFICATION_BAR = "cmd statusbar expand-notifications"
-COLLAPSE_NOTIFICATION_BAR = "cmd statusbar collapse"
-CLEAR_NOTIFICATION_BAR = "service call notification 1"
 
 # Countries/Carriers for Compliance Testing
-AUSTRALIA = "australia"
 BRAZIL = "brazil"
 CANADA = "canada"
-CHILE_ENTEL = "chile_entel"
-CHILE_TELEFONICA = "chile_telefonica"
+CHILE = "chile"
 COLUMBIA = "columbia"
-ECUADOR_TELEFONICA = "ecuador_telefonica"
-ECUADOR_CLARO = "ecuador_claro"
-ELSALVADOR_TELEFONICA = "elsalvador_telefonica"
+EQUADOR = "equador"
 ESTONIA = "estonia"
-FRANCE = "france"
 GREECE = "greece"
-GERMANY_TELEKOM = "germany_telekom"
-QATAR_VODAFONE = "qatar_vodafone"
 HONGKONG = "hongkong"
 ISRAEL = "israel"
 ITALY = "italy"
@@ -742,12 +713,10 @@ JAPAN_SOFTBANK = "japan_softbank"
 KOREA = "korea"
 LATVIA = "latvia"
 LITHUANIA = "lithuania"
-MEXICO_TELEFONICA = "mexico_telefonica"
 NETHERLANDS = "netherlands"
 NEWZEALAND = "newzealand"
 OMAN = "oman"
-PERU_ENTEL = "peru_entel"
-PERU_TELEFONICA = "peru_telefonica"
+PERU = "peru"
 PUERTORICO = "puertorico"
 ROMANIA = "romania"
 SAUDIARABIA = "saudiarabia"
@@ -755,9 +724,6 @@ SOUTHAFRICA = "southafrica"
 TAIWAN = "taiwan"
 UAE = "uae"
 UK = "uk"
-US_ATT = "us_att"
-US_TMO = "us_tmo"
-US_VZW = "us_vzw"
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
@@ -859,10 +825,6 @@ NetworkCallbackSuspended = "Suspended"
 NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
-
-# Constant for Settings
-USE_SIM = 'Use SIM'
-MOBILE_DATA = 'Mobile data'
 
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"
