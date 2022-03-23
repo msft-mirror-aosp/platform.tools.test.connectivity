@@ -119,10 +119,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
-        if not provision_both_devices_for_volte(self.log, ads):
-            return False
-
-        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
+        if not provision_both_devices_for_volte(self.log, ads, GEN_5G,
+                                                nr_type='nsa'):
             return False
 
         # VoLTE calls
@@ -157,13 +155,10 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # LTE attach
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
+        tasks = [(phone_setup_volte, (self.log, ads[0], GEN_5G, 'nsa')),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone failed to set up in volte/3g")
-            return False
-
-        if not provision_device_for_5g(self.log, ads[0], nr_type='nsa'):
             return False
 
         # VoLTE to 3G
@@ -200,10 +195,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
-        if not provision_both_devices_for_volte(self.log, ads):
-            return False
-
-        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
+        if not provision_both_devices_for_volte(self.log, ads, GEN_5G,
+                                                nr_type='nsa'):
             return False
 
         if not phone_setup_call_hold_unhold_test(self.log,
@@ -232,10 +225,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
-        if not provision_both_devices_for_volte(self.log, ads):
-            return False
-
-        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
+        if not provision_both_devices_for_volte(self.log, ads, GEN_5G,
+                                                nr_type='nsa'):
             return False
 
         if not phone_setup_call_hold_unhold_test(self.log,
@@ -267,14 +258,12 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_volte(self.log, ads[0]):
-            ads[0].log.error("failed to setup volte")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       ads,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='5g_volte',
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
 
     @test_tracker_info(uuid="aaa98e51-0bde-472a-abc3-5dc180f56a08")
@@ -295,14 +284,12 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_volte(self.log, ads[0]):
-            ads[0].log.error("failed to setup volte")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       ads,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='5g_volte',
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
 
     @test_tracker_info(uuid="96b7d8c9-d32a-4abf-8326-6b060d116ac2")
@@ -346,14 +333,12 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_volte(self.log, ads[0]):
-            ads[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       ads,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='5g_volte',
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="4e138477-3536-48bd-ab8a-7fb7c228b3e6")
     @TelephonyBaseTest.tel_test_wrap
@@ -371,14 +356,12 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_volte(self.log, ads[0]):
-            ads[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       ads,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='5g_volte',
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
 
     @test_tracker_info(uuid="0d477f6f-3464-4b32-a5e5-0fd134f2753d")
@@ -398,19 +381,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_iwlan(self.log, ads[0], False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            ads[0].log.error(
-                "Failed to setup iwlan with APM off and WIFI and WFC on")
-            return False
-
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       ads,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=False,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
 
     @test_tracker_info(uuid="4d1d7dd9-b373-4361-8301-8517ef77b57b")
@@ -430,19 +410,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_iwlan(self.log, ads[0], False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            ads[0].log.error(
-                "Failed to setup iwlan with APM off and WIFI and WFC on")
-            return False
-
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       ads,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=False,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
 
     @test_tracker_info(uuid="e360bc3a-96b3-4fdf-9bf3-fe3aa08b1af5")
@@ -713,10 +690,11 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             TestFailure if not success.
         """
         ads = self.android_devices
-        if not provision_both_devices_for_volte(self.log, ads):
-            return False
 
-        if not provision_device_for_5g(self.log, ads[1], nr_type='nsa'):
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                (phone_setup_volte, (self.log, ads[1], GEN_5G, 'nsa'))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("phone failed to set up in volte")
             return False
 
         result = two_phone_call_long_seq(
@@ -749,10 +727,10 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
-        if not provision_both_devices_for_volte(self.log, ads):
-            return False
-
-        if not provision_device_for_5g(self.log, ads[1], nr_type='nsa'):
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                (phone_setup_volte, (self.log, ads[1], GEN_5G, 'nsa'))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("phone failed to set up in volte")
             return False
 
         success_count = 0
@@ -948,17 +926,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup IWLAN with NON-APM WIFI WFC on")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=False,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="f827a8b5-039c-4cc1-b030-78a09119acfc")
     @TelephonyBaseTest.tel_test_wrap
@@ -973,17 +950,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM off and WIFI and WFC on")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_5G,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=False,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="af3254d0-a84a-47c8-8ebc-11517b7b4944")
     @TelephonyBaseTest.tel_test_wrap
@@ -999,21 +975,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='nsa'):
-            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="5c58af94-8c24-481b-a555-bdbf36db5f6e")
     @TelephonyBaseTest.tel_test_wrap
@@ -1029,21 +1000,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='nsa'):
-            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="bcd874ae-58e1-4954-88af-bb3dd54d4abf")
     @TelephonyBaseTest.tel_test_wrap
@@ -1058,21 +1024,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='nsa'):
-            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="ad96f1cf-0d17-4a39-86cf-cacb5f4cc81c")
     @TelephonyBaseTest.tel_test_wrap
@@ -1087,21 +1048,16 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='nsa'):
-            self.android_devices[0].log.error("Phone not attached on 5G NSA before call.")
-            return False
-
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='5g_wfc',
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
+            nr_type='nsa',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="9d1121c1-aae4-428b-9167-09d4efdb7e37")
     @TelephonyBaseTest.tel_test_wrap
