@@ -32,6 +32,7 @@ ACCEPT_CONTINUE = "Accept and Continue"
 CONNECTED = "Connected"
 SIGN_IN_NOTIFICATION = "Sign in to network"
 FAS_FDQN = "netsplashpage.net"
+NETWORK_AND_INTERNET = ["Network & internet", "Network and Internet"]
 
 
 class CaptivePortalTest(WifiBaseTest):
@@ -83,10 +84,15 @@ class CaptivePortalTest(WifiBaseTest):
     def _go_to_wifi_settings(self):
         """Go to wifi settings to perform UI actions for Captive portal."""
         self.dut.adb.shell("am start -a android.settings.SETTINGS")
-        asserts.assert_true(
-            uutils.has_element(self.dut, text="Network & internet"),
-            "Failed to find 'Network & internet' icon")
-        uutils.wait_and_click(self.dut, text="Network & internet")
+
+        access_internet_setting = False
+        for text in NETWORK_AND_INTERNET:
+            if uutils.has_element(self.dut, text=text):
+                uutils.wait_and_click(self.dut, text=text)
+                access_internet_setting = True
+                break
+        asserts.assert_true(access_internet_setting,
+                            "Fail to find button NETWORK_AND_INTERNET from UI.")
         android_version = self.dut.adb.getprop("ro.build.version.release")
         if int(android_version) < 12:
             uutils.wait_and_click(self.dut, text="Wi‑Fi")
