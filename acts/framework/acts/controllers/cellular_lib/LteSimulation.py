@@ -429,8 +429,13 @@ class LteSimulation(BaseSimulation):
         self.num_carriers = None
 
         # Force device to LTE only so that it connects faster
-        self.dut.set_preferred_network_type(
-            BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+        try:
+            self.dut.set_preferred_network_type(
+                BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+        except Exception as e:
+            # If this fails the test should be able to run anyways, even if it
+            # takes longer to find the cell.
+            self.log.warning('Setting preferred RAT failed: ' + str(e))
 
         # Get LTE CA frequency bands setting from the test configuration
         if self.KEY_FREQ_BANDS not in test_config:
