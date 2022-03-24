@@ -17,6 +17,7 @@
 import time
 import datetime
 import re
+import statistics
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
@@ -32,6 +33,20 @@ CONCURRENCY_TYPE = {
     "ap_location": "reportLocation"
 }
 
+GPS_XML_CONFIG = {
+    "CS": [
+        '    IgnorePosition=\"true\"\n', '    IgnoreEph=\"true\"\n',
+        '    IgnoreTime=\"true\"\n', '    AsstIgnoreLto=\"true\"\n', '    IgnoreJniTime=\"true\"\n'
+    ],
+    "WS": ['    IgnorePosition=\"true\"\n', '    AsstIgnoreLto=\"true\"\n', '    IgnoreJniTime=\"true\"\n'],
+    "HS": []
+}
+
+ONCHIP_CONFIG = [
+    '    EnableOnChipStopNotification=\"1\"\n',
+    '    EnableOnChipStopNotification=\"2\"\n'
+]
+
 
 class GnssConcurrencyTest(BaseTestClass):
     """ GNSS Concurrency TTFF Tests. """
@@ -42,7 +57,7 @@ class GnssConcurrencyTest(BaseTestClass):
         req_params = [
             "standalone_cs_criteria", "chre_tolerate_rate", "qdsp6m_path",
             "outlier_criteria", "max_outliers", "pixel_lab_location",
-            "max_interval", "onchip_interval"
+            "max_interval", "onchip_interval", "ttff_test_cycle"
         ]
         self.unpack_userparams(req_param_names=req_params)
         gutils._init_device(self.ad)
@@ -77,7 +92,11 @@ class GnssConcurrencyTest(BaseTestClass):
         for _ in range(0, 3):
             try:
                 self.ad.log.info("Start to load the nanoapp")
-                res = self.ad.adb.shell("chre_power_test_client load")
+                cmd = "chre_power_test_client load"
+                if gutils.is_device_wearable(self.ad):
+                    extra_cmd = "tcm /vendor/etc/chre/power_test_tcm.so"
+                    cmd = " ".join([cmd, extra_cmd])
+                res = self.ad.adb.shell(cmd)
                 if "result 1" in res:
                     self.ad.log.info("Nano app loaded successfully")
                     break
@@ -96,7 +115,8 @@ class GnssConcurrencyTest(BaseTestClass):
         if interval_sec == 0:
             self.ad.log.info(f"Stop CHRE request")
         else:
-            self.ad.log.info(f"Initiate CHRE with {interval_sec} seconds interval")
+            self.ad.log.info(
+                f"Initiate CHRE with {interval_sec} seconds interval")
         interval_msec = interval_sec * 1000
         cmd = "chre_power_test_client"
         option = "enable %d" % interval_msec if interval_msec != 0 else "disable"
@@ -276,6 +296,109 @@ class GnssConcurrencyTest(BaseTestClass):
                 ttff = (ttff_stamp - begin_time).total_seconds()
                 self.ad.log.info(f"CHRE {type} TTFF = {ttff}")
 
+    def add_ttff_conf(self, conf_type):
+        """ Add mcu ttff config to gps.xml
+
+        Args:
+            conf_type: a string identify the config type
+        """
+        search_line_tag = "<gll\n"
+        append_line_str = GPS_XML_CONFIG[conf_type]
+        gutils.bcm_gps_xml_update_option(self.ad, "add", search_line_tag,
+                                         append_line_str)
+
+    def update_gps_conf(self, search_line, update_line):
+        """ Update gps.xml content
+
+        Args:
+            search_line: target content
+            update_line: update content
+        """
+        gutils.bcm_gps_xml_update_option(
+            self.ad, "update", search_line, update_txt=update_line)
+
+    def delete_gps_conf(self, conf_type):
+        """ Delete gps.xml content
+
+        Args:
+            conf_type: a string identify the config type
+        """
+        search_line_tag = GPS_XML_CONFIG[conf_type]
+        gutils.bcm_gps_xml_update_option(
+            self.ad, "delete", delete_txt=search_line_tag)
+
+    def preset_mcu_test(self, mode):
+        """ Preseting mcu test with config and device state
+
+        mode:
+            mode: a string identify the test type
+        """
+        self.add_ttff_conf(mode)
+        gutils.push_lhd_overlay(self.ad)
+        self.ad.droid.connectivityToggleAirplaneMode(True)
+        self.update_gps_conf(ONCHIP_CONFIG[1], ONCHIP_CONFIG[0])
+        gutils.clear_aiding_data_by_gtw_gpstool(self.ad)
+        self.ad.reboot(self.ad)
+        self.load_chre_nanoapp()
+
+    def reset_mcu_test(self, mode):
+        """ Resetting mcu test with config and device state
+
+        mode:
+            mode: a string identify the test type
+        """
+        self.delete_gps_conf(mode)
+        self.update_gps_conf(ONCHIP_CONFIG[0], ONCHIP_CONFIG[1])
+
+    def get_mcu_ttff(self):
+        """ Get mcu ttff seconds
+
+        Return:
+            ttff: a float identify ttff seconds
+        """
+        search_res = ""
+        search_pattern = "$PGLOR,0,FIX"
+        ttff_regex = r"FIX,(.*)\*"
+        cmd_base = "chre_power_test_client gnss tcm"
+        cmd_start = " ".join([cmd_base, "enable 1000"])
+        cmd_stop = " ".join([cmd_base, "disable"])
+        begin_time = datetime.datetime.now()
+
+        self.ad.log.info("Send CHRE enable to DUT")
+        self.ad.adb.shell(cmd_start)
+        for i in range(6):
+            search_res = self.ad.search_logcat(search_pattern, begin_time)
+            if search_res:
+                break
+            time.sleep(10)
+        else:
+            self.ad.adb.shell(cmd_stop)
+            self.ad.log.error("Unable to get mcu ttff in 60 seconds")
+            return 60
+        self.ad.adb.shell(cmd_stop)
+
+        res = re.search(ttff_regex, search_res[0]["log_message"])
+        ttff = res.group(1)
+        self.ad.log.info(f"TTFF = {ttff}")
+        return float(ttff)
+
+    def run_mcu_ttff_loops(self, mode, loops):
+        """ Run mcu ttff with given mode and loops
+
+        Args:
+            mode: a string identify mode cs/ws/hs.
+            loops: a int to identify the number of loops
+        """
+        ttff_res = []
+        for i in range(10):
+            ttff = self.get_mcu_ttff()
+            self.ad.log.info(f"{mode} TTFF LOOP{i+1} = {ttff}")
+            ttff_res.append(ttff)
+            time.sleep(10)
+        self.ad.log.info(f"TestResult {mode}_MAX_TTFF {max(ttff_res)}")
+        self.ad.log.info(
+            f"TestResult {mode}_AVG_TTFF {statistics.mean(ttff_res)}")
+
     # Concurrency Test Cases
     @test_tracker_info(uuid="9b0daebf-461e-4005-9773-d5d10aaeaaa4")
     def test_gnss_concurrency_ct1(self):
@@ -352,3 +475,24 @@ class GnssConcurrencyTest(BaseTestClass):
         self.is_brcm_test()
         freq = [self.onchip_interval, 1]
         self.run_engine_switching_test(freq)
+
+    @test_tracker_info(uuid="fd671f4a-0cc7-4894-ae5b-e9b9d470562d")
+    def test_mcu_cs_ttff(self):
+        mode = "CS"
+        self.preset_mcu_test(mode)
+        self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
+        self.reset_mcu_test(mode)
+
+    @test_tracker_info(uuid="de67334e-7538-4fc4-a8e5-bcf72a14ea82")
+    def test_mcu_ws_ttff(self):
+        mode = "WS"
+        self.preset_mcu_test(mode)
+        self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
+        self.reset_mcu_test(mode)
+
+    @test_tracker_info(uuid="c361e811-df72-4578-ab47-8cade28e79a3")
+    def test_mcu_hs_ttff(self):
+        mode = "HS"
+        self.preset_mcu_test(mode)
+        self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
+        self.reset_mcu_test(mode)
