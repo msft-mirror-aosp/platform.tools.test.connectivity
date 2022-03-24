@@ -18,6 +18,7 @@ import collections
 import pyvisa
 import time
 from acts import logger
+from acts_contrib.test_utils.cellular import cellular_performance_test_utils as cputils
 
 VERY_SHORT_SLEEP = 0.1
 SUBFRAME_DURATION = 0.001
@@ -136,6 +137,39 @@ class Keysight5GTestApp(object):
         if cell_state:
             self.log.error('Cell must be off')
 
+    def select_cell(self, cell_type, cell):
+        """Function to select active cell.
+
+        Args:
+            cell_type: LTE or NR5G cell
+            cell: cell/carrier number
+        """
+        self.send_cmd('BSE:SELected:CELL {},{}'.format(
+            cell_type, Keysight5GTestApp._format_cells(cell)))
+
+    def select_display_tab(self, cell_type, cell, tab, subtab):
+        """Function to select display tab.
+
+        Args:
+            cell_type: LTE or NR5G cell
+            cell: cell/carrier number
+            tab: tab to display for the selected cell
+        """
+        supported_tabs = {
+            'PHY': [
+                'BWP', 'HARQ', 'PDSCH', 'PDCCH', 'PRACH', 'PUSCH', 'PUCCH',
+                'SRSC'
+            ],
+            'BTHR': ['SUMMARY', 'OTAGRAPH', 'ULOTA', 'DLOTA'],
+            'CSI': []
+        }
+        if tab not in supported_tabs:
+            return
+        if subtab not in supported_tabs[tab]:
+            return
+        self.select_cell(cell_type, cell)
+        self.send_cmd('DISPlay:{} {},{}'.format(cell_type, tab, subtab))
+
     def get_cell_state(self, cell_type, cell):
         """Function to get cell on/off state.
 
@@ -188,6 +222,46 @@ class Keysight5GTestApp(object):
             cell_type, Keysight5GTestApp._format_cells(cell), state))
 
     #@assert_cell_off_decorator
+    def set_cell_band(self, cell_type, cell, band):
+        """Function to set cell power
+
+        Args:
+            cell_type: LTE or NR5G cell
+            cell: cell/carrier number
+            band: LTE or NR band (e.g. 1,3,N260, N77)
+        """
+        self.assert_cell_off(cell_type, cell)
+        self.send_cmd('BSE:CONFig:{}:{}:BAND {}'.format(
+            cell_type, Keysight5GTestApp._format_cells(cell), band))
+
+    #@assert_cell_off_decorator
+    def set_cell_channel(self, cell_type, cell, channel):
+        """Function to set cell frequency/channel
+
+        Args:
+            cell_type: LTE or NR5G cell
+            cell: cell/carrier number
+            channel: requested channel (ARFCN)
+        """
+        self.assert_cell_off(cell_type, cell)
+        self.send_cmd('BSE:CONFig:{}:{}:DL:CHANnel {}'.format(
+            cell_type, Keysight5GTestApp._format_cells(cell), channel))
+
+    #@assert_cell_off_decorator
+    def set_nr_cell_channel_preset(self, cell, band, channel_preset):
+        """Function to set cell frequency/channel
+
+        Args:
+            cell: cell/carrier number
+            channel_preset: low, mid, or high
+        """
+        self.assert_cell_off('NR5G', cell)
+        self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 0')
+        pcc_arfcn = cputils.PCC_PRESET_MAPPING[band][channel_preset]
+        self.set_cell_channel('NR5G', cell, pcc_arfcn)
+        self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 1')
+
+    #@assert_cell_off_decorator
     def set_cell_bandwidth(self, cell_type, cell, bandwidth):
         """Function to set cell bandwidth
 
@@ -199,19 +273,6 @@ class Keysight5GTestApp(object):
         self.assert_cell_off(cell_type, cell)
         self.send_cmd('BSE:CONFig:{}:{}:DL:BW {}'.format(
             cell_type, Keysight5GTestApp._format_cells(cell), bandwidth))
-
-    #@assert_cell_off_decorator
-    def set_cell_channel(self, cell_type, cell, channel):
-        """Function to set cell frequency/channel
-
-        Args:
-            cell_type: LTE or NR5G cell
-            cell: cell/carrier number
-            channel: requested channel
-        """
-        self.assert_cell_off(cell_type, cell)
-        self.send_cmd('BSE:CONFig:{}:{}:DL:CHANnel {}'.format(
-            cell_type, Keysight5GTestApp._format_cells(cell), channel))
 
     #@assert_cell_off_decorator
     def set_cell_mimo_config(self, cell_type, cell, link, mimo_config):
@@ -249,6 +310,7 @@ class Keysight5GTestApp(object):
         else:
             self.send_cmd('BSE:CONFIG:{}:{}:DL:POWer:EPRE {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), power))
+        #TODO: check if we need to BSE:CONFig:NR5G:APPLY
 
     #@assert_cell_off_decorator
     def set_cell_duplex_mode(self, cell_type, cell, duplex_mode):
@@ -262,19 +324,6 @@ class Keysight5GTestApp(object):
         self.assert_cell_off(cell_type, cell)
         self.send_cmd('BSE:CONFig:{}:{}:DUPLEX:MODe {}'.format(
             cell_type, Keysight5GTestApp._format_cells(cell), duplex_mode))
-
-    #@assert_cell_off_decorator
-    def set_cell_band(self, cell_type, cell, band):
-        """Function to set cell power
-
-        Args:
-            cell_type: LTE or NR5G cell
-            cell: cell/carrier number
-            band: LTE or NR band (e.g. 1,3,N260, N77)
-        """
-        self.assert_cell_off(cell_type, cell)
-        self.send_cmd('BSE:CONFig:{}:{}:BAND {}'.format(
-            cell_type, Keysight5GTestApp._format_cells(cell), band))
 
     def set_dl_carriers(self, cells):
         """Function to set aggregated DL NR5G carriers
