@@ -105,7 +105,7 @@ class ShellCommand(object):
         try:
             result = self.run('ps aux | grep -v grep | grep %s' % identifier)
         except job.Error as e:
-            if e.exit_status == 1:
+            if e.result.exit_status == 1:
                 # Grep returns exit status 1 when no lines are selected. This is
                 # an expected return code.
                 return
