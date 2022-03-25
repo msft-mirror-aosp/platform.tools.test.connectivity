@@ -2646,7 +2646,7 @@ def deep_suspend_device(ad):
         command = "echo mem >/sys/power/state"
         for i in range(1, 4):
             ad.log.debug(f"Send deep suspend command round {i}")
-            ad.adb.shell(command)
+            ad.adb.shell(command, ignore_status=True)
             # sleep here to ensure the device stays enough time in deep suspend mode
             time.sleep(15)
             if not _is_device_enter_deep_suspend(ad):
@@ -2688,7 +2688,7 @@ def ensure_power_manager_is_dozing(ad, begin_time):
         begin_time: datetime, used as the starting point to search log
     """
     keyword = "PowerManagerService: Dozing"
-    ad.log.info(begin_time)
+    ad.log.debug("Log search start time: %s" % begin_time)
     for i in range(0,3):
         result = ad.search_logcat(keyword, begin_time)
         if result:
