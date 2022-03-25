@@ -17,6 +17,27 @@
 import logging
 import time
 
+PCC_PRESET_MAPPING = {
+    'N257': {
+        'low': 2054999,
+        'mid': 2079165,
+        'high': 2090832
+    },
+    'N258': {
+        'low': 2017499,
+        'mid': 2043749,
+        'high': 2057499
+    },
+    'N260': {
+        'low': 2229999,
+        'mid': 2254165,
+        'high': 2265832
+    },
+    'N261': {
+        'low': 2071667
+    }
+}
+
 
 def start_pixel_logger(ad):
     """Function to start pixel logger with default log mask.

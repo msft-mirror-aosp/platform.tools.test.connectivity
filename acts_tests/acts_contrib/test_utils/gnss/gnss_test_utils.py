@@ -2451,47 +2451,65 @@ def delete_bcm_nvmem_sto_file(ad):
     ad.log.info("Delete BCM's NVMEM ephemeris files.\n%s" % status)
 
 
-def bcm_gps_xml_add_option(ad,
+def bcm_gps_xml_update_option(ad,
+                           option,
                            search_line=None,
                            append_txt=None,
+                           update_txt=None,
+                           delete_txt=None,
                            gps_xml_path=BCM_GPS_XML_PATH):
     """Append parameter setting in gps.xml for BCM solution
 
     Args:
+        option: A str to identify the operation (add/update/delete).
         ad: An AndroidDevice object.
         search_line: Pattern matching of target
         line for appending new line data.
-        append_txt: New line that will be appended after the search_line.
+        append_txt: New lines that will be appended after the search_line.
+        update_txt: New line to update the original file.
+        delete_txt: lines to delete from the original file.
         gps_xml_path: gps.xml file location of DUT
     """
     remount_device(ad)
     #Update gps.xml
-    if not search_line or not append_txt:
-        ad.log.info("Nothing for update.")
-    else:
-        tmp_log_path = tempfile.mkdtemp()
-        ad.pull_files(gps_xml_path, tmp_log_path)
-        gps_xml_tmp_path = os.path.join(tmp_log_path, "gps.xml")
-        gps_xml_file = open(gps_xml_tmp_path, "r")
-        lines = gps_xml_file.readlines()
-        gps_xml_file.close()
-        fout = open(gps_xml_tmp_path, "w")
-        append_txt_tag = append_txt.strip()
+    tmp_log_path = tempfile.mkdtemp()
+    ad.pull_files(gps_xml_path, tmp_log_path)
+    gps_xml_tmp_path = os.path.join(tmp_log_path, "gps.xml")
+    gps_xml_file = open(gps_xml_tmp_path, "r")
+    lines = gps_xml_file.readlines()
+    gps_xml_file.close()
+    fout = open(gps_xml_tmp_path, "w")
+    if option == "add":
         for line in lines:
-            if append_txt_tag in line:
-                ad.log.info('{} is already in the file. Skip'.format(append_txt))
+            if line.strip() in append_txt:
+                ad.log.info("{} is already in the file. Skip".format(append_txt))
                 continue
             fout.write(line)
             if search_line in line:
-                fout.write(append_txt)
-                ad.log.info("Update new line: '{}' in gps.xml.".format(append_txt))
-        fout.close()
+                for add_txt in append_txt:
+                    fout.write(add_txt)
+                    ad.log.info("Add new line: '{}' in gps.xml.".format(add_txt))
+    elif option == "update":
+        for line in lines:
+            if search_line in line:
+                ad.log.info(line)
+                fout.write(update_txt)
+                ad.log.info("Update line: '{}' in gps.xml.".format(update_txt))
+                continue
+            fout.write(line)
+    elif option == "delete":
+        for line in lines:
+            if line in delete_txt:
+                ad.log.info("Delete line: '{}' in gps.xml.".format(line.strip()))
+                continue
+            fout.write(line)
+    fout.close()
 
-        # Update gps.xml with gps_new.xml
-        ad.push_system_file(gps_xml_tmp_path, gps_xml_path)
+    # Update gps.xml with gps_new.xml
+    ad.push_system_file(gps_xml_tmp_path, gps_xml_path)
 
-        # remove temp folder
-        shutil.rmtree(tmp_log_path, ignore_errors=True)
+    # remove temp folder
+    shutil.rmtree(tmp_log_path, ignore_errors=True)
 
 
 def bcm_gps_ignore_rom_alm(ad):
@@ -2500,8 +2518,8 @@ def bcm_gps_ignore_rom_alm(ad):
         ad: An AndroidDevice object.
     """
     search_line_tag = '<gll\n'
-    append_line_str = '       IgnoreRomAlm=\"true\"\n'
-    bcm_gps_xml_add_option(ad, search_line_tag, append_line_str)
+    append_line_str = ['       IgnoreRomAlm=\"true\"\n']
+    bcm_gps_xml_update_option(ad, "add", search_line_tag, append_line_str)
 
 
 def check_inject_time(ad):
@@ -2551,3 +2569,25 @@ def enable_framework_log(ad):
     reboot(ad)
     ad.log.info("Wait 2 mins for Wearable booting system busy")
     time.sleep(120)
+
+def push_lhd_overlay(ad):
+    """Push lhd_overlay.conf to device in /data/vendor/gps/overlay/
+
+    ad:
+        ad: An AndroidDevice object.
+    """
+    overlay_name = "lhd_overlay.conf"
+    overlay_asset = ad.adb.shell("ls /data/vendor/gps/overlay/")
+    if overlay_name in overlay_asset:
+        ad.log.info(f"{overlay_name} already in device, skip.")
+        return
+
+    temp_path = tempfile.mkdtemp()
+    file_path = os.path.join(temp_path, overlay_name)
+    lhd_content = 'Lhe477xDebugFlags=RPC:FACILITY=2097151:LOG_INFO:STDOUT_PUTS:STDOUT_LOG\n'\
+                  'LogLevel=*:E\nLogLevel=*:W\nLogLevel=*:I\nLog=LOGCAT\nLogEnabled=true\n'
+    overlay_path = "/data/vendor/gps/overlay/"
+    with open(file_path, "w") as f:
+        f.write(lhd_content)
+    ad.log.info("Push lhd_overlay to device")
+    ad.adb.push(file_path, overlay_path)
