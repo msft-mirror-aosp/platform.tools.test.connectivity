@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import time
 import os
 import re
@@ -1417,3 +1418,37 @@ class GnssFunctionTest(BaseTestClass):
                                       type="gnss", testtime=1, freq=self.onchip_interval)
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss",
                               validate_gnssstatus=True)
+
+    @test_tracker_info(uuid="ca3d26ea-c64f-4566-9636-ee98641d219b")
+    def test_location_update_after_resuming_from_deep_suspend(self):
+        """Verify the GPS location reported after resume from suspend mode
+        1. Enable GPS location report for 1 min to make sure the GPS is working
+        2. Force DUT into deep suspend mode for a while(3 times with 15s interval)
+        3. Enable GPS location report for 5 mins
+        4. Check the report frequency
+        5. Check the location fix rate
+        """
+
+        gps_enable_minutes = 1
+        gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+                                      testtime=gps_enable_minutes)
+        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+        self.ad.log.debug("Location report details before suspend")
+        self.ad.log.debug(result)
+        gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
+                                          fix_rate_criteria=0.95)
+
+        gutils.deep_suspend_device(self.ad)
+
+        gps_enable_minutes = 5
+        gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+                                      testtime=gps_enable_minutes)
+        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+        self.ad.log.debug("Location report details after suspend")
+        self.ad.log.debug(result)
+
+        location_report_time = list(result.keys())
+        gutils.check_location_report_interval(self.ad, location_report_time,
+                                              gps_enable_minutes * 60, tolerance=0.01)
+        gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
+                                          fix_rate_criteria=0.99)
