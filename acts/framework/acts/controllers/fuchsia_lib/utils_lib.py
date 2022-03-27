@@ -263,9 +263,8 @@ def flash(fuchsia_device, use_ssh=False,
         else:
             image_tgz = file_to_download
 
-        tar = tarfile.open(image_tgz, 'r:gz')
-        tar.extractall(tmp_path)
-        tar.close()
+        # Use tar command instead of tarfile.extractall, as it takes too long.
+        job.run(f'tar xfvz {image_tgz} -C {tmp_path}', timeout=120)
 
         reboot_to_bootloader(fuchsia_device, use_ssh,
                              fuchsia_reconnect_after_reboot_time)
