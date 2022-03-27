@@ -48,6 +48,12 @@ class WifiCountrySoftApAcsTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         self.client = self.android_devices[1]
 
+        if "OpenWrtAP" in self.user_params:
+            self.openwrt = self.access_points[0]
+            self.openwrt.log.info("Rebooting OpenWrt")
+            self.openwrt.reboot()
+            self.openwrt.verify_wifi_status(timeout=60)
+
         req_params = []
         opt_param = ["cnss_diag_file", "pixel_models"]
 

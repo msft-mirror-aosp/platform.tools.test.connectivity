@@ -49,6 +49,8 @@ DEFAULT_TIMEOUT = 10
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
 WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
+DEFAULT_SCAN_TRIES = 3
+DEFAULT_CONNECT_TRIES = 3
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -1474,7 +1476,8 @@ def ensure_no_disconnect(ad, duration=10):
 
 def connect_to_wifi_network(ad, network, assert_on_fail=True,
                             check_connectivity=True, hidden=False,
-                            num_of_scan_tries=3, num_of_connect_tries=3):
+                            num_of_scan_tries=DEFAULT_SCAN_TRIES,
+                            num_of_connect_tries=DEFAULT_CONNECT_TRIES):
     """Connection logic for open and psk wifi networks.
 
     Args:
@@ -2039,11 +2042,12 @@ def validate_connection(ad,
     Returns:
         ping output if successful, NULL otherwise.
     """
+    android_version = int(ad.adb.shell("getprop ro.vendor.build.version.release"))
     # wait_time to allow for DHCP to complete.
     for i in range(wait_time):
-        if ad.droid.connectivityNetworkIsConnected(
-        ) and ad.droid.connectivityGetIPv4DefaultGateway():
-            break
+        if ad.droid.connectivityNetworkIsConnected():
+            if (android_version > 10 and ad.droid.connectivityGetIPv4DefaultGateway()) or android_version < 11:
+                break
         time.sleep(1)
     ping = False
     try:
@@ -2051,7 +2055,7 @@ def validate_connection(ad,
         ad.log.info("Http ping result: %s.", ping)
     except:
         pass
-    if not ping and ping_gateway:
+    if android_version > 10 and not ping and ping_gateway:
         ad.log.info("Http ping failed. Pinging default gateway")
         gw = ad.droid.connectivityGetIPv4DefaultGateway()
         result = ad.adb.shell("ping -c 6 {}".format(gw))

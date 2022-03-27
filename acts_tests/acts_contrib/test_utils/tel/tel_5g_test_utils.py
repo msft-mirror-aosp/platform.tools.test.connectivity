@@ -108,10 +108,10 @@ def provision_device_for_5g_nsa(log, ads, mmwave = None):
         return True
 
 
-def provision_both_devices_for_volte(log, ads):
-    # LTE attach and enable VoLTE on both phones
-    tasks = [(phone_setup_volte, (log, ads[0])),
-             (phone_setup_volte, (log, ads[1]))]
+def provision_both_devices_for_volte(log, ads, nw_gen, nr_type=None):
+    # LTE or NR attach and enable VoLTE on both phones
+    tasks = [(phone_setup_volte, (log, ads[0], nw_gen, nr_type)),
+             (phone_setup_volte, (log, ads[1], nw_gen, nr_type))]
     if not multithread_func(log, tasks):
         log.error("phone failed to set up in volte")
         return False
