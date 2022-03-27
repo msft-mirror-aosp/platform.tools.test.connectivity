@@ -240,10 +240,19 @@ class CellularBaseTest(base_test.BaseTestClass):
         if not sim_params:
             raise KeyError('Test config file does not contain '
                            'settings for ' + self.test_name)
+
+        # Changes the single band sim_params type to list to make it easier
+        # to apply the class parameters to test parameters for multiple bands
+        if not isinstance(sim_params, list):
+            sim_params = [sim_params]
+        num_band = len(sim_params)
+
         # Get class parameters and apply if not overwritten by test parameters
         for key, val in self.test_configs.items():
-            if not key.startswith('test_') and key not in sim_params:
-                sim_params[key] = val
+            if not key.startswith('test_'):
+                for idx in range(num_band):
+                    if key not in sim_params[idx]:
+                        sim_params[idx][key] = val
         self.log.info('Simulation parameters: ' + str(sim_params))
         self.simulation.configure(sim_params)
 
