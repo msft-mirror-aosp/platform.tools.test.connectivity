@@ -90,6 +90,10 @@ MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION = 60
 # actually receive this MT SMS.
 MAX_WAIT_TIME_SMS_RECEIVE = 120
 
+# Max time to wait after MT MMS was sent and before device
+# actually receive this MT SMS.
+MAX_WAIT_TIME_MMS_RECEIVE = 300
+
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS in case of collision.
 MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION = 1200
