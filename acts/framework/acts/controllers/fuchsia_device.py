@@ -456,49 +456,6 @@ class FuchsiaDevice:
 
         self.ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ssh_priv_key)
 
-        # Wait for the device to be available. If the device isn't available within
-        # a short time (e.g. 5 seconds), log a warning before waiting longer.
-        try:
-            self.ffx.run("target wait", timeout_sec=5)
-        except job.TimeoutError as e:
-            longer_wait_sec = 60
-            self.log.info(
-                "Device is not immediately available via ffx." +
-                f" Waiting up to {longer_wait_sec} seconds for device to be reachable."
-            )
-            self.ffx.run("target wait", timeout_sec=longer_wait_sec)
-
-        # Test actual connectivity to the device by getting device information.
-        # Use a shorter timeout than default because this command can hang for
-        # a long time if the device is not actually connectable.
-        try:
-            result = self.ffx.run("target show --json", timeout_sec=15)
-        except Exception as e:
-            self.log.error(
-                f'Failed to reach target device. Try running "{self.ffx_binary_path}'
-                + ' doctor" to diagnose issues.')
-            raise e
-
-        # Compare the device's version to the ffx version
-        result_json = json.loads(result.stdout)
-        build_info = next(
-            filter(lambda s: s.get('label') == 'build', result_json))
-        version_info = next(
-            filter(lambda s: s.get('label') == 'version', build_info['child']))
-        device_version = version_info.get('value')
-        ffx_version = self.ffx.run("version").stdout
-
-        if not getattr(self, '_have_logged_ffx_version', False):
-            self._have_logged_ffx_version = True
-            self.log.info(
-                f"Device version: {device_version}, ffx version: {ffx_version}"
-            )
-            if device_version != ffx_version:
-                self.log.warning(
-                    "ffx versions that differ from device versions may" +
-                    " have compatibility issues. It is recommended to" +
-                    " use versions within 6 weeks of each other.")
-
     def run_commands_from_config(self, cmd_dicts):
         """Runs commands on the Fuchsia device from the config file. Useful for
         device and/or Fuchsia specific configuration.
