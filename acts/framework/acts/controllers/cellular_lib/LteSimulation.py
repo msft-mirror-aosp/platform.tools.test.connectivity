@@ -211,7 +211,8 @@ class LteSimulation(BaseSimulation):
         41: 39650,
         42: 41590,
         43: 45590,
-        66: 66436
+        66: 66436,
+        67: 67336
     }
 
     # Peak throughput lookup tables for each TDD subframe
@@ -428,8 +429,13 @@ class LteSimulation(BaseSimulation):
         self.num_carriers = None
 
         # Force device to LTE only so that it connects faster
-        self.dut.set_preferred_network_type(
-            BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+        try:
+            self.dut.set_preferred_network_type(
+                BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+        except Exception as e:
+            # If this fails the test should be able to run anyways, even if it
+            # takes longer to find the cell.
+            self.log.warning('Setting preferred RAT failed: ' + str(e))
 
         # Get LTE CA frequency bands setting from the test configuration
         if self.KEY_FREQ_BANDS not in test_config:
@@ -490,7 +496,7 @@ class LteSimulation(BaseSimulation):
 
                 # Class C means that there are two contiguous carriers
                 if ca_class == 'C':
-                    new_cell_list.append(cell)
+                    new_cell_list.append(dict(cell))
                     bw = int(cell[LteCellConfig.PARAM_BW])
                     dl_earfcn = LteCellConfig.PARAM_DL_EARFCN
                     new_cell_list[-1][dl_earfcn] = self.LOWEST_DL_CN_DICTIONARY[
@@ -498,6 +504,9 @@ class LteSimulation(BaseSimulation):
             else:
                 # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
+
+        # Logs new_cell_list for debug
+        self.log.info('new cell list: {}'.format(new_cell_list))
 
         self.simulator.set_band_combination(
             [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
