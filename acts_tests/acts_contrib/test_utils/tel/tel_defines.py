@@ -406,7 +406,7 @@ GOOGLE_CBRS_CARRIER_ID = 2340
 GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
-CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha", "taro"]
 # SMS over wifi providers
 SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
                            "dtag")
