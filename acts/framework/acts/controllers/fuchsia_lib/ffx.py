@@ -23,6 +23,7 @@ from pathlib import Path
 from acts import context
 from acts import logger
 from acts import signals
+from acts import utils
 from acts.libs.proc import job
 
 FFX_DEFAULT_COMMAND_TIMEOUT = 60
@@ -68,13 +69,16 @@ class FFX:
         parallel, causing the ffx invocations to “upgrade” one daemon to
         another, which appears as a flap/restart to another test.
         """
-        root_dir = context.get_current_context(
-            context.ContextLevel.ROOT).get_full_output_path()
-        target_dir = os.path.join(root_dir, self.target)
-        ffx_daemon_log_dir = os.path.join(target_dir, "ffx_daemon_logs")
-
-        for dir in [target_dir, ffx_daemon_log_dir]:
-            os.makedirs(dir, exist_ok=True)
+        # Store ffx files in a unique directory. Timestamp is used to prevent
+        # files from being overwritten in the case when a test intentionally
+        # reboots or resets the device such that a new isolated ffx environment
+        # is created.
+        root_dir = context.get_current_context().get_full_output_path()
+        epoch = utils.get_current_epoch_time()
+        time_stamp = logger.normalize_log_line_timestamp(
+            logger.epoch_to_log_line_timestamp(epoch))
+        target_dir = os.path.join(root_dir, f'{self.target}_{time_stamp}')
+        os.makedirs(target_dir, exist_ok=True)
 
         # Sockets need to be created in a different directory to be guaranteed
         # to stay under the maximum socket path length of 104 characters.
@@ -102,7 +106,7 @@ class FFX:
             # directory.
             "log": {
                 "enabled": True,
-                "dir": [ffx_daemon_log_dir],
+                "dir": [target_dir],
             },
             # Disable analytics to decrease noise on the network.
             "ffx": {
