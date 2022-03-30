@@ -197,9 +197,9 @@ class FFX:
         if self._config_path:
             self.run("daemon stop", skip_reachability_check=True)
         if self._ssh_auth_sock_path:
-            Path(self._ssh_auth_sock_path).unlink()
+            Path(self._ssh_auth_sock_path).unlink(missing_ok=True)
         if self._overnet_socket_path:
-            Path(self._overnet_socket_path).unlink()
+            Path(self._overnet_socket_path).unlink(missing_ok=True)
 
         self._config_path = None
         self._ssh_auth_sock_path = None
