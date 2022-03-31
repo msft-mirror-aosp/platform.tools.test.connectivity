@@ -156,7 +156,7 @@ CORRECT_EMPTY_IP_LIST = {
 }
 
 FUCHSIA_INIT_SERVER = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
-                       'init_server_connection')
+                       'init_sl4f_connection')
 FUCHSIA_INIT_FFX = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
                     'init_ffx_connection')
 FUCHSIA_SET_CONTROL_PATH_CONFIG = ('acts.controllers.fuchsia_device.'
