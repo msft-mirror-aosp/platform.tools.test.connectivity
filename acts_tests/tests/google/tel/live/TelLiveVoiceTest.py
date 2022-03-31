@@ -4103,11 +4103,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        return test_wifi_cell_switching_in_call(self.log,
-                                                ads,
-                                                self.wifi_network_ssid,
-                                                self.wifi_network_pass,
-                                                new_gen=GEN_4G)
+        return test_wifi_cell_switching_in_call(
+            self.log,
+            ads,
+            self.wifi_network_ssid,
+            self.wifi_network_pass,
+            verify_caller_func=is_phone_in_call_volte,
+            verify_callee_func=is_phone_in_call_volte)
 
     @test_tracker_info(uuid="8a853186-cdff-4078-930a-6c619ea89183")
     @TelephonyBaseTest.tel_test_wrap
@@ -4126,6 +4128,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -4134,11 +4139,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        return test_wifi_cell_switching_in_call(self.log,
-                                                ads,
-                                                self.wifi_network_ssid,
-                                                self.wifi_network_pass,
-                                                new_gen=GEN_4G)
+        return test_wifi_cell_switching_in_call(
+            self.log,
+            ads,
+            self.wifi_network_ssid,
+            self.wifi_network_pass,
+            verify_caller_func=is_phone_in_call_iwlan)
 
     @test_tracker_info(uuid="187bf7b5-d122-4914-82c0-b0709272ee12")
     @TelephonyBaseTest.tel_test_wrap
@@ -4162,11 +4168,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        return test_wifi_cell_switching_in_call(self.log,
-                                                ads,
-                                                self.wifi_network_ssid,
-                                                self.wifi_network_pass,
-                                                new_gen=GEN_3G)
+        return test_wifi_cell_switching_in_call(
+            self.log,
+            ads,
+            self.wifi_network_ssid,
+            self.wifi_network_pass,
+            verify_caller_func=is_phone_in_call_csfb,
+            verify_callee_func=is_phone_in_call_csfb)
 
 
 """ Tests End """
