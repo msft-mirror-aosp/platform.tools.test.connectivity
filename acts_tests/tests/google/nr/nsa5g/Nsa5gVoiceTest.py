@@ -1084,7 +1084,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
+        if not phone_setup_volte(
+                self.log, ads[0], nw_gen=GEN_5G, nr_type='nsa'):
             return False
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
