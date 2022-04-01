@@ -26,6 +26,7 @@ import zipfile
 from collections import namedtuple
 from datetime import datetime
 from xml.etree import ElementTree
+from contextlib import contextmanager
 
 from acts import utils
 from acts import asserts
@@ -813,7 +814,8 @@ def process_gnss_by_gtw_gpstool(ad,
                                 type="gnss",
                                 clear_data=True,
                                 meas_flag=False,
-                                freq=0):
+                                freq=0,
+                                bg_display=False):
     """Launch GTW GPSTool and Clear all GNSS aiding data
        Start GNSS tracking on GTW_GPSTool.
 
@@ -826,6 +828,7 @@ def process_gnss_by_gtw_gpstool(ad,
         meas_flag: True to enable GnssMeasurement. False is not to. Default
         set to False.
         freq: An integer to set location update frequency. Default set to 0.
+        bg_display: To enable GPS tool bg display or not
 
     Returns:
         True: First fix TTFF are within criteria.
@@ -843,7 +846,8 @@ def process_gnss_by_gtw_gpstool(ad,
             clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start %s on GTW_GPSTool - attempt %d" % (type.upper(),
                                                               i+1))
-        start_gnss_by_gtw_gpstool(ad, state=True, type=type, meas=meas_flag, freq=freq)
+        start_gnss_by_gtw_gpstool(ad, state=True, type=type, meas=meas_flag, freq=freq,
+                                  bgdisplay=bg_display)
         for _ in range(10 + criteria):
             logcat_results = ad.search_logcat("First fixed", begin_time)
             if logcat_results:
@@ -916,7 +920,8 @@ def gnss_tracking_via_gtw_gpstool(ad,
                                   type="gnss",
                                   testtime=60,
                                   meas_flag=False,
-                                  freq=0):
+                                  freq=0,
+                                  is_screen_off=False):
     """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
 
     Args:
@@ -927,15 +932,17 @@ def gnss_tracking_via_gtw_gpstool(ad,
         meas_flag: True to enable GnssMeasurement. False is not to. Default
         set to False.
         freq: An integer to set location update frequency. Default set to 0.
+        is_screen_off: whether to turn off during tracking
     """
     process_gnss_by_gtw_gpstool(
-        ad, criteria=criteria, type=type, meas_flag=meas_flag, freq=freq)
+        ad, criteria=criteria, type=type, meas_flag=meas_flag, freq=freq, bg_display=is_screen_off)
     ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
                                                            testtime))
     begin_time = get_current_epoch_time()
-    while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
-        detect_crash_during_tracking(ad, begin_time, type)
-    ad.log.info("Successfully tested for %d minutes" % testtime)
+    with set_screen_status(ad, off=is_screen_off):
+        while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
+            detect_crash_during_tracking(ad, begin_time, type)
+        ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, state=False, type=type)
 
 
@@ -968,8 +975,8 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=Fa
     file_count = int(ad.adb.shell("find %s -type f -iname *.txt | wc -l"
                                   % GNSSSTATUS_LOG_PATH))
     if file_count != 1:
-        ad.log.error("%d API logs exist." % file_count)
-    dir_file = ad.adb.shell("ls %s" % GNSSSTATUS_LOG_PATH).split()
+        ad.log.warn("%d API logs exist." % file_count)
+    dir_file = ad.adb.shell("ls -tr %s" % GNSSSTATUS_LOG_PATH).split()
     for path_key in dir_file:
         if fnmatch.fnmatch(path_key, "*.txt"):
             logpath = posixpath.join(GNSSSTATUS_LOG_PATH, path_key)
@@ -1320,11 +1327,14 @@ def check_current_focus_app(ad):
 
     Args:
         ad: An AndroidDevice object.
+    Returns:
+        string: the current focused window / app
     """
     time.sleep(1)
     current = ad.adb.shell(
         "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'")
     ad.log.debug("\n"+current)
+    return current
 
 
 def check_location_api(ad, retries):
@@ -2754,3 +2764,42 @@ def check_location_report_interval(ad, location_reported_time_src, total_seconds
         fail_message = (f"Interval longer than {expected_longest_interval}s "
                         f"exceed tolerance count: {error_tolerance}, error count: {error_count}")
         ad.log.error(fail_message)
+
+
+@contextmanager
+def set_screen_status(ad, off=True):
+    """Set screen on / off
+
+    A context manager function, can be used with "with" statement.
+    example:
+        with set_screen_status(ad, off=True):
+            do anything you want during screen is off
+    Once the function end, it will turn on the screen
+    Args:
+        ad: AndroidDevice object
+        off: (bool) True -> turn off screen / False -> leave screen as it is
+    """
+    try:
+        if off:
+            ad.droid.goToSleepNow()
+        yield ad
+    finally:
+        ad.droid.wakeUpNow()
+        ensure_device_screen_is_on(ad)
+
+
+def ensure_device_screen_is_on(ad):
+    """Make sure the screen is on
+
+    Will try 3 times, each with 1 second interval
+
+    Raise:
+        GnssTestUtilsError: if screen can't be turn on after 3 tries
+    """
+    for _ in range(3):
+        # when NotificationShade appears in focus window, it indicates the screen is still off
+        if "NotificationShade" not in check_current_focus_app(ad):
+            break
+        time.sleep(1)
+    else:
+        raise GnssTestUtilsError("Device screen is not on after 3 tries")
