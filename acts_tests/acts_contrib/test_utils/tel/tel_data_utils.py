@@ -1866,7 +1866,9 @@ def test_wifi_cell_switching_in_call(log,
                                      ads,
                                      network_ssid,
                                      network_password,
-                                     new_gen=None):
+                                     new_gen=None,
+                                     verify_caller_func=None,
+                                     verify_callee_func=None):
     """Test data connection network switching during voice call when phone on <nw_gen>
     Args:
         log: log object.
@@ -1879,7 +1881,12 @@ def test_wifi_cell_switching_in_call(log,
 
     """
     result = True
-    if not call_setup_teardown(log, ads[0], ads[1], None, None, None,
+    if not call_setup_teardown(log,
+                               ads[0],
+                               ads[1],
+                               None,
+                               verify_caller_func,
+                               verify_callee_func,
                                5):
         log.error("Call setup failed")
         return False
