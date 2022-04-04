@@ -90,6 +90,10 @@ MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION = 60
 # actually receive this MT SMS.
 MAX_WAIT_TIME_SMS_RECEIVE = 120
 
+# Max time to wait after MT MMS was sent and before device
+# actually receive this MT SMS.
+MAX_WAIT_TIME_MMS_RECEIVE = 300
+
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS in case of collision.
 MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION = 1200
@@ -402,7 +406,7 @@ GOOGLE_CBRS_CARRIER_ID = 2340
 GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
-CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha", "taro"]
 # SMS over wifi providers
 SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
                            "dtag")
@@ -859,6 +863,10 @@ NetworkCallbackSuspended = "Suspended"
 NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
+
+# Constant for Settings
+USE_SIM = 'Use SIM'
+MOBILE_DATA = 'Mobile data'
 
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"

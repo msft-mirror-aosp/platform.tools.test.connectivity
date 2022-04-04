@@ -3164,10 +3164,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="d750d66b-2091-4e8d-baa2-084b9d2bbff5")
     @TelephonyBaseTest.tel_test_wrap
@@ -3187,10 +3188,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="35703e83-b3e6-40af-aeaf-6b983d6205f4")
     @TelephonyBaseTest.tel_test_wrap
@@ -3210,13 +3212,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_volte(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='volte',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="a0f658d9-4212-44db-b3e8-7202f1eec04d")
     @TelephonyBaseTest.tel_test_wrap
@@ -3236,13 +3236,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_volte(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='volte',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="e0b264ec-fc29-411e-b018-684b7ff5a37e")
     @TelephonyBaseTest.tel_test_wrap
@@ -3262,14 +3260,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_ORIGINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='csfb',
+            call_direction=DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=True)
 
     @test_tracker_info(uuid="98f04a27-74e1-474d-90d1-a4a45cdb6f5b")
     @TelephonyBaseTest.tel_test_wrap
@@ -3289,14 +3285,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_TERMINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='csfb',
+            call_direction=DIRECTION_MOBILE_TERMINATED,
+            allow_data_transfer_interruption=True)
 
     @test_tracker_info(uuid="359b1ee1-36a6-427b-9d9e-4d77231fcb09")
     @TelephonyBaseTest.tel_test_wrap
@@ -3317,14 +3311,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup 3G")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_3G,
-                                                       DIRECTION_MOBILE_ORIGINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='3g',
+            call_direction=DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=True)
 
     @test_tracker_info(uuid="b172bbb4-2d6e-4d83-a381-ebfdf23bc30e")
     @TelephonyBaseTest.tel_test_wrap
@@ -3345,14 +3337,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup 3G")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_3G,
-                                                       DIRECTION_MOBILE_TERMINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='3g',
+            call_direction=DIRECTION_MOBILE_TERMINATED,
+            allow_data_transfer_interruption=True)
 
     @test_tracker_info(uuid="f5d9bfd0-0996-4c18-b11e-c6113dc201e2")
     @TelephonyBaseTest.tel_test_wrap
@@ -3373,14 +3363,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_2g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup voice in 2G")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_2G,
-                                                       DIRECTION_MOBILE_ORIGINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='2g',
+            call_direction=DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=True)
 
     @test_tracker_info(uuid="99cfd1be-b992-48bf-a50e-fc3eec8e5a67")
     @TelephonyBaseTest.tel_test_wrap
@@ -3401,14 +3389,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_2g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup voice in 2G")
-            return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       GEN_2G,
-                                                       DIRECTION_MOBILE_TERMINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat='2g',
+            call_direction=DIRECTION_MOBILE_TERMINATED,
+            allow_data_transfer_interruption=True)
 
     @test_tracker_info(uuid="12677cf2-40d3-4bb1-8afa-91ebcbd0f862")
     @TelephonyBaseTest.tel_test_wrap
@@ -3431,10 +3417,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup IWLAN with NON-APM WIFI WFC on")
             return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="84adcc19-43bb-4ea3-9284-7322ab139aac")
     @TelephonyBaseTest.tel_test_wrap
@@ -3457,10 +3444,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM off and WIFI and WFC on")
             return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="42566255-c33f-406c-abab-932a0aaa01a8")
     @TelephonyBaseTest.tel_test_wrap
@@ -3488,10 +3476,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="fbf52f60-449b-46f2-9486-36d338a1b070")
     @TelephonyBaseTest.tel_test_wrap
@@ -3519,10 +3508,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="d1bf0739-ffb7-4bf8-ab94-570619f812a8")
     @TelephonyBaseTest.tel_test_wrap
@@ -3547,10 +3537,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI")
             return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="76b2cdaf-b783-4c1a-b91b-207f82ffa816")
     @TelephonyBaseTest.tel_test_wrap
@@ -3575,10 +3566,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_data_transfer(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_data_transfer(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="1dc9f03f-1b6c-4c17-993b-3acafdc26ea3")
     @TelephonyBaseTest.tel_test_wrap
@@ -3594,10 +3586,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="32bc8fab-a0b9-4d47-8afb-940d1fdcde02")
     @TelephonyBaseTest.tel_test_wrap
@@ -3613,10 +3606,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="72204212-e0c8-4447-be3f-ae23b2a63a1c")
     @TelephonyBaseTest.tel_test_wrap
@@ -3632,13 +3626,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_volte(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='volte',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="84cd3ab9-a2b2-4ef9-b531-ee6201bec128")
     @TelephonyBaseTest.tel_test_wrap
@@ -3654,13 +3646,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_volte(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='volte',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="a8dca8d3-c44c-40a6-be56-931b4be5499b")
     @TelephonyBaseTest.tel_test_wrap
@@ -3676,14 +3666,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_ORIGINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='csfb',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="d11f7263-f51d-4ea3-916a-0df4f52023ce")
     @TelephonyBaseTest.tel_test_wrap
@@ -3699,14 +3686,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_4G,
-                                                       DIRECTION_MOBILE_TERMINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='csfb',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="676378b4-94b7-4ad7-8242-7ccd2bf1efba")
     @TelephonyBaseTest.tel_test_wrap
@@ -3723,14 +3707,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup 3G")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_3G,
-                                                       DIRECTION_MOBILE_ORIGINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='3g',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="6216fc6d-2aa2-4eb9-90e2-5791cb31c12e")
     @TelephonyBaseTest.tel_test_wrap
@@ -3747,14 +3728,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup 3G")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_3G,
-                                                       DIRECTION_MOBILE_TERMINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='3g',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="58ec9783-6f8e-49f6-8dae-9dd33108b6f9")
     @TelephonyBaseTest.tel_test_wrap
@@ -3771,14 +3749,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_2g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup voice in 2G")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_2G,
-                                                       DIRECTION_MOBILE_ORIGINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='2g',
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="e8ba7c0c-48a3-4fc6-aa34-a2e1c570521a")
     @TelephonyBaseTest.tel_test_wrap
@@ -3795,14 +3770,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             False if failed.
         """
         self.check_band_support(self.android_devices[0])
-        if not phone_setup_voice_2g(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup voice in 2G")
-            return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       GEN_2G,
-                                                       DIRECTION_MOBILE_TERMINATED,
-                                                       allow_data_transfer_interruption=True)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat='2g',
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="eb8971c1-b34a-430f-98df-0d4554c7ab12")
     @TelephonyBaseTest.tel_test_wrap
@@ -3824,10 +3796,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup IWLAN with NON-APM WIFI WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="275a93d6-1f39-40c8-893f-ff77afd09e54")
     @TelephonyBaseTest.tel_test_wrap
@@ -3849,10 +3822,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM off and WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="ea087709-d4df-4223-b80c-1b33bacbd5a2")
     @TelephonyBaseTest.tel_test_wrap
@@ -3879,10 +3853,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="44cc14e0-60c7-4fdb-ad26-31fdc4e52aaf")
     @TelephonyBaseTest.tel_test_wrap
@@ -3909,10 +3884,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="e115e8a6-25bf-41fc-aeb8-8f4c922c50e4")
     @TelephonyBaseTest.tel_test_wrap
@@ -3934,10 +3910,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="d754d3dd-0b02-4f13-bc65-fdafa254196b")
     @TelephonyBaseTest.tel_test_wrap
@@ -3959,10 +3936,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="88822edf-4c4a-4bc4-9280-2f27ee9e28d5")
     @TelephonyBaseTest.tel_test_wrap
@@ -3986,10 +3964,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_ORIGINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="c4b066b0-3cfd-4831-9c61-5d6b132648c4")
     @TelephonyBaseTest.tel_test_wrap
@@ -4013,10 +3992,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return test_call_setup_in_active_youtube_video(self.log,
-                                                       self.android_devices,
-                                                       None,
-                                                       DIRECTION_MOBILE_TERMINATED)
+        return test_call_setup_in_active_youtube_video(
+            self.log,
+            self.android_devices,
+            rat=None,
+            call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="f367de12-1fd8-488d-816f-091deaacb791")
     @TelephonyBaseTest.tel_test_wrap
@@ -4123,11 +4103,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        return test_wifi_cell_switching_in_call(self.log,
-                                                ads,
-                                                self.wifi_network_ssid,
-                                                self.wifi_network_pass,
-                                                new_gen=GEN_4G)
+        return test_wifi_cell_switching_in_call(
+            self.log,
+            ads,
+            self.wifi_network_ssid,
+            self.wifi_network_pass,
+            verify_caller_func=is_phone_in_call_volte,
+            verify_callee_func=is_phone_in_call_volte)
 
     @test_tracker_info(uuid="8a853186-cdff-4078-930a-6c619ea89183")
     @TelephonyBaseTest.tel_test_wrap
@@ -4146,6 +4128,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
+        if not phone_setup_volte(self.log, ads[0]):
+            return False
+
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -4154,11 +4139,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        return test_wifi_cell_switching_in_call(self.log,
-                                                ads,
-                                                self.wifi_network_ssid,
-                                                self.wifi_network_pass,
-                                                new_gen=GEN_4G)
+        return test_wifi_cell_switching_in_call(
+            self.log,
+            ads,
+            self.wifi_network_ssid,
+            self.wifi_network_pass,
+            verify_caller_func=is_phone_in_call_iwlan)
 
     @test_tracker_info(uuid="187bf7b5-d122-4914-82c0-b0709272ee12")
     @TelephonyBaseTest.tel_test_wrap
@@ -4182,11 +4168,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        return test_wifi_cell_switching_in_call(self.log,
-                                                ads,
-                                                self.wifi_network_ssid,
-                                                self.wifi_network_pass,
-                                                new_gen=GEN_3G)
+        return test_wifi_cell_switching_in_call(
+            self.log,
+            ads,
+            self.wifi_network_ssid,
+            self.wifi_network_pass,
+            verify_caller_func=is_phone_in_call_csfb,
+            verify_callee_func=is_phone_in_call_csfb)
 
 
 """ Tests End """
