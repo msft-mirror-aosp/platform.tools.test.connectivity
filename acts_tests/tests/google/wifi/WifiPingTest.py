@@ -523,7 +523,8 @@ class WifiPingTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing all test params
         """
-        return self.testclass_params['range_atten_start']
+        band = wputils.CHANNEL_TO_BAND_MAP[testcase_params['channel']]
+        return self.testclass_params['range_atten_start'].get(band, 0)
 
     def compile_test_params(self, testcase_params):
         # Check if test should be skipped.
@@ -628,6 +629,7 @@ class WifiPingTest(base_test.BaseTestClass):
 
 
 class WifiPing_TwoChain_Test(WifiPingTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(ap_power='standard',
@@ -646,6 +648,7 @@ class WifiPing_TwoChain_Test(WifiPingTest):
 
 
 class WifiPing_PerChainRange_Test(WifiPingTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(ap_power='standard',
@@ -660,6 +663,7 @@ class WifiPing_PerChainRange_Test(WifiPingTest):
 
 
 class WifiPing_LowPowerAP_Test(WifiPingTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
@@ -678,6 +682,7 @@ class WifiOtaPingTest(WifiPingTest):
     setting turntable orientation and other chamber parameters to study
     performance in varying channel conditions
     """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
@@ -799,9 +804,10 @@ class WifiOtaPingTest(WifiPingTest):
             start_atten: starting attenuation for current test
         """
         # If the test is being retried, start from the beginning
+        band = wputils.CHANNEL_TO_BAND_MAP[testcase_params['channel']]
         if self.retry_flag:
             self.log.info('Retry flag set. Setting attenuation to minimum.')
-            return self.testclass_params['range_atten_start']
+            return self.testclass_params['range_atten_start'].get(band, 0)
         # Get the current and reference test config. The reference test is the
         # one performed at the current MCS+1
         ref_test_params = wputils.extract_sub_dict(
@@ -821,8 +827,9 @@ class WifiOtaPingTest(WifiPingTest):
         except ValueError:
             self.log.info(
                 'Reference test not found. Starting from {} dB'.format(
-                    self.testclass_params['range_atten_start']))
-            start_atten = self.testclass_params['range_atten_start']
+                    self.testclass_params['range_atten_start'].get(band, 0)))
+            start_atten = self.testclass_params['range_atten_start'].get(
+                band, 0)
         return start_atten
 
     def generate_test_cases(self, ap_power, channels, modes, chain_masks,
@@ -861,6 +868,7 @@ class WifiOtaPingTest(WifiPingTest):
 
 
 class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
@@ -873,6 +881,7 @@ class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(ap_power='standard',
@@ -889,6 +898,7 @@ class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_SteppedStirrers_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(ap_power='standard',
@@ -900,6 +910,7 @@ class WifiOtaPing_SteppedStirrers_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_LowPowerAP_TenDegree_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(ap_power='low_power',
@@ -912,6 +923,7 @@ class WifiOtaPing_LowPowerAP_TenDegree_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_LowPowerAP_45Degree_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
@@ -924,6 +936,7 @@ class WifiOtaPing_LowPowerAP_45Degree_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_LowPowerAP_SteppedStirrers_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(ap_power='low_power',
@@ -935,6 +948,7 @@ class WifiOtaPing_LowPowerAP_SteppedStirrers_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_LowPowerAP_PerChain_TenDegree_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(ap_power='low_power',
@@ -947,6 +961,7 @@ class WifiOtaPing_LowPowerAP_PerChain_TenDegree_Test(WifiOtaPingTest):
 
 
 class WifiOtaPing_PerChain_TenDegree_Test(WifiOtaPingTest):
+
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
