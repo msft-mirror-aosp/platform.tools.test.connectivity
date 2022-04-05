@@ -101,7 +101,6 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
     def setup_test(self):
         if self.testclass_params['enable_pixel_logs']:
             cputils.start_pixel_logger(self.dut)
-        self.retry_flag = False
 
     def on_retry(self):
         """Function to control test logic on retried tests.
@@ -111,7 +110,6 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         and sets a retry_flag to enable further tweaking the test logic on
         second attempts.
         """
-        self.retry_flag = True
         asserts.assert_true(utils.force_airplane_mode(self.dut, True),
                             'Can not turn on airplane mode.')
         if self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
@@ -127,7 +125,6 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         os.makedirs(self.log_path, exist_ok=True)
         if self.testclass_params['enable_pixel_logs']:
             cputils.stop_pixel_logger(self.dut, log_path)
-        self.retry_flag = False
         self.process_testcase_results()
         self.pass_fail_check()
 

@@ -686,3 +686,36 @@ class Keysight5GTestApp(object):
         time.sleep(length * SUBFRAME_DURATION)
         bler_result = self.get_bler_result(cell_type, cells, length, 1)
         return bler_result
+
+    def start_nr_rsrp_measurement(self, cells, length):
+        """Function to start 5G NR RSRP measurement.
+
+        Args:
+            cells: list of NR cells to get RSRP on
+            length: length of RSRP measurement in milliseconds
+        Returns:
+            rsrp_result: dict containing per-cell and aggregate BLER results
+        """
+        for cell in cells:
+            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STOP'.format(Keysight5GTestApp._format_cells(cell)))
+        for cell in cells:
+            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:LENGth {}'.format(Keysight5GTestApp._format_cells(cell), length))
+        for cell in cells:
+            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STARt'.format(Keysight5GTestApp._format_cells(cell)))
+
+    def get_nr_rsrp_measurement_state(self, cells):
+        for cell in cells:
+            self.log.info(self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STATe?'.format(Keysight5GTestApp._format_cells(cell)),1))
+
+    def get_nr_rsrp_measurement_results(self, cells):
+        for cell in cells:
+            self.log.info(self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:REPorts:JSON?'.format(Keysight5GTestApp._format_cells(cell)),1))
+
+
+
+
+
+
+
+
+
