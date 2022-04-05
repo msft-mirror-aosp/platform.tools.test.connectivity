@@ -17,6 +17,7 @@
 import collections
 import itertools
 import json
+import numpy
 import os
 from functools import partial
 from acts import asserts
@@ -26,6 +27,8 @@ from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.controllers.utils_lib import ssh
 from acts_contrib.test_utils.cellular.keysight_5g_testapp import Keysight5GTestApp
+from acts_contrib.test_utils.cellular import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from Cellular5GFR2ThroughputTest import Cellular5GFR2ThroughputTest
 
@@ -99,6 +102,9 @@ class Cellular5GFR2SensitivityTest(Cellular5GFR2ThroughputTest):
         else:
             testcase_results['sensitivity'] = float('nan')
 
+        testcase_results['cell_power_list'] = cell_power_list
+        testcase_results['dl_bler_list'] = dl_bler_list
+
         results_file_path = os.path.join(
             context.get_current_context().get_full_output_path(),
             '{}.json'.format(self.current_test_name))
@@ -116,19 +122,47 @@ class Cellular5GFR2SensitivityTest(Cellular5GFR2ThroughputTest):
         else:
             self.log.info('Result unreliable. {}'.format(result_string))
 
-    def generate_test_cases(self, bands, mcs_pair_list, num_dl_cells_list,
-                            num_ul_cells_list, **kwargs):
+    def process_testclass_results(self):
+        Cellular5GFR2ThroughputTest.process_testclass_results(self)
+
+        plots = collections.OrderedDict()
+        id_fields = ['band', 'num_dl_cells']
+        for testcase, testcase_data in self.testclass_results.items():
+            testcase_params = testcase_data['testcase_params']
+            plot_id = cputils.extract_test_id(testcase_params, id_fields)
+            plot_id = tuple(plot_id.items())
+            if plot_id not in plots:
+                plots[plot_id] = BokehFigure(title='{} {}CC'.format(
+                    testcase_params['band'], testcase_params['num_dl_cells']),
+                                             x_label='Cell Power (dBm)',
+                                             primary_y_label='BLER (%)')
+            plots[plot_id].add_line(
+                testcase_data['cell_power_list'],
+                testcase_data['dl_bler_list'],
+                'Channel {}, MCS {}'.format(testcase_params['channel'],
+                                            testcase_params['dl_mcs']))
+        figure_list = []
+        for plot_id, plot in plots.items():
+            plot.generate_figure()
+            figure_list.append(plot)
+        output_file_path = os.path.join(self.log_path, 'results.html')
+        BokehFigure.save_figures(figure_list, output_file_path)
+
+    def generate_test_cases(self, bands, channels, mcs_pair_list,
+                            num_dl_cells_list, num_ul_cells_list, **kwargs):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
 
-        for band, num_ul_cells, num_dl_cells, mcs_pair in itertools.product(
-                bands, num_ul_cells_list, num_dl_cells_list, mcs_pair_list):
+        for band, channel, num_ul_cells, num_dl_cells, mcs_pair in itertools.product(
+                bands, channels, num_ul_cells_list, num_dl_cells_list,
+                mcs_pair_list):
             if num_ul_cells > num_dl_cells:
                 continue
-            test_name = 'test_nr_sensitivity_{}_DL_{}CC_mcs{}'.format(
-                band, num_dl_cells, mcs_pair[0])
+            test_name = 'test_nr_sensitivity_{}_{}_DL_{}CC_mcs{}'.format(
+                band, channel, num_dl_cells, mcs_pair[0])
             test_params = collections.OrderedDict(
                 band=band,
+                channel=channel,
                 dl_mcs=mcs_pair[0],
                 ul_mcs=mcs_pair[1],
                 num_dl_cells=num_dl_cells,
@@ -147,8 +181,55 @@ class Cellular5GFR2_AllBands_SensitivityTest(Cellular5GFR2SensitivityTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                              ['low', 'mid', 'high'],
                                               [(16, 4), (27, 4)],
                                               list(range(1, 9)), [1],
                                               schedule_scenario="FULL_TPUT",
                                               traffic_direction='DL',
                                               transform_precoding=0)
+
+
+class Cellular5GFR2_FrequencySweep_SensitivityTest(Cellular5GFR2SensitivityTest
+                                                   ):
+
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        frequency_sweep_params = self.user_params['sensitivity_test_params'][
+            'frequency_sweep']
+        self.tests = self.generate_test_cases(frequency_sweep_params,
+                                              [(16, 4), (27, 4)],
+                                              schedule_scenario="FULL_TPUT",
+                                              traffic_direction='DL',
+                                              transform_precoding=0)
+
+    def generate_test_cases(self, dl_frequency_sweep_params, mcs_pair_list,
+                            **kwargs):
+        """Function that auto-generates test cases for a test class."""
+        test_cases = ['test_load_scpi']
+
+        for band, band_config in dl_frequency_sweep_params.items():
+            for num_dl_cells_str, sweep_config in band_config.items():
+                num_dl_cells = int(num_dl_cells_str[0])
+                num_ul_cells = 1
+                freq_vector = numpy.arange(sweep_config[0], sweep_config[1],
+                                           sweep_config[2])
+                for freq in freq_vector:
+                    for mcs_pair in mcs_pair_list:
+                        test_name = 'test_nr_sensitivity_{}_{}_DL_{}CC_mcs{}'.format(
+                            band, freq, num_dl_cells, mcs_pair[0])
+                        test_params = collections.OrderedDict(
+                            band=band,
+                            channel=freq,
+                            dl_mcs=mcs_pair[0],
+                            ul_mcs=mcs_pair[1],
+                            num_dl_cells=num_dl_cells,
+                            num_ul_cells=num_ul_cells,
+                            dl_cell_list=list(range(1, num_dl_cells + 1)),
+                            ul_cell_list=list(range(1, num_ul_cells + 1)),
+                            **kwargs)
+                        setattr(
+                            self, test_name,
+                            partial(self._test_nr_throughput_bler,
+                                    test_params))
+                        test_cases.append(test_name)
+        return test_cases
