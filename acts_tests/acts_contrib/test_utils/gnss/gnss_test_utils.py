@@ -2643,7 +2643,7 @@ def deep_suspend_device(ad):
     ensure_power_manager_is_dozing(ad, begin_time)
     ad.stop_services()
     try:
-        command = "echo mem >/sys/power/state"
+        command = "echo deep > /sys/power/mem_sleep && echo mem > /sys/power/state"
         for i in range(1, 4):
             ad.log.debug(f"Send deep suspend command round {i}")
             ad.adb.shell(command, ignore_status=True)
