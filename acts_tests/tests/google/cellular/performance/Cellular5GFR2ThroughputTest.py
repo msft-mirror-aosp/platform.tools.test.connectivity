@@ -39,6 +39,7 @@ MEDIUM_SLEEP = 2
 IPERF_TIMEOUT = 10
 SHORT_SLEEP = 1
 SUBFRAME_LENGTH = 0.001
+STOP_COUNTER_LIMIT = 3
 
 
 class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
@@ -85,10 +86,16 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
 
     def teardown_class(self):
         self.log.info('Turning airplane mode on')
-        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
-                            'Can not turn on airplane mode.')
-        self.keysight_test_app.set_cell_state('LTE', 1, 0)
-        self.keysight_test_app.destroy()
+        try:
+            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                                'Can not turn on airplane mode.')
+        except:
+            self.log.warning('Cannot perform teardown operations on DUT.')
+        try:
+            self.keysight_test_app.set_cell_state('LTE', 1, 0)
+            self.keysight_test_app.destroy()
+        except:
+            self.log.warning('Cannot perform teardown operations on tester.')
         self.process_testclass_results()
 
     def setup_test(self):
@@ -107,6 +114,9 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         self.retry_flag = True
         asserts.assert_true(utils.force_airplane_mode(self.dut, True),
                             'Can not turn on airplane mode.')
+        if self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
+            self.log.info('Turning LTE off.')
+            self.keysight_test_app.set_cell_state('LTE', 'CELL1', 0)
 
     def teardown_test(self):
         self.log.info('Turing airplane mode on')
@@ -142,8 +152,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             'results.csv')
         with open(results_file_path, 'w', newline='') as csvfile:
             field_names = [
-                'Band', 'Channel Preset', 'DL Carriers', 'UL Carriers',
-                'DL MCS', 'UL MCS', 'Cell Power', 'DL Min. Throughput',
+                'Band', 'Channel', 'DL Carriers', 'UL Carriers', 'DL MCS',
+                'UL MCS', 'Cell Power', 'DL Min. Throughput',
                 'DL Max. Throughput', 'DL Avg. Throughput',
                 'DL Theoretical Throughput', 'UL Min. Throughput',
                 'UL Max. Throughput', 'UL Avg. Throughput',
@@ -159,8 +169,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                     writer.writerow({
                         'Band':
                         testcase_results['testcase_params']['band'],
-                        'Channel Preset':
-                        testcase_results['testcase_params']['channel_preset'],
+                        'Channel':
+                        testcase_results['testcase_params']['channel'],
                         'DL Carriers':
                         testcase_results['testcase_params']['num_dl_cells'],
                         'UL Carriers':
@@ -217,13 +227,12 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         self.log.info('Turning off airplane mode')
         asserts.assert_true(utils.force_airplane_mode(self.dut, False),
                             'Can not turn on airplane mode.')
-        self.log.info('Waiting for LTE and applying aggregation')
         for cell in testcase_params['dl_cell_list']:
             self.keysight_test_app.set_cell_band('NR5G', cell,
                                                  testcase_params['band'])
-        self.keysight_test_app.set_nr_cell_channel_preset(
+        self.keysight_test_app.configure_contiguous_nr_channels(
             testcase_params['dl_cell_list'][0], testcase_params['band'],
-            testcase_params['channel_preset'])
+            testcase_params['channel'])
         # Consider configuring schedule quick config
         self.keysight_test_app.set_nr_cell_schedule_scenario(
             testcase_params['dl_cell_list'][0],
@@ -236,6 +245,10 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             testcase_params['ul_mcs'])
         self.keysight_test_app.set_dl_carriers(testcase_params['dl_cell_list'])
         self.keysight_test_app.set_ul_carriers(testcase_params['ul_cell_list'])
+        self.log.info('Waiting for LTE and applying aggregation')
+        if not self.keysight_test_app.wait_for_cell_status(
+                'LTE', 'CELL1', 'CONN', 60):
+            asserts.fail('DUT did not connect to LTE.')
         self.keysight_test_app.apply_carrier_agg()
         self.log.info('Waiting for 5G connection')
         connected = self.keysight_test_app.wait_for_cell_status(
@@ -294,6 +307,7 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         # Setup tester and wait for DUT to connect
         self.setup_tester(testcase_params)
         # Run test
+        stop_counter = 0
         for cell_power in testcase_params['cell_power_list']:
             result = collections.OrderedDict()
             result['cell_power'] = cell_power
@@ -344,7 +358,13 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                     self.testclass_params['traffic_type'],
                     testcase_params['traffic_direction'],
                     result['iperf_throughput']))
-            #self.log.info(summary_message)
+
+            if result['bler_result']['total']['DL']['nack_ratio'] * 100 > 99:
+                stop_counter = stop_counter + 1
+            else:
+                stop_counter = 0
+            if stop_counter == STOP_COUNTER_LIMIT:
+                break
         # Turn off NR cells
         for cell in testcase_params['dl_cell_list'][::-1]:
             self.keysight_test_app.set_cell_state('NR5G', cell, 0)
@@ -410,24 +430,24 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             testcase_params['use_client_output'] = False
         return testcase_params
 
-    def generate_test_cases(self, bands, channel_presets, mcs_pair_list,
+    def generate_test_cases(self, bands, channels, mcs_pair_list,
                             num_dl_cells_list, num_ul_cells_list, **kwargs):
         """Function that auto-generates test cases for a test class."""
         test_cases = ['test_load_scpi']
 
-        for band, channel_preset, num_ul_cells, num_dl_cells, mcs_pair in itertools.product(
-                bands, channel_presets, num_ul_cells_list, num_dl_cells_list,
+        for band, channel, num_ul_cells, num_dl_cells, mcs_pair in itertools.product(
+                bands, channels, num_ul_cells_list, num_dl_cells_list,
                 mcs_pair_list):
             if num_ul_cells > num_dl_cells:
                 continue
-            if channel_preset not in cputils.PCC_PRESET_MAPPING[band]:
+            if channel not in cputils.PCC_PRESET_MAPPING[band]:
                 continue
             test_name = 'test_nr_throughput_bler_{}_{}_DL_{}CC_mcs{}_UL_{}CC_mcs{}'.format(
-                band, channel_preset, num_dl_cells, mcs_pair[0], num_ul_cells,
+                band, channel, num_dl_cells, mcs_pair[0], num_ul_cells,
                 mcs_pair[1])
             test_params = collections.OrderedDict(
                 band=band,
-                channel_preset=channel_preset,
+                channel=channel,
                 dl_mcs=mcs_pair[0],
                 ul_mcs=mcs_pair[1],
                 num_dl_cells=num_dl_cells,
@@ -481,3 +501,50 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                               schedule_scenario="UL_RMC",
                                               traffic_direction='UL',
                                               transform_precoding=1)
+
+
+class Cellular5GFR2_DL_FrequecySweep_ThroughputTest(Cellular5GFR2ThroughputTest
+                                                    ):
+
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        dl_frequency_sweep_params = self.user_params['throughput_test_params'][
+            'dl_frequency_sweep']
+        self.tests = self.generate_test_cases(dl_frequency_sweep_params,
+                                              [(16, 4), (27, 4)],
+                                              schedule_scenario="FULL_TPUT",
+                                              traffic_direction='DL',
+                                              transform_precoding=0)
+
+    def generate_test_cases(self, dl_frequency_sweep_params, mcs_pair_list,
+                            **kwargs):
+        """Function that auto-generates test cases for a test class."""
+        test_cases = ['test_load_scpi']
+
+        for band, band_config in dl_frequency_sweep_params.items():
+            for num_dl_cells_str, sweep_config in band_config.items():
+                num_dl_cells = int(num_dl_cells_str[0])
+                num_ul_cells = 1
+                freq_vector = numpy.arange(sweep_config[0], sweep_config[1],
+                                           sweep_config[2])
+                for freq in freq_vector:
+                    for mcs_pair in mcs_pair_list:
+                        test_name = 'test_nr_throughput_bler_{}_{}MHz_DL_{}CC_mcs{}_UL_{}CC_mcs{}'.format(
+                            band, freq, num_dl_cells, mcs_pair[0],
+                            num_ul_cells, mcs_pair[1])
+                        test_params = collections.OrderedDict(
+                            band=band,
+                            channel=freq,
+                            dl_mcs=mcs_pair[0],
+                            ul_mcs=mcs_pair[1],
+                            num_dl_cells=num_dl_cells,
+                            num_ul_cells=num_ul_cells,
+                            dl_cell_list=list(range(1, num_dl_cells + 1)),
+                            ul_cell_list=list(range(1, num_ul_cells + 1)),
+                            **kwargs)
+                        setattr(
+                            self, test_name,
+                            partial(self._test_nr_throughput_bler,
+                                    test_params))
+                        test_cases.append(test_name)
+        return test_cases

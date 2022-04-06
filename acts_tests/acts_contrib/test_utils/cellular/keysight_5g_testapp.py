@@ -235,31 +235,55 @@ class Keysight5GTestApp(object):
             cell_type, Keysight5GTestApp._format_cells(cell), band))
 
     #@assert_cell_off_decorator
-    def set_cell_channel(self, cell_type, cell, channel):
+    def set_cell_channel(self, cell_type, cell, channel, arfcn=1):
         """Function to set cell frequency/channel
 
         Args:
             cell_type: LTE or NR5G cell
             cell: cell/carrier number
-            channel: requested channel (ARFCN)
+            channel: requested channel (ARFCN) in frequency in MHz
         """
         self.assert_cell_off(cell_type, cell)
-        self.send_cmd('BSE:CONFig:{}:{}:DL:CHANnel {}'.format(
-            cell_type, Keysight5GTestApp._format_cells(cell), channel))
+        if arfcn == 1:
+            self.send_cmd('BSE:CONFig:{}:{}:DL:CHANnel {}'.format(
+                cell_type, Keysight5GTestApp._format_cells(cell), channel))
+        else:
+            self.send_cmd('BSE:CONFig:{}:{}:DL:FREQuency:MAIN {}'.format(
+                cell_type, Keysight5GTestApp._format_cells(cell),
+                channel * 1e6))
 
     #@assert_cell_off_decorator
-    def set_nr_cell_channel_preset(self, cell, band, channel_preset):
+    def configure_contiguous_nr_channels(self, cell, band, channel):
         """Function to set cell frequency/channel
 
         Args:
             cell: cell/carrier number
-            channel_preset: low, mid, or high
+            band: band to set channel in (only required for preset)
+            channel_preset: frequency in MHz or preset in [low, mid, or high]
         """
         self.assert_cell_off('NR5G', cell)
         self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 0')
-        pcc_arfcn = cputils.PCC_PRESET_MAPPING[band][channel_preset]
-        self.set_cell_channel('NR5G', cell, pcc_arfcn)
+        if channel in ['low', 'mid', 'high']:
+            pcc_arfcn = cputils.PCC_PRESET_MAPPING[band][channel]
+            self.set_cell_channel('NR5G', cell, pcc_arfcn, 1)
+        else:
+            self.set_cell_channel('NR5G', cell, channel, 0)
         self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 1')
+
+    #@assert_cell_off_decorator
+    def configure_noncontiguous_nr_channels(self, cells, band, channels):
+        """Function to set cell frequency/channel
+
+        Args:
+            cell: cell/carrier number
+            band: band number
+            channel: frequency in MHz or preset in [low, mid, or high]
+        """
+        for cell in cells:
+            self.assert_cell_off('NR5G', cell)
+        self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 0')
+        for cell, channel in zip(cells, channels):
+            self.set_cell_channel('NR5G', cell, channel, arfcn=0)
 
     #@assert_cell_off_decorator
     def set_cell_bandwidth(self, cell_type, cell, bandwidth):
@@ -310,7 +334,7 @@ class Keysight5GTestApp(object):
         else:
             self.send_cmd('BSE:CONFIG:{}:{}:DL:POWer:EPRE {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), power))
-        #TODO: check if we need to BSE:CONFig:NR5G:APPLY
+        self.send_cmd('BSE:CONFig:{}:APPLY'.format(cell_type))
 
     #@assert_cell_off_decorator
     def set_cell_duplex_mode(self, cell_type, cell, duplex_mode):

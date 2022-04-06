@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import collections
 import logging
 import time
 
@@ -37,6 +38,12 @@ PCC_PRESET_MAPPING = {
         'low': 2071667
     }
 }
+
+
+def extract_test_id(testcase_params, id_fields):
+    test_id = collections.OrderedDict(
+        (param, testcase_params[param]) for param in id_fields)
+    return test_id
 
 
 def start_pixel_logger(ad):
