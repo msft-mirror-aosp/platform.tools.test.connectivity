@@ -15,14 +15,13 @@
 #   limitations under the License.
 
 import backoff
-import itertools
 import os
 import logging
 import paramiko
 import psutil
-import shutil
 import socket
 import tarfile
+import tempfile
 import time
 import usbinfo
 
@@ -254,26 +253,32 @@ def flash(fuchsia_device, use_ssh=False,
     else:
         raise ValueError('A suitable build could not be found.')
 
-    tmp_path = '/tmp/%s_%s' % (str(int(
-        time.time() * 10000)), fuchsia_device.board_type)
-    os.mkdir(tmp_path)
-    if file_download_needed:
-        job.run('gsutil cp %s %s' % (file_to_download, tmp_path))
-        logging.info('Downloading %s to %s' % (file_to_download, tmp_path))
-        image_tgz = os.path.basename(file_to_download)
-    else:
-        job.run('cp %s %s' % (fuchsia_device.specific_image, tmp_path))
-        logging.info('Copying %s to %s' % (file_to_download, tmp_path))
-        image_tgz = os.path.basename(fuchsia_device.specific_image)
+    tmp_dir = tempfile.TemporaryDirectory(suffix=fuchsia_device.board_type)
+    with tmp_dir as tmp_path:
+        if file_download_needed:
+            logging.info('Downloading %s to %s' % (file_to_download, tmp_path))
+            job.run('gsutil cp %s %s' % (file_to_download, tmp_dir.name))
+            image_tgz = os.path.join(tmp_path,
+                                     os.path.basename(file_to_download))
+        else:
+            image_tgz = file_to_download
 
-    job.run('tar xfvz %s/%s -C %s' % (tmp_path, image_tgz, tmp_path))
-    all_files = []
-    for root, _dirs, files in itertools.islice(os.walk(tmp_path), 1, None):
-        for filename in files:
-            all_files.append(os.path.join(root, filename))
-    for filename in all_files:
-        shutil.move(filename, tmp_path)
+        # Use tar command instead of tarfile.extractall, as it takes too long.
+        job.run(f'tar xfvz {image_tgz} -C {tmp_path}', timeout=120)
 
+        reboot_to_bootloader(fuchsia_device, use_ssh,
+                             fuchsia_reconnect_after_reboot_time)
+
+        logging.info(
+            f'Flashing {fuchsia_device.orig_ip} with {image_tgz} using authorized keys "{fuchsia_device.authorized_file}".'
+        )
+        run_flash_script(fuchsia_device, tmp_path)
+    return True
+
+
+def reboot_to_bootloader(fuchsia_device,
+                         use_ssh=False,
+                         fuchsia_reconnect_after_reboot_time=5):
     if use_ssh:
         logging.info('Sending reboot command via SSH to '
                      'get into bootloader.')
@@ -327,16 +332,17 @@ def flash(fuchsia_device, use_ssh=False,
                 flash_process_found = True
         if not flash_process_found:
             break
-    logging.info(f'Flashing {fuchsia_device.orig_ip} with {tmp_path}/{image_tgz} using authorized keys "{fuchsia_device.authorized_file}".')
+
+
+def run_flash_script(fuchsia_device, flash_dir):
     try:
-        flash_output = job.run(f'bash {tmp_path}/flash.sh --ssh-key={fuchsia_device.authorized_file} -s {fuchsia_device.serial_number}', timeout=120)
+        flash_output = job.run(
+            f'bash {flash_dir}/flash.sh --ssh-key={fuchsia_device.authorized_file} -s {fuchsia_device.serial_number}',
+            timeout=120)
         logging.debug(flash_output.stderr)
     except job.TimeoutError as err:
         raise TimeoutError(err)
-    try:
-        os.rmdir(tmp_path)
-    except Exception:
-        job.run('rm -fr %s' % tmp_path)
+
     logging.info('Waiting %s seconds for device'
                  ' to come back up after flashing.' % AFTER_FLASH_BOOT_TIME)
     time.sleep(AFTER_FLASH_BOOT_TIME)
@@ -361,4 +367,3 @@ def flash(fuchsia_device, use_ssh=False,
     else:
         raise ValueError('Invalid IP: %s after flashing.' %
                          fuchsia_device.orig_ip)
-    return True

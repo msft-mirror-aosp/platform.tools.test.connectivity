@@ -62,7 +62,7 @@ from acts.controllers.fuchsia_lib.ram_lib import FuchsiaRamLib
 from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
 from acts.controllers.fuchsia_lib.sysinfo_lib import FuchsiaSysInfoLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
-from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
+from acts.controllers.fuchsia_lib.syslog_lib import create_syslog_process
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import flash
@@ -105,8 +105,6 @@ FUCHSIA_DEFAULT_LOG_ITEMS = [
 ]
 
 FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
-
-ENABLE_LOG_LISTENER = True
 
 CHANNEL_OPEN_TIMEOUT = 5
 
@@ -314,17 +312,11 @@ class FuchsiaDevice:
 
         self.init_libraries()
 
-        self.skip_sl4f = False
-        # Start sl4f on device
-        self.start_services(skip_sl4f=self.skip_sl4f)
-        # Init server
-        self.init_server_connection()
-
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
 
         try:
-            self.init_ffx_connection()
+            self.start_services()
             self.run_commands_from_config(self.setup_commands)
         except Exception as e:
             # Prevent a threading error, since controller isn't fully up yet.
@@ -481,9 +473,9 @@ class FuchsiaDevice:
         (ConnectionRefusedError, requests.exceptions.ConnectionError),
         interval=1.5,
         max_tries=4)
-    def init_server_connection(self):
+    def init_sl4f_connection(self):
         """Initializes HTTP connection with SL4F server."""
-        self.log.debug("Initializing server connection")
+        self.log.debug("Initializing SL4F server connection")
         init_data = json.dumps({
             "jsonrpc": "2.0",
             "id": self.build_id(self.test_counter),
@@ -517,49 +509,6 @@ class FuchsiaDevice:
             self.ffx.clean_up()
 
         self.ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ssh_priv_key)
-
-        # Wait for the device to be available. If the device isn't available within
-        # a short time (e.g. 5 seconds), log a warning before waiting longer.
-        try:
-            self.ffx.run("target wait", timeout_sec=5)
-        except job.TimeoutError as e:
-            longer_wait_sec = 60
-            self.log.info(
-                "Device is not immediately available via ffx." +
-                f" Waiting up to {longer_wait_sec} seconds for device to be reachable."
-            )
-            self.ffx.run("target wait", timeout_sec=longer_wait_sec)
-
-        # Test actual connectivity to the device by getting device information.
-        # Use a shorter timeout than default because this command can hang for
-        # a long time if the device is not actually connectable.
-        try:
-            result = self.ffx.run("target show --json", timeout_sec=15)
-        except Exception as e:
-            self.log.error(
-                f'Failed to reach target device. Try running "{self.ffx_binary_path}'
-                + ' doctor" to diagnose issues.')
-            raise e
-
-        # Compare the device's version to the ffx version
-        result_json = json.loads(result.stdout)
-        build_info = next(
-            filter(lambda s: s.get('label') == 'build', result_json))
-        version_info = next(
-            filter(lambda s: s.get('label') == 'version', build_info['child']))
-        device_version = version_info.get('value')
-        ffx_version = self.ffx.run("version").stdout
-
-        if not getattr(self, '_have_logged_ffx_version', False):
-            self._have_logged_ffx_version = True
-            self.log.info(
-                f"Device version: {device_version}, ffx version: {ffx_version}"
-            )
-            if device_version != ffx_version:
-                self.log.warning(
-                    "ffx versions that differ from device versions may" +
-                    " have compatibility issues. It is recommended to" +
-                    " use versions within 6 weeks of each other.")
 
     def run_commands_from_config(self, cmd_dicts):
         """Runs commands on the Fuchsia device from the config file. Useful for
@@ -698,8 +647,8 @@ class FuchsiaDevice:
                testbed_pdus=None):
         """Reboot a FuchsiaDevice.
 
-        Soft reboots the device, verifies it becomes unreachable, then verfifies
-        it comes back online. Reinitializes SL4F so the tests can continue.
+        Soft reboots the device, verifies it becomes unreachable, then verifies
+        it comes back online. Re-initializes services so the tests can continue.
 
         Args:
             use_ssh: bool, if True, use fuchsia shell command via ssh to reboot
@@ -764,11 +713,9 @@ class FuchsiaDevice:
                         device_pdu.on(str(device_pdu_port))
                     break
             else:
-                self.log.info('Device failed to go offline. Reintializing '
-                              'SL4F.')
+                self.log.info(
+                    'Device failed to go offline. Restarting services...')
                 self.start_services()
-                self.init_server_connection()
-                self.init_ffx_connection()
                 raise ConnectionError('Device never went down.')
             self.log.info('Device is unreachable as expected.')
         if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
@@ -804,17 +751,12 @@ class FuchsiaDevice:
 
         # Creating new log process, start it, start new persistent ssh session,
         # start SL4F, and connect via SL4F
-        self.log.info(
-            'Restarting log process and reinitiating SL4F on FuchsiaDevice %s'
-            % self.ip)
+        self.log.info(f'Restarting services on FuchsiaDevice {self.ip}')
         self.start_services()
 
         # Verify SL4F is up.
-        self.log.info(
-            'Initiating connection to SL4F and verifying commands can run.')
+        self.log.info('Verifying SL4F commands can run.')
         try:
-            self.init_server_connection()
-            self.init_ffx_connection()
             self.hwinfo_lib.getDeviceInfo()
         except Exception as err:
             raise ConnectionError(
@@ -1021,9 +963,6 @@ class FuchsiaDevice:
         # This MUST be run, otherwise syslog threads will never join.
         self.clean_up_services()
 
-        if hasattr(self, 'ffx'):
-            self.ffx.clean_up()
-
     def clean_up_services(self):
         """ Cleans up FuchsiaDevice services (e.g. SL4F). Subset of clean_up,
         to be used for reboots, when testing is to continue (as opposed to
@@ -1223,36 +1162,34 @@ class FuchsiaDevice:
                           (FuchsiaSyslogError, socket.timeout),
                           interval=1.5,
                           max_tries=4)
-    def start_services(self, skip_sl4f=False):
+    def start_services(self):
         """Starts long running services on the Fuchsia device.
 
-        1. Start SL4F if not skipped.
+        Starts a syslog streaming process, SL4F server, initializes a connection
+        to the SL4F server, then starts an isolated ffx daemon.
 
-        Args:
-            skip_sl4f: Does not attempt to start SL4F if True.
         """
         self.log.debug("Attempting to start Fuchsia device services on %s." %
                        self.ip)
         if self.ssh_config:
-            self.log_process = start_syslog(self.serial,
-                                            self.log_path,
-                                            self.ip,
-                                            self.ssh_username,
-                                            self.ssh_config,
-                                            ssh_port=self.ssh_port)
+            self.log_process = create_syslog_process(self.serial,
+                                                     self.log_path,
+                                                     self.ip,
+                                                     self.ssh_username,
+                                                     self.ssh_config,
+                                                     ssh_port=self.ssh_port)
 
-            if ENABLE_LOG_LISTENER:
-                try:
-                    self.log_process.start()
-                except FuchsiaSyslogError as e:
-                    # Before backing off and retrying, stop the syslog if it
-                    # failed to setup correctly, to prevent threading error when
-                    # retrying
-                    self.log_process.stop()
-                    raise
+            try:
+                self.log_process.start()
+            except FuchsiaSyslogError as e:
+                # Before backing off and retrying, stop the syslog if it
+                # failed to setup correctly, to prevent threading error when
+                # retrying
+                self.log_process.stop()
+                raise
 
-            if not skip_sl4f:
-                self.control_daemon("sl4f.cmx", "start")
+            self.control_daemon("sl4f.cmx", "start")
+            self.init_sl4f_connection()
 
             out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
             full_out_path = os.path.join(self.log_path, out_name)
@@ -1260,34 +1197,39 @@ class FuchsiaDevice:
             fw_file.write('%s\n' % self.version())
             fw_file.close()
 
+        self.init_ffx_connection()
+
     def stop_services(self):
         """Stops long running services on the fuchsia device.
 
-        Terminate sl4f sessions if exist.
+        Terminates the syslog streaming process, the SL4F server on the device,
+        and the ffx daemon.
         """
         self.log.debug("Attempting to stop Fuchsia device services on %s." %
                        self.ip)
+        if hasattr(self, 'ffx'):
+            self.ffx.clean_up()
         if self.ssh_config:
             try:
                 self.control_daemon("sl4f.cmx", "stop")
             except Exception as err:
                 self.log.exception("Failed to stop sl4f.cmx with: %s" % err)
             if self.log_process:
-                if ENABLE_LOG_LISTENER:
-                    self.log_process.stop()
+                self.log_process.stop()
 
     def load_config(self, config):
         pass
 
     def take_bug_report(self,
-                        test_name,
-                        begin_time,
+                        test_name=None,
+                        begin_time=None,
                         additional_log_objects=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
             test_name: Name of the test case that triggered this bug report.
-            begin_time: Epoch time when the test started.
+            begin_time: Epoch time when the test started. If not specified, the
+                current time will be used.
             additional_log_objects: A list of additional objects in Fuchsia to
                 query in the bug report.  Must be in the following format:
                 /hub/c/scenic.cmx/[0-9]*/out/objects
@@ -1301,16 +1243,22 @@ class FuchsiaDevice:
                 matching_log_items.append(additional_log_object)
         sn_path = context.get_current_context().get_full_output_path()
         os.makedirs(sn_path, exist_ok=True)
+
+        epoch = begin_time if begin_time else utils.get_current_epoch_time()
         time_stamp = acts_logger.normalize_log_line_timestamp(
-            acts_logger.epoch_to_log_line_timestamp(begin_time))
-        out_name = "FuchsiaDevice%s_%s" % (
-            self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
+            acts_logger.epoch_to_log_line_timestamp(epoch))
+        out_name = f"{self.mdns_name}_{time_stamp}"
         snapshot_out_name = f"{out_name}.zip"
         out_name = "%s.txt" % out_name
         full_out_path = os.path.join(sn_path, out_name)
         full_sn_out_path = os.path.join(sn_path, snapshot_out_name)
-        self.log.info("Taking snapshot for %s on FuchsiaDevice%s." %
-                      (test_name, self.serial))
+
+        if test_name:
+            self.log.info(
+                f"Taking snapshot of {self.mdns_name} for {test_name}")
+        else:
+            self.log.info(f"Taking snapshot of {self.mdns_name}")
+
         if self.ssh_config is not None:
             try:
                 subprocess.run([
