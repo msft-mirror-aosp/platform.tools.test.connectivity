@@ -1452,3 +1452,26 @@ class GnssFunctionTest(BaseTestClass):
                                               gps_enable_minutes * 60, tolerance=0.01)
         gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
                                           fix_rate_criteria=0.99)
+
+    @test_tracker_info(uuid="cfdd4708-283c-4844-be42-4fe10365a10c")
+    def test_location_mode_in_battery_saver_with_screen_off(self):
+        """Ensure location request with foreground permission can work
+        in battery saver mode (screen off)
+
+        1. unplug power
+        2. enter battery saver mode
+        3. start tracking for 2 mins with screen off
+        4. repest step 3 for 3 times
+        """
+        try:
+            gutils.set_battery_saver_mode(self.ad, state=True)
+            test_time = 2
+            for i in range(1, 4):
+                self.ad.log.info("Tracking attempt %s" % str(i))
+                gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+                                              testtime=test_time, is_screen_off=True)
+                result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+                gutils.validate_location_fix_rate(self.ad, result, run_time=test_time,
+                                                  fix_rate_criteria=0.99)
+        finally:
+            gutils.set_battery_saver_mode(self.ad, state=False)
