@@ -56,20 +56,6 @@ CARRIER_FREQUENCIES = {
 }
 
 
-def validate_gnssstatus(gnss_status_obj, ad):
-    """validate gnssstatus with given GnssStatus object.
-
-    Args:
-        gnss_status_obj: A GnssStatus object
-        ad: An android device obj
-    """
-    gnss_status_obj.validate_gnssstatus()
-    test_res = gnss_status_obj.get_gnssstatus_health()
-    if test_res != '':
-        ad.log.info(gnss_status_obj.raw_message)
-        raise signals.TestFailure('Gnsstatus validate failed:\n%s' % test_res)
-
-
 class GnssSvidContainer:
     """A class to hold the satellite svid information
 
@@ -131,8 +117,8 @@ class GnssStatus:
     def __init__(self, gnssstatus_raw):
         status_res = re.search(self.gnssstatus_re, gnssstatus_raw)
         if not status_res:
-            raise signals.TestFailure('Fail to create GnssStatus obj: %s' %
-                                      gnssstatus_raw)
+            raise signals.TestFailure(
+                f'Fail to create GnssStatus obj: {gnssstatus_raw}')
         self.raw_message = gnssstatus_raw
         self.used_in_fix = status_res.group(1).lower() == 'true'
         self.constellation = status_res.group(2)
@@ -151,37 +137,38 @@ class GnssStatus:
         self._validate_elev()
         self._validate_azim()
         self._validate_carrier_frequency()
+        if self.get_gnssstatus_health() != '':
+            raise signals.TestFailure(
+                f'Gnsstatus validate failed:\n {self.raw_message}')
 
     def _validate_sv(self):
         """A validate function for SV ID."""
-        if not SVID_RANGE.get(self.constellation):
-            raise signals.TestError('Satellite identify fail: %s' %
-                                    self.constellation)
-
+        if not self.constellation in SVID_RANGE.keys():
+            raise signals.TestFailure(
+                f'Satellite identify fail: {self.constellation}')
         for id_range in SVID_RANGE[self.constellation]:
             if id_range[0] <= self.svid <= id_range[1]:
                 break
         else:
-            fail_details = '%s ID %s not in SV Range' % (self.constellation,
-                                                         self.svid)
+            fail_details = f'{self.constellation} ID {self.svid} not in SV Range'
             self.failures.append(fail_details)
 
     def _validate_cn(self):
         """A validate function for CN value."""
         if not 0 <= self.cn <= 63:
-            self.failures.append('Ant CN not in range: %s' % self.cn)
+            self.failures.append(f'Ant CN not in range: {self.cn}')
         if not 0 <= self.base_cn <= 63:
-            self.failures.append('Base CN not in range: %s' % self.cn)
+            self.failures.append(f'Base CN not in range: {self.base_cn}')
 
     def _validate_elev(self):
         """A validate function for Elevation (should between 0-90)."""
         if not 0 <= self.elev <= 90:
-            self.failures.append('Elevation not in range: %s' % self.elev)
+            self.failures.append(f'Elevation not in range: {self.elev}')
 
     def _validate_azim(self):
         """A validate function for Azimuth (should between 0-360)."""
         if not 0 <= self.azim <= 360:
-            self.failures.append('Azimuth not in range: %s' % self.azim)
+            self.failures.append(f'Azimuth not in range: {self.azim}')
 
     def _validate_carrier_frequency(self):
         """A validate function for carrier frequency (should fall in below range).
@@ -194,8 +181,13 @@ class GnssStatus:
            'GAL': E1:1575.42, E5a:1176.45
            'NIC': L5:1176.45
         """
-        target_freq = CARRIER_FREQUENCIES[self.constellation][
-            self.frequency_band]
+        if self.frequency_band in CARRIER_FREQUENCIES[
+                self.constellation].keys():
+            target_freq = CARRIER_FREQUENCIES[self.constellation][
+                self.frequency_band]
+        else:
+            raise signals.TestFailure(
+                f'Carrier frequency identify fail: {self.frequency_band}')
         if not self.carrier_frequency in target_freq:
             self.failures.append(
                 f'{self.constellation}_{self.frequency_band} carrier'
