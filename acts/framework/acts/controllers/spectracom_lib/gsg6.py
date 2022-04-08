@@ -118,13 +118,3 @@ class GSG6(abstract_inst.SocketInstrument):
         infmsg = 'Set GSG-6 transmit power to "{}"'.format(
             round(power_level, 1))
         self._logger.debug(infmsg)
-
-    def get_nmealog(self):
-        """Get GSG6 NMEA data.
-
-        Returns:
-            GSG6's NMEA data
-        """
-        nmea_data = self._query('SOUR:SCEN:LOG?')
-
-        return nmea_data

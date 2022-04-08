@@ -18,7 +18,7 @@
 
 import logging
 
-MOBLY_CONTROLLER_CONFIG_NAME = "MagicDevice"
+ACTS_CONTROLLER_CONFIG_NAME = "MagicDevice"
 
 
 def create(configs):

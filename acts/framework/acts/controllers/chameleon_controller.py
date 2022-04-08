@@ -21,7 +21,7 @@ from subprocess import call
 
 from acts import signals
 
-MOBLY_CONTROLLER_CONFIG_NAME = "ChameleonDevice"
+ACTS_CONTROLLER_CONFIG_NAME = "ChameleonDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "chameleon_devices"
 
 CHAMELEON_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"

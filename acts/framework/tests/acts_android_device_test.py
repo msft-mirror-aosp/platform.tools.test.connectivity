@@ -459,11 +459,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_get_apk_process_id_process_cannot_find(self, fastboot_proxy,
-                                                    adb_proxy):
+    def test_get_apk_process_id_process_cannot_find(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_value = "does_not_contain_value"
         self.assertEqual(None, ad.get_package_pid("some_package"))
@@ -471,11 +467,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_get_apk_process_id_process_exists_second_try(self, fastboot_proxy,
-                                                          adb_proxy):
+    def test_get_apk_process_id_process_exists_second_try(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_multiple = True
         ad.adb.return_value = ["", "system 1 2 3 4  S com.some_package"]
@@ -484,10 +476,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_get_apk_process_id_bad_return(self, fastboot_proxy, adb_proxy):
+    def test_get_apk_process_id_bad_return(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_value = "bad_return_index_error"
         self.assertEqual(None, ad.get_package_pid("some_package"))
@@ -495,10 +484,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_get_apk_process_id_bad_return(self, fastboot_proxy, adb_proxy):
+    def test_get_apk_process_id_bad_return(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_value = "bad return value error"
         self.assertEqual(None, ad.get_package_pid("some_package"))
@@ -506,11 +492,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_ensure_verity_enabled_only_system_enabled(self, fastboot_proxy,
-                                                       adb_proxy):
+    def test_ensure_verity_enabled_only_system_enabled(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         root_user_id = '0'
 
@@ -531,11 +513,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_ensure_verity_enabled_only_vendor_enabled(self, fastboot_proxy,
-                                                       adb_proxy):
+    def test_ensure_verity_enabled_only_vendor_enabled(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         root_user_id = '0'
 
@@ -557,11 +535,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_ensure_verity_enabled_both_enabled_at_start(self, fastboot_proxy,
-                                                         adb_proxy):
+    def test_ensure_verity_enabled_both_enabled_at_start(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         root_user_id = '0'
 
@@ -581,11 +555,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_ensure_verity_disabled_system_already_disabled(
-            self, fastboot_proxy, adb_proxy):
+    def test_ensure_verity_disabled_system_already_disabled(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         root_user_id = '0'
 
@@ -605,11 +575,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_ensure_verity_disabled_vendor_already_disabled(
-            self, fastboot_proxy, adb_proxy):
+    def test_ensure_verity_disabled_vendor_already_disabled(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         root_user_id = '0'
 
@@ -631,11 +597,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_ensure_verity_disabled_disabled_at_start(
-            self, fastboot_proxy, adb_proxy):
+    def test_ensure_verity_disabled_disabled_at_start(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         root_user_id = '0'
 
@@ -656,10 +618,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_push_system_file(self, fastboot_proxy, adb_proxy):
+    def test_push_system_file(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.ensure_verity_disabled = mock.MagicMock()
         ad.adb.remount = mock.MagicMock()
@@ -671,11 +630,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
         return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    def test_push_system_file_returns_false_on_error(self, fastboot_proxy,
-                                                     adb_proxy):
+    def test_push_system_file_returns_false_on_error(self, adb_proxy):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.ensure_verity_disabled = mock.MagicMock()
         ad.adb.remount = mock.MagicMock()

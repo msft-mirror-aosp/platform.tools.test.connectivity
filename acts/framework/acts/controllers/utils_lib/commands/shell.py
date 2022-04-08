@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shlex
+import shellescape
 import signal
 import time
 
+from acts.controllers.utils_lib.ssh import connection
 from acts.libs.proc import job
 
 
@@ -28,6 +29,7 @@ class ShellCommand(object):
 
     Note: At the moment this only works with the ssh runner.
     """
+
     def __init__(self, runner, working_dir=None):
         """Creates a new shell command invoker.
 
@@ -39,7 +41,7 @@ class ShellCommand(object):
         self._runner = runner
         self._working_dir = working_dir
 
-    def run(self, command, timeout=60):
+    def run(self, command, timeout=3600):
         """Runs a generic command through the runner.
 
         Takes the command and prepares it to be run in the target shell using
@@ -128,7 +130,8 @@ class ShellCommand(object):
             True if the string or pattern was found, False otherwise.
         """
         try:
-            self.run('grep %s %s' % (shlex.quote(search_string), file_name))
+            self.run('grep %s %s' % (shellescape.quote(search_string),
+                                     file_name))
             return True
         except job.Error:
             return False
@@ -151,7 +154,7 @@ class ShellCommand(object):
             file_name: The name of the file to write to.
             data: The string of data to write.
         """
-        return self.run('echo %s > %s' % (shlex.quote(data), file_name))
+        return self.run('echo %s > %s' % (shellescape.quote(data), file_name))
 
     def append_file(self, file_name, data):
         """Appends a block of data to a file through the shell.
@@ -160,7 +163,7 @@ class ShellCommand(object):
             file_name: The name of the file to write to.
             data: The string of data to write.
         """
-        return self.run('echo %s >> %s' % (shlex.quote(data), file_name))
+        return self.run('echo %s >> %s' % (shellescape.quote(data), file_name))
 
     def touch_file(self, file_name):
         """Creates a file through the shell.

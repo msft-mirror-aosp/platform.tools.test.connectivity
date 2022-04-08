@@ -26,20 +26,21 @@ class ActsErrorTest(unittest.TestCase):
 
     def test_assert_description_pulled_from_docstring(self):
         e = error.ActsError()
-        self.assertEqual(e.error_doc, 'Base Acts Error')
+        self.assertEqual(e.message, 'Base Acts Error')
 
     def test_error_without_args(self):
         e = error.ActsError()
-        self.assertEqual(e.details, '')
+        self.assertNotIn('details', e.extra)
 
     def test_error_with_args(self):
         args = ('hello', )
         e = error.ActsError(*args)
-        self.assertEqual(e.details, 'hello')
+        self.assertEqual(e.extra['details'], args)
 
     def test_error_with_kwargs(self):
         e = error.ActsError(key='value')
-        self.assertIn(('key', 'value'), e.extras.items())
+        self.assertTrue('key' in e.extra.keys())
+        self.assertTrue('value' in e.extra['key'])
 
 
 if __name__ == '__main__':

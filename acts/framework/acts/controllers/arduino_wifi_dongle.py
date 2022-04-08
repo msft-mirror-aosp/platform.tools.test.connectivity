@@ -27,8 +27,9 @@ from serial import Serial
 from acts import logger
 from acts import signals
 from acts import utils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
-MOBLY_CONTROLLER_CONFIG_NAME = 'ArduinoWifiDongle'
+ACTS_CONTROLLER_CONFIG_NAME = 'ArduinoWifiDongle'
 ACTS_CONTROLLER_REFERENCE_NAME = 'arduino_wifi_dongles'
 
 WIFI_DONGLE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
@@ -45,8 +46,8 @@ SCAN_END = 'Scan End'
 READ_TIMEOUT = 10
 BAUD_RATE = 9600
 TMP_DIR = 'tmp/'
-SSID_KEY = 'SSID'
-PWD_KEY = 'password'
+SSID_KEY = wutils.WifiEnums.SSID_KEY
+PWD_KEY = wutils.WifiEnums.PWD_KEY
 
 
 class ArduinoWifiDongleError(signals.ControllerError):

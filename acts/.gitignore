@@ -68,6 +68,3 @@ target/
 
 # PyCharm
 .idea/
-
-# IntelliJ
-*.iml

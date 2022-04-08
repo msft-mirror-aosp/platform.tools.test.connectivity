@@ -40,7 +40,6 @@ class Monsoon(BaseMonsoon):
     def __init__(self, serial, device=None):
         super().__init__()
         self._mon = MonsoonProxy(serialno=serial, device=device)
-        self._allocated = True
         self.serial = serial
 
     def set_voltage(self, voltage):
@@ -139,13 +138,8 @@ class Monsoon(BaseMonsoon):
 
     def release_monsoon_connection(self):
         self._mon.release_dev_port()
-        self._allocated = False
-
-    def is_allocated(self):
-        return self._allocated
 
     def establish_monsoon_connection(self):
         self._mon.obtain_dev_port()
-        self._allocated = True
         # Makes sure the Monsoon is in the command-receiving state.
         self._mon.stop_data_collection()

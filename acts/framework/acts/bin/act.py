@@ -115,8 +115,8 @@ def _run_tests(parsed_configs, test_identifiers, repeat):
     return ok
 
 
-def main():
-    """This is the default implementation of a cli entry point for ACTS test
+def main(argv):
+    """This is a sample implementation of a cli entry point for ACTS test
     execution.
 
     Or you could implement your own cli entry point using acts.config_parser
@@ -181,7 +181,7 @@ def main():
                         type=int,
                         help="Number of times to run every test case.")
 
-    args = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args(argv)
     test_list = None
     if args.testfile:
         test_list = config_parser.parse_test_file(args.testfile[0])
@@ -210,7 +210,7 @@ def main():
                 or test_run_config.controller_configs[testpath_key] is None):
             test_run_config.controller_configs[testpath_key] = utils.abs_path(
                 utils.os.path.join(os.path.dirname(__file__),
-                                   '../../../../acts_tests/tests/'))
+                                   '../../../tests/'))
 
         # TODO(markdr): Find a way to merge this with the validation done in
         # Mobly's load_test_config_file.
@@ -231,4 +231,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

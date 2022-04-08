@@ -49,7 +49,6 @@ class Monsoon(BaseMonsoon):
         self.serial = serial
         self._mon = HVPM.Monsoon()
         self._mon.setup_usb(serial)
-        self._allocated = True
         if self._mon.Protocol.DEVICE is None:
             raise ValueError('HVPM Monsoon %s could not be found.' % serial)
 
@@ -139,7 +138,6 @@ class Monsoon(BaseMonsoon):
         manager.shutdown()
 
         self._mon.setup_usb(self.serial)
-        self._allocated = True
         monsoon_data = MonsoonResult(aggregator.num_samples,
                                      aggregator.sum_currents, hz, voltage,
                                      output_path)
@@ -155,10 +153,6 @@ class Monsoon(BaseMonsoon):
 
     def release_monsoon_connection(self):
         self._mon.closeDevice()
-        self._allocated = False
-
-    def is_allocated(self):
-        return self._allocated
 
     def establish_monsoon_connection(self):
         self._mon.setup_usb(self.serial)
