@@ -995,7 +995,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=Fa
         if line.startswith('Fix'):
             gnss_status = gnssstatus_utils.GnssStatus(line)
             if validate_gnssstatus:
-                gnssstatus_utils.validate_gnssstatus(gnss_status, ad)
+                gnss_status.validate_gnssstatus()
                 gnssstatus_count += 1
             gnss_svid_container.add_satellite(gnss_status)
         if "Antenna_History Avg Top4" in line:

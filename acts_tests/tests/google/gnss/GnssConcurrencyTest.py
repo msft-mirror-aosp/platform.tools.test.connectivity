@@ -151,7 +151,7 @@ class GnssConcurrencyTest(BaseTestClass):
             results.append(timedelt_sec)
             if timedelt_sec > (criteria *
                                self.chre_tolerate_rate) + self.outlier_criteria:
-                failures.append(target)
+                failures.append(timedelt_sec)
                 self.ad.log.error("[Failure][%s]:%.2f sec" %
                                   (target["time_stamp"], timedelt_sec))
             elif timedelt_sec > criteria * self.chre_tolerate_rate:
@@ -221,8 +221,8 @@ class GnssConcurrencyTest(BaseTestClass):
             if not results[request_type]:
                 failure_log += "[%s] Fail to find location report.\n" % request_type
             if len(failures[request_type]) > 0:
-                failure_log += "[%s] Test exceeds criteria: %.2f\n" % (
-                    request_type, criteria)
+                failure_log += "[%s] Test exceeds criteria(%.2f): %.2f\n" % (
+                    request_type, criteria, max(failures[request_type]))
             if len(outliers[request_type]) > self.max_outliers:
                 failure_log += "[%s] Outliers excceds max amount: %d\n" % (
                     request_type, len(outliers[request_type]))
