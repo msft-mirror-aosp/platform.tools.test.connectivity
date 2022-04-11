@@ -137,9 +137,11 @@ class GnssStatus:
         self._validate_elev()
         self._validate_azim()
         self._validate_carrier_frequency()
-        if self.get_gnssstatus_health() != '':
+        if self.failures:
+            failure_info = '\n'.join(self.failures)
             raise signals.TestFailure(
-                f'Gnsstatus validate failed:\n {self.raw_message}')
+                f'Gnsstatus validate failed:\n{self.raw_message}\n{failure_info}'
+            )
 
     def _validate_sv(self):
         """A validate function for SV ID."""
@@ -192,11 +194,3 @@ class GnssStatus:
             self.failures.append(
                 f'{self.constellation}_{self.frequency_band} carrier'
                 f'frequency not in range: {self.carrier_frequency}')
-
-    def get_gnssstatus_health(self):
-        """A function return the obj property health state
-
-           Return: Failure msg or blank.
-        """
-        gnss_health_info = '\n'.join(self.failures)
-        return gnss_health_info
