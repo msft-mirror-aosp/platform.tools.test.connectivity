@@ -40,6 +40,7 @@ from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.tel import tel_logging_utils as tlutils
 from acts_contrib.test_utils.tel import tel_test_utils as tutils
 from acts_contrib.test_utils.gnss import gnssstatus_utils
+from acts_contrib.test_utils.gnss import gnss_constant
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationCommandBuilder
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 from acts.utils import get_current_epoch_time
@@ -249,8 +250,11 @@ def disable_supl_mode(ad):
         reboot(ad)
 
 
-def kill_xtra_daemon(ad):
-    """Kill XTRA daemon to test SUPL only test item.
+def disable_vendor_orbit_assistance_data(ad):
+    """Disable vendor assiatance features.
+
+    For Qualcomm: disable XTRA
+    For Broadcom: disable LTO
 
     Args:
         ad: An AndroidDevice object.
@@ -887,6 +891,8 @@ def start_ttff_by_gtw_gpstool(ad,
         mininterval: Minimum value of random interval pool. The unit is second.
         maxinterval: Maximum value of random interval pool. The unit is second.
         hot_warm_sleep: Wait time for acquiring Almanac.
+    Returns:
+        latest_start_time: (Datetime) the start time of latest successful TTFF
     """
     begin_time = get_current_epoch_time()
     if (ttff_mode == "hs" or ttff_mode == "ws") and not aid_data:
@@ -906,10 +912,12 @@ def start_ttff_by_gtw_gpstool(ad,
                          ttff_mode, iteration, raninterval, mininterval,
                          maxinterval))
         time.sleep(1)
-        if ad.search_logcat("act=com.android.gpstool.start_test_action",
-                            begin_time):
+        result = ad.search_logcat("act=com.android.gpstool.start_test_action", begin_time)
+        if result:
+            ad.log.debug("TTFF start log" % result)
+            latest_start_time = max(list(map(lambda x: x['datetime_obj'], result)))
             ad.log.info("Send TTFF start_test_action successfully.")
-            break
+            return latest_start_time
     else:
         check_current_focus_app(ad)
         raise signals.TestError("Fail to send TTFF start_test_action.")
@@ -945,6 +953,22 @@ def gnss_tracking_via_gtw_gpstool(ad,
         ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, state=False, type=type)
 
+
+# TODO: (diegowchung) GnssFunctionTest has similar function, need to handle the duplication
+def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
+    """Run GNSS TTFF test with selected mode and parse the results.
+
+    Args:
+        mode: "cs", "ws" or "hs"
+        criteria: Criteria for the TTFF.
+    """
+    process_gnss_by_gtw_gpstool(ad, criteria)
+    ttff_start_time = start_ttff_by_gtw_gpstool(ad, mode, test_cycle)
+    ttff_data = process_ttff_by_gtw_gpstool(ad, ttff_start_time, true_location)
+    result = check_ttff_data(ad, ttff_data, gnss_constant.TTFF_MODE.get(mode), criteria)
+    asserts.assert_true(
+        result, "TTFF %s fails to reach designated criteria of %d "
+                "seconds." % (gnss_constant.TTFF_MODE.get(mode), criteria))
 
 def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=False):
     """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
@@ -2803,3 +2827,27 @@ def ensure_device_screen_is_on(ad):
         time.sleep(1)
     else:
         raise GnssTestUtilsError("Device screen is not on after 3 tries")
+
+
+def start_qxdm_and_tcpdump_log(ad, enable):
+    """Start QXDM and adb tcpdump if collect_logs is True.
+    Args:
+        ad: AndroidDevice object
+        enable: (bool) True -> start collecting
+                       False -> not start collecting
+    """
+    if enable:
+        start_pixel_logger(ad)
+        tlutils.start_adb_tcpdump(ad)
+
+
+def set_screen_always_on(ad):
+    """Ensure the sceen will not turn off and display the correct app screen
+    for wearable, we also disable the charing screen,
+    otherwise the charing screen will keep popping up and block the GPS tool
+    """
+    if is_device_wearable(ad):
+        ad.adb.shell("settings put global stay_on_while_plugged_in 7")
+        ad.adb.shell("setprop persist.enable_charging_experience false")
+    else:
+        ad.adb.shell("settings put system screen_off_timeout 1800000")
