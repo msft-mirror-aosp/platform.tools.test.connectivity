@@ -993,11 +993,17 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss", validate_gnssstatus=Fa
     gnss_svid_container = gnssstatus_utils.GnssSvidContainer()
     for line in lines:
         if line.startswith('Fix'):
-            gnss_status = gnssstatus_utils.GnssStatus(line)
+            try:
+                gnss_status = gnssstatus_utils.GnssStatus(line)
+                gnssstatus_count += 1
+            except gnssstatus_utils.RegexParseException as e:
+                ad.log.warn(e)
+                continue
+
+            gnss_svid_container.add_satellite(gnss_status)
             if validate_gnssstatus:
                 gnss_status.validate_gnssstatus()
-                gnssstatus_count += 1
-            gnss_svid_container.add_satellite(gnss_status)
+
         if "Antenna_History Avg Top4" in line:
             ant_top4_cn = float(line.split(":")[-1].strip())
         elif "Antenna_History Avg" in line:
