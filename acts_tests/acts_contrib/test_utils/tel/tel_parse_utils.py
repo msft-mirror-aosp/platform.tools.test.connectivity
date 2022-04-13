@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#   Copyright 2021 - Google
+#   Copyright 2022 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -88,6 +88,11 @@ SEND_SMS_RESPONSE_OVER_IMS = 'onSendSmsResult token'
 SMS_RECEIVED_OVER_IMS = 'SMS received'
 SMS_RECEIVED_OVER_IMS_SLOT0 = r'ImsSmsDispatcher \[0\]: SMS received'
 SMS_RECEIVED_OVER_IMS_SLOT1 = r'ImsSmsDispatcher \[1\]: SMS received'
+
+IMS_REGISTERED_CST_SLOT0 = 'IMS_REGISTERED.*CrossStackEpdg.*SLID:0'
+IMS_REGISTERED_CST_SLOT1 = 'IMS_REGISTERED.*CrossStackEpdg.*SLID:1'
+ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT0 = r'ImsPhone: \[0\].*onImsMmTelConnected imsRadioTech=WLAN'
+ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT1 = r'ImsPhone: \[1\].*onImsMmTelConnected imsRadioTech=WLAN'
 
 
 def print_nested_dict(ad, d):
@@ -1842,3 +1847,125 @@ def parse_mms(ad_mo, ad_mt):
         mt_avg_setup_time = None
 
     return send_mms, mo_avg_setup_time, receive_mms, mt_avg_setup_time
+
+
+def parse_cst_reg(ad, slot, search_intervals=None):
+    """ Check if IMS CST and WFC is registered at given slot by parsing logcat.
+
+        Args:
+            ad: Android object
+            slot: 0 for pSIM and 1 for eSIM
+            search_intervals: List. Only lines with time stamp in given time
+                intervals will be parsed.
+                E.g., [(begin_time1, end_time1), (begin_time2, end_time2)]
+                Both begin_time and end_time should be datetime object.
+
+        Returns: List of attampt number and error messages of not found pattern
+            of failing cycles
+    """
+    cst = {
+        'ims_registered': {
+            '0': IMS_REGISTERED_CST_SLOT0,
+            '1': IMS_REGISTERED_CST_SLOT1
+        },
+        'iwlan': {
+            '0': ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT0,
+            '1': ON_IMS_MM_TEL_CONNECTED_IWLAN_SLOT1
+        }
+    }
+    ad.log.info('====== Start to search logcat ====== ')
+    logcat = ad.search_logcat(
+        '%s\|%s' % (
+            cst['ims_registered'][str(slot)], cst['iwlan'][str(slot)]))
+
+    for line in logcat:
+        msg = line["log_message"]
+        ad.log.info(msg)
+
+    parsing_fail = []
+    keyword_dict = {
+        'ims_registered': cst['ims_registered'][str(slot)],
+        'iwlan': cst['iwlan'][str(slot)]
+    }
+    for attempt, interval in enumerate(search_intervals):
+        if isinstance(interval, list):
+            try:
+                begin_time, end_time = interval
+            except Exception as e:
+                ad.log.error(e)
+                continue
+
+            ad.log.info('Parsing begin time: %s', begin_time)
+            ad.log.info('Parsing end time: %s', end_time)
+
+            temp_keyword_dict = copy.deepcopy(keyword_dict)
+            for line in logcat:
+                if begin_time and line['datetime_obj'] < begin_time:
+                    continue
+
+                if end_time and line['datetime_obj'] > end_time:
+                    break
+
+                for key in temp_keyword_dict:
+                    if temp_keyword_dict[key] and not isinstance(
+                        temp_keyword_dict[key], dict):
+                        res = re.findall(
+                            temp_keyword_dict[key], line['log_message'])
+                        if res:
+                            ad.log.info('Found: %s', line['log_message'])
+                            temp_keyword_dict[key] = {
+                                'message': line['log_message'],
+                                'time_stamp': line['datetime_obj']}
+                            break
+
+            for key in temp_keyword_dict:
+                if temp_keyword_dict[key] == keyword_dict[key]:
+                    ad.log.error(
+                        '"%s" is missing in cycle %s.',
+                        keyword_dict[key],
+                        attempt+1)
+                    parsing_fail.append({
+                        'attempt': attempt+1,
+                        'missing_msg': keyword_dict[key]})
+
+    return parsing_fail
+
+
+def check_ims_cst_reg(ad, slot, search_interval=None):
+    """ Check if IMS CST is registered at given slot by parsing logcat.
+
+        Args:
+            ad: Android object
+            slot: 0 for pSIM and 1 for eSIM
+            search_intervals: List. Only lines with time stamp in given time
+                intervals will be parsed.
+                E.g., [(begin_time1, end_time1), (begin_time2, end_time2)]
+                Both begin_time and end_time should be datetime object.
+
+        Returns: True for successful registration. Otherwise False
+    """
+    ims_cst_reg = {
+        '0': IMS_REGISTERED_CST_SLOT0,
+        '1': IMS_REGISTERED_CST_SLOT1
+    }
+    logcat = ad.search_logcat('%s' % ims_cst_reg[str(slot)])
+    if isinstance(search_interval, list):
+        try:
+            begin_time, end_time = search_interval
+        except Exception as e:
+            ad.log.error(e)
+
+        for line in logcat:
+            if begin_time and line['datetime_obj'] < begin_time:
+                continue
+
+            if end_time and line['datetime_obj'] > end_time:
+                break
+
+            res = re.findall(ims_cst_reg[str(slot)], line['log_message'])
+            if res:
+                ad.log.info(
+                    'IMS CST is registered due to following message '
+                    'found: %s', line['log_message'])
+                return True
+    return False
