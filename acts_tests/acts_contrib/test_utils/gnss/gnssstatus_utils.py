@@ -56,6 +56,10 @@ CARRIER_FREQUENCIES = {
 }
 
 
+class RegexParseException(Exception):
+    pass
+
+
 class GnssSvidContainer:
     """A class to hold the satellite svid information
 
@@ -117,8 +121,8 @@ class GnssStatus:
     def __init__(self, gnssstatus_raw):
         status_res = re.search(self.gnssstatus_re, gnssstatus_raw)
         if not status_res:
-            raise signals.TestFailure(
-                f'Fail to create GnssStatus obj: {gnssstatus_raw}')
+            raise RegexParseException(f'Gnss raw msg parse fail:\n{gnssstatus_raw}\n'
+                                      f'Please check it manually.')
         self.raw_message = gnssstatus_raw
         self.used_in_fix = status_res.group(1).lower() == 'true'
         self.constellation = status_res.group(2)
