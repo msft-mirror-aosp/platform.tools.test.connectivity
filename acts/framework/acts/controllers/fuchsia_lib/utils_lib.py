@@ -195,7 +195,8 @@ class SshResults:
         return self._exit_status
 
 
-def flash(fuchsia_device, use_ssh=False,
+def flash(fuchsia_device,
+          use_ssh=False,
           fuchsia_reconnect_after_reboot_time=5):
     """A function to flash, not pave, a fuchsia_device
 
@@ -225,54 +226,66 @@ def flash(fuchsia_device, use_ssh=False,
         raise ValueError('The fuchsia_device ip must be the mDNS name to be '
                          'able to flash.')
 
+    file_to_download = None
+    image_archive_path = None
+    image_path = None
+
     if not fuchsia_device.specific_image:
-        file_download_needed = True
         product_build = fuchsia_device.product_type
         if fuchsia_device.build_type:
-            product_build = '{}_{}'.format(product_build,
-                                           fuchsia_device.build_type)
+            product_build = f'{product_build}_{fuchsia_device.build_type}'
         if 'LATEST' in fuchsia_device.build_number:
             sdk_version = 'sdk'
             if 'LATEST_F' in fuchsia_device.build_number:
                 f_branch = fuchsia_device.build_number.split('LATEST_F', 1)[1]
-                sdk_version = 'f{}_sdk'.format(f_branch)
-            file_to_download = '{}/{}-{}.{}-release.tgz'.format(
-                FUCHSIA_RELEASE_TESTING_URL, sdk_version, product_build,
-                fuchsia_device.board_type)
+                sdk_version = f'f{f_branch}_sdk'
+            file_to_download = (
+                f'{FUCHSIA_RELEASE_TESTING_URL}/'
+                f'{sdk_version}-{product_build}.{fuchsia_device.board_type}-release.tgz'
+            )
         else:
             # Must be a fully qualified build number (e.g. 5.20210721.4.1215)
-            file_to_download = '{}/{}/images/{}.{}-release.tgz'.format(
-                FUCHSIA_SDK_URL, fuchsia_device.build_number, product_build,
-                fuchsia_device.board_type)
+            file_to_download = (
+                f'{FUCHSIA_SDK_URL}/{fuchsia_device.build_number}/images/'
+                f'{product_build}.{fuchsia_device.board_type}-release.tgz')
     elif 'gs://' in fuchsia_device.specific_image:
-        file_download_needed = True
         file_to_download = fuchsia_device.specific_image
+    elif os.path.isdir(fuchsia_device.specific_image):
+        image_path = fuchsia_device.specific_image
     elif tarfile.is_tarfile(fuchsia_device.specific_image):
-        file_download_needed = False
-        file_to_download = fuchsia_device.specific_image
+        image_archive_path = fuchsia_device.specific_image
     else:
-        raise ValueError('A suitable build could not be found.')
+        raise ValueError(
+            f'Invalid specific_image "{fuchsia_device.specific_image}"')
 
-    tmp_dir = tempfile.TemporaryDirectory(suffix=fuchsia_device.board_type)
-    with tmp_dir as tmp_path:
-        if file_download_needed:
-            logging.info('Downloading %s to %s' % (file_to_download, tmp_path))
-            job.run('gsutil cp %s %s' % (file_to_download, tmp_dir.name))
-            image_tgz = os.path.join(tmp_path,
-                                     os.path.basename(file_to_download))
-        else:
-            image_tgz = file_to_download
-
-        # Use tar command instead of tarfile.extractall, as it takes too long.
-        job.run(f'tar xfvz {image_tgz} -C {tmp_path}', timeout=120)
-
+    if image_path:
         reboot_to_bootloader(fuchsia_device, use_ssh,
                              fuchsia_reconnect_after_reboot_time)
-
         logging.info(
-            f'Flashing {fuchsia_device.orig_ip} with {image_tgz} using authorized keys "{fuchsia_device.authorized_file}".'
+            f'Flashing {fuchsia_device.orig_ip} with {image_path} using authorized keys "{fuchsia_device.authorized_file}".'
         )
-        run_flash_script(fuchsia_device, tmp_path)
+        run_flash_script(fuchsia_device, image_path)
+    else:
+        suffix = fuchsia_device.board_type
+        with tempfile.TemporaryDirectory(suffix=suffix) as image_path:
+            if file_to_download:
+                logging.info(f'Downloading {file_to_download} to {image_path}')
+                job.run(f'gsutil cp {file_to_download} {image_path}')
+                image_archive_path = os.path.join(
+                    image_path, os.path.basename(file_to_download))
+
+            if image_archive_path:
+                # Use tar command instead of tarfile.extractall, as it takes too long.
+                job.run(f'tar xfvz {image_archive_path} -C {image_path}',
+                        timeout=120)
+
+            reboot_to_bootloader(fuchsia_device, use_ssh,
+                                 fuchsia_reconnect_after_reboot_time)
+
+            logging.info(
+                f'Flashing {fuchsia_device.orig_ip} with {image_archive_path} using authorized keys "{fuchsia_device.authorized_file}".'
+            )
+            run_flash_script(fuchsia_device, image_path)
     return True
 
 
