@@ -1469,3 +1469,17 @@ class GnssFunctionTest(BaseTestClass):
                                                   fix_rate_criteria=0.99)
         finally:
             gutils.set_battery_saver_mode(self.ad, state=False)
+
+    @test_tracker_info(uuid="083cc907-4644-46fb-acb2-6858b74bb5ff")
+    def test_measure_adr_rate_after_10_mins_tracking(self):
+        """Verify ADR rate
+
+        1. Enable "Force full gnss measurement"
+        2. Start tracking with GnssMeasurement enabled for 10 mins
+        3. Check ADR usable rate / valid rate
+        4. Disable "Force full gnss measurement"
+        """
+        with gutils.full_gnss_measurement(self.ad):
+            gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+                                          testtime=10, meas_flag=True)
+            gutils.validate_adr_rate(self.ad, pass_criteria=0.5)

@@ -36,6 +36,7 @@ from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
+from acts_contrib.test_utils.gnss.gnss_measurement import GnssMeasurement
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.tel import tel_logging_utils as tlutils
 from acts_contrib.test_utils.tel import tel_test_utils as tutils
@@ -950,6 +951,8 @@ def gnss_tracking_via_gtw_gpstool(ad,
     with set_screen_status(ad, off=is_screen_off):
         while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
             detect_crash_during_tracking(ad, begin_time, type)
+            # add sleep here to avoid too many request and cause device not responding
+            time.sleep(1)
         ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, state=False, type=type)
 
@@ -2818,6 +2821,16 @@ def set_screen_status(ad, off=True):
         ensure_device_screen_is_on(ad)
 
 
+@contextmanager
+def full_gnss_measurement(ad):
+    """Context manager function to enable full gnss measurement"""
+    try:
+        ad.adb.shell("settings put global enable_gnss_raw_meas_full_tracking 1")
+        yield ad
+    finally:
+        ad.adb.shell("settings put global enable_gnss_raw_meas_full_tracking 0")
+
+
 def ensure_device_screen_is_on(ad):
     """Make sure the screen is on
 
@@ -2857,3 +2870,31 @@ def set_screen_always_on(ad):
         ad.adb.shell("setprop persist.enable_charging_experience false")
     else:
         ad.adb.shell("settings put system screen_off_timeout 1800000")
+
+
+def validate_adr_rate(ad, pass_criteria):
+    """Check the ADR rate
+
+    Args:
+        ad: AndroidDevice object
+        pass_criteria: (float) the passing ratio, 1 = 100%, 0.5 = 50%
+    """
+    adr_statistic = GnssMeasurement(ad).get_adr_static()
+
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_valid_rate {0:.1%}".format(adr_statistic.valid_rate))
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
+                "ADR_usable_rate {0:.1%}".format(adr_statistic.usable_rate))
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_total_count %s" % adr_statistic.total_count)
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_valid_count %s" % adr_statistic.valid_count)
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_reset_count %s" % adr_statistic.reset_count)
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
+                "ADR_ctcle_slip_count %s" % adr_statistic.cycle_slip_count)
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
+                "ADR_half_cycle_reported_count %s" % adr_statistic.half_cycle_reported_count)
+    ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
+                "ADR_half_cycle_resolved_count %s" % adr_statistic.half_cycle_resolved_count)
+
+    if pass_criteria > adr_statistic.usable_rate:
+        # TODO: (diegowchung) add assertion once we have the expected criteria
+        ad.log.warn("Usable rate: %s lower than expected: %s" %
+                    (adr_statistic.usable_rate, pass_criteria))
