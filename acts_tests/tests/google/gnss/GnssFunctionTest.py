@@ -50,7 +50,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import check_network_location
 from acts_contrib.test_utils.gnss.gnss_test_utils import launch_google_map
 from acts_contrib.test_utils.gnss.gnss_test_utils import check_location_api
 from acts_contrib.test_utils.gnss.gnss_test_utils import set_battery_saver_mode
-from acts_contrib.test_utils.gnss.gnss_test_utils import kill_xtra_daemon
+from acts_contrib.test_utils.gnss.gnss_test_utils import disable_vendor_orbit_assistance_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_ttff_by_gtw_gpstool
@@ -267,12 +267,6 @@ class GnssFunctionTest(BaseTestClass):
             result, "TTFF %s fails to reach designated criteria of %d "
                     "seconds." % (self.ttff_mode.get(mode), criteria))
 
-    def start_qxdm_and_tcpdump_log(self):
-        """Start QXDM and adb tcpdump if collect_logs is True."""
-        if self.collect_logs:
-            gutils.start_pixel_logger(self.ad)
-            start_adb_tcpdump(self.ad)
-
     def supl_ttff_with_sim(self, mode, criteria):
         """Verify SUPL TTFF functionality.
 
@@ -280,8 +274,8 @@ class GnssFunctionTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def standalone_ttff_airplane_mode_on(self, mode, criteria):
@@ -291,7 +285,7 @@ class GnssFunctionTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         self.ad.droid.connectivityToggleAirplaneMode(True)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
@@ -305,8 +299,8 @@ class GnssFunctionTest(BaseTestClass):
         """
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def xtra_ttff_mobile_data(self, mode, criteria):
@@ -317,7 +311,7 @@ class GnssFunctionTest(BaseTestClass):
             criteria: Criteria for the test.
         """
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def xtra_ttff_weak_gnss_signal(self, mode, criteria):
@@ -330,7 +324,7 @@ class GnssFunctionTest(BaseTestClass):
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def xtra_ttff_wifi(self, mode, criteria):
@@ -341,7 +335,7 @@ class GnssFunctionTest(BaseTestClass):
             criteria: Criteria for the test.
         """
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         self.ad.droid.connectivityToggleAirplaneMode(True)
         wifi_toggle_state(self.ad, True)
@@ -389,7 +383,7 @@ class GnssFunctionTest(BaseTestClass):
             DUT could finish 60 minutes test and output track data.
         """
         test_time = 60
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                       type="gnss", testtime=test_time)
         location_data = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
@@ -410,7 +404,7 @@ class GnssFunctionTest(BaseTestClass):
             DPO should be engaged in 5 minutes GNSS tracking.
         """
         tracking_minutes = 5
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         dpo_begin_time = get_current_epoch_time()
         gnss_tracking_via_gtw_gpstool(self.ad,
                                       self.standalone_cs_criteria,
@@ -512,7 +506,7 @@ class GnssFunctionTest(BaseTestClass):
             Test devices could report cell Network Location.
         """
         test_result_all = []
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_wifi_and_bt_scanning(self.ad, False)
         for i in range(1, 6):
             test_result = check_network_location(
@@ -537,7 +531,7 @@ class GnssFunctionTest(BaseTestClass):
             Test devices could report wifi Network Location.
         """
         test_result_all = []
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_wifi_and_bt_scanning(self.ad, True)
         for i in range(1, 6):
             test_result = check_network_location(
@@ -562,7 +556,7 @@ class GnssFunctionTest(BaseTestClass):
             Test devices could report location to Google Map.
         """
         test_result_all = []
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for i in range(1, 6):
             grant_location_permission(self.ad, True)
             launch_google_map(self.ad)
@@ -588,7 +582,7 @@ class GnssFunctionTest(BaseTestClass):
             Test devices could report location to Google Map.
         """
         test_result_all = []
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.adb.shell("settings put secure location_mode 1")
         out = int(self.ad.adb.shell("settings get secure location_mode"))
         self.ad.log.info("Modify current Location Mode to %d" % out)
@@ -619,7 +613,7 @@ class GnssFunctionTest(BaseTestClass):
             Test devices could report location to Google Map.
         """
         test_result_all = []
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_battery_saver_mode(self.ad, True)
         for i in range(1, 6):
             grant_location_permission(self.ad, True)
@@ -687,8 +681,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             supl_cs_criteria.
         """
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.droid.setVoiceCallVolume(25)
         initiate_call(self.ad.log, self.ad, "99117")
         time.sleep(5)
@@ -710,8 +704,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         download = Process(target=http_file_download_by_sl4a,
                            args=(self.ad, "https://speed.hetzner.de/10GB.bin",
                                  None, None, True, 3600))
@@ -742,8 +736,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.droid.setMediaVolume(25)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(
@@ -772,8 +766,8 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         supl_ssr_test_result_all = []
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
             if gutils.check_chipset_vendor_by_qualcomm(self.ad):
@@ -856,8 +850,8 @@ class GnssFunctionTest(BaseTestClass):
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_mobile_data(self.ad, False)
         self.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria)
 
@@ -880,7 +874,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         supl_no_gnss_signal_all = []
         enable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for times in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
@@ -962,8 +956,8 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.unlock_screen(password=None)
             _init_device(self.ad)
             begin_time = get_current_epoch_time()
-            kill_xtra_daemon(self.ad)
-            self.start_qxdm_and_tcpdump_log()
+            disable_vendor_orbit_assistance_data(self.ad)
+            gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             start_ttff_by_gtw_gpstool(
                 self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
@@ -1123,7 +1117,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         xtra_ssr_test_result_all = []
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
             if gutils.check_chipset_vendor_by_qualcomm(self.ad):
@@ -1163,7 +1157,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         mobile_xtra_result_all = []
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -1191,7 +1185,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         wifi_xtra_result_all = []
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         self.ad.droid.connectivityToggleAirplaneMode(True)
         wifi_toggle_state(self.ad, True)
@@ -1224,7 +1218,7 @@ class GnssFunctionTest(BaseTestClass):
             No single Timeout is seen in 10 iterations.
         """
         enable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         start_toggle_gnss_by_gtw_gpstool(
             self.ad, iteration=self.ttff_test_cycle)
 
@@ -1242,8 +1236,8 @@ class GnssFunctionTest(BaseTestClass):
             Location fixed within supl_cs_criteria.
         """
         overall_test_result = []
-        kill_xtra_daemon(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        disable_vendor_orbit_assistance_data(self.ad)
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for test_loop in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
@@ -1272,7 +1266,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         overall_test_result = []
         disable_supl_mode(self.ad)
-        self.start_qxdm_and_tcpdump_log()
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         for test_loop in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
@@ -1305,7 +1299,7 @@ class GnssFunctionTest(BaseTestClass):
         start_gnss_by_gtw_gpstool(self.ad, False)
         for test_loop in range(1, 11):
             reboot(self.ad)
-            self.start_qxdm_and_tcpdump_log()
+            gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
             if is_device_wearable(self.ad):
                 test_result = process_gnss_by_gtw_gpstool(
                     self.ad, self.wearable_reboot_hs_criteria, clear_data=False)
@@ -1339,7 +1333,7 @@ class GnssFunctionTest(BaseTestClass):
         for times in range(1, 6):
             delete_lto_file(self.ad)
             reboot(self.ad)
-            self.start_qxdm_and_tcpdump_log()
+            gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
             # Wait 20 seconds for boot busy and lto auto-download time
             time.sleep(20)
             begin_time = get_current_epoch_time()
