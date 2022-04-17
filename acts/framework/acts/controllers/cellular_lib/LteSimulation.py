@@ -591,7 +591,9 @@ class LteSimulation(BaseSimulation):
 
         bandwidth = bts_config.bandwidth
 
-        if bandwidth == 20:  # 100 RBs
+        if bandwidth == 100: # This assumes 273 RBs. TODO: b/229163022
+            power = rsrp + 35.15
+        elif bandwidth == 20:  # 100 RBs
             power = rsrp + 30.79
         elif bandwidth == 15:  # 75 RBs
             power = rsrp + 29.54
