@@ -27,6 +27,7 @@ from collections import namedtuple
 from datetime import datetime
 from xml.etree import ElementTree
 from contextlib import contextmanager
+from statistics import median
 
 from acts import utils
 from acts import asserts
@@ -1273,6 +1274,7 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
         ttff_data: TTFF data of secs, position error and signal strength.
         ttff_mode: TTFF Test mode for current test item.
     """
+    timeout_ttff = 61
     prop_basename = "TestResult "+ttff_mode.replace(" ", "_")+"_TTFF_"
     sec_list = [float(ttff_data[key].ttff_sec) for key in ttff_data.keys()]
     pe_list = [float(ttff_data[key].ttff_pe) for key in ttff_data.keys()]
@@ -1283,12 +1285,14 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     haccu_list = [float(ttff_data[key].ttff_haccu) for key in
                     ttff_data.keys()]
     timeoutcount = sec_list.count(0.0)
+    sec_list = sorted(sec_list)
     if len(sec_list) == timeoutcount:
-        avgttff = 9527
+        median_ttff = avgttff = timeout_ttff
     else:
         avgttff = sum(sec_list)/(len(sec_list) - timeoutcount)
+        median_ttff = median(sec_list)
     if timeoutcount != 0:
-        maxttff = 9527
+        maxttff = timeout_ttff
     else:
         maxttff = max(sec_list)
     avgdis = sum(pe_list)/len(pe_list)
@@ -1297,6 +1301,7 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     base_avgcn = sum(base_cn_list)/len(base_cn_list)
     avg_haccu = sum(haccu_list)/len(haccu_list)
     ad.log.info(prop_basename+"AvgTime %.1f" % avgttff)
+    ad.log.info(prop_basename+"MedianTime %.1f" % median_ttff)
     ad.log.info(prop_basename+"MaxTime %.1f" % maxttff)
     ad.log.info(prop_basename+"TimeoutCount %d" % timeoutcount)
     ad.log.info(prop_basename+"AvgDis %.1f" % avgdis)
