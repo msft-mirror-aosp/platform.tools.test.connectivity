@@ -11,7 +11,7 @@ def set_supl_over_wifi_state(ad, turn_on):
         ad: AndroidDevice object
         turn_on: (bool) True -> enable / False -> disable
     """
-    ad.remount()
+    ad.adb.remount()
     xml_path_on_device = "/vendor/etc/gnss/gps.xml"
     folder = tempfile.mkdtemp()
     xml_path_on_host = os.path.join(folder, "gps.xml")
@@ -24,9 +24,9 @@ def set_supl_over_wifi_state(ad, turn_on):
     for node in root:
         if "hal" in node.tag:
             if turn_on:
-                _enable_supl_over_wifi(node)
+                _enable_supl_over_wifi(ad, node)
             else:
-                _disable_supl_over_wifi(node)
+                _disable_supl_over_wifi(ad, node)
     xml_tree.write(xml_path_on_host, xml_declaration=True, encoding="utf-8", method="xml")
     ad.push_system_file(xml_path_on_host, xml_path_on_device)
 
