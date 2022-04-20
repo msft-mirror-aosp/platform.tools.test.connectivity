@@ -50,6 +50,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
     example config file to run this test class see
     example_connectivity_performance_ap_sta.json.
     """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
@@ -125,6 +126,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             except:
                 self.log.warning('Could not start sniffer. Disabling sniffs.')
                 self.testbed_params['sniffer_enable'] = 0
+        self.sniffer_subsampling = 1
         self.log_path = os.path.join(logging.log_path, 'test_results')
         os.makedirs(self.log_path, exist_ok=True)
         self.log.info('Access Point Configuration: {}'.format(
@@ -354,7 +356,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.log.info('Starting iperf test.')
         llstats_obj = wputils.LinkLayerStats(self.dut)
         llstats_obj.update_stats()
-        if self.testbed_params['sniffer_enable']:
+        if self.testbed_params['sniffer_enable'] and len(
+                self.testclass_results) % self.sniffer_subsampling == 0:
             self.sniffer.start_capture(
                 network=testcase_params['test_network'],
                 chan=testcase_params['channel'],
@@ -375,7 +378,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         current_rssi = current_rssi.result()
         server_output_path = self.iperf_server.stop()
         # Stop sniffer
-        if self.testbed_params['sniffer_enable']:
+        if self.testbed_params['sniffer_enable'] and len(
+                self.testclass_results) % self.sniffer_subsampling == 0:
             self.sniffer.stop_capture()
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
@@ -501,6 +505,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
     setting turntable orientation and other chamber parameters to study
     performance in varying channel conditions
     """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
@@ -647,6 +652,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
 
 class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
                                                 ):
+
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149, '6g37'],
@@ -655,8 +661,13 @@ class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
                                               ['high', 'low'], 'orientation',
                                               list(range(0, 360, 10)))
 
+    def setup_class(self):
+        WifiOtaThroughputStabilityTest.setup_class(self)
+        self.sniffer_subsampling = 6
+
 
 class WifiOtaThroughputStability_45Degree_Test(WifiOtaThroughputStabilityTest):
+
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149, '6g37'],
@@ -668,6 +679,7 @@ class WifiOtaThroughputStability_45Degree_Test(WifiOtaThroughputStabilityTest):
 
 class WifiOtaThroughputStability_SteppedStirrers_Test(
         WifiOtaThroughputStabilityTest):
+
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149, '6g37'],
@@ -676,3 +688,7 @@ class WifiOtaThroughputStability_SteppedStirrers_Test(
                                               ['high', 'low'],
                                               'stepped stirrers',
                                               list(range(100)))
+
+    def setup_class(self):
+        WifiOtaThroughputStabilityTest.setup_class(self)
+        self.sniffer_subsampling = 10
