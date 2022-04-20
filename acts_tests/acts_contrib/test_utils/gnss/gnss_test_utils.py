@@ -76,6 +76,11 @@ log.tag.NtpTrustedTime=VERBOSE
 log.tag.GnssPsdsDownloader=VERBOSE
 log.tag.Gnss=VERBOSE
 log.tag.GnssConfiguration=VERBOSE"""
+LOCAL_PROP_FILE_CONTENTS_FOR_WEARABLE = """\
+log.tag.ImsPhone=VERBOSE
+log.tag.GsmCdmaPhone=VERBOSE
+log.tag.Phone=VERBOSE
+log.tag.GCoreFlp=VERBOSE"""
 TEST_PACKAGE_NAME = "com.google.android.apps.maps"
 LOCATION_PERMISSIONS = [
     "android.permission.ACCESS_FINE_LOCATION",
@@ -155,7 +160,11 @@ def enable_gnss_verbose_logging(ad):
     else:
         ad.adb.shell("echo LogEnabled=true >> /data/vendor/gps/libgps.conf")
         ad.adb.shell("chown gps.system /data/vendor/gps/libgps.conf")
-    ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
+    if is_device_wearable(ad):
+       PROP_CONTENTS = LOCAL_PROP_FILE_CONTENTS + LOCAL_PROP_FILE_CONTENTS_FOR_WEARABLE
+    else:
+        PROP_CONTENTS = LOCAL_PROP_FILE_CONTENTS
+    ad.adb.shell("echo %r >> /data/local.prop" % PROP_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.logpersistd.size 20000")
     ad.adb.shell("setprop persist.logd.size 16777216")
@@ -2318,53 +2327,55 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold, brcm_error_log_allowlist):
                                   brcm_error_log))
 
 
-def pair_to_wearable(ad, ad1):
+def pair_to_wearable(watch, phone):
     """Pair phone to watch via Bluetooth.
 
     Args:
-        ad: A pixel phone.
-        ad1: A wearable project.
+        watch: A wearable project.
+        phone: A pixel phone.
     """
-    check_location_service(ad1)
-    utils.sync_device_time(ad1)
-    bt_model_name = ad.adb.getprop("ro.product.model")
-    bt_sn_name = ad.adb.getprop("ro.serialno")
+    check_location_service(phone)
+    utils.sync_device_time(phone)
+    bt_model_name = watch.adb.getprop("ro.product.model")
+    bt_sn_name = watch.adb.getprop("ro.serialno")
     bluetooth_name = bt_model_name +" " + bt_sn_name[10:]
-    fastboot_factory_reset(ad, False)
-    ad.log.info("Wait 1 min for wearable system busy time.")
+    fastboot_factory_reset(watch, False)
+    # TODO (chenstanley)Need to re-structure for better code and test flow instead of simply waiting
+    watch.log.info("Wait 1 min for wearable system busy time.")
     time.sleep(60)
-    ad.adb.shell("input keyevent 4")
+    watch.adb.shell("input keyevent 4")
     # Clear Denali paired data in phone.
-    ad1.adb.shell("pm clear com.google.android.gms")
-    ad1.adb.shell("pm clear com.google.android.apps.wear.companion")
-    ad1.adb.shell("am start -S -n com.google.android.apps.wear.companion/"
+    phone.adb.shell("pm clear com.google.android.gms")
+    phone.adb.shell("pm clear com.google.android.apps.wear.companion")
+    phone.adb.shell("am start -S -n com.google.android.apps.wear.companion/"
                         "com.google.android.apps.wear.companion.application.RootActivity")
-    uia_click(ad1, "Next")
-    uia_click(ad1, "I agree")
-    uia_click(ad1, bluetooth_name)
-    uia_click(ad1, "Pair")
-    uia_click(ad1, "Skip")
-    uia_click(ad1, "Skip")
-    uia_click(ad1, "Finish")
-    ad.log.info("Wait 3 mins for complete pairing process.")
+    uia_click(phone, "Next")
+    uia_click(phone, "I agree")
+    uia_click(phone, bluetooth_name)
+    uia_click(phone, "Pair")
+    uia_click(phone, "Skip")
+    uia_click(phone, "Skip")
+    uia_click(phone, "Finish")
+    # TODO (chenstanley)Need to re-structure for better code and test flow instead of simply waiting
+    watch.log.info("Wait 3 mins for complete pairing process.")
     time.sleep(180)
-    ad.adb.shell("settings put global stay_on_while_plugged_in 7")
-    check_location_service(ad)
-    enable_gnss_verbose_logging(ad)
-    if is_bluetooth_connected(ad, ad1):
-        ad.log.info("Pairing successfully.")
+    watch.adb.shell("settings put global stay_on_while_plugged_in 7")
+    check_location_service(watch)
+    enable_gnss_verbose_logging(watch)
+    if is_bluetooth_connected(watch, phone):
+        watch.log.info("Pairing successfully.")
     else:
         raise signals.TestFailure("Fail to pair watch and phone successfully.")
 
 
-def is_bluetooth_connected(ad, ad1):
+def is_bluetooth_connected(watch, phone):
     """Check if device's Bluetooth status is connected or not.
 
     Args:
-    ad: A wearable project
-    ad1: A pixel phone.
+    watch: A wearable project
+    phone: A pixel phone.
     """
-    return ad.droid.bluetoothIsDeviceConnected(ad1.droid.bluetoothGetLocalAddress())
+    return watch.droid.bluetoothIsDeviceConnected(phone.droid.bluetoothGetLocalAddress())
 
 
 def detect_crash_during_tracking(ad, begin_time, type):
@@ -2586,38 +2597,25 @@ def check_inject_time(ad):
             return True
     raise signals.TestFailure("Fail to get time injected within %s attempts." % i)
 
-
-def enable_framework_log(ad):
-    """Enable framework log for wearable to check UTC time download.
+def recover_paired_status(watch, phone):
+    """Recover Bluetooth paired status if not paired.
 
     Args:
-        ad: An AndroidDevice object.
+        watch: A wearable project.
+        phone: A pixel phone.
     """
-    remount_device(ad)
-    time.sleep(3)
-    ad.log.info("Start to enable framwork log for wearable.")
-    ad.adb.shell("echo 'log.tag.LocationManagerService=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GnssLocationProvider=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GpsNetInitiatedHandler=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GnssNetInitiatedHandler=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GnssNetworkConnectivityHandler=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.NtpTimeHelper=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.ConnectivityService=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GnssPsdsDownloader=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GnssVisibilityControl=VERBOSE'  >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.Gnss=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GnssConfiguration=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.ImsPhone=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GsmCdmaPhone=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.Phone=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("echo 'log.tag.GCoreFlp=VERBOSE' >> /data/local.prop")
-    ad.adb.shell("chmod 644 /data/local.prop")
-    ad.adb.shell("echo 'LogEnabled=true' > /data/vendor/gps/libgps.conf")
-    ad.adb.shell("chown gps.system /data/vendor/gps/libgps.conf")
-    ad.adb.shell("sync")
-    reboot(ad)
-    ad.log.info("Wait 2 mins for Wearable booting system busy")
-    time.sleep(120)
+    for _ in range(3):
+        watch.log.info("Switch Bluetooth Off-On to recover paired status.")
+        for status in (False, True):
+            watch.droid.bluetoothToggleState(status)
+            phone.droid.bluetoothToggleState(status)
+            # TODO (chenstanley)Need to re-structure for better code and test flow instead of simply waiting
+            watch.log.info("Wait for Bluetooth auto re-connect.")
+            time.sleep(10)
+        if is_bluetooth_connected(watch, phone):
+            watch.log.info("Success to recover paired status.")
+            return True
+    raise signals.TestFailure("Fail to recover BT paired status in 3 attempts.")
 
 def push_lhd_overlay(ad):
     """Push lhd_overlay.conf to device in /data/vendor/gps/overlay/

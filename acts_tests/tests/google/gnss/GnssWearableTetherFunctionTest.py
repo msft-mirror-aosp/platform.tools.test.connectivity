@@ -73,7 +73,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE or WiFi network.")
         if not gutils.is_bluetooth_connected(self.watch, self.phone):
-            gutils.pair_to_wearable(self.phone, self.watch)
+            gutils.recover_paired_status(self.watch, self.phone)
 
     def teardown_test(self):
         gutils.stop_pixel_logger(self.watch)
@@ -253,7 +253,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         for i in range(1,6):
             self.watch.log.info("First fix of Fast Start - attempts %s" % i)
             pair_to_wearable(self.watch, self.phone)
-            gutils.enable_framework_log(self.watch)
             self.start_qxdm_and_tcpdump_log()
             begin_time = get_current_epoch_time()
             gutils.check_xtra_download(self.watch, begin_time)
