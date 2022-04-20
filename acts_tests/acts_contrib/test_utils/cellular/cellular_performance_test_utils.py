@@ -16,6 +16,7 @@
 
 import collections
 import logging
+import os
 import time
 
 PCC_PRESET_MAPPING = {
@@ -64,7 +65,7 @@ def start_pixel_logger(ad):
     )
 
 
-def stop_pixel_logger(ad, log_path):
+def stop_pixel_logger(ad, log_path, tag=None):
     """Function to stop pixel logger and retrieve logs
 
     Args:
@@ -95,8 +96,11 @@ def stop_pixel_logger(ad, log_path):
             previous_file_size = file_size
             time.sleep(1)
     try:
+        local_file_name = '{}_{}'.format(file_name, tag) if tag else file_name
+        local_path = os.path.join(log_path, local_file_name)
         ad.pull_files(
-            '/storage/emulated/0/Android/data/com.android.pixellogger/files/logs/logs/',
-            log_path)
+            '/storage/emulated/0/Android/data/com.android.pixellogger/files/logs/logs/{}'
+            .format(file_name), log_path)
+        return local_path
     except:
         logging.error('Could not pull pixel logs.')
