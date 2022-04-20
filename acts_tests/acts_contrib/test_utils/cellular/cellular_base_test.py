@@ -29,7 +29,6 @@ from acts.controllers.cellular_lib import LteSimulation as lte_sim
 from acts.controllers.cellular_lib import UmtsSimulation as umts_sim
 from acts.controllers.cellular_lib import LteImsSimulation as lteims_sim
 
-from acts_contrib.test_utils.tel import tel_logging_utils
 from acts_contrib.test_utils.tel import tel_test_utils as telutils
 
 
@@ -77,8 +76,8 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         super().setup_class()
 
-        if not hasattr(self, 'dut'):
-            self.dut = self.android_devices[0]
+        self.cellular_dut = AndroidCellularDut.AndroidCellularDut(
+            self.android_devices[0], self.log)
 
         TEST_PARAMS = self.TAG + '_params'
         self.cellular_test_params = self.user_params.get(TEST_PARAMS, {})
@@ -93,7 +92,7 @@ class CellularBaseTest(base_test.BaseTestClass):
                                cmw500_port=None,
                                cmx500_ip=None,
                                cmx500_port=None,
-                               qxdm_logs=None)
+                               modem_logging=None)
 
         # Load calibration tables
         filename_calibration_table = (
@@ -258,11 +257,11 @@ class CellularBaseTest(base_test.BaseTestClass):
         self.log.info('Simulation parameters: ' + str(sim_params))
         self.simulation.configure(sim_params)
 
-        # Enable QXDM logger if required
-        if self.qxdm_logs:
-            self.log.info('Enabling the QXDM logger.')
-            tel_logging_utils.set_qxdm_logger_command(self.dut)
-            tel_logging_utils.start_qxdm_logger(self.dut)
+        if self.modem_logging:
+            try:
+                self.cellular_dut.start_modem_logging()
+            except NotImplementedError:
+                self.log.error('Modem logging couldn\'t be started')
 
         # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
@@ -279,11 +278,8 @@ class CellularBaseTest(base_test.BaseTestClass):
         """
         super().teardown_test()
 
-        # If QXDM logging was enabled pull the results
-        if self.qxdm_logs:
-            self.log.info('Stopping the QXDM logger and pulling results.')
-            tel_logging_utils.stop_qxdm_logger(self.dut)
-            self.dut.get_qxdm_logs()
+        if self.modem_logging:
+            self.cellular_dut.stop_modem_logging()
 
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
@@ -373,14 +369,12 @@ class CellularBaseTest(base_test.BaseTestClass):
         if sim_type not in self.calibration_table:
             self.calibration_table[sim_type] = {}
 
-        cellular_dut = AndroidCellularDut.AndroidCellularDut(
-            self.dut, self.log)
         # Instantiate a new simulation
         if sim_type == self.PARAM_SIM_TYPE_NR:
             self.simulation = simulation_class(
                 self.cellular_simulator,
                 self.log,
-                cellular_dut,
+                self.cellular_dut,
                 self.cellular_test_params,
                 self.calibration_table[sim_type],
                 nr_mode=self.PARAM_SIM_TYPE_NR)
@@ -388,7 +382,7 @@ class CellularBaseTest(base_test.BaseTestClass):
             self.simulation = simulation_class(
                 self.cellular_simulator,
                 self.log,
-                cellular_dut,
+                self.cellular_dut,
                 self.cellular_test_params,
                 self.calibration_table[sim_type])
 
