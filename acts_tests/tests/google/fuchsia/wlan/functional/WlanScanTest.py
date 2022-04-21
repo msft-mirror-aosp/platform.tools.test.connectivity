@@ -21,20 +21,15 @@ related to wlan scanning
 
 from datetime import datetime
 
-import pprint
-import time
-
-import acts_contrib.test_utils.wifi.wifi_test_utils as wutils
-
 from acts import signals
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class WlanScanTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanScanTest(WifiBaseTest):
     """WLAN scan test class.
 
     Test Bed Requirement:
@@ -42,6 +37,7 @@ class WlanScanTest(AbstractDeviceWlanDeviceBaseTest):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network or a onHub/GoogleWifi
     """
+
     def setup_class(self):
         super().setup_class()
 
