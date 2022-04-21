@@ -29,10 +29,6 @@ class GnssSuplTest(BaseTestClass):
         for network in self.pixel_lab_network:
             SSID = network["SSID"]
             self.ssid_map[SSID] = network
-        if self.collect_logs and \
-            gutils.check_chipset_vendor_by_qualcomm(self.ad):
-            self.flash_new_radio_or_mbn()
-            self.push_gnss_cfg()
         self.init_device()
 
     def runs_on_projects(self, projects):
