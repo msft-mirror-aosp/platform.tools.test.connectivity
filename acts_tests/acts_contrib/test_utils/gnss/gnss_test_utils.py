@@ -2891,7 +2891,7 @@ def validate_adr_rate(ad, pass_criteria):
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_valid_count %s" % adr_statistic.valid_count)
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_reset_count %s" % adr_statistic.reset_count)
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
-                "ADR_ctcle_slip_count %s" % adr_statistic.cycle_slip_count)
+                "ADR_cycle_slip_count %s" % adr_statistic.cycle_slip_count)
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
                 "ADR_half_cycle_reported_count %s" % adr_statistic.half_cycle_reported_count)
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
