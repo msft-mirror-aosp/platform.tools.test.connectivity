@@ -72,6 +72,20 @@ class CellularRxPowerTest(base_test.BaseTestClass):
     def setup_test(self):
         cputils.start_pixel_logger(self.dut)
 
+    def on_retry(self):
+        """Function to control test logic on retried tests.
+
+        This function is automatically executed on tests that are being
+        retried. In this case the function resets wifi, toggles it off and on
+        and sets a retry_flag to enable further tweaking the test logic on
+        second attempts.
+        """
+        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                            'Can not turn on airplane mode.')
+        if self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
+            self.log.info('Turning LTE off.')
+            self.keysight_test_app.set_cell_state('LTE', 'CELL1', 0)
+
     def teardown_test(self):
         self.log.info('Turning airplane mode on')
         asserts.assert_true(utils.force_airplane_mode(self.dut, True),
@@ -103,29 +117,39 @@ class CellularRxPowerTest(base_test.BaseTestClass):
         self.log.info('Turning off airplane mode')
         asserts.assert_true(utils.force_airplane_mode(self.dut, False),
                             'Can not turn on airplane mode.')
-        self.log.info('Waiting for LTE and applying aggregation')
-        for cell in testcase_params['cell_list']:
+
+        for cell in testcase_params['dl_cell_list']:
             self.keysight_test_app.set_cell_band('NR5G', cell,
                                                  testcase_params['band'])
         # Consider configuring schedule quick config
         self.keysight_test_app.set_nr_cell_schedule_scenario(
-            testcase_params['cell_list'][0], 'BASIC')
-        self.keysight_test_app.set_dl_carriers(testcase_params['cell_list'])
-        self.keysight_test_app.set_ul_carriers(testcase_params['cell_list'][0])
+            testcase_params['dl_cell_list'][0], 'BASIC')
+        self.keysight_test_app.set_dl_carriers(testcase_params['dl_cell_list'])
+        self.keysight_test_app.set_ul_carriers(testcase_params['dl_cell_list'][0])
+        self.log.info('Waiting for LTE and applying aggregation')
+        if not self.keysight_test_app.wait_for_cell_status(
+                'LTE', 'CELL1', 'CONN', 60):
+            asserts.fail('DUT did not connect to LTE.')
         self.keysight_test_app.apply_carrier_agg()
         self.log.info('Waiting for 5G connection')
         connected = self.keysight_test_app.wait_for_cell_status(
-            'NR5G', testcase_params['cell_list'][-1], ['ACT', 'CONN'], 60)
+            'NR5G', testcase_params['dl_cell_list'][-1], ['ACT', 'CONN'], 60)
         if not connected:
             asserts.fail('DUT did not connect to NR.')
         for cell_power in testcase_params['power_range_vector']:
             self.log.info('Setting power to {} dBm'.format(cell_power))
-            for cell in testcase_params['cell_list']:
+            for cell in testcase_params['dl_cell_list']:
                 self.keysight_test_app.set_cell_dl_power(
-                    'NR5G', cell, True, cell_power)
-            time.sleep(5)
+                    'NR5G', cell, cell_power, True)
+            #measure RSRP
+            self.keysight_test_app.start_nr_rsrp_measurement(
+                testcase_params['dl_cell_list'],
+                self.testclass_params['rsrp_measurement_duration'])
+            time.sleep(self.testclass_params['rsrp_measurement_duration']*1.5/1000)
+            self.keysight_test_app.get_nr_rsrp_measurement_state(testcase_params['dl_cell_list'])
+            self.keysight_test_app.get_nr_rsrp_measurement_results(testcase_params['dl_cell_list'])
 
-        for cell in testcase_params['cell_list'][::-1]:
+        for cell in testcase_params['dl_cell_list'][::-1]:
             self.keysight_test_app.set_cell_state('NR5G', cell, 0)
         asserts.assert_true(utils.force_airplane_mode(self.dut, True),
                             'Can not turn on airplane mode.')
@@ -146,7 +170,7 @@ class CellularRxPowerTest(base_test.BaseTestClass):
             test_name = 'test_nr_rsrp_{}_{}CC'.format(band, num_cells)
             test_params = collections.OrderedDict(band=band,
                                                   num_cells=num_cells,
-                                                  cell_list=list(
+                                                  dl_cell_list=list(
                                                       range(1, num_cells + 1)))
             setattr(self, test_name, partial(self._test_nr_rsrp, test_params))
             test_cases.append(test_name)
