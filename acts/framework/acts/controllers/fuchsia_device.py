@@ -193,7 +193,6 @@ class FuchsiaDevice:
         sl4f_port: The SL4F HTTP port number of the Fuchsia device.
         ssh_config: The ssh_config for connecting to the Fuchsia device.
     """
-
     def __init__(self, fd_conf_data):
         """
         Args:
@@ -321,6 +320,7 @@ class FuchsiaDevice:
         except Exception as e:
             # Prevent a threading error, since controller isn't fully up yet.
             self.clean_up()
+            self.stop_sl4f_on_fuchsia_device()
             raise e
 
     def _set_control_path_config(self, old_config, new_config):
@@ -672,16 +672,19 @@ class FuchsiaDevice:
                 self.log.info('Sending reboot command via SSH.')
                 with utils.SuppressLogOutput():
                     self.clean_up_services()
+                    self.stop_sl4f_on_fuchsia_device()
                     self.send_command_ssh(
                         'dm reboot',
                         timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
                         skip_status_code_check=True)
             else:
                 self.log.info('Calling SL4F reboot command.')
+                self.clean_up_services()
                 with utils.SuppressLogOutput():
                     self.hardware_power_statecontrol_lib.suspendReboot(
                         timeout=3)
-                    self.clean_up_services()
+                    self.stop_sl4f_on_fuchsia_device()
+        # TODO(http://b/230890623): Refactor control_daemon to split cleanup.
         elif reboot_type == FUCHSIA_REBOOT_TYPE_SOFT_AND_FLASH:
             flash(self, use_ssh, FUCHSIA_RECONNECT_AFTER_REBOOT_TIME)
             skip_unreachable_check = True
@@ -769,6 +772,7 @@ class FuchsiaDevice:
         except FuchsiaDeviceError:
             # Prevent a threading error, since controller isn't fully up yet.
             self.clean_up()
+            self.stop_sl4f_on_fuchsia_device()
             raise FuchsiaDeviceError(
                 'Failed to run setup commands after reboot.')
 
@@ -941,7 +945,7 @@ class FuchsiaDevice:
 
     def clean_up(self):
         """Cleans up the FuchsiaDevice object, releases any resources it
-        claimed, and restores saved networks is applicable. For reboots, use
+        claimed, and restores saved networks if applicable. For reboots, use
         clean_up_services only.
 
         Note: Any exceptions thrown in this method must be caught and handled,
@@ -988,7 +992,7 @@ class FuchsiaDevice:
             self.log.exception("Cleanup request failed with %s:" % err)
         finally:
             self.test_counter += 1
-            self.stop_services()
+            self.stop_host_services()
 
     def check_process_state(self, process_name):
         """Checks the state of a process on the Fuchsia device
@@ -1092,6 +1096,7 @@ class FuchsiaDevice:
             self.log.info(unable_to_connect_msg)
             raise e
         finally:
+            # TODO(http://b/230890623): Refactor control_daemon to split cleanup.
             if action == 'stop' and (process_name == 'sl4f'
                                      or process_name == 'sl4f.cmx'):
                 self._persistent_ssh_conn.close()
@@ -1199,23 +1204,29 @@ class FuchsiaDevice:
 
         self.init_ffx_connection()
 
-    def stop_services(self):
-        """Stops long running services on the fuchsia device.
-
-        Terminates the syslog streaming process, the SL4F server on the device,
-        and the ffx daemon.
-        """
-        self.log.debug("Attempting to stop Fuchsia device services on %s." %
+    def stop_host_services(self):
+        """Stops ffx daemon and ssh connection to streaming logs on the host"""
+        self.log.debug("Attempting to stop host device services on %s." %
                        self.ip)
         if hasattr(self, 'ffx'):
             self.ffx.clean_up()
+        if self.ssh_config:
+            if self.log_process:
+                self.log_process.stop()
+
+    def stop_sl4f_on_fuchsia_device(self):
+        """Stops SL4F server on the fuchsia device
+
+        This also closes the persistent ssh connection to the SLF4 daemon which
+        is important to prevent ssh exceptions on subsequent commands.
+        """
+        self.log.debug("Attempting to stop SL4F server on Fuchsia device %s." %
+                       self.ip)
         if self.ssh_config:
             try:
                 self.control_daemon("sl4f.cmx", "stop")
             except Exception as err:
                 self.log.exception("Failed to stop sl4f.cmx with: %s" % err)
-            if self.log_process:
-                self.log_process.stop()
 
     def load_config(self, config):
         pass

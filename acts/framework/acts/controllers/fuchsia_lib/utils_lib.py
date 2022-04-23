@@ -297,6 +297,7 @@ def reboot_to_bootloader(fuchsia_device,
                      'get into bootloader.')
         with utils.SuppressLogOutput():
             fuchsia_device.clean_up_services()
+            fuchsia_device.stop_sl4f_on_fuchsia_device()
             # Sending this command will put the device in fastboot
             # but it does not guarantee the device will be in fastboot
             # after this command.  There is no check so if there is an
