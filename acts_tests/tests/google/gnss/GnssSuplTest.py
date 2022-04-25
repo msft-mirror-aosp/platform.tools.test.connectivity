@@ -37,14 +37,9 @@ class GnssSuplTest(BaseTestClass):
             phone_projects: (list) list of project name,
                 default value: [] -> runs on all projects
         """
-        shell_result = self.ad.adb.shell("getprop | grep ro.build.product")
-        regex = re.compile(":\s\[(\w+)\]")
-        regex_result = re.search(regex, shell_result)
-        actual_project = regex_result.group(1)
-
-        if projects and actual_project not in projects:
+        if projects and self.ad.model not in projects:
             raise signals.TestSkip("Not expected project, skip the test. Runs on %s, got: %s" %
-                                   (projects, actual_project))
+                                   (projects, self.ad.model))
 
     def init_device(self):
         """Init GNSS test devices for SUPL suite."""
@@ -57,8 +52,15 @@ class GnssSuplTest(BaseTestClass):
         gutils.disable_private_dns_mode(self.ad)
         gutils.init_gtw_gpstool(self.ad)
         gutils.disable_vendor_orbit_assistance_data(self.ad)
-        supl.set_supl_over_wifi_state(self.ad, turn_on=True)
+        self.enable_supl_over_wifi()
         gutils.disable_ramdump(self.ad)
+
+    def enable_supl_over_wifi(self):
+        try:
+            self.runs_on_projects(self.project_limit_lte_btwifi)
+            supl.set_supl_over_wifi_state(self.ad, turn_on=True)
+        except signals.TestSkip:
+            self.ad.log.info("Skip enabling supl over wifi due to project not supported")
 
     def setup_test(self):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
@@ -103,9 +105,11 @@ class GnssSuplTest(BaseTestClass):
     @test_tracker_info(uuid="4a364e0f-926d-45ff-b3f0-733b5e30e073")
     def test_supl_over_wifi_with_mobile_data_off(self):
         """ Test supl can works through wifi with mobile data off
-        1. Turn off mobile data
-        2. Connect to wifi
-        3. Run CS TTFF
+
+        Test steps are executed in the following sequence.
+        - Turn off mobile data
+        - Connect to wifi
+        - Run SUPL CS TTFF
         """
         # We can't push real project name into git repo, so I will add the desired projects name
         # into configuration file on g3 and read it from test cases
@@ -120,9 +124,11 @@ class GnssSuplTest(BaseTestClass):
     @test_tracker_info(uuid="18c316ef-6a70-4709-a71c-12ec3e5326d6")
     def test_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
-        1. Turn on airplane mode
-        2. Connect to wifi
-        3. Run CS TTFF
+
+        Test steps are executed in the following sequence.
+        - Turn on airplane mode
+        - Connect to wifi
+        - Run SUPL CS TTFF
         """
         self.runs_on_projects(self.project_limit_lte_btwifi)
 
@@ -135,8 +141,10 @@ class GnssSuplTest(BaseTestClass):
     @test_tracker_info(uuid="b13b8589-946b-48c7-b1a6-7399b4b12440")
     def test_supl_with_wifi_connected_and_mobile_data_on(self):
         """ Test supl can works on both wifi / mobile data features are turned on
-        1. Connect to wifi
-        2. Run CS TTFF
+
+        Test steps are executed in the following sequence.
+        - Connect to wifi
+        - Run SUPL CS TTFF
         """
         self.runs_on_projects(self.project_limit_lte)
 
