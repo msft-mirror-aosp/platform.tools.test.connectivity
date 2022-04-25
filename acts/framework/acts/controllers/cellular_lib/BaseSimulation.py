@@ -68,7 +68,9 @@ class BaseSimulation(object):
     # the simulations inheriting from this class.
     DOWNLINK_SIGNAL_LEVEL_UNITS = None
 
-    def __init__(self, simulator, log, dut, test_config, calibration_table):
+    def __init__(
+        self, simulator, log, dut, test_config, calibration_table,
+        nr_mode=None):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
@@ -87,6 +89,7 @@ class BaseSimulation(object):
         self.log = log
         self.dut = dut
         self.calibration_table = calibration_table
+        self.nr_mode = nr_mode
 
         # Turn calibration on or off depending on the test config value. If the
         # key is not present, set to False by default

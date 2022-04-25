@@ -411,7 +411,9 @@ class LteSimulation(BaseSimulation):
         tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM OFF & MAC padding ON
     }
 
-    def __init__(self, simulator, log, dut, test_config, calibration_table):
+    def __init__(
+        self, simulator, log, dut, test_config, calibration_table,
+        nr_mode=None):
         """ Initializes the simulator for a single-carrier LTE simulation.
 
         Args:
@@ -424,14 +426,19 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        super().__init__(simulator, log, dut, test_config, calibration_table)
+        super().__init__(
+            simulator, log, dut, test_config, calibration_table, nr_mode)
 
         self.num_carriers = None
 
         # Force device to LTE only so that it connects faster
         try:
-            self.dut.set_preferred_network_type(
-                BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+            if self.nr_mode and 'nr' == self.nr_mode:
+                self.dut.set_preferred_network_type(
+                    BaseCellularDut.PreferredNetworkType.LTE_NR)
+            else:
+                self.dut.set_preferred_network_type(
+                    BaseCellularDut.PreferredNetworkType.LTE_ONLY)
         except Exception as e:
             # If this fails the test should be able to run anyways, even if it
             # takes longer to find the cell.
@@ -447,7 +454,12 @@ class LteSimulation(BaseSimulation):
 
     def setup_simulator(self):
         """ Do initial configuration in the simulator. """
-        self.simulator.setup_lte_scenario()
+        if self.nr_mode and 'nr' == self.nr_mode:
+            self.log.info('Initializes the callbox to Nr Nsa scenario')
+            self.simulator.setup_nr_nsa_scenario()
+        else:
+            self.log.info('Initializes the callbox to LTE scenario')
+            self.simulator.setup_lte_scenario()
 
     def configure(self, parameters):
         """ Configures simulation using a dictionary of parameters.
@@ -481,6 +493,7 @@ class LteSimulation(BaseSimulation):
                     # If the remaining string is only the band number, add
                     # the cell and continue
                     new_cell_list.append(cell)
+                    continue
 
                 ca_class = band[-1].upper()
                 band_num = band[:-1]
