@@ -32,7 +32,8 @@ from acts_contrib.test_utils.fuchsia import utils
 from acts.utils import rand_ascii_str
 
 
-class PingStressTest(AbstractDeviceWlanDeviceBaseTest):
+class PingStressTest(WifiBaseTest):
+
     # Timeout for ping thread in seconds
     ping_thread_timeout_s = 60 * 5
 
