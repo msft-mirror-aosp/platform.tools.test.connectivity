@@ -18,15 +18,16 @@ Test to verify that a DUT's client interface's status can be queried.
 """
 
 from acts import signals
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class WlanStatusTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanStatusTest(WifiBaseTest):
     """WLAN status test class.
 
     Test Bed Requirements:
     * One or more Fuchsia devices with WLAN client capabilities.
     """
+
     def setup_class(self):
         super().setup_class()
         for fd in self.fuchsia_devices:
