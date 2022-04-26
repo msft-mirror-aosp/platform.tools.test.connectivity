@@ -16,7 +16,7 @@
 
 from acts import asserts
 from acts import utils
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 
 AP_ROLE = 'Ap'
@@ -29,8 +29,9 @@ TEST_MAC_ADDR = '12:34:56:78:9a:bc'
 TEST_MAC_ADDR_SECONDARY = 'bc:9a:78:56:34:12'
 
 
-class WlanDeprecatedConfigurationTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanDeprecatedConfigurationTest(WifiBaseTest):
     """Tests for WlanDeprecatedConfigurationFacade"""
+
     def setup_class(self):
         super().setup_class()
         self.dut = create_wlan_device(self.fuchsia_devices[0])
