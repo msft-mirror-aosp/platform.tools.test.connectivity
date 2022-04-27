@@ -559,6 +559,17 @@ class AndroidDevice:
         }
         return info
 
+    def add_device_info(self, name, info):
+        """Add custom device info to the user_added_info section.
+
+        Adding the same info name the second time will override existing info.
+
+        Args:
+          name: string, name of this info.
+          info: serializable, content of the info.
+        """
+        self._user_added_device_info.update({name: info})
+
     def sdk_api_level(self):
         if self._sdk_api_level is not None:
             return self._sdk_api_level
