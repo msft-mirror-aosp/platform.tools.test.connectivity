@@ -602,11 +602,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                                      self.user_params["gps_log_file"])
             for reason in failure_reasons:
                 self.result_info["Call %s Failure" % reason] += 1
-            for ad in ads:
-                log_path = os.path.join(self.log_path, test_name,
+            if self.get_binder_logs:
+                for ad in ads:
+                    log_path = os.path.join(self.log_path, test_name,
                                         "%s_binder_logs" % ad.serial)
-                os.makedirs(log_path, exist_ok=True)
-                ad.pull_files(BINDER_LOGS, log_path)
+                    os.makedirs(log_path, exist_ok=True)
+                    ad.pull_files(BINDER_LOGS, log_path)
             try:
                 self._take_bug_report(test_name, begin_time)
             except Exception as e:
