@@ -1207,8 +1207,7 @@ class AndroidDevice:
             if crashes:
                 crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
-            test_name = test_name or time.strftime("%Y-%m-%d-%Y-%H-%M-%S")
-            crash_log_path = os.path.join(self.log_path, test_name,
+            crash_log_path = os.path.join(self.device_log_path,
                                           "Crashes_%s" % self.serial)
             os.makedirs(crash_log_path, exist_ok=True)
             self.pull_files(crash_reports, crash_log_path)
