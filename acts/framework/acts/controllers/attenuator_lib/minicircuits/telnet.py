@@ -37,6 +37,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
     the functionality of AttenuatorInstrument is contingent upon a telnet
     connection being established.
     """
+
     def __init__(self, num_atten=0):
         super(AttenuatorInstrument, self).__init__(num_atten)
         self._tnhelper = _tnhelper._TNHelper(tx_cmd_separator='\r\n',
@@ -116,7 +117,9 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
-        self._tnhelper.cmd('CHAN:%s:SETATT:%s' % (idx + 1, value), retry=retry)
+        adjusted_value = min(max(0, value), self.max_atten)
+        self._tnhelper.cmd('CHAN:%s:SETATT:%s' % (idx + 1, adjusted_value),
+                           retry=retry)
 
     def get_atten(self, idx, retry=False):
         """Returns the current attenuation of the attenuator at the given index.
