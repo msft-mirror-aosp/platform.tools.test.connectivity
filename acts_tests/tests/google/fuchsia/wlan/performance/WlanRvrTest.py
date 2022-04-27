@@ -26,9 +26,8 @@ from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.attenuator import get_attenuators_for_device
 from acts.controllers.iperf_server import IPerfResult
-from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.utils import rand_ascii_str
 
 from bokeh.plotting import ColumnDataSource
@@ -101,7 +100,7 @@ def write_csv_rvr_data(test_name, csv_path, csv_data):
                                           throughput[csv_loop_counter]))
 
 
-class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanRvrTest(WifiBaseTest):
     """Tests running WLAN RvR.
 
     Test Bed Requirement:
@@ -112,7 +111,7 @@ class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
     """
 
     def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+        super().__init__(self, controllers)
         self.rvr_graph_summary = []
 
     def setup_class(self):

@@ -27,8 +27,8 @@ from acts.controllers.access_point import setup_ap, AccessPoint
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib.hostapd_utils import generate_random_password
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 CONNECTIVITY_MODE_LOCAL = 'local_only'
 CONNECTIVITY_MODE_UNRESTRICTED = 'unrestricted'
@@ -132,7 +132,7 @@ class StressTestIterationFailure(Exception):
     pass
 
 
-class SoftApTest(AbstractDeviceWlanDeviceBaseTest):
+class SoftApTest(WifiBaseTest):
     """Tests for Fuchsia SoftAP
 
     Testbed requirement:
@@ -145,6 +145,7 @@ class SoftApTest(AbstractDeviceWlanDeviceBaseTest):
         tests), a physical AP (whirlwind) is also required. Those tests will be
         skipped if physical AP is not present.
     """
+
     def setup_class(self):
         self.soft_ap_test_params = self.user_params.get(
             'soft_ap_test_params', {})
