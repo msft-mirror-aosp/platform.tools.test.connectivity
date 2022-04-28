@@ -68,7 +68,9 @@ class BaseSimulation(object):
     # the simulations inheriting from this class.
     DOWNLINK_SIGNAL_LEVEL_UNITS = None
 
-    def __init__(self, simulator, log, dut, test_config, calibration_table):
+    def __init__(
+        self, simulator, log, dut, test_config, calibration_table,
+        nr_mode=None):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
@@ -87,6 +89,7 @@ class BaseSimulation(object):
         self.log = log
         self.dut = dut
         self.calibration_table = calibration_table
+        self.nr_mode = nr_mode
 
         # Turn calibration on or off depending on the test config value. If the
         # key is not present, set to False by default
@@ -269,13 +272,13 @@ class BaseSimulation(object):
         # Wait until it goes to communication state
         self.simulator.wait_until_communication_state()
 
-        # Set uplink power to a minimum before going to the actual desired
+        # Set uplink power to a low value before going to the actual desired
         # value. This avoid inconsistencies produced by the hysteresis in the
         # PA switching points.
-        self.log.info('Setting UL power to -30 dBm before going to the '
+        self.log.info('Setting UL power to -5 dBm before going to the '
                       'requested value to avoid incosistencies caused by '
                       'hysteresis.')
-        self.set_uplink_tx_power(-30)
+        self.set_uplink_tx_power(-5)
 
         # Set signal levels obtained from the test parameters
         self.set_downlink_rx_power(self.sim_dl_power)

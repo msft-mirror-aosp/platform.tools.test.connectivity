@@ -1675,6 +1675,10 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
             dut2,
             autils.decorate_event(aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
                                   aa_s_id))
+
+        if (hasattr(self, "ranging_role_concurrency_flexible_models") and
+         dut2.model in self.ranging_role_concurrency_flexible_models):
+            time.sleep(3)
         bb_p_id = dut2.droid.wifiAwarePublish(
             dut2_id,
             autils.add_ranging_to_pub(
