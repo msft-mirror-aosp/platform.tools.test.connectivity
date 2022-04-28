@@ -27,15 +27,16 @@ from acts_contrib.test_utils.tel.tel_defines import NETWORK_MODE_NR_ONLY
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_5g_utils import is_current_network_5g
-from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
 from acts_contrib.test_utils.tel.tel_data_utils import browsing_test
 from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_detection
 from acts_contrib.test_utils.tel.tel_data_utils import check_data_stall_recovery
 from acts_contrib.test_utils.tel.tel_data_utils import check_network_validation_fail
 from acts_contrib.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
-from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
+from acts_contrib.test_utils.tel.tel_data_utils import reboot_test
 from acts_contrib.test_utils.tel.tel_data_utils import test_wifi_connect_disconnect
 from acts_contrib.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts_contrib.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
+from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
 from acts_contrib.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
@@ -234,5 +235,25 @@ class Sa5gDataTest(TelephonyBaseTest):
         wifi_toggle_state(ad.log, ad, False)
         wifi_toggle_state(ad.log, ad, True)
         return data_connectivity_single_bearer(ad.log, ad, GEN_5G, nr_type= 'sa')
+
+
+    @test_tracker_info(uuid="6c1ec0a6-223e-4bcd-b958-b85f5eb03943")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_sa_reboot(self):
+        """Test 5G SA service availability after reboot.
+
+        Ensure phone is on 5G SA.
+        Ensure phone attach, data on, WiFi off and verify Internet.
+        Reboot Device.
+        Verify Network Connection.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='sa'):
+            return False
+        if not verify_internet_connection(self.log, self.android_devices[0]):
+            return False
+        return reboot_test(self.log, self.android_devices[0])
 
     """ Tests End """

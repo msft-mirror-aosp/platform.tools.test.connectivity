@@ -28,7 +28,7 @@ from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
+from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH, GERMANY_TELEKOM, QATAR_VODAFONE
 from acts_contrib.test_utils.tel.tel_defines import CLEAR_NOTIFICATION_BAR
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_ALERT_TYPE
 from acts_contrib.test_utils.tel.tel_defines import EXPAND_NOTIFICATION_BAR
@@ -88,13 +88,30 @@ from acts_contrib.test_utils.tel.tel_defines import DUMPSYS_VIBRATION
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_SOUND_TIME
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_VIBRATION_TIME
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_OFFSET
+from acts_contrib.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
+from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
+from acts_contrib.test_utils.tel.tel_defines import GEN_5G
+from acts_contrib.test_utils.tel.tel_defines import GEN_4G
+from acts_contrib.test_utils.tel.tel_defines import GEN_3G
 from acts_contrib.test_utils.tel.tel_logging_utils import log_screen_shot
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
+from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.net import ui_utils as uutils
+from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
+from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_data_for_subscription
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
+from test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 
 
 class CellBroadcastTest(TelephonyBaseTest):
@@ -133,8 +150,9 @@ class CellBroadcastTest(TelephonyBaseTest):
             self.android_devices[0].log.info("device is operated at DSDS!")
         else:
             self.android_devices[0].log.info("device is operated at single SIM!")
-        self.current_sub_id = get_default_data_sub_id(self.android_devices[0])
-        self.android_devices[0].log.info("Active slot: %d, active subscription id: %d",
+        self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
+
+        self.android_devices[0].log.info("Active slot: %d, active voice subscription id: %d",
                                          self.slot_sub_id_list[self.current_sub_id], self.current_sub_id)
 
         if hasattr(self, "carrier_test_conf"):
@@ -439,11 +457,19 @@ class CellBroadcastTest(TelephonyBaseTest):
         return alert_in_notification
 
 
-    def _verify_send_receive_wea_alerts(self, ad, region=None):
+    def _verify_send_receive_wea_alerts(self, ad, region=None, call=False, call_direction=DIRECTION_MOBILE_ORIGINATED):
         result = True
         # Always clear notifications in the status bar before testing to find alert notification easily.
         self._clear_statusbar_notifications(ad)
         for key, value in self.emergency_alert_channels_dict[region].items():
+
+            if call:
+                if not self._setup_voice_call(self.log,
+                                              self.android_devices,
+                                              call_direction=call_direction):
+                    self.log("Fail to set up voice call!")
+                    return False
+
             # Configs
             iteration_result = True
             channel = int(key)
@@ -465,6 +491,11 @@ class CellBroadcastTest(TelephonyBaseTest):
             if region == NEWZEALAND:
                 if not self._verify_flashlight(ad):
                     iteration_result = False
+
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+            if call:
+                hangup_call(self.log, ad)
+
             time.sleep(wait_for_alert)
 
             # Receive Alert
@@ -553,6 +584,62 @@ class CellBroadcastTest(TelephonyBaseTest):
         return result
 
 
+    def _setup_receive_test_flow_wifi(self, region, gen, data):
+        """ Setup send/receive WEA with wifi enabled and various RAT."""
+        ad = self.android_devices[0]
+        self._set_device_to_specific_region(ad, region)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        if gen == GEN_5G:
+            if not provision_device_for_5g(self.log, ad):
+                return False
+        else:
+            phone_setup_data_for_subscription(ad.log,
+                                              ad,
+                                              get_default_data_sub_id(ad),
+                                              gen)
+        if data:
+            ad.log.info("Enable data network!")
+        else:
+            ad.log.info("Disable data network!")
+        ad.droid.telephonyToggleDataConnection(data)
+        if not wait_for_data_connection(ad.log, ad, data,
+                                        MAX_WAIT_TIME_DATA_SUB_CHANGE):
+            if data:
+                ad.log.error("Failed to enable data network!")
+            else:
+                ad.log.error("Failed to disable data network!")
+            return False
+
+        wifi_toggle_state(ad.log, ad, True)
+        if not ensure_wifi_connected(ad.log, ad,
+                                     self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            ad.log.error("WiFi connect fail.")
+            return False
+        return True
+
+    def _setup_voice_call(self, log, ads, call_direction=DIRECTION_MOBILE_ORIGINATED):
+        if call_direction == DIRECTION_MOBILE_ORIGINATED:
+            ad_caller = ads[0]
+            ad_callee = ads[1]
+        else:
+            ad_caller = ads[1]
+            ad_callee = ads[0]
+        return call_setup_teardown(log, ad_caller, ad_callee, wait_time_in_call=0)
+
+    def _setup_wfc_mode(self, ad):
+        if not set_wfc_mode_for_subscription(ad,
+                                             WFC_MODE_WIFI_ONLY,
+                                             get_default_data_sub_id(ad)):
+            ad.log.error("Unable to set WFC mode to %s.", WFC_MODE_WIFI_ONLY)
+            return False
+
+        if not wait_for_wfc_enabled(ad.log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
+            ad.log.error("WFC is not enabled")
+            return False
+        return True
     """ Tests Begin """
 
 
@@ -1094,6 +1181,36 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._settings_test_flow(US_VZW)
+
+
+    @test_tracker_info(uuid="fb4cda9e-7b4c-469e-a480-670bfb9dc6d7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_germany_telekom(self):
+        """ Verifies Wireless Emergency Alert settings for Germany telecom
+
+        configures the device to Germany telecom
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(GERMANY_TELEKOM)
+
+
+    @test_tracker_info(uuid="f4afbef9-c1d7-4fab-ad0f-e03bc961a689")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_qatar_vodafone(self):
+        """ Verifies Wireless Emergency Alert settings for Qatar vodafone
+
+        configures the device to Qatar vodafone
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(QATAR_VODAFONE)
 
 
     @test_tracker_info(uuid="f3a99475-a23f-427c-a371-d2a46d357d75")
@@ -1706,3 +1823,368 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._send_receive_test_flow(US_VZW)
+
+
+    @test_tracker_info(uuid="b94cc715-d2e2-47a4-91cd-acb47d64e6b2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_germany_telekom(self):
+        """ Verifies Wireless Emergency Alerts for Germany telekom
+
+        configures the device to Germany telekom
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(GERMANY_TELEKOM)
+
+
+    @test_tracker_info(uuid="f0b0cdbf-32c4-4dfd-b8fb-03d8b6169fd1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_qatar_vodafone(self):
+        """ Verifies Wireless Emergency Alerts for Qatar vodafone.
+
+        configures the device to Qatar vodafone
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(QATAR_VODAFONE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_5g_wifi_us_vzw(self):
+        """ Verifies WEA with WiFi and 5G NSA data network enabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WiFi and 5G NSA data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_5G, True):
+            result = False
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_4g_wifi_us_vzw(self):
+        """ Verifies WEA with WiFi and 4G data network enabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WiFi and 4G data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_4G, True):
+            result = False
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_3g_wifi_us_vzw(self):
+        """ Verifies WEA with WiFi and 3G data network enabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WiFi and 3G data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_3G, True):
+            result = False
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_5g_wifi_only_us_vzw(self):
+        """ Verifies WEA with WiFi enabled and 5G NSA data network disabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WiFi and disable 5G NSA data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_5G, False):
+            result = False
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_4g_wifi_only_us_vzw(self):
+        """ Verifies WEA with WiFi enabled and 4G data network disabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WiFi and disable 4G data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_4G, False):
+            result = False
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_3g_wifi_only_us_vzw(self):
+        """ Verifies WEA with WiFi enabled and 3G data network disabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WiFi and disable 3G data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_3G, False):
+            result = False
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_5g_wfc_wifi_only_us_vzw(self):
+        """ Verifies WEA with WFC mode and 5G NSA data network disabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WFC mode and disable 5G NSA data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_5G, False)\
+                or not self._setup_wfc_mode(self.android_devices[0]):
+            result = False
+
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_4g_wfc_wifi_only_us_vzw(self):
+        """ Verifies WEA with WFC mode and 4G data network disabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WFC mode and disable 4G data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_4G, False)\
+                or not self._setup_wfc_mode(self.android_devices[0]):
+            result = False
+
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return True
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_3g_wfc_wifi_only_us_vzw(self):
+        """ Verifies WEA with WFC mode and 3G data network disabled for US Verizon.
+
+        configures the device to US Verizon
+        enables WFC mode and disable 3G data network.
+        connects to internet via WiFi.
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_3G, False)\
+                or not self._setup_wfc_mode(self.android_devices[0]):
+            result = False
+
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return True
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_5g_epdg_mo_wfc_wifi_only_us_vzw(self):
+        """ Verifies WEA during VoWiFi call for US Verizon.
+
+        configures the device to US Verizon
+        enables WFC mode and disable 5G NSA data network.
+        connects to internet via WiFi.
+        sends alerts across all channels and initiates mo VoWiFi call respectively.
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_5G, False)\
+                or not self._setup_wfc_mode(self.android_devices[0]):
+            result = False
+
+        phone_setup_voice_general(self.log, self.android_devices[1] )
+
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW, call=True):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_4g_epdg_mo_wfc_wifi_only_us_vzw(self):
+        """ Verifies WEA during VoWiFi call for US Verizon.
+
+        configures the device to US Verizon
+        enables WFC mode and disable 5G NSA data network.
+        connects to internet via WiFi.
+        sends alerts across all channels and initiates mo VoWiFi call respectively.
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_4G, False)\
+                or not self._setup_wfc_mode(self.android_devices[0]):
+            result = False
+
+        phone_setup_voice_general(self.log, self.android_devices[1] )
+
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW, call=True):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_3g_epdg_mo_wfc_wifi_only_us_vzw(self):
+        """ Verifies WEA during VoWiFi call for US Verizon.
+
+        configures the device to US Verizon
+        enables WFC mode and disable 5G NSA data network.
+        connects to internet via WiFi.
+        sends alerts across all channels and initiates mo VoWiFi call respectively.
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        if not self._setup_receive_test_flow_wifi(US_VZW, GEN_3G, False)\
+                or not self._setup_wfc_mode(self.android_devices[0]):
+            result = False
+
+        phone_setup_voice_general(self.log, self.android_devices[1] )
+
+        if result:
+            if not self._verify_send_receive_wea_alerts(self.android_devices[0], US_VZW, call=True):
+                result = False
+
+        get_screen_shot_log(self.android_devices[0])
+        return result
+
