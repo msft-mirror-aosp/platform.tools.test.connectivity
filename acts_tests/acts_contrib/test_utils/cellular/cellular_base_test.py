@@ -41,6 +41,7 @@ class CellularBaseTest(base_test.BaseTestClass):
     PARAM_SIM_TYPE_LTE = "lte"
     PARAM_SIM_TYPE_LTE_CA = "lteca"
     PARAM_SIM_TYPE_LTE_IMS = "lteims"
+    PARAM_SIM_TYPE_NR = "nr"
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
@@ -81,6 +82,8 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         TEST_PARAMS = self.TAG + '_params'
         self.cellular_test_params = self.user_params.get(TEST_PARAMS, {})
+        self.log.info(
+            'self.cellular_test_params: ' + str(self.cellular_test_params))
 
         # Unpack test parameters used in this class
         self.unpack_userparams(['custom_files'],
@@ -220,6 +223,8 @@ class CellularBaseTest(base_test.BaseTestClass):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_CA)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_LTE_IMS):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_IMS)
+        elif self.consume_parameter(self.PARAM_SIM_TYPE_NR):
+            self.init_simulation(self.PARAM_SIM_TYPE_NR)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_UMTS):
             self.init_simulation(self.PARAM_SIM_TYPE_UMTS)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_GSM):
@@ -237,10 +242,19 @@ class CellularBaseTest(base_test.BaseTestClass):
         if not sim_params:
             raise KeyError('Test config file does not contain '
                            'settings for ' + self.test_name)
+
+        # Changes the single band sim_params type to list to make it easier
+        # to apply the class parameters to test parameters for multiple bands
+        if not isinstance(sim_params, list):
+            sim_params = [sim_params]
+        num_band = len(sim_params)
+
         # Get class parameters and apply if not overwritten by test parameters
         for key, val in self.test_configs.items():
-            if not key.startswith('test_') and key not in sim_params:
-                sim_params[key] = val
+            if not key.startswith('test_'):
+                for idx in range(num_band):
+                    if key not in sim_params[idx]:
+                        sim_params[idx][key] = val
         self.log.info('Simulation parameters: ' + str(sim_params))
         self.simulation.configure(sim_params)
 
@@ -333,6 +347,9 @@ class CellularBaseTest(base_test.BaseTestClass):
         simulation_dictionary = {
             self.PARAM_SIM_TYPE_LTE: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_LTE_CA: lte_sim.LteSimulation,
+            # The LteSimulation class is able to handle NR cells as well.
+            # The long-term goal is to consolidate all simulation classes.
+            self.PARAM_SIM_TYPE_NR: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_UMTS: umts_sim.UmtsSimulation,
             self.PARAM_SIM_TYPE_GSM: gsm_sim.GsmSimulation,
             self.PARAM_SIM_TYPE_LTE_IMS: lteims_sim.LteImsSimulation
@@ -359,10 +376,21 @@ class CellularBaseTest(base_test.BaseTestClass):
         cellular_dut = AndroidCellularDut.AndroidCellularDut(
             self.dut, self.log)
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.cellular_simulator, self.log,
-                                           cellular_dut,
-                                           self.cellular_test_params,
-                                           self.calibration_table[sim_type])
+        if sim_type == self.PARAM_SIM_TYPE_NR:
+            self.simulation = simulation_class(
+                self.cellular_simulator,
+                self.log,
+                cellular_dut,
+                self.cellular_test_params,
+                self.calibration_table[sim_type],
+                nr_mode=self.PARAM_SIM_TYPE_NR)
+        else:
+            self.simulation = simulation_class(
+                self.cellular_simulator,
+                self.log,
+                cellular_dut,
+                self.cellular_test_params,
+                self.calibration_table[sim_type])
 
     def ensure_valid_calibration_table(self, calibration_table):
         """ Ensures the calibration table has the correct structure.
