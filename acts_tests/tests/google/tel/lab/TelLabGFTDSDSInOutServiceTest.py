@@ -47,7 +47,6 @@ IN_CALL_CASE = 4
 CALL_DATA_CASE = 5
 _VOLTE = "volte"
 
-
 class TelLabGFTDSDSInOutServiceTest(GFTInOutBaseTest):
     def __init__(self, controllers):
         GFTInOutBaseTest.__init__(self, controllers)
@@ -82,48 +81,56 @@ class TelLabGFTDSDSInOutServiceTest(GFTInOutBaseTest):
         tasks = [(set_dds_on_slot, (ad, dds_slot )) for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             asserts.skip("Fail to to set up DDS")
-        tasks = [(set_voice_sub_id, (ad, voice_slot )) for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
-            asserts.skip("Fail to to set voice to slot %s" %voice_slot)
+        for ad in self.android_devices:
+            voice_sub_id = get_subid_from_slot_index(self.log, ad, voice_slot)
+            if voice_sub_id == INVALID_SUB_ID:
+                asserts.skip("Failed to get sub ID ar slot %s.", voice_slot)
+            else:
+                ad.log.info("get_subid_from_slot_index voice_slot=%s. voice_sub_id=%s"
+                    , voice_slot, voice_sub_id)
+            if not set_voice_sub_id(ad, voice_sub_id):
+                ad.log.info("Fail to to set voice to slot %s" , voice_sub_id)
+            else:
+                ad.log.info("set voice to slot %s" , voice_sub_id)
         tasks = [(set_message_subid, (ad, sms_slot )) for ad in self.android_devices]
         if multithread_func(self.log, tasks):
-            asserts.skip("Fail to to set up sms to slot %s" %sms_slot)
-        if multithread_func(self.log, tasks):
-            for x in range (loop):
-                self.log.info("%s loop: %s/%s" %(self.current_test_name,x+1, loop))
-                if case == IDLE_CASE:
-                    asserts.assert_true(self._dsds_in_out_service_idle_test(idle_time),
-                        "Fail: %s." %("_dsds_in_out_service_idle_test failure"),
-                        extras={"failure_cause": self.my_error_msg})
-                elif case == DATA_TRANSFER_CASE:
-                    asserts.assert_true(self._dsds_in_out_service_data_transfer_test(idle_time),
-                        "Fail: %s." %("_dsds_in_out_service_data_transfer_test failure"),
-                        extras={"failure_cause": self.my_error_msg})
-                elif case == DATA_OFF_CASE:
-                    asserts.assert_true(self._dsds_in_out_service_data_off_test(idle_time),
-                        "Fail: %s." %("_dsds_in_out_service_data_off_test failure"),
-                        extras={"failure_cause": self.my_error_msg})
-                elif case == IN_CALL_CASE:
-                    asserts.assert_true(self._dsds_in_out_service_in_call_test(case, voice_slot,
-                        sms_slot,idle_time),
-                        "Fail: %s." %("_dsds_in_out_service_in_call_test failure"),
-                        extras={"failure_cause": self.my_error_msg})
-                elif case == CALL_DATA_CASE:
-                    asserts.assert_true(self._dsds_in_out_service_in_call_transfer_test(case,
-                        voice_slot,sms_slot, idle_time), "Fail: %s."
-                        %("_dsds_in_out_service_in_call_transfer_test failure"),
-                        extras={"failure_cause": self.my_error_msg})
+            asserts.skip("Fail to to set up sms to slot %s" , sms_slot)
+        else:
+            ad.log.info("set up sms to slot %s" , sms_slot)
 
-                tasks = [(wait_for_network_service, (self.log, ad, ))
-                    for ad in self.android_devices]
-                if not multithread_func(self.log, tasks):
-                    asserts.assert_true(False, "Fail: %s." %("wait_for_network_service failure"),
-                        extras={"failure_cause": self.my_error_msg})
-                tasks = [(self.verify_device_status, (ad, VOICE_CALL))
-                    for ad in self.android_devices]
-                asserts.assert_true(multithread_func(self.log, tasks),
-                    "Fail: %s." %("verify_device_status failure"),
+        for x in range (loop):
+            self.log.info("%s loop: %s/%s" , self.current_test_name, x+1, loop))
+            if case == IDLE_CASE:
+                asserts.assert_true(self._dsds_in_out_service_idle_test(idle_time),
+                    "Fail: %s." %("_dsds_in_out_service_idle_test failure"),
                     extras={"failure_cause": self.my_error_msg})
+            elif case == DATA_TRANSFER_CASE:
+                asserts.assert_true(self._dsds_in_out_service_data_transfer_test(idle_time),
+                    "Fail: %s." %("_dsds_in_out_service_data_transfer_test failure"),
+                    extras={"failure_cause": self.my_error_msg})
+            elif case == DATA_OFF_CASE:
+                asserts.assert_true(self._dsds_in_out_service_data_off_test(idle_time),
+                    "Fail: %s." %("_dsds_in_out_service_data_off_test failure"),
+                    extras={"failure_cause": self.my_error_msg})
+            elif case == IN_CALL_CASE:
+                asserts.assert_true(self._dsds_in_out_service_in_call_test(idle_time),
+                    "Fail: %s." %("_dsds_in_out_service_in_call_test failure"),
+                    extras={"failure_cause": self.my_error_msg})
+            elif case == CALL_DATA_CASE:
+                asserts.assert_true(self._dsds_in_out_service_in_call_transfer_test(idle_time),
+                    "Fail: %s." %("_dsds_in_out_service_in_call_transfer_test failure"),
+                    extras={"failure_cause": self.my_error_msg})
+
+            tasks = [(wait_for_network_service, (self.log, ad, ))
+                for ad in self.android_devices]
+            if not multithread_func(self.log, tasks):
+                asserts.assert_true(False, "Fail: %s." %("wait_for_network_service failure"),
+                    extras={"failure_cause": self.my_error_msg})
+            tasks = [(self.verify_device_status, (ad, VOICE_CALL))
+                for ad in self.android_devices]
+            asserts.assert_true(multithread_func(self.log, tasks),
+                "Fail: %s." %("verify_device_status failure"),
+                extras={"failure_cause": self.my_error_msg})
         return True
 
     def _dsds_in_out_service_idle_test(self, idle_time=60):
