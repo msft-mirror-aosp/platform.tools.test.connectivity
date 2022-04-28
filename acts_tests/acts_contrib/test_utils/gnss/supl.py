@@ -12,9 +12,9 @@ def set_supl_over_wifi_state(ad, turn_on):
         turn_on: (bool) True -> enable / False -> disable
     """
     ad.adb.remount()
-    xml_path_on_device = "/vendor/etc/gnss/gps.xml"
     folder = tempfile.mkdtemp()
     xml_path_on_host = os.path.join(folder, "gps.xml")
+    xml_path_on_device = "/vendor/etc/gnss/gps.xml"
     ad.pull_files(xml_path_on_device, xml_path_on_host)
 
     # register namespance to aviod adding ns0 into xml attributes
@@ -46,7 +46,7 @@ def _enable_supl_over_wifi(ad, node):
     """
     ad.log.info("Enable SUPL over wifi")
     attributes = {"SuplDummyCellInfo": "true", "SuplUseApn": "false", "SuplUseApnNI": "true",
-                    "SuplUseFwCellInfo": "false"}
+                  "SuplUseFwCellInfo": "false"}
     for key, value in attributes.items():
         node.set(key, value)
 
@@ -68,4 +68,4 @@ def _disable_supl_over_wifi(ad, node):
     ad.log.info("Disable SUPL over wifi")
     for attri in ["SuplDummyCellInfo", "SuplUseApnNI", "SuplUseFwCellInfo"]:
         node.attrib.pop(attri, None)
-        node.set("SuplUseApn", "true")
+    node.set("SuplUseApn", "true")
