@@ -449,8 +449,9 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             enabled: whether 256 QAM should be used
         """
         self.log.info('Set 256 QAM DL MCS enabled: ' + str(enabled))
-        self.dl_modulation = cmw500.ModulationType.Q256
-        self.dl_256_qam_enabled = True
+        self.dl_modulation = cmw500.ModulationType.Q256 if enabled \
+            else cmw500.ModulationType.Q64
+        self.dl_256_qam_enabled = enabled
 
     def set_ul_64_qam_enabled(self, bts_index, enabled):
         """ Determines what MCS table should be used for the uplink.
@@ -461,8 +462,9 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             enabled: whether 64 QAM should be used
         """
         self.log.info('Set 64 QAM UL MCS enabled: ' + str(enabled))
-        self.dl_modulation = cmw500.ModulationType.Q64
-        self.ul_64_qam_enabled = True
+        self.ul_modulation = cmw500.ModulationType.Q64 if enabled \
+            else cmw500.ModulationType.Q16
+        self.ul_64_qam_enabled = enabled
 
     def set_mac_padding(self, bts_index, mac_padding):
         """ Enables or disables MAC padding in the indicated base station.
