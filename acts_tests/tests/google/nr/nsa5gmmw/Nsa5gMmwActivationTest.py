@@ -24,11 +24,14 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import cycle_airplane_mode
 from acts_contrib.test_utils.tel.tel_5g_test_utils import test_activation_by_condition
+from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
 
 
 class Nsa5gMmwActivationTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
+        for ad in self.android_devices:
+            set_phone_silent_mode(self.log, ad, True)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)

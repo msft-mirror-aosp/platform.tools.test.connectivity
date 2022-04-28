@@ -67,9 +67,11 @@ class AbstractDeviceWlanDeviceBaseTest(WifiBaseTest):
         current_path = context.get_current_context().get_full_output_path()
         dhcp_full_out_path = os.path.join(current_path, "dhcp_log.txt")
 
-        dhcp_log_file = open(dhcp_full_out_path, 'w')
-        dhcp_log_file.write(self.access_point.get_dhcp_logs())
-        dhcp_log_file.close()
+        dhcp_log = self.access_point.get_dhcp_logs()
+        if dhcp_log:
+            dhcp_log_file = open(dhcp_full_out_path, 'w')
+            dhcp_log_file.write(dhcp_log)
+            dhcp_log_file.close()
 
         hostapd_logs = self.access_point.get_hostapd_logs()
         for interface in hostapd_logs:
