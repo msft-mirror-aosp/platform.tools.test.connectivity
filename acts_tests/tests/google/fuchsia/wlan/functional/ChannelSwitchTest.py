@@ -133,8 +133,8 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
                                              channel_num)
             channel_num_after_switch = self.access_point.get_current_channel(
                 self.in_use_interface)
-            asserts.assert_true(channel_num_after_switch == channel_num,
-                                'AP failed to channel switch')
+            asserts.assert_equal(channel_num_after_switch, channel_num,
+                                 'AP failed to channel switch')
             self.current_channel_num = channel_num
 
             # Check periodically to see if DUT stays connected. Sometimes
@@ -211,8 +211,8 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
             test_with_soft_ap=True)
 
     # TODO(fxbug.dev/84777): This test fails.
-    def test_channel_switch_regression_global_operating_class_115(
-            self) -> None:
+    def test_channel_switch_regression_global_operating_class_115(self
+                                                                  ) -> None:
         """Channel switch into, through, and out of global op. class 115 channels.
 
         Global operating class 115 is described in IEEE 802.11-2016 Table E-4.
@@ -243,8 +243,8 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
             test_with_soft_ap=True)
 
     # TODO(fxbug.dev/84777): This test fails.
-    def test_channel_switch_regression_global_operating_class_124(
-            self) -> None:
+    def test_channel_switch_regression_global_operating_class_124(self
+                                                                  ) -> None:
         """Switch into, through, and out of global op. class 124 channels.
 
         Global operating class 124 is described in IEEE 802.11-2016 Table E-4.
