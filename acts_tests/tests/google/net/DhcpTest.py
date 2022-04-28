@@ -17,15 +17,17 @@ import time
 from acts import asserts
 from acts.controllers.openwrt_ap import MOBLY_CONTROLLER_CONFIG_NAME as OPENWRT
 from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.net.net_test_utils import start_tcpdump
+from acts_contrib.test_utils.net.net_test_utils import stop_tcpdump
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from scapy.all import rdpcap, DHCP, IPv6
 from scapy.layers.inet6 import ICMPv6ND_NA as NA
 
-
 WLAN = "wlan0"
 PING_ADDR = "google.com"
 RAPID_COMMIT_OPTION = (80, b'')
+DEFAULT_IPV6_ALLROUTERS = "ff02::2"
 
 
 class DhcpTest(WifiBaseTest):
@@ -106,15 +108,16 @@ class DhcpTest(WifiBaseTest):
     def verify_gratuitous_na(self, packets):
         ipv6localaddress = self.dut.droid.connectivityGetLinkLocalIpv6Address(WLAN).strip("%wlan0")
         self.dut.log.info("Device local address : %s" % ipv6localaddress)
-        ipv6globaladdress = self.dut.droid.connectivityGetIPv6Addresses(WLAN)
+        ipv6globaladdress = sorted(self.dut.droid.connectivityGetIPv6Addresses(WLAN))
         self.dut.log.info("Device global address : %s" % ipv6globaladdress)
         target_address = []
         for pkt in packets:
-            if pkt.haslayer(NA) and pkt.haslayer(IPv6) and pkt[IPv6].src == ipv6localaddress:
+            if pkt.haslayer(NA) and pkt.haslayer(IPv6) and pkt[IPv6].src == ipv6localaddress\
+                    and pkt[IPv6].dst == DEFAULT_IPV6_ALLROUTERS:
                 # broadcast global address
                 target_address.append(pkt.tgt)
         self.dut.log.info("Broadcast target address : %s" % target_address)
-        asserts.assert_equal(ipv6globaladdress, target_address,
+        asserts.assert_equal(ipv6globaladdress, sorted(target_address),
                              "Target address from NA is not match to device ipv6 address.")
 
     @test_tracker_info(uuid="01148659-6a3d-4a74-88b6-04b19c4acaaa")
@@ -172,9 +175,11 @@ class DhcpTest(WifiBaseTest):
         """Verify DUT will send NA after ipv6 address set."""
         self.dut.adb.shell("device_config put connectivity ipclient_gratuitous_na_version 1")
         remote_pcap_path = self.openwrt.network_setting.start_tcpdump(self.test_name)
+        self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
         wutils.connect_to_wifi_network(self.dut, self.wifi_network)
         local_pcap_path = self.openwrt.network_setting.stop_tcpdump(
             remote_pcap_path, self.dut.device_log_path)
+        stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
         self.dut.log.info("pcap file path : %s" % local_pcap_path)
         packets = rdpcap(local_pcap_path)
         self.verify_gratuitous_na(packets)
