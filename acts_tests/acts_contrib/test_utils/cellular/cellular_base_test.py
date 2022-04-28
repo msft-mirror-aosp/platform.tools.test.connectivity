@@ -82,6 +82,8 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         TEST_PARAMS = self.TAG + '_params'
         self.cellular_test_params = self.user_params.get(TEST_PARAMS, {})
+        self.log.info(
+            'self.cellular_test_params: ' + str(self.cellular_test_params))
 
         # Unpack test parameters used in this class
         self.unpack_userparams(['custom_files'],
@@ -374,10 +376,21 @@ class CellularBaseTest(base_test.BaseTestClass):
         cellular_dut = AndroidCellularDut.AndroidCellularDut(
             self.dut, self.log)
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.cellular_simulator, self.log,
-                                           cellular_dut,
-                                           self.cellular_test_params,
-                                           self.calibration_table[sim_type])
+        if sim_type == self.PARAM_SIM_TYPE_NR:
+            self.simulation = simulation_class(
+                self.cellular_simulator,
+                self.log,
+                cellular_dut,
+                self.cellular_test_params,
+                self.calibration_table[sim_type],
+                nr_mode=self.PARAM_SIM_TYPE_NR)
+        else:
+            self.simulation = simulation_class(
+                self.cellular_simulator,
+                self.log,
+                cellular_dut,
+                self.cellular_test_params,
+                self.calibration_table[sim_type])
 
     def ensure_valid_calibration_table(self, calibration_table):
         """ Ensures the calibration table has the correct structure.
