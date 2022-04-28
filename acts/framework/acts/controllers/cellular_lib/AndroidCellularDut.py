@@ -36,6 +36,8 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
         """
         self.ad = ad
         self.log = logger
+        logger.info('Initializing Android DUT with baseband version {}'.format(
+            ad.adb.getprop('gsm.version.baseband')))
 
     def toggle_airplane_mode(self, new_state=True):
         """ Turns airplane mode on / off.
