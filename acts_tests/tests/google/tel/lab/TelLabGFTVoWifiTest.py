@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 
+
 import time
 import logging
 from acts import asserts
@@ -23,10 +24,12 @@ from acts.test_decorators import test_tracker_info
 from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.GFTInOutBaseTest import GFTInOutBaseTest
+from acts_contrib.test_utils.tel.tel_atten_utils import set_rssi
 from acts_contrib.test_utils.tel.gft_inout_defines import VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import VOLTE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import CSFB_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import WFC_CALL
+from acts_contrib.test_utils.tel.gft_inout_defines import NO_VOICE_CALL
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import IN_SERVICE_POWER_LEVEL
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_TIME
@@ -62,6 +65,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         self.wifi_ssid = self.user_params.get('wifi_network_ssid')
         self.wifi_pw = self.user_params.get('wifi_network_pw')
         self.my_error_msg = ""
+        self.rssi = ""
         logging.info("wifi_ssid = %s" %self.wifi_ssid)
         logging.info("wifi_pw = %s" %self.wifi_pw )
 
@@ -78,6 +82,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             for ad in self.android_devices:
                 log_screen_shot(ad, self.test_name)
             error_msg = "fail to setup volte"
+            self.log.error(error_msg)
             asserts.assert_true(False, "Fail: %s." %(error_msg),
                 extras={"failure_cause": self.my_error_msg})
             asserts.skip(error_msg)
@@ -87,7 +92,6 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
             for ad in self.android_devices:
                 log_screen_shot(ad, self.test_name)
             error_msg = "device does not support WFC! Skip test"
-            self.log.info(error_msg)
             asserts.skip(error_msg)
 
 
@@ -96,6 +100,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         tasks = [(toggle_airplane_mode, (self.log, ad, False))
             for ad in self.android_devices]
         multithread_func(self.log, tasks)
+
 
     @test_tracker_info(uuid="21ec1aff-a161-4dc9-9682-91e0dd8a13a7")
     @TelephonyBaseTest.tel_test_wrap
@@ -145,7 +150,7 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
                 self.log.info("device is not back to service")
         return test_result
 
-    def _enable_wifi_calling(self, wfc_mode, call_type=None,
+    def _enable_wifi_calling(self, wfc_mode, call_type=NO_VOICE_CALL,
         end_call=True, is_airplane_mode=False, talk_time=30):
         """ Enable Wi-Fi calling in Wi-Fi Preferred mode and connect to a
             valid Wi-Fi AP.
@@ -170,10 +175,10 @@ class TelLabGFTVoWifiTest(GFTInOutBaseTest):
         if not multithread_func(self.log, tasks):
             self.my_error_msg += "fail to setup WFC mode to %s, " %(wfc_mode)
             raise signals.TestFailure(self.my_error_msg)
-        if call_type != None:
-            if not self._voice_call(self.android_devices, call_type, end_call, talk_time):
-                self.log.error("%s failuer" %call_type)
-                return False
+        if call_type != NO_VOICE_CALL:
+           if not self._voice_call(self.android_devices, call_type, end_call, talk_time):
+               self.log.error("%s failuer" %call_type)
+               return False
         return True
 
     def _voice_call(self, ads, call_type, end_call=True, talk_time=15):
