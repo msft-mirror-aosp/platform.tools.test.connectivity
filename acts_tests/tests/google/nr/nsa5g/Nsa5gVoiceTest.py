@@ -56,6 +56,7 @@ from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_volte
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import install_dialer_apk
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import _test_call_long_duration
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -633,6 +634,9 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             None, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
         self.tel_logger.set_result(result.result_value)
+
+        toggle_airplane_mode(self.log, ads[0], False)
+
         if not result:
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": str(result.result_value)})
@@ -669,6 +673,9 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
             None, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
         self.tel_logger.set_result(result.result_value)
+
+        toggle_airplane_mode(self.log, ads[0], False)
+
         if not result:
             raise signals.TestFailure("Failed",
                 extras={"fail_reason": str(result.result_value)})
@@ -897,7 +904,7 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
         else:
             self.log.info("Call setup succeed")
 
-        if not wifi_cell_switching(self.log, ads[0], GEN_5G, self.wifi_network_ssid,
+        if not wifi_cell_switching(self.log, ads[0], None, self.wifi_network_ssid,
                                    self.wifi_network_pass):
             ads[0].log.error("Failed to do WIFI and Cell switch in call")
             result = False
@@ -1077,7 +1084,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
+        if not phone_setup_volte(
+                self.log, ads[0], nw_gen=GEN_5G, nr_type='nsa'):
             return False
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
