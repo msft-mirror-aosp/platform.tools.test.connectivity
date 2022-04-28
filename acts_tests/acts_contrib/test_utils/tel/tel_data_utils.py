@@ -709,6 +709,7 @@ def reboot_test(log, ad, wifi_ssid=None):
         voice_subid = get_outgoing_voice_sub_id(ad)
         sms_subid = get_outgoing_message_sub_id(ad)
 
+        sim_mode_before_reboot = ad.droid.telephonyGetPhoneCount()
         data_rat_before_reboot = get_network_rat_for_subscription(
             log, ad, data_subid, NETWORK_SERVICE_DATA)
         voice_rat_before_reboot = get_network_rat_for_subscription(
@@ -732,19 +733,23 @@ def reboot_test(log, ad, wifi_ssid=None):
 
             return False
 
-        sim_mode = ad.droid.telephonyGetPhoneCount()
+        sim_mode_after_reboot = ad.droid.telephonyGetPhoneCount()
+
+        if sim_mode_after_reboot != sim_mode_before_reboot:
+            ad.log.error(
+                "SIM mode changed! (Before reboot: %s; after reboot: %s)",
+                sim_mode_before_reboot, sim_mode_after_reboot)
+            return False
+
         if getattr(ad, 'dsds', False):
-            if sim_mode == 1:
+            if sim_mode_after_reboot == 1:
                 ad.log.error("Phone is in single SIM mode after reboot.")
                 return False
-            elif sim_mode == 2:
+            elif sim_mode_after_reboot == 2:
                 ad.log.info("Phone keeps being in dual SIM mode after reboot.")
         else:
-            if sim_mode == 1:
+            if sim_mode_after_reboot == 1:
                 ad.log.info("Phone keeps being in single SIM mode after reboot.")
-            elif sim_mode == 2:
-                ad.log.error("Phone is in dual SIM mode after reboot.")
-                return False
 
         data_subid_after_reboot = get_default_data_sub_id(ad)
         if data_subid_after_reboot != data_subid:
@@ -1866,7 +1871,9 @@ def test_wifi_cell_switching_in_call(log,
                                      ads,
                                      network_ssid,
                                      network_password,
-                                     new_gen=None):
+                                     new_gen=None,
+                                     verify_caller_func=None,
+                                     verify_callee_func=None):
     """Test data connection network switching during voice call when phone on <nw_gen>
     Args:
         log: log object.
@@ -1879,7 +1886,12 @@ def test_wifi_cell_switching_in_call(log,
 
     """
     result = True
-    if not call_setup_teardown(log, ads[0], ads[1], None, None, None,
+    if not call_setup_teardown(log,
+                               ads[0],
+                               ads[1],
+                               None,
+                               verify_caller_func,
+                               verify_callee_func,
                                5):
         log.error("Call setup failed")
         return False
