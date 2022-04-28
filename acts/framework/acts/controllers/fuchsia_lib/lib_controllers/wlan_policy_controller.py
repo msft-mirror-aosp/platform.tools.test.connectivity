@@ -85,10 +85,12 @@ class WlanPolicyController:
             self.log.debug(f"Paused session: {response.get('result')}")
 
         # Acquire control of policy layer
+        controller_errors = []
         while time.time() < end_time:
             # Create a client controller
             response = self.device.wlan_policy_lib.wlanCreateClientController()
             if response.get('error'):
+                controller_errors.append(response['error'])
                 self.log.debug(response['error'])
                 time.sleep(1)
                 continue
@@ -96,11 +98,15 @@ class WlanPolicyController:
             # channel, meaning the client controller was rejected.
             response = self.device.wlan_policy_lib.wlanGetSavedNetworks()
             if response.get('error'):
+                controller_errors.append(response['error'])
                 self.log.debug(response['error'])
                 time.sleep(1)
                 continue
             break
         else:
+            self.log.warning(
+                "Failed to create and use a WLAN policy client controller. Errors: ["
+                + "; ".join(controller_errors) + "]")
             raise WlanPolicyControllerError(
                 'Failed to create and use a WLAN policy client controller.')
 
