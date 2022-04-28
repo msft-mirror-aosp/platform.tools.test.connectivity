@@ -222,16 +222,16 @@ class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
             asserts.fail(f'DUT failed to get an IP address')
 
         expected_string = f'DHCPDISCOVER from'
-        asserts.assert_true(
-            dhcp_logs.count(expected_string) == 1,
-            f'Incorrect count of DHCP Discovers ("{expected_string}") in logs: '
+        asserts.assert_equal(
+            dhcp_logs.count(expected_string), 1,
+            f'Incorrect count of DHCP Discovers ("{expected_string}") in logs:\n'
             + dhcp_logs + "\n")
 
         expected_string = f'DHCPOFFER on {ip}'
-        asserts.assert_true(
-            dhcp_logs.count(expected_string) == 1,
-            f'Incorrect count of DHCP Offers ("{expected_string}") in logs: ' +
-            dhcp_logs + "\n")
+        asserts.assert_equal(
+            dhcp_logs.count(expected_string), 1,
+            f'Incorrect count of DHCP Offers ("{expected_string}") in logs:\n'
+            + dhcp_logs + "\n")
 
         expected_string = f'DHCPREQUEST for {ip}'
         asserts.assert_true(
