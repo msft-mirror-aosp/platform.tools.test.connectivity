@@ -709,6 +709,7 @@ def reboot_test(log, ad, wifi_ssid=None):
         voice_subid = get_outgoing_voice_sub_id(ad)
         sms_subid = get_outgoing_message_sub_id(ad)
 
+        sim_mode_before_reboot = ad.droid.telephonyGetPhoneCount()
         data_rat_before_reboot = get_network_rat_for_subscription(
             log, ad, data_subid, NETWORK_SERVICE_DATA)
         voice_rat_before_reboot = get_network_rat_for_subscription(
@@ -732,19 +733,23 @@ def reboot_test(log, ad, wifi_ssid=None):
 
             return False
 
-        sim_mode = ad.droid.telephonyGetPhoneCount()
+        sim_mode_after_reboot = ad.droid.telephonyGetPhoneCount()
+
+        if sim_mode_after_reboot != sim_mode_before_reboot:
+            ad.log.error(
+                "SIM mode changed! (Before reboot: %s; after reboot: %s)",
+                sim_mode_before_reboot, sim_mode_after_reboot)
+            return False
+
         if getattr(ad, 'dsds', False):
-            if sim_mode == 1:
+            if sim_mode_after_reboot == 1:
                 ad.log.error("Phone is in single SIM mode after reboot.")
                 return False
-            elif sim_mode == 2:
+            elif sim_mode_after_reboot == 2:
                 ad.log.info("Phone keeps being in dual SIM mode after reboot.")
         else:
-            if sim_mode == 1:
+            if sim_mode_after_reboot == 1:
                 ad.log.info("Phone keeps being in single SIM mode after reboot.")
-            elif sim_mode == 2:
-                ad.log.error("Phone is in dual SIM mode after reboot.")
-                return False
 
         data_subid_after_reboot = get_default_data_sub_id(ad)
         if data_subid_after_reboot != data_subid:
@@ -1256,63 +1261,69 @@ def test_call_setup_in_active_data_transfer(
         return call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
                                    caller_verifier, callee_verifier,
                                    wait_time_in_call)
+    try:
+        if rat:
+            if not phone_setup_on_rat(log,
+                                      ads[0],
+                                      rat,
+                                      is_airplane_mode=is_airplane_mode,
+                                      wfc_mode=wfc_mode,
+                                      wifi_ssid=wifi_ssid,
+                                      wifi_pwd=wifi_pwd,
+                                      nr_type=nr_type):
+                return False
+        else:
+            ads[0].log.debug("Skipping setup network rat since it is None")
 
-    if rat:
-        if not phone_setup_on_rat(log,
-                                  ads[0],
-                                  rat,
-                                  is_airplane_mode=is_airplane_mode,
-                                  wfc_mode=wfc_mode,
-                                  wifi_ssid=wifi_ssid,
-                                  wifi_pwd=wifi_pwd,
-                                  nr_type=nr_type):
+        if not verify_internet_connection(log, ads[0]):
+            ads[0].log.error("Internet connection is not available")
             return False
-    else:
-        ads[0].log.debug("Skipping setup network rat since it is None")
 
-    if not verify_internet_connection(log, ads[0]):
-        ads[0].log.error("Internet connection is not available")
-        return False
+        if call_direction == DIRECTION_MOBILE_ORIGINATED:
+            ad_caller = ads[0]
+            ad_callee = ads[1]
+        else:
+            ad_caller = ads[1]
+            ad_callee = ads[0]
+        ad_download = ads[0]
 
-    if call_direction == DIRECTION_MOBILE_ORIGINATED:
-        ad_caller = ads[0]
-        ad_callee = ads[1]
-    else:
-        ad_caller = ads[1]
-        ad_callee = ads[0]
-    ad_download = ads[0]
-
-    start_youtube_video(ad_download)
-    call_task = (_call_setup_teardown, (log, ad_caller, ad_callee,
-                                        ad_caller, None, None, 30))
-    download_task = active_file_download_task(log, ad_download)
-    results = run_multithread_func(log, [download_task, call_task])
-    if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
-        ad_download.log.info("After call hangup, audio is back to music")
-    else:
-        ad_download.log.warning(
-            "After call hang up, audio is not back to music")
-    ad_download.force_stop_apk("com.google.android.youtube")
-    if not results[1]:
-        log.error("Call setup failed in active data transfer.")
-    if results[0]:
-        ad_download.log.info("Data transfer succeeded.")
-    elif not allow_data_transfer_interruption:
-        ad_download.log.error(
-            "Data transfer failed with parallel phone call.")
-        return False
-    else:
-        ad_download.log.info("Retry data connection after call hung up")
-        if not verify_internet_connection(log, ad_download):
-            ad_download.log.error("Internet connection is not available")
+        start_youtube_video(ad_download)
+        call_task = (_call_setup_teardown, (log, ad_caller, ad_callee,
+                                            ad_caller, None, None, 30))
+        download_task = active_file_download_task(log, ad_download)
+        results = run_multithread_func(log, [download_task, call_task])
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
+        if not results[1]:
+            log.error("Call setup failed in active data transfer.")
+        if results[0]:
+            ad_download.log.info("Data transfer succeeded.")
+        elif not allow_data_transfer_interruption:
+            ad_download.log.error(
+                "Data transfer failed with parallel phone call.")
             return False
-    # Disable airplane mode if test under apm on.
-    toggle_airplane_mode(log, ads[0], False)
-    if rat and '5g' in rat and not check_current_network_5g(ads[0],
-                                                            nr_type=nr_type):
-        ads[0].log.error("Phone not attached on 5G after call.")
-        return False
-    return True
+        else:
+            ad_download.log.info("Retry data connection after call hung up")
+            if not verify_internet_connection(log, ad_download):
+                ad_download.log.error("Internet connection is not available")
+                return False
+
+        if is_airplane_mode:
+            toggle_airplane_mode(log, ads[0], False)
+
+        if rat and '5g' in rat and not check_current_network_5g(ads[0],
+                                                                nr_type=nr_type):
+            ads[0].log.error("Phone not attached on 5G after call.")
+            return False
+        return True
+    finally:
+        # Disable airplane mode if test under apm on.
+        if is_airplane_mode:
+            toggle_airplane_mode(log, ads[0], False)
 
 
 def test_call_setup_in_active_youtube_video(
@@ -1347,55 +1358,62 @@ def test_call_setup_in_active_youtube_video(
         True if success.
         False if failed.
     """
-    if rat:
-        if not phone_setup_on_rat(log,
-                                  ads[0],
-                                  rat,
-                                  is_airplane_mode=is_airplane_mode,
-                                  wfc_mode=wfc_mode,
-                                  wifi_ssid=wifi_ssid,
-                                  wifi_pwd=wifi_pwd,
-                                  nr_type=nr_type):
+    try:
+        if rat:
+            if not phone_setup_on_rat(log,
+                                      ads[0],
+                                      rat,
+                                      is_airplane_mode=is_airplane_mode,
+                                      wfc_mode=wfc_mode,
+                                      wifi_ssid=wifi_ssid,
+                                      wifi_pwd=wifi_pwd,
+                                      nr_type=nr_type):
+                return False
+        else:
+            ensure_phones_default_state(log, ads)
+
+        if not verify_internet_connection(log, ads[0]):
+            ads[0].log.error("Internet connection is not available")
             return False
-    else:
-        ensure_phones_default_state(log, ads)
 
-    if not verify_internet_connection(log, ads[0]):
-        ads[0].log.error("Internet connection is not available")
-        return False
+        if call_direction == DIRECTION_MOBILE_ORIGINATED:
+            ad_caller = ads[0]
+            ad_callee = ads[1]
+        else:
+            ad_caller = ads[1]
+            ad_callee = ads[0]
+        ad_download = ads[0]
 
-    if call_direction == DIRECTION_MOBILE_ORIGINATED:
-        ad_caller = ads[0]
-        ad_callee = ads[1]
-    else:
-        ad_caller = ads[1]
-        ad_callee = ads[0]
-    ad_download = ads[0]
+        if not start_youtube_video(ad_download):
+            ad_download.log.warning("Fail to bring up youtube video")
 
-    if not start_youtube_video(ad_download):
-        ad_download.log.warning("Fail to bring up youtube video")
+        if not call_setup_teardown(log, ad_caller, ad_callee, ad_caller,
+                                None, None, 30):
+            ad_download.log.error("Call setup failed in active youtube video")
+            result = False
+        else:
+            ad_download.log.info("Call setup succeed in active youtube video")
+            result = True
 
-    if not call_setup_teardown(log, ad_caller, ad_callee, ad_caller,
-                               None, None, 30):
-        ad_download.log.error("Call setup failed in active youtube video")
-        result = False
-    else:
-        ad_download.log.info("Call setup succeed in active youtube video")
-        result = True
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                    "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
 
-    if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
-        ad_download.log.info("After call hangup, audio is back to music")
-    else:
-        ad_download.log.warning(
-                "After call hang up, audio is not back to music")
-    ad_download.force_stop_apk("com.google.android.youtube")
-    # Disable airplane mode if test under apm on.
-    toggle_airplane_mode(log, ads[0], False)
-    if rat and '5g' in rat and not check_current_network_5g(ads[0],
-                                                            nr_type=nr_type):
-        ads[0].log.error("Phone not attached on 5G after call.")
-        result = False
-    return result
+        if is_airplane_mode:
+            toggle_airplane_mode(log, ads[0], False)
+
+        if rat and '5g' in rat and not check_current_network_5g(ads[0],
+                                                                nr_type=nr_type):
+            ads[0].log.error("Phone not attached on 5G after call.")
+            result = False
+        return result
+    finally:
+        # Disable airplane mode if test under apm on.
+        if is_airplane_mode:
+            toggle_airplane_mode(log, ads[0], False)
 
 
 def call_epdg_to_epdg_wfc(log,
@@ -1462,6 +1480,9 @@ def call_epdg_to_epdg_wfc(log,
 
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
+    if apm_mode:
+        toggle_airplane_mode(log, ads[0], False)
+
     if nw_gen == GEN_5G and not verify_5g_attach_for_both_devices(
         log, ads, nr_type=nr_type):
         log.error("Phone not attached on 5G after epdg call.")
@@ -1491,43 +1512,46 @@ def verify_toggle_apm_tethering_internet_connection(log, provider, clients, ssid
 
     log.info(
         "Provider turn on APM, verify no wifi/data on Client.")
+    try:
+        if not toggle_airplane_mode(log, provider, True):
+            log.error("Provider turn on APM failed.")
+            return False
+        time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
 
-    if not toggle_airplane_mode(log, provider, True):
-        log.error("Provider turn on APM failed.")
-        return False
-    time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+        if provider.droid.wifiIsApEnabled():
+            provider.log.error("Provider WiFi tethering not stopped.")
+            return False
 
-    if provider.droid.wifiIsApEnabled():
-        provider.log.error("Provider WiFi tethering not stopped.")
-        return False
+        if not verify_internet_connection(log, clients[0], expected_state=False):
+            clients[0].log.error(
+                "Client should not have Internet connection.")
+            return False
 
-    if not verify_internet_connection(log, clients[0], expected_state=False):
-        clients[0].log.error(
-            "Client should not have Internet connection.")
-        return False
+        wifi_info = clients[0].droid.wifiGetConnectionInfo()
+        clients[0].log.info("WiFi Info: {}".format(wifi_info))
+        if wifi_info[WIFI_SSID_KEY] == ssid:
+            clients[0].log.error(
+                "WiFi error. WiFi should not be connected.".format(
+                    wifi_info))
+            return False
 
-    wifi_info = clients[0].droid.wifiGetConnectionInfo()
-    clients[0].log.info("WiFi Info: {}".format(wifi_info))
-    if wifi_info[WIFI_SSID_KEY] == ssid:
-        clients[0].log.error(
-            "WiFi error. WiFi should not be connected.".format(
-                wifi_info))
-        return False
-
-    log.info("Provider turn off APM.")
-    if not toggle_airplane_mode(log, provider, False):
-        provider.log.error("Provider turn on APM failed.")
-        return False
-    time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-    if provider.droid.wifiIsApEnabled():
-        provider.log.error(
-            "Provider WiFi tethering should not on.")
-        return False
-    if not verify_internet_connection(log, provider):
-        provider.log.error(
-            "Provider should have Internet connection.")
-        return False
-    return True
+        log.info("Provider turn off APM.")
+        if not toggle_airplane_mode(log, provider, False):
+            provider.log.error("Provider turn off APM failed.")
+            return False
+        time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+        if provider.droid.wifiIsApEnabled():
+            provider.log.error(
+                "Provider WiFi tethering should not on.")
+            return False
+        if not verify_internet_connection(log, provider):
+            provider.log.error(
+                "Provider should have Internet connection.")
+            return False
+        return True
+    finally:
+        # Disable airplane mode before test end.
+        toggle_airplane_mode(log, provider, False)
 
 
 def verify_tethering_entitlement_check(log, provider):
@@ -1847,7 +1871,9 @@ def test_wifi_cell_switching_in_call(log,
                                      ads,
                                      network_ssid,
                                      network_password,
-                                     new_gen=None):
+                                     new_gen=None,
+                                     verify_caller_func=None,
+                                     verify_callee_func=None):
     """Test data connection network switching during voice call when phone on <nw_gen>
     Args:
         log: log object.
@@ -1860,7 +1886,12 @@ def test_wifi_cell_switching_in_call(log,
 
     """
     result = True
-    if not call_setup_teardown(log, ads[0], ads[1], None, None, None,
+    if not call_setup_teardown(log,
+                               ads[0],
+                               ads[1],
+                               None,
+                               verify_caller_func,
+                               verify_callee_func,
                                5):
         log.error("Call setup failed")
         return False
