@@ -382,7 +382,7 @@ class TelLabGFTAirplaneModeTest(GFTInOutBaseTest):
             for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             raise signals.TestFailure("_airplane_mode_wifi_hotspot failure: %s"
-                %(self.my_error_msg)))
+                %(self.my_error_msg))
         return True
 
     @test_tracker_info(uuid="f21f4554-7755-4019-b8a2-6f86d1ebd57a")

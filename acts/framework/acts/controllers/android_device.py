@@ -1069,12 +1069,13 @@ class AndroidDevice:
         except Exception as e:
             self.log.warning("Fail to stop package %s: %s", package_name, e)
 
-    def take_bug_report(self, test_name, begin_time):
+    def take_bug_report(self, test_name=None, begin_time=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
             test_name: Name of the test case that triggered this bug report.
-            begin_time: Epoch time when the test started.
+            begin_time: Epoch time when the test started. If none is specified,
+                the current time will be used.
         """
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
         new_br = True
@@ -1088,15 +1089,18 @@ class AndroidDevice:
             new_br = False
         br_path = self.device_log_path
         os.makedirs(br_path, exist_ok=True)
+        epoch = begin_time if begin_time else utils.get_current_epoch_time()
         time_stamp = acts_logger.normalize_log_line_timestamp(
-            acts_logger.epoch_to_log_line_timestamp(begin_time))
-        out_name = "AndroidDevice%s_%s" % (
-            self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
+            acts_logger.epoch_to_log_line_timestamp(epoch))
+        out_name = "AndroidDevice%s_%s" % (self.serial, time_stamp)
         out_name = "%s.zip" % out_name if new_br else "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
-        self.log.info("Taking bugreport for %s.", test_name)
+        if test_name:
+            self.log.info("Taking bugreport for %s.", test_name)
+        else:
+            self.log.info("Taking bugreport.")
         if new_br:
             out = self.adb.shell("bugreportz", timeout=BUG_REPORT_TIMEOUT)
             if not out.startswith("OK"):
@@ -1108,8 +1112,11 @@ class AndroidDevice:
         else:
             self.adb.bugreport(" > {}".format(full_out_path),
                                timeout=BUG_REPORT_TIMEOUT)
-        self.log.info("Bugreport for %s taken at %s.", test_name,
-                      full_out_path)
+        if test_name:
+            self.log.info("Bugreport for %s taken at %s.", test_name,
+                          full_out_path)
+        else:
+            self.log.info("Bugreport taken at %s.", test_name, full_out_path)
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
 
     def get_file_names(self,
@@ -1200,8 +1207,7 @@ class AndroidDevice:
             if crashes:
                 crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
-            test_name = test_name or time.strftime("%Y-%m-%d-%Y-%H-%M-%S")
-            crash_log_path = os.path.join(self.log_path, test_name,
+            crash_log_path = os.path.join(self.device_log_path,
                                           "Crashes_%s" % self.serial)
             os.makedirs(crash_log_path, exist_ok=True)
             self.pull_files(crash_reports, crash_log_path)

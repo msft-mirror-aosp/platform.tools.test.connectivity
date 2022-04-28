@@ -41,10 +41,11 @@ _NO_SERVICE_TIME = 30
 _ERROR_MSG_DATA_TRANSFER_FAILURE = "_test_in_out_service_data_transfer failure"
 _ERROR_MSG_IDLE_FAILURE = "_test_in_out_service_idle failure"
 
-
 class TelLabGFTDSDSTest(GFTInOutBaseTest):
     def __init__(self, controllers):
+        # requirs 2 android devices to run DSDS test
         GFTInOutBaseTest.__init__(self, controllers)
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
         self.my_error_msg = ""
 
     def teardown_test(self):
@@ -84,8 +85,8 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_msim_5g_esim_5g_dds_sim2(self, loop=1):
         '''
-             1.7.20 [SA/NSA][DDS:SIM2][SIM1:5G, SIM2:5G]
-             Attach to 5G after in/out service during idle.
+            1.7.20 [SA/NSA][DDS:SIM2][SIM1:5G, SIM2:5G]
+            Attach to 5G after in/out service during idle.
             SIM1 (pSIM) : Carrier 1 with 5G SIM.
             SIM2 (eSIM) : Carrier 2 with 5G SIM.
             DDS (Data preferred) on SIM2
@@ -160,6 +161,8 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
                 loop: repeat this test cases for how many times
             Returns:
                 True if pass; False if fail
+            Raises:
+                TestFailure if not success.
         '''
         for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
@@ -190,7 +193,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
             Returns:
                 True if pass; False if fail
         '''
-            for x in range(self.user_params.get("dsds_io_cycle", 1)):
+        for x in range(self.user_params.get("dsds_io_cycle", 1)):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
             asserts.assert_true(
                 self._test_in_out_service_idle(_5G_VOLTE, _VOLTE, 0),
@@ -409,7 +412,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
 
 
     def _test_in_out_service_idle(self, psim_rat=_5G_VOLTE , esim_rat=_5G_VOLTE,
-                                  dds_slot =0, momt_direction="mo"):
+                                  dds_slot=0, momt_direction="mo"):
         ad = self.android_devices[0]
         set_dds_on_slot(ad, dds_slot)
         self.adjust_cellular_signal(NO_SERVICE_POWER_LEVEL)
@@ -419,7 +422,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
 
 
     def _test_in_out_service_data_transfer(self, psim_rat=_5G_VOLTE , esim_rat=_5G_VOLTE,
-                                           dds_slot =0, momt_direction="mo"):
+                                           dds_slot=0, momt_direction="mo"):
         ad = self.android_devices[0]
         set_dds_on_slot(ad, dds_slot)
         # start streaming
@@ -437,6 +440,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
         # Make a MOMT voice on SIM1
         test_result = dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             0,
             None,
@@ -447,6 +451,7 @@ class TelLabGFTDSDSTest(GFTInOutBaseTest):
         # Make a MOMT voice on SIM2
         test_result = dsds_voice_call_test(
             self.log,
+            self.tel_logger,
             self.android_devices,
             1,
             None,
