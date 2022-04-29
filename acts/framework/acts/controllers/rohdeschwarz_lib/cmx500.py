@@ -143,10 +143,11 @@ class TransmissionModes(Enum):
     TM9 = 9
 
 
+# For mimo 1x1, also set_num_crs_antenna_ports to 1
 MIMO_MAX_LAYER_MAPPING = {
-    MimoModes.MIMO1x1: 1,
+    MimoModes.MIMO1x1: 2,
     MimoModes.MIMO2x2: 2,
-    MimoModes.MIMO4x4: 3,
+    MimoModes.MIMO4x4: 4,
 }
 
 
