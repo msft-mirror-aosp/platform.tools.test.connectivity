@@ -111,11 +111,11 @@ class WlanRvrTest(WifiBaseTest):
     """
 
     def __init__(self, controllers):
-        super().__init__(self, controllers)
+        super().__init__(controllers)
         self.rvr_graph_summary = []
 
     def setup_class(self):
-        super(WlanRvrTest, self).setup_class()
+        super().setup_class()
         if 'dut' in self.user_params:
             if self.user_params['dut'] == 'fuchsia_devices':
                 self.dut = create_wlan_device(self.fuchsia_devices[0])
