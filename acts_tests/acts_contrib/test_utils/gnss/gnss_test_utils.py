@@ -301,7 +301,6 @@ def _init_device(ad):
         ad: An AndroidDevice object.
     """
     enable_gnss_verbose_logging(ad)
-    enable_compact_and_particle_fusion_log(ad)
     prepare_gps_overlay(ad)
     if check_chipset_vendor_by_qualcomm(ad):
         disable_xtra_throttle(ad)
