@@ -84,7 +84,7 @@ class ChannelSweepTest(WifiBaseTest):
     """
 
     def __init__(self, controllers):
-        super().__init__(self, controllers)
+        super().__init__(controllers)
         if 'channel_sweep_test_params' in self.user_params:
             self.time_to_wait_for_ip_addr = self.user_params[
                 'channel_sweep_test_params'].get(

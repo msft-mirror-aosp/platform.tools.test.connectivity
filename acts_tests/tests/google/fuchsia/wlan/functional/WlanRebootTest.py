@@ -109,7 +109,7 @@ class WlanRebootTest(WifiBaseTest):
     """
 
     def __init__(self, controllers):
-        super().__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
         super().setup_class()
