@@ -71,7 +71,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
     """
 
     def __init__(self, controllers):
-        super().__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = [
             'test_11n_capabilities_24_HT20',
             'test_11n_capabilities_24_HT40_lower',

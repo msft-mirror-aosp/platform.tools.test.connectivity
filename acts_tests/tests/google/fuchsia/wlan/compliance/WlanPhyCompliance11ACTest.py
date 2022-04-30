@@ -115,7 +115,7 @@ class WlanPhyCompliance11ACTest(WifiBaseTest):
     """
 
     def __init__(self, controllers):
-        super().__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = [
             'test_11ac_capabilities_20mhz_open',
             'test_11ac_capabilities_40mhz_open',
