@@ -34,7 +34,6 @@ from acts.keys import Config
 from acts_contrib.test_utils.net import net_test_utils as nutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
-from mobly import utils
 from mobly.base_test import STAGE_NAME_TEARDOWN_CLASS
 
 AP_1 = 0
@@ -43,7 +42,6 @@ MAX_AP_COUNT = 2
 
 
 class WifiBaseTest(BaseTestClass):
-
     def __init__(self, configs):
         super().__init__(configs)
         self.enable_packet_log = False
@@ -942,7 +940,6 @@ class WifiBaseTest(BaseTestClass):
 
     @staticmethod
     def wifi_test_wrap(fn):
-
         def _safe_wrap_test_case(self, *args, **kwargs):
             test_id = "%s:%s:%s" % (self.__class__.__name__, self.test_name,
                                     self.log_begin_time.replace(' ', '-'))
