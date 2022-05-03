@@ -31,18 +31,18 @@ from acts.utils import start_standing_subprocess
 
 _LS_MASK_NAME = "Lassen default + TCP"
 
-_LS_ENABLE_LOG_SHELL = f"""\
+_LS_ENABLE_LOG_SHELL = f'\
 am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver \
-    -a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
-    -e intent_key_enable "true" -e intent_key_config "{_LS_MASK_NAME}" \
-    --ei intent_key_max_log_size_mb 100 --ei intent_key_max_number_of_files 100
-"""
-_LS_DISABLE_LOG_SHELL = """\
+-a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
+-e intent_key_enable "true" -e intent_key_config "{_LS_MASK_NAME}" \
+--ei intent_key_max_log_size_mb 100 --ei intent_key_max_number_of_files 100'
+_LS_DISABLE_LOG_SHELL = '\
 am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver \
-    -a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
-    -e intent_key_enable "false"
-"""
-
+-a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING \
+-e intent_key_enable "false"'
+_LS_GET_LOG_STATUS_SHELL = 'getprop vendor.sys.modem.logging.status'
+_LS_START_LS_TIMEOUT_SECS = 30
+_LS_STOP_LS_TIMEOUT_SECS = 30
 
 def check_if_tensor_platform(ad):
     """Check if current platform belongs to the Tensor platform
@@ -119,6 +119,15 @@ def start_dsp_logger_p21(ad, retry=3):
     return False
 
 
+def is_sdm_logger_running(ad):
+    """Queries the status of SDM logger.
+
+    Returns:
+      True if the SDM logger is runninng.
+    """
+    return "true" in ad.adb.shell(_LS_GET_LOG_STATUS_SHELL, ignore_status=True)
+
+
 def start_sdm_logger(ad):
     """Start SDM logger."""
     if not getattr(ad, "sdm_log", True): return
@@ -137,36 +146,37 @@ def start_sdm_logger(ad):
     # Disable modem logging already running
     stop_sdm_logger(ad)
 
-    # start logging
-    ad.log.debug("start sdm logging")
-    while int(
-        ad.adb.shell(f"find {ad.sdm_log_path} -type f "
-                     "-iname sbuff_profile.sdm | wc -l") == 0 or
-        int(
-            ad.adb.shell(f"find {ad.sdm_log_path} -type f "
-                         "-iname sbuff_[0-9]*.sdm* | wc -l")) == 0):
+    if not is_sdm_logger_running(ad):
+        ad.log.debug("starting sdm logger...")
         ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
-        time.sleep(5)
+
+        timeout = time.monotonic() + _LS_START_LS_TIMEOUT_SECS
+        while time.monotonic() < timeout:
+            time.sleep(1)
+            if is_sdm_logger_running(ad):
+                ad.log.info('SDM logger has started')
+                break
+        else:
+            raise RuntimeError(
+                'Timed out while waiting for SDM logger to start.')
+
 
 
 def stop_sdm_logger(ad):
     """Stop SDM logger."""
-    ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
-    cycle = 1
-
-    ad.log.debug("stop sdm logging")
-    while int(
-        ad.adb.shell(
-            f"find {ad.sdm_log_path} -type f -iname sbuff_profile.sdm -o "
-            "-iname sbuff_[0-9]*.sdm* | wc -l")) != 0:
-        if cycle == 1 and int(
-            ad.adb.shell(f"find {ad.sdm_log_path} -type f "
-                         "-iname sbuff_profile.sdm | wc -l")) == 0:
-            ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
-            time.sleep(5)
+    if is_sdm_logger_running(ad):
+        ad.log.info("Stopping SDM logger...")
         ad.adb.shell(_LS_DISABLE_LOG_SHELL, ignore_status=True)
-        cycle += 1
-        time.sleep(15)
+
+        timeout = time.monotonic() + _LS_STOP_LS_TIMEOUT_SECS
+        while time.monotonic() < timeout:
+            time.sleep(1)
+            if not is_sdm_logger_running(ad):
+                ad.log.info('SDM logger has stoped')
+                break
+        else:
+            raise RuntimeError(
+                'Timed out while waiting for SDM logger to stop.')
 
 
 def start_sdm_loggers(log, ads):
