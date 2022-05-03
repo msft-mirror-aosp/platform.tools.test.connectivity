@@ -197,11 +197,9 @@ class Dhcpv4InteropFixture(WifiBaseTest):
         self.log.debug('DHCP Configuration:\n' +
                        dhcp_conf.render_config_file() + "\n")
 
-        dhcp_logs_before = self.access_point.get_dhcp_logs()
+        dhcp_logs_before = self.access_point.get_dhcp_logs().split('\n')
         self.access_point.start_dhcp(dhcp_conf=dhcp_conf)
         self.connect(ap_params=ap_params)
-        dhcp_logs_after = self.access_point.get_dhcp_logs()
-        dhcp_logs = dhcp_logs_after.replace(dhcp_logs_before, '')
 
         # Typical log lines look like:
         # dhcpd[26695]: DHCPDISCOVER from f8:0f:f9:3d:ce:d1 via wlan1
@@ -214,6 +212,11 @@ class Dhcpv4InteropFixture(WifiBaseTest):
         except ConnectionError:
             self.log.warn(dhcp_logs)
             asserts.fail(f'DUT failed to get an IP address')
+
+        # Get updates to DHCP logs
+        dhcp_logs = self.access_point.get_dhcp_logs()
+        for line in dhcp_logs_before:
+            dhcp_logs = dhcp_logs.replace(line, '')
 
         expected_string = f'DHCPDISCOVER from'
         asserts.assert_equal(
@@ -249,7 +252,6 @@ class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
     In theory, these are more similar to unit tests than ACTS tests, but
     since they interact with hardware (specifically, the AP), we have to
     write and run them like the rest of the ACTS tests."""
-
     def test_invalid_options_not_accepted(self):
         """Ensures the DHCP server doesn't accept invalid options"""
         ap_params = self.setup_ap()
@@ -280,7 +282,6 @@ class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
 
 class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
     """DhcpV4 tests which validate basic DHCP client/server interactions."""
-
     def test_basic_dhcp_assignment(self):
         self.run_test_case_expect_dhcp_success(settings={
             'dhcp_options': {},
@@ -345,7 +346,6 @@ class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
 
 
 class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
-
     def setup_test(self):
         super().setup_test()
         self.extra_addresses = []
