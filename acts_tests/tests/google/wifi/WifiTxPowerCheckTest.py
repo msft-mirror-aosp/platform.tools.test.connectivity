@@ -95,7 +95,7 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             test_types=[
                 'test_tx_power',
             ],
-            country_codes=['US', 'GB', 'JP'],
+            country_codes=['US', 'GB', 'JP', 'CA', 'AU'],
             sar_states=range(0, 13))
 
     def setup_class(self):
@@ -703,11 +703,16 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
                 last_est_out = self.dut.adb.shell(
                     "wl curpower | grep 'Last est. power'", ignore_status=True)
                 if "Last est. power" in last_est_out:
-                    per_chain_powers = last_est_out.split(
-                        ':')[1].strip().split('  ')
-                    per_chain_powers = [
-                        float(power) for power in per_chain_powers
-                    ]
+                    try:
+                        per_chain_powers = last_est_out.split(
+                            ':')[1].strip().split('  ')
+                        per_chain_powers = [
+                            float(power) for power in per_chain_powers
+                        ]
+                    except:
+                        per_chain_powers = [0, 0]
+                        self.log.warning(
+                            'Could not parse output: {}'.format(last_est_out))
                     self.log.info(
                         'Current Tx Powers = {}'.format(per_chain_powers))
                     if per_chain_powers[0] > 0:
@@ -827,7 +832,7 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         wutils.set_wifi_country_code(self.dut, testcase_params['country_code'])
         wutils.wifi_connect(self.dut,
                             testcase_params['test_network'],
-                            num_of_tries=1,
+                            num_of_tries=5,
                             check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
