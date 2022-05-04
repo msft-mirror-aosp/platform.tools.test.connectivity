@@ -16,8 +16,14 @@
 
 from acts.controllers.android_lib.tel import tel_utils
 from acts.controllers.cellular_lib import BaseCellularDut
+import os
 
 GET_BUILD_VERSION = 'getprop ro.build.version.release'
+PIXELLOGGER_CONTROL = 'am broadcast -n com.android.pixellogger/.receiver.' \
+                      'AlwaysOnLoggingReceiver -a com.android.pixellogger.' \
+                      'service.logging.LoggingService.' \
+                      'ACTION_CONFIGURE_ALWAYS_ON_LOGGING ' \
+                      '-e intent_key_enable "{}"'
 
 NETWORK_TYPE_TO_BITMASK = {
     BaseCellularDut.PreferredNetworkType.LTE_ONLY: '01000001000000000000',
@@ -117,3 +123,14 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
 
         Will be deprecated and replaced by get_rx_tx_power_levels. """
         tel_utils.get_telephony_signal_strength(self.ad)
+
+    def start_modem_logging(self):
+        """ Starts on-device log collection. """
+        self.ad.adb.shell('rm /data/vendor/slog/*.* -f')
+        self.ad.adb.shell(PIXELLOGGER_CONTROL.format('true'))
+
+    def stop_modem_logging(self):
+        """ Stops log collection and pulls logs. """
+        output_path = self.ad.device_log_path + '/modem/'
+        os.makedirs(output_path, exist_ok=True)
+        self.ad.adb.shell(PIXELLOGGER_CONTROL.format('false'))
