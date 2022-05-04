@@ -53,7 +53,9 @@ class WlanPolicyController:
         self.policy_configured = False
         self._paused_session = False
 
-    def _configure_wlan(self, preserve_saved_networks, timeout=15):
+    # TODO(b/231252355): Lower default timeout to 15s once ffx becomes more
+    # performant and/or reliable.
+    def _configure_wlan(self, preserve_saved_networks, timeout=30):
         """Sets up wlan policy layer.
 
         Args:
