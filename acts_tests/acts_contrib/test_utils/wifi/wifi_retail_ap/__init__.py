@@ -18,11 +18,13 @@ import collections.abc
 import copy
 import fcntl
 import importlib
+import logging
 import os
 import selenium
 import splinter
 import time
 from acts import logger
+from webdriver_manager.chrome import ChromeDriverManager
 
 BROWSER_WAIT_SHORT = 1
 BROWSER_WAIT_MED = 3
@@ -115,6 +117,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
     The class is to be used within context managers (e.g. with statements) to
     ensure locks are always properly released.
     """
+
     def __init__(self, headless, timeout):
         """Constructor for BlockingBrowser class.
 
@@ -135,7 +138,8 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
         if headless:
             self.chrome_options.add_argument('--headless')
             self.chrome_options.add_argument('--disable-gpu')
-        self.lock_file_path = '/usr/local/bin/chromedriver'
+        self.executable_path = ChromeDriverManager(
+            log_level=logging.ERROR).install()
         self.timeout = timeout
 
     def __enter__(self):
@@ -146,7 +150,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
         session. If an exception occurs while starting the browser, the lock
         file is released.
         """
-        self.lock_file = open(self.lock_file_path, 'r')
+        self.lock_file = open(self.executable_path, 'r')
         start_time = time.time()
         while time.time() < start_time + self.timeout:
             try:
@@ -156,6 +160,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
                 continue
             try:
                 self.driver = selenium.webdriver.Chrome(
+                    executable_path=self.executable_path,
                     options=self.chrome_options,
                     desired_capabilities=self.chrome_capabilities)
                 self.element_class = splinter.driver.webdriver.WebDriverElement
@@ -245,6 +250,7 @@ class WifiRetailAP(object):
     If some functions such as set_power not supported by ap, checks will raise
     exceptions.
     """
+
     def __init__(self, ap_settings):
         self.ap_settings = ap_settings.copy()
         self.log = logger.create_tagged_trace_logger('AccessPoint|{}'.format(
