@@ -328,7 +328,7 @@ class WifiStressTest(WifiBaseTest):
         sec = self.stress_hours * 60 * 60
         start_time = time.time()
 
-        dl_args = "-p {} -t {} -R".format(self.iperf_server_port, sec)
+        dl_args = "-p {} -t {} -b1M -R".format(self.iperf_server_port, sec)
         dl = threading.Thread(target=self.run_long_traffic, args=(sec, dl_args, q))
         dl.start()
         dl.join()
