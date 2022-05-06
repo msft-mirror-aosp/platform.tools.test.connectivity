@@ -305,10 +305,7 @@ def _init_device(ad):
     if check_chipset_vendor_by_qualcomm(ad):
         disable_xtra_throttle(ad)
     enable_supl_mode(ad)
-    if is_device_wearable(ad):
-        ad.adb.shell("settings put global stay_on_while_plugged_in 7")
-    else:
-        ad.adb.shell("settings put system screen_off_timeout 1800000")
+    set_screen_always_on(ad)
     wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
     ad.droid.bluetoothToggleState(False)
@@ -320,6 +317,8 @@ def _init_device(ad):
     if not is_mobile_data_on(ad):
         set_mobile_data(ad, True)
     disable_ramdump(ad)
+    if is_device_wearable(ad):
+        disable_battery_defend(ad)
 
 
 def prepare_gps_overlay(ad):
@@ -819,7 +818,7 @@ def start_gnss_by_gtw_gpstool(ad,
         options = ("--es type {} --ei freq {} --ez BG {} --ez meas {} --ez "
                    "lowpower {}").format(type, freq, bgdisplay, meas, lowpower)
         cmd = cmd + " " + options
-    ad.adb.shell(cmd)
+    ad.adb.shell(cmd, ignore_status=True, timeout = 300)
     time.sleep(3)
 
 
@@ -2326,8 +2325,8 @@ def check_dpo_rate_via_brcm_log(ad, dpo_threshold, brcm_error_log_allowlist):
                                   brcm_error_log))
 
 
-def pair_to_wearable(watch, phone):
-    """Pair phone to watch via Bluetooth.
+def process_pair(watch, phone):
+    """Pair phone to watch via Bluetooth in OOBE.
 
     Args:
         watch: A wearable project.
@@ -2358,13 +2357,9 @@ def pair_to_wearable(watch, phone):
     # TODO (chenstanley)Need to re-structure for better code and test flow instead of simply waiting
     watch.log.info("Wait 3 mins for complete pairing process.")
     time.sleep(180)
-    watch.adb.shell("settings put global stay_on_while_plugged_in 7")
+    set_screen_always_on(watch)
     check_location_service(watch)
     enable_gnss_verbose_logging(watch)
-    if is_bluetooth_connected(watch, phone):
-        watch.log.info("Pairing successfully.")
-    else:
-        raise signals.TestFailure("Fail to pair watch and phone successfully.")
 
 
 def is_bluetooth_connected(watch, phone):
@@ -2393,7 +2388,7 @@ def detect_crash_during_tracking(ad, begin_time, type):
         ad.start_adb_logcat()
     for attr in gnss_crash_list:
         gnss_crash_result = ad.adb.shell(
-            "logcat -d | grep -E -i '%s'" % attr)
+            "logcat -d | grep -E -i '%s'" % attr, ignore_status=True, timeout = 300)
         if gnss_crash_result:
             start_gnss_by_gtw_gpstool(ad, state=False, type=type)
             raise signals.TestFailure(
@@ -2900,3 +2895,40 @@ def validate_adr_rate(ad, pass_criteria):
         # TODO: (diegowchung) add assertion once we have the expected criteria
         ad.log.warn("Usable rate: %s lower than expected: %s" %
                     (adr_statistic.usable_rate, pass_criteria))
+
+
+def pair_to_wearable(watch, phone):
+    """Pair watch to phone.
+
+    Args:
+        watch: A wearable project.
+        phone: A pixel phone.
+    Raise:
+        TestFailure: If pairing process could not success after 3 tries.
+    """
+    for _ in range(3):
+        process_pair(watch, phone)
+        if is_bluetooth_connected(watch, phone):
+            watch.log.info("Pairing successfully.")
+            return True
+    raise signals.TestFailure("Pairing is not successfully.")
+
+
+def disable_battery_defend(ad):
+    """Disable battery defend config to prevent battery defend message pop up
+    after connecting to the same charger for 4 days in a row.
+
+    Args:
+        ad: A wearable project.
+    """
+    for _ in range(5):
+        remount_device(ad)
+        ad.adb.shell("setprop vendor.battery.defender.disable 1")
+        # To simulate cable unplug and the status will be recover after device reboot.
+        ad.adb.shell("cmd battery unplug")
+        # Sleep 3 seconds for waiting adb commend changes config and simulates cable unplug.
+        time.sleep(3)
+        config_setting = ad.adb.shell("getprop vendor.battery.defender.state")
+        if config_setting == "DISABLED":
+            ad.log.info("Disable Battery Defend setting successfully.")
+            break
