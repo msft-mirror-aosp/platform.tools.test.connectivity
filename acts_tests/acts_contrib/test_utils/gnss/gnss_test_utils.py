@@ -300,6 +300,7 @@ def _init_device(ad):
     Args:
         ad: An AndroidDevice object.
     """
+    check_location_service(ad)
     enable_gnss_verbose_logging(ad)
     prepare_gps_overlay(ad)
     if check_chipset_vendor_by_qualcomm(ad):
@@ -309,7 +310,6 @@ def _init_device(ad):
     wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
     ad.droid.bluetoothToggleState(False)
-    check_location_service(ad)
     set_wifi_and_bt_scanning(ad, True)
     disable_private_dns_mode(ad)
     reboot(ad)
