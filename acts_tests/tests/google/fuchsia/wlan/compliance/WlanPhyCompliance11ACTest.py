@@ -22,9 +22,7 @@ from acts import utils
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.ap_lib import hostapd_constants
-from acts.controllers.ap_lib import hostapd_config
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 
@@ -108,7 +106,7 @@ def generate_test_name(settings):
 
 
 # 6912 test cases
-class WlanPhyCompliance11ACTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanPhyCompliance11ACTest(WifiBaseTest):
     """Tests for validating 11ac PHYS.
 
     Test Bed Requirement:
@@ -117,7 +115,7 @@ class WlanPhyCompliance11ACTest(AbstractDeviceWlanDeviceBaseTest):
     """
 
     def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = [
             'test_11ac_capabilities_20mhz_open',
             'test_11ac_capabilities_40mhz_open',

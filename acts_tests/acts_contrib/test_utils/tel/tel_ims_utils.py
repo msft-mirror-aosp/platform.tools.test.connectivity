@@ -396,6 +396,8 @@ def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
                 return True
 
             ad.log.info("Set wfc mode to %s for sub ID %s.", wfc_mode, sub_id)
+            ad.root_adb()
+            ad.adb.shell("setprop dbg.force_wfc_activated true")
             ad.droid.imsMmTelSetVoWiFiModeSetting(sub_id, wfc_mode)
             mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
             if mode != wfc_mode:

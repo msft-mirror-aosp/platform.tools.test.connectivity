@@ -24,12 +24,12 @@ from acts import asserts
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.utils import rand_ascii_str
+from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from typing import Sequence
 
 
-class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
+class ChannelSwitchTest(WifiBaseTest):
     # Time to wait between issuing channel switches
     WAIT_BETWEEN_CHANNEL_SWITCHES_S = 15
 
@@ -133,8 +133,8 @@ class ChannelSwitchTest(AbstractDeviceWlanDeviceBaseTest):
                                              channel_num)
             channel_num_after_switch = self.access_point.get_current_channel(
                 self.in_use_interface)
-            asserts.assert_true(channel_num_after_switch == channel_num,
-                                'AP failed to channel switch')
+            asserts.assert_equal(channel_num_after_switch, channel_num,
+                                 'AP failed to channel switch')
             self.current_channel_num = channel_num
 
             # Check periodically to see if DUT stays connected. Sometimes

@@ -16,7 +16,20 @@
 
 from acts.controllers.android_lib.tel import tel_utils
 from acts.controllers.cellular_lib import BaseCellularDut
+import os
 
+GET_BUILD_VERSION = 'getprop ro.build.version.release'
+PIXELLOGGER_CONTROL = 'am broadcast -n com.android.pixellogger/.receiver.' \
+                      'AlwaysOnLoggingReceiver -a com.android.pixellogger.' \
+                      'service.logging.LoggingService.' \
+                      'ACTION_CONFIGURE_ALWAYS_ON_LOGGING ' \
+                      '-e intent_key_enable "{}"'
+
+NETWORK_TYPE_TO_BITMASK = {
+    BaseCellularDut.PreferredNetworkType.LTE_ONLY: '01000001000000000000',
+    BaseCellularDut.PreferredNetworkType.NR_LTE: '11000001000000000000',
+    BaseCellularDut.PreferredNetworkType.WCDMA_ONLY: '00000100001110000100',
+}
 
 class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
     """ Android implementation of the cellular DUT class."""
@@ -29,6 +42,8 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
         """
         self.ad = ad
         self.log = logger
+        logger.info('Initializing Android DUT with baseband version {}'.format(
+            ad.adb.getprop('gsm.version.baseband')))
 
     def toggle_airplane_mode(self, new_state=True):
         """ Turns airplane mode on / off.
@@ -72,6 +87,22 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
         Args:
           type: an instance of class PreferredNetworkType
         """
+
+        # If android version is S or later, uses bit mask to set and return.
+        version = self.ad.adb.shell(GET_BUILD_VERSION)
+        try:
+            version_in_number = int(version)
+            if version_in_number > 11:
+                set_network_cmd = 'cmd phone set-allowed-network-types-for-users '
+                set_network_cmd += NETWORK_TYPE_TO_BITMASK[type]
+                self.ad.adb.shell(set_network_cmd)
+                get_network_cmd = 'cmd phone get-allowed-network-types-for-users'
+                allowed_network = self.ad.adb.shell(get_network_cmd)
+                self.log.info('The allowed network: {}'.format(allowed_network))
+                return
+        except ValueError:
+            self.log.info('The android version is older than S, use sl4a')
+
         if type == BaseCellularDut.PreferredNetworkType.LTE_ONLY:
             formatted_type = tel_utils.NETWORK_MODE_LTE_ONLY
         elif type == BaseCellularDut.PreferredNetworkType.WCDMA_ONLY:
@@ -92,3 +123,14 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
 
         Will be deprecated and replaced by get_rx_tx_power_levels. """
         tel_utils.get_telephony_signal_strength(self.ad)
+
+    def start_modem_logging(self):
+        """ Starts on-device log collection. """
+        self.ad.adb.shell('rm /data/vendor/slog/*.* -f')
+        self.ad.adb.shell(PIXELLOGGER_CONTROL.format('true'))
+
+    def stop_modem_logging(self):
+        """ Stops log collection and pulls logs. """
+        output_path = self.ad.device_log_path + '/modem/'
+        os.makedirs(output_path, exist_ok=True)
+        self.ad.adb.shell(PIXELLOGGER_CONTROL.format('false'))

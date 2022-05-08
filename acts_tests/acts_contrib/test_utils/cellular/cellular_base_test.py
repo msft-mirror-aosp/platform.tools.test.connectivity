@@ -29,7 +29,6 @@ from acts.controllers.cellular_lib import LteSimulation as lte_sim
 from acts.controllers.cellular_lib import UmtsSimulation as umts_sim
 from acts.controllers.cellular_lib import LteImsSimulation as lteims_sim
 
-from acts_contrib.test_utils.tel import tel_logging_utils
 from acts_contrib.test_utils.tel import tel_test_utils as telutils
 
 
@@ -41,6 +40,7 @@ class CellularBaseTest(base_test.BaseTestClass):
     PARAM_SIM_TYPE_LTE = "lte"
     PARAM_SIM_TYPE_LTE_CA = "lteca"
     PARAM_SIM_TYPE_LTE_IMS = "lteims"
+    PARAM_SIM_TYPE_NR = "nr"
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
@@ -76,11 +76,13 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         super().setup_class()
 
-        if not hasattr(self, 'dut'):
-            self.dut = self.android_devices[0]
+        self.cellular_dut = AndroidCellularDut.AndroidCellularDut(
+            self.android_devices[0], self.log)
 
         TEST_PARAMS = self.TAG + '_params'
         self.cellular_test_params = self.user_params.get(TEST_PARAMS, {})
+        self.log.info(
+            'self.cellular_test_params: ' + str(self.cellular_test_params))
 
         # Unpack test parameters used in this class
         self.unpack_userparams(['custom_files'],
@@ -90,7 +92,7 @@ class CellularBaseTest(base_test.BaseTestClass):
                                cmw500_port=None,
                                cmx500_ip=None,
                                cmx500_port=None,
-                               qxdm_logs=None)
+                               modem_logging=None)
 
         # Load calibration tables
         filename_calibration_table = (
@@ -220,6 +222,8 @@ class CellularBaseTest(base_test.BaseTestClass):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_CA)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_LTE_IMS):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_IMS)
+        elif self.consume_parameter(self.PARAM_SIM_TYPE_NR):
+            self.init_simulation(self.PARAM_SIM_TYPE_NR)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_UMTS):
             self.init_simulation(self.PARAM_SIM_TYPE_UMTS)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_GSM):
@@ -237,18 +241,27 @@ class CellularBaseTest(base_test.BaseTestClass):
         if not sim_params:
             raise KeyError('Test config file does not contain '
                            'settings for ' + self.test_name)
+
+        # Changes the single band sim_params type to list to make it easier
+        # to apply the class parameters to test parameters for multiple bands
+        if not isinstance(sim_params, list):
+            sim_params = [sim_params]
+        num_band = len(sim_params)
+
         # Get class parameters and apply if not overwritten by test parameters
         for key, val in self.test_configs.items():
-            if not key.startswith('test_') and key not in sim_params:
-                sim_params[key] = val
+            if not key.startswith('test_'):
+                for idx in range(num_band):
+                    if key not in sim_params[idx]:
+                        sim_params[idx][key] = val
         self.log.info('Simulation parameters: ' + str(sim_params))
         self.simulation.configure(sim_params)
 
-        # Enable QXDM logger if required
-        if self.qxdm_logs:
-            self.log.info('Enabling the QXDM logger.')
-            tel_logging_utils.set_qxdm_logger_command(self.dut)
-            tel_logging_utils.start_qxdm_logger(self.dut)
+        if self.modem_logging:
+            try:
+                self.cellular_dut.start_modem_logging()
+            except NotImplementedError:
+                self.log.error('Modem logging couldn\'t be started')
 
         # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
@@ -265,11 +278,8 @@ class CellularBaseTest(base_test.BaseTestClass):
         """
         super().teardown_test()
 
-        # If QXDM logging was enabled pull the results
-        if self.qxdm_logs:
-            self.log.info('Stopping the QXDM logger and pulling results.')
-            tel_logging_utils.stop_qxdm_logger(self.dut)
-            self.dut.get_qxdm_logs()
+        if self.modem_logging:
+            self.cellular_dut.stop_modem_logging()
 
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
@@ -333,6 +343,9 @@ class CellularBaseTest(base_test.BaseTestClass):
         simulation_dictionary = {
             self.PARAM_SIM_TYPE_LTE: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_LTE_CA: lte_sim.LteSimulation,
+            # The LteSimulation class is able to handle NR cells as well.
+            # The long-term goal is to consolidate all simulation classes.
+            self.PARAM_SIM_TYPE_NR: lte_sim.LteSimulation,
             self.PARAM_SIM_TYPE_UMTS: umts_sim.UmtsSimulation,
             self.PARAM_SIM_TYPE_GSM: gsm_sim.GsmSimulation,
             self.PARAM_SIM_TYPE_LTE_IMS: lteims_sim.LteImsSimulation
@@ -356,13 +369,22 @@ class CellularBaseTest(base_test.BaseTestClass):
         if sim_type not in self.calibration_table:
             self.calibration_table[sim_type] = {}
 
-        cellular_dut = AndroidCellularDut.AndroidCellularDut(
-            self.dut, self.log)
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.cellular_simulator, self.log,
-                                           cellular_dut,
-                                           self.cellular_test_params,
-                                           self.calibration_table[sim_type])
+        if sim_type == self.PARAM_SIM_TYPE_NR:
+            self.simulation = simulation_class(
+                self.cellular_simulator,
+                self.log,
+                self.cellular_dut,
+                self.cellular_test_params,
+                self.calibration_table[sim_type],
+                nr_mode=self.PARAM_SIM_TYPE_NR)
+        else:
+            self.simulation = simulation_class(
+                self.cellular_simulator,
+                self.log,
+                self.cellular_dut,
+                self.cellular_test_params,
+                self.calibration_table[sim_type])
 
     def ensure_valid_calibration_table(self, calibration_table):
         """ Ensures the calibration table has the correct structure.

@@ -18,7 +18,7 @@
 
 from datetime import datetime
 
-from acts import signals, utils
+from acts import signals
 from acts.controllers.ap_lib import (hostapd_ap_preset, hostapd_bss_settings,
                                      hostapd_constants, hostapd_security)
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest

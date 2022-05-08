@@ -594,10 +594,14 @@ class OpenWrtAP(object):
     """
     status = True
     for radio in self.radios:
-      str_output = self.ssh.run("wifi status %s" % radio).stdout
-      wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
-                              Loader=yaml.SafeLoader)
-      status = wifi_status[radio]["up"] and status
+      try:
+        str_output = self.ssh.run("wifi status %s" % radio).stdout
+        wifi_status = yaml.load(str_output.replace("\t", "").replace("\n", ""),
+                                Loader=yaml.SafeLoader)
+        status = wifi_status[radio]["up"] and status
+      except:
+        self.log.info("Failed to make ssh connection to the OpenWrt")
+        return False
     return status
 
   def verify_wifi_status(self, timeout=20):
@@ -641,3 +645,8 @@ class OpenWrtAP(object):
   def close_ssh(self):
     """Close SSH connection to AP."""
     self.ssh.close()
+
+  def reboot(self):
+    """Reboot Openwrt."""
+    self.ssh.run("reboot")
+

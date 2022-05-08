@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import ipaddress
-import itertools
 import random
 import time
 import re
@@ -29,11 +27,10 @@ from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts.controllers.utils_lib.commands import ip
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
+class Dhcpv4InteropFixture(WifiBaseTest):
     """Test helpers for validating DHCPv4 Interop
 
     Test Bed Requirement:
@@ -41,9 +38,6 @@ class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
     * One Access Point
     """
     access_point: AccessPoint
-
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
 
     def setup_class(self):
         super().setup_class()
@@ -222,16 +216,16 @@ class Dhcpv4InteropFixture(AbstractDeviceWlanDeviceBaseTest):
             asserts.fail(f'DUT failed to get an IP address')
 
         expected_string = f'DHCPDISCOVER from'
-        asserts.assert_true(
-            dhcp_logs.count(expected_string) == 1,
-            f'Incorrect count of DHCP Discovers ("{expected_string}") in logs: '
+        asserts.assert_equal(
+            dhcp_logs.count(expected_string), 1,
+            f'Incorrect count of DHCP Discovers ("{expected_string}") in logs:\n'
             + dhcp_logs + "\n")
 
         expected_string = f'DHCPOFFER on {ip}'
-        asserts.assert_true(
-            dhcp_logs.count(expected_string) == 1,
-            f'Incorrect count of DHCP Offers ("{expected_string}") in logs: ' +
-            dhcp_logs + "\n")
+        asserts.assert_equal(
+            dhcp_logs.count(expected_string), 1,
+            f'Incorrect count of DHCP Offers ("{expected_string}") in logs:\n'
+            + dhcp_logs + "\n")
 
         expected_string = f'DHCPREQUEST for {ip}'
         asserts.assert_true(
@@ -351,6 +345,7 @@ class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
 
 
 class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
+
     def setup_test(self):
         super().setup_test()
         self.extra_addresses = []
