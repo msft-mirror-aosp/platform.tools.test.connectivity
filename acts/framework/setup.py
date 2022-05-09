@@ -59,12 +59,10 @@ versioned_deps = {
 if sys.version_info < (3, 8):
     versioned_deps['numpy'] = 'numpy<1.22'
     versioned_deps['scipy'] = 'scipy<1.8'
-
 if sys.version_info < (3, 7):
     versioned_deps['numpy'] = 'numpy<1.20'
     versioned_deps['scipy'] = 'scipy<1.6'
     versioned_deps['typing_extensions'] = 'typing_extensions==4.1.1'
-
 if sys.version_info < (3, 6):
     versioned_deps['numpy'] = 'numpy<1.19'
     versioned_deps['scipy'] = 'scipy<1.5'
