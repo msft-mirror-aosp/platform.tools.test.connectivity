@@ -25,12 +25,15 @@ from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_message_utils import message_test
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
 
 class Nsa5gMmwMmsTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
+        for ad in self.android_devices:
+            set_phone_silent_mode(self.log, ad, True)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)

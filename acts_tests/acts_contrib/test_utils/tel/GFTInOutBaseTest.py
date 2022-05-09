@@ -41,6 +41,8 @@ from acts_contrib.test_utils.tel.gft_inout_defines import WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_WIFI_AREA
 from acts_contrib.test_utils.tel.gft_inout_defines import NO_SERVICE_TIME
 from acts_contrib.test_utils.tel.gft_inout_defines import WAIT_FOR_SERVICE_TIME
+from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
+
 CELLULAR_PORT = 0
 WIFI_PORT = 1
 UNKNOWN = "UNKNOWN"
@@ -50,6 +52,7 @@ class GFTInOutBaseTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.my_error_msg = ""
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -101,8 +104,6 @@ class GFTInOutBaseTest(TelephonyBaseTest):
             return True if ceullular port is set
         """
         if self.user_params.get("Attenuator"):
-            if 'adjust_gradually' in self.user_params:
-                adjust_gradually = self.user_params.get('adjust_gradually')
             if adjust_gradually:
                 self.log.info("adjust cellular signal gradually to mini-circuits to %s" %(power))
                 self.adjust_atten_slowly(10, NO_SERVICE_AREA)
@@ -122,8 +123,6 @@ class GFTInOutBaseTest(TelephonyBaseTest):
             return True if wifi port is set
         """
         if self.user_params.get("Attenuator"):
-            if 'adjust_gradually' in self.user_params:
-                adjust_gradually = self.user_params.get('adjust_gradually')
             if adjust_gradually:
                 self.log.info("adjust wifi signal set mini-circuits to %s" %(power))
                 self.adjust_atten_slowly(10, NO_WIFI_AREA)
@@ -257,8 +256,8 @@ class GFTInOutBaseTest(TelephonyBaseTest):
                 self.log.info("verify_data_connection pass")
         if verify_voice:
             if call_type:
-                tasks = [(mo_voice_call, (self.log, ad, call_type, end_call, talk_time,
-                    voice_retries)) for ad in self.android_devices]
+                tasks = [(mo_voice_call, (self.log, ad, call_type, end_call,
+                    talk_time, voice_retries)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
                 log_screen_shot(ad, "verify_voice_call_fail")
                 ad.log.info("verify_voice_call_fail")
@@ -267,6 +266,7 @@ class GFTInOutBaseTest(TelephonyBaseTest):
                 self.log.info("verify_voice_call pass")
                 return True
         return True
+
 
     def _on_failure(self, error_msg="", assert_on_fail=True, test_result=False):
         """ operation on fail

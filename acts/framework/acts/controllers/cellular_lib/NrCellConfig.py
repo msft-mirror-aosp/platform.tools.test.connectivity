@@ -21,11 +21,22 @@ class NrCellConfig(base_cell.BaseCellConfig):
     """ NR cell configuration class.
 
     Attributes:
+        band: an integer indicating the required band number.
+        bandwidth: a integer indicating the required channel bandwidth
     """
+
+    PARAM_BAND = "band"
+    PARAM_BW = "bw"
+
     def __init__(self, log):
         """ Initialize the base station config by setting all its
-        parameters to None. """
+        parameters to None.
+        Args:
+            log: logger object.
+        """
         super().__init__(log)
+        self.band = None
+        self.bandwidth = None
 
     def configure(self, parameters):
         """ Configures an NR cell using a dictionary of parameters.
@@ -33,4 +44,17 @@ class NrCellConfig(base_cell.BaseCellConfig):
         Args:
             parameters: a configuration dictionary
         """
-        raise NotImplementedError()
+        if self.PARAM_BAND not in parameters:
+            raise ValueError(
+                "The configuration dictionary must include a key '{}' with "
+                "the required band number.".format(self.PARAM_BAND))
+
+        self.band = parameters[self.PARAM_BAND]
+
+        if self.PARAM_BW not in parameters:
+            raise ValueError(
+                "The config dictionary must include parameter {} with an "
+                "int value (to indicate 1.4 MHz use 14).".format(
+                    self.PARAM_BW))
+
+        self.bandwidth = parameters[self.PARAM_BW]
