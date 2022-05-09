@@ -369,11 +369,8 @@ class Nsa5gDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not phone_setup_volte(ads[0].log, ads[0]):
-            ads[0].log.error("Failed to setup VoLTE")
-            return False
-        return test_data_connectivity_multi_bearer(self.log, ads, GEN_5G, nr_type='nsa')
+        return test_data_connectivity_multi_bearer(
+            self.log, self.android_devices, '5g_volte', nr_type='nsa')
 
 
     @test_tracker_info(uuid="e88b226e-3842-4c45-a33e-d4fee7d8f6f0")
@@ -464,7 +461,16 @@ class Nsa5gDataTest(TelephonyBaseTest):
     @test_tracker_info(uuid="091cde37-0bac-4399-83aa-cbd5a83b07a1")
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_reboot(self):
-        """Test 5G NSA service availability after reboot."""
+        """Test 5G NSA service availability after reboot.
+
+        Ensure phone is on 5G NSA.
+        Ensure phone attach, data on, WiFi off and verify Internet.
+        Reboot Device.
+        Verify Network Connection.
+
+        Returns:
+            True if pass; False if fail.
+        """
         if not provision_device_for_5g(self.log, self.android_devices[0], nr_type='nsa'):
             return False
         if not verify_internet_connection(self.log, self.android_devices[0]):
