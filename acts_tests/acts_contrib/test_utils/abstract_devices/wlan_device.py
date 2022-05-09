@@ -55,6 +55,7 @@ class WlanDevice(object):
     Attributes:
         device: A generic WLAN device.
     """
+
     def __init__(self, device):
         self.device = device
         self.log = logging
@@ -74,7 +75,7 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def take_bug_report(self, test_name, begin_time):
+    def take_bug_report(self, test_name=None, begin_time=None):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
@@ -190,6 +191,7 @@ class AndroidWlanDevice(WlanDevice):
     Attributes:
         android_device: An Android WLAN device.
     """
+
     def __init__(self, android_device):
         super().__init__(android_device)
         self.identifier = android_device.serial
@@ -200,7 +202,7 @@ class AndroidWlanDevice(WlanDevice):
     def reset_wifi(self):
         awutils.reset_wifi(self.device)
 
-    def take_bug_report(self, test_name, begin_time):
+    def take_bug_report(self, test_name=None, begin_time=None):
         self.device.take_bug_report(test_name, begin_time)
 
     def get_log(self, test_name, begin_time):
@@ -319,6 +321,7 @@ class FuchsiaWlanDevice(WlanDevice):
     Attributes:
         fuchsia_device: A Fuchsia WLAN device.
     """
+
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
         self.identifier = fuchsia_device.ip
@@ -332,7 +335,7 @@ class FuchsiaWlanDevice(WlanDevice):
         """Stub for Fuchsia implementation."""
         pass
 
-    def take_bug_report(self, test_name, begin_time):
+    def take_bug_report(self, test_name=None, begin_time=None):
         """Stub for Fuchsia implementation."""
         self.device.take_bug_report(test_name, begin_time)
 

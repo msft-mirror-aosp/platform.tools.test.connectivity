@@ -929,7 +929,7 @@ def call_setup_teardown_for_subscription(
         begin_time,
         check_interval=CHECK_INTERVAL,
         tel_result_wrapper=TelResultWrapper(CallResult('SUCCESS')),
-        wait_time_in_call=WAIT_TIME_IN_CALL)
+        wait_time_in_call=wait_time_in_call)
 
 
 def two_phone_call_leave_voice_mail(
@@ -2639,7 +2639,7 @@ def truncate_phone_number(
     caller_number,
     callee_number,
     dialing_number_length,
-    skip_inter_area_call=True):
+    skip_inter_area_call=False):
     """This function truncates the phone number of the caller/callee to test
     7/10/11/12 digit dialing for North American numbering plan, and distinguish
     if this is an inter-area call by comparing the area code.
@@ -2672,8 +2672,8 @@ def truncate_phone_number(
         skip_inter_area_call = True
 
     if skip_inter_area_call:
-        msg = "Cannot make call from %s to %s by %s digits since inter-area "
-        "call is not allowed" % (
+        msg = "Cannot make call from %s to %s by %s digits since inter-area \
+        call is not allowed" % (
             caller_number, callee_number, dialing_number_length)
         log.info(msg)
         raise signals.TestSkip(msg)
@@ -2681,3 +2681,4 @@ def truncate_phone_number(
         callee_number = callee_dial_number
 
     return callee_number
+
