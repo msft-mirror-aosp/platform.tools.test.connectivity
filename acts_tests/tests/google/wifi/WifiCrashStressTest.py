@@ -21,7 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import disable_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 
 WifiEnums = wutils.WifiEnums
 
@@ -51,6 +51,8 @@ class WifiCrashStressTest(WifiBaseTest):
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
