@@ -324,6 +324,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Run test and log result
         # Start iperf session
         self.log.info('Starting iperf test.')
+        test_result = collections.OrderedDict()
         llstats_obj = wputils.LinkLayerStats(self.dut)
         llstats_obj.update_stats()
         if self.testbed_params['sniffer_enable'] and len(
@@ -362,16 +363,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         try:
             iperf_result = ipf.IPerfResult(iperf_file)
         except:
-            asserts.fail('Cannot get iperf result.')
-        llstats_obj.update_stats()
-        curr_llstats = llstats_obj.llstats_incremental.copy()
-        test_result = collections.OrderedDict()
-        test_result['testcase_params'] = testcase_params.copy()
-        test_result['ap_settings'] = self.access_point.ap_settings.copy()
-        test_result['attenuation'] = testcase_params['atten_level']
-        test_result['iperf_result'] = iperf_result
-        test_result['rssi_result'] = current_rssi
-        test_result['llstats'] = curr_llstats
+            iperf_result = ipf.IPerfResult('{}')  #empty iperf result
+            self.log.warning('Cannot get iperf result.')
         if iperf_result.instantaneous_rates:
             instantaneous_rates_Mbps = [
                 rate * 8 * (1.024**2)
@@ -396,6 +389,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             (tput_standard_deviation / numpy.mean(instantaneous_rates_Mbps)) *
             100
         }
+        llstats_obj.update_stats()
+        curr_llstats = llstats_obj.llstats_incremental.copy()
+        test_result['testcase_params'] = testcase_params.copy()
+        test_result['ap_settings'] = self.access_point.ap_settings.copy()
+        test_result['attenuation'] = testcase_params['atten_level']
+        test_result['iperf_result'] = iperf_result
+        test_result['rssi_result'] = current_rssi
+        test_result['llstats'] = curr_llstats
 
         llstats = (
             'TX MCS = {0} ({1:.1f}%). '
@@ -414,6 +415,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 test_result['iperf_summary']['avg_throughput'],
                 test_result['iperf_summary']['std_dev_percent'],
                 test_result['iperf_summary']['min_throughput'], llstats))
+
         self.log.info(test_message)
 
         self.testclass_results.append(test_result)
