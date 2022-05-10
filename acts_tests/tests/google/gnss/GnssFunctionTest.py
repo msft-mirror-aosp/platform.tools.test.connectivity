@@ -144,7 +144,7 @@ class GnssFunctionTest(BaseTestClass):
         if self.ad.droid.connectivityCheckAirplaneMode():
             self.ad.log.info("Force airplane mode off")
             self.ad.droid.connectivityToggleAirplaneMode(False)
-        if not is_wearable_btwifi and self.ad.droid.wifiCheckState():
+        if not is_wearable_btwifi(self.ad) and self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
         if not is_mobile_data_on(self.ad):
             set_mobile_data(self.ad, True)
