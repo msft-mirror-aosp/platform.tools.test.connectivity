@@ -25,6 +25,8 @@ from acts_contrib.test_utils.wifi import wifi_constants as wconsts
 from acts_contrib.test_utils.wifi.aware import aware_const as aconsts
 from acts_contrib.test_utils.wifi.aware import aware_test_utils as autils
 from acts_contrib.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts_contrib.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
+from acts_contrib.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 
 # arbitrary timeout for events
 EVENT_TIMEOUT = 10
@@ -67,6 +69,10 @@ class NonConcurrencyTest(AwareBaseTest):
         # start other service
         if is_p2p:
             dut.droid.wifiP2pInitialize()
+            wp2putils.p2p_create_group(dut)
+            dut.ed.pop_event(p2pconsts.CONNECTED_EVENT,
+                        p2pconsts.DEFAULT_TIMEOUT)
+            time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
         else:
             wutils.start_wifi_tethering(dut, self.TETHER_SSID, password=None)
 
@@ -76,14 +82,19 @@ class NonConcurrencyTest(AwareBaseTest):
         dut.droid.wifiAwarePublish(id, p_config)
         autils.wait_for_event(dut, aconsts.SESSION_CB_ON_SESSION_CONFIG_FAILED)
 
-        # P2P, SoftAp and Aware has same priority, aware will be available
+        # Aware will be available, and try to tear down other service when new service request.
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
 
-        # Start Aware again, publish should succeed.
+        # Try to attach again
         id = dut.droid.wifiAwareAttach()
-        autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
-        dut.droid.wifiAwarePublish(id, p_config)
-        autils.wait_for_event(dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+        if is_p2p or dut.droid.isSdkAtLeastS():
+            autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+            dut.droid.wifiAwarePublish(id, p_config)
+            autils.wait_for_event(dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+        else:
+            # SoftAp has higher priority on R device, attach should fail
+            autils.fail_on_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+
 
 
     def run_incompat_service_then_aware(self, is_p2p):
@@ -113,7 +124,11 @@ class NonConcurrencyTest(AwareBaseTest):
         asserts.assert_true(dut.droid.wifiIsAwareAvailable(), "Aware should be available")
 
         dut.droid.wifiAwareAttach()
-        autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+        if is_p2p or dut.droid.isSdkAtLeastS():
+            autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+        else:
+            # SoftAp has higher priority on R device, attach should fail
+            autils.fail_on_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
 
     def run_aware_then_connect_to_new_ap(self):
         """Validate interaction of Wi-Fi Aware and infra (STA) association with randomized MAC
@@ -211,6 +226,10 @@ class NonConcurrencyTest(AwareBaseTest):
     def test_run_aware_then_softap(self):
         """Validate that a running Aware session terminates when softAp is
     started"""
+        #Adding dbs support verifying before test start
+        asserts.skip_if(
+            self.android_devices[0].model not in self.dbs_supported_models,
+            "Device %s doesn't support STA+AP." % self.android_devices[0].model)
         self.run_aware_then_incompat_service(is_p2p=False)
 
     @test_tracker_info(uuid="2ac27ac6-8010-4d05-b892-00242420b075")

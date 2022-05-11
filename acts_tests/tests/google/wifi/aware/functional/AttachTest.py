@@ -129,6 +129,8 @@ class AttachTest(AwareBaseTest):
     the broadcast for Aware unavailable is received.
     """
         dut = self.android_devices[0]
+        asserts.skip_if(dut.droid.isSdkAtLeastT(),
+                        "From T build Aware will not be disabled due to location off")
         utils.set_location_service(dut, False)
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
         dut.droid.wifiAwareAttach()
@@ -151,7 +153,7 @@ class AttachTest(AwareBaseTest):
         utils.force_airplane_mode(dut, True)
         # APM has a race condition between tear down the NAN Iface and change the Wifi State.
         try:
-            autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+            dut.ed.pop_event(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE, autils.EVENT_TIMEOUT)
         except queue.Empty:
             dut.log.info('Wifi State changes before Interface is torn down')
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)

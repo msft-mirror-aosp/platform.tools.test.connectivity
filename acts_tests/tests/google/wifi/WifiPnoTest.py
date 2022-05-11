@@ -62,6 +62,9 @@ class WifiPnoTest(WifiBaseTest):
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
+        # DUT to the saved networks so they won't be excluded from PNO scan.
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_a)
+        wutils.connect_to_wifi_network(self.dut, self.pno_network_b)
 
     def teardown_test(self):
         super().teardown_test()
@@ -150,7 +153,7 @@ class WifiPnoTest(WifiBaseTest):
     """ Tests Begin """
 
     @test_tracker_info(uuid="33d3cae4-5fa7-4e90-b9e2-5d3747bba64c")
-    def test_simple_pno_connection_to_2g(self):
+    def test_simple_pno_connection_5g_to_2g(self):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
@@ -164,7 +167,7 @@ class WifiPnoTest(WifiBaseTest):
         self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
 
     @test_tracker_info(uuid="39b945a1-830f-4f11-9e6a-9e9641066a96")
-    def test_simple_pno_connection_to_5g(self):
+    def test_simple_pno_connection_2g_to_5g(self):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
@@ -197,9 +200,6 @@ class WifiPnoTest(WifiBaseTest):
         self.add_network_and_enable(self.pno_network_b)
         # Force single scan so that both networks become preferred before PNO.
         wutils.start_wifi_connection_scan_and_return_status(self.dut)
-        self.dut.droid.goToSleepNow()
-        wutils.wifi_toggle_state(self.dut, False)
-        wutils.wifi_toggle_state(self.dut, True)
         time.sleep(10)
         self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
 

@@ -21,7 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.tel.tel_test_utils import disable_qxdm_logger
+from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 
 WifiEnums = wutils.WifiEnums
 
@@ -44,13 +44,15 @@ class WifiCrashStressTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        req_params = ["dbs_supported_models", "stress_count"]
+        req_params = ["sta_sta_supported_models", "dbs_supported_models", "stress_count"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
+        elif "OpenWrtAP" in self.user_params:
+            self.configure_openwrt_ap_and_start(wpa_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -59,6 +61,8 @@ class WifiCrashStressTest(WifiBaseTest):
         self.ap_iface = 'wlan0'
         if self.dut.model in self.dbs_supported_models:
             self.ap_iface = 'wlan1'
+        if self.dut.model in self.sta_sta_supported_models:
+            self.ap_iface = 'wlan2'
 
     def setup_test(self):
         super().setup_test()

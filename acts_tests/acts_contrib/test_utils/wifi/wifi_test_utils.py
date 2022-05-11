@@ -49,6 +49,8 @@ DEFAULT_TIMEOUT = 10
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
 WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
+DEFAULT_SCAN_TRIES = 3
+DEFAULT_CONNECT_TRIES = 3
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -439,6 +441,14 @@ class WifiEnums():
         165: 5825
     }
 
+    channel_6G_to_freq = {4 * x + 1: 5955 + 20 * x for x in range(59)}
+
+    channel_to_freq = {
+        '2G': channel_2G_to_freq,
+        '5G': channel_5G_to_freq,
+        '6G': channel_6G_to_freq
+    }
+
 
 class WifiChannelBase:
     ALL_2G_FREQUENCIES = []
@@ -478,11 +488,16 @@ class WifiChannelUS(WifiChannelBase):
         5700, 5745, 5805
     ]
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, support_addition_channel=[]):
+        if model in support_addition_channel:
+            self.ALL_2G_FREQUENCIES = [
+                2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457,
+                2462, 2467, 2472
+                ]
         self.DFS_5G_FREQUENCIES = [
             5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5600, 5620,
             5640, 5660, 5680, 5700, 5720
-        ]
+            ]
         self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
 
 
@@ -721,8 +736,13 @@ def reset_wifi(ad):
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
+    removed = []
     for n in networks:
-        ad.droid.wifiForgetNetwork(n['networkId'])
+        if n['networkId'] not in removed:
+            ad.droid.wifiForgetNetwork(n['networkId'])
+            removed.append(n['networkId'])
+        else:
+            continue
         try:
             event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                     SHORT_TIMEOUT)
@@ -732,6 +752,7 @@ def reset_wifi(ad):
     asserts.assert_true(
         not ad.droid.wifiGetConfiguredNetworks(),
         "Failed to remove these configured Wi-Fi networks: %s" % networks)
+
 
 
 def toggle_airplane_mode_on_and_off(ad):
@@ -777,9 +798,11 @@ def wifi_forget_network(ad, net_ssid):
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
+    removed = []
     for n in networks:
-        if net_ssid in n[WifiEnums.SSID_KEY]:
+        if net_ssid in n[WifiEnums.SSID_KEY] and n['networkId'] not in removed:
             ad.droid.wifiForgetNetwork(n['networkId'])
+            removed.append(n['networkId'])
             try:
                 event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                         SHORT_TIMEOUT)
@@ -897,13 +920,18 @@ def start_wifi_connection_scan_and_check_for_network(ad,
         True: if network_ssid is found in scan results.
         False: if network_ssid is not found in scan results.
     """
+    start_time = time.time()
     for num_tries in range(max_tries):
         if start_wifi_connection_scan_and_return_status(ad):
             scan_results = ad.droid.wifiGetScanResults()
             match_results = match_networks({WifiEnums.SSID_KEY: network_ssid},
                                            scan_results)
             if len(match_results) > 0:
+                ad.log.debug("Found network in %s seconds." %
+                             (time.time() - start_time))
                 return True
+    ad.log.debug("Did not find network in %s seconds." %
+                 (time.time() - start_time))
     return False
 
 
@@ -1454,11 +1482,10 @@ def ensure_no_disconnect(ad, duration=10):
         ad.droid.wifiStopTrackingStateChange()
 
 
-def connect_to_wifi_network(ad,
-                            network,
-                            assert_on_fail=True,
-                            check_connectivity=True,
-                            hidden=False):
+def connect_to_wifi_network(ad, network, assert_on_fail=True,
+                            check_connectivity=True, hidden=False,
+                            num_of_scan_tries=DEFAULT_SCAN_TRIES,
+                            num_of_connect_tries=DEFAULT_CONNECT_TRIES):
     """Connection logic for open and psk wifi networks.
 
     Args:
@@ -1467,16 +1494,20 @@ def connect_to_wifi_network(ad,
         assert_on_fail: If true, errors from wifi_connect will raise
                         test failure signals.
         hidden: Is the Wifi network hidden.
+        num_of_scan_tries: The number of times to try scan
+                           interface before declaring failure.
+        num_of_connect_tries: The number of times to try
+                              connect wifi before declaring failure.
     """
     if hidden:
         start_wifi_connection_scan_and_ensure_network_not_found(
-            ad, network[WifiEnums.SSID_KEY])
+            ad, network[WifiEnums.SSID_KEY], max_tries=num_of_scan_tries)
     else:
         start_wifi_connection_scan_and_ensure_network_found(
-            ad, network[WifiEnums.SSID_KEY])
+            ad, network[WifiEnums.SSID_KEY], max_tries=num_of_scan_tries)
     wifi_connect(ad,
                  network,
-                 num_of_tries=3,
+                 num_of_tries=num_of_connect_tries,
                  assert_on_fail=assert_on_fail,
                  check_connectivity=check_connectivity)
 
@@ -1693,7 +1724,8 @@ def wifi_connect_using_network_request(ad,
     # Need a delay here because UI interaction should only start once wifi
     # starts processing the request.
     time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
-    _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries)
+    _wait_for_wifi_connect_after_network_request(ad, network, key,
+                                                 num_of_tries)
     return key
 
 
@@ -1729,7 +1761,10 @@ def wait_for_wifi_connect_after_network_request(ad,
                             assert_on_fail, ad, network, key, num_of_tries)
 
 
-def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=3):
+def _wait_for_wifi_connect_after_network_request(ad,
+                                                 network,
+                                                 key,
+                                                 num_of_tries=3):
     """
     Simulate and verify the connection flow after initiating the network
     request.
@@ -1781,13 +1816,11 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
 
         # Wait for the platform to connect to the network.
         autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            60,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 60,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_AVAILABLE))
         on_capabilities_changed = autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            10,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 10,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED))
@@ -1804,8 +1837,7 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
         asserts.assert_equal(
             connected_network[WifiEnums.SSID_KEY], expected_ssid,
             "Connected to the wrong network."
-            "Expected %s, but got %s."
-            % (network, connected_network))
+            "Expected %s, but got %s." % (network, connected_network))
     except Empty:
         asserts.fail("Failed to connect to %s" % expected_ssid)
     except Exception as error:
@@ -2019,11 +2051,12 @@ def validate_connection(ad,
     Returns:
         ping output if successful, NULL otherwise.
     """
+    android_version = int(ad.adb.shell("getprop ro.vendor.build.version.release"))
     # wait_time to allow for DHCP to complete.
     for i in range(wait_time):
-        if ad.droid.connectivityNetworkIsConnected(
-        ) and ad.droid.connectivityGetIPv4DefaultGateway():
-            break
+        if ad.droid.connectivityNetworkIsConnected():
+            if (android_version > 10 and ad.droid.connectivityGetIPv4DefaultGateway()) or android_version < 11:
+                break
         time.sleep(1)
     ping = False
     try:
@@ -2031,7 +2064,7 @@ def validate_connection(ad,
         ad.log.info("Http ping result: %s.", ping)
     except:
         pass
-    if not ping and ping_gateway:
+    if android_version > 10 and not ping and ping_gateway:
         ad.log.info("Http ping failed. Pinging default gateway")
         gw = ad.droid.connectivityGetIPv4DefaultGateway()
         result = ad.adb.shell("ping -c 6 {}".format(gw))
