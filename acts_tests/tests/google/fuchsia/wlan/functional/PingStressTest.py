@@ -23,6 +23,8 @@ import threading
 from collections import namedtuple
 
 from acts import signals
+from acts import utils
+
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -30,9 +32,6 @@ from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_dev
 from acts.utils import rand_ascii_str
 
 LOCALHOST_IP = '127.0.0.1'
-GOOGLE_DNS_1_IP = '8.8.8.8'
-GOOGLE_DNS_2_IP = '8.8.4.4'
-
 PING_RESULT_TIMEOUT_SEC = 60 * 5
 
 Test = namedtuple(
@@ -40,30 +39,38 @@ Test = namedtuple(
     field_names=['name', 'dest_ip', 'count', 'interval', 'timeout', 'size'],
     defaults=[3, 1000, 1000, 25])
 
+Addrs = namedtuple(typename='Addrs', field_names=['local', 'ap', 'remote'])
+
 
 class PingStressTest(WifiBaseTest):
 
     def setup_generated_tests(self):
         self.generate_tests(
             self.send_ping, lambda test_name, *_: f'test_{test_name}', [
-                Test("simple_ping", GOOGLE_DNS_1_IP),
-                Test("ping_local", LOCALHOST_IP),
-                Test("ping_AP", lambda ap: ap.ssh_settings.hostname),
-                Test("ping_with_params",
-                     GOOGLE_DNS_1_IP,
+                Test("ping_local", lambda addrs: addrs.local),
+                Test("ping_ap", lambda addrs: addrs.ap),
+                Test("ping_remote_small_packet", lambda addrs: addrs.remote),
+                Test("ping_remote_with_params",
+                     lambda addrs: addrs.remote,
                      count=5,
                      interval=800,
                      size=50),
-                Test("long_ping", GOOGLE_DNS_1_IP, count=50),
-                Test("medium_packet_ping", GOOGLE_DNS_1_IP, size=64),
-                Test("medium_packet_long_ping",
-                     GOOGLE_DNS_1_IP,
+                Test("ping_remote_small_packet_long",
+                     lambda addrs: addrs.remote,
+                     count=50),
+                Test("ping_remote_medium_packet",
+                     lambda addrs: addrs.remote,
+                     size=64),
+                Test("ping_remote_medium_packet_long",
+                     lambda addrs: addrs.remote,
                      count=50,
                      timeout=1500,
                      size=64),
-                Test("large_packet_ping", GOOGLE_DNS_1_IP, size=500),
-                Test("large_packet_long_ping",
-                     GOOGLE_DNS_1_IP,
+                Test("ping_remote_large_packet",
+                     lambda addrs: addrs.remote,
+                     size=500),
+                Test("ping_remote_large_packet_long",
+                     lambda addrs: addrs.remote,
                      count=50,
                      timeout=5000,
                      size=500),
@@ -71,16 +78,29 @@ class PingStressTest(WifiBaseTest):
 
     def setup_class(self):
         super().setup_class()
-
         self.ssid = rand_ascii_str(10)
         self.dut = create_wlan_device(self.fuchsia_devices[0])
         self.access_point = self.access_points[0]
+        self.iperf_server = self.iperf_servers[0]
         setup_ap(access_point=self.access_point,
                  profile_name='whirlwind',
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
                  ssid=self.ssid,
                  setup_bridge=True)
         self.dut.associate(self.ssid)
+        self.iperf_server_ipv4 = self.iperf_server.get_addr()
+
+        ap_bridges = self.access_point.interfaces.get_bridge_interface()
+        if len(ap_bridges) != 1:
+            raise signals.TestAbortClass(
+                f'Expected one bridge interface on the AP, got {ap_bridges}')
+        ap_ipv4_addrs = utils.get_interface_ip_addresses(
+            self.access_point.ssh, ap_bridges[0])['ipv4_private']
+        if len(ap_ipv4_addrs) != 1:
+            raise signals.TestAbortClass(
+                f'Expected one private IPv4 address on the AP, got {ap_ipv4_addrs}'
+            )
+        self.ap_ipv4 = ap_ipv4_addrs[0]
 
     def teardown_class(self):
         self.dut.disconnect()
@@ -90,13 +110,15 @@ class PingStressTest(WifiBaseTest):
 
     def send_ping(self,
                   test_name,
-                  dest_ip,
+                  get_addr_fn,
                   count=3,
                   interval=1000,
                   timeout=1000,
                   size=25):
-        if callable(dest_ip):
-            dest_ip = dest_ip(self.access_point)
+        dest_ip = get_addr_fn(
+            Addrs(local=LOCALHOST_IP,
+                  ap=self.ap_ipv4,
+                  remote=self.iperf_server_ipv4))
 
         self.log.info(f'Attempting to ping {dest_ip} for test_{test_name}...')
         ping_result = self.dut.can_ping(dest_ip, count, interval, timeout,
@@ -113,10 +135,10 @@ class PingStressTest(WifiBaseTest):
 
     def test_simultaneous_pings(self):
         ping_urls = [
-            GOOGLE_DNS_1_IP,
-            GOOGLE_DNS_2_IP,
-            GOOGLE_DNS_1_IP,
-            GOOGLE_DNS_2_IP,
+            self.iperf_server_ipv4,
+            self.ap_ipv4,
+            self.iperf_server_ipv4,
+            self.ap_ipv4,
         ]
         ping_threads = []
         ping_results = []
