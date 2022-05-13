@@ -35,6 +35,7 @@ from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
 from acts_contrib.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 
+
 IDLE_CASE = 1
 DATA_TRANSFER_CASE = 2
 PDP_OFF_CASE = 3
@@ -57,7 +58,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         self.check_network()
         self.my_error_msg = ""
 
-    @test_tracker_info(uuid="c602e556-8273-4c75-b8fa-4d51ba514654")
+    @test_tracker_info(uuid="aebbafc8-8388-47ac-a22a-c82c177b6eb8")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_idle_1min(self, idle_time=60):
         """ UE is in idle
@@ -70,7 +71,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         """
         return self._test_in_out_service_idle(idle_time)
 
-    @test_tracker_info(uuid="c602e556-8273-4c75-b8fa-4d51ba514654")
+    @test_tracker_info(uuid="e5c4e835-0bfd-41cd-8e8d-46eafef67f90")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_idle_2min(self, idle_time=120):
         """ UE is in idle
@@ -82,7 +83,9 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time)
-    @test_tracker_info(uuid="1d437482-caff-4695-9f3f-f3daf6793540")
+
+
+    @test_tracker_info(uuid="3ffc18f7-d56b-4eca-9add-d5c6c1bbff65")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_idle_5min(self, idle_time=300):
         """ UE is in idle
@@ -95,7 +98,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time)
-    @test_tracker_info(uuid="339b4bf5-57a1-48f0-b26a-83a7db21b08b")
+
+    @test_tracker_info(uuid="29ce2e4f-f63e-4350-bb3a-eb3a65c7e924")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_idle_10min(self, idle_time=600):
         """ UE is in idle
@@ -108,7 +112,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time)
-    @test_tracker_info(uuid="65ebac02-8d5a-48c2-bd26-6d931d6048f1")
+
+    @test_tracker_info(uuid="e99d0b85-d8ba-47e0-9361-8bedb38b06ce")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_data_transfer_1min(self, idle_time=60):
         """ In/Out service - Stationary data transfer - 1 min
@@ -121,7 +126,9 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, DATA_TRANSFER_CASE)
-    @test_tracker_info(uuid="ec3e7de4-bcf6-4a8a-ae04-868bd7925191")
+
+
+    @test_tracker_info(uuid="fcdd8a4f-54df-4487-9e30-cbd589bfab5b")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_data_transfer_2min(self, idle_time=120):
         """ In/Out service - Stationary data transfer - 2 min
@@ -131,7 +138,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, DATA_TRANSFER_CASE)
-    @test_tracker_info(uuid="8bd7017d-0a88-4423-a94b-1e37060bba1d")
+
+    @test_tracker_info(uuid="fcdd8a4f-54df-4487-9e30-cbd589bfab5b")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_data_transfer_5min(self, idle_time=300):
         """ In/Out service - Stationary data transfer - 5 min
@@ -141,7 +149,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, DATA_TRANSFER_CASE)
-    @test_tracker_info(uuid="c3b9c52d-41d3-449c-99ff-4bb830ca0219")
+
+    @test_tracker_info(uuid="4684282a-e16f-42d8-bbb3-da4f6348f720")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_no_service_data_transfer_10min(self, idle_time=600):
         """ In/Out service - Stationary data transfer - 10 min
@@ -152,7 +161,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, DATA_TRANSFER_CASE)
-    @test_tracker_info(uuid="86a6b3b3-e754-4bde-b418-d4273b1ad907")
+
+    @test_tracker_info(uuid="1667cf8f-ad33-45a1-b4b9-256dd5054635")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_incall_1min(self, idle_time=60):
         """ In/Out service - Stationary incall - 1 min
@@ -162,7 +172,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, IN_CALL_CASE)
-    @test_tracker_info(uuid="0f8772cd-6f86-48eb-b583-4cbaf80a21a9")
+
+    @test_tracker_info(uuid="b6d71f75-d0a8-4010-b8eb-46083469d089")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_incall_2min(self, idle_time=120):
         """ In/Out service - Stationary incall - 2 min
@@ -172,7 +183,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, IN_CALL_CASE)
-    @test_tracker_info(uuid="11f24c0f-db33-4eb3-b847-9aed447eb820")
+
+    @test_tracker_info(uuid="eb7a3821-dbb2-4e24-9649-fc8ca99afcc0")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_incall_5min(self, idle_time=300):
         """ In/Out service - Stationary incall - 5 min
@@ -182,7 +194,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, IN_CALL_CASE)
-    @test_tracker_info(uuid="e318921b-de6b-428b-b2c4-3db7786d7558")
+
+    @test_tracker_info(uuid="cc8ca8f3-7d93-4a61-baba-c503aba322f9")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_incall_10min(self, idle_time=600):
         """ In/Out service - Stationary incall - 10 min
@@ -192,7 +205,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, IN_CALL_CASE)
-    @test_tracker_info(uuid="f6cf0019-e123-4ebd-990b-0fa5b236840c")
+
+    @test_tracker_info(uuid="5c3ea073-58f1-4af1-a196-c3cd507cbe62")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_call_date_1min(self, idle_time=60):
         """ In/Out service - Stationary incall + data transfer - 1 mins
@@ -202,7 +216,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, CALL_DATA_CASE)
-    @test_tracker_info(uuid="2f49a9de-0383-4ec6-a8ee-c62f52ea0cf2")
+
+    @test_tracker_info(uuid="7f25090f-e340-413d-8a6a-0a50d38c8dad")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_call_date_2min(self, idle_time=120):
         """ In/Out service - Stationary incall + data transfer - 2 mins
@@ -212,7 +227,9 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, CALL_DATA_CASE)
-    @test_tracker_info(uuid="73a6eedb-791f-4486-b815-8067a95efd5c")
+
+
+    @test_tracker_info(uuid="f72f2f46-4e21-4fc2-add5-c3d4424ecd35")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_call_date_5min(self, idle_time=300):
         """ In/Out service - Stationary incall + data transfer - 5 mins
@@ -222,7 +239,9 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, CALL_DATA_CASE)
-    @test_tracker_info(uuid="5cfbc90a-97e1-43e9-a69e-4ce2815c544d")
+
+
+    @test_tracker_info(uuid="b57bd9fc-8d7f-41d8-9bb5-f7ac39860ede")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_call_date_10min(self, idle_time=600):
         """ In/Out service - Stationary incall + data transfer - 10 mins
@@ -233,8 +252,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         """
         return self._test_in_out_service_idle(idle_time, CALL_DATA_CASE)
 
-
-    @test_tracker_info(uuid="c70180c9-5a36-4dc5-9ccc-3e6c0b5e6d37")
+    @test_tracker_info(uuid="ea27ee5d-1bd7-4b24-a044-1201ac4cde2f")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_pdp_off_1min(self, idle_time=60):
         """ In/Out service - Stationary data off - 1 min
@@ -248,7 +266,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         """
         return self._test_in_out_service_idle(idle_time, PDP_OFF_CASE)
 
-    @test_tracker_info(uuid="50cc8e73-d96f-45a6-91cd-bf51de5241d2")
+    @test_tracker_info(uuid="904ff9c7-5566-4f7b-9168-a73f9ee5c967")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_pdp_off_2min(self, idle_time=120):
         """ In/Out service - Stationary data off - 2 min
@@ -258,7 +276,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, PDP_OFF_CASE)
-    @test_tracker_info(uuid="1f25d40c-1bfe-4d18-b57c-d7be69664f0d")
+
+    @test_tracker_info(uuid="b4b271e3-90f7-4ffb-8938-5df5791dfc0d")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_pdp_off_5min(self, idle_time=300):
         """ In/Out service - Stationary data off - 5 min
@@ -268,7 +287,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 True if pass; False if fail.
         """
         return self._test_in_out_service_idle(idle_time, PDP_OFF_CASE)
-    @test_tracker_info(uuid="b076b0d0-a105-4be9-aa0b-db0d782f70f2")
+
+    @test_tracker_info(uuid="fadc53a3-429f-48fc-bd84-7f795a82797a")
     @TelephonyBaseTest.tel_test_wrap
     def test_in_out_service_pdp_off_10min(self, idle_time=600):
         """ In/Out service - Stationary data off - 10 min
@@ -292,8 +312,8 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         test_result = True
         if 'autoio_cycle' in self.user_params:
             loop = self.user_params.get('autoio_cycle')
-        for x in range (loop):
-            self.log.info("%s loop: %s/%s" %(self.current_test_name,x+1, loop))
+        for attempt in range(1, loop + 1):
+            self.log.info(f"{self.current_test_name} loop: {attempt}/{loop}")
             if case == IDLE_CASE:
                 if not self._in_out_service_idle_only(idle_time):
                     test_result = False
@@ -484,18 +504,18 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
 
         for x in range (loop):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
-            self.my_error_msg += "cylce%s: " %(x+1)
+            self.my_error_msg += "cycle%s: " %(x+1)
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
 
             self.log.info("Turn on IMS")
             tasks = [(toggle_volte, (self.log, ad, True)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte, ")
+                self._on_failure("fail to toggle volte, ")
                 return False
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("ims is not register, ")
+                self._on_failure("ims is not register, ")
                 return False
 
             self.log.info("Move to no service area")
@@ -505,7 +525,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             self.log.info("Turn off IMS")
             tasks = [(toggle_volte, (self.log, ad, False)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte, ")
+                self._on_failure("fail to toggle volte, ")
                 return False
             self.log.info("Move back to service area and verify device status")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
@@ -513,7 +533,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 for ad in self.android_devices]
             test_result = multithread_func(self.log, tasks)
             if not test_result:
-                self._on_fail("verify_device_status fail, ")
+                self._on_failure("verify_device_status fail, ")
                 return False
         if not test_result:
             asserts.assert_true(test_result, "[Fail]%s" %(error_msg),
@@ -537,11 +557,11 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         error_msg = ""
         test_result = True
         if 'ims_cycle' in self.user_params:
-            loop = self.user_params.get('ims_cylce')
+            loop = self.user_params.get('ims_cycle')
 
         for x in range (loop):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
-            self.my_error_msg += "cylce%s: " %(x+1)
+            self.my_error_msg += "cycle%s: " %(x+1)
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
@@ -550,12 +570,12 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             self.log.info("Turn on IMS")
             tasks = [(toggle_volte, (self.log, ad, True)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte, ")
+                self._on_failure("fail to toggle volte, ")
                 return False
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("ims is not register, ")
+                self._on_failure("ims is not register, ")
                 return False
 
             self.log.info("Move to no service area")
@@ -567,13 +587,13 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             self.log.info("Turn off IMS")
             tasks = [(toggle_volte, (self.log, ad, False)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte, ")
+                self._on_failure("fail to toggle volte, ")
                 return False
             tasks = [(self.verify_device_status, (ad, VOICE_CALL))
                 for ad in self.android_devices]
             test_result = multithread_func(self.log, tasks)
             if not test_result:
-                self._on_fail( "verify_device_status fail, ")
+                self._on_failure( "verify_device_status fail, ")
                 return False
         return test_result
 
@@ -593,11 +613,11 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         error_msg = ""
         test_result = True
         if 'ims_cycle' in self.user_params:
-            loop = self.user_params.get('ims_cylce')
+            loop = self.user_params.get('ims_cycle')
 
         for x in range (loop):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
-            self.my_error_msg += "cylce%s: " %(x+1)
+            self.my_error_msg += "cycle%s: " %(x+1)
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
@@ -606,19 +626,19 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             self.log.info("Turn off IMS")
             tasks = [(toggle_volte, (self.log, ad, False)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte, ")
+                self._on_failure("fail to toggle volte, ")
                 return False
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("ims is not register, ")
+                self._on_failure("ims is not register, ")
                 return False
 
             self.log.info("CSFB call in service area")
             tasks = [(mo_voice_call, (self.log, ad, CSFB_CALL, True, 30))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("csfb_call_fail, ")
+                self._on_failure("csfb_call_fail, ")
                 return False
 
             self.log.info("Move to no service area then turn on IMS")
@@ -626,7 +646,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             time.sleep(60)
             tasks = [(toggle_volte, (self.log, ad, True)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte, ")
+                self._on_failure("fail to toggle volte, ")
                 return False
 
             self.log.info("Move back to service area and verify device status, VOLTE call")
@@ -635,7 +655,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 for ad in self.android_devices]
             test_result = multithread_func(self.log, tasks)
             if not test_result:
-                self._on_fail( "verify_device_status fail, ")
+                self._on_failure( "verify_device_status fail, ")
                 return False
         return test_result
 
@@ -658,11 +678,11 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
         error_msg = ""
         test_result = True
         if 'ims_cycle' in self.user_params:
-            loop = self.user_params.get('ims_cylce')
+            loop = self.user_params.get('ims_cycle')
 
         for x in range (loop):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
-            self.my_error_msg += "cylce%s: " %(x+1)
+            self.my_error_msg += "cycle%s: " %(x+1)
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
@@ -671,19 +691,19 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             self.log.info("Turn off IMS")
             tasks = [(toggle_volte, (self.log, ad, False)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte ")
+                self._on_failure("fail to toggle volte ")
                 return False
 
             tasks = [(check_ims_state, (ad, )) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("ims is not register, ")
+                self._on_failure("ims is not register, ")
                 return False
 
             self.log.info("CSFB call in service area")
-            tasks = [(mo_voice_call, (self.log, ad, CSFB_CALL, true, 30))
+            tasks = [(mo_voice_call, (self.log, ad, CSFB_CALL, True, 30))
                 for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("csfb_call_fail, ")
+                self._on_failure("csfb_call_fail, ")
                 return False
 
             self.log.info("Move to no service area")
@@ -694,7 +714,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
             self.log.info("Turn on ims")
             tasks = [(toggle_volte, (self.log, ad, True)) for ad in self.android_devices]
             if not multithread_func(self.log, tasks):
-                self._on_fail("fail to toggle volte ")
+                self._on_failure("fail to toggle volte ")
                 return False
             self.log.info("Verify device status, VOLTE call")
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
@@ -702,7 +722,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
                 for ad in self.android_devices]
             test_result = multithread_func(self.log, tasks)
             if not test_result:
-                self._on_fail("verify_device_status fail, ")
+                self._on_failure("verify_device_status fail, ")
                 return False
         return test_result
 
@@ -726,7 +746,7 @@ class TelLabGFTInOutServiceTest(GFTInOutBaseTest):
 
         for x in range (loop):
             self.log.info("%s loop: %s/%s" %(self.current_test_name, x+1, loop))
-            self.my_error_msg += "cylce%s: " %(x+1)
+            self.my_error_msg += "cycle%s: " %(x+1)
             self.adjust_cellular_signal(IN_SERVICE_POWER_LEVEL)
             for ad in self.android_devices:
                 ad.log.info("initiate voice call to %s " %(ad.mt_phone_number))
