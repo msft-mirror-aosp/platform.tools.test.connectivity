@@ -24,6 +24,7 @@ import threading
 import time
 
 from acts import context
+from acts import logger as acts_logger
 from acts import utils
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib.ssh import connection
@@ -90,6 +91,7 @@ def destroy(iperf_server_list):
 
 
 class IPerfResult(object):
+
     def __init__(self, result_path, reporting_speed_units='Mbytes'):
         """Loads iperf result from file.
 
@@ -342,6 +344,7 @@ def _get_port_from_ss_output(ss_output, pid):
 
 class IPerfServer(IPerfServerBase):
     """Class that handles iperf server commands on localhost."""
+
     def __init__(self, port=5201):
         super().__init__(port)
         self._hinted_port = port
@@ -417,8 +420,14 @@ class IPerfServer(IPerfServerBase):
         self.stop()
 
 
+class IPerfServerAddrTimeout(Exception):
+    pass
+class IPerfServerMultipleAddrs(Exception):
+    pass
+
 class IPerfServerOverSsh(IPerfServerBase):
     """Class that handles iperf3 operations on remote machines."""
+
     def __init__(self,
                  ssh_config,
                  port,
@@ -426,6 +435,8 @@ class IPerfServerOverSsh(IPerfServerBase):
                  use_killall=False):
         super().__init__(port)
         self.ssh_settings = settings.from_config(ssh_config)
+        self.log = acts_logger.create_tagged_trace_logger(
+            f'IPerfServer | {self.ssh_settings.hostname}')
         self._ssh_session = None
         self.start_ssh()
 
@@ -437,9 +448,10 @@ class IPerfServerOverSsh(IPerfServerBase):
             # A test interface can only be found if an ip address is specified.
             # A fully qualified hostname will return None for the
             # test_interface.
-            self.test_interface = self._get_test_interface_based_on_ip(
-                test_interface)
-        except Exception:
+            self.test_interface = test_interface if test_interface else utils.get_interface_based_on_ip(
+                self._ssh_session, self.hostname)
+        except Exception as e:
+            self.log.warning(e)
             self.test_interface = None
 
     @property
@@ -452,21 +464,6 @@ class IPerfServerOverSsh(IPerfServerBase):
 
     def _get_remote_log_path(self):
         return '/tmp/iperf_server_port%s.log' % self.port
-
-    def _get_test_interface_based_on_ip(self, test_interface):
-        """Gets the test interface for a particular IP if the test interface
-            passed in test_interface is None
-
-        Args:
-            test_interface: Either a interface name, ie eth0, or None
-
-        Returns:
-            The name of the test interface.
-        """
-        if test_interface:
-            return test_interface
-        return utils.get_interface_based_on_ip(self._ssh_session,
-                                               self.hostname)
 
     def get_interface_ip_addresses(self, interface):
         """Gets all of the ip addresses, ipv4 and ipv6, associated with a
@@ -490,12 +487,44 @@ class IPerfServerOverSsh(IPerfServerBase):
         return utils.get_interface_ip_addresses(self._ssh_session, interface)
 
     def renew_test_interface_ip_address(self):
-        """Renews the test interface's IP address.  Necessary for changing
-           DHCP scopes during a test.
+        """Renews the test interface's IPv4 address.
+
+        Necessary for changing DHCP scopes during a test.
         """
         if not self._ssh_session:
             self.start_ssh()
         utils.renew_linux_ip_address(self._ssh_session, self.test_interface)
+
+    def get_addr(self, timeout_sec=3, addr_type='ipv4_private'):
+        """Wait until a type of IP address on the test interface is available
+        then return it.
+
+        Args:
+            timeout_sec: Seconds to wait for DHCP to acquire an address if there
+                isn't one already available.
+            addr_type: Type of address to get as defined by the return value of
+                utils.get_interface_ip_addresses.
+
+        Returns:
+            A string containing the requested address.
+
+        Raises:
+            IPerfServerAddrTimeout: No address is available
+            IPerfServerMultipleAddrs: Several addresses are available
+        """
+        now = time.time()
+        start = now
+        elapsed = now - start
+
+        while elapsed < timeout_sec:
+            ip_addrs = self.get_interface_ip_addresses(self.test_interface)[addr_type]
+            if len(ip_addrs) != 1:
+                raise IPerfServerMultipleAddrs(
+                    f'Expected only one "{addr_type}" address, got {ip_addrs}')
+            return ip_addrs[0]
+
+        raise IPerfServerAddrTimeout(
+            f'No available "{addr_type}" address after {timeout_sec}s')
 
     def _cleanup_iperf_port(self):
         """Checks and kills zombie iperf servers occupying intended port."""
@@ -623,6 +652,7 @@ event_bus.register_subscription(_AndroidDeviceBridge.on_test_end.subscription)
 
 class IPerfServerOverAdb(IPerfServerBase):
     """Class that handles iperf3 operations over ADB devices."""
+
     def __init__(self, android_device_or_serial, port):
         """Creates a new IPerfServerOverAdb object.
 
