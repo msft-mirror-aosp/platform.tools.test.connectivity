@@ -563,6 +563,7 @@ def timeout(sec):
     """
 
     def decorator(func):
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if sec:
@@ -1411,12 +1412,11 @@ def get_interface_ip_addresses(comm_channel, interface):
 
     Returns:
         A list of dictionaries of the the various IP addresses:
-            ipv4_private_local_addresses: Any 192.168, 172.16, 10, or 169.254
-                addresses
-            ipv4_public_addresses: Any IPv4 public addresses
-            ipv6_link_local_addresses: Any fe80:: addresses
-            ipv6_private_local_addresses: Any fd00:: addresses
-            ipv6_public_addresses: Any publicly routable addresses
+            ipv4_private: Any 192.168, 172.16, 10, or 169.254 addresses
+            ipv4_public: Any IPv4 public addresses
+            ipv6_link_local: Any fe80:: addresses
+            ipv6_private_local: Any fd00:: addresses
+            ipv6_public: Any publicly routable addresses
     """
     # Local imports are used here to prevent cyclic dependency.
     from acts.controllers.android_device import AndroidDevice
