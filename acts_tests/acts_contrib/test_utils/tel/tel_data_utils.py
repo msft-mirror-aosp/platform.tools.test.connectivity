@@ -709,6 +709,7 @@ def reboot_test(log, ad, wifi_ssid=None):
         voice_subid = get_outgoing_voice_sub_id(ad)
         sms_subid = get_outgoing_message_sub_id(ad)
 
+        sim_mode_before_reboot = ad.droid.telephonyGetPhoneCount()
         data_rat_before_reboot = get_network_rat_for_subscription(
             log, ad, data_subid, NETWORK_SERVICE_DATA)
         voice_rat_before_reboot = get_network_rat_for_subscription(
@@ -732,19 +733,23 @@ def reboot_test(log, ad, wifi_ssid=None):
 
             return False
 
-        sim_mode = ad.droid.telephonyGetPhoneCount()
+        sim_mode_after_reboot = ad.droid.telephonyGetPhoneCount()
+
+        if sim_mode_after_reboot != sim_mode_before_reboot:
+            ad.log.error(
+                "SIM mode changed! (Before reboot: %s; after reboot: %s)",
+                sim_mode_before_reboot, sim_mode_after_reboot)
+            return False
+
         if getattr(ad, 'dsds', False):
-            if sim_mode == 1:
+            if sim_mode_after_reboot == 1:
                 ad.log.error("Phone is in single SIM mode after reboot.")
                 return False
-            elif sim_mode == 2:
+            elif sim_mode_after_reboot == 2:
                 ad.log.info("Phone keeps being in dual SIM mode after reboot.")
         else:
-            if sim_mode == 1:
+            if sim_mode_after_reboot == 1:
                 ad.log.info("Phone keeps being in single SIM mode after reboot.")
-            elif sim_mode == 2:
-                ad.log.error("Phone is in dual SIM mode after reboot.")
-                return False
 
         data_subid_after_reboot = get_default_data_sub_id(ad)
         if data_subid_after_reboot != data_subid:
@@ -2889,7 +2894,7 @@ def check_data_stall_recovery(ad, begin_time=None,
     try:
         while (time_var < wait_time):
             time_var += 30
-            recovery = ad.search_logcat("doRecovery() cleanup all connections",
+            recovery = ad.search_logcat("doRecovery().*cleanup all connections",
                                          begin_time)
             if recovery:
                 ad.log.info("Recovery Performed here - %s",

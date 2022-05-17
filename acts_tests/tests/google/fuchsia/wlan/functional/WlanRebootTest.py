@@ -25,7 +25,6 @@ from acts import context
 from acts import utils
 from acts.controllers import iperf_client
 from acts.controllers import iperf_server
-from acts.controllers import pdu
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
@@ -35,7 +34,6 @@ from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 # Constants, for readibility
 AP = 'ap'
@@ -101,7 +99,7 @@ def get_test_name(settings):
     return settings['test_name']
 
 
-class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanRebootTest(WifiBaseTest):
     """Tests wlan reconnects in different reboot scenarios.
 
     Testbed Requirement:
@@ -109,8 +107,9 @@ class WlanRebootTest(AbstractDeviceWlanDeviceBaseTest):
     * One Whirlwind Access Point (will also serve as iperf server)
     * One PduDevice
     """
+
     def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
         super().setup_class()

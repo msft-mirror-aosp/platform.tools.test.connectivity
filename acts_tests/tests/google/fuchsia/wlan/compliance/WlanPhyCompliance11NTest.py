@@ -25,7 +25,6 @@ from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts_contrib.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 FREQUENCY_24 = ['2.4GHz']
@@ -63,7 +62,7 @@ def generate_test_name(settings):
                             settings['security'], ''.join(ret))
 
 
-class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
+class WlanPhyCompliance11NTest(WifiBaseTest):
     """Tests for validating 11n PHYS.
 
     Test Bed Requirement:
@@ -72,7 +71,7 @@ class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
     """
 
     def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = [
             'test_11n_capabilities_24_HT20',
             'test_11n_capabilities_24_HT40_lower',
