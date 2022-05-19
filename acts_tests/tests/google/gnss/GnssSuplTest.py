@@ -18,6 +18,8 @@ class GnssSuplTest(BaseTestClass):
         self.ad = self.android_devices[0]
         req_params = ["pixel_lab_network",
                       "supl_cs_criteria",
+                      "supl_ws_criteria",
+                      "supl_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "pixel_lab_location",
                       "qdsp6m_path",
@@ -101,8 +103,18 @@ class GnssSuplTest(BaseTestClass):
         gutils.run_ttff_via_gtw_gpstool(self.ad, mode, criteria, self.ttff_test_cycle,
                                         self.pixel_lab_location)
 
+    def connect_to_wifi_with_mobile_data_off(self):
+        gutils.set_mobile_data(self.ad, False)
+        wutils.wifi_toggle_state(self.ad, True)
+        gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+
+    def connect_to_wifi_with_airplane_mode_on(self):
+        self.ad.droid.connectivityToggleAirplaneMode(True)
+        wutils.wifi_toggle_state(self.ad, True)
+        gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+
     @test_tracker_info(uuid="4a364e0f-926d-45ff-b3f0-733b5e30e073")
-    def test_supl_over_wifi_with_mobile_data_off(self):
+    def test_cs_ttff_supl_over_wifi_with_mobile_data_off(self):
         """ Test supl can works through wifi with mobile data off
 
         Test steps are executed in the following sequence.
@@ -114,14 +126,27 @@ class GnssSuplTest(BaseTestClass):
         # into configuration file on g3 and read it from test cases
         self.runs_on_projects(self.project_limit_lte)
 
-        gutils.set_mobile_data(self.ad, False)
-        wutils.wifi_toggle_state(self.ad, True)
-        gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        self.connect_to_wifi_with_mobile_data_off()
 
         self.run_ttff("cs", self.supl_cs_criteria)
 
+    @test_tracker_info(uuid="4adce337-b79b-4085-9d3d-7cdd88dc4643")
+    def test_hs_ttff_supl_over_wifi_with_mobile_data_off(self):
+        """ Test supl can works through wifi with mobile data off
+
+        Test steps are executed in the following sequence.
+        - Turn off mobile data
+        - Connect to wifi
+        - Run SUPL HS TTFF
+        """
+        self.runs_on_projects(self.project_limit_lte)
+
+        self.connect_to_wifi_with_mobile_data_off()
+
+        self.run_ttff("hs", self.supl_hs_criteria)
+
     @test_tracker_info(uuid="18c316ef-6a70-4709-a71c-12ec3e5326d6")
-    def test_supl_over_wifi_with_airplane_mode_on(self):
+    def test_cs_ttff_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
 
         Test steps are executed in the following sequence.
@@ -131,11 +156,24 @@ class GnssSuplTest(BaseTestClass):
         """
         self.runs_on_projects(self.project_limit_lte_btwifi)
 
-        self.ad.droid.connectivityToggleAirplaneMode(True)
-        wutils.wifi_toggle_state(self.ad, True)
-        gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        self.connect_to_wifi_with_airplane_mode_on()
 
         self.run_ttff("cs", self.supl_cs_criteria)
+
+    @test_tracker_info(uuid="afcab5bd-b2a9-4846-929c-3aa2596a6044")
+    def test_ws_ttff_supl_over_wifi_with_airplane_mode_on(self):
+        """ Test supl can works through wifi with airplane mode on
+
+        Test steps are executed in the following sequence.
+        - Turn on airplane mode
+        - Connect to wifi
+        - Run SUPL WS TTFF
+        """
+        self.runs_on_projects(self.project_limit_lte_btwifi)
+
+        self.connect_to_wifi_with_airplane_mode_on()
+
+        self.run_ttff("ws", self.supl_ws_criteria)
 
     @test_tracker_info(uuid="b13b8589-946b-48c7-b1a6-7399b4b12440")
     def test_supl_with_wifi_connected_and_mobile_data_on(self):
