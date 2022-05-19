@@ -36,7 +36,6 @@ from bokeh.plotting import output_file
 from bokeh.plotting import save
 
 AP_11ABG_PROFILE_NAME = 'whirlwind_11ag_legacy'
-RADVD_PREFIX = 'fd00::/64'
 REPORTING_SPEED_UNITS = 'Mbps'
 
 RVR_GRAPH_SUMMARY_FILE = 'rvr_summary.html'
@@ -350,17 +349,13 @@ class WlanRvrTest(WifiBaseTest):
         else:
             raise ValueError('Invalid WLAN band specified: %s' % band)
         if ip_version == 6:
-            radvd_config = RadvdConfig(
-                prefix=RADVD_PREFIX,
-                adv_send_advert=radvd_constants.ADV_SEND_ADVERT_ON,
-                adv_on_link=radvd_constants.ADV_ON_LINK_ON,
-                adv_autonomous=radvd_constants.ADV_AUTONOMOUS_ON)
             self.router_adv_daemon = Radvd(
                 self.access_point.ssh,
                 self.access_point.interfaces.get_bridge_interface()[0])
+            radvd_config = RadvdConfig()
             self.router_adv_daemon.start(radvd_config)
 
-        for rvr_loop_counter in range(0, self.debug_loop_count):
+        for _ in range(0, self.debug_loop_count):
             for rvr_attenuator in rvr_attenuators:
                 rvr_attenuator.set_atten(self.starting_attn)
 
