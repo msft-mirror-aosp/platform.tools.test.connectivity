@@ -420,11 +420,6 @@ class IPerfServer(IPerfServerBase):
         self.stop()
 
 
-class IPerfServerAddrTimeout(Exception):
-    pass
-class IPerfServerMultipleAddrs(Exception):
-    pass
-
 class IPerfServerOverSsh(IPerfServerBase):
     """Class that handles iperf3 operations on remote machines."""
 
@@ -473,13 +468,8 @@ class IPerfServerOverSsh(IPerfServerBase):
             interface: The interface name on the device, ie eth0
 
         Returns:
-            A list of dictionaries of the the various IP addresses:
-                ipv4_private_local_addresses: Any 192.168, 172.16, or 10
-                    addresses
-                ipv4_public_addresses: Any IPv4 public addresses
-                ipv6_link_local_addresses: Any fe80:: addresses
-                ipv6_private_local_addresses: Any fd00:: addresses
-                ipv6_public_addresses: Any publicly routable addresses
+            A list of dictionaries of the various IP addresses. See
+            utils.get_interface_ip_addresses.
         """
         if not self._ssh_session:
             self.start_ssh()
@@ -495,36 +485,14 @@ class IPerfServerOverSsh(IPerfServerBase):
             self.start_ssh()
         utils.renew_linux_ip_address(self._ssh_session, self.test_interface)
 
-    def get_addr(self, timeout_sec=3, addr_type='ipv4_private'):
+    def get_addr(self, addr_type='ipv4_private', timeout_sec=None):
         """Wait until a type of IP address on the test interface is available
         then return it.
-
-        Args:
-            timeout_sec: Seconds to wait for DHCP to acquire an address if there
-                isn't one already available.
-            addr_type: Type of address to get as defined by the return value of
-                utils.get_interface_ip_addresses.
-
-        Returns:
-            A string containing the requested address.
-
-        Raises:
-            IPerfServerAddrTimeout: No address is available
-            IPerfServerMultipleAddrs: Several addresses are available
         """
-        now = time.time()
-        start = now
-        elapsed = now - start
-
-        while elapsed < timeout_sec:
-            ip_addrs = self.get_interface_ip_addresses(self.test_interface)[addr_type]
-            if len(ip_addrs) != 1:
-                raise IPerfServerMultipleAddrs(
-                    f'Expected only one "{addr_type}" address, got {ip_addrs}')
-            return ip_addrs[0]
-
-        raise IPerfServerAddrTimeout(
-            f'No available "{addr_type}" address after {timeout_sec}s')
+        if not self._ssh_session:
+            self.start_ssh()
+        return utils.get_addr(self._ssh_session, self.test_interface,
+                              addr_type, timeout_sec)
 
     def _cleanup_iperf_port(self):
         """Checks and kills zombie iperf servers occupying intended port."""
