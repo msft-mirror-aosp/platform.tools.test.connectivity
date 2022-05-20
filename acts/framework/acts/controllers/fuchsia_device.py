@@ -98,8 +98,6 @@ FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
 
 CHANNEL_OPEN_TIMEOUT = 5
 
-FUCHSIA_GET_VERSION_CMD = 'cat /config/build-info/version'
-
 FUCHSIA_REBOOT_TYPE_SOFT = 'soft'
 FUCHSIA_REBOOT_TYPE_SOFT_AND_FLASH = 'flash'
 FUCHSIA_REBOOT_TYPE_HARD = 'hard'
@@ -183,6 +181,7 @@ class FuchsiaDevice:
         sl4f_port: The SL4F HTTP port number of the Fuchsia device.
         ssh_config: The ssh_config for connecting to the Fuchsia device.
     """
+
     def __init__(self, fd_conf_data):
         """
         Args:
@@ -786,14 +785,34 @@ class FuchsiaDevice:
             timeout: (int) Seconds to wait for command to run.
 
         Returns:
-            A string containing the Fuchsia version number.
-            For example, "5.20210713.2.1".
+            A string containing the Fuchsia version number or nothing if there
+            is no version information attached during the build.
+            For example, "5.20210713.2.1" or "".
 
         Raises:
             DeviceOffline: If SSH to the device fails.
         """
-        return self.send_command_ssh(FUCHSIA_GET_VERSION_CMD,
-                                     timeout=timeout).stdout
+        if not hasattr(self, 'ffx'):
+            self.init_ffx_connection()
+        target_info_json = self.ffx.run("target show --json").stdout
+        target_info = json.loads(target_info_json)
+        build_info = [
+            entry for entry in target_info if entry["label"] == "build"
+        ]
+        if len(build_info) != 0:
+            self.log.warning(
+                'Expected one entry with label "build", found {build_info}')
+            return ""
+        version_info = [
+            child for child in build_info[0]["child"]
+            if child["label"] == "version"
+        ]
+        if len(version_info) != 0:
+            self.log.warning(
+                'Expected one entry child with label "version", found {build_info}'
+            )
+            return ""
+        return version_info[0].value
 
     def ping(self,
              dest_ip,
@@ -1264,6 +1283,7 @@ class FuchsiaDevice:
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
+
     def process(self, msg, kwargs):
         msg = "[FuchsiaDevice|%s] %s" % (self.extra["ip"], msg)
         return msg, kwargs
