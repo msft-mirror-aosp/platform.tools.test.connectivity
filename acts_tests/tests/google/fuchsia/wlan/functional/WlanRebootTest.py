@@ -220,18 +220,13 @@ class WlanRebootTest(WifiBaseTest):
         if not ipv4:
             self.access_point.stop_dhcp()
         if ipv6:
-            radvd_config = RadvdConfig(
-                prefix='fd00::/64',
-                adv_send_advert=radvd_constants.ADV_SEND_ADVERT_ON,
-                adv_on_link=radvd_constants.ADV_ON_LINK_ON,
-                adv_autonomous=radvd_constants.ADV_AUTONOMOUS_ON)
-
             if band == BAND_2G:
                 self.router_adv_daemon = Radvd(self.access_point.ssh,
                                                self.access_point.wlan_2g)
             elif band == BAND_5G:
                 self.router_adv_daemon = Radvd(self.access_point.ssh,
                                                self.access_point.wlan_5g)
+            radvd_config = RadvdConfig()
             self.router_adv_daemon.start(radvd_config)
 
         self.log.info('Network (SSID: %s) is up.' % ssid)
