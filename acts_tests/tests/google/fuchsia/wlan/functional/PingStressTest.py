@@ -14,8 +14,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """
-Script for exercising various ping scenarios
-
+PingStressTest exercises sending ICMP and ICMPv6 pings to a wireless access
+router and another device behind the AP. Note, this does not reach out to the
+internet. The DUT is only responsible for sending a routable packet; any
+communication past the first-hop is not the responsibility of the DUT.
 """
 
 import threading
@@ -31,7 +33,8 @@ from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.utils import rand_ascii_str
 
-LOCALHOST_IP = '127.0.0.1'
+LOOPBACK_IPV4 = '127.0.0.1'
+LOOPBACK_IPV6 = '::1'
 PING_RESULT_TIMEOUT_SEC = 60 * 5
 
 Test = namedtuple(
@@ -39,7 +42,9 @@ Test = namedtuple(
     field_names=['name', 'dest_ip', 'count', 'interval', 'timeout', 'size'],
     defaults=[3, 1000, 1000, 25])
 
-Addrs = namedtuple(typename='Addrs', field_names=['local', 'ap', 'remote'])
+Addrs = namedtuple(
+    typename='Addrs',
+    field_names=['gateway_ipv4', 'gateway_ipv6', 'remote_ipv4', 'remote_ipv6'])
 
 
 class PingStressTest(WifiBaseTest):
@@ -47,30 +52,49 @@ class PingStressTest(WifiBaseTest):
     def setup_generated_tests(self):
         self.generate_tests(
             self.send_ping, lambda test_name, *_: f'test_{test_name}', [
-                Test("ping_local", lambda addrs: addrs.local),
-                Test("ping_ap", lambda addrs: addrs.ap),
-                Test("ping_remote_small_packet", lambda addrs: addrs.remote),
-                Test("ping_remote_with_params",
-                     lambda addrs: addrs.remote,
-                     count=5,
-                     interval=800,
-                     size=50),
-                Test("ping_remote_small_packet_long",
-                     lambda addrs: addrs.remote,
+                Test("loopback_ipv4", LOOPBACK_IPV4),
+                Test("loopback_ipv6", LOOPBACK_IPV6),
+                Test("gateway_ipv4", lambda addrs: addrs.gateway_ipv4),
+                Test("gateway_ipv6", lambda addrs: addrs.gateway_ipv6),
+                Test("remote_ipv4_small_packet",
+                     lambda addrs: addrs.remote_ipv4),
+                Test("remote_ipv6_small_packet",
+                     lambda addrs: addrs.remote_ipv6),
+                Test("remote_ipv4_small_packet_long",
+                     lambda addrs: addrs.remote_ipv4,
                      count=50),
-                Test("ping_remote_medium_packet",
-                     lambda addrs: addrs.remote,
+                Test("remote_ipv6_small_packet_long",
+                     lambda addrs: addrs.remote_ipv6,
+                     count=50),
+                Test("remote_ipv4_medium_packet",
+                     lambda addrs: addrs.remote_ipv4,
                      size=64),
-                Test("ping_remote_medium_packet_long",
-                     lambda addrs: addrs.remote,
+                Test("remote_ipv6_medium_packet",
+                     lambda addrs: addrs.remote_ipv6,
+                     size=64),
+                Test("remote_ipv4_medium_packet_long",
+                     lambda addrs: addrs.remote_ipv4,
                      count=50,
                      timeout=1500,
                      size=64),
-                Test("ping_remote_large_packet",
-                     lambda addrs: addrs.remote,
+                Test("remote_ipv6_medium_packet_long",
+                     lambda addrs: addrs.remote_ipv6,
+                     count=50,
+                     timeout=1500,
+                     size=64),
+                Test("remote_ipv4_large_packet",
+                     lambda addrs: addrs.remote_ipv4,
                      size=500),
-                Test("ping_remote_large_packet_long",
-                     lambda addrs: addrs.remote,
+                Test("remote_ipv6_large_packet",
+                     lambda addrs: addrs.remote_ipv6,
+                     size=500),
+                Test("remote_ipv4_large_packet_long",
+                     lambda addrs: addrs.remote_ipv4,
+                     count=50,
+                     timeout=5000,
+                     size=500),
+                Test("remote_ipv6_large_packet_long",
+                     lambda addrs: addrs.remote_ipv6,
                      count=50,
                      timeout=5000,
                      size=500),
@@ -86,21 +110,30 @@ class PingStressTest(WifiBaseTest):
                  profile_name='whirlwind',
                  channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
                  ssid=self.ssid,
-                 setup_bridge=True)
-        self.dut.associate(self.ssid)
-        self.iperf_server_ipv4 = self.iperf_server.get_addr()
+                 setup_bridge=True,
+                 is_ipv6_enabled=True,
+                 is_nat_enabled=False)
 
         ap_bridges = self.access_point.interfaces.get_bridge_interface()
         if len(ap_bridges) != 1:
             raise signals.TestAbortClass(
                 f'Expected one bridge interface on the AP, got {ap_bridges}')
-        ap_ipv4_addrs = utils.get_interface_ip_addresses(
-            self.access_point.ssh, ap_bridges[0])['ipv4_private']
-        if len(ap_ipv4_addrs) != 1:
-            raise signals.TestAbortClass(
-                f'Expected one private IPv4 address on the AP, got {ap_ipv4_addrs}'
-            )
-        self.ap_ipv4 = ap_ipv4_addrs[0]
+        self.ap_ipv4 = utils.get_addr(self.access_point.ssh, ap_bridges[0])
+        self.ap_ipv6 = utils.get_addr(self.access_point.ssh,
+                                      ap_bridges[0],
+                                      addr_type='ipv6_link_local')
+        self.log.info(
+            f"Gateway finished setup ({self.ap_ipv4} | {self.ap_ipv6})")
+
+        self.iperf_server.renew_test_interface_ip_address()
+        self.iperf_server_ipv4 = self.iperf_server.get_addr()
+        self.iperf_server_ipv6 = self.iperf_server.get_addr(
+            addr_type='ipv6_private_local')
+        self.log.info(
+            f"Remote finished setup ({self.iperf_server_ipv4} | {self.iperf_server_ipv6})"
+        )
+
+        self.dut.associate(self.ssid)
 
     def teardown_class(self):
         self.dut.disconnect()
@@ -109,36 +142,38 @@ class PingStressTest(WifiBaseTest):
         self.access_point.stop_all_aps()
 
     def send_ping(self,
-                  test_name,
+                  _,
                   get_addr_fn,
                   count=3,
                   interval=1000,
                   timeout=1000,
                   size=25):
         dest_ip = get_addr_fn(
-            Addrs(local=LOCALHOST_IP,
-                  ap=self.ap_ipv4,
-                  remote=self.iperf_server_ipv4))
+            Addrs(
+                gateway_ipv4=self.ap_ipv4,
+                # IPv6 link-local addresses require specification of the
+                # outgoing interface as the scope ID when sending packets.
+                gateway_ipv6=
+                f'{self.ap_ipv6}%{self.dut.get_default_wlan_test_interface()}',
+                remote_ipv4=self.iperf_server_ipv4,
+                # IPv6 global addresses do not require scope IDs.
+                remote_ipv6=self.iperf_server_ipv6)) if callable(
+                    get_addr_fn) else get_addr_fn
 
-        self.log.info(f'Attempting to ping {dest_ip} for test_{test_name}...')
+        self.log.info(f'Attempting to ping {dest_ip}...')
         ping_result = self.dut.can_ping(dest_ip, count, interval, timeout,
                                         size)
         if ping_result:
             self.log.info('Ping was successful.')
         else:
-            if '8.8' in dest_ip:
-                raise signals.TestFailure('Ping was unsuccessful. Consider '
-                                          'possibility of server failure.')
-            else:
-                raise signals.TestFailure('Ping was unsuccessful.')
-        return True
+            raise signals.TestFailure('Ping was unsuccessful.')
 
     def test_simultaneous_pings(self):
         ping_urls = [
             self.iperf_server_ipv4,
             self.ap_ipv4,
-            self.iperf_server_ipv4,
-            self.ap_ipv4,
+            self.iperf_server_ipv6,
+            f'{self.ap_ipv6}%{self.dut.get_default_wlan_test_interface()}',
         ]
         ping_threads = []
         ping_results = []
@@ -155,7 +190,6 @@ class PingStressTest(WifiBaseTest):
         try:
             # Start multiple ping at the same time
             for index, url in enumerate(ping_urls):
-                self.log.info('Create and start thread %d.' % index)
                 t = threading.Thread(target=ping_thread,
                                      args=(self, url, ping_results))
                 ping_threads.append(t)
@@ -174,12 +208,10 @@ class PingStressTest(WifiBaseTest):
                     is_alive = True
 
             if is_alive:
-                raise signals.TestFailure('Thread %d timedout' % index)
+                raise signals.TestFailure(
+                    f'Timed out while pinging {ping_urls[index]}')
 
         for index in range(0, len(ping_results)):
             if not ping_results[index]:
-                self.log.info("Ping failed for %d" % index)
-                raise signals.TestFailure('Thread %d failed to ping. '
-                                          'Consider possibility of server '
-                                          'failure' % index)
+                raise signals.TestFailure(f'Failed to ping {ping_urls[index]}')
         return True

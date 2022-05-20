@@ -32,6 +32,8 @@ from acts.controllers.ap_lib import hostapd
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
+from acts.controllers.ap_lib import radvd
+from acts.controllers.ap_lib import radvd_config
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
@@ -107,7 +109,9 @@ def setup_ap(access_point,
              n_capabilities=None,
              ac_capabilities=None,
              vht_bandwidth=None,
-             setup_bridge=False):
+             setup_bridge=False,
+             is_ipv6_enabled=False,
+             is_nat_enabled=True):
     """Creates a hostapd profile and runs it on an ap. This is a convenience
     function that allows us to start an ap with a single function, without first
     creating a hostapd config.
@@ -128,6 +132,12 @@ def setup_ap(access_point,
         additional_ap_parameters: Additional parameters to send the AP.
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
+        setup_bridge: Whether to bridge the LAN interface WLAN interface.
+            Only one WLAN interface can be bridged with the LAN interface
+            and none of the guest networks can be bridged.
+        is_ipv6_enabled: If True, start a IPv6 router advertisement daemon
+        is_nat_enabled: If True, start NAT on the AP to allow the DUT to be able
+            to access the internet if the WAN port is connected to the internet.
 
     Returns:
         An identifier for each ssid being started. These identifiers can be
@@ -157,7 +167,9 @@ def setup_ap(access_point,
                                             vht_bandwidth=vht_bandwidth)
     return access_point.start_ap(
         hostapd_config=ap,
+        radvd_config=radvd_config.RadvdConfig() if is_ipv6_enabled else None,
         setup_bridge=setup_bridge,
+        is_nat_enabled=is_nat_enabled,
         additional_parameters=additional_ap_parameters)
 
 
@@ -192,8 +204,8 @@ class AccessPoint(object):
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
-        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
-            self.ssh_settings.hostname, msg))
+        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
+                                        (self.ssh_settings.hostname, msg))
         self.device_pdu_config = configs.get('PduDevice', None)
         self.identifier = self.ssh_settings.hostname
 
@@ -220,6 +232,7 @@ class AccessPoint(object):
         self._aps = dict()
         self._dhcp = None
         self._dhcp_bss = dict()
+        self._radvd = None
         self.bridge = bridge_interface.BridgeInterface(self)
         self.iwconfig = ap_iwconfig.ApIwconfig(self)
 
@@ -271,7 +284,9 @@ class AccessPoint(object):
 
     def start_ap(self,
                  hostapd_config,
+                 radvd_config=None,
                  setup_bridge=False,
+                 is_nat_enabled=True,
                  additional_parameters=None):
         """Starts as an ap using a set of configurations.
 
@@ -284,9 +299,14 @@ class AccessPoint(object):
         Args:
             hostapd_config: hostapd_config.HostapdConfig, The configurations
                 to use when starting up the ap.
+            radvd_config: radvd_config.RadvdConfig, The IPv6 configuration
+                to use when starting up the ap.
             setup_bridge: Whether to bridge the LAN interface WLAN interface.
                 Only one WLAN interface can be bridged with the LAN interface
                 and none of the guest networks can be bridged.
+            is_nat_enabled: If True, start NAT on the AP to allow the DUT to be
+                able to access the internet if the WAN port is connected to the
+                internet.
             additional_parameters: A dictionary of parameters that can sent
                 directly into the hostapd config file.  This can be used for
                 debugging and or adding one off parameters into the config.
@@ -390,7 +410,16 @@ class AccessPoint(object):
         configured_subnets = self.get_configured_subnets()
         dhcp_conf = dhcp_config.DhcpConfig(subnets=configured_subnets)
         self.start_dhcp(dhcp_conf=dhcp_conf)
-        self.start_nat()
+        if is_nat_enabled:
+            self.start_nat()
+            self.enable_forwarding()
+        else:
+            self.stop_nat()
+            self.enable_forwarding()
+        if radvd_config:
+            radvd_interface = bridge_interface_name if setup_bridge else interface
+            self._radvd = radvd.Radvd(self.ssh, radvd_interface)
+            self._radvd.start(radvd_config)
 
         bss_interfaces = [bss for bss in hostapd_config.bss_lookup]
         bss_interfaces.append(interface)
@@ -458,6 +487,15 @@ class AccessPoint(object):
                 identifier).hostapd.pull_logs()
         return hostapd_logs
 
+    def enable_forwarding(self):
+        """Enable IPv4 and IPv6 forwarding on the AP.
+
+        When forwarding is enabled, the access point is able to route IP packets
+        between devices in the same subnet.
+        """
+        self.ssh.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
+        self.ssh.run('echo 1 > /proc/sys/net/ipv6/conf/all/forwarding')
+
     def start_nat(self):
         """Start NAT on the AP.
 
@@ -474,8 +512,6 @@ class AccessPoint(object):
         self.ssh.run('iptables -t nat -F')
         self.ssh.run('iptables -t nat -A POSTROUTING -o %s -j MASQUERADE' %
                      self.wan)
-        self.ssh.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
-        self.ssh.run('echo 1 > /proc/sys/net/ipv6/conf/all/forwarding')
 
     def stop_nat(self):
         """Stop NAT on the AP.
@@ -487,8 +523,6 @@ class AccessPoint(object):
         per-interface masquerade rules.
         """
         self.ssh.run('iptables -t nat -F')
-        self.ssh.run('echo 0 > /proc/sys/net/ipv4/ip_forward')
-        self.ssh.run('echo 0 > /proc/sys/net/ipv6/conf/all/forwarding')
 
     def create_bridge(self, bridge_name, interfaces):
         """Create the specified bridge and bridge the specified interfaces.
@@ -575,11 +609,14 @@ class AccessPoint(object):
 
         instance = self._aps.get(identifier)
 
-        instance.hostapd.stop()
+        if self._radvd:
+            self._radvd.stop()
         try:
             self.stop_dhcp()
         except dhcp_server.NoInterfaceError:
             pass
+        self.stop_nat()
+        instance.hostapd.stop()
         self._ip_cmd.clear_ipv4_addresses(identifier)
 
         del self._aps[identifier]
