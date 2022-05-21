@@ -897,14 +897,14 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
                 raise signals.TestFailure("Failed",
                     extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        if not call_setup_teardown(self.log, ads[0], ads[1], ads[0], None, None,
+        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
                                    5):
             self.log.error("Call setup failed")
             return False
         else:
             self.log.info("Call setup succeed")
 
-        if not wifi_cell_switching(self.log, ads[0], GEN_5G, self.wifi_network_ssid,
+        if not wifi_cell_switching(self.log, ads[0], None, self.wifi_network_ssid,
                                    self.wifi_network_pass):
             ads[0].log.error("Failed to do WIFI and Cell switch in call")
             result = False
@@ -1084,7 +1084,8 @@ class Nsa5gVoiceTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        if not provision_device_for_5g(self.log, ads, nr_type='nsa'):
+        if not phone_setup_volte(
+                self.log, ads[0], nw_gen=GEN_5G, nr_type='nsa'):
             return False
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
