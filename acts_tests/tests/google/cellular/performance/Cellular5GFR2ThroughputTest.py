@@ -150,12 +150,12 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         with open(results_file_path, 'w', newline='') as csvfile:
             field_names = [
                 'Band', 'Channel', 'DL Carriers', 'UL Carriers', 'DL MCS',
-                'UL MCS', 'Cell Power', 'DL Min. Throughput',
-                'DL Max. Throughput', 'DL Avg. Throughput',
-                'DL Theoretical Throughput', 'UL Min. Throughput',
-                'UL Max. Throughput', 'UL Avg. Throughput',
-                'UL Theoretical Throughput', 'DL BLER (%)', 'UL BLER (%)',
-                'TCP/UDP Throughput'
+                'DL MIMO', 'UL MCS', 'UL MIMO', 'Cell Power',
+                'DL Min. Throughput', 'DL Max. Throughput',
+                'DL Avg. Throughput', 'DL Theoretical Throughput',
+                'UL Min. Throughput', 'UL Max. Throughput',
+                'UL Avg. Throughput', 'UL Theoretical Throughput',
+                'DL BLER (%)', 'UL BLER (%)', 'TCP/UDP Throughput'
             ]
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
@@ -174,8 +174,12 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                         testcase_results['testcase_params']['num_ul_cells'],
                         'DL MCS':
                         testcase_results['testcase_params']['dl_mcs'],
+                        'DL MIMO':
+                        testcase_results['testcase_params']['dl_mimo_config'],
                         'UL MCS':
                         testcase_results['testcase_params']['ul_mcs'],
+                        'UL MIMO':
+                        testcase_results['testcase_params']['ul_mimo_config'],
                         'Cell Power':
                         result['cell_power'],
                         'DL Min. Throughput':
@@ -227,6 +231,11 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         for cell in testcase_params['dl_cell_list']:
             self.keysight_test_app.set_cell_band('NR5G', cell,
                                                  testcase_params['band'])
+            self.keysight_test_app.set_cell_mimo_config(
+                'NR5G', cell, 'DL', testcase_params['dl_mimo_config'])
+        for cell in testcase_params['ul_cell_list']:
+            self.keysight_test_app.set_cell_mimo_config(
+                'NR5G', cell, 'UL', testcase_params['ul_mimo_config'])
         self.keysight_test_app.configure_contiguous_nr_channels(
             testcase_params['dl_cell_list'][0], testcase_params['band'],
             testcase_params['channel'])
@@ -312,8 +321,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             for cell in testcase_params['dl_cell_list']:
                 self.keysight_test_app.set_cell_dl_power(
                     'NR5G', cell, result['cell_power'], 1)
-            self.keysight_test_app.select_display_tab(
-                'NR5G', testcase_params['dl_cell_list'][0], 'BTHR', 'OTAGRAPH')
+            #self.keysight_test_app.select_display_tab(
+            #    'NR5G', testcase_params['dl_cell_list'][0], 'BTHR', 'OTAGRAPH')
             time.sleep(SHORT_SLEEP)
             # Start BLER and throughput measurements
             self.keysight_test_app.start_bler_measurement(
@@ -428,7 +437,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         return testcase_params
 
     def generate_test_cases(self, bands, channels, mcs_pair_list,
-                            num_dl_cells_list, num_ul_cells_list, **kwargs):
+                            num_dl_cells_list, num_ul_cells_list,
+                            dl_mimo_config, ul_mimo_config, **kwargs):
         """Function that auto-generates test cases for a test class."""
         test_cases = ['test_load_scpi']
 
@@ -439,9 +449,9 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                 continue
             if channel not in cputils.PCC_PRESET_MAPPING[band]:
                 continue
-            test_name = 'test_nr_throughput_bler_{}_{}_DL_{}CC_mcs{}_UL_{}CC_mcs{}'.format(
-                band, channel, num_dl_cells, mcs_pair[0], num_ul_cells,
-                mcs_pair[1])
+            test_name = 'test_nr_throughput_bler_{}_{}_DL_{}CC_mcs{}_{}_UL_{}CC_mcs{}_{}'.format(
+                band, channel, num_dl_cells, mcs_pair[0], dl_mimo_config,
+                num_ul_cells, mcs_pair[1], ul_mimo_config)
             test_params = collections.OrderedDict(
                 band=band,
                 channel=channel,
@@ -449,6 +459,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                 ul_mcs=mcs_pair[1],
                 num_dl_cells=num_dl_cells,
                 num_ul_cells=num_ul_cells,
+                dl_mimo_config=dl_mimo_config,
+                ul_mimo_config=ul_mimo_config,
                 dl_cell_list=list(range(1, num_dl_cells + 1)),
                 ul_cell_list=list(range(1, num_ul_cells + 1)),
                 **kwargs)
@@ -467,6 +479,8 @@ class Cellular5GFR2_DL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                               [(16, 4), (27, 4)],
                                               list(range(1, 9)),
                                               list(range(1, 3)),
+                                              dl_mimo_config='N2X2',
+                                              ul_mimo_config='N1X1',
                                               schedule_scenario="FULL_TPUT",
                                               traffic_direction='DL',
                                               transform_precoding=0)
@@ -478,12 +492,48 @@ class Cellular5GFR2_CP_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
                                               ['low', 'mid', 'high'],
-                                              [(4, 16), (4, 27)],
-                                              list(range(1, 3)),
-                                              list(range(1, 3)),
+                                              [(4, 16), (4, 27)], [1], [1],
+                                              dl_mimo_config='N2X2',
+                                              ul_mimo_config='N1X1',
                                               schedule_scenario="UL_RMC",
                                               traffic_direction='UL',
                                               transform_precoding=0)
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [1], [1],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=0))
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [2], [2],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=0))
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [3], [3],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=0))
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [4], [4],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=0))
 
 
 class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
@@ -492,12 +542,48 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
                                               ['low', 'mid', 'high'],
-                                              [(4, 16), (4, 27)],
-                                              list(range(1, 3)),
-                                              list(range(1, 3)),
+                                              [(4, 16), (4, 27)], [1], [1],
+                                              dl_mimo_config='N2X2',
+                                              ul_mimo_config='N1X1',
                                               schedule_scenario="UL_RMC",
                                               traffic_direction='UL',
                                               transform_precoding=1)
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [1], [1],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=1))
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [2], [2],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=1))
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [3], [3],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=1))
+        self.tests.extend(
+            self.generate_test_cases(['N257', 'N258', 'N260', 'N261'],
+                                     ['low', 'mid', 'high'],
+                                     [(4, 16), (4, 27)], [4], [4],
+                                     dl_mimo_config='N2X2',
+                                     ul_mimo_config='N2X2',
+                                     schedule_scenario="UL_RMC",
+                                     traffic_direction='UL',
+                                     transform_precoding=1))
 
 
 class Cellular5GFR2_DL_FrequecySweep_ThroughputTest(Cellular5GFR2ThroughputTest
@@ -511,7 +597,9 @@ class Cellular5GFR2_DL_FrequecySweep_ThroughputTest(Cellular5GFR2ThroughputTest
                                               [(16, 4), (27, 4)],
                                               schedule_scenario="FULL_TPUT",
                                               traffic_direction='DL',
-                                              transform_precoding=0)
+                                              transform_precoding=0,
+                                              dl_mimo_config='N2X2',
+                                              ul_mimo_config='N1X1')
 
     def generate_test_cases(self, dl_frequency_sweep_params, mcs_pair_list,
                             **kwargs):
