@@ -23,11 +23,11 @@ import time
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.net import ui_utils
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
 from acts_contrib.test_utils.tel.tel_defines import MOBILE_DATA
 from acts_contrib.test_utils.tel.tel_defines import USE_SIM
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_ops_utils import get_resource_value
-from acts_contrib.test_utils.tel.tel_ops_utils import wait_and_click_element
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
@@ -67,12 +67,17 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
 
+        branch_name = ad.adb.shell('getprop ro.product.build.id')
+        s_branch = False
+        if branch_name[0] == 'S':
+            s_branch = True
+
         if not provision_device_for_5g(ad.log, ad, nr_type='nsa'):
             return False
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
         ad.adb.shell('am start -a android.settings.WIRELESS_SETTINGS')
-        wait_and_click_element(ad, 'SIMs')
+        ui_utils.wait_and_click(ad, text='SIMs')
 
         switch_value = get_resource_value(ad, USE_SIM)
         if switch_value == 'true':
@@ -84,11 +89,17 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         label_text = USE_SIM
         label_resource_id = 'com.android.settings:id/switch_text'
 
-        ad.log.info('Disable SIM')
-        wait_and_click_element(ad, label_text, label_resource_id)
+        ad.log.info('Start Disabling SIM')
+        ui_utils.wait_and_click(ad,
+                                text=label_text,
+                                resource_id=label_resource_id)
 
         button_resource_id = 'android:id/button1'
-        wait_and_click_element(ad, 'Yes', button_resource_id)
+        if any(model in ad.model for model in CHIPSET_MODELS_LIST) and s_branch:
+            ui_utils.wait_and_click(ad, text='YES', resource_id=button_resource_id)
+        else:
+            ui_utils.wait_and_click(ad, text='Yes', resource_id=button_resource_id)
+
         switch_value = get_resource_value(ad, USE_SIM)
         if switch_value == 'false':
             ad.log.info('SIM is disabled as expected')
@@ -96,10 +107,18 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
             ad.log.error('SIM should be disabled but SIM is enabled')
             return False
 
-        ad.log.info('Enable SIM')
-        wait_and_click_element(ad, label_text, label_resource_id)
+        ad.log.info('Start Enabling SIM')
+        ui_utils.wait_and_click(ad,
+                                text=label_text,
+                                resource_id=label_resource_id)
 
-        wait_and_click_element(ad, 'Yes', button_resource_id)
+        if any(model in ad.model for model in CHIPSET_MODELS_LIST) and s_branch:
+            ui_utils.wait_and_click(ad, text='YES', resource_id=button_resource_id)
+        elif any(model in ad.model for model in CHIPSET_MODELS_LIST) and not s_branch:
+            pass
+        else:
+            ui_utils.wait_and_click(ad, text='Yes', resource_id=button_resource_id)
+
         switch_value = get_resource_value(ad, USE_SIM)
         if switch_value == 'true':
             ad.log.info('SIM is enabled as expected')
@@ -141,7 +160,7 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
         ad.adb.shell('am start -a android.settings.WIRELESS_SETTINGS')
-        wait_and_click_element(ad, 'SIMs')
+        ui_utils.wait_and_click(ad, text='SIMs')
         switch_value = get_resource_value(ad, MOBILE_DATA)
 
         if switch_value == 'true':
@@ -149,7 +168,7 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         else:
             ad.log.error('Mobile data should be enabled but it is disabled')
 
-        ad.log.info('Disable mobile data')
+        ad.log.info('Start Disabling mobile data')
         ad.droid.telephonyToggleDataConnection(False)
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         switch_value = get_resource_value(ad, MOBILE_DATA)
@@ -158,9 +177,10 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         else:
             ad.log.error('Mobile data should be disabled but it is enabled')
 
-        ad.log.info('Enabling mobile data')
+        ad.log.info('Start Enabling mobile data')
         ad.droid.telephonyToggleDataConnection(True)
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+
         switch_value = get_resource_value(ad, MOBILE_DATA)
         if switch_value == 'true':
             ad.log.info('Mobile data is enabled as expected')
