@@ -34,12 +34,20 @@ from acts.keys import Config
 from acts_contrib.test_utils.net import net_test_utils as nutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
+<<<<<<< TARGET BRANCH (f836c1 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 <<<<<<< TARGET BRANCH (98b4b2 Regenerate remaining pb2.py files using protoc=3.20.1 am: eb)
+=======
+<<<<<<< TARGET BRANCH (5fcdc3 Regenerate remaining pb2.py files using protoc=3.20.1 am: eb)
+>>>>>>> SOURCE BRANCH (8128e4 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 from mobly.base_test import STAGE_NAME_TEARDOWN_CLASS
 
 =======
 WifiEnums = wutils.WifiEnums
+<<<<<<< TARGET BRANCH (f836c1 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 >>>>>>> SOURCE BRANCH (9a32e5 The change on Wifi_Base and Wifi_utils is for Country code t)
+=======
+>>>>>>> SOURCE BRANCH (62843c The change on Wifi_Base and Wifi_utils is for Country code t)
+>>>>>>> SOURCE BRANCH (8128e4 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
