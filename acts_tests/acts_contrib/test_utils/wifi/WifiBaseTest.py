@@ -34,8 +34,12 @@ from acts.keys import Config
 from acts_contrib.test_utils.net import net_test_utils as nutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
+<<<<<<< TARGET BRANCH (98b4b2 Regenerate remaining pb2.py files using protoc=3.20.1 am: eb)
 from mobly.base_test import STAGE_NAME_TEARDOWN_CLASS
 
+=======
+WifiEnums = wutils.WifiEnums
+>>>>>>> SOURCE BRANCH (9a32e5 The change on Wifi_Base and Wifi_utils is for Country code t)
 AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
@@ -77,7 +81,9 @@ class WifiBaseTest(BaseTestClass):
                             self.country_code_file)
                     self.country_code = utils.load_config(
                         self.country_code_file)["country"]
-                    wutils.set_wifi_country_code(ad, self.country_code)
+                else:
+                    self.country_code = WifiEnums.CountryCode.US
+                wutils.set_wifi_country_code(ad, self.country_code)
 
     def setup_test(self):
         if (hasattr(self, "android_devices")
