@@ -34,6 +34,7 @@ from acts.keys import Config
 from acts_contrib.test_utils.net import net_test_utils as nutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
+<<<<<<< TARGET BRANCH (7a2b5f Merge "Modify UUID for TelLabGFTVoWiFiTest.py" am: 6592311d3)
 <<<<<<< TARGET BRANCH (d8cb5b [conflict] [conflict] The change on Wifi_Base and Wifi_utils)
 <<<<<<< TARGET BRANCH (80ad75 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 <<<<<<< TARGET BRANCH (ac27f9 Regenerate remaining pb2.py files using protoc=3.20.1 am: eb)
@@ -68,6 +69,8 @@ WifiEnums = wutils.WifiEnums
 >>>>>>> SOURCE BRANCH (62843c The change on Wifi_Base and Wifi_utils is for Country code t)
 >>>>>>> SOURCE BRANCH (8128e4 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 >>>>>>> SOURCE BRANCH (64cf27 [conflict] [conflict] The change on Wifi_Base and Wifi_utils)
+=======
+>>>>>>> SOURCE BRANCH (5e04e4 Revert "The change on Wifi_Base and Wifi_utils is for Countr)
 AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
@@ -109,9 +112,7 @@ class WifiBaseTest(BaseTestClass):
                             self.country_code_file)
                     self.country_code = utils.load_config(
                         self.country_code_file)["country"]
-                else:
-                    self.country_code = WifiEnums.CountryCode.US
-                wutils.set_wifi_country_code(ad, self.country_code)
+                    wutils.set_wifi_country_code(ad, self.country_code)
 
     def setup_test(self):
         if (hasattr(self, "android_devices")
