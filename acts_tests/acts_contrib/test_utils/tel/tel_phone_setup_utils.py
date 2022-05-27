@@ -97,7 +97,8 @@ def phone_setup_iwlan(log,
                       wfc_mode,
                       wifi_ssid=None,
                       wifi_pwd=None,
-                      nw_gen=None):
+                      nw_gen=None,
+                      nr_type=None):
     """Phone setup function for epdg call test.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -114,13 +115,14 @@ def phone_setup_iwlan(log,
         wifi_pwd: WiFi network password. This is optional.
         nw_gen: network type selection. This is optional.
             GEN_4G for 4G, GEN_5G for 5G or None for doing nothing.
+        nr_type: NR network type
     Returns:
         True if success. False if fail.
     """
     return phone_setup_iwlan_for_subscription(log, ad,
                                               get_outgoing_voice_sub_id(ad),
                                               is_airplane_mode, wfc_mode,
-                                              wifi_ssid, wifi_pwd, nw_gen)
+                                              wifi_ssid, wifi_pwd, nw_gen, nr_type)
 
 
 def phone_setup_iwlan_for_subscription(log,
