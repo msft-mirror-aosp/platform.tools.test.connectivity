@@ -49,6 +49,10 @@ MAX_FILENAME_LEN = 255
 # All Fuchsia devices use this suffix for link-local mDNS host names.
 FUCHSIA_MDNS_TYPE = '_fuchsia._udp.local.'
 
+# Default max seconds it takes to Duplicate Address Detection to finish before
+# assigning an IPv6 address.
+DAD_TIMEOUT_SEC = 30
+
 
 class ActsUtilsError(Exception):
     """Generic error raised for exceptions in ACTS utils."""
@@ -563,6 +567,7 @@ def timeout(sec):
     """
 
     def decorator(func):
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if sec:
@@ -1411,12 +1416,11 @@ def get_interface_ip_addresses(comm_channel, interface):
 
     Returns:
         A list of dictionaries of the the various IP addresses:
-            ipv4_private_local_addresses: Any 192.168, 172.16, 10, or 169.254
-                addresses
-            ipv4_public_addresses: Any IPv4 public addresses
-            ipv6_link_local_addresses: Any fe80:: addresses
-            ipv6_private_local_addresses: Any fd00:: addresses
-            ipv6_public_addresses: Any publicly routable addresses
+            ipv4_private: Any 192.168, 172.16, 10, or 169.254 addresses
+            ipv4_public: Any IPv4 public addresses
+            ipv6_link_local: Any fe80:: addresses
+            ipv6_private_local: Any fd00:: addresses
+            ipv6_public: Any publicly routable addresses
     """
     # Local imports are used here to prevent cyclic dependency.
     from acts.controllers.android_device import AndroidDevice
@@ -1500,6 +1504,62 @@ def get_interface_ip_addresses(comm_channel, interface):
         'ipv6_private_local': ipv6_private_local_addresses,
         'ipv6_public': ipv6_public_addresses
     }
+
+
+class AddressTimeout(signals.TestError):
+    pass
+
+
+class MultipleAddresses(signals.TestError):
+    pass
+
+
+def get_addr(comm_channel,
+             interface,
+             addr_type='ipv4_private',
+             timeout_sec=None):
+    """Get the requested type of IP address for an interface; if an address is
+    not available, retry until the timeout has been reached.
+
+    Args:
+        addr_type: Type of address to get as defined by the return value of
+            utils.get_interface_ip_addresses.
+        timeout_sec: Seconds to wait to acquire an address if there isn't one
+            already available. If fetching an IPv4 address, the default is 3
+            seconds. If IPv6, the default is 30 seconds for Duplicate Address
+            Detection.
+
+    Returns:
+        A string containing the requested address.
+
+    Raises:
+        TestAbortClass: timeout_sec is None and invalid addr_type
+        AddressTimeout: No address is available after timeout_sec
+        MultipleAddresses: Several addresses are available
+    """
+    if not timeout_sec:
+        if 'ipv4' in addr_type:
+            timeout_sec = 3
+        elif 'ipv6' in addr_type:
+            timeout_sec = DAD_TIMEOUT_SEC
+        else:
+            raise signals.TestAbortClass(f'Unknown addr_type "{addr_type}"')
+
+    start = time.time()
+    elapsed = 0
+
+    while elapsed <= timeout_sec:
+        ip_addrs = get_interface_ip_addresses(comm_channel,
+                                              interface)[addr_type]
+        if len(ip_addrs) > 1:
+            raise MultipleAddresses(
+                f'Expected only one "{addr_type}" address, got {ip_addrs}')
+        elif len(ip_addrs) == 1:
+            return ip_addrs[0]
+        elapsed = time.time() - start
+
+    raise AddressTimeout(
+        f'No available "{addr_type}" address after {timeout_sec}s')
 
 
 def get_interface_based_on_ip(comm_channel, desired_ip_address):
