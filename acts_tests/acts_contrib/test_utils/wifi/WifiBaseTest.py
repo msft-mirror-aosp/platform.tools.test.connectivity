@@ -34,6 +34,7 @@ from acts.keys import Config
 from acts_contrib.test_utils.net import net_test_utils as nutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
+<<<<<<< TARGET BRANCH (ef85d7 [conflict] Merge "Revert "[conflict] The change on Wifi_Base)
 <<<<<<< TARGET BRANCH (11c43c Merge "Modify UUID for TelLabGFTVoWiFiTest.py" am: 6592311d3)
 <<<<<<< TARGET BRANCH (f836c1 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 <<<<<<< TARGET BRANCH (98b4b2 Regenerate remaining pb2.py files using protoc=3.20.1 am: eb)
@@ -54,6 +55,8 @@ WifiEnums = wutils.WifiEnums
 >>>>>>> SOURCE BRANCH (8128e4 [conflict] The change on Wifi_Base and Wifi_utils is for Cou)
 =======
 >>>>>>> SOURCE BRANCH (a03de9 Merge "Revert "[conflict] The change on Wifi_Base and Wifi_u)
+=======
+>>>>>>> SOURCE BRANCH (178461 Revert "The change on Wifi_Base and Wifi_utils is for Countr)
 AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
