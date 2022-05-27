@@ -112,6 +112,8 @@ FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 
 MDNS_LOOKUP_RETRY_MAX = 3
 
+START_SL4F_V2_CMD = 'start_sl4f'
+
 VALID_ASSOCIATION_MECHANISMS = {None, 'policy', 'drivers'}
 
 
@@ -302,6 +304,11 @@ class FuchsiaDevice:
 
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
+
+        # Assuming using SL4F CFv2, we'll fallback to using CFv1 if v2 is
+        # not present.
+        self.sl4f_v1 = False
+
 
         try:
             self.start_services()
@@ -1158,7 +1165,7 @@ class FuchsiaDevice:
                 self.log_process.stop()
                 raise
 
-            self.control_daemon("sl4f.cmx", "start")
+            self.start_sl4f_on_fuchsia_device()
             self.init_sl4f_connection()
 
             out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
@@ -1179,6 +1186,23 @@ class FuchsiaDevice:
             if self.log_process:
                 self.log_process.stop()
 
+    def start_sl4f_on_fuchsia_device(self):
+        self.log.debug("Attempting to start SL4F server on Fuchsia device %s." %
+                       self.ip)
+        if self.ssh_config:
+            result = self.send_command_ssh(START_SL4F_V2_CMD,
+                timeout=10, skip_status_code_check=True).stdout
+            self.sl4f_v1 = False
+            # TODO(fxbug.dev/99331) Remove support to run SL4F in CFv1 mode once
+            # ACTS no longer use images that comes with only CFv1 SL4F.
+            if result.exit_status != 0:
+                self.log.warn(
+                    "Running SL4F in CFv1 mode, "
+                    "this is deprecated for images built after 5/9/2022, "
+                    "see https://fxbug.dev/77056 for more info.")
+                self.control_daemon("sl4f.cmx", "start")
+                self.sl4f_v1 = True
+
     def stop_sl4f_on_fuchsia_device(self):
         """Stops SL4F server on the fuchsia device
 
@@ -1187,11 +1211,19 @@ class FuchsiaDevice:
         """
         self.log.debug("Attempting to stop SL4F server on Fuchsia device %s." %
                        self.ip)
-        if self.ssh_config:
+        if self.ssh_config and self.sl4f_v1:
             try:
                 self.control_daemon("sl4f.cmx", "stop")
             except Exception as err:
-                self.log.exception("Failed to stop sl4f.cmx with: %s" % err)
+                self.log.exception("Failed to stop sl4f.cmx with: %s. "
+                                   "This is expected if running CFv2." % err)
+        else:
+            if hasattr(self, 'ffx'):
+                # TODO(b/234054431): This calls ffx after it has been stopped.
+                # Refactor controller clean up such that ffx is called after SL4F
+                # has been stopped.
+                self.ffx.run('component stop /core/sl4f')
+                self.ffx.clean_up()
 
     def load_config(self, config):
         pass
