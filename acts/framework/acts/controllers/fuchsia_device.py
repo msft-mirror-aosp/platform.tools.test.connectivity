@@ -1222,12 +1222,6 @@ class FuchsiaDevice:
             self.start_sl4f_on_fuchsia_device()
             self.init_sl4f_connection()
 
-            out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
-            full_out_path = os.path.join(self.log_path, out_name)
-            fw_file = open(full_out_path, 'w')
-            fw_file.write('%s\n' % self.version())
-            fw_file.close()
-
         self.init_ffx_connection()
 
     def stop_host_services(self):
