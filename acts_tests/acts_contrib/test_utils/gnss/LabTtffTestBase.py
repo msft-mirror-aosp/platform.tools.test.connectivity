@@ -36,12 +36,7 @@ from acts_contrib.test_utils.gnss.gnss_defines import BCM_GPS_XML_PATH
 class LabTtffTestBase(BaseTestClass):
     """ LAB TTFF Tests Base Class"""
     GTW_GPSTOOL_APP = 'gtw_gpstool_apk'
-    GNSS_SIMULATOR_KEY = 'gnss_simulator'
-    GNSS_SIMULATOR_IP_KEY = 'gnss_simulator_ip'
-    GNSS_SIMULATOR_PORT_KEY = 'gnss_simulator_port'
-    GNSS_SIMULATOR_PORT_CTRL_KEY = 'gnss_simulator_port_ctrl'
-    GNSS_SIMULATOR_SCENARIO_KEY = 'gnss_simulator_scenario'
-    GNSS_SIMULATOR_POWER_LEVEL_KEY = 'gnss_simulator_power_level'
+    GNSS_SIMULATOR_KEY = 'gnss_sim_params'
     CUSTOM_FILES_KEY = 'custom_files'
     CSTTFF_CRITERIA = 'cs_criteria'
     HSTTFF_CRITERIA = 'hs_criteria'
@@ -52,12 +47,16 @@ class LabTtffTestBase(BaseTestClass):
     TTFF_ITERATION = 'ttff_iteration'
     SIMULATOR_LOCATION = 'simulator_location'
     DIAG_OPTION = 'diag_option'
+    SCENARIO_POWER = 'scenario_power'
+    MDSAPP = 'mdsapp'
+    MASKFILE = 'maskfile'
+    MODEMPARFILE = 'modemparfile'
+    NV_DICT = 'nv_dict'
 
     def __init__(self, controllers):
         """ Initializes class attributes. """
 
         super().__init__(controllers)
-
         self.dut = None
         self.gnss_simulator = None
         self.rockbottom_script = None
@@ -67,61 +66,71 @@ class LabTtffTestBase(BaseTestClass):
     def setup_class(self):
         super().setup_class()
 
-        req_params = [
-            self.GNSS_SIMULATOR_KEY, self.GNSS_SIMULATOR_IP_KEY,
-            self.GNSS_SIMULATOR_PORT_KEY, self.GNSS_SIMULATOR_SCENARIO_KEY,
-            self.GNSS_SIMULATOR_POWER_LEVEL_KEY, self.CSTTFF_CRITERIA,
-            self.HSTTFF_CRITERIA, self.WSTTFF_CRITERIA, self.TTFF_ITERATION,
-            self.SIMULATOR_LOCATION, self.DIAG_OPTION
-        ]
+        # Update parameters by test case configurations.
+        TEST_PARAMS = self.TAG + '_params'
+        self.test_params = self.user_params.get(TEST_PARAMS, {})
+        if not self.test_params:
+            self.log.warning(TEST_PARAMS + ' was not found in the user '
+                             'parameters defined in the config file.')
 
+        # Override user_param values with test parameters
+        self.user_params.update(self.test_params)
+
+        # Unpack user_params with default values. All the usages of user_params
+        # as self attributes need to be included either as a required parameter
+        # or as a parameter with a default value.
+
+        # Required parameters
+        req_params = [
+            self.CSTTFF_PECRITERIA, self.WSTTFF_PECRITERIA, self.HSTTFF_PECRITERIA,
+            self.CSTTFF_CRITERIA, self.HSTTFF_CRITERIA, self.WSTTFF_CRITERIA,
+            self.TTFF_ITERATION, self.GNSS_SIMULATOR_KEY, self.DIAG_OPTION,
+            self.GTW_GPSTOOL_APP
+        ]
         self.unpack_userparams(req_param_names=req_params)
+
+        # Optional parameters
+        self.custom_files = self.user_params.get(self.CUSTOM_FILES_KEY,[])
+        self.maskfile = self.user_params.get(self.MASKFILE,'')
+        self.mdsapp = self.user_params.get(self.MDSAPP,'')
+        self.modemparfile = self.user_params.get(self.MODEMPARFILE,'')
+        self.nv_dict = self.user_params.get(self.NV_DICT,{})
+        self.scenario_power = self.user_params.get(self.SCENARIO_POWER, [])
+
+        # Set TTFF Spec.
+        test_type = namedtuple('Type', ['command', 'criteria'])
+        self.test_types = {
+            'cs': test_type('Cold Start', self.cs_criteria),
+            'ws': test_type('Warm Start', self.ws_criteria),
+            'hs': test_type('Hot Start', self.hs_criteria)
+        }
+
         self.dut = self.android_devices[0]
-        self.gnss_simulator_scenario = self.user_params[
-            self.GNSS_SIMULATOR_SCENARIO_KEY]
-        self.gnss_simulator_power_level = self.user_params[
-            self.GNSS_SIMULATOR_POWER_LEVEL_KEY]
-        self.gtw_gpstool_app = self.user_params[self.GTW_GPSTOOL_APP]
-        custom_files = self.user_params.get(self.CUSTOM_FILES_KEY, [])
-        self.cs_ttff_criteria = self.user_params.get(self.CSTTFF_CRITERIA, [])
-        self.hs_ttff_criteria = self.user_params.get(self.HSTTFF_CRITERIA, [])
-        self.ws_ttff_criteria = self.user_params.get(self.WSTTFF_CRITERIA, [])
-        self.cs_ttff_pecriteria = self.user_params.get(self.CSTTFF_PECRITERIA,
-                                                       [])
-        self.hs_ttff_pecriteria = self.user_params.get(self.HSTTFF_PECRITERIA,
-                                                       [])
-        self.ws_ttff_pecriteria = self.user_params.get(self.WSTTFF_PECRITERIA,
-                                                       [])
-        self.ttff_iteration = self.user_params.get(self.TTFF_ITERATION, [])
-        self.simulator_location = self.user_params.get(self.SIMULATOR_LOCATION,
-                                                       [])
-        self.diag_option = self.user_params.get(self.DIAG_OPTION, [])
+
+        # GNSS Simulator Setup
+        self.simulator_location = self.gnss_sim_params.get(
+            self.SIMULATOR_LOCATION, [])
+        self.gnss_simulator_scenario = self.gnss_sim_params.get('scenario')
+        self.gnss_simulator_power_level = self.gnss_sim_params.get('power_level')
 
         # Create gnss_simulator instance
-        gnss_simulator_key = self.user_params[self.GNSS_SIMULATOR_KEY]
-        gnss_simulator_ip = self.user_params[self.GNSS_SIMULATOR_IP_KEY]
-        gnss_simulator_port = self.user_params[self.GNSS_SIMULATOR_PORT_KEY]
+        gnss_simulator_key = self.gnss_sim_params.get('type')
+        gnss_simulator_ip = self.gnss_sim_params.get('ip')
+        gnss_simulator_port = self.gnss_sim_params.get('port')
         if gnss_simulator_key == 'gss7000':
-            gnss_simulator_port_ctrl = self.user_params[
-                self.GNSS_SIMULATOR_PORT_CTRL_KEY]
+            gnss_simulator_port_ctrl = self.gnss_sim_params.get('port_ctrl')
         else:
             gnss_simulator_port_ctrl = None
         self.gnss_simulator = GnssSimulator.AbstractGnssSimulator(
             gnss_simulator_key, gnss_simulator_ip, gnss_simulator_port,
             gnss_simulator_port_ctrl)
 
-        test_type = namedtuple('Type', ['command', 'criteria'])
-        self.test_types = {
-            'cs': test_type('Cold Start', self.cs_ttff_criteria),
-            'ws': test_type('Warm Start', self.ws_ttff_criteria),
-            'hs': test_type('Hot Start', self.hs_ttff_criteria)
-        }
-
         # Unpack the rockbottom script file if its available.
-        for file in custom_files:
-            if 'rockbottom_' + self.dut.model in file:
-                self.rockbottom_script = file
-                break
+        if self.custom_files:
+            for file in self.custom_files:
+                if 'rockbottom_' + self.dut.model in file:
+                    self.rockbottom_script = file
+                    break
 
     def setup_test(self):
 
@@ -138,7 +147,7 @@ class LabTtffTestBase(BaseTestClass):
 
         utils.set_location_service(self.dut, True)
         gutils.reinstall_package_apk(self.dut, GPS_PKG_NAME,
-                                     self.gtw_gpstool_app)
+                                     self.gtw_gpstool_apk)
 
         # For BCM DUTs, delete gldata.sto and set IgnoreRomAlm="true" based on b/196936791#comment20
         if self.diag_option == "BCM":
@@ -195,7 +204,23 @@ class LabTtffTestBase(BaseTestClass):
 
         self.gnss_simulator.start_scenario(self.gnss_simulator_scenario)
         time.sleep(25)
-        self.gnss_simulator.set_power(self.gnss_simulator_power_level)
+        if self.scenario_power:
+            self.log.info('Set GNSS simulator power with power_level by scenario_power')
+            for setting in self.scenario_power:
+                power_level = setting.get('power_level', -130)
+                sat_system = setting.get('sat_system', '')
+                freq_band = setting.get('freq_band', 'ALL')
+                sat_id = setting.get('sat_id', '')
+                self.log.debug(f'sat: {sat_system}; freq_band: {freq_band}, '
+                               f'power_level: {power_level}, sat_id: {sat_id}')
+                self.gnss_simulator.set_scenario_power(power_level,
+                                                       sat_id,
+                                                       sat_system,
+                                                       freq_band)
+        else:
+            self.log.debug('Set GNSS simulator power '
+                           f'with power_level: {self.gnss_simulator_power_level}')
+            self.gnss_simulator.set_power(self.gnss_simulator_power_level)
 
     def get_and_verify_ttff(self, mode):
         """Retrieve ttff with designate mode.

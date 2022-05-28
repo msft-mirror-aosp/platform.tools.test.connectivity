@@ -42,6 +42,7 @@ from acts_contrib.test_utils.tel.tel_defines import CHILE_TELEFONICA
 from acts_contrib.test_utils.tel.tel_defines import MEXICO_TELEFONICA
 from acts_contrib.test_utils.tel.tel_defines import ELSALVADOR_TELEFONICA
 from acts_contrib.test_utils.tel.tel_defines import PERU_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import SPAIN_TELEFONICA
 from acts_contrib.test_utils.tel.tel_defines import PERU_ENTEL
 from acts_contrib.test_utils.tel.tel_defines import KOREA
 from acts_contrib.test_utils.tel.tel_defines import TAIWAN
@@ -109,9 +110,9 @@ from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_data_for_subscription
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
-from test_utils.tel.tel_5g_test_utils import provision_device_for_5g
-from test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
-from test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
+from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
+from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
+from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 
 
 class CellBroadcastTest(TelephonyBaseTest):
@@ -791,6 +792,21 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._settings_test_flow(PERU_TELEFONICA)
+
+
+    @test_tracker_info(uuid="087da90b-d847-4bf7-8504-4006bb1d6816")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_spain_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for Spain_Telefonica
+
+        configures the device to Spain_Telefonica
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(SPAIN_TELEFONICA)
 
 
     @test_tracker_info(uuid="cc0e0f64-2c77-4e20-b55e-6f555f7ecb97")
@@ -1653,6 +1669,23 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._send_receive_test_flow(PERU_TELEFONICA)
+
+
+    @test_tracker_info(uuid="73a4cefc-42e1-4e68-9680-1ac135f424a4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_spain_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for SPAIN_TELEFONICA
+
+        configures the device to SPAIN_TELEFONICA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(SPAIN_TELEFONICA)
 
 
     @test_tracker_info(uuid="fefb293a-5c22-45b2-9323-ccb355245c9a")

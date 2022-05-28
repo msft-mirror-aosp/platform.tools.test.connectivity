@@ -169,6 +169,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.cbrs_check_interval = int(
             self.user_params.get("cbrs_check_interval", 100))
         self.dut_incall = False
+        self.wfc_nw_gen = self.user_params.get("wfc_nw_gen", None)
         self.dsds_esim = self.user_params.get("dsds_esim", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
         telephony_info = getattr(self.dut, "telephony", {})
@@ -252,7 +253,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         for ad in self.android_devices:
             if not phone_setup_iwlan(
                     self.log, ad, True, WFC_MODE_CELLULAR_PREFERRED,
-                    self.wifi_network_ssid, self.wifi_network_pass):
+                    self.wifi_network_ssid, self.wifi_network_pass,
+                    nw_gen=self.wfc_nw_gen, nr_type= self.nr_type):
                 ad.log.error("Failed to setup WFC.")
                 return False
         return True
