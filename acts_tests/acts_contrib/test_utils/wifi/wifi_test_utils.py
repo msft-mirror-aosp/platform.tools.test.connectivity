@@ -811,7 +811,7 @@ def wifi_forget_network(ad, net_ssid):
             break
 
 
-def wifi_test_device_init(ad, country_code=WifiEnums.CountryCode.US):
+def wifi_test_device_init(ad):
     """Initializes an android device for wifi testing.
 
     0. Make sure SL4A connection is established on the android device.
@@ -842,7 +842,7 @@ def wifi_test_device_init(ad, country_code=WifiEnums.CountryCode.US):
     ad.log.info("wpa_supplicant log change status: %s", output)
     utils.sync_device_time(ad)
     ad.droid.telephonyToggleDataConnection(False)
-    set_wifi_country_code(ad, country_code)
+    set_wifi_country_code(ad, WifiEnums.CountryCode.US)
     utils.set_ambient_display(ad, False)
 
 
