@@ -34,11 +34,8 @@ from acts.keys import Config
 from acts_contrib.test_utils.net import net_test_utils as nutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
-<<<<<<< TARGET BRANCH (a03de9 Merge "Revert "[conflict] The change on Wifi_Base and Wifi_u)
 from mobly.base_test import STAGE_NAME_TEARDOWN_CLASS
 
-=======
->>>>>>> SOURCE BRANCH (6f04e8 Revert "The change on Wifi_Base and Wifi_utils is for Countr)
 AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
