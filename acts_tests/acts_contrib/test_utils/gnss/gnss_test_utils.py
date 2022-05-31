@@ -16,6 +16,7 @@
 import time
 import re
 import os
+import pathlib
 import math
 import shutil
 import fnmatch
@@ -2223,55 +2224,43 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
     brcm_log_list = []
     brcm_log_error_pattern = ["lhd: FS: Start Failsafe dump", "E slog"]
     brcm_error_log_list = []
-    stop_pixel_logger(ad)
     pixellogger_path = (
         "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/.")
-    tmp_log_path = tempfile.mkdtemp()
-    ad.pull_files(pixellogger_path, tmp_log_path)
-    for path_key in os.listdir(tmp_log_path):
-        zip_path = posixpath.join(tmp_log_path, path_key)
-        if path_key.endswith(".zip"):
-            ad.log.info("Processing zip file: {}".format(zip_path))
-            with zipfile.ZipFile(zip_path, "r") as zip_file:
-                zip_file.extractall(tmp_log_path)
-                gl_logs = zip_file.namelist()
-                # b/214145973 check if hidden exists in pixel logger zip file
-                tmp_file = [name for name in gl_logs if 'tmp' in name]
-                if tmp_file:
-                    ad.log.warn(f"Hidden file {tmp_file} exists in pixel logger zip file")
-            break
-        elif os.path.isdir(zip_path):
-            ad.log.info("BRCM logs didn't zip properly. Log path is directory.")
-            tmp_log_path = zip_path
-            gl_logs = os.listdir(tmp_log_path)
-            ad.log.info("Processing BRCM log files: {}".format(gl_logs))
-            break
-    else:
-        raise signals.TestError(
-            "No BRCM logs found in {}".format(os.listdir(tmp_log_path)))
-    gl_logs = [log for log in gl_logs
-               if log.startswith("gl") and log.endswith(".log")]
-    for file in gl_logs:
-        nmea_log_path = posixpath.join(tmp_log_path, file)
-        ad.log.info("Parsing log pattern of \"%s\" in %s" % (nmea_pattern,
-                                                             nmea_log_path))
-        brcm_log = open(nmea_log_path, "r", encoding="UTF-8", errors="ignore")
-        lines = brcm_log.readlines()
-        for line in lines:
-            if nmea_pattern in line:
-                brcm_log_list.append(line)
-            for attr in brcm_log_error_pattern:
-                if attr in line:
-                    benign_log = False
-                    for allow_log in brcm_error_log_allowlist:
-                        if allow_log in line:
-                            benign_log = True
-                            ad.log.info("\"%s\" is in allow-list and removed "
-                                        "from error." % allow_log)
-                    if not benign_log:
-                        brcm_error_log_list.append(line)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        ad.pull_files(pixellogger_path, tmp_dir)
+
+        # Although we don't rely on the zip file, stop pixel logger here to avoid
+        # wasting resources.
+        stop_pixel_logger(ad)
+
+        tmp_path = pathlib.Path(tmp_dir)
+        log_folders = sorted([x for x in tmp_path.iterdir() if x.is_dir()])
+        if not log_folders:
+            raise signals.TestError("No BRCM logs found.")
+        # The folder name is a string of datetime, the latest one will be in the last index.
+        gl_logs = log_folders[-1].glob("**/gl*.log")
+
+        for nmea_log_path in gl_logs:
+            ad.log.info("Parsing log pattern of \"%s\" in %s" % (nmea_pattern,
+                                                                 nmea_log_path))
+            brcm_log = open(nmea_log_path, "r", encoding="UTF-8", errors="ignore")
+            lines = brcm_log.readlines()
+            for line in lines:
+                if nmea_pattern in line:
+                    brcm_log_list.append(line)
+                for attr in brcm_log_error_pattern:
+                    if attr in line:
+                        benign_log = False
+                        for allow_log in brcm_error_log_allowlist:
+                            if allow_log in line:
+                                benign_log = True
+                                ad.log.info("\"%s\" is in allow-list and removed "
+                                            "from error." % allow_log)
+                        if not benign_log:
+                            brcm_error_log_list.append(line)
+
     brcm_error_log = "".join(brcm_error_log_list)
-    shutil.rmtree(tmp_log_path, ignore_errors=True)
     return brcm_log_list, brcm_error_log
 
 
