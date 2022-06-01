@@ -433,19 +433,25 @@ def clear_logd_gnss_qxdm_log(ad):
     """
     remount_device(ad)
     ad.log.info("Clear Logd, GNSS and PixelLogger Log from previous test item.")
-    ad.adb.shell("rm -rf /data/misc/logd", ignore_status=True)
+    folders_should_be_removed = ["/data/misc/logd"]
     ad.adb.shell(
         'find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH,
         ignore_status=True)
     if check_chipset_vendor_by_qualcomm(ad):
         diag_logs = (
             "/sdcard/Android/data/com.android.pixellogger/files/logs/diag_logs")
-        ad.adb.shell("rm -rf %s" % diag_logs, ignore_status=True)
         output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
+        folders_should_be_removed += [diag_logs, output_path]
     else:
         output_path = ("/sdcard/Android/data/com.android.pixellogger/files"
                        "/logs/gps/")
-    ad.adb.shell("rm -rf %s" % output_path, ignore_status=True)
+        always_on_logger_log_path = ("/data/vendor/gps/logs")
+        folders_should_be_removed += [always_on_logger_log_path, output_path]
+    for folder in folders_should_be_removed:
+        ad.log.info("Folder to be deleted: %s" % folder)
+        folder_contents = ad.adb.shell(f"ls {folder}")
+        ad.log.debug("Contents to be deleted: %s" % folder_contents)
+        ad.adb.shell("rm -rf %s" % folder, ignore_status=True)
     reboot(ad)
 
 
