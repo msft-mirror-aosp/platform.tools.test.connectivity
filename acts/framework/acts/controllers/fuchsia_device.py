@@ -83,9 +83,6 @@ FUCHSIA_DEVICE_INVALID_CONFIG = ("Fuchsia device config must be either a str "
 FUCHSIA_DEVICE_NO_IP_MSG = "No IP address specified, abort!"
 FUCHSIA_COULD_NOT_GET_DESIRED_STATE = "Could not %s %s."
 FUCHSIA_INVALID_CONTROL_STATE = "Invalid control state (%s). abort!"
-FUCHSIA_SSH_CONFIG_NOT_DEFINED = ("Cannot send ssh commands since the "
-                                  "ssh_config was not specified in the Fuchsia"
-                                  "device config.")
 
 FUCHSIA_SSH_USERNAME = "fuchsia"
 FUCHSIA_TIME_IN_NANOSECONDS = 1000000000
@@ -122,10 +119,34 @@ FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 
 MDNS_LOOKUP_RETRY_MAX = 3
 
+START_SL4F_V2_CMD = 'start_sl4f'
+
 VALID_ASSOCIATION_MECHANISMS = {None, 'policy', 'drivers'}
 
 
 class FuchsiaDeviceError(signals.ControllerError):
+    pass
+
+
+class FuchsiaConfigError(signals.ControllerError):
+    """Incorrect FuchsiaDevice configuration."""
+    pass
+
+
+class FuchsiaSSHError(signals.TestError):
+    """A SSH command returned with a non-zero status code."""
+
+    def __init__(self, command, result):
+        super().__init__(
+            f'SSH command "{command}" unexpectedly returned {result.exit_status}: {result.stderr}'
+        )
+        self.stdout = result.stdout
+        self.stderr = result.stderr
+        self.exit_status = result.exit_status
+
+
+class FuchsiaSSHTransportError(signals.TestError):
+    """Failure to send an SSH command."""
     pass
 
 
@@ -312,6 +333,10 @@ class FuchsiaDevice:
 
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
+
+        # Assuming using SL4F CFv2, we'll fallback to using CFv1 if v2 is
+        # not present.
+        self.sl4f_v1 = False
 
         try:
             self.start_services()
@@ -518,6 +543,10 @@ class FuchsiaDevice:
                 'cmd': string, command to run on device
                 'timeout': int, seconds to wait for command to run (optional)
                 'skip_status_code_check': bool, disregard errors if true
+
+        Raises:
+            FuchsiaDeviceError: if any of the commands return a non-zero status
+                code and skip_status_code_check is false or undefined.
         """
         for cmd_dict in cmd_dicts:
             try:
@@ -532,21 +561,22 @@ class FuchsiaDevice:
             skip_status_code_check = 'true' == str(
                 cmd_dict.get('skip_status_code_check', False)).lower()
 
-            self.log.info(
-                'Running command "%s".%s' %
-                (cmd, ' Ignoring result.' if skip_status_code_check else ''))
-            result = self.send_command_ssh(
-                cmd,
-                timeout=timeout,
-                skip_status_code_check=skip_status_code_check)
+            try:
+                if skip_status_code_check:
+                    self.log.info(
+                        f'Running command "{cmd}" and ignoring result.')
+                else:
+                    self.log.info(f'Running command "{cmd}".')
 
-            if isinstance(result, Exception):
-                raise result
-
-            elif not skip_status_code_check and result.stderr:
+                result = self.send_command_ssh(
+                    cmd,
+                    timeout=timeout,
+                    skip_status_code_check=skip_status_code_check)
+                self.log.debug(result)
+            except FuchsiaSSHError as e:
                 raise FuchsiaDeviceError(
-                    'Error when running command "%s": %s' %
-                    (cmd, result.stderr))
+                    'Failed device specific commands for initial configuration'
+                ) from e
 
     def build_id(self, test_id):
         """Concatenates client_id and test_id to form a command_id
@@ -803,34 +833,41 @@ class FuchsiaDevice:
 
         Returns:
             A SshResults object containing the results of the ssh command.
+
+        Raises:
+            FuchsiaConfigError: if ssh_config is not specified
+            FuchsiaSSHError: if the SSH command returns a non-zero status code
+                and skip_status_code_check is False.
+            FuchsiaSSHTransportError: if SSH fails to run the command
         """
-        command_result = False
-        ssh_conn = None
         if not self.ssh_config:
-            self.log.warning(FUCHSIA_SSH_CONFIG_NOT_DEFINED)
-        else:
-            try:
-                ssh_conn = create_ssh_connection(
-                    self.ip,
-                    self.ssh_username,
-                    self.ssh_config,
-                    ssh_port=self.ssh_port,
-                    connect_timeout=connect_timeout)
-                cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
-                    ssh_conn.exec_command(test_cmd, timeout=timeout))
-                if not skip_status_code_check:
-                    command_result = SshResults(cmd_result_stdin,
-                                                cmd_result_stdout,
-                                                cmd_result_stderr,
-                                                cmd_result_stdout.channel)
-            except Exception as e:
-                self.log.warning("Problem running ssh command: %s"
-                                 "\n Exception: %s" % (test_cmd, e))
-                return e
-            finally:
-                if ssh_conn is not None:
-                    ssh_conn.close()
-        return command_result
+            raise FuchsiaConfigError(
+                'Cannot send ssh commands since "FuchsiaDevice.ssh_config" was not specified'
+            )
+
+        ssh_conn = None
+        result = False
+
+        try:
+            ssh_conn = create_ssh_connection(self.ip,
+                                             self.ssh_username,
+                                             self.ssh_config,
+                                             ssh_port=self.ssh_port,
+                                             connect_timeout=connect_timeout)
+            cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
+                ssh_conn.exec_command(test_cmd, timeout=timeout))
+            result = SshResults(cmd_result_stdin, cmd_result_stdout,
+                                cmd_result_stderr, cmd_result_stdout.channel)
+        except Exception as e:
+            raise FuchsiaSSHTransportError(
+                f'Failed sending SSH command "{test_cmd}"') from e
+        finally:
+            if ssh_conn is not None:
+                ssh_conn.close()
+
+        if result.exit_status != 0 and not skip_status_code_check:
+            raise FuchsiaSSHError(test_cmd, result)
+        return result
 
     def version(self, timeout=FUCHSIA_DEFAULT_COMMAND_TIMEOUT):
         """Returns the version of Fuchsia running on the device.
@@ -1212,14 +1249,8 @@ class FuchsiaDevice:
                 self.log_process.stop()
                 raise
 
-            self.control_daemon("sl4f.cmx", "start")
+            self.start_sl4f_on_fuchsia_device()
             self.init_sl4f_connection()
-
-            out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
-            full_out_path = os.path.join(self.log_path, out_name)
-            fw_file = open(full_out_path, 'w')
-            fw_file.write('%s\n' % self.version())
-            fw_file.close()
 
         self.init_ffx_connection()
 
@@ -1233,6 +1264,23 @@ class FuchsiaDevice:
             if self.log_process:
                 self.log_process.stop()
 
+    def start_sl4f_on_fuchsia_device(self):
+        self.log.debug(
+            "Attempting to start SL4F server on Fuchsia device %s." % self.ip)
+        if self.ssh_config:
+            try:
+                self.send_command_ssh(START_SL4F_V2_CMD).stdout
+                self.sl4f_v1 = False
+            except FuchsiaSSHError:
+                # TODO(fxbug.dev/99331) Remove support to run SL4F in CFv1 mode
+                # once ACTS no longer use images that comes with only CFv1 SL4F.
+                self.log.warn(
+                    "Running SL4F in CFv1 mode, "
+                    "this is deprecated for images built after 5/9/2022, "
+                    "see https://fxbug.dev/77056 for more info.")
+                self.control_daemon("sl4f.cmx", "start")
+                self.sl4f_v1 = True
+
     def stop_sl4f_on_fuchsia_device(self):
         """Stops SL4F server on the fuchsia device
 
@@ -1241,11 +1289,19 @@ class FuchsiaDevice:
         """
         self.log.debug("Attempting to stop SL4F server on Fuchsia device %s." %
                        self.ip)
-        if self.ssh_config:
+        if self.ssh_config and self.sl4f_v1:
             try:
                 self.control_daemon("sl4f.cmx", "stop")
             except Exception as err:
-                self.log.exception("Failed to stop sl4f.cmx with: %s" % err)
+                self.log.exception("Failed to stop sl4f.cmx with: %s. "
+                                   "This is expected if running CFv2." % err)
+        else:
+            if hasattr(self, 'ffx'):
+                # TODO(b/234054431): This calls ffx after it has been stopped.
+                # Refactor controller clean up such that ffx is called after SL4F
+                # has been stopped.
+                self.ffx.run('component stop /core/sl4f')
+                self.ffx.clean_up()
 
     def load_config(self, config):
         pass
