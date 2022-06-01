@@ -93,14 +93,6 @@ DAEMON_INIT_TIMEOUT_SEC = 1
 DAEMON_ACTIVATED_STATES = ["running", "start"]
 DAEMON_DEACTIVATED_STATES = ["stop", "stopped"]
 
-FUCHSIA_DEFAULT_LOG_CMD = 'iquery --absolute_paths --cat --format= --recursive'
-FUCHSIA_DEFAULT_LOG_ITEMS = [
-    '/hub/c/scenic.cmx/[0-9]*/out/objects',
-    '/hub/c/root_presenter.cmx/[0-9]*/out/objects',
-    '/hub/c/wlanstack2.cmx/[0-9]*/out/public',
-    '/hub/c/basemgr.cmx/[0-9]*/out/objects'
-]
-
 FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
 
 CHANNEL_OPEN_TIMEOUT = 5
@@ -1306,38 +1298,22 @@ class FuchsiaDevice:
     def load_config(self, config):
         pass
 
-    def take_bug_report(self,
-                        test_name=None,
-                        begin_time=None,
-                        additional_log_objects=None):
+    def take_bug_report(self, test_name=None, begin_time=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
-            test_name: Name of the test case that triggered this bug report.
-            begin_time: Epoch time when the test started. If not specified, the
-                current time will be used.
-            additional_log_objects: A list of additional objects in Fuchsia to
-                query in the bug report.  Must be in the following format:
-                /hub/c/scenic.cmx/[0-9]*/out/objects
+            test_name: DEPRECATED. Do not specify this argument; it is only used
+                for logging. Name of the test case that triggered this bug
+                report.
+            begin_time: DEPRECATED. Do not specify this argument; it allows
+                overwriting of bug reports when this function is called several
+                times in one test. Epoch time when the test started. If not
+                specified, the current time will be used.
         """
-        if not additional_log_objects:
-            additional_log_objects = []
-        log_items = []
-        matching_log_items = FUCHSIA_DEFAULT_LOG_ITEMS
-        for additional_log_object in additional_log_objects:
-            if additional_log_object not in matching_log_items:
-                matching_log_items.append(additional_log_object)
-        sn_path = context.get_current_context().get_full_output_path()
-        os.makedirs(sn_path, exist_ok=True)
-
-        epoch = begin_time if begin_time else utils.get_current_epoch_time()
-        time_stamp = acts_logger.normalize_log_line_timestamp(
-            acts_logger.epoch_to_log_line_timestamp(epoch))
-        out_name = f"{self.mdns_name}_{time_stamp}"
-        snapshot_out_name = f"{out_name}.zip"
-        out_name = "%s.txt" % out_name
-        full_out_path = os.path.join(sn_path, out_name)
-        full_sn_out_path = os.path.join(sn_path, snapshot_out_name)
+        if not self.ssh_config:
+            self.log.warn(
+                'Skipping take_bug_report because ssh_config is not specified')
+            return
 
         if test_name:
             self.log.info(
@@ -1345,30 +1321,19 @@ class FuchsiaDevice:
         else:
             self.log.info(f"Taking snapshot of {self.mdns_name}")
 
-        if self.ssh_config is not None:
-            try:
-                subprocess.run([
-                    f"ssh -F {self.ssh_config} {self.ip} snapshot > {full_sn_out_path}"
-                ],
-                               shell=True)
-                self.log.info("Snapshot saved at: {}".format(full_sn_out_path))
-            except Exception as err:
-                self.log.error("Failed to take snapshot with: {}".format(err))
+        epoch = begin_time if begin_time else utils.get_current_epoch_time()
+        time_stamp = acts_logger.normalize_log_line_timestamp(
+            acts_logger.epoch_to_log_line_timestamp(epoch))
+        out_dir = context.get_current_context().get_full_output_path()
+        out_path = os.path.join(out_dir, f'{self.mdns_name}_{time_stamp}.zip')
 
-        system_objects = self.send_command_ssh('iquery --find /hub').stdout
-        system_objects = system_objects.split()
-
-        for matching_log_item in matching_log_items:
-            for system_object in system_objects:
-                if re.match(matching_log_item, system_object):
-                    log_items.append(system_object)
-
-        log_command = '%s %s' % (FUCHSIA_DEFAULT_LOG_CMD, ' '.join(log_items))
-        bug_report_data = self.send_command_ssh(log_command).stdout
-
-        bug_report_file = open(full_out_path, 'w')
-        bug_report_file.write(bug_report_data)
-        bug_report_file.close()
+        try:
+            subprocess.run(
+                [f"ssh -F {self.ssh_config} {self.ip} snapshot > {out_path}"],
+                shell=True)
+            self.log.info(f'Snapshot saved to {out_path}')
+        except Exception as err:
+            self.log.error(f'Failed to take snapshot: {err}')
 
     def take_bt_snoop_log(self, custom_name=None):
         """Takes a the bt-snoop log from the device and stores it in a file
