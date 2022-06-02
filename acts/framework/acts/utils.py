@@ -1426,33 +1426,28 @@ def get_interface_ip_addresses(comm_channel, interface):
     from acts.controllers.android_device import AndroidDevice
     from acts.controllers.fuchsia_device import FuchsiaDevice
     from acts.controllers.utils_lib.ssh.connection import SshConnection
-    ipv4_private_local_addresses = []
-    ipv4_public_addresses = []
-    ipv6_link_local_addresses = []
-    ipv6_private_local_addresses = []
-    ipv6_public_addresses = []
+
     is_local = comm_channel == job
     if type(comm_channel) is AndroidDevice:
-        all_interfaces_and_addresses = comm_channel.adb.shell(
-            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
-            'print $2" "$4}\'')
-        ifconfig_output = comm_channel.adb.shell('ifconfig %s' % interface)
+        addrs = comm_channel.adb.shell(
+            f'ip -o addr show {interface} | awk \'{{gsub("/", " "); print $4}}\''
+        ).splitlines()
     elif (type(comm_channel) is SshConnection or is_local):
-        all_interfaces_and_addresses = comm_channel.run(
-            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
-            'print $2" "$4}\'').stdout
-        ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+        addrs = comm_channel.run(
+            f'ip -o addr show {interface} | awk \'{{gsub("/", " "); print $4}}\''
+        ).stdout.splitlines()
     elif type(comm_channel) is FuchsiaDevice:
-        all_interfaces_and_addresses = []
         interfaces = comm_channel.netstack_lib.netstackListInterfaces()
-        if interfaces.get('error') is not None:
-            raise ActsUtilsError('Failed with {}'.format(
-                interfaces.get('error')))
+        err = interfaces.get('error')
+        if err is not None:
+            raise ActsUtilsError(f'Failed get_interface_ip_addresses: {err}')
+        addrs = []
         for item in interfaces.get('result'):
+            if item['name'] != interface:
+                continue
             for ipv4_address in item['ipv4_addresses']:
                 ipv4_address = '.'.join(map(str, ipv4_address))
-                all_interfaces_and_addresses.append(
-                    '%s %s' % (item['name'], ipv4_address))
+                addrs.append(ipv4_address)
             for ipv6_address in item['ipv6_addresses']:
                 converted_ipv6_address = []
                 for octet in ipv6_address:
@@ -1461,22 +1456,21 @@ def get_interface_ip_addresses(comm_channel, interface):
                 ipv6_address = (':'.join(
                     ipv6_address[i:i + 4]
                     for i in range(0, len(ipv6_address), 4)))
-                all_interfaces_and_addresses.append(
-                    '%s %s' %
-                    (item['name'], str(ipaddress.ip_address(ipv6_address))))
-        all_interfaces_and_addresses = '\n'.join(all_interfaces_and_addresses)
-        ifconfig_output = all_interfaces_and_addresses
+                addrs.append(str(ipaddress.ip_address(ipv6_address)))
     else:
         raise ValueError('Unsupported method to send command to device.')
 
-    for interface_line in all_interfaces_and_addresses.split('\n'):
-        if interface != interface_line.split()[0]:
-            continue
-        on_device_ip = ipaddress.ip_address(interface_line.split()[1])
+    ipv4_private_local_addresses = []
+    ipv4_public_addresses = []
+    ipv6_link_local_addresses = []
+    ipv6_private_local_addresses = []
+    ipv6_public_addresses = []
+
+    for addr in addrs:
+        on_device_ip = ipaddress.ip_address(addr)
         if on_device_ip.version == 4:
             if on_device_ip.is_private:
-                if str(on_device_ip) in ifconfig_output:
-                    ipv4_private_local_addresses.append(str(on_device_ip))
+                ipv4_private_local_addresses.append(str(on_device_ip))
             elif on_device_ip.is_global or (
                     # Carrier private doesn't have a property, so we check if
                     # all other values are left unset.
@@ -1485,18 +1479,15 @@ def get_interface_ip_addresses(comm_channel, interface):
                     and not on_device_ip.is_link_local
                     and not on_device_ip.is_loopback
                     and not on_device_ip.is_multicast):
-                if str(on_device_ip) in ifconfig_output:
-                    ipv4_public_addresses.append(str(on_device_ip))
+                ipv4_public_addresses.append(str(on_device_ip))
         elif on_device_ip.version == 6:
             if on_device_ip.is_link_local:
-                if str(on_device_ip) in ifconfig_output:
-                    ipv6_link_local_addresses.append(str(on_device_ip))
+                ipv6_link_local_addresses.append(str(on_device_ip))
             elif on_device_ip.is_private:
-                if str(on_device_ip) in ifconfig_output:
-                    ipv6_private_local_addresses.append(str(on_device_ip))
+                ipv6_private_local_addresses.append(str(on_device_ip))
             elif on_device_ip.is_global:
-                if str(on_device_ip) in ifconfig_output:
-                    ipv6_public_addresses.append(str(on_device_ip))
+                ipv6_public_addresses.append(str(on_device_ip))
+
     return {
         'ipv4_private': ipv4_private_local_addresses,
         'ipv4_public': ipv4_public_addresses,
@@ -1585,8 +1576,8 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
 
 
 def renew_linux_ip_address(comm_channel, interface):
-    comm_channel.run('sudo ifconfig %s down' % interface)
-    comm_channel.run('sudo ifconfig %s up' % interface)
+    comm_channel.run('sudo ip link set %s down' % interface)
+    comm_channel.run('sudo ip link set %s up' % interface)
     comm_channel.run('sudo dhclient -r %s' % interface)
     comm_channel.run('sudo dhclient %s' % interface)
 
