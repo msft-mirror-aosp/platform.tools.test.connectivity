@@ -450,7 +450,7 @@ def clear_logd_gnss_qxdm_log(ad):
         folders_should_be_removed += [always_on_logger_log_path, output_path]
     for folder in folders_should_be_removed:
         ad.log.info("Folder to be deleted: %s" % folder)
-        folder_contents = ad.adb.shell(f"ls {folder}")
+        folder_contents = ad.adb.shell(f"ls {folder}", ignore_status=True)
         ad.log.debug("Contents to be deleted: %s" % folder_contents)
         ad.adb.shell("rm -rf %s" % folder, ignore_status=True)
     reboot(ad)
