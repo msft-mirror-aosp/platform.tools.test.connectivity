@@ -96,7 +96,7 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
                 'test_tx_power',
             ],
             country_codes=['US', 'GB', 'JP', 'CA', 'AU'],
-            sar_states=range(0, 13))
+            sar_states=range(-1, 13))
 
     def setup_class(self):
         self.dut = self.android_devices[-1]
@@ -138,6 +138,9 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         # decode nvram
         self.nvram_sar_data = self.read_nvram_sar_data()
         self.csv_sar_data = self.read_sar_csv(self.testclass_params['sar_csv'])
+
+        # Configure test retries
+        self.user_params['retry_tests'] = [self.__class__.__name__]
 
     def teardown_class(self):
         # Turn WiFi OFF and reset AP
@@ -246,11 +249,13 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         of SAR scenarios to NVRAM data tables.
         """
 
-        self.sar_state_mapping = collections.OrderedDict([(-1, {
+        self.sar_state_mapping = collections.OrderedDict([(-2, {
             "google_name":
-            'WIFI_POWER_SCENARIO_DISABLE'
-        }), (0, {
+            'WIFI_POWER_SCENARIO_INVALID'
+        }), (-1, {
             "google_name": 'WIFI_POWER_SCENARIO_DISABLE'
+        }), (0, {
+            "google_name": 'WIFI_POWER_SCENARIO_VOICE_CALL'
         }), (1, {
             "google_name": 'WIFI_POWER_SCENARIO_ON_HEAD_CELL_OFF'
         }), (2, {
@@ -303,7 +308,7 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         """
 
         sar_config = collections.OrderedDict()
-        list_of_countries = ['fcc', 'jp']
+        list_of_countries = ['fcc', 'jp', 'ca']
         try:
             sar_config['country'] = next(country
                                          for country in list_of_countries
@@ -328,9 +333,10 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         sar_powers = sar_line.split('=')[1].split(',')
         decoded_powers = []
         for sar_power in sar_powers:
+            # Note that core 0 and 1 are flipped in the NVRAM entries
             decoded_powers.append([
-                (int(sar_power[2:4], 16) & int('7f', 16)) / 4,
-                (int(sar_power[4:], 16) & int('7f', 16)) / 4
+                (int(sar_power[4:], 16) & int('7f', 16)) / 4,
+                (int(sar_power[2:4], 16) & int('7f', 16)) / 4
             ])
 
         return tuple(sar_config.values()), decoded_powers
@@ -353,6 +359,8 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             reg_domain = 'fcc'
         elif testcase_params['country_code'] == 'JP':
             reg_domain = 'jp'
+        elif testcase_params['country_code'] == 'CA':
+            reg_domain = 'ca'
         else:
             reg_domain = 'row'
         for band, channels in self.BAND_TO_CHANNEL_MAP.items():
@@ -385,6 +393,8 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             reg_domain = 'fcc'
         elif testcase_params['country_code'] == 'JP':
             reg_domain = 'jp'
+        elif testcase_params['country_code'] == 'CA':
+            reg_domain = 'ca'
         else:
             reg_domain = 'row'
         for band, channels in self.BAND_TO_CHANNEL_MAP.items():
@@ -600,16 +610,16 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             mode = 'VHT' + str(result['testcase_params']['bandwidth'])
         regulatory_power = result['wl_curpower']['regulatory_limits'][(mode, 0,
                                                                        2)]
-        if result['testcase_params']['sar_state'] == 0:
-            #get from wl_curpower
-            csv_powers = [30, 30]
-            nvram_powers = [30, 30]
-            sar_config = 'SAR DISABLED'
-        else:
+        try:
             sar_config, nvram_powers = self.get_sar_power_from_nvram(
                 result['testcase_params'])
             csv_config, csv_powers = self.get_sar_power_from_csv(
                 result['testcase_params'])
+        except:
+            #get from wl_curpower
+            csv_powers = [30, 30]
+            nvram_powers = [30, 30]
+            sar_config = 'SAR DISABLED'
         self.log.info("SAR state: {} ({})".format(
             result['testcase_params']['sar_state'],
             self.sar_state_mapping[result['testcase_params']['sar_state']],
@@ -668,6 +678,12 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
                 bw=testcase_params['bandwidth'],
                 duration=testcase_params['ping_duration'] *
                 len(testcase_params['atten_range']) + self.TEST_TIMEOUT)
+        # Set sar state
+        if testcase_params['sar_state'] == -1:
+            self.dut.adb.shell('halutil -sar disable')
+        else:
+            self.dut.adb.shell('halutil -sar enable {}'.format(
+                testcase_params['sar_state']))
         # Run ping and sweep attenuation as needed
         self.log.info('Starting ping.')
         thread_future = wputils.get_ping_stats_nb(self.ping_server,
@@ -688,9 +704,6 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             else:
                 self.dut.adb.shell('wl 6g_rate -e 0 -s 2 -b {}'.format(
                     testcase_params['bandwidth']))
-            # Set sar state
-            self.dut.adb.shell('halutil -sar enable {}'.format(
-                testcase_params['sar_state']))
             # Refresh link layer stats
             llstats_obj.update_stats()
             # Check sar state
@@ -791,8 +804,11 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
             self.access_point.set_region(self.testbed_params['default_region'])
-        self.access_point.set_channel(band, testcase_params['channel'])
-        self.access_point.set_bandwidth(band, testcase_params['mode'])
+        self.access_point.set_channel_and_bandwidth(band,
+                                                    testcase_params['channel'],
+                                                    testcase_params['mode'])
+        #self.access_point.set_channel(band, testcase_params['channel'])
+        #self.access_point.set_bandwidth(band, testcase_params['mode'])
         if 'low' in testcase_params['ap_power']:
             self.log.info('Setting low AP power.')
             self.access_point.set_power(
@@ -830,6 +846,14 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         if self.testbed_params.get('txbf_off', False):
             wputils.disable_beamforming(self.dut)
         wutils.set_wifi_country_code(self.dut, testcase_params['country_code'])
+        current_country = self.dut.adb.shell('wl country')
+        self.log.info('Current country code: {}'.format(current_country))
+        if testcase_params['country_code'] not in current_country:
+            asserts.fail('Country code not correct.')
+        chan_list = self.dut.adb.shell('wl chan_info_list')
+        if str(testcase_params['channel']) not in chan_list:
+            asserts.skip('Channel {} not supported in {}'.format(
+                testcase_params['channel'], testcase_params['country_code']))
         wutils.wifi_connect(self.dut,
                             testcase_params['test_network'],
                             num_of_tries=5,
