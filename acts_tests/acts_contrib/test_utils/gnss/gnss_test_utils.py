@@ -453,7 +453,8 @@ def clear_logd_gnss_qxdm_log(ad):
         folder_contents = ad.adb.shell(f"ls {folder}", ignore_status=True)
         ad.log.debug("Contents to be deleted: %s" % folder_contents)
         ad.adb.shell("rm -rf %s" % folder, ignore_status=True)
-    reboot(ad)
+    if not is_device_wearable(ad):
+        reboot(ad)
 
 
 def get_gnss_qxdm_log(ad, qdb_path=None):
@@ -2342,13 +2343,16 @@ def process_pair(watch, phone):
     phone.adb.shell("pm clear com.google.android.apps.wear.companion")
     phone.adb.shell("am start -S -n com.google.android.apps.wear.companion/"
                         "com.google.android.apps.wear.companion.application.RootActivity")
-    uia_click(phone, "Next")
+    uia_click(phone, "Continue")
+    uia_click(phone, "More")
     uia_click(phone, "I agree")
+    uia_click(phone, "I accept")
     uia_click(phone, bluetooth_name)
     uia_click(phone, "Pair")
     uia_click(phone, "Skip")
+    uia_click(phone, "Next")
     uia_click(phone, "Skip")
-    uia_click(phone, "Finish")
+    uia_click(phone, "Done")
     # TODO (chenstanley)Need to re-structure for better code and test flow instead of simply waiting
     watch.log.info("Wait 3 mins for complete pairing process.")
     time.sleep(180)
