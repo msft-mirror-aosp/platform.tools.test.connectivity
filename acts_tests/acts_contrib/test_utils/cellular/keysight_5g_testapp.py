@@ -91,18 +91,28 @@ class Keysight5GTestApp(object):
         ]
         return formatted_response
 
-    def send_cmd(self, command, read_response=0):
+    def send_cmd(self, command, read_response=0, check_errors=1):
         "Helper function to write to or query test app."
         if read_response:
             try:
-                return Keysight5GTestApp._format_response(
+                response = Keysight5GTestApp._format_response(
                     self.test_app.query(command))
+                if check_errors:
+                    error = self.test_app.query('SYSTem:ERRor?')
+                    if 'No error' not in error:
+                        self.log.warning("Command: {}. Error: {}".format(
+                            command, error))
+                return response
             except:
                 raise RuntimeError('Lost connection to test app.')
         else:
             try:
                 self.test_app.write(command)
                 self.send_cmd('*OPC?', 1)
+                error = self.test_app.query('SYSTem:ERRor?')
+                if 'No error' not in error:
+                    self.log.warning("Command: {}. Error: {}".format(
+                        command, error))
             except:
                 raise RuntimeError('Lost connection to test app.')
             return None
@@ -314,7 +324,7 @@ class Keysight5GTestApp(object):
                          documentation for allowed range of values)
         """
         self.assert_cell_off(cell_type, cell)
-        self.send_cmd('BSE:CONFig:{}:{}:{}:ANTenna:CONFig {}'.format(
+        self.send_cmd('BSE:CONFig:{}:{}:{}:MIMO:CONFig {}'.format(
             cell_type, Keysight5GTestApp._format_cells(cell), link,
             mimo_config))
 
@@ -697,25 +707,25 @@ class Keysight5GTestApp(object):
             rsrp_result: dict containing per-cell and aggregate BLER results
         """
         for cell in cells:
-            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STOP'.format(Keysight5GTestApp._format_cells(cell)))
+            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STOP'.format(
+                Keysight5GTestApp._format_cells(cell)))
         for cell in cells:
-            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:LENGth {}'.format(Keysight5GTestApp._format_cells(cell), length))
+            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:LENGth {}'.format(
+                Keysight5GTestApp._format_cells(cell), length))
         for cell in cells:
-            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STARt'.format(Keysight5GTestApp._format_cells(cell)))
+            self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STARt'.format(
+                Keysight5GTestApp._format_cells(cell)))
 
     def get_nr_rsrp_measurement_state(self, cells):
         for cell in cells:
-            self.log.info(self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:STATe?'.format(Keysight5GTestApp._format_cells(cell)),1))
+            self.log.info(
+                self.send_cmd(
+                    'BSE:MEASure:NR5G:{}:L1:RSRPower:STATe?'.format(
+                        Keysight5GTestApp._format_cells(cell)), 1))
 
     def get_nr_rsrp_measurement_results(self, cells):
         for cell in cells:
-            self.log.info(self.send_cmd('BSE:MEASure:NR5G:{}:L1:RSRPower:REPorts:JSON?'.format(Keysight5GTestApp._format_cells(cell)),1))
-
-
-
-
-
-
-
-
-
+            self.log.info(
+                self.send_cmd(
+                    'BSE:MEASure:NR5G:{}:L1:RSRPower:REPorts:JSON?'.format(
+                        Keysight5GTestApp._format_cells(cell)), 1))
