@@ -34,6 +34,7 @@ from acts import utils
 from acts import asserts
 from acts import signals
 from acts.libs.proc import job
+from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
@@ -2234,7 +2235,10 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
         "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/.")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        ad.pull_files(pixellogger_path, tmp_dir)
+        try:
+            ad.pull_files(pixellogger_path, tmp_dir)
+        except AdbCommandError:
+            raise FileNotFoundError("No pixel logger folders found")
 
         # Although we don't rely on the zip file, stop pixel logger here to avoid
         # wasting resources.
@@ -2243,7 +2247,7 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
         tmp_path = pathlib.Path(tmp_dir)
         log_folders = sorted([x for x in tmp_path.iterdir() if x.is_dir()])
         if not log_folders:
-            raise signals.TestError("No BRCM logs found.")
+            raise FileNotFoundError("No BRCM logs found.")
         # The folder name is a string of datetime, the latest one will be in the last index.
         gl_logs = log_folders[-1].glob("**/gl*.log")
 
