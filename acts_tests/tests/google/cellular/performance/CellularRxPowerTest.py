@@ -27,7 +27,9 @@ from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.cellular.keysight_5g_testapp import Keysight5GTestApp
 from acts_contrib.test_utils.cellular import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.cellular.shannon_log_parser import ShannonLogger
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from functools import partial
 
 
@@ -54,7 +56,8 @@ class CellularRxPowerTest(base_test.BaseTestClass):
         self.testclass_params = self.user_params['rx_power_params']
         self.keysight_test_app = Keysight5GTestApp(
             self.user_params['Keysight5GTestApp'])
-        self.testclass_results = []
+        self.sdm_logger = ShannonLogger(self.dut)
+        self.testclass_results = collections.OrderedDict()
         # Configure test retries
         self.user_params['retry_tests'] = [self.__class__.__name__]
 
@@ -92,8 +95,57 @@ class CellularRxPowerTest(base_test.BaseTestClass):
                             'Can not turn on airplane mode.')
         log_path = os.path.join(
             context.get_current_context().get_full_output_path(), 'pixel_logs')
-        os.makedirs(self.log_path, exist_ok=True)
-        cputils.stop_pixel_logger(self.dut, log_path)
+        os.makedirs(log_path, exist_ok=True)
+        self.log.info(self.current_test_info)
+        self.testclass_results.setdefault(self.current_test_name,
+                                          collections.OrderedDict())
+        self.testclass_results[self.current_test_name].setdefault(
+            'log_path', [])
+        self.testclass_results[self.current_test_name]['log_path'].append(
+            cputils.stop_pixel_logger(self.dut, log_path))
+        self.process_test_results()
+
+    def process_test_results(self):
+        test_result = self.testclass_results[self.current_test_name]
+
+        # Save output as text file
+        results_file_path = os.path.join(
+            self.log_path, '{}.json'.format(self.current_test_name))
+        with open(results_file_path, 'w') as results_file:
+            json.dump(wputils.serialize_dict(test_result),
+                      results_file,
+                      indent=4)
+        # Plot and save
+        if test_result['log_path']:
+            log_data = self.sdm_logger.process_log(test_result['log_path'][-1])
+        else:
+            return
+        figure = BokehFigure(title=self.current_test_name,
+                             x_label='Cell Power Setting (dBm)',
+                             primary_y_label='Time')
+        figure.add_line(log_data.lte.rsrp_time, log_data.lte.rsrp_rx0,
+                        'LTE RSRP (Rx0)')
+        figure.add_line(log_data.lte.rsrp_time, log_data.lte.rsrp_rx1,
+                        'LTE RSRP (Rx1)')
+        figure.add_line(log_data.lte.rsrp2_time, log_data.lte.rsrp2_rx0,
+                        'LTE RSRP2 (Rx0)')
+        figure.add_line(log_data.lte.rsrp2_time, log_data.lte.rsrp2_rx1,
+                        'LTE RSRP2 (Rx0)')
+        figure.add_line(log_data.nr.rsrp_time, log_data.nr.rsrp_rx0,
+                        'NR RSRP (Rx0)')
+        figure.add_line(log_data.nr.rsrp_time, log_data.nr.rsrp_rx1,
+                        'NR RSRP (Rx1)')
+        figure.add_line(log_data.nr.rsrp2_time, log_data.nr.rsrp2_rx0,
+                        'NR RSRP2 (Rx0)')
+        figure.add_line(log_data.nr.rsrp2_time, log_data.nr.rsrp2_rx1,
+                        'NR RSRP2 (Rx0)')
+        figure.add_line(log_data.fr2.rsrp0_time, log_data.fr2.rsrp0,
+                        'NR RSRP (Rx0)')
+        figure.add_line(log_data.fr2.rsrp1_time, log_data.fr2.rsrp1,
+                        'NR RSRP2 (Rx1)')
+        output_file_path = os.path.join(
+            self.log_path, '{}.html'.format(self.current_test_name))
+        figure.generate_figure(output_file_path)
 
     def _test_nr_rsrp(self, testcase_params):
         """Test function to run cellular RSRP tests.
@@ -125,7 +177,8 @@ class CellularRxPowerTest(base_test.BaseTestClass):
         self.keysight_test_app.set_nr_cell_schedule_scenario(
             testcase_params['dl_cell_list'][0], 'BASIC')
         self.keysight_test_app.set_dl_carriers(testcase_params['dl_cell_list'])
-        self.keysight_test_app.set_ul_carriers(testcase_params['dl_cell_list'][0])
+        self.keysight_test_app.set_ul_carriers(
+            testcase_params['dl_cell_list'][0])
         self.log.info('Waiting for LTE and applying aggregation')
         if not self.keysight_test_app.wait_for_cell_status(
                 'LTE', 'CELL1', 'CONN', 60):
@@ -145,9 +198,12 @@ class CellularRxPowerTest(base_test.BaseTestClass):
             self.keysight_test_app.start_nr_rsrp_measurement(
                 testcase_params['dl_cell_list'],
                 self.testclass_params['rsrp_measurement_duration'])
-            time.sleep(self.testclass_params['rsrp_measurement_duration']*1.5/1000)
-            self.keysight_test_app.get_nr_rsrp_measurement_state(testcase_params['dl_cell_list'])
-            self.keysight_test_app.get_nr_rsrp_measurement_results(testcase_params['dl_cell_list'])
+            time.sleep(self.testclass_params['rsrp_measurement_duration'] *
+                       1.5 / 1000)
+            self.keysight_test_app.get_nr_rsrp_measurement_state(
+                testcase_params['dl_cell_list'])
+            self.keysight_test_app.get_nr_rsrp_measurement_results(
+                testcase_params['dl_cell_list'])
 
         for cell in testcase_params['dl_cell_list'][::-1]:
             self.keysight_test_app.set_cell_state('NR5G', cell, 0)
@@ -155,7 +211,7 @@ class CellularRxPowerTest(base_test.BaseTestClass):
                             'Can not turn on airplane mode.')
         # Save results
         result['testcase_params'] = testcase_params
-        self.testclass_results.append(result)
+        self.testclass_results[self.current_test_name] = result
         results_file_path = os.path.join(
             context.get_current_context().get_full_output_path(),
             '{}.json'.format(self.current_test_name))

@@ -1341,7 +1341,7 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.log.info("Iteration %d => %s" % (times, reboot_lto_test_result))
             reboot_lto_test_results_all.append(reboot_lto_test_result)
             gutils.stop_pixel_logger(self.ad)
-            tutils.stop_adb_tcpdump(self.ad)
+            stop_adb_tcpdump(self.ad)
         asserts.assert_true(all(reboot_lto_test_results_all),
                                 "Fail to Download and Inject LTO File.")
 

@@ -53,6 +53,7 @@ class WifiRssiTest(base_test.BaseTestClass):
     configurable attenuation waveforms.For an example config file to run this
     test class see example_connectivity_performance_ap_sta.json.
     """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
@@ -634,8 +635,12 @@ class WifiRssiTest(base_test.BaseTestClass):
             scan_measurements=self.
             testclass_params['rssi_vs_atten_scan_measurements'],
             first_measurement_delay=MED_SLEEP,
-            rssi_under_test=self.testclass_params['rssi_vs_atten_metrics'],
             absolute_accuracy=1)
+        rssi_under_test = self.testclass_params['rssi_vs_atten_metrics']
+        if testclass_params[
+                'rssi_vs_atten_scan_measurements'] == 0 and 'scan_rssi' in rssi_under_test:
+            rssi_under_test.remove('scan_rssi')
+        testcase_params['rssi_under_test'] = rssi_under_test
 
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
@@ -846,6 +851,7 @@ class WifiRssiTest(base_test.BaseTestClass):
 
 
 class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
@@ -854,6 +860,7 @@ class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
 
 
 class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
@@ -863,6 +870,7 @@ class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
 
 
 class WifiRssi_AllChannels_ActiveTraffic_Test(WifiRssiTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
@@ -873,6 +881,7 @@ class WifiRssi_AllChannels_ActiveTraffic_Test(WifiRssiTest):
 
 
 class WifiRssi_SampleChannels_NoTraffic_Test(WifiRssiTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
@@ -881,6 +890,7 @@ class WifiRssi_SampleChannels_NoTraffic_Test(WifiRssiTest):
 
 
 class WifiRssiTrackingTest(WifiRssiTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['test_rssi_tracking'],
@@ -897,6 +907,7 @@ class WifiOtaRssiTest(WifiRssiTest):
     It allows setting orientation and other chamber parameters to study
     performance in varying channel conditions
     """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
@@ -1100,6 +1111,7 @@ class WifiOtaRssiTest(WifiRssiTest):
 
 
 class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(['test_rssi_vs_atten'],
@@ -1110,6 +1122,7 @@ class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
 
 
 class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
+
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_variation'],
@@ -1119,6 +1132,7 @@ class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
 
 
 class WifiOtaRssi_TenDegree_Test(WifiOtaRssiTest):
+
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(['test_rssi_over_orientation'],
