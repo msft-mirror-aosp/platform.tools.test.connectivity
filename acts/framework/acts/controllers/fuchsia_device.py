@@ -122,9 +122,7 @@ class FuchsiaSSHError(signals.TestError):
         super().__init__(
             f'SSH command "{command}" unexpectedly returned {result.exit_status}: {result.stderr}'
         )
-        self.stdout = result.stdout
-        self.stderr = result.stderr
-        self.exit_status = result.exit_status
+        self.result = result
 
 
 class FuchsiaSSHTransportError(signals.TestError):
@@ -830,7 +828,7 @@ class FuchsiaDevice:
         ]
         if len(build_info) != 0:
             self.log.warning(
-                'Expected one entry with label "build", found {build_info}')
+                f'Expected one entry with label "build", found {build_info}')
             return ""
         version_info = [
             child for child in build_info[0]["child"]
@@ -838,7 +836,7 @@ class FuchsiaDevice:
         ]
         if len(version_info) != 0:
             self.log.warning(
-                'Expected one entry child with label "version", found {build_info}'
+                f'Expected one entry child with label "version", found {build_info}'
             )
             return ""
         return version_info[0].value
@@ -878,11 +876,13 @@ class FuchsiaDevice:
         self.log.debug("Pinging %s..." % dest_ip)
         if not additional_ping_params:
             additional_ping_params = ''
-        ping_result = self.send_command_ssh(
-            'ping -c %s -i %s -t %s -s %s %s %s' %
-            (count, interval, timeout, size, additional_ping_params, dest_ip))
-        if isinstance(ping_result, job.Error):
-            ping_result = ping_result.result
+
+        try:
+            ping_result = self.send_command_ssh(
+                f'ping -c {count} -i {interval} -t {timeout} -s {size} '
+                f'{additional_ping_params} {dest_ip}')
+        except FuchsiaSSHError as e:
+            ping_result = e.result
 
         if ping_result.stderr:
             status = False
