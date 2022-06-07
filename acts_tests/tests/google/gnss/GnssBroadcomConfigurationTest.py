@@ -147,7 +147,6 @@ class LhdConf(GpsConfig):
         self.lheconsole = "LheConsole"
         self.lheconsole_hub = self.get_lheconsole_value()
         self.esw_crash_dump_pattern = self.get_esw_crash_dump_pattern()
-        self.ad.log.info(f"here is {self.esw_crash_dump_pattern}")
 
     def _adjust_lhe_setting(self, key, enable):
         """Set lhe setting.
@@ -256,6 +255,8 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
     def setup_class(self):
         super().setup_class()
         self.ad = self.android_devices[0]
+        req_params = ["standalone_cs_criteria"]
+        self.unpack_userparams(req_param_names=req_params)
 
         if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
             gutils._init_device(self.ad)
@@ -318,10 +319,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
     def run_gps_and_capture_log(self):
         """Enable GPS via gps tool for 15s and capture pixel log"""
         gutils.start_pixel_logger(self.ad)
-        gutils.start_gnss_by_gtw_gpstool(self.ad, state=True)
-        time.sleep(15)
-        gutils.start_gnss_by_gtw_gpstool(self.ad, state=False)
-        gutils.stop_pixel_logger(self.ad)
+        gutils.gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria, testtime=1)
 
     def set_gps_logenabled(self, enable):
         """Set LogEnabled in gps.xml / lhd.conf / scd.conf
@@ -343,11 +341,11 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         """Verify the LogEnabled setting in gps.xml / scd.conf / lhd.conf
         Steps:
             1. default setting is on in user_debug build
-            2. enable gps for 15s
-            3. assert gps log pattern "slog    :" in pixel logger
+            2. run gps tracking for 1 min
+            3. should find slog in pixel logger log files
             4. disable LogEnabled in all the gps conf
-            5. enable gps for 15s
-            6. assert gps log pattern "slog    :" in pixel logger
+            5. run gps tracking for 1 min
+            6. should not find slog in pixel logger log files
         """
         self.run_gps_and_capture_log()
         result, _ = gutils.parse_brcm_nmea_log(self.ad, "slog    :", [])
@@ -357,9 +355,13 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
 
         self.run_gps_and_capture_log()
-        result, _ = gutils.parse_brcm_nmea_log(self.ad, "slog    :", [])
-        asserts.assert_false(bool(result), ("LogEnabled is set to False but still found %d slog",
-                                            len(result)))
+        try:
+            result, _ = gutils.parse_brcm_nmea_log(self.ad, "slog    :", [])
+            asserts.assert_false(
+                bool(result),
+                ("LogEnabled is set to False but still found %d slog" % len(result)))
+        except FileNotFoundError:
+            self.ad.log.info("Test pass because no BRCM log files/folders was found")
 
     @test_tracker_info(uuid="152a12e0-7957-47e0-9ea7-14725254fd1d")
     def test_gps_supllogenable_setting(self):
@@ -367,11 +369,11 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         Steps:
             1. default setting is on in user_debug build
             2. remove existing supl log
-            3. enable gps for 15s
+            3. run gps tracking for 1 min
             4. supl log should exist
             5. disable SuplLogEnable in gps.xml
             6. remove existing supl log
-            7. enable gps for 15s
+            7. run gps tracking for 1 min
             8. supl log should not exist
         """
         def is_supl_log_exist_after_supl_request():
