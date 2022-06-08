@@ -22,6 +22,7 @@ from acts_contrib.test_utils.cellular import cellular_performance_test_utils as 
 
 VERY_SHORT_SLEEP = 0.1
 SUBFRAME_DURATION = 0.001
+VISA_QUERY_DELAY = 0.01
 
 
 class Keysight5GTestApp(object):
@@ -45,7 +46,7 @@ class Keysight5GTestApp(object):
         self.test_app.timeout = 200000
         self.test_app.write_termination = '\n'
         self.test_app.read_termination = '\n'
-        self.test_app.query_delay = 0.005
+        self.test_app.query_delay = VISA_QUERY_DELAY
 
         inst_id = self.send_cmd('*IDN?', 1)
         if 'Keysight' not in inst_id[0]:
@@ -97,8 +98,10 @@ class Keysight5GTestApp(object):
             try:
                 response = Keysight5GTestApp._format_response(
                     self.test_app.query(command))
+                time.sleep(VISA_QUERY_DELAY)
                 if check_errors:
                     error = self.test_app.query('SYSTem:ERRor?')
+                    time.sleep(VISA_QUERY_DELAY)
                     if 'No error' not in error:
                         self.log.warning("Command: {}. Error: {}".format(
                             command, error))
@@ -108,11 +111,14 @@ class Keysight5GTestApp(object):
         else:
             try:
                 self.test_app.write(command)
+                time.sleep(VISA_QUERY_DELAY)
                 self.send_cmd('*OPC?', 1)
-                error = self.test_app.query('SYSTem:ERRor?')
-                if 'No error' not in error:
-                    self.log.warning("Command: {}. Error: {}".format(
-                        command, error))
+                time.sleep(VISA_QUERY_DELAY)
+                if check_errors:
+                    error = self.test_app.query('SYSTem:ERRor?')
+                    if 'No error' not in error:
+                        self.log.warning("Command: {}. Error: {}".format(
+                            command, error))
             except:
                 raise RuntimeError('Lost connection to test app.')
             return None
