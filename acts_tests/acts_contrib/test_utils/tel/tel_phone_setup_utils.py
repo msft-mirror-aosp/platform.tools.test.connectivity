@@ -1628,12 +1628,14 @@ def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
     Phone not in call.
     Phone have no stored WiFi network and WiFi disconnected.
     Phone not in airplane mode.
+    Phone is data on.
     """
     result = True
     if not toggle_airplane_mode(log, ad, False, False):
         ad.log.error("Fail to turn off airplane mode")
         result = False
     try:
+        ad.droid.telephonyToggleDataConnection(True)
         set_wifi_to_default(log, ad)
         while ad.droid.telecomIsInCall() and retry > 0:
             ad.droid.telecomEndCall()
