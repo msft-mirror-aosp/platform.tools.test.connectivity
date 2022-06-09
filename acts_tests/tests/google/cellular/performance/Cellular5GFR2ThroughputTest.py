@@ -129,15 +129,45 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
         self.pass_fail_check()
 
     def process_testcase_results(self):
-        if self.current_test_name in self.testclass_results:
-            testcase_results = self.testclass_results[self.current_test_name]
-            results_file_path = os.path.join(
-                context.get_current_context().get_full_output_path(),
-                '{}.json'.format(self.current_test_name))
-            with open(results_file_path, 'w') as results_file:
-                json.dump(wputils.serialize_dict(testcase_results),
-                          results_file,
-                          indent=4)
+        if self.current_test_name not in self.testclass_results:
+            return
+        testcase_data = self.testclass_results[self.current_test_name]
+        results_file_path = os.path.join(
+            context.get_current_context().get_full_output_path(),
+            '{}.json'.format(self.current_test_name))
+        with open(results_file_path, 'w') as results_file:
+            json.dump(wputils.serialize_dict(testcase_data),
+                      results_file,
+                      indent=4)
+        testcase_result = testcase_data['results'][0]
+        metric_map = {
+            'min_dl_tput':
+            testcase_result['tput_result']['total']['DL']['min_tput'],
+            'max_dl_tput':
+            testcase_result['tput_result']['total']['DL']['max_tput'],
+            'avg_dl_tput':
+            testcase_result['tput_result']['total']['DL']['average_tput'],
+            'theoretical_dl_tput':
+            testcase_result['tput_result']['total']['DL']['theoretical_tput'],
+            'dl_bler':
+            testcase_result['bler_result']['total']['DL']['nack_ratio'] * 100,
+            'min_dl_tput':
+            testcase_result['tput_result']['total']['UL']['min_tput'],
+            'max_dl_tput':
+            testcase_result['tput_result']['total']['UL']['max_tput'],
+            'avg_dl_tput':
+            testcase_result['tput_result']['total']['UL']['average_tput'],
+            'theoretical_dl_tput':
+            testcase_result['tput_result']['total']['UL']['theoretical_tput'],
+            'ul_bler':
+            testcase_result['bler_result']['total']['UL']['nack_ratio'] * 100,
+            'tcp_udp_tput':
+            testcase_result.get('iperf_throughput', float('nan'))
+        }
+        if self.publish_testcase_metrics:
+            for metric_name, metric_value in metric_map.items():
+                self.testcase_metric_logger.add_metric(metric_name,
+                                                       metric_value)
 
     def pass_fail_check(self):
         pass
@@ -495,7 +525,7 @@ class Cellular5GFR2_CP_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                               [(4, 16), (4, 27)], [1], [1],
                                               dl_mimo_config='N2X2',
                                               ul_mimo_config='N1X1',
-                                              schedule_scenario="UL_RMC",
+                                              schedule_scenario="FULL_TPUT",
                                               traffic_direction='UL',
                                               transform_precoding=0)
         self.tests.extend(
@@ -504,7 +534,7 @@ class Cellular5GFR2_CP_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [1], [1],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=0))
         self.tests.extend(
@@ -513,7 +543,7 @@ class Cellular5GFR2_CP_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [2], [2],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=0))
         self.tests.extend(
@@ -531,7 +561,7 @@ class Cellular5GFR2_CP_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [4], [4],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=0))
 
@@ -545,7 +575,7 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                               [(4, 16), (4, 27)], [1], [1],
                                               dl_mimo_config='N2X2',
                                               ul_mimo_config='N1X1',
-                                              schedule_scenario="UL_RMC",
+                                              schedule_scenario="FULL_TPUT",
                                               traffic_direction='UL',
                                               transform_precoding=1)
         self.tests.extend(
@@ -554,7 +584,7 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [1], [1],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=1))
         self.tests.extend(
@@ -563,7 +593,7 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [2], [2],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=1))
         self.tests.extend(
@@ -572,7 +602,7 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [3], [3],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=1))
         self.tests.extend(
@@ -581,7 +611,7 @@ class Cellular5GFR2_DFTS_UL_ThroughputTest(Cellular5GFR2ThroughputTest):
                                      [(4, 16), (4, 27)], [4], [4],
                                      dl_mimo_config='N2X2',
                                      ul_mimo_config='N2X2',
-                                     schedule_scenario="UL_RMC",
+                                     schedule_scenario="FULL_TPUT",
                                      traffic_direction='UL',
                                      transform_precoding=1))
 
