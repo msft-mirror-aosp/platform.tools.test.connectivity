@@ -36,9 +36,13 @@ CONCURRENCY_TYPE = {
 GPS_XML_CONFIG = {
     "CS": [
         '    IgnorePosition=\"true\"\n', '    IgnoreEph=\"true\"\n',
-        '    IgnoreTime=\"true\"\n', '    AsstIgnoreLto=\"true\"\n', '    IgnoreJniTime=\"true\"\n'
+        '    IgnoreTime=\"true\"\n', '    AsstIgnoreLto=\"true\"\n',
+        '    IgnoreJniTime=\"true\"\n'
     ],
-    "WS": ['    IgnorePosition=\"true\"\n', '    AsstIgnoreLto=\"true\"\n', '    IgnoreJniTime=\"true\"\n'],
+    "WS": [
+        '    IgnorePosition=\"true\"\n', '    AsstIgnoreLto=\"true\"\n',
+        '    IgnoreJniTime=\"true\"\n'
+    ],
     "HS": []
 }
 
@@ -149,8 +153,11 @@ class GnssConcurrencyTest(BaseTestClass):
             timedelt = target["datetime_obj"] - search_results[i]["datetime_obj"]
             timedelt_sec = timedelt.total_seconds()
             results.append(timedelt_sec)
-            if timedelt_sec > (criteria *
-                               self.chre_tolerate_rate) + self.outlier_criteria:
+            upper_bond = criteria * (
+                1 + self.chre_tolerate_rate) + self.outlier_criteria
+            lower_bond = criteria * (
+                1 - self.chre_tolerate_rate) - self.outlier_criteria
+            if timedelt_sec > upper_bond or timedelt_sec < lower_bond:
                 failures.append(timedelt_sec)
                 self.ad.log.error("[Failure][%s]:%.2f sec" %
                                   (target["time_stamp"], timedelt_sec))
@@ -159,7 +166,7 @@ class GnssConcurrencyTest(BaseTestClass):
                 self.ad.log.info("[Outlier][%s]:%.2f sec" %
                                  (target["time_stamp"], timedelt_sec))
 
-        res_summary = " ".join([str(res) for res in results])
+        res_summary = " ".join([str(res) for res in results[1:]])
         self.ad.log.info("[%s]Overall Result: %s" % (type, res_summary))
         self.ad.log.info("TestResult %s_samples %d" %
                          (type, len(search_results)))
@@ -177,11 +184,12 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
+        self.enable_chre(criteria["gnss"])
+        TTFF_criteria = criteria["ap_location"] + self.standalone_cs_criteria
+        gutils.process_gnss_by_gtw_gpstool(
+            self.ad, TTFF_criteria, freq=criteria["ap_location"])
         begin_time = datetime.datetime.now()
         self.ad.log.info(f"Test Start at {begin_time}")
-        gutils.start_gnss_by_gtw_gpstool(
-            self.ad, True, freq=criteria["ap_location"])
-        self.enable_chre(criteria["gnss"])
         time.sleep(test_duration)
         self.enable_chre(0)
         gutils.start_gnss_by_gtw_gpstool(self.ad, False)
