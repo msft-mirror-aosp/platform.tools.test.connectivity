@@ -21,12 +21,15 @@ import xml.etree.ElementTree as ET
 import time
 import random
 import os
+import re
 
 from acts import signals
 from acts.logger import epoch_to_log_line_timestamp
 from acts.keys import Config
 from acts.test_decorators import test_tracker_info
 from acts.utils import load_config
+from acts.utils import start_standing_subprocess
+from acts.utils import wait_for_standing_subprocess
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH, GERMANY_TELEKOM, QATAR_VODAFONE
 from acts_contrib.test_utils.tel.tel_defines import CLEAR_NOTIFICATION_BAR
@@ -102,6 +105,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
@@ -110,6 +114,8 @@ from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import call_setup_teardown
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_data_for_subscription
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_on_rat
+from acts_contrib.test_utils.net.ui_utils import get_element_attributes
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
@@ -152,6 +158,14 @@ class CellBroadcastTest(TelephonyBaseTest):
         else:
             self.android_devices[0].log.info("device is operated at single SIM!")
         self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
+        # If device doesn't set the preferred voice subscription id, set the preferred voice to the sub id of pSIM.
+        if self.current_sub_id < 0:
+            for sub_id in self.slot_sub_id_list.keys():
+                if self.slot_sub_id_list[sub_id] == 0:
+                    psim_sub_id = sub_id
+                    break;
+            self.android_devices[0].droid.subscriptionSetDefaultVoiceSubId(psim_sub_id)
+            self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
 
         self.android_devices[0].log.info("Active slot: %d, active voice subscription id: %d",
                                          self.slot_sub_id_list[self.current_sub_id], self.current_sub_id)
@@ -458,12 +472,15 @@ class CellBroadcastTest(TelephonyBaseTest):
         return alert_in_notification
 
 
-    def _verify_send_receive_wea_alerts(self, ad, region=None, call=False, call_direction=DIRECTION_MOBILE_ORIGINATED):
+    def _verify_send_receive_wea_alerts(self, ad, region=None, call=False, call_direction=DIRECTION_MOBILE_ORIGINATED, test_channel=None, screen_off=False):
         result = True
         # Always clear notifications in the status bar before testing to find alert notification easily.
         self._clear_statusbar_notifications(ad)
         for key, value in self.emergency_alert_channels_dict[region].items():
-
+            channel = int(key)
+            if test_channel:
+                if test_channel != channel:
+                    continue
             if call:
                 if not self._setup_voice_call(self.log,
                                               self.android_devices,
@@ -473,7 +490,6 @@ class CellBroadcastTest(TelephonyBaseTest):
 
             # Configs
             iteration_result = True
-            channel = int(key)
             alert_text = value["title"]
             alert_expected = value["default_value"]
             wait_for_alert = value.get("alert_time", WAIT_TIME_FOR_ALERT_TO_RECEIVE)
@@ -497,7 +513,11 @@ class CellBroadcastTest(TelephonyBaseTest):
             if call:
                 hangup_call(self.log, ad)
 
+            if screen_off:
+                ad.adb.shell("input keyevent KEYCODE_POWER")
             time.sleep(wait_for_alert)
+            if screen_off:
+                ad.adb.shell("input keyevent KEYCODE_POWER")
 
             # Receive Alert
             if not self._verify_text_present_on_ui(ad, alert_text):
@@ -572,14 +592,14 @@ class CellBroadcastTest(TelephonyBaseTest):
         return result
 
 
-    def _send_receive_test_flow(self, region):
+    def _send_receive_test_flow(self, region, test_channel=None):
         ad = self.android_devices[0]
         result = True
         self._set_device_to_specific_region(ad, region)
         time.sleep(WAIT_TIME_FOR_UI)
         ad.log.info("disable DND: %s", CMD_DND_OFF)
         ad.adb.shell(CMD_DND_OFF)
-        if not self._verify_send_receive_wea_alerts(ad, region):
+        if not self._verify_send_receive_wea_alerts(ad, region, test_channel=test_channel):
             result = False
         get_screen_shot_log(ad)
         return result
@@ -2167,7 +2187,7 @@ class CellBroadcastTest(TelephonyBaseTest):
         """ Verifies WEA during VoWiFi call for US Verizon.
 
         configures the device to US Verizon
-        enables WFC mode and disable 5G NSA data network.
+        enables WFC mode and disable 4G data network.
         connects to internet via WiFi.
         sends alerts across all channels and initiates mo VoWiFi call respectively.
         verify if alert is received correctly
@@ -2197,7 +2217,7 @@ class CellBroadcastTest(TelephonyBaseTest):
         """ Verifies WEA during VoWiFi call for US Verizon.
 
         configures the device to US Verizon
-        enables WFC mode and disable 5G NSA data network.
+        enables WFC mode and disable 3G data network.
         connects to internet via WiFi.
         sends alerts across all channels and initiates mo VoWiFi call respectively.
         verify if alert is received correctly
@@ -2221,3 +2241,440 @@ class CellBroadcastTest(TelephonyBaseTest):
         get_screen_shot_log(self.android_devices[0])
         return result
 
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_toggle_apm(self):
+        """Verify WEA at APM on and off.
+
+        Set device’s region to US Verizon
+        Turn off APM mode
+        Verify emergency alerts
+        Turn on APM mode
+        Verify emergency alerts
+        Turn off APM mode
+        Verify emergency alerts
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        ad = self.android_devices[0]
+        result = True
+        self._set_device_to_specific_region(ad, US_VZW)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        ad.log.info("set device to US Verizon and APM off!")
+        toggle_airplane_mode(ad.log, ad, False)
+        time.sleep(WAIT_TIME_FOR_UI)
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+
+        ad.log.info("set APM on and verify WEA setting!")
+        toggle_airplane_mode(ad.log, ad, True)
+        time.sleep(WAIT_TIME_FOR_UI)
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+
+        ad.log.info("set APM off and verify WEA setting!")
+        toggle_airplane_mode(ad.log, ad, False)
+        time.sleep(WAIT_TIME_FOR_UI)
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+        get_screen_shot_log(ad)
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_handover_lte_3g(self):
+        """Verify WEA during handover btw lte and 3g.
+
+        Set device to US Verizon
+        Set network preferred mode to RAT LTE
+        Verify emergency alerts
+        Set network preferred mode to RAT 3G
+        Verify emergency alerts
+        Set network preferred mode to RAT LTE
+        Verify emergency alerts
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        ad = self.android_devices[0]
+        result = True
+        self._set_device_to_specific_region(ad, US_VZW)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        time.sleep(WAIT_TIME_FOR_UI)
+
+        ad.log.info("Set device on volte!")
+        if not phone_setup_on_rat(ad.log, ad, 'volte'):
+            return False
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+
+        ad.log.info("Set device on 3g!")
+        if not phone_setup_on_rat(ad.log, ad, '3g'):
+            return False
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+
+        ad.log.info("Set device on volte!")
+        if not phone_setup_on_rat(ad.log, ad, 'volte'):
+            return False
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+        get_screen_shot_log(ad)
+
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_handover_5g_lte(self):
+        """Verify WEA during handover btw 5g and lte.
+
+        Set device to US Verizon
+        Set network preferred mode to RAT 5G NSA
+        Verify emergency alerts
+        Set network preferred mode to RAT LTE
+        Verify emergency alerts
+        Set network preferred mode to RAT 5G NSA
+        Verify emergency alerts
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        ad = self.android_devices[0]
+        result = True
+        self._set_device_to_specific_region(ad, US_VZW)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        time.sleep(WAIT_TIME_FOR_UI)
+
+        ad.log.info("Set device on 5g nsa!")
+        if not phone_setup_on_rat(ad.log, ad, '5g'):
+            return False
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+
+        ad.log.info("Set device on volte!")
+        if not phone_setup_on_rat(ad.log, ad, 'volte'):
+            return False
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+
+        ad.log.info("Set device on 5g nsa!")
+        if not phone_setup_on_rat(ad.log, ad, '5g'):
+            return False
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+        get_screen_shot_log(ad)
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_sideload_cbr_module(self):
+        """Verify WEA after sideloading a patch
+
+        Get value of cbr_patch parameter defined in acts config file.
+            If cbr_patch is not defined or empty, skip the test.
+        Install cbr patch.
+        Reboot device.
+        Set device to US Verizon.
+        Verify emergency alerts.
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        ad = self.android_devices[0]
+        cbr_patch_fetch = self.user_params.get("cbr_patch", "")
+        if cbr_patch_fetch:
+            ad.log.info("Download %s and install it.", cbr_patch_fetch)
+            cbr_patch_fetch = cbr_patch_fetch + " " + self.log_path
+            ad.log.info("%s", cbr_patch_fetch)
+            self.fetch_proc = start_standing_subprocess(cbr_patch_fetch)
+            wait_for_standing_subprocess(self.fetch_proc)
+            out, err = self.fetch_proc.communicate()
+            if err:
+                ad.log.info("%s", err.decode('utf-8'))
+                return False
+        else:
+            raise signals.TestSkip("No available cbr patch. Skip test!");
+
+        ad.log.info("Successfully install it.")
+        ad.adb.install("-r %s" % self.log_path+"/com.google.android.cellbroadcast.apex")
+        reboot_device(ad)
+        self._set_device_to_specific_region(ad, US_VZW)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        time.sleep(WAIT_TIME_FOR_UI)
+        if not self._verify_send_receive_wea_alerts(ad, US_VZW, test_channel=4370):
+            result = False
+        get_screen_shot_log(ad)
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_alert_not_dismiss_after_clicking_home_button(self):
+        """Verify if alert dismisses when clicking home button.
+
+        1. Set device region to Chile
+        2. Send CBR 4370 alert
+        3. Hide alert in notification drawer by clicking home button
+        4. Verify if alert is in notification drawer
+        5. Show and verify alert dialog is 4370 alert
+        6. dismiss alert
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        ad = self.android_devices[0]
+        self._clear_statusbar_notifications(ad)
+        self._set_device_to_specific_region(ad, CHILE_TELEFONICA)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+
+        alert_text = self.emergency_alert_channels_dict[CHILE_TELEFONICA]["4370"]["title"]
+        sequence_num = random.randrange(10000, 40000)
+        ad.log.info("%s for %s: %s", alert_text, CHILE_TELEFONICA, 4370)
+        # Send Alert
+        ad.droid.cbrSendTestAlert(sequence_num, 4370)
+
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("Hide the alert channel %s in the notification drawer by clicking home button!", 4370)
+        ad.adb.shell("input keyevent KEYCODE_HOME")
+        time.sleep(WAIT_TIME_FOR_UI)
+        alert_in_notification = False
+        if self._popup_alert_in_statusbar_notifications(ad, alert_text):
+            ad.log.info("Found the alert channel %d in the notification drawer!", 4370)
+            # Verify alert text in message.
+            alert_in_notification = self._verify_text_present_on_ui(ad, alert_text)
+            if not alert_in_notification:
+                ad.log.error("The alert title is not expected, %s", alert_text)
+            self._exit_alert_pop_up(ad)
+        else:
+            ad.log.error(" Couldn't find the alert channel %d in the notification drawer!", 4370)
+
+        return alert_in_notification
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_alert_unread_count(self):
+        """ Verify unread alert count.
+
+        1. Set device region to Korea
+        2. Open alert setting UI and turn off show full screen messages
+        3. Send and hide 4370, 4371 and 4372 alerts for three times each in sequence
+        4. Show alert dialog from notification drawer
+        5. Verify if alert count is 9
+        6. Verify if each alert is correct
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        ad = self.android_devices[0]
+        self._clear_statusbar_notifications(ad)
+
+        self._set_device_to_specific_region(ad, KOREA)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+
+        self._open_wea_settings_page(ad)
+        full_screen_setting = "Show full-screen messages"
+        if not self._has_element(ad, full_screen_setting):
+            for _ in range(3):
+                ad.adb.shell(SCROLL_DOWN)
+            if not self._has_element(ad, full_screen_setting):
+                ad.log.error("UI - %s missing", full_screen_setting)
+                return False
+
+        full_screen_setting_value = self._get_toggle_value(ad, full_screen_setting)
+        if full_screen_setting_value == "true":
+            # Turn off show full-screen messages
+            self._wait_and_click(ad, full_screen_setting)
+            time.sleep(WAIT_TIME_FOR_UI)
+        self._close_wea_settings_page(ad)
+        time.sleep(WAIT_TIME_FOR_UI)
+
+        test_alert_channels = [4370, 4371, 4372]
+        for channel in test_alert_channels:
+        # Send and hide alert
+            for iterate in range(1, 4):
+                alert_text = self.emergency_alert_channels_dict[KOREA][str(channel)]["title"]
+                sequence_num = random.randrange(10000, 40000)
+                ad.log.info("%s for %s: %s", alert_text, KOREA, channel)
+                ad.droid.cbrSendTestAlert(sequence_num, channel)
+                time.sleep(WAIT_TIME_FOR_UI)
+                ad.adb.shell("input keyevent KEYCODE_HOME")
+
+        if self._popup_alert_in_statusbar_notifications(ad, "New alerts"):
+            ad.log.info("Found alerts in the notification drawer!")
+        else:
+            ad.log.error(" Couldn't find the alert in the notification drawer!")
+            return False
+
+        ok_button_attrs = get_element_attributes(ad, text_contains="OK")
+        result = True
+        if not "1/9" in ok_button_attrs["text"].value:
+            result = False
+            ad.log.error("Unread alert count is incorrect, %s", ok_button_attrs["text"])
+        else:
+            ad.log.info("Unread alert count is 9!")
+        test_alert_channels.reverse()
+        for channel in test_alert_channels:
+            for iterate in range(1, 4):
+                alert_text = self.emergency_alert_channels_dict[KOREA][str(channel)]["title"]
+                ad.log.info("Try to dismiss %s alert", alert_text)
+                if not self._has_element(ad, alert_text):
+                    result = False
+                    ad.log.error("Alert is incorrect, should be %s", alert_text)
+                self._exit_alert_pop_up(ad)
+
+        return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_alert_datetime_chile_telefonica(self):
+        """ Verifies the datetime format of alert messages for Chile.
+
+        Set the device's region to Chile
+        Send channel 4370 alert
+        Get the alert time string on the alert dialog
+        Verify if the format of the alert time is DD/MM/YYYY hh:mm PM|AM
+        Get device time
+        Verify if the alert time is same as device time
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        ad = self.android_devices[0]
+        self._set_device_to_specific_region(ad, CHILE_TELEFONICA)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        alert_text = self.emergency_alert_channels_dict[CHILE_TELEFONICA][str(4370)]["title"]
+        sequence_num = random.randrange(10000, 40000)
+        ad.log.info("%s for %s: %s", alert_text, CHILE_TELEFONICA, 4370)
+        ad.droid.cbrSendTestAlert(sequence_num, 4370)
+        time.sleep(WAIT_TIME_FOR_UI)
+        # get the device time
+        stdout = ad.adb.shell("date +\"%d/%m/%Y,%I,%M,%p\"")
+        device_time = stdout.split(',')
+        title_attrs = get_element_attributes(ad, text_contains=alert_text)
+        # Verify the format(DD/MM/YYYY hh:mm PM|AM) of alert date and time.
+        format = "(\d{2}/\d{2}/\d{4}) ([0]\d|[1][012]):\d{2} (PM|AM)$"
+        alert_time = re.search(format, title_attrs["text"].value)
+        ad.log.info("The alert title is %s\nverify the format of the alert time!", title_attrs["text"].value)
+        if not alert_time:
+            result = False
+            ad.log.error("The format of the alert time is incorrect. The correct format is DD/MM/YYYY hh:mm PM|AM")
+        else:
+            ad.log.info("The format of the alert time is correct!")
+        # Verify the alert time
+        ad.log.info("The device time is %s %s:%s %s", device_time[0], device_time[1], device_time[2], device_time[3])
+        ad.log.info("Verify the alert time...")
+        # The exact matched pattern count must be 3.
+        if not alert_time or len(alert_time.groups()) != 3:
+            result = False
+            ad.log.error("The matched alert time %s is incorrect!", alert_time.group(0))
+
+        if result and (not ((device_time[0] == alert_time.group(1)
+                 and device_time[1] == alert_time.group(2)
+                 and device_time[3] == alert_time.group(3)))):
+            result = False
+            ad.log.error("The alert time is incorrect!")
+        else:
+            ad.log.info("The alert time is correct!")
+        self._exit_alert_pop_up(ad)
+
+        return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_allow_alerts_japan_kddi(self):
+        """ Verify alert is received after switch over 'Allow alerts' setting.
+
+        Set the device's region to Japan kddi
+        Turn off "Allow alerts" setting
+        Reboot
+        Turn on "Allow alerts" setting
+        Send channel 4353 alert
+        Verify if channel 4353 alert is received
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        ad = self.android_devices[0]
+        result = True
+        self._set_device_to_specific_region(ad, JAPAN_KDDI)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+
+        allow_alerts_title = "Allow alerts"
+        self._open_wea_settings_page(ad)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        if not self._has_element(ad, allow_alerts_title):
+            for _ in range(3):
+                ad.adb.shell(SCROLL_DOWN)
+            if not self._has_element(ad, allow_alerts_title):
+                ad.log.error("UI - %s missing", allow_alerts_title)
+                return False
+        # Get switch button's value of Allow alerts
+        node = uutils.wait_and_get_xml_node(ad, timeout=30, text=allow_alerts_title)
+        allow_alerts_value = node.nextSibling.attributes['checked'].value
+
+        if allow_alerts_value == "true":
+            # Turn off Allow alerts
+            ad.log.info("Switch off Allow alerts!")
+            self._wait_and_click(ad, allow_alerts_title)
+        else:
+            ad.log.info("Allow alerts is off!")
+        time.sleep(WAIT_TIME_FOR_UI)
+        self._close_wea_settings_page(ad)
+
+        reboot_device(ad)
+        time.sleep(WAIT_TIME_FOR_ALERTS_TO_POPULATE)
+        self._open_wea_settings_page(ad)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        # Turn on Allow alerts
+        ad.log.info("Switch on Allow alerts!")
+        self._wait_and_click(ad, allow_alerts_title)
+        time.sleep(WAIT_TIME_FOR_UI)
+        self._close_wea_settings_page(ad)
+        if not self._verify_send_receive_wea_alerts(ad, JAPAN_KDDI, test_channel=4353):
+            result = False
+        get_screen_shot_log(ad)
+
+        return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_alert_screen_off_chile_telefonica(self):
+        """Verify the vibration is on when the screen is off after receiving alerts.
+
+        Set the device's region to Chile
+        Send channel 4378 alert
+        Turn off screen
+        Wait for alert time
+        turn on screen
+        Verify the vibration time of the alert
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        result = True
+        ad = self.android_devices[0]
+        self._set_device_to_specific_region(ad, CHILE_TELEFONICA)
+        time.sleep(WAIT_TIME_FOR_UI)
+        ad.log.info("disable DND: %s", CMD_DND_OFF)
+        ad.adb.shell(CMD_DND_OFF)
+        if not self._verify_send_receive_wea_alerts(ad, CHILE_TELEFONICA, test_channel=4378, screen_off=True):
+            result = False
+        get_screen_shot_log(ad)
+
+        return result
