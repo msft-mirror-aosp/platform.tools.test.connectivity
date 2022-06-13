@@ -425,6 +425,22 @@ def check_location_service(ad):
         raise signals.TestError("Failed to turn Location on")
 
 
+def delete_device_folder(ad, folder):
+    ad.log.info("Folder to be deleted: %s" % folder)
+    folder_contents = ad.adb.shell(f"ls {folder}", ignore_status=True)
+    ad.log.debug("Contents to be deleted: %s" % folder_contents)
+    ad.adb.shell("rm -rf %s" % folder, ignore_status=True)
+
+
+def remove_pixel_logger_folder(ad):
+    if check_chipset_vendor_by_qualcomm(ad):
+        folder = "/sdcard/Android/data/com.android.pixellogger/files/logs/diag_logs"
+    else:
+        folder = "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/"
+
+    delete_device_folder(ad, folder)
+
+
 def clear_logd_gnss_qxdm_log(ad):
     """Clear /data/misc/logd,
     /storage/emulated/0/Android/data/com.android.gpstool/files and
@@ -440,20 +456,14 @@ def clear_logd_gnss_qxdm_log(ad):
         'find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH,
         ignore_status=True)
     if check_chipset_vendor_by_qualcomm(ad):
-        diag_logs = (
-            "/sdcard/Android/data/com.android.pixellogger/files/logs/diag_logs")
         output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
-        folders_should_be_removed += [diag_logs, output_path]
+        folders_should_be_removed += [output_path]
     else:
-        output_path = ("/sdcard/Android/data/com.android.pixellogger/files"
-                       "/logs/gps/")
         always_on_logger_log_path = ("/data/vendor/gps/logs")
-        folders_should_be_removed += [always_on_logger_log_path, output_path]
+        folders_should_be_removed += [always_on_logger_log_path]
     for folder in folders_should_be_removed:
-        ad.log.info("Folder to be deleted: %s" % folder)
-        folder_contents = ad.adb.shell(f"ls {folder}", ignore_status=True)
-        ad.log.debug("Contents to be deleted: %s" % folder_contents)
-        ad.adb.shell("rm -rf %s" % folder, ignore_status=True)
+        delete_device_folder(ad, folder)
+    remove_pixel_logger_folder(ad)
     if not is_device_wearable(ad):
         reboot(ad)
 
