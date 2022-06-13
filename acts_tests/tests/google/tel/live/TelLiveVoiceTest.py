@@ -3789,17 +3789,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup IWLAN with NON-APM WIFI WFC on")
-            return False
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="275a93d6-1f39-40c8-893f-ff77afd09e54")
@@ -3815,17 +3811,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM off and WIFI and WFC on")
-            return False
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="ea087709-d4df-4223-b80c-1b33bacbd5a2")
@@ -3846,17 +3838,15 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             wfc = WFC_MODE_CELLULAR_PREFERRED
         else:
             wfc = WFC_MODE_WIFI_PREFERRED
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 wfc,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
+
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            is_airplane_mode=True,
+            wfc_mode=wfc,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="44cc14e0-60c7-4fdb-ad26-31fdc4e52aaf")
@@ -3877,17 +3867,15 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             wfc = WFC_MODE_CELLULAR_PREFERRED
         else:
             wfc = WFC_MODE_WIFI_PREFERRED
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 wfc,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
+
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            is_airplane_mode=True,
+            wfc_mode=wfc,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="e115e8a6-25bf-41fc-aeb8-8f4c922c50e4")
@@ -3903,17 +3891,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_CELLULAR_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="d754d3dd-0b02-4f13-bc65-fdafa254196b")
@@ -3929,17 +3914,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
-                                 WFC_MODE_CELLULAR_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="88822edf-4c4a-4bc4-9280-2f27ee9e28d5")
@@ -3955,19 +3937,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log,
-                                 self.android_devices[0],
-                                 True,
-                                 WFC_MODE_CELLULAR_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_ORIGINATED)
 
     @test_tracker_info(uuid="c4b066b0-3cfd-4831-9c61-5d6b132648c4")
@@ -3983,19 +3960,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_iwlan(self.log,
-                                 self.android_devices[0],
-                                 True,
-                                 WFC_MODE_CELLULAR_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
-            self.android_devices[0].log.error(
-                "Failed to setup iwlan with APM, WIFI and WFC on")
-            return False
         return test_call_setup_in_active_youtube_video(
             self.log,
             self.android_devices,
-            rat=None,
+            rat="wfc",
+            is_airplane_mode=True,
+            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+            wifi_ssid=self.wifi_network_ssid,
+            wifi_pwd=self.wifi_network_pass,
             call_direction=DIRECTION_MOBILE_TERMINATED)
 
     @test_tracker_info(uuid="f367de12-1fd8-488d-816f-091deaacb791")
