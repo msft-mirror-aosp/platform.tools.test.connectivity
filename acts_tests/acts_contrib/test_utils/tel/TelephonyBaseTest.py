@@ -57,6 +57,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import stop_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_sdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_tcpdumps
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_default_state
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_idle
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import initial_set_up_for_subid_information
@@ -520,6 +521,7 @@ class TelephonyBaseTest(BaseTestClass):
             time.sleep(3)
             ad.screenshot(f"{ad.serial}_last_screen")
         self._take_bug_report(test_name, begin_time)
+        ensure_phones_default_state(self.log, self.android_devices)
 
     def on_pass(self, test_name, begin_time):
         if self.save_passing_logs:
