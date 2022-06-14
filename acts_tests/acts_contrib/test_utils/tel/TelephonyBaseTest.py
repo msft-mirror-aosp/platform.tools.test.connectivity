@@ -199,6 +199,8 @@ class TelephonyBaseTest(BaseTestClass):
 
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
+        self.reboot_before_test = self.user_params.get(
+            "reboot_before_test", False)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
         self.log_path = getattr(logging, "log_path", None)
@@ -496,6 +498,8 @@ class TelephonyBaseTest(BaseTestClass):
         else:
             stop_tcpdumps(self.android_devices)
         for ad in self.android_devices:
+            if self.reboot_before_test:
+                ad.reboot()
             if self.skip_reset_between_cases:
                 ensure_phone_idle(self.log, ad)
             else:
