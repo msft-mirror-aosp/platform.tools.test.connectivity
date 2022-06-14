@@ -2906,6 +2906,7 @@ def validate_adr_rate(ad, pass_criteria):
     """
     adr_statistic = GnssMeasurement(ad).get_adr_static()
 
+    ad.log.info("ADR threshold: {0:.1%}".format(pass_criteria))
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_valid_rate {0:.1%}".format(adr_statistic.valid_rate))
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
                 "ADR_usable_rate {0:.1%}".format(adr_statistic.usable_rate))
@@ -2919,10 +2920,12 @@ def validate_adr_rate(ad, pass_criteria):
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
                 "ADR_half_cycle_resolved_count %s" % adr_statistic.half_cycle_resolved_count)
 
-    if pass_criteria > adr_statistic.usable_rate:
-        # TODO: (diegowchung) add assertion once we have the expected criteria
-        ad.log.warn("Usable rate: %s lower than expected: %s" %
-                    (adr_statistic.usable_rate, pass_criteria))
+    asserts.assert_true(
+        (pass_criteria < adr_statistic.valid_rate) and (pass_criteria < adr_statistic.usable_rate),
+        f"ADR valid rate: {adr_statistic.valid_rate:.1%}, "
+        f"ADR usable rate: {adr_statistic.usable_rate:.1%} "
+        f"Lower than expected: {pass_criteria:.1%}"
+    )
 
 
 def pair_to_wearable(watch, phone):

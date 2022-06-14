@@ -99,7 +99,7 @@ class GnssFunctionTest(BaseTestClass):
                       "gnss_init_error_allowlist", "pixel_lab_location",
                       "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
-                      "brcm_error_log_allowlist", "onchip_interval"]
+                      "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -1480,10 +1480,15 @@ class GnssFunctionTest(BaseTestClass):
         3. Check ADR usable rate / valid rate
         4. Disable "Force full gnss measurement"
         """
+        adr_threshold = self.adr_ratio_threshold.get(self.ad.model)
+        if not adr_threshold:
+            self.ad.log.warn((f"Can't get '{self.ad.model}' threshold from config "
+                              f"{self.adr_ratio_threshold}, use default threshold 0.5"))
+            adr_threshold = 0.5
         with gutils.full_gnss_measurement(self.ad):
             gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                           testtime=10, meas_flag=True)
-            gutils.validate_adr_rate(self.ad, pass_criteria=0.5)
+            gutils.validate_adr_rate(self.ad, pass_criteria=float(adr_threshold))
 
 
     @test_tracker_info(uuid="7e43dd94-54e7-42a3-b6fa-39d4f101635e")
