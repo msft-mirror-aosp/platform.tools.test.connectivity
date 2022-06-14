@@ -353,6 +353,8 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
 
         self.set_gps_logenabled(enable=False)
         gutils.clear_logd_gnss_qxdm_log(self.ad)
+        # Removes pixel logger path again in case pixel logger still writes log unexpectedly.
+        gutils.remove_pixel_logger_folder(self.ad)
 
         self.run_gps_and_capture_log()
         try:
