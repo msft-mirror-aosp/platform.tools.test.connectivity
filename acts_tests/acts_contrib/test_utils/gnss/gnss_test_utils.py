@@ -625,14 +625,13 @@ def check_xtra_download(ad, begin_time):
             ad.log.info("XTRA downloaded and injected successfully.")
             return True
         ad.log.error("XTRA downloaded FAIL.")
-    elif is_device_wearable(ad):
-        lto_results = ad.adb.shell("ls -al /data/vendor/gps/lto*")
-        if "lto2.dat" in lto_results:
-            ad.log.info("LTO downloaded and injected successfully.")
-            return True
     else:
-        lto_results = ad.search_logcat("GnssPsdsAidl: injectPsdsData: "
-                                       "psdsType: 1", begin_time)
+        if is_device_wearable(ad):
+            lto_results = ad.search_logcat("GnssLocationProvider: "
+                                           "calling native_inject_psds_data", begin_time)
+        else:
+            lto_results = ad.search_logcat("GnssPsdsAidl: injectPsdsData: "
+                                           "psdsType: 1", begin_time)
         if lto_results:
             ad.log.debug("%s" % lto_results[-1]["log_message"])
             ad.log.info("LTO downloaded and injected successfully.")
