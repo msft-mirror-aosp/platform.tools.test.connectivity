@@ -129,18 +129,27 @@ class GnssConcurrencyTest(BaseTestClass):
             if "ap" not in type:
                 self.ad.adb.shell(" ".join([cmd, type, option]))
 
-    def parse_concurrency_result(self, begin_time, type, criteria):
+    def parse_concurrency_result(self,
+                                 begin_time,
+                                 type,
+                                 criteria,
+                                 exam_lower=True):
         """ Parse the test result with given time and criteria.
 
         Args:
             begin_time: test begin time.
             type: str for location request type.
             criteria: dictionary for test criteria.
+            exam_lower: a boolean to identify the lower bond or not.
         Return: List for the failure and outlier loops and results.
         """
         results = []
         failures = []
         outliers = []
+        upper_bond = criteria * (
+            1 + self.chre_tolerate_rate) + self.outlier_criteria
+        lower_bond = criteria * (
+            1 - self.chre_tolerate_rate) - self.outlier_criteria
         search_results = self.ad.search_logcat(CONCURRENCY_TYPE[type],
                                                begin_time)
         if not search_results:
@@ -153,15 +162,15 @@ class GnssConcurrencyTest(BaseTestClass):
             timedelt = target["datetime_obj"] - search_results[i]["datetime_obj"]
             timedelt_sec = timedelt.total_seconds()
             results.append(timedelt_sec)
-            upper_bond = criteria * (
-                1 + self.chre_tolerate_rate) + self.outlier_criteria
-            lower_bond = criteria * (
-                1 - self.chre_tolerate_rate) - self.outlier_criteria
-            if timedelt_sec > upper_bond or timedelt_sec < lower_bond:
+            if timedelt_sec > upper_bond:
                 failures.append(timedelt_sec)
                 self.ad.log.error("[Failure][%s]:%.2f sec" %
                                   (target["time_stamp"], timedelt_sec))
-            elif timedelt_sec > criteria * self.chre_tolerate_rate:
+            if timedelt_sec < lower_bond and exam_lower:
+                failures.append(timedelt_sec)
+                self.ad.log.error("[Failure][%s]:%.2f sec" %
+                                  (target["time_stamp"], timedelt_sec))
+            elif timedelt_sec > criteria * (1 + self.chre_tolerate_rate):
                 outliers.append(target)
                 self.ad.log.info("[Outlier][%s]:%.2f sec" %
                                  (target["time_stamp"], timedelt_sec))
@@ -225,7 +234,7 @@ class GnssConcurrencyTest(BaseTestClass):
             self.ad.log.info("Starting process %s result" % request_type)
             outliers[request_type], failures[request_type], results[
                 request_type] = self.parse_concurrency_result(
-                    begin_time, request_type, criteria)
+                    begin_time, request_type, criteria, exam_lower=False)
             if not results[request_type]:
                 failure_log += "[%s] Fail to find location report.\n" % request_type
             if len(failures[request_type]) > 0:
