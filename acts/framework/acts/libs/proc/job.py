@@ -25,7 +25,6 @@ else:
 
 class Error(Exception):
     """Indicates that a command failed, is fatal to the test unless caught."""
-
     def __init__(self, result):
         super(Error, self).__init__(result)
         self.result = result
@@ -49,7 +48,6 @@ class Result(object):
         duration: How long the process ran for.
         did_timeout: True if the program timed out and was killed.
     """
-
     @property
     def stdout(self):
         """String representation of standard output."""
@@ -130,7 +128,8 @@ def run(command,
 
     Raises:
         job.TimeoutError: When the remote command took to long to execute.
-        Error: When the command had an error executing and ignore_status==False.
+        Error: When the ssh connection failed to be created.
+        CommandError: Ssh worked, but the command had an error executing.
     """
     start_time = time.time()
     proc = subprocess.Popen(command,

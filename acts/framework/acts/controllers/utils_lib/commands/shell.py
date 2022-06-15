@@ -28,7 +28,6 @@ class ShellCommand(object):
 
     Note: At the moment this only works with the ssh runner.
     """
-
     def __init__(self, runner, working_dir=None):
         """Creates a new shell command invoker.
 
@@ -104,12 +103,8 @@ class ShellCommand(object):
         """
         try:
             result = self.run('ps aux | grep -v grep | grep %s' % identifier)
-        except job.Error as e:
-            if e.result.exit_status == 1:
-                # Grep returns exit status 1 when no lines are selected. This is
-                # an expected return code.
-                return
-            raise e
+        except job.Error:
+            raise StopIteration
 
         lines = result.stdout.splitlines()
 
@@ -120,10 +115,7 @@ class ShellCommand(object):
         # USER    PID  ...
         for line in lines:
             pieces = line.split()
-            try:
-                yield int(pieces[1])
-            except StopIteration:
-                return
+            yield int(pieces[1])
 
     def search_file(self, search_string, file_name):
         """Searches through a file for a string.
