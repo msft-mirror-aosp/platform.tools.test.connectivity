@@ -385,8 +385,8 @@ class GnssFunctionTest(BaseTestClass):
         test_time = 60
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
-                                      type="gnss", testtime=test_time)
-        location_data = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+                                      api_type="gnss", testtime=test_time)
+        location_data = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
         gutils.validate_location_fix_rate(self.ad, location_data, run_time=test_time,
                                           fix_rate_criteria=0.99)
 
@@ -408,7 +408,7 @@ class GnssFunctionTest(BaseTestClass):
         dpo_begin_time = get_current_epoch_time()
         gnss_tracking_via_gtw_gpstool(self.ad,
                                       self.standalone_cs_criteria,
-                                      type="gnss",
+                                      api_type="gnss",
                                       testtime=tracking_minutes,
                                       meas_flag=True)
         if gutils.check_chipset_vendor_by_qualcomm(self.ad):
@@ -1390,8 +1390,8 @@ class GnssFunctionTest(BaseTestClass):
             GnssStatus obj should return no failures
         """
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
-                                      type="gnss", testtime=1)
-        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss",
+                                      api_type="gnss", testtime=1)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss",
                               validate_gnssstatus=True)
 
     @test_tracker_info(uuid="c85da9af-112f-4426-a80a-3e3f9c8df0d4")
@@ -1409,8 +1409,8 @@ class GnssFunctionTest(BaseTestClass):
         if gutils.check_chipset_vendor_by_qualcomm(self.ad):
             raise signals.TestSkip("Not BRCM chipset. Skip the test.")
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
-                                      type="gnss", testtime=1, freq=self.onchip_interval)
-        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss",
+                                      api_type="gnss", testtime=1, freq=self.onchip_interval)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss",
                               validate_gnssstatus=True)
 
     @test_tracker_info(uuid="ca3d26ea-c64f-4566-9636-ee98641d219b")
@@ -1424,9 +1424,9 @@ class GnssFunctionTest(BaseTestClass):
         """
 
         gps_enable_minutes = 1
-        gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+        gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                       testtime=gps_enable_minutes)
-        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
         self.ad.log.debug("Location report details before suspend")
         self.ad.log.debug(result)
         gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
@@ -1435,9 +1435,9 @@ class GnssFunctionTest(BaseTestClass):
         gutils.deep_suspend_device(self.ad)
 
         gps_enable_minutes = 5
-        gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+        gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                       testtime=gps_enable_minutes)
-        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
         self.ad.log.debug("Location report details after suspend")
         self.ad.log.debug(result)
 
@@ -1462,9 +1462,10 @@ class GnssFunctionTest(BaseTestClass):
             test_time = 2
             for i in range(1, 4):
                 self.ad.log.info("Tracking attempt %s" % str(i))
-                gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
-                                              testtime=test_time, is_screen_off=True)
-                result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
+                gnss_tracking_via_gtw_gpstool(
+                    self.ad, criteria=self.supl_cs_criteria, api_type="gnss", testtime=test_time,
+                    is_screen_off=True)
+                result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
                 gutils.validate_location_fix_rate(self.ad, result, run_time=test_time,
                                                   fix_rate_criteria=0.99)
         finally:
@@ -1480,6 +1481,6 @@ class GnssFunctionTest(BaseTestClass):
         4. Disable "Force full gnss measurement"
         """
         with gutils.full_gnss_measurement(self.ad):
-            gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, type="gnss",
+            gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                           testtime=10, meas_flag=True)
             gutils.validate_adr_rate(self.ad, pass_criteria=0.5)

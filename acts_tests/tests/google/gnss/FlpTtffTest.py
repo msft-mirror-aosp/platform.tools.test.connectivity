@@ -106,11 +106,11 @@ class FlpTtffTest(BaseTestClass):
         for mode in ttff.keys():
             begin_time = get_current_epoch_time()
             process_gnss_by_gtw_gpstool(
-                self.ad, self.standalone_cs_criteria, type="flp")
+                self.ad, self.standalone_cs_criteria, api_type="flp")
             start_ttff_by_gtw_gpstool(
                 self.ad, ttff_mode=mode, iteration=self.ttff_test_cycle)
             ttff_data = process_ttff_by_gtw_gpstool(
-                self.ad, begin_time, location, type="flp")
+                self.ad, begin_time, location, api_type="flp")
             result = check_ttff_data(self.ad, ttff_data, ttff[mode], criteria)
             flp_results.append(result)
         asserts.assert_true(
@@ -137,8 +137,8 @@ class FlpTtffTest(BaseTestClass):
         """
         self.start_qxdm_and_tcpdump_log()
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
-                                      type="flp", testtime=60)
-        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="flp")
+                                      api_type="flp", testtime=60)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="flp")
 
     @test_tracker_info(uuid="8bc4e82d-fdce-4ee8-af8c-5e4a925b5360")
     def test_flp_ttff_strong_signal_wifiscan_on_wifi_connect(self):
