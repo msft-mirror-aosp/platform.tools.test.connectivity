@@ -29,7 +29,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import delete_lto_file, pair_t
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import check_tracking_file
-from uiautomator import Device
+from uiautomator2 import Device
 
 
 class GnssWearableTetherFunctionTest(BaseTestClass):
