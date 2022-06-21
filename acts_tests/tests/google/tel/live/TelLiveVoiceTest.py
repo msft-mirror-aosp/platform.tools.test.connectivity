@@ -3978,7 +3978,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         1. Set the data limit to the current usage
         2. Setup PhoneA WFC mode: WIFI_PREFERRED.
-        3. Make Sure PhoneB is in 3G mode.
+        3. Make Sure PhoneB is in general mode.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         5. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
@@ -3997,7 +3997,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             tasks = [(phone_setup_iwlan,
                       (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                        self.wifi_network_ssid, self.wifi_network_pass)),
-                     (phone_setup_voice_3g, (self.log, ads[1]))]
+                     (phone_setup_voice_general, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
