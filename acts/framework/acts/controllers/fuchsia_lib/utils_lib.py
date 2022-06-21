@@ -221,10 +221,10 @@ def flash(fuchsia_device,
                          'fuchsia_devices.')
     if not fuchsia_device.build_number:
         fuchsia_device.build_number = 'LATEST'
-    if (utils.is_valid_ipv4_address(fuchsia_device.orig_ip)
-            or utils.is_valid_ipv6_address(fuchsia_device.orig_ip)):
-        raise ValueError('The fuchsia_device ip must be the mDNS name to be '
-                         'able to flash.')
+    if not fuchsia_device.mdns_name:
+        raise ValueError(
+            'Either fuchsia_device mdns_name must be specified or '
+            'ip must be the mDNS name to be able to flash.')
 
     file_to_download = None
     image_archive_path = None
@@ -262,7 +262,7 @@ def flash(fuchsia_device,
         reboot_to_bootloader(fuchsia_device, use_ssh,
                              fuchsia_reconnect_after_reboot_time)
         logging.info(
-            f'Flashing {fuchsia_device.orig_ip} with {image_path} using authorized keys "{fuchsia_device.authorized_file}".'
+            f'Flashing {fuchsia_device.mdns_name} with {image_path} using authorized keys "{fuchsia_device.authorized_file}".'
         )
         run_flash_script(fuchsia_device, image_path)
     else:
@@ -283,7 +283,7 @@ def flash(fuchsia_device,
                                  fuchsia_reconnect_after_reboot_time)
 
             logging.info(
-                f'Flashing {fuchsia_device.orig_ip} with {image_archive_path} using authorized keys "{fuchsia_device.authorized_file}".'
+                f'Flashing {fuchsia_device.mdns_name} with {image_archive_path} using authorized keys "{fuchsia_device.authorized_file}".'
             )
             run_flash_script(fuchsia_device, image_path)
     return True
@@ -315,14 +315,14 @@ def reboot_to_bootloader(fuchsia_device,
     while time_counter < FASTBOOT_TIMEOUT:
         logging.info('Checking to see if fuchsia_device(%s) SN: %s is in '
                      'fastboot. (Attempt #%s Timeout: %s)' %
-                     (fuchsia_device.orig_ip, fuchsia_device.serial_number,
+                     (fuchsia_device.mdns_name, fuchsia_device.serial_number,
                       str(time_counter + 1), FASTBOOT_TIMEOUT))
         for usb_device in usbinfo.usbinfo():
             if (usb_device['iSerialNumber'] == fuchsia_device.serial_number
                     and usb_device['iProduct'] == 'USB_download_gadget'):
                 logging.info(
                     'fuchsia_device(%s) SN: %s is in fastboot.' %
-                    (fuchsia_device.orig_ip, fuchsia_device.serial_number))
+                    (fuchsia_device.mdns_name, fuchsia_device.serial_number))
                 time_counter = FASTBOOT_TIMEOUT
         time_counter = time_counter + 1
         if time_counter == FASTBOOT_TIMEOUT:
@@ -331,7 +331,7 @@ def reboot_to_bootloader(fuchsia_device,
             raise TimeoutError(
                 'fuchsia_device(%s) SN: %s '
                 'never went into fastboot' %
-                (fuchsia_device.orig_ip, fuchsia_device.serial_number))
+                (fuchsia_device.mdns_name, fuchsia_device.serial_number))
         time.sleep(1)
 
     end_time = time.time() + WAIT_FOR_EXISTING_FLASH_TO_FINISH_SEC
@@ -363,14 +363,14 @@ def run_flash_script(fuchsia_device, flash_dir):
     logging.info('Updating device to new IP addresses.')
     mdns_ip = None
     for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
-        mdns_ip = get_fuchsia_mdns_ipv6_address(fuchsia_device.orig_ip)
+        mdns_ip = get_fuchsia_mdns_ipv6_address(fuchsia_device.mdns_name)
         if mdns_ip:
             break
         else:
             time.sleep(1)
     if mdns_ip and utils.is_valid_ipv6_address(mdns_ip):
         logging.info('IP for fuchsia_device(%s) changed from %s to %s' %
-                     (fuchsia_device.orig_ip, fuchsia_device.ip, mdns_ip))
+                     (fuchsia_device.mdns_name, fuchsia_device.ip, mdns_ip))
         fuchsia_device.ip = mdns_ip
         fuchsia_device.address = "http://[{}]:{}".format(
             fuchsia_device.ip, fuchsia_device.sl4f_port)
@@ -380,4 +380,4 @@ def run_flash_script(fuchsia_device, flash_dir):
         fuchsia_device.init_libraries()
     else:
         raise ValueError('Invalid IP: %s after flashing.' %
-                         fuchsia_device.orig_ip)
+                         fuchsia_device.mdns_name)
