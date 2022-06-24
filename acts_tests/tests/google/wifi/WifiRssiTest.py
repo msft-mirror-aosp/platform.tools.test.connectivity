@@ -637,7 +637,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             first_measurement_delay=MED_SLEEP,
             absolute_accuracy=1)
         rssi_under_test = self.testclass_params['rssi_vs_atten_metrics']
-        if testclass_params[
+        if self.testclass_params[
                 'rssi_vs_atten_scan_measurements'] == 0 and 'scan_rssi' in rssi_under_test:
             rssi_under_test.remove('scan_rssi')
         testcase_params['rssi_under_test'] = rssi_under_test
