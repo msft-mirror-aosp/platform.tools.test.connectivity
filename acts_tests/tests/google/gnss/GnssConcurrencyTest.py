@@ -130,12 +130,21 @@ class GnssConcurrencyTest(BaseTestClass):
                 self.ad.adb.shell(" ".join([cmd, type, option]))
 
     def get_current_dut_time(self):
-        """ Get current time from test device.
+        """ Get current time from test device via log.
 
             Returns: a datetime_obj for current time.
         """
+        # [TODO:b/235569769] Debugging only to check timestamp
         current_epoch = self.ad.adb.shell("date +%s")
-        return datetime.fromtimestamp(int(current_epoch))
+        dut_time = datetime.fromtimestamp(int(current_epoch))
+
+        last_log_entry = self.ad.search_logcat("")
+        last_log_time = last_log_entry[-1]["datetime_obj"]
+        self.ad.log.info(
+            f"\nDUT TIME:{dut_time}\nSYS TIME:{datetime.now()}\nLOG TIME:{last_log_time}"
+        )
+
+        return last_log_time
 
     def parse_concurrency_result(self,
                                  begin_time,
