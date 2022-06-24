@@ -1484,3 +1484,33 @@ class GnssFunctionTest(BaseTestClass):
             gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                           testtime=10, meas_flag=True)
             gutils.validate_adr_rate(self.ad, pass_criteria=0.5)
+
+
+    @test_tracker_info(uuid="7e43dd94-54e7-42a3-b6fa-39d4f101635e")
+    def test_hal_crashing_should_resume_tracking(self):
+        """Make sure location request can be resumed after HAL restart.
+
+        1. Start GPS tool and get First Fixed
+        2. Wait for 1 min for tracking
+        3. Restart HAL service
+        4. Wait for 1 min for tracking
+        5. Check fix rate
+        """
+
+        process_gnss_by_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria)
+
+        begin_time = get_current_epoch_time()
+        self.ad.log.info("Start 2 mins tracking")
+
+        gutils.wait_n_mins_for_gnss_tracking(self.ad, begin_time, testtime=1,
+                                             ignore_hal_crash=False)
+        gutils.restart_hal_service(self.ad)
+        # The test case is designed to run the tracking for 2 mins, so we assign testime to 2 to
+        # indicate the total run time is 2 mins (starting from begin_time).
+        gutils.wait_n_mins_for_gnss_tracking(self.ad, begin_time, testtime=2, ignore_hal_crash=True)
+
+        start_gnss_by_gtw_gpstool(self.ad, state=False)
+
+        result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location)
+        gutils.validate_location_fix_rate(self.ad, result, run_time=2,
+                                          fix_rate_criteria=0.95)
