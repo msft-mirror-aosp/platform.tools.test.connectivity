@@ -976,13 +976,26 @@ def gnss_tracking_via_gtw_gpstool(ad,
                                                            testtime))
     begin_time = get_current_epoch_time()
     with set_screen_status(ad, off=is_screen_off):
-        while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
-            detect_crash_during_tracking(ad, begin_time, api_type)
-            # add sleep here to avoid too many request and cause device not responding
-            time.sleep(1)
+        wait_n_mins_for_gnss_tracking(ad, begin_time, testtime, api_type)
         ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, state=False, api_type=api_type)
 
+
+def wait_n_mins_for_gnss_tracking(ad, begin_time, testtime, api_type="gnss",
+                                  ignore_hal_crash=False):
+    """Waits for GNSS tracking to finish and detect GNSS crash during the waiting time.
+
+    Args:
+        ad: An AndroidDevice object.
+        begin_time: The start time of tracking.
+        api_type: Different API for location fix. Use gnss/flp/nmea
+        testtime: Tracking test time for minutes.
+        ignore_hal_crash: To ignore HAL crash error no not.
+    """
+    while get_current_epoch_time() - begin_time < testtime * 60 * 1000:
+        detect_crash_during_tracking(ad, begin_time, api_type, ignore_hal_crash)
+        # add sleep here to avoid too many request and cause device not responding
+        time.sleep(1)
 
 # TODO: (diegowchung) GnssFunctionTest has similar function, need to handle the duplication
 def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
@@ -2385,18 +2398,20 @@ def is_bluetooth_connected(watch, phone):
     return watch.droid.bluetoothIsDeviceConnected(phone.droid.bluetoothGetLocalAddress())
 
 
-def detect_crash_during_tracking(ad, begin_time, api_type):
+def detect_crash_during_tracking(ad, begin_time, api_type, ignore_hal_crash=False):
     """Check if GNSS or GPSTool crash happened druing GNSS Tracking.
 
     Args:
     ad: An AndroidDevice object.
     begin_time: Start Time to check if crash happened in logs.
     api_type: Using GNSS or FLP reading method in GNSS tracking.
+    ignore_hal_crash: In BRCM devices, once the HAL is being killed, it will write error/fatal logs.
+      Ignore this error if the error logs are expected.
     """
     gnss_crash_list = [".*Fatal signal.*gnss",
-                       ".*Fatal signal.*xtra",
-                       ".*F DEBUG.*gnss",
-                       ".*Fatal signal.*gpsd"]
+                       ".*Fatal signal.*xtra"]
+    if not ignore_hal_crash:
+        gnss_crash_list += [".*Fatal signal.*gpsd", ".*F DEBUG.*gnss"]
     if not ad.is_adb_logcat_on:
         ad.start_adb_logcat()
     for attr in gnss_crash_list:
@@ -2891,6 +2906,7 @@ def validate_adr_rate(ad, pass_criteria):
     """
     adr_statistic = GnssMeasurement(ad).get_adr_static()
 
+    ad.log.info("ADR threshold: {0:.1%}".format(pass_criteria))
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX + "ADR_valid_rate {0:.1%}".format(adr_statistic.valid_rate))
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
                 "ADR_usable_rate {0:.1%}".format(adr_statistic.usable_rate))
@@ -2904,10 +2920,12 @@ def validate_adr_rate(ad, pass_criteria):
     ad.log.info(UPLOAD_TO_SPONGE_PREFIX +
                 "ADR_half_cycle_resolved_count %s" % adr_statistic.half_cycle_resolved_count)
 
-    if pass_criteria > adr_statistic.usable_rate:
-        # TODO: (diegowchung) add assertion once we have the expected criteria
-        ad.log.warn("Usable rate: %s lower than expected: %s" %
-                    (adr_statistic.usable_rate, pass_criteria))
+    asserts.assert_true(
+        (pass_criteria < adr_statistic.valid_rate) and (pass_criteria < adr_statistic.usable_rate),
+        f"ADR valid rate: {adr_statistic.valid_rate:.1%}, "
+        f"ADR usable rate: {adr_statistic.usable_rate:.1%} "
+        f"Lower than expected: {pass_criteria:.1%}"
+    )
 
 
 def pair_to_wearable(watch, phone):
@@ -2945,3 +2963,37 @@ def disable_battery_defend(ad):
         if config_setting == "DISABLED":
             ad.log.info("Disable Battery Defend setting successfully.")
             break
+
+
+def restart_hal_service(ad):
+    """Restart HAL service by killing the pid.
+
+    Gets the pid by ps command and pass the pid to kill command. Then we get the pid of HAL service
+    again to see if the pid changes(pid should be different after HAL restart). If not, we will
+    retry up to 4 times before raising Test Failure.
+
+    Args:
+        ad: AndroidDevice object
+    """
+    ad.log.info("Restart HAL service")
+    get_hal_pid_cmd = ("ps -A | grep 'android.hardware."
+                       "gnss@[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}-service' | awk '{print $2}'")
+    hal_pid = ad.adb.shell(get_hal_pid_cmd)
+    ad.log.info("HAL pid: %s" % hal_pid)
+
+    # Retry kill process if the PID is the same as original one
+    for _ in range(4):
+        ad.log.info("Kill HAL service")
+        ad.adb.shell(f"kill -9 {hal_pid}")
+
+        # Waits for the HAL service to restart up to 4 seconds.
+        for _ in range(4):
+            new_hal_pid = ad.adb.shell(get_hal_pid_cmd)
+            ad.log.info("New HAL pid: %s" % new_hal_pid)
+            if new_hal_pid:
+                if hal_pid != new_hal_pid:
+                    return
+                break
+            time.sleep(1)
+    else:
+        raise signals.TestFailure("HAL service can't be killed")
