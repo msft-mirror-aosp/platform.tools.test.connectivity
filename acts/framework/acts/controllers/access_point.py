@@ -17,6 +17,7 @@
 import collections
 import ipaddress
 import os
+import re
 import time
 
 from acts import logger
@@ -34,6 +35,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import radvd
 from acts.controllers.ap_lib import radvd_config
+from acts.controllers.ap_lib.extended_capabilities import ExtendedCapabilities
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
@@ -886,3 +888,18 @@ class AccessPoint(object):
             raise ValueError(f'Invalid identifier {identifier} given')
         instance = self._aps.get(identifier)
         return instance.hostapd.get_current_channel()
+
+    def get_stas(self, identifier) -> set[str]:
+        """Return MAC addresses of all associated STAs on the given AP."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError(f'Invalid identifier {identifier} given')
+        instance = self._aps.get(identifier)
+        return instance.hostapd.get_stas()
+
+    def get_sta_extended_capabilities(self, identifier,
+                                      sta_mac: str) -> ExtendedCapabilities:
+        """Get extended capabilities for the given STA, as seen by the AP."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError(f'Invalid identifier {identifier} given')
+        instance = self._aps.get(identifier)
+        return instance.hostapd.get_sta_extended_capabilities(sta_mac)
