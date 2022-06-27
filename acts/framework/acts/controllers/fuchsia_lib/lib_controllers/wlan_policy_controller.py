@@ -51,7 +51,7 @@ class WlanPolicyController:
         self.client_controller = False
         self.preserved_networks_and_client_state = None
         self.policy_configured = False
-        self._paused_session = False
+        self._stopped_session = False
 
     # TODO(b/231252355): Lower default timeout to 15s once ffx becomes more
     # performant and/or reliable.
@@ -77,14 +77,14 @@ class WlanPolicyController:
                 'Failed to issue successful basemgr kill call.')
 
         # Stop the session manager, which also holds the Policy controller.
-        response = self.device.session_manager_lib.pauseSession()
+        response = self.device.session_manager_lib.stopSession()
         if response.get('error'):
             self.log.error('Failed to stop the session.')
             raise WlanPolicyControllerError(response['error'])
         else:
             if response.get('result') == 'Success':
-                self._paused_session = True
-            self.log.debug(f"Paused session: {response.get('result')}")
+                self._stopped_session = True
+            self.log.debug(f"Stopped session: {response.get('result')}")
 
         # Acquire control of policy layer
         controller_errors = []
@@ -137,13 +137,13 @@ class WlanPolicyController:
             if not self.policy_configured:
                 self._configure_wlan()
             self.restore_preserved_networks_and_client_state()
-        if self._paused_session:
-            response = self.device.session_manager_lib.resumeSession()
+        if self._stopped_session:
+            response = self.device.session_manager_lib.startSession()
             if response.get('error'):
-                self.log.warning('Failed to resume the session.')
+                self.log.warning('Failed to start the session.')
                 self.log.warning(response['error'])
             else:
-                self.log.debug(f"Resumed session: {response.get('result')}")
+                self.log.debug(f"Start session: {response.get('result')}")
 
     def start_client_connections(self):
         """Allow device to connect to networks via policy layer (including
