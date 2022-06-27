@@ -34,6 +34,7 @@ CHANNEL_BANDWIDTH_40_LOWER = ['HT40-']
 CHANNEL_BANDWIDTH_40_UPPER = ['HT40+']
 SECURITY_OPEN = 'open'
 SECURITY_WPA2 = 'wpa2'
+N_MODE = [hostapd_constants.MODE_11N_PURE, hostapd_constants.MODE_11N_MIXED]
 LDPC = [hostapd_constants.N_CAPABILITY_LDPC, '']
 TX_STBC = [hostapd_constants.N_CAPABILITY_TX_STBC, '']
 RX_STBC = [hostapd_constants.N_CAPABILITY_RX_STBC1, '']
@@ -58,8 +59,9 @@ def generate_test_name(settings):
     for cap in hostapd_constants.N_CAPABILITIES_MAPPING.keys():
         if cap in settings['n_capabilities']:
             ret.append(hostapd_constants.N_CAPABILITIES_MAPPING[cap])
-    return '%s_%s_%s_%s' % (settings['frequency'], settings['chbw'],
-                            settings['security'], ''.join(ret))
+    return '%s_%s_%s_%s_%s' % (settings['frequency'], settings['chbw'],
+                               settings['security'], settings['n_mode'],
+                               ''.join(ret))
 
 
 class WlanPhyCompliance11NTest(WifiBaseTest):
@@ -184,9 +186,14 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             password = security_profile.password
         target_security = hostapd_constants.SECURITY_STRING_TO_DEFAULT_TARGET_SECURITY.get(
             ap_settings['security'], None)
+
+        mode = ap_settings['n_mode']
+        if mode not in N_MODE:
+            raise ValueError('Invalid n-mode: %s' % ap_settings['n-mode'])
+
         setup_ap(access_point=self.access_point,
                  profile_name='whirlwind',
-                 mode=hostapd_constants.MODE_11N_MIXED,
+                 mode=mode,
                  channel=channel,
                  n_capabilities=n_capabilities,
                  ac_capabilities=[],
@@ -203,18 +210,20 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
     def test_11n_capabilities_24_HT20(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_20, LDPC,
+                                             CHANNEL_BANDWIDTH_20, N_MODE, LDPC,
                                              TX_STBC, RX_STBC, SGI_20,
                                              INTOLERANT_40, MAX_AMPDU_7935,
                                              SMPS):
             test_frequency = combination[0]
             test_chbw = combination[1]
-            n_capabilities = combination[2:]
+            n_mode = combination[2]
+            n_capabilities = combination[3:]
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': n_mode,
                 'security': SECURITY_OPEN,
-                'n_capabilities': n_capabilities
+                'n_capabilities': n_capabilities,
             })
         self.run_generated_testcases(self.setup_and_connect,
                                      settings=test_list,
@@ -232,6 +241,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_OPEN,
                 'n_capabilities': n_capabilities
             })
@@ -251,6 +261,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_OPEN,
                 'n_capabilities': n_capabilities
             })
@@ -270,6 +281,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_OPEN,
                 'n_capabilities': n_capabilities
             })
@@ -289,6 +301,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_OPEN,
                 'n_capabilities': n_capabilities
             })
@@ -299,15 +312,17 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
     def test_11n_capabilities_5_HT40_upper(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_40_UPPER, LDPC,
+                                             CHANNEL_BANDWIDTH_40_UPPER, N_MODE, LDPC,
                                              TX_STBC, RX_STBC, SGI_20, SGI_40,
                                              MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
-            n_capabilities = combination[2:]
+            n_mode = combination[2]
+            n_capabilities = combination[3:]
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': n_mode,
                 'security': SECURITY_OPEN,
                 'n_capabilities': n_capabilities
             })
@@ -328,6 +343,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_WPA2,
                 'n_capabilities': n_capabilities
             })
@@ -347,6 +363,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_WPA2,
                 'n_capabilities': n_capabilities
             })
@@ -366,6 +383,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_WPA2,
                 'n_capabilities': n_capabilities
             })
@@ -385,6 +403,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_WPA2,
                 'n_capabilities': n_capabilities
             })
@@ -404,6 +423,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_WPA2,
                 'n_capabilities': n_capabilities
             })
@@ -423,6 +443,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             test_list.append({
                 'frequency': test_frequency,
                 'chbw': test_chbw,
+                'n_mode': hostapd_constants.MODE_11N_MIXED,
                 'security': SECURITY_WPA2,
                 'n_capabilities': n_capabilities
             })
@@ -435,17 +456,19 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
         allowed_chbw = (CHANNEL_BANDWIDTH_20 + CHANNEL_BANDWIDTH_40_LOWER +
                         CHANNEL_BANDWIDTH_40_UPPER)
         allowed_security = [SECURITY_WPA2, SECURITY_OPEN]
-        freq_chbw_sec = re.compile(r'(.*)_(.*)_(.*)_(\[.*\])?$')
+        freq_chbw_sec_mode = re.compile(r'(.*)_(.*)_(.*)_(.*)_(\[.*\])?$')
         for test_title in self.user_params['debug_11n_tests']:
             test_list = []
-            test_to_run = re.match(freq_chbw_sec, test_title)
+            test_to_run = re.match(freq_chbw_sec_mode, test_title)
             if test_to_run:
                 test_frequency = test_to_run.group(1)
                 test_chbw = test_to_run.group(2)
                 security = test_to_run.group(3)
+                n_mode = test_to_run.group(4)
                 if (test_frequency in allowed_frequencies
                         and test_chbw in allowed_chbw
-                        and security in allowed_security):
+                        and security in allowed_security
+                        and n_mode in N_MODE):
                     if test_to_run.group(4):
                         n_capabilities_str = test_to_run.group(4)
                     else:
@@ -482,6 +505,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
                     test_list.append({
                         'frequency': test_frequency,
                         'chbw': test_chbw,
+                        'n_mode': n_mode,
                         'security': security,
                         'n_capabilities': n_capabilities
                     })
