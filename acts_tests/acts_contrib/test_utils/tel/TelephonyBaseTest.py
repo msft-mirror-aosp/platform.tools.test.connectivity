@@ -160,6 +160,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.log_path = getattr(logging, "log_path", None)
         self.qxdm_log = self.user_params.get("qxdm_log", True)
         self.sdm_log = self.user_params.get("sdm_log", False)
+        self.tcpdump_log = self.user_params.get("tcpdump_log", True)
         self.dsp_log_p21 = self.user_params.get("dsp_log_p21", False)
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
