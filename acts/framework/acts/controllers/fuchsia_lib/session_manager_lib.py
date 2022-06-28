@@ -23,8 +23,8 @@ class FuchsiaSessionManagerLib():
     def __init__(self, fuchsia_device):
         self.device: FuchsiaDevice = fuchsia_device
 
-    def resumeSession(self):
-        """Resumes a previously paused session
+    def startSession(self):
+        """Start a session
 
         Returns:
             Dictionary:
@@ -32,28 +32,29 @@ class FuchsiaSessionManagerLib():
                 result: 'Success' or None if error
         """
         try:
+            # This only works on smart displays, not workstation -- needs a different URL on workstation
             self.device.ffx.run(
-                "component start /core/session-manager/session:session")
+                "session launch fuchsia-pkg://fuchsia.com/smart_session#meta/smart_session.cm")
             return {'error': None, 'result': 'Success'}
         except Exception as e:
             return {'error': e, 'result': None}
 
-    def pauseSession(self):
-        """Pause the session, allowing for later resumption
+    def stopSession(self):
+        """Stop the session
 
         Returns:
             Dictionary:
                 error: None, unless an error occurs
-                result: 'Success', 'NoSessionToPause', or None if error
+                result: 'Success', None if error
         """
         result = self.device.ffx.run(
-            "component stop -r /core/session-manager/session:session",
+            "component destroy /core/session-manager/session:session",
             skip_status_code_check=True)
 
         if result.exit_status == 0:
             return {'error': None, 'result': 'Success'}
         else:
-            if "InstanceNotFound" in result.stderr:
-                return {'error': None, 'result': 'NoSessionToPause'}
+            if "InstanceNotFound" in result.stderr or "instance was not found" in result.stderr:
+                return {'error': None, 'result': 'NoSessionToStop'}
             else:
                 return {'error': result, 'result': None}
