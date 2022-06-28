@@ -143,9 +143,6 @@ def start_sdm_logger(ad):
             f"find {ad.sdm_log_path} -type f -iname sbuff_[0-9]*.sdm* "
             f"-not -mtime -{seconds}s -delete")
 
-    # Disable modem logging already running
-    stop_sdm_logger(ad)
-
     if not is_sdm_logger_running(ad):
         ad.log.debug("starting sdm logger...")
         ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
@@ -159,7 +156,6 @@ def start_sdm_logger(ad):
         else:
             raise RuntimeError(
                 'Timed out while waiting for SDM logger to start.')
-
 
 
 def stop_sdm_logger(ad):
