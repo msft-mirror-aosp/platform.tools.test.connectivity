@@ -17,7 +17,7 @@
 import time
 import re
 import statistics
-from datetime import datetime
+from datetime import datetime, timedelta
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
@@ -135,16 +135,21 @@ class GnssConcurrencyTest(BaseTestClass):
             Returns: a datetime_obj for current time.
         """
         # [TODO:b/235569769] Debugging only to check timestamp
+        last_log_time = ""
         current_epoch = self.ad.adb.shell("date +%s")
         dut_time = datetime.fromtimestamp(int(current_epoch))
 
-        last_log_entry = self.ad.search_logcat("")
-        last_log_time = last_log_entry[-1]["datetime_obj"]
+        last_loc_entry = self.ad.search_logcat("reportLocation")
+        if last_loc_entry:
+            last_log_time = last_loc_entry[-1]["datetime_obj"]
+
+        # Temporary workaround to solve test case failure
+        begin_time = datetime.now() + timedelta(hours=1)
         self.ad.log.info(
             f"\nDUT TIME:{dut_time}\nSYS TIME:{datetime.now()}\nLOG TIME:{last_log_time}"
+            f"\nSYS TIME+1:{begin_time}"
         )
-
-        return last_log_time
+        return begin_time
 
     def parse_concurrency_result(self,
                                  begin_time,
@@ -155,7 +160,7 @@ class GnssConcurrencyTest(BaseTestClass):
 
         Args:
             begin_time: test begin time.
-            type: str for location request type.
+            request_type: str for location request type.
             criteria: dictionary for test criteria.
             exam_lower: a boolean to identify the lower bond or not.
         Return: List for the failure and outlier loops and results.
@@ -171,7 +176,7 @@ class GnssConcurrencyTest(BaseTestClass):
                                                begin_time)
         if not search_results:
             raise signals.TestFailure(f"No log entry found for keyword:"
-                                      f"{CONCURRENCY_TYPE[type]}")
+                                      f"{CONCURRENCY_TYPE[request_type]}")
 
         for i in range(len(search_results) - 1):
             target = search_results[i + 1]
