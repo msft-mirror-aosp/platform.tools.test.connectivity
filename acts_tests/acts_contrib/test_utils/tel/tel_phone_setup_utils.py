@@ -135,6 +135,7 @@ def phone_setup_iwlan_for_subscription(log,
                                        nw_gen=None,
                                        nr_type=None):
     """Phone setup function for epdg call test for subscription id.
+    Enable VoLTE. (b/235019060#comment20)
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
     Make sure phone connect to WiFi. (If wifi_ssid is not None.)
@@ -186,6 +187,8 @@ def phone_setup_iwlan_for_subscription(log,
         ad.log.info("WiFi network SSID not specified, available user "
                     "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
                     "wifi_network_ssid_5g")
+    if not toggle_volte_for_subscription(log, ad, sub_id, True):
+        return False
     if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
