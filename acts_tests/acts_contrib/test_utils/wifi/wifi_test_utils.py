@@ -441,6 +441,14 @@ class WifiEnums():
         165: 5825
     }
 
+    channel_6G_to_freq = {4 * x + 1: 5955 + 20 * x for x in range(59)}
+
+    channel_to_freq = {
+        '2G': channel_2G_to_freq,
+        '5G': channel_5G_to_freq,
+        '6G': channel_6G_to_freq
+    }
+
 
 class WifiChannelBase:
     ALL_2G_FREQUENCIES = []
@@ -1716,7 +1724,8 @@ def wifi_connect_using_network_request(ad,
     # Need a delay here because UI interaction should only start once wifi
     # starts processing the request.
     time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
-    _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries)
+    _wait_for_wifi_connect_after_network_request(ad, network, key,
+                                                 num_of_tries)
     return key
 
 
@@ -1752,7 +1761,10 @@ def wait_for_wifi_connect_after_network_request(ad,
                             assert_on_fail, ad, network, key, num_of_tries)
 
 
-def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=3):
+def _wait_for_wifi_connect_after_network_request(ad,
+                                                 network,
+                                                 key,
+                                                 num_of_tries=3):
     """
     Simulate and verify the connection flow after initiating the network
     request.
@@ -1804,13 +1816,11 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
 
         # Wait for the platform to connect to the network.
         autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            60,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 60,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT, cconsts.NETWORK_CB_AVAILABLE))
         on_capabilities_changed = autils.wait_for_event_with_keys(
-            ad, cconsts.EVENT_NETWORK_CALLBACK,
-            10,
+            ad, cconsts.EVENT_NETWORK_CALLBACK, 10,
             (cconsts.NETWORK_CB_KEY_ID, key),
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED))
@@ -1827,8 +1837,7 @@ def _wait_for_wifi_connect_after_network_request(ad, network, key, num_of_tries=
         asserts.assert_equal(
             connected_network[WifiEnums.SSID_KEY], expected_ssid,
             "Connected to the wrong network."
-            "Expected %s, but got %s."
-            % (network, connected_network))
+            "Expected %s, but got %s." % (network, connected_network))
     except Empty:
         asserts.fail("Failed to connect to %s" % expected_ssid)
     except Exception as error:

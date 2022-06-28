@@ -45,7 +45,6 @@ else:
     # Python 3.8+ is support by latest bokeh
     install_requires.append('bokeh')
 
-
 def _setup_acts_framework(option, *args):
     """Locates and runs setup.py for the ACTS framework.
 
