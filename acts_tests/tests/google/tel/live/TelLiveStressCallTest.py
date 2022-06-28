@@ -391,7 +391,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             setup_func=self._setup_wfc_apm,
             network_check_func=is_phone_in_call_iwlan)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d0e52109-b359-4efa-bbaa-ca758428b654")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_wifi_calling_cellular_preferred_stress_apm(self):
         """ Wifi calling in AirPlaneMode call stress test
