@@ -79,13 +79,10 @@ class ActsContribInstall(install):
     Otherwise, it will attempt to locate the ACTS framework from the local
     repository.
     """
-
-    def run(self):
+    def do_egg_install(self):
+        # Ref. https://stackoverflow.com/a/20196065
         _setup_acts_framework('install')
-        # Calling install.run() directly fails to install the dependencies as
-        # listed in install_requires. Use install.do_egg_install() instead.
-        # Ref: https://stackoverflow.com/questions/21915469
-        self.do_egg_install()
+        install.do_egg_install(self)
 
 
 class ActsContribDevelop(develop):
