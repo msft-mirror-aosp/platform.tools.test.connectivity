@@ -1502,9 +1502,9 @@ class GnssFunctionTest(BaseTestClass):
         5. Check fix rate
         """
 
-        process_gnss_by_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria)
+        first_fixed_time = process_gnss_by_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria)
+        begin_time = int(first_fixed_time.timestamp() * 1000)
 
-        begin_time = get_current_epoch_time()
         self.ad.log.info("Start 2 mins tracking")
 
         gutils.wait_n_mins_for_gnss_tracking(self.ad, begin_time, testtime=1,
