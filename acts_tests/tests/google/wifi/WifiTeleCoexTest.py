@@ -18,6 +18,7 @@ from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
@@ -213,7 +214,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         """
         tele_utils.toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
-        if not tele_utils.ensure_network_generation(
+        if not ensure_network_generation(
                 self.log,
                 self.android_devices[0],
                 GEN_4G,
