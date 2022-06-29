@@ -862,8 +862,10 @@ def process_gnss_by_gtw_gpstool(ad,
         bg_display: To enable GPS tool bg display or not
 
     Returns:
-        True: First fix TTFF are within criteria.
-        False: First fix TTFF exceed criteria.
+        First fix datetime obj
+
+    Raises:
+        signals.TestFailure: when first fixed is over criteria or not even get first fixed
     """
     retries = 3
     for i in range(retries):
@@ -887,7 +889,7 @@ def process_gnss_by_gtw_gpstool(ad,
                 ad.log.info("%s First fixed = %.3f seconds" %
                             (api_type.upper(), first_fixed/1000))
                 if (first_fixed/1000) <= criteria:
-                    return True
+                    return logcat_results[-1]["datetime_obj"]
                 start_gnss_by_gtw_gpstool(ad, state=False, api_type=api_type)
                 raise signals.TestFailure("Fail to get %s location fixed "
                                           "within %d seconds criteria."
