@@ -101,9 +101,8 @@ def _syslog_log_test_begin(event):
     test_instance = event.test_class
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
-            if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s BEGIN %s" %
-                                    (TEST_CASE_TOKEN, event.test_case_name))
+            fd.logging_lib.logI("%s BEGIN %s" %
+                                (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -118,9 +117,8 @@ def _syslog_log_test_end(event):
     test_instance = event.test_class
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
-            if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s END %s" %
-                                    (TEST_CASE_TOKEN, event.test_case_name))
+            fd.logging_lib.logI("%s END %s" %
+                                (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(

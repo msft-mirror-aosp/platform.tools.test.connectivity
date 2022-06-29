@@ -57,6 +57,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import stop_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_sdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_tcpdumps
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_default_state
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_default_state
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phone_idle
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import initial_set_up_for_subid_information
@@ -159,6 +160,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.log_path = getattr(logging, "log_path", None)
         self.qxdm_log = self.user_params.get("qxdm_log", True)
         self.sdm_log = self.user_params.get("sdm_log", False)
+        self.tcpdump_log = self.user_params.get("tcpdump_log", True)
         self.dsp_log_p21 = self.user_params.get("dsp_log_p21", False)
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
@@ -198,6 +200,8 @@ class TelephonyBaseTest(BaseTestClass):
 
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
+        self.reboot_before_test = self.user_params.get(
+            "reboot_before_test", False)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
         self.log_path = getattr(logging, "log_path", None)
@@ -495,6 +499,8 @@ class TelephonyBaseTest(BaseTestClass):
         else:
             stop_tcpdumps(self.android_devices)
         for ad in self.android_devices:
+            if self.reboot_before_test:
+                ad.reboot()
             if self.skip_reset_between_cases:
                 ensure_phone_idle(self.log, ad)
             else:
@@ -520,6 +526,7 @@ class TelephonyBaseTest(BaseTestClass):
             time.sleep(3)
             ad.screenshot(f"{ad.serial}_last_screen")
         self._take_bug_report(test_name, begin_time)
+        ensure_phones_default_state(self.log, self.android_devices)
 
     def on_pass(self, test_name, begin_time):
         if self.save_passing_logs:

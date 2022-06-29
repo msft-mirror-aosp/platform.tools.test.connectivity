@@ -97,7 +97,8 @@ def phone_setup_iwlan(log,
                       wfc_mode,
                       wifi_ssid=None,
                       wifi_pwd=None,
-                      nw_gen=None):
+                      nw_gen=None,
+                      nr_type=None):
     """Phone setup function for epdg call test.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -114,13 +115,14 @@ def phone_setup_iwlan(log,
         wifi_pwd: WiFi network password. This is optional.
         nw_gen: network type selection. This is optional.
             GEN_4G for 4G, GEN_5G for 5G or None for doing nothing.
+        nr_type: NR network type
     Returns:
         True if success. False if fail.
     """
     return phone_setup_iwlan_for_subscription(log, ad,
                                               get_outgoing_voice_sub_id(ad),
                                               is_airplane_mode, wfc_mode,
-                                              wifi_ssid, wifi_pwd, nw_gen)
+                                              wifi_ssid, wifi_pwd, nw_gen, nr_type)
 
 
 def phone_setup_iwlan_for_subscription(log,
@@ -133,6 +135,7 @@ def phone_setup_iwlan_for_subscription(log,
                                        nw_gen=None,
                                        nr_type=None):
     """Phone setup function for epdg call test for subscription id.
+    Enable VoLTE. (b/235019060#comment20)
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
     Make sure phone connect to WiFi. (If wifi_ssid is not None.)
@@ -184,6 +187,8 @@ def phone_setup_iwlan_for_subscription(log,
         ad.log.info("WiFi network SSID not specified, available user "
                     "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
                     "wifi_network_ssid_5g")
+    if not toggle_volte_for_subscription(log, ad, sub_id, True):
+        return False
     if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
@@ -1626,12 +1631,14 @@ def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
     Phone not in call.
     Phone have no stored WiFi network and WiFi disconnected.
     Phone not in airplane mode.
+    Phone is data on.
     """
     result = True
     if not toggle_airplane_mode(log, ad, False, False):
         ad.log.error("Fail to turn off airplane mode")
         result = False
     try:
+        ad.droid.telephonyToggleDataConnection(True)
         set_wifi_to_default(log, ad)
         while ad.droid.telecomIsInCall() and retry > 0:
             ad.droid.telecomEndCall()

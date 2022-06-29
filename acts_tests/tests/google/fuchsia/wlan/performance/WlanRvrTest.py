@@ -36,7 +36,6 @@ from bokeh.plotting import output_file
 from bokeh.plotting import save
 
 AP_11ABG_PROFILE_NAME = 'whirlwind_11ag_legacy'
-RADVD_PREFIX = 'fd00::/64'
 REPORTING_SPEED_UNITS = 'Mbps'
 
 RVR_GRAPH_SUMMARY_FILE = 'rvr_summary.html'
@@ -209,9 +208,7 @@ class WlanRvrTest(WifiBaseTest):
                         title='RvR Sumamry')
             save(list(self.rvr_graph_summary))
         except Exception as e:
-            self.log.info('Unable to generate RvR summary file due '
-                          'to Exception')
-            self.log.info(e)
+            self.log.error(f'Unable to generate RvR summary file: {e}')
 
         super().teardown_class()
 
@@ -350,17 +347,13 @@ class WlanRvrTest(WifiBaseTest):
         else:
             raise ValueError('Invalid WLAN band specified: %s' % band)
         if ip_version == 6:
-            radvd_config = RadvdConfig(
-                prefix=RADVD_PREFIX,
-                adv_send_advert=radvd_constants.ADV_SEND_ADVERT_ON,
-                adv_on_link=radvd_constants.ADV_ON_LINK_ON,
-                adv_autonomous=radvd_constants.ADV_AUTONOMOUS_ON)
             self.router_adv_daemon = Radvd(
                 self.access_point.ssh,
                 self.access_point.interfaces.get_bridge_interface()[0])
+            radvd_config = RadvdConfig()
             self.router_adv_daemon.start(radvd_config)
 
-        for rvr_loop_counter in range(0, self.debug_loop_count):
+        for _ in range(0, self.debug_loop_count):
             for rvr_attenuator in rvr_attenuators:
                 rvr_attenuator.set_atten(self.starting_attn)
 
@@ -473,9 +466,10 @@ class WlanRvrTest(WifiBaseTest):
             try:
                 for attenuator in rvr_attenuators:
                     attenuator.set_atten(step)
-            except ValueError:
-                self.log.info('%s is beyond the max or min of the testbed '
-                              'attenuator\'s capability. Stopping.')
+            except ValueError as e:
+                self.log.error(
+                    f'{step} is beyond the max or min of the testbed '
+                    f'attenuator\'s capability. Stopping. {e}')
                 break
             self.log.info('Set relative attenuation to %s db' % step)
 
@@ -566,10 +560,11 @@ class WlanRvrTest(WifiBaseTest):
                         '%s_%s_%s' %
                         (iperf_tag, traffic_dir, self.starting_attn),
                         timeout=(self.dwell_time_in_secs * 2))
-                except TimeoutError:
+                except TimeoutError as e:
                     iperf_results_file = None
-                    self.log.info('Iperf traffic timed out. Marking 0 %s for '
-                                  'throughput.' % REPORTING_SPEED_UNITS)
+                    self.log.error(
+                        f'Iperf traffic timed out. Marking 0 {REPORTING_SPEED_UNITS} for '
+                        f'throughput. {e}')
 
                 if not iperf_results_file:
                     throughput.append(0)
@@ -581,24 +576,26 @@ class WlanRvrTest(WifiBaseTest):
                         if iperf_results.error:
                             self.iperf_server.stop()
                             self.iperf_server.start()
-                            self.log.info('\nErrors in iperf logs:\n%s' %
-                                          iperf_results.error)
+                            self.log.error(
+                                f'Errors in iperf logs:\n{iperf_results.error}'
+                            )
                         if not iperf_results.avg_send_rate:
                             throughput.append(0)
                         else:
                             throughput.append(iperf_results.avg_send_rate)
-                    except ValueError:
+                    except ValueError as e:
                         self.iperf_server.stop()
                         self.iperf_server.start()
-                        self.log.info(
-                            'No data in Iperf file. Marking 0 %s for '
-                            'throughput.' % REPORTING_SPEED_UNITS)
+                        self.log.error(
+                            f'No data in iPerf3 file. Marking 0 {REPORTING_SPEED_UNITS} '
+                            f'for throughput: {e}')
                         throughput.append(0)
                     except Exception as e:
                         self.iperf_server.stop()
                         self.iperf_server.start()
-                        self.log.info('Unknown exception. Marking 0 %s for '
-                                      'throughput.' % REPORTING_SPEED_UNITS)
+                        self.log.error(
+                            f'Unknown exception. Marking 0 {REPORTING_SPEED_UNITS} for '
+                            f'throughput: {e}')
                         self.log.error(e)
                         throughput.append(0)
 

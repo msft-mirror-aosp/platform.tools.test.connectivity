@@ -143,9 +143,6 @@ def start_sdm_logger(ad):
             f"find {ad.sdm_log_path} -type f -iname sbuff_[0-9]*.sdm* "
             f"-not -mtime -{seconds}s -delete")
 
-    # Disable modem logging already running
-    stop_sdm_logger(ad)
-
     if not is_sdm_logger_running(ad):
         ad.log.debug("starting sdm logger...")
         ad.adb.shell(_LS_ENABLE_LOG_SHELL, ignore_status=True)
@@ -159,7 +156,6 @@ def start_sdm_logger(ad):
         else:
             raise RuntimeError(
                 'Timed out while waiting for SDM logger to start.')
-
 
 
 def stop_sdm_logger(ad):
@@ -392,9 +388,7 @@ def start_nexuslogger(ad):
             ad.log.info("Kill %s" % qxdm_logger_apk)
             ad.force_stop_apk(qxdm_logger_apk)
             time.sleep(5)
-    for perm in ("READ",):
-        ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
-                     (qxdm_logger_apk, perm))
+    ad.adb.shell("pm grant %s android.permission.READ_EXTERNAL_STORAGE" % (qxdm_logger_apk))
     time.sleep(2)
     for i in range(3):
         ad.unlock_screen()

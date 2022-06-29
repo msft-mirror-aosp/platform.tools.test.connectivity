@@ -36,7 +36,7 @@ install_requires = [
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
-    'protobuf>=3.14.0',
+    'protobuf==3.20.1',
     'pylibftdi',
     'pynacl==1.4.0',
     'pyserial',
@@ -63,9 +63,12 @@ if sys.version_info < (3, 7):
     versioned_deps['numpy'] = 'numpy<1.20'
     versioned_deps['scipy'] = 'scipy<1.6'
     versioned_deps['typing_extensions'] = 'typing_extensions==4.1.1'
+if sys.version_info == (3, 6):
+    versioned_deps['dataclasses'] = 'dataclasses==0.8'
 if sys.version_info < (3, 6):
     versioned_deps['numpy'] = 'numpy<1.19'
     versioned_deps['scipy'] = 'scipy<1.5'
+    versioned_deps['typing_extensions'] = 'typing_extensions<4.0.0'
 
 install_requires += list(versioned_deps.values())
 
