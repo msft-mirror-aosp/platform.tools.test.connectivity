@@ -24,8 +24,6 @@ from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
-from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
-from acts_contrib.test_utils.tel import tel_test_utils as tutils
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import get_current_epoch_time
 from acts.utils import unzip_maintain_permissions
@@ -59,9 +57,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_youtube_video
 from acts_contrib.test_utils.gnss.gnss_test_utils import fastboot_factory_reset
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_mds
-from acts_contrib.test_utils.gnss.gnss_test_utils import disable_supl_mode
 from acts_contrib.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
-from acts_contrib.test_utils.gnss.gnss_test_utils import check_xtra_download
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 from acts_contrib.test_utils.gnss.gnss_test_utils import enable_supl_mode
@@ -69,9 +65,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gt
 from acts_contrib.test_utils.gnss.gnss_test_utils import grant_location_permission
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_wearable_btwifi
-from acts_contrib.test_utils.gnss.gnss_test_utils import delete_lto_file
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_device_wearable
-from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
@@ -84,14 +78,10 @@ class GnssFunctionTest(BaseTestClass):
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
                       "standalone_ws_criteria", "standalone_hs_criteria",
                       "supl_cs_criteria", "supl_ws_criteria",
-                      "supl_hs_criteria", "xtra_cs_criteria",
-                      "xtra_ws_criteria", "xtra_hs_criteria",
+                      "supl_hs_criteria",
                       "weak_signal_supl_cs_criteria",
                       "weak_signal_supl_ws_criteria",
                       "weak_signal_supl_hs_criteria",
-                      "weak_signal_xtra_cs_criteria",
-                      "weak_signal_xtra_ws_criteria",
-                      "weak_signal_xtra_hs_criteria",
                       "wearable_reboot_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
@@ -110,8 +100,7 @@ class GnssFunctionTest(BaseTestClass):
                           "ws": "Warm Start",
                           "hs": "Hot Start",
                           "csa": "CSWith Assist"}
-        if self.collect_logs and \
-            gutils.check_chipset_vendor_by_qualcomm(self.ad):
+        if self.collect_logs and gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.flash_new_radio_or_mbn()
             self.push_gnss_cfg()
         _init_device(self.ad)
@@ -302,71 +291,6 @@ class GnssFunctionTest(BaseTestClass):
         disable_vendor_orbit_assistance_data(self.ad)
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
-
-    def xtra_ttff_mobile_data(self, mode, criteria):
-        """Verify XTRA\LTO TTFF functionality with mobile data.
-
-        Args:
-            mode: "cs", "ws" or "hs"
-            criteria: Criteria for the test.
-        """
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.run_ttff_via_gtw_gpstool(mode, criteria)
-
-    def xtra_ttff_weak_gnss_signal(self, mode, criteria):
-        """Verify XTRA\LTO TTFF functionality under weak GNSS signal.
-
-        Args:
-            mode: "cs", "ws" or "hs"
-            criteria: Criteria for the test.
-        """
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.weak_gnss_signal_attenuation)
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.run_ttff_via_gtw_gpstool(mode, criteria)
-
-    def xtra_ttff_wifi(self, mode, criteria):
-        """Verify XTRA\LTO TTFF functionality with WiFi.
-
-        Args:
-            mode: "cs", "ws" or "hs"
-            criteria: Criteria for the test.
-        """
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.ad.log.info("Turn airplane mode on")
-        self.ad.droid.connectivityToggleAirplaneMode(True)
-        wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(
-            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        self.run_ttff_via_gtw_gpstool(mode, criteria)
-
-    def ttff_with_assist(self, mode, criteria):
-        """Verify CS/WS TTFF functionality with Assist data.
-
-        Args:
-            mode: "csa" or "ws"
-            criteria: Criteria for the test.
-        """
-        disable_supl_mode(self.ad)
-        begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(
-            self.ad, self.standalone_cs_criteria)
-        check_xtra_download(self.ad, begin_time)
-        self.ad.log.info("Turn airplane mode on")
-        self.ad.droid.connectivityToggleAirplaneMode(True)
-        start_gnss_by_gtw_gpstool(self.ad, True)
-        start_ttff_by_gtw_gpstool(
-            self.ad, mode, iteration=self.ttff_test_cycle)
-        ttff_data = process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        result = check_ttff_data(
-            self.ad, ttff_data, mode, criteria)
-        asserts.assert_true(
-            result, "TTFF %s fails to reach designated criteria of %d "
-                    "seconds." % (self.ttff_mode.get(mode), criteria))
 
     """ Test Cases """
 
@@ -970,238 +894,6 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.log.info("SUPL after Factory Reset test %d times -> "
                              "PASS" % times)
 
-    @test_tracker_info(uuid="ea3096cf-4f72-4e91-bfb3-0bcbfe865ab4")
-    def test_xtra_ttff_cs_mobile_data(self):
-        """Verify XTRA/LTO functionality of TTFF Cold Start with mobile data.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. TTFF Cold Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Cold Start results should be within xtra_cs_criteria.
-        """
-        self.xtra_ttff_mobile_data("cs", self.xtra_cs_criteria)
-
-    @test_tracker_info(uuid="c9b22894-deb3-4dc2-af14-4dcbb8ebad66")
-    def test_xtra_ttff_ws_mobile_data(self):
-        """Verify XTRA/LTO functionality of TTFF Warm Start with mobile data.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. TTFF Warm Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Warm Start results should be within xtra_ws_criteria.
-        """
-        self.xtra_ttff_mobile_data("ws", self.xtra_ws_criteria)
-
-    @test_tracker_info(uuid="273741e2-0815-4817-96df-9c13401119dd")
-    def test_xtra_ttff_hs_mobile_data(self):
-        """Verify XTRA/LTO functionality of TTFF Hot Start with mobile data.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. TTFF Hot Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Hot Start results should be within xtra_hs_criteria.
-        """
-        self.xtra_ttff_mobile_data("hs", self.xtra_hs_criteria)
-
-    @test_tracker_info(uuid="c91ba740-220e-41de-81e5-43af31f63907")
-    def test_xtra_ttff_cs_weak_gnss_signal(self):
-        """Verify XTRA/LTO functionality of TTFF Cold Start under weak GNSS
-        signal.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. Set attenuation value to weak GNSS signal.
-            3. TTFF Cold Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Cold Start results should be within
-            weak_signal_xtra_cs_criteria.
-        """
-        self.xtra_ttff_weak_gnss_signal("cs", self.weak_signal_xtra_cs_criteria)
-
-    @test_tracker_info(uuid="2a285be7-3571-49fb-8825-01efa2e65f10")
-    def test_xtra_ttff_ws_weak_gnss_signal(self):
-        """Verify XTRA/LTO functionality of TTFF Warm Start under weak GNSS
-        signal.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. Set attenuation value to weak GNSS signal.
-            3. TTFF Warm Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Warm Start results should be within
-            weak_signal_xtra_ws_criteria.
-        """
-        self.xtra_ttff_weak_gnss_signal("ws", self.weak_signal_xtra_ws_criteria)
-
-    @test_tracker_info(uuid="249bf484-8b04-4cd9-a372-aa718e5f4ec6")
-    def test_xtra_ttff_hs_weak_gnss_signal(self):
-        """Verify XTRA/LTO functionality of TTFF Hot Start under weak GNSS
-        signal.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. Set attenuation value to weak GNSS signal.
-            3. TTFF Hot Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Hot Start results should be within
-            weak_signal_xtra_hs_criteria.
-        """
-        self.xtra_ttff_weak_gnss_signal("hs", self.weak_signal_xtra_hs_criteria)
-
-    @test_tracker_info(uuid="beeb3454-bcb2-451e-83fb-26289e89b515")
-    def test_xtra_ttff_cs_wifi(self):
-        """Verify XTRA/LTO functionality of TTFF Cold Start with WiFi.
-
-        Steps:
-            1. Disable SUPL mode and turn airplane mode on.
-            2. Connect to WiFi.
-            3. TTFF Cold Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Cold Start results should be within
-            xtra_cs_criteria.
-        """
-        self.xtra_ttff_wifi("cs", self.xtra_cs_criteria)
-
-    @test_tracker_info(uuid="f6e79b31-99d5-49ca-974f-4543957ea449")
-    def test_xtra_ttff_ws_wifi(self):
-        """Verify XTRA/LTO functionality of TTFF Warm Start with WiFi.
-
-        Steps:
-            1. Disable SUPL mode and turn airplane mode on.
-            2. Connect to WiFi.
-            3. TTFF Warm Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Warm Start results should be within xtra_ws_criteria.
-        """
-        self.xtra_ttff_wifi("ws", self.xtra_ws_criteria)
-
-    @test_tracker_info(uuid="8981363c-f64f-4c37-9674-46733c40473b")
-    def test_xtra_ttff_hs_wifi(self):
-        """Verify XTRA/LTO functionality of TTFF Hot Start with WiFi.
-
-        Steps:
-            1. Disable SUPL mode and turn airplane mode on.
-            2. Connect to WiFi.
-            3. TTFF Hot Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Hot Start results should be within xtra_hs_criteria.
-        """
-        self.xtra_ttff_wifi("hs", self.xtra_hs_criteria)
-
-    @test_tracker_info(uuid="1745b8a4-5925-4aa0-809a-1b17e848dc9c")
-    def test_xtra_modem_ssr(self):
-        """Verify XTRA/LTO functionality after modem silent reboot /
-        GPS daemons restart.
-
-        Steps:
-            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
-            2. Wait 1 minute for modem to recover.
-            3. XTRA/LTO TTFF Cold Start for 3 iteration.
-            4. Repeat Step1. to Step 3. for 5 times.
-
-        Expected Results:
-            All XTRA/LTO TTFF Cold Start results should be within
-            xtra_cs_criteria.
-        """
-        xtra_ssr_test_result_all = []
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for times in range(1, 6):
-            begin_time = get_current_epoch_time()
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                test_info = "XTRA after Modem SSR"
-                gnss_trigger_modem_ssr_by_mds(self.ad)
-            else:
-                test_info = "LTO after restarting GPS daemons"
-                gutils.restart_gps_daemons(self.ad)
-            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                              expected_state=True):
-                raise signals.TestFailure("Fail to connect to LTE network.")
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            xtra_ssr_test_result = check_ttff_data(
-                self.ad, ttff_data, ttff_mode="Cold Start",
-                criteria=self.xtra_cs_criteria)
-            self.ad.log.info("%s test %d times -> %s" % (
-                test_info, times, xtra_ssr_test_result))
-            xtra_ssr_test_result_all.append(xtra_ssr_test_result)
-        asserts.assert_true(all(xtra_ssr_test_result_all),
-                            "TTFF fails to reach designated criteria")
-
-    @test_tracker_info(uuid="4d6e81e1-3abb-4e03-b732-7b6b497a2258")
-    def test_xtra_download_mobile_data(self):
-        """Verify XTRA/LTO data could be downloaded via mobile data.
-
-        Steps:
-            1. Delete all GNSS aiding data.
-            2. Get location fixed.
-            3. Verify whether XTRA/LTO is downloaded and injected.
-            4. Repeat Step 1. to Step 3. for 5 times.
-
-        Expected Results:
-            XTRA/LTO data is properly downloaded and injected via mobile data.
-        """
-        mobile_xtra_result_all = []
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for i in range(1, 6):
-            begin_time = get_current_epoch_time()
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            time.sleep(5)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            mobile_xtra_result = check_xtra_download(self.ad, begin_time)
-            self.ad.log.info("Iteration %d => %s" % (i, mobile_xtra_result))
-            mobile_xtra_result_all.append(mobile_xtra_result)
-        asserts.assert_true(all(mobile_xtra_result_all),
-                            "Fail to Download and Inject XTRA/LTO File.")
-
-    @test_tracker_info(uuid="625ac665-1446-4406-a722-e6a19645222c")
-    def test_xtra_download_wifi(self):
-        """Verify XTRA/LTO data could be downloaded via WiFi.
-
-        Steps:
-            1. Connect to WiFi.
-            2. Delete all GNSS aiding data.
-            3. Get location fixed.
-            4. Verify whether XTRA/LTO is downloaded and injected.
-            5. Repeat Step 2. to Step 4. for 5 times.
-
-        Expected Results:
-            XTRA data is properly downloaded and injected via WiFi.
-        """
-        wifi_xtra_result_all = []
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.ad.log.info("Turn airplane mode on")
-        self.ad.droid.connectivityToggleAirplaneMode(True)
-        wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(
-            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        for i in range(1, 6):
-            begin_time = get_current_epoch_time()
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            time.sleep(5)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            wifi_xtra_result = check_xtra_download(self.ad, begin_time)
-            wifi_xtra_result_all.append(wifi_xtra_result)
-            self.ad.log.info("Iteration %d => %s" % (i, wifi_xtra_result))
-        asserts.assert_true(all(wifi_xtra_result_all),
-                            "Fail to Download and Inject XTRA/LTO File.")
-
     @test_tracker_info(uuid="2a9f2890-3c0a-48b8-821d-bf97e36355e9")
     def test_quick_toggle_gnss_state(self):
         """Verify GNSS can still work properly after quick toggle GNSS off
@@ -1251,35 +943,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(overall_test_result),
                             "SUPL fail after system server restart.")
 
-    @test_tracker_info(uuid="a9a64900-9016-46d0-ad7e-cab30e8152cd")
-    def test_xtra_system_server_restart(self):
-        """Verify XTRA/LTO functionality after system server restart.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. Get location fixed within xtra_cs_criteria.
-            3. Restarts android runtime.
-            4. Get location fixed within xtra_cs_criteria.
-
-        Expected Results:
-            Location fixed within xtra_cs_criteria.
-        """
-        overall_test_result = []
-        disable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for test_loop in range(1, 6):
-            process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.restart_runtime()
-            self.ad.unlock_screen(password=None)
-            test_result = process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.xtra_cs_criteria)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
-            overall_test_result.append(test_result)
-        asserts.assert_true(all(overall_test_result),
-                            "XTRA/LTO fail after system server restart.")
-
     @test_tracker_info(uuid="ab5ef9f7-0b28-48ed-a693-7f1d902ca3e1")
     def test_gnss_init_after_reboot(self):
         """Verify SUPL and XTRA/LTO functionality after reboot.
@@ -1315,67 +978,6 @@ class GnssFunctionTest(BaseTestClass):
         self.ad.log.info("TestResult Pass_rate %s" % format(pass_rate, ".0%"))
         asserts.assert_true(all(overall_test_result),
                             "GNSS init fail after reboot.")
-
-    @test_tracker_info(uuid="2c62183a-4354-4efc-92f2-84580cbd3398")
-    def test_lto_download_after_reboot(self):
-        """Verify LTO data could be downloaded and injected after device reboot.
-
-        Steps:
-            1. Reboot device.
-            2. Verify whether LTO is auto downloaded and injected without trigger GPS.
-            3. Repeat Step 1 to Step 2 for 5 times.
-
-        Expected Results:
-            LTO data is properly downloaded and injected at the first time tether to phone.
-        """
-        reboot_lto_test_results_all = []
-        disable_supl_mode(self.ad)
-        for times in range(1, 6):
-            delete_lto_file(self.ad)
-            reboot(self.ad)
-            gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-            # Wait 20 seconds for boot busy and lto auto-download time
-            time.sleep(20)
-            begin_time = get_current_epoch_time()
-            reboot_lto_test_result = gutils.check_xtra_download(self.ad, begin_time)
-            self.ad.log.info("Iteration %d => %s" % (times, reboot_lto_test_result))
-            reboot_lto_test_results_all.append(reboot_lto_test_result)
-            gutils.stop_pixel_logger(self.ad)
-            stop_adb_tcpdump(self.ad)
-        asserts.assert_true(all(reboot_lto_test_results_all),
-                                "Fail to Download and Inject LTO File.")
-
-    @test_tracker_info(uuid="a7048a4f-8a40-40a4-bb6c-7fc90e8227bd")
-    def test_ws_with_assist(self):
-        """Verify Warm Start functionality with existed LTO data.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. Make LTO is downloaded.
-            3. Turn on AirPlane mode to make sure there's no network connection.
-            4. TTFF Warm Start with Assist for 10 iteration.
-
-        Expected Results:
-            All TTFF Warm Start with Assist results should be within
-            xtra_ws_criteria.
-        """
-        self.ttff_with_assist("ws", self.xtra_ws_criteria)
-
-    @test_tracker_info(uuid="c5fb9519-63b0-42bd-bd79-fce7593604ea")
-    def test_cs_with_assist(self):
-        """Verify Cold Start functionality with existed LTO data.
-
-        Steps:
-            1. Disable SUPL mode.
-            2. Make sure LTO is downloaded.
-            3. Turn on AirPlane mode to make sure there's no network connection.
-            4. TTFF Cold Start with Assist for 10 iteration.
-
-        Expected Results:
-            All TTFF Cold Start with Assist results should be within
-            standalone_cs_criteria.
-        """
-        self.ttff_with_assist("csa", self.standalone_cs_criteria)
 
     @test_tracker_info(uuid="2dd0ed34-d06f-40c3-9e5d-e1a957924e81")
     def test_host_gnssstatus_validation(self):

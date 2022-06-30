@@ -45,6 +45,7 @@ from acts_contrib.test_utils.tel import tel_logging_utils as tlutils
 from acts_contrib.test_utils.tel import tel_test_utils as tutils
 from acts_contrib.test_utils.gnss import gnssstatus_utils
 from acts_contrib.test_utils.gnss import gnss_constant
+from acts_contrib.test_utils.gnss import supl
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationCommandBuilder
 from acts_contrib.test_utils.instrumentation.device.command.instrumentation_command_builder import InstrumentationTestCommandBuilder
 from acts.utils import get_current_epoch_time
@@ -255,16 +256,30 @@ def disable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Disable SUPL mode.")
     ad.adb.shell("echo -e '\nSUPL_MODE=0' >> /etc/gps_debug.conf")
+    if not check_chipset_vendor_by_qualcomm(ad):
+        supl.set_supl_over_wifi_state(ad, False)
+
+
+def enable_vendor_orbit_assistance_data(ad):
+    """Enable vendor assistance features.
+
+    For Qualcomm: Enable XTRA
+    For Broadcom: Enable LTO
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    ad.root_adb()
     if is_device_wearable(ad):
         lto_mode_wearable(ad, True)
-    elif not check_chipset_vendor_by_qualcomm(ad):
-        lto_mode(ad, True)
+    elif check_chipset_vendor_by_qualcomm(ad):
+        reboot()
     else:
-        reboot(ad)
+        lto_mode(ad, True)
 
 
 def disable_vendor_orbit_assistance_data(ad):
-    """Disable vendor assiatance features.
+    """Disable vendor assistance features.
 
     For Qualcomm: disable XTRA
     For Broadcom: disable LTO
@@ -276,10 +291,19 @@ def disable_vendor_orbit_assistance_data(ad):
     if is_device_wearable(ad):
         lto_mode_wearable(ad, False)
     elif check_chipset_vendor_by_qualcomm(ad):
-        ad.log.info("Disable XTRA-daemon until next reboot.")
-        ad.adb.shell("killall xtra-daemon", ignore_status=True)
+        disable_qualcomm_orbit_assistance_data(ad)
     else:
         lto_mode(ad, False)
+
+
+def disable_qualcomm_orbit_assistance_data(ad):
+    """Disable assiatance features for Qualcomm project.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    ad.log.info("Disable XTRA-daemon until next reboot.")
+    ad.adb.shell("killall xtra-daemon", ignore_status=True)
 
 
 def disable_private_dns_mode(ad):
@@ -314,7 +338,6 @@ def _init_device(ad):
     ad.droid.bluetoothToggleState(False)
     set_wifi_and_bt_scanning(ad, True)
     disable_private_dns_mode(ad)
-    reboot(ad)
     init_gtw_gpstool(ad)
     if not is_mobile_data_on(ad):
         set_mobile_data(ad, True)
@@ -2999,3 +3022,14 @@ def restart_hal_service(ad):
             time.sleep(1)
     else:
         raise signals.TestFailure("HAL service can't be killed")
+
+
+def run_ttff(ad, mode, criteria, test_cycle, base_lat_long, collect_logs=False):
+    """Verify TTFF functionality with mobile data.
+
+    Args:
+        mode: "cs", "ws" or "hs"
+        criteria: Criteria for the test.
+    """
+    start_qxdm_and_tcpdump_log(ad, collect_logs)
+    run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, base_lat_long)
