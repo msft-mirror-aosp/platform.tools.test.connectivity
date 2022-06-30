@@ -65,3 +65,16 @@ class MmeFunctions():
     head, body = self.remote.send_message(const.PortNumber.URI_MME, dump_msg)
     self.remote.verify_response('pws_kill', head, body)
 
+  def ue_del(self, imsi: str):
+    """Remove UE from the UE database and force disconnect if necessary.
+
+    Args:
+      imsi: IMSI of the UE to delete.
+    """
+    msg = {}
+    msg['message'] = 'ue_del'
+    msg['imsi'] = imsi
+    dump_msg = json.dumps(msg)
+    logging.debug('ue_del dump msg = %s', dump_msg)
+    head, body = self.remote.send_message(const.PortNumber.URI_MME, dump_msg)
+    self.remote.verify_response('ue_del', head, body)

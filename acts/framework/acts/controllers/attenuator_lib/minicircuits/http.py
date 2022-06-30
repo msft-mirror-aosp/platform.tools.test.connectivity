@@ -58,7 +58,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
 
         att_req = urllib.request.urlopen('http://{}:{}/MN?'.format(
             self._ip_address, self._port))
-        config_str = att_req.read().decode('utf-8')
+        config_str = att_req.read().decode('utf-8').strip()
         if not config_str.startswith('MN='):
             raise attenuator.InvalidDataError(
                 'Attenuator returned invalid data. Attenuator returned: {}'.
@@ -111,10 +111,11 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
+        adjusted_value = min(max(0, value), self.max_atten)
         att_req = urllib.request.urlopen(
             'http://{}:{}/CHAN:{}:SETATT:{}'.format(self._ip_address,
                                                     self._port, idx + 1,
-                                                    value),
+                                                    adjusted_value),
             timeout=self._timeout)
         att_resp = att_req.read().decode('utf-8').strip()
         if att_resp != '1':
@@ -142,10 +143,11 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         if not (0 <= idx < self.num_atten):
             raise IndexError('Attenuator index out of range!', self.num_atten,
                              idx)
-        att_req = urllib.request.urlopen('http://{}:{}/CHAN:{}:ATT?'.format(
-            self._ip_address, self.port, idx + 1),
-                                         timeout=self._timeout)
-        att_resp = att_req.read().decode('utf-8')
+        att_req = urllib.request.urlopen(
+            'http://{}:{}/CHAN:{}:ATT?'.format(self._ip_address, self.port,
+                                               idx + 1),
+            timeout=self._timeout)
+        att_resp = att_req.read().decode('utf-8').strip()
         try:
             atten_val = float(att_resp)
         except:

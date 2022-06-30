@@ -199,18 +199,20 @@ class LteSimulation(BaseSimulation):
         29: 9660,
         30: 9770,
         31: 9870,
-        32: 36000,
-        33: 36200,
-        34: 36350,
-        35: 36950,
-        36: 37550,
-        37: 37750,
-        38: 38250,
-        39: 38650,
-        40: 39650,
-        41: 41590,
-        42: 45590,
-        66: 66436
+        32: 9920,
+        33: 36000,
+        34: 36200,
+        35: 36350,
+        36: 36950,
+        37: 37550,
+        38: 37750,
+        39: 38250,
+        40: 38650,
+        41: 39650,
+        42: 41590,
+        43: 45590,
+        66: 66436,
+        67: 67336
     }
 
     # Peak throughput lookup tables for each TDD subframe
@@ -409,7 +411,9 @@ class LteSimulation(BaseSimulation):
         tdd_config4_tput_lut  # DL 256QAM, UL 64 QAM OFF & MAC padding ON
     }
 
-    def __init__(self, simulator, log, dut, test_config, calibration_table):
+    def __init__(
+        self, simulator, log, dut, test_config, calibration_table,
+        nr_mode=None):
         """ Initializes the simulator for a single-carrier LTE simulation.
 
         Args:
@@ -422,13 +426,23 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        super().__init__(simulator, log, dut, test_config, calibration_table)
+        super().__init__(
+            simulator, log, dut, test_config, calibration_table, nr_mode)
 
         self.num_carriers = None
 
         # Force device to LTE only so that it connects faster
-        self.dut.set_preferred_network_type(
-            BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+        try:
+            if self.nr_mode and 'nr' == self.nr_mode:
+                self.dut.set_preferred_network_type(
+                    BaseCellularDut.PreferredNetworkType.LTE_NR)
+            else:
+                self.dut.set_preferred_network_type(
+                    BaseCellularDut.PreferredNetworkType.LTE_ONLY)
+        except Exception as e:
+            # If this fails the test should be able to run anyways, even if it
+            # takes longer to find the cell.
+            self.log.warning('Setting preferred RAT failed: ' + str(e))
 
         # Get LTE CA frequency bands setting from the test configuration
         if self.KEY_FREQ_BANDS not in test_config:
@@ -440,7 +454,12 @@ class LteSimulation(BaseSimulation):
 
     def setup_simulator(self):
         """ Do initial configuration in the simulator. """
-        self.simulator.setup_lte_scenario()
+        if self.nr_mode and 'nr' == self.nr_mode:
+            self.log.info('Initializes the callbox to Nr Nsa scenario')
+            self.simulator.setup_nr_nsa_scenario()
+        else:
+            self.log.info('Initializes the callbox to LTE scenario')
+            self.simulator.setup_lte_scenario()
 
     def configure(self, parameters):
         """ Configures simulation using a dictionary of parameters.
@@ -474,13 +493,14 @@ class LteSimulation(BaseSimulation):
                     # If the remaining string is only the band number, add
                     # the cell and continue
                     new_cell_list.append(cell)
+                    continue
 
                 ca_class = band[-1].upper()
                 band_num = band[:-1]
 
                 if ca_class in ['A', 'C']:
                     # Remove the CA class label and add the cell
-                    cell[LteCellConfig.PARAM_BAND].band = band_num
+                    cell[LteCellConfig.PARAM_BAND] = band_num
                     new_cell_list.append(cell)
                 elif ca_class == 'B':
                     raise RuntimeError('Class B LTE CA not supported.')
@@ -489,13 +509,17 @@ class LteSimulation(BaseSimulation):
 
                 # Class C means that there are two contiguous carriers
                 if ca_class == 'C':
-                    new_cell_list.append(cell)
+                    new_cell_list.append(dict(cell))
                     bw = int(cell[LteCellConfig.PARAM_BW])
-                    new_cell_list[-1].dl_earfcn = int(
-                        self.LOWEST_DL_CN_DICTIONARY[band_num] + bw * 10 - 2)
+                    dl_earfcn = LteCellConfig.PARAM_DL_EARFCN
+                    new_cell_list[-1][dl_earfcn] = self.LOWEST_DL_CN_DICTIONARY[
+                        int(band_num)] + bw * 10 - 2
             else:
                 # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
+
+        # Logs new_cell_list for debug
+        self.log.info('new cell list: {}'.format(new_cell_list))
 
         self.simulator.set_band_combination(
             [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
@@ -580,7 +604,9 @@ class LteSimulation(BaseSimulation):
 
         bandwidth = bts_config.bandwidth
 
-        if bandwidth == 20:  # 100 RBs
+        if bandwidth == 100: # This assumes 273 RBs. TODO: b/229163022
+            power = rsrp + 35.15
+        elif bandwidth == 20:  # 100 RBs
             power = rsrp + 30.79
         elif bandwidth == 15:  # 75 RBs
             power = rsrp + 29.54
