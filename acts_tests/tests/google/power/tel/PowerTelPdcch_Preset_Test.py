@@ -16,5 +16,8 @@ import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
 
 class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
 
-    def test_sa_pdcch(self):
+    def test_preset_sa_pdcch(self):
+        self.power_pdcch_test()
+
+    def test_preset_nsa_pdcch(self):
         self.power_pdcch_test()
