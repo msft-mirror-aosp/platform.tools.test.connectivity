@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from enum import IntEnum, unique
+from typing import Tuple
 
 
 @unique
@@ -117,7 +118,7 @@ class ExtendedCapability(IntEnum):
     # 88-n reserved
 
 
-def _offsets(ext_cap_offset: ExtendedCapability) -> tuple[int, int]:
+def _offsets(ext_cap_offset: ExtendedCapability) -> Tuple[int, int]:
     """For given capability, return the byte and bit offsets within the field.
 
     802.11 divides the extended capability field into bytes, as does the
