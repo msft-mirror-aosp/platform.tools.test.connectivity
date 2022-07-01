@@ -12,11 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import enum
-import logging
-import os
 import collections
-import itertools
+import logging
+from typing import FrozenSet
 
 from acts.controllers.ap_lib import hostapd_constants
 
@@ -306,11 +304,11 @@ class HostapdConfig(object):
         return self._min_streams
 
     @property
-    def wnm_features(self) -> frozenset[hostapd_constants.WnmFeature]:
+    def wnm_features(self) -> FrozenSet[hostapd_constants.WnmFeature]:
         return self._wnm_features
 
     @wnm_features.setter
-    def wnm_features(self, value: frozenset[hostapd_constants.WnmFeature]):
+    def wnm_features(self, value: FrozenSet[hostapd_constants.WnmFeature]):
         self._wnm_features = value
 
     def __init__(self,
@@ -338,7 +336,7 @@ class HostapdConfig(object):
                  spectrum_mgmt_required=None,
                  scenario_name=None,
                  min_streams=None,
-                 wnm_features: frozenset[
+                 wnm_features: FrozenSet[
                      hostapd_constants.WnmFeature] = frozenset(),
                  bss_settings=[],
                  additional_parameters={},

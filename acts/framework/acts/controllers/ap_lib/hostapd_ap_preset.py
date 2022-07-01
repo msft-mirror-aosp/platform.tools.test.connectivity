@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import FrozenSet
+
 from acts import utils
 
 import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
@@ -60,7 +62,7 @@ def create_ap_preset(
         n_capabilities=None,
         ac_capabilities=None,
         vht_bandwidth=None,
-        wnm_features: frozenset[hostapd_constants.WnmFeature] = frozenset(),
+        wnm_features: FrozenSet[hostapd_constants.WnmFeature] = frozenset(),
         bss_settings=[]):
     """AP preset config generator.  This a wrapper for hostapd_config but
        but supplies the default settings for the preset that is selected.
