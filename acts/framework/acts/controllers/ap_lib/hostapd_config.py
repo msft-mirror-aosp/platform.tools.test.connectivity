@@ -12,11 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import enum
-import logging
-import os
 import collections
-import itertools
+import logging
+from typing import FrozenSet
 
 from acts.controllers.ap_lib import hostapd_constants
 
@@ -133,11 +131,7 @@ class HostapdConfig(object):
     @property
     def _require_ht(self):
         """Returns: True iff clients should be required to support HT."""
-        # TODO(wiley) Why? (crbug.com/237370)
-        # DOES THIS APPLY TO US?
-        logging.warning('Not enforcing pure N mode because Snow does '
-                        'not seem to support it...')
-        return False
+        return self._mode == hostapd_constants.MODE_11N_PURE
 
     @property
     def _require_vht(self):
@@ -310,11 +304,11 @@ class HostapdConfig(object):
         return self._min_streams
 
     @property
-    def wnm_features(self) -> frozenset[hostapd_constants.WnmFeature]:
+    def wnm_features(self) -> FrozenSet[hostapd_constants.WnmFeature]:
         return self._wnm_features
 
     @wnm_features.setter
-    def wnm_features(self, value: frozenset[hostapd_constants.WnmFeature]):
+    def wnm_features(self, value: FrozenSet[hostapd_constants.WnmFeature]):
         self._wnm_features = value
 
     def __init__(self,
@@ -342,7 +336,7 @@ class HostapdConfig(object):
                  spectrum_mgmt_required=None,
                  scenario_name=None,
                  min_streams=None,
-                 wnm_features: frozenset[
+                 wnm_features: FrozenSet[
                      hostapd_constants.WnmFeature] = frozenset(),
                  bss_settings=[],
                  additional_parameters={},

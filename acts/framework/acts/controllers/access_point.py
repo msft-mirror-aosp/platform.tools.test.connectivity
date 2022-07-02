@@ -19,6 +19,7 @@ import ipaddress
 import os
 import re
 import time
+from typing import FrozenSet, Set
 
 from acts import logger
 from acts import utils
@@ -112,7 +113,7 @@ def setup_ap(
         n_capabilities=None,
         ac_capabilities=None,
         vht_bandwidth=None,
-        wnm_features: frozenset[hostapd_constants.WnmFeature] = frozenset(),
+        wnm_features: FrozenSet[hostapd_constants.WnmFeature] = frozenset(),
         setup_bridge=False,
         is_ipv6_enabled=False,
         is_nat_enabled=True):
@@ -893,7 +894,7 @@ class AccessPoint(object):
         instance = self._aps.get(identifier)
         return instance.hostapd.get_current_channel()
 
-    def get_stas(self, identifier) -> set[str]:
+    def get_stas(self, identifier) -> Set[str]:
         """Return MAC addresses of all associated STAs on the given AP."""
         if identifier not in list(self._aps.keys()):
             raise ValueError(f'Invalid identifier {identifier} given')
