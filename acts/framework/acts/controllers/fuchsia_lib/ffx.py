@@ -39,11 +39,12 @@ class FFX:
     Attributes:
         log: Logger for the device-specific instance of ffx.
         binary_path: Path to the ffx binary.
-        target: mDNS nodename of the default Fuchsia target.
+        mdns_name: mDNS nodename of the default Fuchsia target.
+        ip: IP address of the default Fuchsia target.
         ssh_private_key_path: Path to Fuchsia DUT SSH private key.
     """
 
-    def __init__(self, binary_path, target, ssh_private_key_path=None):
+    def __init__(self, binary_path, mdns_name, ip = None, ssh_private_key_path=None):
         """
         Args:
             binary_path: Path to ffx binary.
@@ -51,9 +52,10 @@ class FFX:
             ssh_private_key_path: Path to SSH private key for talking to the
                 Fuchsia DUT.
         """
-        self.log = logger.create_tagged_trace_logger(f"ffx | {target}")
+        self.log = logger.create_tagged_trace_logger(f"ffx | {mdns_name}")
         self.binary_path = binary_path
-        self.target = target
+        self.mdns_name = mdns_name
+        self.ip = ip
         self.ssh_private_key_path = ssh_private_key_path
 
         self._config_path = None
@@ -77,7 +79,7 @@ class FFX:
         epoch = utils.get_current_epoch_time()
         time_stamp = logger.normalize_log_line_timestamp(
             logger.epoch_to_log_line_timestamp(epoch))
-        target_dir = os.path.join(root_dir, f'{self.target}_{time_stamp}')
+        target_dir = os.path.join(root_dir, f'{self.mdns_name}_{time_stamp}')
         os.makedirs(target_dir, exist_ok=True)
 
         # Sockets need to be created in a different directory to be guaranteed
@@ -89,7 +91,7 @@ class FFX:
 
         config = {
             "target": {
-                "default": self.target,
+                "default": self.mdns_name,
             },
             # Use user-specific and device-specific locations for sockets.
             # Avoids user permission errors in a multi-user test environment.
@@ -115,6 +117,17 @@ class FFX:
                 },
             },
         }
+
+        if self.ip:
+            # An IP address must have been specified
+            config["target"]["manual"] = {
+                f"{self.ip}:0": None,
+            }
+            config["discovery"] = {
+                "mdns": {
+                    "enabled": False,
+                },
+            }
 
         # ffx looks for the private key in several default locations. For
         # testbeds which have the private key in another location, set it now.

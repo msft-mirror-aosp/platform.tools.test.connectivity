@@ -522,7 +522,8 @@ class FuchsiaDevice:
         if hasattr(self, 'ffx'):
             self.ffx.clean_up()
 
-        self.ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ssh_priv_key)
+        self.ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ip,
+                       self.ssh_priv_key)
 
     def run_commands_from_config(self, cmd_dicts):
         """Runs commands on the Fuchsia device from the config file. Useful for
