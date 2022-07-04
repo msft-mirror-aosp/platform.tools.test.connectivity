@@ -132,8 +132,7 @@ class GnssSuplTest(BaseTestClass):
 
         self.connect_to_wifi_with_mobile_data_off()
 
-        gutils.run_ttff(mode="cs", criteria=self.supl_cs_criteria, test_cycle=self.ttff_test_cycle,
-                        base_lat_long=self.pixel_lab_location, collect_logs=self.collect_logs)
+        self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
 
     @test_tracker_info(uuid="4adce337-b79b-4085-9d3d-7cdd88dc4643")
     def test_hs_ttff_supl_over_wifi_with_mobile_data_off(self):
@@ -163,8 +162,7 @@ class GnssSuplTest(BaseTestClass):
 
         self.connect_to_wifi_with_airplane_mode_on()
 
-        gutils.run_ttff(mode="cs", criteria=self.supl_cs_criteria, test_cycle=self.ttff_test_cycle,
-                        base_lat_long=self.pixel_lab_location, collect_logs=self.collect_logs)
+        self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
 
     @test_tracker_info(uuid="afcab5bd-b2a9-4846-929c-3aa2596a6044")
     def test_ws_ttff_supl_over_wifi_with_airplane_mode_on(self):
@@ -194,5 +192,4 @@ class GnssSuplTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
 
-        gutils.run_ttff(mode="cs", criteria=self.supl_cs_criteria, test_cycle=self.ttff_test_cycle,
-                        base_lat_long=self.pixel_lab_location, collect_logs=self.collect_logs)
+        self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
