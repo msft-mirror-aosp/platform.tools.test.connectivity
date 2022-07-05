@@ -34,7 +34,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
         """Init GNSS test devices for vendor features suite."""
         gutils._init_device(self.ad)
         gutils.disable_supl_mode(self.ad)
-        gutils.enable_vendor_orbit_assistance_data()
+        gutils.enable_vendor_orbit_assistance_data(self.ad)
 
     def setup_test(self):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
