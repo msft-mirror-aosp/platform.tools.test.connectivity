@@ -187,7 +187,11 @@ def phone_setup_iwlan_for_subscription(log,
         ad.log.info("WiFi network SSID not specified, available user "
                     "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
                     "wifi_network_ssid_5g")
-    if not toggle_volte_for_subscription(log, ad, sub_id, True):
+    toggle_volte_for_subscription(log, ad, sub_id, True)
+    if not wait_for_volte_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED, sub_id):
+        ad.log.error(
+            "Failed to <report volte enabled true> within %s seconds.",
+            MAX_WAIT_TIME_VOLTE_ENABLED)
         return False
     if not set_wfc_mode_for_subscription(ad, wfc_mode, sub_id):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
