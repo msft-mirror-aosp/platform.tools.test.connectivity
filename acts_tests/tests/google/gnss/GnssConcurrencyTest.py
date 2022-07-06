@@ -17,7 +17,7 @@
 import time
 import re
 import statistics
-from datetime import datetime, timedelta
+from datetime import datetime
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
@@ -129,28 +129,6 @@ class GnssConcurrencyTest(BaseTestClass):
             if "ap" not in type:
                 self.ad.adb.shell(" ".join([cmd, type, option]))
 
-    def get_current_dut_time(self):
-        """ Get current time from test device via log.
-
-            Returns: a datetime_obj for current time.
-        """
-        # [TODO:b/235569769] Debugging only to check timestamp
-        last_log_time = ""
-        current_epoch = self.ad.adb.shell("date +%s")
-        dut_time = datetime.fromtimestamp(int(current_epoch))
-
-        last_loc_entry = self.ad.search_logcat("reportLocation")
-        if last_loc_entry:
-            last_log_time = last_loc_entry[-1]["datetime_obj"]
-
-        # Temporary workaround to solve test case failure
-        begin_time = datetime.now() + timedelta(hours=1)
-        self.ad.log.info(
-            f"\nDUT TIME:{dut_time}\nSYS TIME:{datetime.now()}\nLOG TIME:{last_log_time}"
-            f"\nSYS TIME+1:{begin_time}"
-        )
-        return begin_time
-
     def parse_concurrency_result(self,
                                  begin_time,
                                  request_type,
@@ -221,7 +199,7 @@ class GnssConcurrencyTest(BaseTestClass):
             self.ad, TTFF_criteria, freq=criteria["ap_location"])
         self.ad.log.info("Tracking 10 sec to prevent flakiness.")
         time.sleep(10)
-        begin_time = self.get_current_dut_time()
+        begin_time = datetime.now()
         self.ad.log.info(f"Test Start at {begin_time}")
         time.sleep(test_duration)
         self.enable_chre(0)
@@ -235,7 +213,7 @@ class GnssConcurrencyTest(BaseTestClass):
             criteria: int for test criteria.
             test_duration: int for test duration.
         """
-        begin_time = self.get_current_dut_time()
+        begin_time = datetime.now()
         self.ad.log.info(f"Test Start at {begin_time}")
         self.enable_chre(criteria["gnss"])
         time.sleep(test_duration)
@@ -278,7 +256,7 @@ class GnssConcurrencyTest(BaseTestClass):
             freq: a list identify source1/2 frequency [freq1, freq2]
         """
         request = {"ap_location": self.max_interval}
-        begin_time = self.get_current_dut_time()
+        begin_time = datetime.now()
         self.ad.droid.startLocating(freq[0] * 1000, 0)
         time.sleep(10)
         for i in range(5):
@@ -319,7 +297,7 @@ class GnssConcurrencyTest(BaseTestClass):
             interval_sec: test interval in seconds for CHRE.
             duration: test duration.
         """
-        begin_time = self.get_current_dut_time()
+        begin_time = datetime.now()
         self.ad.log.info(f"Test start at {begin_time}")
         self.enable_chre(interval_sec)
         time.sleep(duration)
@@ -403,7 +381,7 @@ class GnssConcurrencyTest(BaseTestClass):
         cmd_base = "chre_power_test_client gnss tcm"
         cmd_start = " ".join([cmd_base, "enable 1000"])
         cmd_stop = " ".join([cmd_base, "disable"])
-        begin_time = self.get_current_dut_time()
+        begin_time = datetime.now()
 
         self.ad.log.info("Send CHRE enable to DUT")
         self.ad.adb.shell(cmd_start)
@@ -497,7 +475,7 @@ class GnssConcurrencyTest(BaseTestClass):
         test_duration = 10
         intervals = [0, 0.5, 1.5]
         for interval in intervals:
-            begin_time = self.get_current_dut_time()
+            begin_time = datetime.now()
             self.ad.droid.startLocating(interval * 1000, 0)
             time.sleep(test_duration)
             self.ad.droid.stopLocating()
