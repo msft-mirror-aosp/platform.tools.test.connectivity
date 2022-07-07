@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import time
+from typing import Set
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -149,7 +150,7 @@ class Hostapd(object):
         list_sta_cmd = 'list_sta'
         return self._run_hostapd_cli_cmd(list_sta_cmd)
 
-    def get_stas(self) -> set[str]:
+    def get_stas(self) -> Set[str]:
         """Return MAC addresses of all associated STAs."""
         list_sta_result = self._list_sta()
         stas = set()

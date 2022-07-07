@@ -273,7 +273,7 @@ def enable_vendor_orbit_assistance_data(ad):
     if is_device_wearable(ad):
         lto_mode_wearable(ad, True)
     elif check_chipset_vendor_by_qualcomm(ad):
-        reboot()
+        reboot(ad)
     else:
         lto_mode(ad, True)
 
