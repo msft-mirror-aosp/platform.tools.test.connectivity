@@ -20,6 +20,7 @@ import re
 import time
 
 from acts_contrib.test_utils.tel.tel_defines import CHIPSET_MODELS_LIST
+from acts_contrib.test_utils.tel.tel_defines import INVALID_PORT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
@@ -182,18 +183,42 @@ def get_subid_by_adb(ad, sim_slot_index):
 
 
 def get_subid_from_slot_index(log, ad, sim_slot_index):
-    """ Get the subscription ID for a SIM at a particular slot
+    """ Get the subscription ID for a SIM at a particular slot.
 
     Args:
         ad: android_device object.
+        sim_slot_index: 0 for pSIM,
+                        1 for eSIM port 0,
+                        2 for eSIM port 1.
 
     Returns:
         result: Subscription ID
     """
-    subInfo = ad.droid.subscriptionGetAllSubInfoList()
-    for info in subInfo:
-        if info['simSlotIndex'] == sim_slot_index:
-            return info['subscriptionId']
+    siminfo = ad.adb.shell(
+        "content query --uri content://telephony/siminfo")
+    if "port_index" in siminfo:
+        pattern_port = re.compile(r"port_index=(\d)")
+        pattern_sub = re.compile(r" _id=(\d+)")
+        pattern_embedded = re.compile(r"is_embedded=(\d+)")
+        siminfo_list = siminfo.splitlines()
+        for row in siminfo_list:
+            sub_id = pattern_sub.findall(row)
+            sub_id = int(sub_id[-1]) if sub_id else INVALID_SUB_ID
+            port_id = pattern_port.findall(row)
+            port_id = int(port_id[-1]) if port_id else INVALID_PORT_INDEX
+            is_embedded = int(pattern_embedded.findall(row)[-1])
+            if port_id == INVALID_PORT_INDEX:
+                continue
+            elif sim_slot_index == 0 and is_embedded == 0:
+                return sub_id
+            elif sim_slot_index-1 == port_id and is_embedded == 1:
+                return sub_id
+    else:
+        sim_slot_index = 1 if sim_slot_index else 0
+        subInfo = ad.droid.subscriptionGetAllSubInfoList()
+        for info in subInfo:
+            if info['simSlotIndex'] == sim_slot_index:
+                return info['subscriptionId']
     return INVALID_SUB_ID
 
 
@@ -395,13 +420,12 @@ def set_dds_on_slot_0(ad):
         ad.log.warning("Invalid sub ID at slot 0")
         return False
     operator = get_operatorname_from_slot_index(ad, 0)
-    if get_default_data_sub_id(ad) == sub_id:
+    if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
         ad.log.info("Current DDS is already on %s", operator)
         return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
-    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
     if get_default_data_sub_id(ad) == sub_id:
         return True
     else:
@@ -414,13 +438,12 @@ def set_dds_on_slot_1(ad):
         ad.log.warning("Invalid sub ID at slot 1")
         return False
     operator = get_operatorname_from_slot_index(ad, 1)
-    if get_default_data_sub_id(ad) == sub_id:
+    if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
         ad.log.info("Current DDS is already on %s", operator)
         return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
-    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
     if get_default_data_sub_id(ad) == sub_id:
         return True
     else:
@@ -442,13 +465,12 @@ def set_dds_on_slot(ad, dds_slot):
         ad.log.warning("Invalid sub ID at slot %d", dds_slot)
         return False
     operator = get_operatorname_from_slot_index(ad, dds_slot)
-    if get_default_data_sub_id(ad) == sub_id:
+    if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
         ad.log.info("Current DDS is already on %s", operator)
         return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
-    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
     if get_default_data_sub_id(ad) == sub_id:
         return True
     else:
