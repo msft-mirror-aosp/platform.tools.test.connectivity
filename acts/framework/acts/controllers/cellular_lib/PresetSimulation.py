@@ -95,28 +95,34 @@ class PresetSimulation(BaseSimulation):
         """
         # airplane mode on
         self.dut.toggle_airplane_mode(True)
-        time.sleep(5)
+        time.sleep(10)
         # turn cell on
         self.simulator.turn_cell_on()
         time.sleep(5)
         # airplane mode off
         self.dut.toggle_airplane_mode(False)
+        time.sleep(5)
 
         # waits for connect
-        for index in range(20):
-            time.sleep(60)
+        for index in range(1, self.attach_retries):
+            time.sleep(self.attach_timeout)
             cell_state = self.simulator.get_cell_status()
             self.log.info(f'cell state: {cell_state}')
             if cell_state == 'CONN\n':
                 return True
-            elif (index % 15) == 0:
+            if (index % 4) == 0:
+                self.log.info(f'Reboot')
+                self.dut.ad.adb.shell('reboot')
+                self.log.info(
+                    f'Sleep 40s waiting for reboot complete: {cell_state}')
+                time.sleep(40)
+                self.dut.ad.adb.shell('root')
+            else:
                 # airplane mode on
                 self.dut.toggle_airplane_mode(True)
                 time.sleep(5)
                 # airplane mode off
                 self.dut.toggle_airplane_mode(False)
-            elif (index % 30) == 29:
-                self.dut.reboot()
         return False
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
