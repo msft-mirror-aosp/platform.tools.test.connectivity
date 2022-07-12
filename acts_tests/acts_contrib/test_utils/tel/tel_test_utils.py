@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import Sequence
 from future import standard_library
 standard_library.install_aliases()
 
@@ -27,6 +28,7 @@ import acts.controllers.iperf_server as ipf
 import struct
 
 from acts import signals
+from acts.controllers.android_device import AndroidDevice
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb_lib.error import AdbCommandError, AdbError
@@ -65,6 +67,7 @@ from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_7
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_10_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_11_DIGIT
 from acts_contrib.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_12_DIGIT
+from acts_contrib.test_utils.tel.tel_defines import SimSlotInfo
 from acts_contrib.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts_contrib.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
@@ -2989,6 +2992,47 @@ def power_off_sim_by_adb(ad, sim_slot_id,
     sim_state = ad.adb.getprop("gsm.sim.state").split(",")
     ad.log.warning("Fail to power off SIM slot %d, sim_state=%s",
         sim_slot_id, sim_state[sim_slot_id])
+    return False
+
+
+def change_slot(ad: AndroidDevice, sim_slot: Sequence[SimSlotInfo],
+                timeout: int = MAX_WAIT_TIME_FOR_STATE_CHANGE) -> bool:
+    """Enable Sims for Slot Mapping Mode.
+
+    Args:
+        ad: android device object.
+        sim_slot: a list which contains 2 slots for logical slot 0 and 1.
+            e.g. [SimSlotInfo.SLOT_0, SimSlotInfo.SLOT_1]
+        timeout: wait time for state change.
+
+    Returns:
+        True if success, False otherwise.
+    """
+    port_id = [sim_slot[0].value[1], sim_slot[1].value[1]]
+    phy_slot_id = [sim_slot[0].value[2], sim_slot[1].value[2]]
+    ad.adb.shell(
+        "am broadcast -a android.telephony.euicc.action.TEST_PROFILE "
+        "-n com.google.android.euicc/com.android.euicc.receiver."
+        "ProfileTestReceiver --es 'operation' 'changeSlot' --es "
+        "'simSlotMapping' \"[{'port':%d,'physical':%d,'logical':1},{'port':%d,"
+        "'physical':%d,'logical':0}]\"" % (port_id[0], phy_slot_id[0],
+        port_id[1], phy_slot_id[1]))
+    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+
+    while timeout > 0:
+        sim_state = ad.adb.getprop("gsm.sim.state").split(",")
+        if (get_subid_from_slot_index(
+            ad.log, ad, sim_slot[0].value[0]) != INVALID_SUB_ID
+            ) and (get_subid_from_slot_index(
+                ad.log, ad, sim_slot[1].value[0]) != INVALID_SUB_ID):
+            if (set(sim_state) - {
+                SIM_STATE_UNKNOWN, SIM_STATE_ABSENT, SIM_STATE_NOT_READY}):
+                return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+
+    ad.log.warning("Fail to change SIM slot %s, sim_state=%s",
+        sim_slot, sim_state)
     return False
 
 
