@@ -14,11 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
 import os
 import re
 import fnmatch
-from multiprocessing import Process
 
 from acts import asserts
 from acts import signals
@@ -31,9 +29,7 @@ from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
-from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
-from acts_contrib.test_utils.tel.tel_data_utils import http_file_download_by_sl4a
 from acts_contrib.test_utils.gnss.gnss_test_utils import get_baseband_and_gms_version
 from acts_contrib.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_signal
 from acts_contrib.test_utils.gnss.gnss_test_utils import _init_device
@@ -51,12 +47,6 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import set_battery_saver_mode
 from acts_contrib.test_utils.gnss.gnss_test_utils import disable_vendor_orbit_assistance_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
-from acts_contrib.test_utils.gnss.gnss_test_utils import start_ttff_by_gtw_gpstool
-from acts_contrib.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gpstool
-from acts_contrib.test_utils.gnss.gnss_test_utils import check_ttff_data
-from acts_contrib.test_utils.gnss.gnss_test_utils import start_youtube_video
-from acts_contrib.test_utils.gnss.gnss_test_utils import fastboot_factory_reset
-from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_mds
 from acts_contrib.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
@@ -75,19 +65,16 @@ class GnssFunctionTest(BaseTestClass):
     def setup_class(self):
         super().setup_class()
         self.ad = self.android_devices[0]
-        req_params = ["pixel_lab_network", "standalone_cs_criteria",
+        req_params = ["pixel_lab_network",
                       "standalone_ws_criteria", "standalone_hs_criteria",
-                      "supl_cs_criteria", "supl_ws_criteria",
+                      "supl_cs_criteria",
                       "supl_hs_criteria",
-                      "weak_signal_supl_cs_criteria",
-                      "weak_signal_supl_ws_criteria",
-                      "weak_signal_supl_hs_criteria",
                       "wearable_reboot_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_allowlist", "pixel_lab_location",
-                      "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
+                      "qdsp6m_path", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
                       "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold"]
         self.unpack_userparams(req_param_names=req_params)
@@ -238,35 +225,6 @@ class GnssFunctionTest(BaseTestClass):
                 self.ad.log.error("cat mcfg.version with error %s", e)
                 return False
 
-    def run_ttff_via_gtw_gpstool(self, mode, criteria):
-        """Run GNSS TTFF test with selected mode and parse the results.
-
-        Args:
-            mode: "cs", "ws" or "hs"
-            criteria: Criteria for the TTFF.
-        """
-        begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, mode, self.ttff_test_cycle)
-        ttff_data = process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        result = check_ttff_data(
-            self.ad, ttff_data, self.ttff_mode.get(mode), criteria)
-        asserts.assert_true(
-            result, "TTFF %s fails to reach designated criteria of %d "
-                    "seconds." % (self.ttff_mode.get(mode), criteria))
-
-    def supl_ttff_with_sim(self, mode, criteria):
-        """Verify SUPL TTFF functionality.
-
-        Args:
-            mode: "cs", "ws" or "hs"
-            criteria: Criteria for the test.
-        """
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.run_ttff_via_gtw_gpstool(mode, criteria)
-
     def standalone_ttff_airplane_mode_on(self, mode, criteria):
         """Verify Standalone GNSS TTFF functionality while airplane mode is on.
 
@@ -277,20 +235,8 @@ class GnssFunctionTest(BaseTestClass):
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         self.ad.droid.connectivityToggleAirplaneMode(True)
-        self.run_ttff_via_gtw_gpstool(mode, criteria)
-
-    def supl_ttff_weak_gnss_signal(self, mode, criteria):
-        """Verify SUPL TTFF functionality under weak GNSS signal.
-
-        Args:
-            mode: "cs", "ws" or "hs"
-            criteria: Criteria for the test.
-        """
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.weak_gnss_signal_attenuation)
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.run_ttff_via_gtw_gpstool(mode, criteria)
+        gutils.run_ttff_via_gtw_gpstool(mode, criteria, self.ttff_test_cycle,
+                                        self.pixel_lab_location)
 
     """ Test Cases """
 
@@ -374,29 +320,6 @@ class GnssFunctionTest(BaseTestClass):
                 self.ad.log.info("NO \"%s\" initialization error found." % attr)
         asserts.assert_true(error_mismatch, "Error message found after GNSS "
                                             "init")
-
-    @test_tracker_info(uuid="ff318483-411c-411a-8b1a-422bd54f4a3f")
-    def test_supl_capabilities(self):
-        """Verify SUPL capabilities.
-
-        Steps:
-            1. Root DUT.
-            2. Check SUPL capabilities.
-
-        Expected Results:
-            CAPABILITIES=0x37 which supports MSA + MSB.
-            CAPABILITIES=0x17 = ON_DEMAND_TIME | MSA | MSB | SCHEDULING
-        """
-        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
-            raise signals.TestSkip("Not Qualcomm chipset. Skip the test.")
-        capabilities_state = str(
-            self.ad.adb.shell(
-                "cat vendor/etc/gps.conf | grep CAPABILITIES")).split("=")[-1]
-        self.ad.log.info("SUPL capabilities - %s" % capabilities_state)
-        asserts.assert_true(capabilities_state in self.supl_capabilities,
-                            "Wrong default SUPL capabilities is set. Found %s, "
-                            "expected any of %r" % (capabilities_state,
-                                                    self.supl_capabilities))
 
     @test_tracker_info(uuid="dcae6979-ddb4-4cad-9d14-fbdd9439cf42")
     def test_sap_valid_modes(self):
@@ -550,173 +473,6 @@ class GnssFunctionTest(BaseTestClass):
         set_battery_saver_mode(self.ad, False)
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
-    @test_tracker_info(uuid="a59c72af-5d56-4d88-9746-ae2749cac671")
-    def test_supl_ttff_cs(self):
-        """Verify SUPL functionality of TTFF Cold Start.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. SUPL TTFF Cold Start for 10 iteration.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be less than
-            supl_cs_criteria.
-        """
-        self.supl_ttff_with_sim("cs", self.supl_cs_criteria)
-
-    @test_tracker_info(uuid="9a91c8ad-1978-414a-a9ac-8ebc782f77ff")
-    def test_supl_ttff_ws(self):
-        """Verify SUPL functionality of TTFF Warm Start.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. SUPL TTFF Warm Start for 10 iteration.
-
-        Expected Results:
-            All SUPL TTFF Warm Start results should be less than
-            supl_ws_criteria.
-        """
-        self.supl_ttff_with_sim("ws", self.supl_ws_criteria)
-
-    @test_tracker_info(uuid="bbd5aad4-3309-4579-a3b2-a06bfb674dfa")
-    def test_supl_ttff_hs(self):
-        """Verify SUPL functionality of TTFF Hot Start.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. SUPL TTFF Hot Start for 10 iteration.
-
-        Expected Results:
-            All SUPL TTFF Hot Start results should be less than
-            supl_hs_criteria.
-        """
-        self.supl_ttff_with_sim("hs", self.supl_hs_criteria)
-
-    @test_tracker_info(uuid="60c0aeec-0c8f-4a96-bc6c-05cba1260e73")
-    def test_supl_ongoing_call(self):
-        """Verify SUPL functionality during phone call.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. Initiate call on DUT.
-            3. SUPL TTFF Cold Start for 10 iteration.
-            4. DUT hang up call.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be less than
-            supl_cs_criteria.
-        """
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.ad.droid.setVoiceCallVolume(25)
-        initiate_call(self.ad.log, self.ad, "99117")
-        time.sleep(5)
-        if not check_call_state_connected_by_adb(self.ad):
-            raise signals.TestFailure("Call is not connected.")
-        self.run_ttff_via_gtw_gpstool("cs", self.supl_cs_criteria)
-
-    @test_tracker_info(uuid="df605509-328f-43e8-b6d8-00635bf701ef")
-    def test_supl_downloading_files(self):
-        """Verify SUPL functionality when downloading files.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. DUT start downloading files by sl4a.
-            3. SUPL TTFF Cold Start for 10 iteration.
-            4. DUT cancel downloading files.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-        """
-        begin_time = get_current_epoch_time()
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        download = Process(target=http_file_download_by_sl4a,
-                           args=(self.ad, "https://speed.hetzner.de/10GB.bin",
-                                 None, None, True, 3600))
-        download.start()
-        time.sleep(10)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(
-            self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
-        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                self.pixel_lab_location)
-        download.terminate()
-        time.sleep(3)
-        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                 criteria=self.supl_cs_criteria)
-        asserts.assert_true(result, "TTFF fails to reach designated criteria")
-
-    @test_tracker_info(uuid="66b9f9d4-1397-4da7-9e55-8b89b1732017")
-    def test_supl_watching_youtube(self):
-        """Verify SUPL functionality when watching video on youtube.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. DUT start watching video on youtube.
-            3. SUPL TTFF Cold Start for 10 iteration at the background.
-            4. DUT stop watching video on youtube.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-        """
-        begin_time = get_current_epoch_time()
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.ad.droid.setMediaVolume(25)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(
-            self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
-        start_youtube_video(self.ad,
-                            url="https://www.youtube.com/watch?v=AbdVsi1VjQY",
-                            retries=3)
-        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                self.pixel_lab_location)
-        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                 criteria=self.supl_cs_criteria)
-        asserts.assert_true(result, "TTFF fails to reach designated criteria")
-
-    @test_tracker_info(uuid="a748af8b-e1eb-4ec6-bde3-74bcefa1c680")
-    def test_supl_modem_ssr(self):
-        """Verify SUPL functionality after modem silent reboot /
-        GPS daemons restart.
-
-        Steps:
-            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
-            2. Wait 1 minute for modem to recover.
-            3. SUPL TTFF Cold Start for 3 iteration.
-            4. Repeat Step 1. to Step 3. for 5 times.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-        """
-        supl_ssr_test_result_all = []
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for times in range(1, 6):
-            begin_time = get_current_epoch_time()
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                test_info = "Modem SSR"
-                gnss_trigger_modem_ssr_by_mds(self.ad)
-            else:
-                test_info = "restarting GPS daemons"
-                gutils.restart_gps_daemons(self.ad)
-            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                              expected_state=True):
-                raise signals.TestFailure("Fail to connect to LTE network.")
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            supl_ssr_test_result = check_ttff_data(
-                self.ad, ttff_data, ttff_mode="Cold Start",
-                criteria=self.supl_cs_criteria)
-            self.ad.log.info("SUPL after %s test %d times -> %s" % (
-                test_info, times, supl_ssr_test_result))
-            supl_ssr_test_result_all.append(supl_ssr_test_result)
-        asserts.assert_true(all(supl_ssr_test_result_all),
-                            "TTFF fails to reach designated criteria")
-
     @test_tracker_info(uuid="01602e65-8ded-4459-8df1-7df70a1bfe8a")
     def test_gnss_ttff_cs_airplane_mode_on(self):
         """Verify Standalone GNSS functionality of TTFF Cold Start while
@@ -778,127 +534,8 @@ class GnssFunctionTest(BaseTestClass):
         disable_vendor_orbit_assistance_data(self.ad)
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_mobile_data(self.ad, False)
-        self.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria)
-
-    @test_tracker_info(uuid="085b86a9-0212-4c0f-8ca1-2e467a0a2e6e")
-    def test_supl_after_regain_gnss_signal(self):
-        """Verify SUPL functionality after regain GNSS signal.
-
-        Steps:
-            1. Get location fixed.
-            2  Let device do GNSS tracking for 1 minute.
-            3. Set attenuation value to block GNSS signal.
-            4. Let DUT stay in no GNSS signal for 5 minutes.
-            5. Set attenuation value to regain GNSS signal.
-            6. Try to get location reported again.
-            7. Repeat Step 1. to Step 6. for 5 times.
-
-        Expected Results:
-            After setting attenuation value to 10 (GPS signal regain),
-            DUT could get location fixed again.
-        """
-        supl_no_gnss_signal_all = []
-        enable_supl_mode(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for times in range(1, 6):
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            self.ad.log.info("Let device do GNSS tracking for 1 minute.")
-            time.sleep(60)
-            set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                       self.no_gnss_signal_attenuation)
-            self.ad.log.info("Let device stay in no GNSS signal for 5 minutes.")
-            time.sleep(300)
-            set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                       self.default_gnss_signal_attenuation)
-            supl_no_gnss_signal = check_location_api(self.ad, retries=3)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.log.info("SUPL without GNSS signal test %d times -> %s"
-                             % (times, supl_no_gnss_signal))
-            supl_no_gnss_signal_all.append(supl_no_gnss_signal)
-        asserts.assert_true(all(supl_no_gnss_signal_all),
-                            "Fail to get location update")
-
-    @test_tracker_info(uuid="3ff2f2fa-42d8-47fa-91de-060816cca9df")
-    def test_supl_ttff_cs_weak_gnss_signal(self):
-        """Verify SUPL functionality of TTFF Cold Start under weak GNSS signal.
-
-        Steps:
-            1. Set attenuation value to weak GNSS signal.
-            2. Kill XTRA/LTO daemon to support SUPL only case.
-            3. SUPL TTFF Cold Start for 10 iteration.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be less than
-            weak_signal_supl_cs_criteria.
-        """
-        self.supl_ttff_weak_gnss_signal("cs", self.weak_signal_supl_cs_criteria)
-
-    @test_tracker_info(uuid="d72364d4-dad8-4d46-8190-87183def9822")
-    def test_supl_ttff_ws_weak_gnss_signal(self):
-        """Verify SUPL functionality of TTFF Warm Start under weak GNSS signal.
-
-        Steps:
-            1. Set attenuation value to weak GNSS signal.
-            2. Kill XTRA/LTO daemon to support SUPL only case.
-            3. SUPL TTFF Warm Start for 10 iteration.
-
-        Expected Results:
-            All SUPL TTFF Warm Start results should be less than
-            weak_signal_supl_ws_criteria.
-        """
-        self.supl_ttff_weak_gnss_signal("ws", self.weak_signal_supl_ws_criteria)
-
-    @test_tracker_info(uuid="aeb95733-9829-470d-bfc7-e3b059bf881f")
-    def test_supl_ttff_hs_weak_gnss_signal(self):
-        """Verify SUPL functionality of TTFF Hot Start under weak GNSS signal.
-
-        Steps:
-            1. Set attenuation value to weak GNSS signal.
-            2. Kill XTRA/LTO daemon to support SUPL only case.
-            3. SUPL TTFF Hot Start for 10 iteration.
-
-        Expected Results:
-            All SUPL TTFF Hot Start results should be less than
-            weak_signal_supl_hs_criteria.
-        """
-        self.supl_ttff_weak_gnss_signal("hs", self.weak_signal_supl_hs_criteria)
-
-    @test_tracker_info(uuid="4ad4a371-949a-42e1-b1f4-628c79fa8ddc")
-    def test_supl_factory_reset(self):
-        """Verify SUPL functionality after factory reset.
-
-        Steps:
-            1. Factory reset device.
-            2. Kill XTRA/LTO daemon to support SUPL only case.
-            3. SUPL TTFF Cold Start for 10 iteration.
-            4. Repeat Step 1. to Step 3. for 3 times.
-
-        Expected Results:
-            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-        """
-        for times in range(1, 4):
-            self.ad.log.info(f"before reset - gms version is {gutils.get_gms_version(self.ad)}")
-            fastboot_factory_reset(self.ad, True)
-            self.ad.unlock_screen(password=None)
-            self.ad.log.info(f"after reset - gms version is {gutils.get_gms_version(self.ad)}")
-            _init_device(self.ad)
-            begin_time = get_current_epoch_time()
-            disable_vendor_orbit_assistance_data(self.ad)
-            gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            start_ttff_by_gtw_gpstool(
-                self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
-            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            if not check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                   criteria=self.supl_cs_criteria):
-                raise signals.TestFailure("SUPL after Factory Reset test %d "
-                                          "times -> FAIL" % times)
-            self.ad.log.info("SUPL after Factory Reset test %d times -> "
-                             "PASS" % times)
-        # For debug only, we'd like to see the bug report on the success case.
-        begin_time = get_current_epoch_time()
-        self.ad.take_bug_report("test_supl_factory_reset", begin_time)
+        gutils.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria, self.ttff_test_cycle,
+                                        self.pixel_lab_location)
 
     @test_tracker_info(uuid="2a9f2890-3c0a-48b8-821d-bf97e36355e9")
     def test_quick_toggle_gnss_state(self):
@@ -919,35 +556,6 @@ class GnssFunctionTest(BaseTestClass):
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         start_toggle_gnss_by_gtw_gpstool(
             self.ad, iteration=self.ttff_test_cycle)
-
-    @test_tracker_info(uuid="9f565b32-9938-42c0-a29d-f4d28b5f4d75")
-    def test_supl_system_server_restart(self):
-        """Verify SUPL functionality after system server restart.
-
-        Steps:
-            1. Kill XTRA/LTO daemon to support SUPL only case.
-            2. Get location fixed within supl_cs_criteria.
-            3. Restarts android runtime.
-            4. Get location fixed within supl_cs_criteria.
-
-        Expected Results:
-            Location fixed within supl_cs_criteria.
-        """
-        overall_test_result = []
-        disable_vendor_orbit_assistance_data(self.ad)
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for test_loop in range(1, 6):
-            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.restart_runtime()
-            self.ad.unlock_screen(password=None)
-            test_result = process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.supl_cs_criteria)
-            start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
-            overall_test_result.append(test_result)
-        asserts.assert_true(all(overall_test_result),
-                            "SUPL fail after system server restart.")
 
     @test_tracker_info(uuid="ab5ef9f7-0b28-48ed-a693-7f1d902ca3e1")
     def test_gnss_init_after_reboot(self):
