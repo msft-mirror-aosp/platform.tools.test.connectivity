@@ -37,7 +37,6 @@ from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from mobly.base_test import STAGE_NAME_TEARDOWN_CLASS
 
 WifiEnums = wutils.WifiEnums
-
 AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
