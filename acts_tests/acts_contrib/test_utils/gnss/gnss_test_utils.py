@@ -958,11 +958,16 @@ def start_ttff_by_gtw_gpstool(ad,
         ad.log.info("Start TTFF CSWith Assist...")
         time.sleep(3)
     for i in range(1, 4):
-        ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
-                     "--es ttff {} --es cycle {}  --ez raninterval {} "
-                     "--ei mininterval {} --ei maxinterval {}".format(
-                         ttff_mode, iteration, raninterval, mininterval,
-                         maxinterval))
+        try:
+            ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
+                         "--es ttff {} --es cycle {}  --ez raninterval {} "
+                         "--ei mininterval {} --ei maxinterval {}".format(
+                             ttff_mode, iteration, raninterval, mininterval,
+                             maxinterval))
+        except:
+            # Debug only, to see what the sceen display when fail to trigger TTFF
+            ad.adb.shell(f"screencap -p {GNSSSTATUS_LOG_PATH}/ttff_fail.png")
+            raise
         time.sleep(1)
         result = ad.search_logcat("act=com.android.gpstool.start_test_action", begin_time)
         if result:
