@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import enum
+
 ###############################################
 # TIMERS
 ###############################################
@@ -258,6 +260,9 @@ SIM2_SLOT_INDEX = 1
 
 # invalid Subscription ID
 INVALID_SUB_ID = -1
+
+# invalid port index
+INVALID_PORT_INDEX = -1
 
 # invalid SIM slot index
 INVALID_SIM_SLOT_INDEX = -1
@@ -983,6 +988,16 @@ class CarrierConfigs:
     DEFAULT_WFC_IMS_MODE_INT = "carrier_default_wfc_ims_mode_int"
     DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL = "carrier_default_wfc_ims_roaming_enabled_bool"
     DEFAULT_WFC_IMS_ROAMING_MODE_INT = "carrier_default_wfc_ims_roaming_mode_int"
+
+
+class SimSlotInfo(enum.Enum):
+    """Mapping table of SIM_SLOT.
+
+    [SIM_SLOT_ID, PORT_ID, PHYSICAL_SLOT_ID]
+    """
+    SLOT_0 = [0, 0, 1]
+    SLOT_1 = [1, 0, 0]
+    SLOT_2 = [2, 1, 0]
 
 
 """

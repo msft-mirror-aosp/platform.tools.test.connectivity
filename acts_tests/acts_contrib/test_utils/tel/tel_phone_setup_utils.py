@@ -135,6 +135,7 @@ def phone_setup_iwlan_for_subscription(log,
                                        nw_gen=None,
                                        nr_type=None):
     """Phone setup function for epdg call test for subscription id.
+    Enable VoLTE. (b/235019060#comment20)
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
     Make sure phone connect to WiFi. (If wifi_ssid is not None.)
@@ -165,6 +166,7 @@ def phone_setup_iwlan_for_subscription(log,
                 nr_type=nr_type):
             ad.log.error("Failed to set to %s data.", nw_gen)
             return False
+    toggle_volte_for_subscription(log, ad, sub_id, True)
     toggle_airplane_mode(log, ad, is_airplane_mode, strict_checking=False)
 
     # Pause at least for 4 seconds is necessary after airplane mode was turned
