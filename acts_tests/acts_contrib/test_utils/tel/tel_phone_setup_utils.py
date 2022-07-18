@@ -508,13 +508,10 @@ def phone_setup_volte_for_subscription(log, ad, sub_id, nw_gen=GEN_4G,
             ad.log.error("Failed to set to 5G data.")
             return False
     operator_name = get_operator_name(log, ad, sub_id)
-    if operator_name == CARRIER_TMO:
-        return True
-    else:
-        if not wait_for_enhanced_4g_lte_setting(log, ad, sub_id):
-            ad.log.error("Enhanced 4G LTE setting is not available")
-            return False
-        toggle_volte_for_subscription(log, ad, sub_id, True)
+    if not wait_for_enhanced_4g_lte_setting(log, ad, sub_id):
+        ad.log.error("Enhanced 4G LTE setting is not available")
+        return False
+    toggle_volte_for_subscription(log, ad, sub_id, True)
     return phone_idle_volte_for_subscription(log, ad, sub_id, nw_gen,
                                         nr_type=nr_type)
 
