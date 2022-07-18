@@ -78,6 +78,8 @@ class WifiBaseTest(BaseTestClass):
                             self.country_code_file)
                     self.country_code = utils.load_config(
                         self.country_code_file)["country"]
+                    else:
+                        self.country_code = WifiEnums.CountryCode.US
                     wutils.set_wifi_country_code(ad, self.country_code)
 
     def setup_test(self):
