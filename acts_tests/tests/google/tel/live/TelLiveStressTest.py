@@ -496,7 +496,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info)
-            self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
             get_telephony_signal_strength(ads[0])
@@ -809,7 +808,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
-        self.tel_logger.set_result(self.result_collection)
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
