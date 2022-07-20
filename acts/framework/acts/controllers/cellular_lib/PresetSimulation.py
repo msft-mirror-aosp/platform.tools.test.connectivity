@@ -14,7 +14,6 @@
 import time
 
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
-from acts.controllers.cellular_lib import BaseCellularDut
 
 
 class PresetSimulation(BaseSimulation):
@@ -23,6 +22,10 @@ class PresetSimulation(BaseSimulation):
     The simulation will be configed by importing SCPI config file
     instead of individually set params.
     """
+
+    # Keys to obtain settings from the test_config dictionary.
+    KEY_CELL_INFO = "cell_info"
+    KEY_SCPI_FILE_NAME = "scpi_file"
 
     def __init__(self,
                  simulator,
@@ -50,14 +53,8 @@ class PresetSimulation(BaseSimulation):
         self.dut.set_apn('Keysight', 'Keysight')
         self.num_carriers = None
 
-        # Force device to LTE only so that it connects faster
-        try:
-            self.dut.set_preferred_network_type(
-                BaseCellularDut.PreferredNetworkType.NR_LTE)
-        except Exception as e:
-            # If this fails the test should be able to run anyways, even if it
-            # takes longer to find the cell.
-            self.log.warning('Setting preferred RAT failed: ' + str(e))
+        # Enable roaming on the phone
+        self.dut.toggle_data_roaming(True)
 
     def setup_simulator(self):
         """Do initial configuration in the simulator. """
@@ -74,56 +71,46 @@ class PresetSimulation(BaseSimulation):
             parameters: a configuration dictionary which includes scpi file path
                 if there is only one carrier, a list if there are multiple cells.
         """
-        self.simulator.import_configuration(parameters[0]['scpi_file'])
-        self.simulator.set_cell_type(parameters[0]['cell_type'])
-        self.simulator.set_cell_number(parameters[0]['cell_number'])
+        scpi_file = parameters[0][self.KEY_SCPI_FILE_NAME]
+        cell_infos = parameters[0][self.KEY_CELL_INFO]
+
+        self.log.info('Configure test scenario with\n' +
+                      f' SCPI config file: {scpi_file}\n' +
+                      f' cell info: {cell_infos}')
+
+        self.simulator.import_configuration(scpi_file)
+        self.simulator.set_cell_info(cell_infos)
 
     def start(self):
         """Start simulation.
 
         Waiting for the DUT to connect to the callbox.
+
+        Raise:
+            RuntimeError: simulation fail to start
+                due to unable to connect dut and cells.
         """
 
-        if not self.attach():
-            raise RuntimeError('Could not attach to base station.')
+        try:
+            self.attach()
+        except Exception as exc:
+            raise RuntimeError('Simulation fail to start.') from exc
 
     def attach(self):
         """Attach UE to the callbox.
 
         Toggle airplane mode on-off and wait for a specified timeout,
         repeat until the UE connect to the callbox.
-        """
-        # airplane mode on
-        self.dut.toggle_airplane_mode(True)
-        time.sleep(10)
-        # turn cell on
-        self.simulator.turn_cell_on()
-        time.sleep(5)
-        # airplane mode off
-        self.dut.toggle_airplane_mode(False)
-        time.sleep(5)
 
-        # waits for connect
-        for index in range(1, self.attach_retries):
-            time.sleep(self.attach_timeout)
-            cell_state = self.simulator.get_cell_status()
-            self.log.info(f'cell state: {cell_state}')
-            if cell_state == 'CONN\n':
-                return True
-            if (index % 4) == 0:
-                self.log.info(f'Reboot')
-                self.dut.ad.adb.shell('reboot')
-                self.log.info(
-                    f'Sleep 40s waiting for reboot complete: {cell_state}')
-                time.sleep(40)
-                self.dut.ad.adb.shell('root')
-            else:
-                # airplane mode on
-                self.dut.toggle_airplane_mode(True)
-                time.sleep(5)
-                # airplane mode off
-                self.dut.toggle_airplane_mode(False)
-        return False
+        Raise:
+            RuntimeError: attaching fail
+                due to unable to connect dut and cells.
+        """
+        try:
+            self.simulator.wait_until_attached(self.dut, self.attach_timeout,
+                                               self.attach_retries)
+        except Exception as exc:
+            raise RuntimeError('Could not attach to base station.') from exc
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """Convert RSRP to total signal power from the basestation.
