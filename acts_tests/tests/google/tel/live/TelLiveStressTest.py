@@ -565,7 +565,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             if self.nsa_5g_for_stress:
                 for ad in (ads[0], ads[1]):
-                    if not is_current_network_5g(ad, self.nr_type):
+                    if not is_current_network_5g(ad, nr_type=self.nr_type):
                         ad.log.error("Phone not attached on 5G")
         for ad in ads:
             if not wait_for_call_id_clearing(ad,
