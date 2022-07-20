@@ -54,6 +54,7 @@ from acts_contrib.test_utils.gnss.gnss_defines import BCM_GPS_XML_PATH
 from acts_contrib.test_utils.gnss.gnss_defines import BCM_NVME_STO_PATH
 
 WifiEnums = wutils.WifiEnums
+FIRST_FIXED_MAX_WAITING_TIME = "60"
 UPLOAD_TO_SPONGE_PREFIX = "TestResult "
 PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
@@ -1039,7 +1040,9 @@ def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
         mode: "cs", "ws" or "hs"
         criteria: Criteria for the TTFF.
     """
-    process_gnss_by_gtw_gpstool(ad, criteria)
+    # Before running TTFF, we will run tracking and try to get first fixed.
+    # But the TTFF before TTFF doesn't apply to any criteria, so we set a maximum value.
+    process_gnss_by_gtw_gpstool(ad, criteria=FIRST_FIXED_MAX_WAITING_TIME)
     ttff_start_time = start_ttff_by_gtw_gpstool(ad, mode, test_cycle)
     ttff_data = process_ttff_by_gtw_gpstool(ad, ttff_start_time, true_location)
     result = check_ttff_data(ad, ttff_data, gnss_constant.TTFF_MODE.get(mode), criteria)
