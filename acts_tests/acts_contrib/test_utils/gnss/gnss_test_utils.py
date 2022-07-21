@@ -1495,7 +1495,8 @@ def check_network_location(ad, retries, location_type, criteria=30):
     criteria = criteria * 1000
     search_pattern = ("GPSTool : networkLocationType = %s" % location_type)
     for i in range(retries):
-        begin_time = get_current_epoch_time()
+        # Capture the begin time 1 seconds before due to time gap.
+        begin_time = get_current_epoch_time() - 1000
         ad.log.info("Try to get NLP status - attempt %d" % (i+1))
         ad.adb.shell(
             "am start -S -n com.android.gpstool/.GPSTool --es mode nlp")
