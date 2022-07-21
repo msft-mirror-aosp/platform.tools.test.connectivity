@@ -54,7 +54,7 @@ from acts_contrib.test_utils.gnss.gnss_defines import BCM_GPS_XML_PATH
 from acts_contrib.test_utils.gnss.gnss_defines import BCM_NVME_STO_PATH
 
 WifiEnums = wutils.WifiEnums
-FIRST_FIXED_MAX_WAITING_TIME = "60"
+FIRST_FIXED_MAX_WAITING_TIME = 60
 UPLOAD_TO_SPONGE_PREFIX = "TestResult "
 PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
