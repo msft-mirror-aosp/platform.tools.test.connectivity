@@ -51,10 +51,10 @@ class FuchsiaSessionManagerLib():
             "component destroy /core/session-manager/session:session",
             skip_status_code_check=True)
 
-        if result.exit_status == 0:
+        if result.returncode == 0:
             return {'error': None, 'result': 'Success'}
         else:
-            if "InstanceNotFound" in result.stderr or "instance was not found" in result.stderr:
+            if b"InstanceNotFound" in result.stderr or b"instance was not found" in result.stderr:
                 return {'error': None, 'result': 'NoSessionToStop'}
             else:
                 return {'error': result, 'result': None}
