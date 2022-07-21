@@ -17,6 +17,7 @@
 import json
 import os
 import tempfile
+import subprocess
 
 from pathlib import Path
 
@@ -30,6 +31,12 @@ FFX_DEFAULT_COMMAND_TIMEOUT = 60
 
 
 class FFXError(signals.TestError):
+    """Non-zero error code returned from a ffx command."""
+    pass
+
+
+class FFXTimeout(signals.TestError):
+    """Timed out running a ffx command."""
     pass
 
 
@@ -44,7 +51,11 @@ class FFX:
         ssh_private_key_path: Path to Fuchsia DUT SSH private key.
     """
 
-    def __init__(self, binary_path, mdns_name, ip = None, ssh_private_key_path=None):
+    def __init__(self,
+                 binary_path,
+                 mdns_name,
+                 ip=None,
+                 ssh_private_key_path=None):
         """
         Args:
             binary_path: Path to ffx binary.
@@ -125,7 +136,12 @@ class FFX:
             }
             config["discovery"] = {
                 "mdns": {
-                    "enabled": False,
+                    # Disabling mDNS causes "target wait" and "target show"
+                    # commands to silently timeout without warning nor error.
+                    #
+                    # TODO(https://fxbug.dev/104871): Reassess after a
+                    # recommended course of action is given.
+                    "enabled": True,
                 },
             }
 
@@ -153,12 +169,15 @@ class FFX:
 
         When called for the first time, the versions will be checked for
         compatibility.
+
+        Raises:
+            FFXTimeout: when the target is unreachable
         """
         try:
             self.run("target wait",
                      timeout_sec=5,
                      skip_reachability_check=True)
-        except job.TimeoutError as e:
+        except FFXTimeout:
             longer_wait_sec = 60
             self.log.info(
                 "Device is not immediately available via ffx." +
@@ -200,7 +219,7 @@ class FFX:
         version_info = next(
             filter(lambda s: s.get('label') == 'version', build_info['child']))
         device_version = version_info.get('value')
-        ffx_version = self.run("version").stdout
+        ffx_version = self.run("version").stdout.decode('utf-8')
 
         self.log.info(
             f"Device version: {device_version}, ffx version: {ffx_version}")
@@ -240,12 +259,14 @@ class FFX:
             verify_reachable: Whether to verify reachability before running.
 
         Raises:
-            job.TimeoutError: when the command times out.
-            Error: when the command returns non-zero and skip_status_code_check is False.
-            FFXError: when stderr has contents and skip_status_code_check is False.
+            FFXTimeout: when the command times out.
+            FFXError: when the command returns non-zero and skip_status_code_check is False.
 
         Returns:
-            A job.Result object containing the results of the command.
+            A subprocess.CompletedProcess object containing the results of the
+            command. Note this object returns stdout and stderr as a byte-array,
+            not a string. Treat these members as such or convert to a string
+            using bytes.decode('utf-8').
         """
         if not self._config_path:
             self._create_isolated_environment()
@@ -254,22 +275,21 @@ class FFX:
             self.verify_reachable()
 
         self.log.debug(f'Running "{command}".')
-
         full_command = f'{self.binary_path} -c {self._config_path} {command}'
-        result = job.run(command=full_command,
-                         timeout=timeout_sec,
-                         ignore_status=skip_status_code_check)
 
-        if isinstance(result, Exception):
-            raise result
-
-        elif not skip_status_code_check and result.stderr:
-            self.log.warning(
-                f'Ran "{full_command}", exit status {result.exit_status}')
-            self.log.warning(f'stdout: {result.stdout}')
-            self.log.warning(f'stderr: {result.stderr}')
-
+        try:
+            result = subprocess.run(full_command.split(),
+                                    capture_output=True,
+                                    timeout=timeout_sec,
+                                    check=not skip_status_code_check)
+        except subprocess.CalledProcessError as e:
+            self.log.warning(f'Ran "{full_command}", exit code {e.returncode}')
+            self.log.warning(f'stdout: {e.stdout}')
+            self.log.warning(f'stderr: {e.stderr}')
             raise FFXError(
-                f'Error when running "{full_command}": {result.stderr}')
+                f'Non-zero exit code ({e.returncode}) when running "{full_command}": {e.stderr}'
+            )
+        except subprocess.TimeoutExpired as e:
+            raise FFXTimeout(f'Timed out running "{full_command}"') from e
 
         return result
