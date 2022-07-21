@@ -136,7 +136,12 @@ class FFX:
             }
             config["discovery"] = {
                 "mdns": {
-                    "enabled": False,
+                    # Disabling mDNS causes "target wait" and "target show"
+                    # commands to silently timeout without warning nor error.
+                    #
+                    # TODO(https://fxbug.dev/104871): Reassess after a
+                    # recommended course of action is given.
+                    "enabled": True,
                 },
             }
 
