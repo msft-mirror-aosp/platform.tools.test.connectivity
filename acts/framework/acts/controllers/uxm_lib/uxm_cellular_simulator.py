@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import os
 import socket
 import time
 
@@ -19,6 +20,11 @@ from acts.controllers.cellular_simulator import AbstractCellularSimulator
 
 class UXMCellularSimulator(AbstractCellularSimulator):
     """A cellular simulator for UXM callbox. """
+
+    # Keys to obtain data from cell_info dictionary.
+    KEY_CELL_NUMBER = "cell_number"
+    KEY_CELL_TYPE = "cell_type"
+
     # UXM socket port
     UXM_PORT = 5125
 
@@ -35,46 +41,94 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     SCPI_GET_CELL_STATUS = 'BSE:STATus:{}:{}?'
     SCPI_CHECK_CONNECTION_CMD = '*IDN?\n'
 
-    def __init__(self, ip_address):
+    def __init__(self, ip_address, custom_files):
         """Initializes the cellular simulator.
 
         Args:
             ip_address: the ip address of dektop where Keysight Test Application
                 is installed.
-            port: port where Keysigh Test Application is listening for socket
-                communication.
+            custom_files: a list of file path for custom files.
         """
         super().__init__()
-        self.cell_type = None
-        self.cell_number = None
+        self.custom_files = custom_files
+        self.rockbottom_script = None
+        self.cells = []
+
+        # get roclbottom file
+        for file in self.custom_files:
+            if 'rockbottom_' in file:
+                self.rockbottom_script = file
 
         # connect to Keysight Test Application via socket
         self.socket = self._socket_connect(ip_address, self.UXM_PORT)
         self.check_socket_connection()
         self.timeout = 120
 
-    def set_cell_type(self, cell_type):
-        """Set cell type. """
-        self.cell_type = cell_type
+    def set_rockbottom_script_path(self, path):
+        """Set path to rockbottom script.
 
-    def set_cell_number(self, cell_number):
-        """Set the cell number. """
-        self.cell_number = cell_number
+        Args:
+            path: path to rockbottom script.
+        """
+        self.rockbottom_script = path
 
-    def turn_cell_on(self):
-        """Turn UXM's cell on. """
-        self._socket_send_SCPI_command(
-            self.SCPI_CELL_ON_CMD.format(self.cell_type, self.cell_number))
+    def set_cell_info(self, cell_info):
+        """Set type and number for multiple cells.
 
-    def turn_cell_off(self):
-        """Turn UXM's cell off. """
-        self._socket_send_SCPI_command(
-            self.SCPI_CELL_OFF_CMD.format(self.cell_type, self.cell_number))
+        Args:
+            cell_info: list of dictionaries,
+                each dictionary contain cell type
+                and cell number for each cell
+                that the simulator need to control.
+        """
+        if not cell_info:
+            raise ValueError('Missing cell info from configurations file')
+        self.cells = cell_info
 
-    def get_cell_status(self):
-        """Get status of cell. """
+    def turn_cell_on(self, cell_type, cell_number):
+        """Turn UXM's cell on.
+
+        Args:
+            cell_type: type of cell (e.g NR5G, LTE).
+            cell_number: ordinal number of a cell.
+        """
+        if cell_type and cell_number:
+            self._socket_send_SCPI_command(
+                self.SCPI_CELL_ON_CMD.format(cell_type, cell_number))
+        else:
+            raise ValueError('Invalid cell info\n' +
+                             f' cell type: {cell_type}\n' +
+                             f' cell number: {cell_number}\n')
+
+    def turn_cell_off(self, cell_type, cell_number):
+        """Turn UXM's cell off.
+
+        Args:
+            cell_type: type of cell (e.g NR5G, LTE).
+            cell_number: ordinal number of a cell.
+        """
+        if cell_type and cell_number:
+            self._socket_send_SCPI_command(
+                self.SCPI_CELL_OFF_CMD.format(cell_type, cell_number))
+        else:
+            raise ValueError('Invalid cell info\n' +
+                             f' cell type: {cell_type}\n' +
+                             f' cell number: {cell_number}\n')
+
+    def get_cell_status(self, cell_type, cell_number):
+        """Get status of cell.
+
+        Args:
+            cell_type: type of cell (e.g NR5G, LTE).
+            cell_number: ordinal number of a cell.
+        """
+        if not cell_type or not cell_number:
+            raise ValueError('Invalid cell with\n' +
+                             f' cell type: {cell_type}\n' +
+                             f' cell number: {cell_number}\n')
+
         return self._socket_send_SCPI_for_result_command(
-            self.SCPI_GET_CELL_STATUS.format(self.cell_type, self.cell_number))
+            self.SCPI_GET_CELL_STATUS.format(cell_type, cell_number))
 
     def check_socket_connection(self):
         """Check if the socket connection is established.
@@ -167,9 +221,143 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         """Configures the equipment for an LTE simulation.
 
         Args:
-            path: path to SCPI config file
+            path: path to SCPI config file.
         """
         self.import_configuration(path)
+
+    def dut_rockbottom(self, dut):
+        """Set the dut to rockbottom state.
+
+        Args:
+            dut: a CellularAndroid controller.
+        """
+        # The rockbottom script might include a device reboot, so it is
+        # necessary to stop SL4A during its execution.
+        dut.ad.stop_services()
+        self.log.info('Executing rockbottom script for ' + dut.ad.model)
+        os.chmod(self.rockbottom_script, 0o777)
+        os.system('{} {}'.format(self.rockbottom_script, dut.ad.serial))
+        # Make sure the DUT is in root mode after coming back
+        dut.ad.root_adb()
+        # Restart SL4A
+        dut.ad.start_services()
+
+    def wait_until_attached_one_cell(self,
+                                     cell_type,
+                                     cell_number,
+                                     dut,
+                                     wait_for_camp_interval,
+                                     attach_retries,
+                                     change_dut_setting_allow=True):
+        """Wait until connect to given UXM cell.
+
+        After turn off airplane mode, sleep for
+        wait_for_camp_interval seconds for device to camp.
+        If not device is not connected after the wait,
+        either toggle airplane mode on/off or reboot device.
+        Args:
+            cell_type: type of cell
+                which we are trying to connect to.
+            cell_number: ordinal number of a cell
+                which we are trying to connect to.
+            dut: a CellularAndroid controller.
+            wait_for_camp_interval: sleep interval,
+                wait for device to camp.
+            attach_retries: number of retry
+                to wait for device
+                to connect to 1 basestation.
+            change_dut_setting_allow: turn on/off APM
+                or reboot device helps with device camp time.
+                However, if we are trying to connect to second cell
+                changing APM status or reboot is not allowed.
+        Raise:
+            AbstractCellularSimulator.CellularSimulatorError:
+                device unable to connect to cell.
+        """
+        # airplane mode off
+        dut.toggle_airplane_mode(False)
+        time.sleep(5)
+        # turn cell on
+        self.turn_cell_on(cell_type, cell_number)
+        time.sleep(5)
+
+        # waits for connect
+        for index in range(1, attach_retries):
+            # airplane mode on
+            time.sleep(wait_for_camp_interval)
+            cell_state = self.get_cell_status(cell_type, cell_number)
+            self.log.info(f'cell state: {cell_state}')
+            if cell_state == 'CONN\n':
+                return True
+            if change_dut_setting_allow:
+                if (index % 4) == 0:
+                    dut.ad.reboot()
+                    if self.rockbottom_script:
+                        self.dut_rockbottom(dut)
+                    else:
+                        self.log.warning(
+                            f'Rockbottom script {self} was not executed after reboot')
+                else:
+                    # airplane mode on
+                    dut.toggle_airplane_mode(True)
+                    time.sleep(5)
+                    # airplane mode off
+                    dut.toggle_airplane_mode(False)
+
+        # Phone cannot connected to basestation of callbox
+        raise AbstractCellularSimulator.CellularSimulatorError(
+            f'Phone was unable to connect to cell: {cell_type}-{cell_number}')
+
+    def wait_until_attached(self, dut, timeout, attach_retries):
+        """Waits until the DUT is attached to all required cells.
+
+        Args:
+            dut: a CellularAndroid controller.
+            timeout: sleep interval,
+                wait for device to camp in 1 try.
+            attach_retries: number of retry
+                to wait for device
+                to connect to 1 basestation.
+        """
+        # get cell info
+        first_cell_type = self.cells[0][self.KEY_CELL_TYPE]
+        first_cell_number = self.cells[0][self.KEY_CELL_NUMBER]
+        if len(self.cells) == 2:
+            second_cell_type = self.cells[1][self.KEY_CELL_TYPE]
+            second_cell_number = self.cells[1][self.KEY_CELL_NUMBER]
+
+        # connect to 1st cell
+        try:
+            self.wait_until_attached_one_cell(first_cell_type,
+                                              first_cell_number, dut, timeout,
+                                              attach_retries)
+        except Exception as exc:
+            raise RuntimeError(f'Cannot connect to first cell') from exc
+
+        # connect to 2nd cell
+        if len(self.cells) == 2:
+            self.turn_cell_on(
+                second_cell_type,
+                second_cell_number,
+            )
+            self._socket_send_SCPI_command(
+                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL None')
+            self._socket_send_SCPI_command(
+                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:UL None')
+            self._socket_send_SCPI_command(
+                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL CELL1')
+            self._socket_send_SCPI_command(
+                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL CELL1')
+            time.sleep(1)
+            self._socket_send_SCPI_command(
+                "BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly")
+            try:
+                self.wait_until_attached_one_cell(first_cell_type,
+                                                  first_cell_number, dut,
+                                                  timeout, attach_retries,
+                                                  False)
+            except Exception as exc:
+                raise RuntimeError(f'Cannot connect to second cell') from exc
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """Configures the LTE RRC state change timer.
@@ -381,16 +569,6 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         raise NotImplementedError(
             'This UXM callbox simulator does not support this feature.')
 
-    def wait_until_attached(self, timeout=120):
-        """Waits until the DUT is attached to the primary carrier.
-
-        Args:
-            timeout: after this amount of time the method will raise a
-                CellularSimulatorError exception. Default is 120 seconds.
-        """
-        raise NotImplementedError(
-            'This UXM callbox simulator does not support this feature.')
-
     def wait_until_communication_state(self, timeout=120):
         """Waits until the DUT is in Communication state.
 
@@ -413,8 +591,11 @@ class UXMCellularSimulator(AbstractCellularSimulator):
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
-        self._socket_send_SCPI_command(
-            self.SCPI_CELL_OFF_CMD.format(self.cell_type, self.cell_number))
+        for cell in self.cells:
+            cell_type = cell[self.KEY_CELL_TYPE]
+            cell_number = cell[self.KEY_CELL_NUMBER]
+            self._socket_send_SCPI_command(
+                self.SCPI_CELL_OFF_CMD.format(cell_type, cell_number))
 
     def stop(self):
         """Stops current simulation.
