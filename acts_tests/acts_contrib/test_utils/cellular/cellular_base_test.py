@@ -191,7 +191,7 @@ class CellularBaseTest(base_test.BaseTestClass):
                                                self.cmx500_port)
 
         elif self.uxm_ip:
-            return uxm.UXMCellularSimulator(self.uxm_ip)
+            return uxm.UXMCellularSimulator(self.uxm_ip, self.custom_files)
 
         else:
             raise RuntimeError(
