@@ -963,12 +963,19 @@ def start_ttff_by_gtw_gpstool(ad,
             ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
                          "--es ttff {} --es cycle {}  --ez raninterval {} "
                          "--ei mininterval {} --ei maxinterval {}".format(
-                             ttff_mode, iteration, raninterval, mininterval,
-                             maxinterval))
-        except:
-            # Debug only, to see what the sceen display when fail to trigger TTFF
-            ad.adb.shell(f"screencap -p {GNSSSTATUS_LOG_PATH}/ttff_fail.png")
-            raise
+                         ttff_mode, iteration, raninterval, mininterval,
+                         maxinterval))
+        except job.TimeoutError:
+            # If this is the last retry and we still get timeout error, raises the timeoutError.
+            if i == 3:
+                raise
+            # Currently we encounter lots of timeout issue in Qualcomm devices. But so far we don't
+            # know the root cause yet. In order to continue the test, we ignore the timeout for
+            # retry.
+            ad.log.warn("Send TTFF command timeout.")
+            # Wait 1 second to retry
+            time.sleep(1)
+            continue
         time.sleep(1)
         result = ad.search_logcat("act=com.android.gpstool.start_test_action", begin_time)
         if result:
