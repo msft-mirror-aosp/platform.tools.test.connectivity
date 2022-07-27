@@ -222,6 +222,24 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
     return INVALID_SUB_ID
 
 
+def get_subid_from_logical_slot(ad, logical_slot):
+    """ Get the subscription ID for a SIM at a particular logical slot.
+
+    Args:
+        ad: android_device object.
+        logical_slot: The logical slot(0 or 1).
+
+    Returns:
+        result: Subscription ID
+    """
+    logical_slot = 1 if logical_slot else 0
+    subInfo = ad.droid.subscriptionGetAllSubInfoList()
+    for info in subInfo:
+        if info['simSlotIndex'] == logical_slot:
+            return info['subscriptionId']
+    return INVALID_SUB_ID
+
+
 def get_operatorname_from_slot_index(ad, sim_slot_index):
     """ Get the operator name for a SIM at a particular slot
 
@@ -456,6 +474,9 @@ def set_dds_on_slot(ad, dds_slot):
     Args:
         ad: android device object.
         dds_slot: the slot which be set to DDS.
+                  0 for pSIM,
+                  1 for eSIM port 0,
+                  2 for eSIM port 1.
 
     Returns:
         True if success, False if fail.
