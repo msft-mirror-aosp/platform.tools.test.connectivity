@@ -19,6 +19,7 @@ import os
 import tempfile
 import subprocess
 
+from ipaddress import ip_address
 from pathlib import Path
 
 from acts import context
@@ -130,18 +131,18 @@ class FFX:
         }
 
         if self.ip:
+            manual_ip = ip_address(self.ip)
+            if manual_ip.version == 6:
+                manual_ip = f"[{manual_ip}]"
             # An IP address must have been specified
-            config["target"]["manual"] = {
-                f"{self.ip}:0": None,
+            config["targets"] = {
+                    "manual": {
+                        f"{manual_ip}:0": None,
+                    },
             }
             config["discovery"] = {
                 "mdns": {
-                    # Disabling mDNS causes "target wait" and "target show"
-                    # commands to silently timeout without warning nor error.
-                    #
-                    # TODO(https://fxbug.dev/104871): Reassess after a
-                    # recommended course of action is given.
-                    "enabled": True,
+                    "enabled": False,
                 },
             }
 
