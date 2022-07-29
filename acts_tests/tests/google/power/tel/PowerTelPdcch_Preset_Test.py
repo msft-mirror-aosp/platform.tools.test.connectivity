@@ -22,8 +22,14 @@ class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
     def test_preset_nsa_pdcch(self):
         self.power_pdcch_test()
 
+    def test_preset_lte_pdcch(self):
+        self.power_pdcch_test()
+
     def test_preset_sa_cdrx(self):
         self.power_pdcch_test()
 
     def test_preset_nsa_cdrx(self):
+        self.power_pdcch_test()
+
+    def test_preset_lte_cdrx(self):
         self.power_pdcch_test()
