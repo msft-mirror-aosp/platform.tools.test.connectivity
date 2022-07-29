@@ -960,6 +960,7 @@ def start_ttff_by_gtw_gpstool(ad,
         time.sleep(3)
     for i in range(1, 4):
         try:
+            ad.log.info(f"Before sending TTFF gms version is {get_gms_version(ad)}")
             ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
                          "--es ttff {} --es cycle {}  --ez raninterval {} "
                          "--ei mininterval {} --ei maxinterval {}".format(
@@ -973,8 +974,9 @@ def start_ttff_by_gtw_gpstool(ad,
             # know the root cause yet. In order to continue the test, we ignore the timeout for
             # retry.
             ad.log.warn("Send TTFF command timeout.")
-            # Wait 1 second to retry
-            time.sleep(1)
+            ad.log.info(f"Current gms version is {get_gms_version(ad)}")
+            # Wait 2 second to retry
+            time.sleep(2)
             continue
         time.sleep(1)
         result = ad.search_logcat("act=com.android.gpstool.start_test_action", begin_time)
@@ -1607,6 +1609,11 @@ def start_youtube_video(ad, url=None, retries=0):
                             "but audio is not in MUSIC state")
 
 
+def get_gms_version(ad):
+    cmd = "dumpsys package com.google.android.gms | grep versionName"
+    return ad.adb.shell(cmd).split("\n")[0].split("=")[1]
+
+
 def get_baseband_and_gms_version(ad, extra_msg=""):
     """Get current radio baseband and GMSCore version of AndroidDevice object.
 
@@ -1620,9 +1627,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
     try:
         build_version = ad.adb.getprop("ro.build.id")
         baseband_version = ad.adb.getprop("gsm.version.baseband")
-        gms_version = ad.adb.shell(
-            "dumpsys package com.google.android.gms | grep versionName"
-        ).split("\n")[0].split("=")[1]
+        gms_version = get_gms_version(ad)
         if check_chipset_vendor_by_qualcomm(ad):
             mpss_version = ad.adb.shell(
                 "cat /sys/devices/soc0/images | grep MPSS | cut -d ':' -f 3")
