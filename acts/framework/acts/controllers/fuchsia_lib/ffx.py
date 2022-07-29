@@ -26,7 +26,6 @@ from acts import context
 from acts import logger
 from acts import signals
 from acts import utils
-from acts.libs.proc import job
 
 FFX_DEFAULT_COMMAND_TIMEOUT = 60
 

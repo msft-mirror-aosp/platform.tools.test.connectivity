@@ -872,7 +872,8 @@ class FuchsiaDevice:
             For example, "5.20210713.2.1" or "".
 
         Raises:
-            DeviceOffline: If SSH to the device fails.
+            FFXTimeout: when the command times out.
+            FFXError: when the command returns non-zero and skip_status_code_check is False.
         """
         if not hasattr(self, 'ffx'):
             self.init_ffx_connection()
