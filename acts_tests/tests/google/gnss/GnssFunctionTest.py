@@ -876,8 +876,10 @@ class GnssFunctionTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         for times in range(1, 4):
+            self.ad.log.info(f"before reset - gms version is {gutils.get_gms_version(self.ad)}")
             fastboot_factory_reset(self.ad, True)
             self.ad.unlock_screen(password=None)
+            self.ad.log.info(f"after reset - gms version is {gutils.get_gms_version(self.ad)}")
             _init_device(self.ad)
             begin_time = get_current_epoch_time()
             disable_vendor_orbit_assistance_data(self.ad)
