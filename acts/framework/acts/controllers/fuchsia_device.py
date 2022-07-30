@@ -827,7 +827,7 @@ class FuchsiaDevice:
         build_info = [
             entry for entry in target_info if entry["label"] == "build"
         ]
-        if len(build_info) != 0:
+        if len(build_info) != 1:
             self.log.warning(
                 f'Expected one entry with label "build", found {build_info}')
             return ""
@@ -835,12 +835,12 @@ class FuchsiaDevice:
             child for child in build_info[0]["child"]
             if child["label"] == "version"
         ]
-        if len(version_info) != 0:
+        if len(version_info) != 1:
             self.log.warning(
                 f'Expected one entry child with label "version", found {build_info}'
             )
             return ""
-        return version_info[0].value
+        return version_info[0]["value"]
 
     def ping(self,
              dest_ip,
