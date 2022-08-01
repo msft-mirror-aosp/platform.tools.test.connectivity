@@ -895,6 +895,9 @@ class GnssFunctionTest(BaseTestClass):
                                           "times -> FAIL" % times)
             self.ad.log.info("SUPL after Factory Reset test %d times -> "
                              "PASS" % times)
+        # For debug only, we'd like to see the bug report on the success case.
+        begin_time = get_current_epoch_time()
+        self.ad.take_bug_report("test_supl_factory_reset", begin_time)
 
     @test_tracker_info(uuid="2a9f2890-3c0a-48b8-821d-bf97e36355e9")
     def test_quick_toggle_gnss_state(self):
