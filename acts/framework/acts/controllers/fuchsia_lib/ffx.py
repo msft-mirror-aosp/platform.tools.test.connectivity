@@ -19,6 +19,7 @@ import os
 import tempfile
 import subprocess
 
+from ipaddress import ip_address
 from pathlib import Path
 
 from acts import context
@@ -69,7 +70,7 @@ class FFX:
         self.ip = ip
         self.ssh_private_key_path = ssh_private_key_path
 
-        self._config_path = None
+        self._env_config_path = None
         self._ssh_auth_sock_path = None
         self._overnet_socket_path = None
         self._has_been_reachable = False
@@ -130,18 +131,9 @@ class FFX:
         }
 
         if self.ip:
-            # An IP address must have been specified
-            config["target"]["manual"] = {
-                f"{self.ip}:0": None,
-            }
             config["discovery"] = {
                 "mdns": {
-                    # Disabling mDNS causes "target wait" and "target show"
-                    # commands to silently timeout without warning nor error.
-                    #
-                    # TODO(https://fxbug.dev/104871): Reassess after a
-                    # recommended course of action is given.
-                    "enabled": True,
+                    "enabled": False,
                 },
             }
 
@@ -150,9 +142,18 @@ class FFX:
         if self.ssh_private_key_path:
             config["ssh"]["priv"] = self.ssh_private_key_path
 
-        self._config_path = os.path.join(target_dir, "ffx_config.json")
-        with open(self._config_path, 'w', encoding="utf-8") as f:
+        config_path = os.path.join(target_dir, "ffx_config.json")
+        with open(config_path, 'w', encoding="utf-8") as f:
             json.dump(config, f, ensure_ascii=False, indent=4)
+
+        env = {
+            "user": config_path,
+            "build": None,
+            "global": None,
+        }
+        self._env_config_path = os.path.join(target_dir, "ffx_env.json")
+        with open(self._env_config_path, 'w', encoding="utf-8") as f:
+            json.dump(env, f, ensure_ascii=False, indent=4)
 
         # The ffx daemon will started automatically when needed. There is no
         # need to start it manually here.
@@ -173,8 +174,15 @@ class FFX:
         Raises:
             FFXTimeout: when the target is unreachable
         """
+        cmd = "target wait"
+        if self.ip:
+            # `target add` does what `target wait` does but adds an entry
+            # to ensure connections can happen without mDNS.
+            # TODO(https://fxbug.dev/105530): Update manual target parsing in
+            # ffx.
+            cmd = f"target add {self.ip}"
         try:
-            self.run("target wait",
+            self.run(cmd,
                      timeout_sec=5,
                      skip_reachability_check=True)
         except FFXTimeout:
@@ -183,7 +191,7 @@ class FFX:
                 "Device is not immediately available via ffx." +
                 f" Waiting up to {longer_wait_sec} seconds for device to be reachable."
             )
-            self.run("target wait",
+            self.run(cmd,
                      timeout_sec=longer_wait_sec,
                      skip_reachability_check=True)
 
@@ -230,14 +238,14 @@ class FFX:
                 " use versions within 6 weeks of each other.")
 
     def clean_up(self):
-        if self._config_path:
+        if self._env_config_path:
             self.run("daemon stop", skip_reachability_check=True)
         if self._ssh_auth_sock_path:
             Path(self._ssh_auth_sock_path).unlink(missing_ok=True)
         if self._overnet_socket_path:
             Path(self._overnet_socket_path).unlink(missing_ok=True)
 
-        self._config_path = None
+        self._env_config_path = None
         self._ssh_auth_sock_path = None
         self._overnet_socket_path = None
         self._has_been_reachable = False
@@ -268,14 +276,14 @@ class FFX:
             not a string. Treat these members as such or convert to a string
             using bytes.decode('utf-8').
         """
-        if not self._config_path:
+        if not self._env_config_path:
             self._create_isolated_environment()
         if not self._has_been_reachable and not skip_reachability_check:
             self.log.info(f'Verifying reachability before running "{command}"')
             self.verify_reachable()
 
         self.log.debug(f'Running "{command}".')
-        full_command = f'{self.binary_path} -c {self._config_path} {command}'
+        full_command = f'{self.binary_path} -e {self._env_config_path} {command}'
 
         try:
             result = subprocess.run(full_command.split(),

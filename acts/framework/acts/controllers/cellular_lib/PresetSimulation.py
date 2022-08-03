@@ -14,6 +14,7 @@
 import time
 
 from acts.controllers.cellular_lib.BaseSimulation import BaseSimulation
+from acts.controllers.cellular_lib import BaseCellularDut
 
 
 class PresetSimulation(BaseSimulation):
@@ -55,6 +56,15 @@ class PresetSimulation(BaseSimulation):
 
         # Enable roaming on the phone
         self.dut.toggle_data_roaming(True)
+
+        # Force device to LTE only so that it connects faster
+        try:
+            self.dut.set_preferred_network_type(
+                BaseCellularDut.PreferredNetworkType.NR_LTE)
+        except Exception as e:
+            # If this fails the test should be able to run anyways, even if it
+            # takes longer to find the cell.
+            self.log.warning('Setting preferred RAT failed: ' + str(e))
 
     def setup_simulator(self):
         """Do initial configuration in the simulator. """
