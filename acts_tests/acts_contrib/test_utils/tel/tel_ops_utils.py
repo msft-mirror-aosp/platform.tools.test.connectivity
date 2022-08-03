@@ -97,21 +97,3 @@ def get_resource_value(ad, label_text= None):
                                         text=label_text,
                                         resource_id=label_resource_id)
     return node.attributes[node_attribute].value
-
-def wait_and_click_element(ad, label_text=None, label_resource_id=None):
-    """Wait for a UI element to appear and click on it.
-
-    This function locates a UI element on the screen by matching attributes of
-    nodes in XML DOM, calculates a point's coordinates within the boundary of the
-    element, and clicks on the point marked by the coordinates.
-
-  Args:
-    ad: AndroidDevice object.
-    label_text: Identify the key value parameter
-    label_text: Identifies the resource id
-  """
-    if label_resource_id is not None:
-        ui_utils.wait_and_click(ad, text=label_text, resource_id=label_resource_id)
-    else:
-        ui_utils.wait_and_click(ad, text=label_text)
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
