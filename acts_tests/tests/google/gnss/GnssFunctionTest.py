@@ -313,6 +313,7 @@ class GnssFunctionTest(BaseTestClass):
         location_data = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
         gutils.validate_location_fix_rate(self.ad, location_data, run_time=test_time,
                                           fix_rate_criteria=0.99)
+        gutils.verify_gps_time_should_be_close_to_device_time(self.ad, location_data)
 
     @test_tracker_info(uuid="623628ab-fdab-449d-9025-ebf4e9a404c2")
     def test_dpo_function(self):
