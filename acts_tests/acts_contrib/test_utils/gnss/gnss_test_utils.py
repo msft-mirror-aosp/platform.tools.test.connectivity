@@ -23,7 +23,6 @@ import fnmatch
 import posixpath
 import subprocess
 import tempfile
-import zipfile
 from collections import namedtuple
 from datetime import datetime
 from xml.etree import ElementTree
@@ -64,7 +63,7 @@ TTFF_REPORT = namedtuple(
     "TTFF_REPORT", "utc_time ttff_loop ttff_sec ttff_pe ttff_ant_cn "
                    "ttff_base_cn ttff_haccu")
 TRACK_REPORT = namedtuple(
-    "TRACK_REPORT", "l5flag pe ant_top4cn ant_cn base_top4cn base_cn")
+    "TRACK_REPORT", "l5flag pe ant_top4cn ant_cn base_top4cn base_cn device_time report_time")
 LOCAL_PROP_FILE_CONTENTS = """\
 log.tag.LocationManagerService=VERBOSE
 log.tag.GnssLocationProvider=VERBOSE
@@ -1081,6 +1080,8 @@ def parse_gtw_gpstool_log(ad, true_position, api_type="gnss", validate_gnssstatu
     track_lat = 0
     track_long = 0
     l5flag = "false"
+    gps_datetime_pattern = re.compile("(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{0,5})")
+    gps_datetime_format = "%Y/%m/%d %H:%M:%S.%f"
     file_count = int(ad.adb.shell("find %s -type f -iname *.txt | wc -l"
                                   % GNSSSTATUS_LOG_PATH))
     if file_count != 1:
@@ -1127,8 +1128,13 @@ def parse_gtw_gpstool_log(ad, true_position, api_type="gnss", validate_gnssstatu
             track_lat = float(line.split(":")[-1].strip())
         elif "Longitude" in line:
             track_long = float(line.split(":")[-1].strip())
+        elif "Read:" in line:
+            target = re.search(gps_datetime_pattern, line)
+            device_time = datetime.strptime(target.group(1), gps_datetime_format)
         elif "Time" in line:
-            track_utc = line.split("Time:")[-1].strip()
+            target = re.search(gps_datetime_pattern, line)
+            track_utc = target.group(1)
+            report_time = datetime.strptime(track_utc, gps_datetime_format)
             if track_utc in track_data.keys():
                 continue
             pe = calculate_position_error(track_lat, track_long, true_position)
@@ -1137,7 +1143,10 @@ def parse_gtw_gpstool_log(ad, true_position, api_type="gnss", validate_gnssstatu
                                                  ant_top4cn=ant_top4_cn,
                                                  ant_cn=ant_cn,
                                                  base_top4cn=base_top4_cn,
-                                                 base_cn=base_cn)
+                                                 base_cn=base_cn,
+                                                 device_time=device_time,
+                                                 report_time=report_time,
+                                                 )
     ad.log.info("Total %d gnssstatus samples verified" %gnssstatus_count)
     ad.log.debug(track_data)
     prop_basename = UPLOAD_TO_SPONGE_PREFIX + f"{api_type.upper()}_tracking_"
@@ -1160,8 +1169,33 @@ def parse_gtw_gpstool_log(ad, true_position, api_type="gnss", validate_gnssstatu
     ad.log.info(prop_basename+"Base_AvgTop4Signal %.1f" % base_top4cn_list[-1])
     ad.log.info(prop_basename+"Base_AvgSignal %.1f" % base_cn_list[-1])
     _log_svid_info(gnss_svid_container, prop_basename, ad)
-
     return track_data
+
+
+def verify_gps_time_should_be_close_to_device_time(ad, tracking_result):
+    """Check the time gap between GPS time and device time.
+
+    In normal cases, the GPS time should be close to device time. But if GPS week rollover happens,
+    the GPS time may goes back to 20 years ago. In order to capture this issue, we assert the time
+    diff between the GPS time and device time.
+
+    Args:
+        ad: The device under test.
+        tracking_result: The result we get from GNSS tracking.
+    """
+    ad.log.info("Validating GPS/Device time difference")
+    max_time_diff_in_seconds = 2.0
+    exceed_report = []
+    for report in tracking_result.values():
+        time_diff_in_seconds = abs((report.report_time - report.device_time).total_seconds())
+        if time_diff_in_seconds > max_time_diff_in_seconds:
+            message = (f"GPS time: {report.report_time}  Device time: {report.device_time} "
+                       f"diff: {time_diff_in_seconds}")
+            exceed_report.append(message)
+    fail_message = (f"The following items exceed {max_time_diff_in_seconds}s\n" +
+                     "\n".join(exceed_report))
+    asserts.assert_false(exceed_report, msg=fail_message)
+
 
 def validate_location_fix_rate(ad, location_reported, run_time, fix_rate_criteria):
     """Check location reported count
