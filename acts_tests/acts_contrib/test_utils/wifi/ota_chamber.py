@@ -16,6 +16,7 @@
 
 import contextlib
 import io
+import requests
 import serial
 import time
 from acts import logger
@@ -141,6 +142,41 @@ class OctoboxChamber(OtaChamber):
         utils.exe_cmd('sudo {} -d {} -p {}'.format(self.TURNTABLE_FILE_PATH,
                                                    self.device_id,
                                                    orientation))
+
+    def reset_chamber(self):
+        self.log.info('Resetting chamber to home state')
+        self.set_orientation(0)
+
+
+class OctoboxChamberV2(OtaChamber):
+    """Class that implements Octobox chamber."""
+
+    def __init__(self, config):
+        self.config = config.copy()
+        self.address = config['ip_address']
+        self.data = requests.get("http://{}/api/turntable".format(
+            self.address))
+        self.vel_target = '10000'
+        self.current_mode = None
+        self.SUPPORTED_BANDS = [
+            '2.4GHz', 'UNII-1', 'UNII-2', 'UNII-3', 'UNII-4', '6GHz'
+        ]
+        self.log = logger.create_tagged_trace_logger('OtaChamber|{}'.format(
+            self.address))
+
+    def set_orientation(self, orientation):
+        self.log.info('Setting orientation to {} degrees.'.format(orientation))
+        if orientation > 720:
+            raise ValueError('Orientation may not exceed 720.')
+        set_position_submission = {
+            "action": "pos",
+            "enable": "1",
+            "pos_target": orientation,
+            "vel_target": self.vel_target
+        }
+        result = requests.post("http://{}/api/turntable".format(self.address),
+                               json=set_position_submission)
+        self.log.debug(result)
 
     def reset_chamber(self):
         self.log.info('Resetting chamber to home state')
