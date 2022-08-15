@@ -85,6 +85,8 @@ WPA2_SECURITY = Security(security_mode=hostapd_constants.WPA2_STRING,
                          wpa_cipher=hostapd_constants.WPA2_DEFAULT_CIPER,
                          wpa2_cipher=hostapd_constants.WPA2_DEFAULT_CIPER)
 
+SECURITIES = [None, WPA2_SECURITY]
+
 
 def generate_test_name(settings):
     """Generates a test name string based on the ac_capabilities for
@@ -116,16 +118,14 @@ class WlanPhyCompliance11ACTest(WifiBaseTest):
 
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.tests = [
-            'test_11ac_capabilities_20mhz_open',
-            'test_11ac_capabilities_40mhz_open',
-            'test_11ac_capabilities_80mhz_open',
-            'test_11ac_capabilities_20mhz_wpa2',
-            'test_11ac_capabilities_40mhz_wpa2',
-            'test_11ac_capabilities_80mhz_wpa2'
-        ]
-        if 'debug_11ac_tests' in self.user_params:
-            self.tests.append('test_11ac_capabilities_debug')
+
+    def setup_generated_tests(self):
+        test_args = self._generate_20mhz_test_args() + \
+            self._generate_40mhz_test_args() + \
+            self._generate_80mhz_test_args()
+        self.generate_tests(test_logic=self.setup_and_connect,
+                            name_func=generate_test_name,
+                            arg_sets=test_args)
 
     def setup_class(self):
         super().setup_class()
@@ -200,133 +200,64 @@ class WlanPhyCompliance11ACTest(WifiBaseTest):
                                target_security=target_security),
             'Failed to associate.')
 
-    # 864 test cases
-    def test_11ac_capabilities_20mhz_open(self):
-        test_list = []
-        for combination in itertools.product(VHT_MAX_MPDU_LEN, RXLDPC, RX_STBC,
-                                             TX_STBC, MAX_A_MPDU, RX_ANTENNA,
-                                             TX_ANTENNA):
-            test_list.append({
-                'chbw': 20,
-                'security': None,
-                'n_capabilities': N_CAPABS_20MHZ,
-                'ac_capabilities': combination
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
+    # 1728 tests
+    def _generate_20mhz_test_args(self):
+        test_args = []
 
-    # 864 test cases
-    def test_11ac_capabilities_40mhz_open(self):
-        test_list = []
-        for combination in itertools.product(VHT_MAX_MPDU_LEN, RXLDPC, RX_STBC,
-                                             TX_STBC, MAX_A_MPDU, RX_ANTENNA,
-                                             TX_ANTENNA):
-            test_list.append({
-                'chbw': 40,
-                'security': None,
-                'n_capabilities': N_CAPABS_40MHZ,
-                'ac_capabilities': combination
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
-
-    # 1728 test cases
-    def test_11ac_capabilities_80mhz_open(self):
-        test_list = []
-        for combination in itertools.product(VHT_MAX_MPDU_LEN, RXLDPC,
-                                             SHORT_GI_80, RX_STBC, TX_STBC,
+        # 864 test cases for open security
+        # 864 test cases for wpa2 security
+        for combination in itertools.product(SECURITIES, VHT_MAX_MPDU_LEN,
+                                             RXLDPC, RX_STBC, TX_STBC,
                                              MAX_A_MPDU, RX_ANTENNA,
                                              TX_ANTENNA):
-            test_list.append({
-                'chbw': 80,
-                'security': None,
-                'n_capabilities': N_CAPABS_40MHZ,
-                'ac_capabilities': combination
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
-
-    # 864 test cases
-    def test_11ac_capabilities_20mhz_wpa2(self):
-        test_list = []
-        for combination in itertools.product(VHT_MAX_MPDU_LEN, RXLDPC, RX_STBC,
-                                             TX_STBC, MAX_A_MPDU, RX_ANTENNA,
-                                             TX_ANTENNA):
-            test_list.append({
+            security = combination[0]
+            ac_capabilities = combination[1:]
+            test_args.append(({
                 'chbw': 20,
-                'security': WPA2_SECURITY,
-                'n_capabilities': N_CAPABS_20MHZ,
-                'ac_capabilities': combination
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
-
-    # 864 test cases
-    def test_11ac_capabilities_40mhz_wpa2(self):
-        test_list = []
-        for combination in itertools.product(VHT_MAX_MPDU_LEN, RXLDPC, RX_STBC,
-                                             TX_STBC, MAX_A_MPDU, RX_ANTENNA,
-                                             TX_ANTENNA):
-            test_list.append({
-                'chbw': 40,
-                'security': WPA2_SECURITY,
-                'n_capabilities': N_CAPABS_40MHZ,
-                'ac_capabilities': combination
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
-
-    # 1728 test cases
-    def test_11ac_capabilities_80mhz_wpa2(self):
-        test_list = []
-        for combination in itertools.product(VHT_MAX_MPDU_LEN, RXLDPC,
-                                             SHORT_GI_80, RX_STBC, TX_STBC,
-                                             MAX_A_MPDU, RX_ANTENNA,
-                                             TX_ANTENNA):
-            test_list.append({
-                'chbw': 80,
-                'security': WPA2_SECURITY,
-                'n_capabilities': N_CAPABS_40MHZ,
-                'ac_capabilities': combination
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
-
-    def test_11ac_capabilities_debug(self):
-        chbw_sec_capabs = re.compile(
-            r'.*?([0-9]*)mhz.*?(open|wpa2).*?(\[.*\])', re.IGNORECASE)
-        test_list = []
-        for test_name in self.user_params['debug_11ac_tests']:
-            test_to_run = re.match(chbw_sec_capabs, test_name)
-            chbw = int(test_to_run.group(1))
-            security = test_to_run.group(2)
-            capabs = test_to_run.group(3)
-            if chbw >= 40:
-                n_capabs = N_CAPABS_40MHZ
-            else:
-                n_capabs = N_CAPABS_20MHZ
-            if security.lower() == 'open':
-                security = None
-            elif security.lower() == 'wpa2':
-                security = WPA2_SECURITY
-            if capabs:
-                ac_capabs_strings = re.findall(r'\[.*?\]', capabs)
-                ac_capabs = [
-                    hostapd_constants.AC_CAPABILITIES_MAPPING_INVERSE[k]
-                    for k in ac_capabs_strings
-                ]
-            test_list.append({
-                'chbw': chbw,
                 'security': security,
-                'n_capabilities': n_capabs,
-                'ac_capabilities': ac_capabs
-            })
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
+                'n_capabilities': N_CAPABS_20MHZ,
+                'ac_capabilities': ac_capabilities
+            }, ))
+
+        return test_args
+
+    # 1728 tests
+    def _generate_40mhz_test_args(self):
+        test_args = []
+
+        # 864 test cases for open security
+        # 864 test cases for wpa2 security
+        for combination in itertools.product(SECURITIES, VHT_MAX_MPDU_LEN,
+                                             RXLDPC, RX_STBC, TX_STBC,
+                                             MAX_A_MPDU, RX_ANTENNA,
+                                             TX_ANTENNA):
+            security = combination[0]
+            ac_capabilities = combination[1:]
+            test_args.append(({
+                'chbw': 40,
+                'security': security,
+                'n_capabilities': N_CAPABS_40MHZ,
+                'ac_capabilities': ac_capabilities
+            }, ))
+
+        return test_args
+
+    # 3456 tests
+    def _generate_80mhz_test_args(self):
+        test_args = []
+
+        # 1728 test cases for open security
+        # 1728 test cases for wpa2 security
+        for combination in itertools.product(SECURITIES, VHT_MAX_MPDU_LEN,
+                                             RXLDPC, SHORT_GI_80, RX_STBC,
+                                             TX_STBC, MAX_A_MPDU, RX_ANTENNA,
+                                             TX_ANTENNA):
+            security = combination[0]
+            ac_capabilities = combination[1:]
+            test_args.append(({
+                'chbw': 80,
+                'security': security,
+                'n_capabilities': N_CAPABS_40MHZ,
+                'ac_capabilities': ac_capabilities
+            }, ))
+        return test_args
