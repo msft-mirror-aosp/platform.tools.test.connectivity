@@ -494,6 +494,18 @@ class IPerfServerOverSsh(IPerfServerBase):
         return utils.get_addr(self._ssh_session, self.test_interface,
                               addr_type, timeout_sec)
 
+    def _cleanup_iperf_port(self):
+        """Checks and kills zombie iperf servers occupying intended port."""
+        iperf_check_cmd = ('netstat -tulpn | grep LISTEN | grep iperf3'
+                           ' | grep :{}').format(self.port)
+        iperf_check = self._ssh_session.run(iperf_check_cmd,
+                                            ignore_status=True)
+        iperf_check = iperf_check.stdout
+        if iperf_check:
+            logging.debug('Killing zombie server on port {}'.format(self.port))
+            iperf_pid = iperf_check.split(' ')[-1].split('/')[0]
+            self._ssh_session.run('kill -9 {}'.format(str(iperf_pid)))
+
     def start(self, extra_args='', tag='', iperf_binary=None):
         """Starts iperf server on specified machine and port.
 
@@ -510,6 +522,7 @@ class IPerfServerOverSsh(IPerfServerBase):
 
         if not self._ssh_session:
             self.start_ssh()
+        self._cleanup_iperf_port()
         if not iperf_binary:
             logging.debug('No iperf3 binary specified.  '
                           'Assuming iperf3 is in the path.')
