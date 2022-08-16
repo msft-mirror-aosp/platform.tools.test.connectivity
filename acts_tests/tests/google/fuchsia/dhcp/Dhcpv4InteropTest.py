@@ -252,6 +252,7 @@ class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
     In theory, these are more similar to unit tests than ACTS tests, but
     since they interact with hardware (specifically, the AP), we have to
     write and run them like the rest of the ACTS tests."""
+
     def test_invalid_options_not_accepted(self):
         """Ensures the DHCP server doesn't accept invalid options"""
         ap_params = self.setup_ap()
@@ -282,6 +283,7 @@ class Dhcpv4InteropFixtureTest(Dhcpv4InteropFixture):
 
 class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
     """DhcpV4 tests which validate basic DHCP client/server interactions."""
+
     def test_basic_dhcp_assignment(self):
         self.run_test_case_expect_dhcp_success(settings={
             'dhcp_options': {},
@@ -346,6 +348,7 @@ class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
 
 
 class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
+
     def setup_test(self):
         super().setup_test()
         self.extra_addresses = []
@@ -437,30 +440,46 @@ class Dhcpv4InteropCombinatorialOptionsTest(Dhcpv4InteropFixture):
     OPT_NUM_DOMAIN_SEARCH = 119
     OPT_NUM_DOMAIN_NAME = 15
 
-    def setup_class(self):
-        super().setup_class()
+    def setup_generated_tests(self):
+        self._generate_dhcp_options()
+
+        test_args = []
+        for test in self.DHCP_OPTIONS:
+            for option_list in self.DHCP_OPTIONS[test]:
+                test_args.append(({
+                    'dhcp_options': option_list,
+                    'dhcp_parameters': {}
+                }, ))
+
+        self.generate_tests(test_logic=self.run_test_case_expect_dhcp_success,
+                            name_func=self.generate_test_name,
+                            arg_sets=test_args)
+
+    def generate_test_name(self, settings):
+        return settings["dhcp_options"]["test_name"]
+
+    def _generate_dhcp_options(self):
         self.DHCP_OPTIONS = {
             'domain-name-tests': [{
-                'domain-name':
-                '"example.invalid"',
-                'dhcp-parameter-request-list':
-                self.OPT_NUM_DOMAIN_NAME
+                'domain-name': '"example.invalid"',
+                'dhcp-parameter-request-list': self.OPT_NUM_DOMAIN_NAME,
+                'test_name': "test_domain_name_invalid_tld"
             }, {
-                'domain-name':
-                '"example.test"',
-                'dhcp-parameter-request-list':
-                self.OPT_NUM_DOMAIN_NAME
+                'domain-name': '"example.test"',
+                'dhcp-parameter-request-list': self.OPT_NUM_DOMAIN_NAME,
+                'test_name': "test_domain_name_valid_tld"
             }],
             'domain-search-tests': [{
                 'domain-search':
                 '"example.invalid"',
                 'dhcp-parameter-request-list':
-                self.OPT_NUM_DOMAIN_SEARCH
+                self.OPT_NUM_DOMAIN_SEARCH,
+                'test_name':
+                "test_domain_search_invalid_tld"
             }, {
-                'domain-search':
-                '"example.test"',
-                'dhcp-parameter-request-list':
-                self.OPT_NUM_DOMAIN_SEARCH
+                'domain-search': '"example.test"',
+                'dhcp-parameter-request-list': self.OPT_NUM_DOMAIN_SEARCH,
+                'test_name': "test_domain_search_valid_tld"
             }]
         }
 
@@ -491,45 +510,7 @@ class Dhcpv4InteropCombinatorialOptionsTest(Dhcpv4InteropFixture):
             'domain-search':
             long_dns_setting,
             'dhcp-parameter-request-list':
-            self.OPT_NUM_DOMAIN_SEARCH
+            self.OPT_NUM_DOMAIN_SEARCH,
+            'test_name':
+            "test_max_sized_message",
         })
-
-    def test_domain_names(self):
-        test_list = []
-        for option_list in self.DHCP_OPTIONS['domain-name-tests']:
-            test_list.append({
-                'dhcp_options': option_list,
-                'dhcp_parameters': {}
-            })
-        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
-                                     settings=test_list)
-
-    def test_search_domains(self):
-        test_list = []
-        for option_list in self.DHCP_OPTIONS['domain-search-tests']:
-            test_list.append({
-                'dhcp_options': option_list,
-                'dhcp_parameters': {}
-            })
-        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
-                                     settings=test_list)
-
-    def test_large_messages(self):
-        test_list = []
-        for option_list in self.DHCP_OPTIONS['max-message-size-tests']:
-            test_list.append({
-                'dhcp_options': option_list,
-                'dhcp_parameters': {}
-            })
-        self.run_generated_testcases(self.run_test_case_expect_dhcp_success,
-                                     settings=test_list)
-
-    def test_dns(self):
-        pass
-
-    def test_ignored_options_singularly(self):
-        pass
-
-    def test_all_combinations(self):
-        # TODO: test all the combinations above
-        pass
