@@ -584,28 +584,36 @@ class FuchsiaDevice:
         requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
 
-    def init_ffx_connection(self):
-        """Initializes ffx's connection to the device.
+    @property
+    def ffx(self):
+        """Get the ffx module configured for this device.
 
-        If ffx has already been initialized, it will be reinitialized. This will
-        break any running tests calling ffx for this device.
+        The ffx module uses lazy-initialization; it will initialize an ffx
+        connection to the device when it is required.
+
+        If ffx needs to be reinitialized, delete the "ffx" property and attempt
+        access again. Note re-initialization will interrupt any running ffx
+        calls.
         """
-        self.log.debug("Initializing ffx connection")
+        if not hasattr(self, '_ffx'):
+            if not self.ffx_binary_path:
+                raise FuchsiaConfigError(
+                    'Must provide "ffx_binary_path: <path to FFX binary>" in the device config'
+                )
+            if not self.mdns_name:
+                raise FuchsiaConfigError(
+                    'Must provide "mdns_name: <device mDNS name>" in the device config'
+                )
+            self._ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ip,
+                            self.ssh_priv_key)
+        return self._ffx
 
-        if not self.ffx_binary_path:
-            raise ValueError(
-                'Must provide "ffx_binary_path: <path to FFX binary>" in the device config'
-            )
-        if not self.mdns_name:
-            raise ValueError(
-                'Must provide "mdns_name: <device mDNS name>" in the device config'
-            )
-
-        if hasattr(self, 'ffx'):
-            self.ffx.clean_up()
-
-        self.ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ip,
-                       self.ssh_priv_key)
+    @ffx.deleter
+    def ffx(self):
+        if not hasattr(self, '_ffx'):
+            return
+        self._ffx.clean_up()
+        del self._ffx
 
     def run_commands_from_config(self, cmd_dicts):
         """Runs commands on the Fuchsia device from the config file. Useful for
@@ -956,8 +964,6 @@ class FuchsiaDevice:
         Raises:
             DeviceOffline: If SSH to the device fails.
         """
-        if not hasattr(self, 'ffx'):
-            self.init_ffx_connection()
         target_info_json = self.ffx.run("target show --json").stdout
         target_info = json.loads(target_info_json)
         build_info = [
@@ -1304,8 +1310,8 @@ class FuchsiaDevice:
     def start_services(self):
         """Starts long running services on the Fuchsia device.
 
-        Starts a syslog streaming process, SL4F server, initializes a connection
-        to the SL4F server, then starts an isolated ffx daemon.
+        Starts a syslog streaming process, SL4F server, and initializes a
+        connection to the SL4F server.
 
         """
         self.log.debug("Attempting to start Fuchsia device services on %s." %
@@ -1330,14 +1336,11 @@ class FuchsiaDevice:
             self.start_sl4f_on_fuchsia_device()
             self.init_sl4f_connection()
 
-        self.init_ffx_connection()
-
     def stop_host_services(self):
         """Stops ffx daemon and ssh connection to streaming logs on the host"""
         self.log.debug("Attempting to stop host device services on %s." %
                        self.ip)
-        if hasattr(self, 'ffx'):
-            self.ffx.clean_up()
+        del self.ffx
         if self.ssh_config:
             if self.log_process:
                 self.log_process.stop()
@@ -1374,12 +1377,12 @@ class FuchsiaDevice:
                 self.log.exception("Failed to stop sl4f.cmx with: %s. "
                                    "This is expected if running CFv2." % err)
         else:
-            if hasattr(self, 'ffx'):
+            if hasattr(self, '_ffx'):
                 # TODO(b/234054431): This calls ffx after it has been stopped.
                 # Refactor controller clean up such that ffx is called after SL4F
                 # has been stopped.
                 self.ffx.run('component stop /core/sl4f')
-                self.ffx.clean_up()
+                del self.ffx
 
     def load_config(self, config):
         pass
