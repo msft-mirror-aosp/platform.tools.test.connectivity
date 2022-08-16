@@ -28,7 +28,7 @@ install_requires = [
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
     'grpcio',
-    'mobly>=1.10.0',
+    'mobly==1.12.0',
     # Latest version of mock (4.0.0b) causes a number of compatibility issues with ACTS unit tests
     # b/148695846, b/148814743
     'mock==3.0.5',
@@ -63,7 +63,7 @@ if sys.version_info < (3, 7):
     versioned_deps['numpy'] = 'numpy<1.20'
     versioned_deps['scipy'] = 'scipy<1.6'
     versioned_deps['typing_extensions'] = 'typing_extensions==4.1.1'
-if sys.version_info == (3, 6):
+if (sys.version_info.major, sys.version_info.minor) == (3,6):
     versioned_deps['dataclasses'] = 'dataclasses==0.8'
 if sys.version_info < (3, 6):
     versioned_deps['numpy'] = 'numpy<1.19'

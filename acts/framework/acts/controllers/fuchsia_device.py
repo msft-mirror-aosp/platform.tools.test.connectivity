@@ -70,6 +70,7 @@ from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyL
 from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
+from acts.controllers.fuchsia_lib.package_server import PackageServer
 
 MOBLY_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -189,6 +190,54 @@ def get_instances(fds_conf_data):
     return [FuchsiaDevice(fd_conf_data) for fd_conf_data in fds_conf_data]
 
 
+def find_routes_to(dest_ip):
+    """Find the routes used to reach a destination.
+
+    Look through the routing table for the routes that would be used without
+    sending any packets. This is especially helpful for when the device is
+    currently unreachable.
+
+    Only natively supported on Linux. MacOS has iproute2mac, but it doesn't
+    support JSON formatted output.
+
+    TODO(http://b/238924195): Add support for MacOS.
+
+    Args:
+        dest_ip: IP address of the destination
+
+    Throws:
+        CalledProcessError: if the ip command returns a non-zero exit code
+        JSONDecodeError: if the ip command doesn't return JSON
+
+    """
+    resp = subprocess.run(f"ip -json route get {dest_ip}".split(),
+                          capture_output=True,
+                          check=True)
+    return json.loads(resp.stdout)
+
+
+def find_host_ip(device_ip):
+    """Find the host's source IP used to reach a device.
+
+    Not all host interfaces can talk to a given device. This limitation can
+    either be physical through hardware or virtual through routing tables.
+    Look through the routing table without sending any packets then return the
+    preferred source IP address.
+
+    Args:
+        device_ip: IP address of the device
+    """
+    routes = find_routes_to(device_ip)
+    if len(routes) != 1:
+        raise FuchsiaDeviceError(
+            f"Expected only one route to {device_ip}, got {routes}")
+
+    route = routes[0]
+    if not 'prefsrc' in route:
+        raise FuchsiaDeviceError(f'Route does not contain "srcpref": {route}')
+    return route["prefsrc"]
+
+
 class FuchsiaDevice:
     """Class representing a Fuchsia device.
 
@@ -237,6 +286,8 @@ class FuchsiaDevice:
         self.server_path = fd_conf_data.get("server_path", None)
         self.specific_image = fd_conf_data.get("specific_image", None)
         self.ffx_binary_path = fd_conf_data.get("ffx_binary_path", None)
+        self.pm_binary_path = fd_conf_data.get("pm_binary_path", None)
+        self.packages_path = fd_conf_data.get("packages_path", None)
         self.mdns_name = fd_conf_data.get("mdns_name", None)
 
         # Instead of the input ssh_config, a new config is generated with proper
@@ -318,8 +369,10 @@ class FuchsiaDevice:
         self.fuchsia_log_file_path = os.path.join(
             self.log_path, "fuchsialog_%s_debug.txt" % self.serial)
         self.log_process = None
+        self.package_server = None
 
         self.init_libraries()
+        self.init_package_server()
 
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
@@ -482,6 +535,35 @@ class FuchsiaDevice:
         # Contains WLAN policy functions like save_network, remove_network, etc
         self.wlan_policy_controller = WlanPolicyController(self)
 
+    def init_package_server(self):
+        if not self.pm_binary_path or not self.packages_path:
+            self.log.warn(
+                "Either pm_binary_path or packages_path is not specified. "
+                "Assuming a package server is already running and configured on "
+                "the DUT. If this is not the case, either run your own package "
+                "server, or configure these fields appropriately. "
+                "This is usually required for the Fuchsia iPerf3 client or "
+                "other testing utilities not on device cache.")
+            return
+
+        self.package_server = PackageServer(self.pm_binary_path,
+                                            self.packages_path)
+        self.package_server.start()
+
+        # Remove any existing repositories that may be stale.
+        try:
+            self.send_command_ssh(f"pkgctl repo rm fuchsia-pkg://fuchsia.com")
+        except FuchsiaSSHError as e:
+            if not 'NOT_FOUND' in e.result.stderr:
+                raise e
+
+        # Configure the device with the new repository.
+        host_ip = find_host_ip(self.ip)
+        repo_url = f"http://{host_ip}:{self.package_server.port}"
+        self.send_command_ssh(
+            f"pkgctl repo add url -f 2 -n fuchsia.com {repo_url}/config.json")
+        self.log.info(f'Added repo "fuchsia.com" from {repo_url}')
+
     @backoff.on_exception(
         backoff.constant,
         (ConnectionRefusedError, requests.exceptions.ConnectionError),
@@ -502,27 +584,36 @@ class FuchsiaDevice:
         requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
 
-    def init_ffx_connection(self):
-        """Initializes ffx's connection to the device.
+    @property
+    def ffx(self):
+        """Get the ffx module configured for this device.
 
-        If ffx has already been initialized, it will be reinitialized. This will
-        break any running tests calling ffx for this device.
+        The ffx module uses lazy-initialization; it will initialize an ffx
+        connection to the device when it is required.
+
+        If ffx needs to be reinitialized, delete the "ffx" property and attempt
+        access again. Note re-initialization will interrupt any running ffx
+        calls.
         """
-        self.log.debug("Initializing ffx connection")
+        if not hasattr(self, '_ffx'):
+            if not self.ffx_binary_path:
+                raise FuchsiaConfigError(
+                    'Must provide "ffx_binary_path: <path to FFX binary>" in the device config'
+                )
+            if not self.mdns_name:
+                raise FuchsiaConfigError(
+                    'Must provide "mdns_name: <device mDNS name>" in the device config'
+                )
+            self._ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ip,
+                            self.ssh_priv_key)
+        return self._ffx
 
-        if not self.ffx_binary_path:
-            raise ValueError(
-                'Must provide "ffx_binary_path: <path to FFX binary>" in the device config'
-            )
-        if not self.mdns_name:
-            raise ValueError(
-                'Must provide "mdns_name: <device mDNS name>" in the device config'
-            )
-
-        if hasattr(self, 'ffx'):
-            self.ffx.clean_up()
-
-        self.ffx = FFX(self.ffx_binary_path, self.mdns_name, self.ssh_priv_key)
+    @ffx.deleter
+    def ffx(self):
+        if not hasattr(self, '_ffx'):
+            return
+        self._ffx.clean_up()
+        del self._ffx
 
     def run_commands_from_config(self, cmd_dicts):
         """Runs commands on the Fuchsia device from the config file. Useful for
@@ -873,14 +964,12 @@ class FuchsiaDevice:
         Raises:
             DeviceOffline: If SSH to the device fails.
         """
-        if not hasattr(self, 'ffx'):
-            self.init_ffx_connection()
         target_info_json = self.ffx.run("target show --json").stdout
         target_info = json.loads(target_info_json)
         build_info = [
             entry for entry in target_info if entry["label"] == "build"
         ]
-        if len(build_info) != 0:
+        if len(build_info) != 1:
             self.log.warning(
                 f'Expected one entry with label "build", found {build_info}')
             return ""
@@ -888,12 +977,12 @@ class FuchsiaDevice:
             child for child in build_info[0]["child"]
             if child["label"] == "version"
         ]
-        if len(version_info) != 0:
+        if len(version_info) != 1:
             self.log.warning(
                 f'Expected one entry child with label "version", found {build_info}'
             )
             return ""
-        return version_info[0].value
+        return version_info[0]["value"]
 
     def ping(self,
              dest_ip,
@@ -1014,6 +1103,9 @@ class FuchsiaDevice:
 
         # This MUST be run, otherwise syslog threads will never join.
         self.clean_up_services()
+
+        if self.package_server:
+            self.package_server.clean_up()
 
     def clean_up_services(self):
         """ Cleans up FuchsiaDevice services (e.g. SL4F). Subset of clean_up,
@@ -1218,8 +1310,8 @@ class FuchsiaDevice:
     def start_services(self):
         """Starts long running services on the Fuchsia device.
 
-        Starts a syslog streaming process, SL4F server, initializes a connection
-        to the SL4F server, then starts an isolated ffx daemon.
+        Starts a syslog streaming process, SL4F server, and initializes a
+        connection to the SL4F server.
 
         """
         self.log.debug("Attempting to start Fuchsia device services on %s." %
@@ -1244,14 +1336,11 @@ class FuchsiaDevice:
             self.start_sl4f_on_fuchsia_device()
             self.init_sl4f_connection()
 
-        self.init_ffx_connection()
-
     def stop_host_services(self):
         """Stops ffx daemon and ssh connection to streaming logs on the host"""
         self.log.debug("Attempting to stop host device services on %s." %
                        self.ip)
-        if hasattr(self, 'ffx'):
-            self.ffx.clean_up()
+        del self.ffx
         if self.ssh_config:
             if self.log_process:
                 self.log_process.stop()
@@ -1288,12 +1377,12 @@ class FuchsiaDevice:
                 self.log.exception("Failed to stop sl4f.cmx with: %s. "
                                    "This is expected if running CFv2." % err)
         else:
-            if hasattr(self, 'ffx'):
+            if hasattr(self, '_ffx'):
                 # TODO(b/234054431): This calls ffx after it has been stopped.
                 # Refactor controller clean up such that ffx is called after SL4F
                 # has been stopped.
                 self.ffx.run('component stop /core/sl4f')
-                self.ffx.clean_up()
+                del self.ffx
 
     def load_config(self, config):
         pass

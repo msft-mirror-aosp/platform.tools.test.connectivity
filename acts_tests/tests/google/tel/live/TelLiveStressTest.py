@@ -496,7 +496,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info)
-            self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
             get_telephony_signal_strength(ads[0])
@@ -565,7 +564,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             if self.nsa_5g_for_stress:
                 for ad in (ads[0], ads[1]):
-                    if not is_current_network_5g(ad, self.nr_type):
+                    if not is_current_network_5g(ad, nr_type=self.nr_type):
                         ad.log.error("Phone not attached on 5G")
         for ad in ads:
             if not wait_for_call_id_clearing(ad,
@@ -809,7 +808,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
-        self.tel_logger.set_result(self.result_collection)
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],

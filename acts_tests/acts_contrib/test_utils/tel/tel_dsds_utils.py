@@ -23,12 +23,15 @@ from acts import signals
 from acts import tracelogger
 from acts.controllers.android_device import AndroidDevice
 from acts.utils import rand_ascii_str
+from acts.libs.proc.job import TimeoutError
 from acts.libs.utils.multithread import multithread_func
 from acts_contrib.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts_contrib.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts_contrib.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
+from acts_contrib.test_utils.tel.tel_defines import SimSlotInfo
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts_contrib.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts_contrib.test_utils.tel.tel_defines import YOUTUBE_PACKAGE_NAME
 from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_test
@@ -57,6 +60,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import set_dds_on_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_message_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_voice_sub_id
+from acts_contrib.test_utils.tel.tel_test_utils import change_slot
 from acts_contrib.test_utils.tel.tel_test_utils import get_operator_name
 from acts_contrib.test_utils.tel.tel_test_utils import num_active_calls
 from acts_contrib.test_utils.tel.tel_test_utils import power_off_sim
@@ -196,7 +200,7 @@ def dsds_dds_swap_call_streaming_test(
 
     for test_slot, dds_slot in zip(test_slot, [init_dds, 1-init_dds]):
         ads[0].log.info("test_slot: %d, dds_slot: %d", test_slot, dds_slot)
-        result = result and dsds_long_call_streaming_test(
+        result = result and dsds_call_streaming_test(
             log=log,
             tel_logger=tel_logger,
             ads=ads,
@@ -240,15 +244,16 @@ def dsds_dds_swap_call_streaming_test(
     return result
 
 
-def dsds_long_call_streaming_test(
+def dsds_call_streaming_test(
     log: tracelogger.TraceLogger,
     tel_logger: TelephonyMetricLogger.for_test_case,
     ads: Sequence[AndroidDevice],
+    sim_slot: Sequence[SimSlotInfo],
     test_rat: list,
     test_slot: int,
     dds_slot: int,
     direction: str = "mo",
-    duration: int = 360,
+    duration: int = WAIT_TIME_IN_CALL,
     streaming: bool = True,
     is_airplane_mode: bool = False,
     wfc_mode: Sequence[str] = [
@@ -265,6 +270,8 @@ def dsds_long_call_streaming_test(
         log: Logger object.
         tel_logger: Logger object for telephony proto.
         ads: A list of Android device objects.
+        sim_slot: a list which contains 2 slots for logical slot 0 and 1.
+            e.g. [SimSlotInfo.SLOT_0, SimSlotInfo.SLOT_1]
         test_rat: RAT for both slots of primary device.
         test_slot: The slot which make/receive MO/MT call of primary device.
         dds_slot: Preferred data slot of primary device.
@@ -282,6 +289,12 @@ def dsds_long_call_streaming_test(
     Returns:
         TestFailure if failed.
     """
+    log.info("Step 0: Switch to specific SIM slot combination.")
+    try:
+        change_slot(ads[0], sim_slot)
+    except TimeoutError:
+        ads[0].log.warning("Device not support MEP.")
+
     log.info("Step 1: Switch DDS.")
     if not set_dds_on_slot(ads[0], dds_slot):
         ads[0].log.error(
@@ -316,6 +329,7 @@ def dsds_long_call_streaming_test(
         if mt_sub_id == INVALID_SUB_ID:
             ad_mt.log.warning("Failed to get sub ID at default voice slot.")
             return False
+        mo_slot = get_slot_index_from_subid(ad_mo, mo_sub_id)
         mt_slot = get_slot_index_from_subid(ad_mt, mt_sub_id)
         set_voice_sub_id(ad_mt, mt_sub_id)
         ad_mt.log.info("Sub ID for incoming call at slot %s: %s", mt_slot,
@@ -367,6 +381,7 @@ def dsds_long_call_streaming_test(
             ad_mo.log.warning("Failed to get sub ID at default voice slot.")
             return False
         mo_slot = get_slot_index_from_subid(ad_mo, mo_sub_id)
+        mt_slot = get_slot_index_from_subid(ad_mt, mt_sub_id)
         set_voice_sub_id(ad_mo, mo_sub_id)
         ad_mo.log.info("Sub ID for outgoing call at slot %s: %s", mo_slot,
         get_outgoing_voice_sub_id(ad_mo))

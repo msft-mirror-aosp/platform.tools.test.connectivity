@@ -17,7 +17,9 @@
 import collections
 import ipaddress
 import os
+import re
 import time
+from typing import FrozenSet, Set
 
 from acts import logger
 from acts import utils
@@ -34,6 +36,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import radvd
 from acts.controllers.ap_lib import radvd_config
+from acts.controllers.ap_lib.extended_capabilities import ExtendedCapabilities
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
@@ -90,28 +93,30 @@ def get_info(aps):
     return [ap.ssh_settings.hostname for ap in aps]
 
 
-def setup_ap(access_point,
-             profile_name,
-             channel,
-             ssid,
-             mode=None,
-             preamble=None,
-             beacon_interval=None,
-             dtim_period=None,
-             frag_threshold=None,
-             rts_threshold=None,
-             force_wmm=None,
-             hidden=False,
-             security=None,
-             pmf_support=None,
-             additional_ap_parameters=None,
-             password=None,
-             n_capabilities=None,
-             ac_capabilities=None,
-             vht_bandwidth=None,
-             setup_bridge=False,
-             is_ipv6_enabled=False,
-             is_nat_enabled=True):
+def setup_ap(
+        access_point,
+        profile_name,
+        channel,
+        ssid,
+        mode=None,
+        preamble=None,
+        beacon_interval=None,
+        dtim_period=None,
+        frag_threshold=None,
+        rts_threshold=None,
+        force_wmm=None,
+        hidden=False,
+        security=None,
+        pmf_support=None,
+        additional_ap_parameters=None,
+        password=None,
+        n_capabilities=None,
+        ac_capabilities=None,
+        vht_bandwidth=None,
+        wnm_features: FrozenSet[hostapd_constants.WnmFeature] = frozenset(),
+        setup_bridge=False,
+        is_ipv6_enabled=False,
+        is_nat_enabled=True):
     """Creates a hostapd profile and runs it on an ap. This is a convenience
     function that allows us to start an ap with a single function, without first
     creating a hostapd config.
@@ -132,6 +137,7 @@ def setup_ap(access_point,
         additional_ap_parameters: Additional parameters to send the AP.
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
+        wnm_features: WNM features to enable on the AP.
         setup_bridge: Whether to bridge the LAN interface WLAN interface.
             Only one WLAN interface can be bridged with the LAN interface
             and none of the guest networks can be bridged.
@@ -164,7 +170,8 @@ def setup_ap(access_point,
                                             pmf_support=pmf_support,
                                             n_capabilities=n_capabilities,
                                             ac_capabilities=ac_capabilities,
-                                            vht_bandwidth=vht_bandwidth)
+                                            vht_bandwidth=vht_bandwidth,
+                                            wnm_features=wnm_features)
     return access_point.start_ap(
         hostapd_config=ap,
         radvd_config=radvd_config.RadvdConfig() if is_ipv6_enabled else None,
@@ -886,3 +893,18 @@ class AccessPoint(object):
             raise ValueError(f'Invalid identifier {identifier} given')
         instance = self._aps.get(identifier)
         return instance.hostapd.get_current_channel()
+
+    def get_stas(self, identifier) -> Set[str]:
+        """Return MAC addresses of all associated STAs on the given AP."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError(f'Invalid identifier {identifier} given')
+        instance = self._aps.get(identifier)
+        return instance.hostapd.get_stas()
+
+    def get_sta_extended_capabilities(self, identifier,
+                                      sta_mac: str) -> ExtendedCapabilities:
+        """Get extended capabilities for the given STA, as seen by the AP."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError(f'Invalid identifier {identifier} given')
+        instance = self._aps.get(identifier)
+        return instance.hostapd.get_sta_extended_capabilities(sta_mac)
