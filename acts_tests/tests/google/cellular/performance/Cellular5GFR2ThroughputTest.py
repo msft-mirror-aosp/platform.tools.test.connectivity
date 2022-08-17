@@ -351,8 +351,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             for cell in testcase_params['dl_cell_list']:
                 self.keysight_test_app.set_cell_dl_power(
                     'NR5G', cell, result['cell_power'], 1)
-            #self.keysight_test_app.select_display_tab(
-            #    'NR5G', testcase_params['dl_cell_list'][0], 'BTHR', 'OTAGRAPH')
+            self.keysight_test_app.select_display_tab(
+                'NR5G', testcase_params['dl_cell_list'][0], 'BTHR', 'OTAGRAPH')
             time.sleep(SHORT_SLEEP)
             # Start BLER and throughput measurements
             self.keysight_test_app.start_bler_measurement(
@@ -361,6 +361,13 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             if self.testclass_params['traffic_type'] != 'PHY':
                 result['iperf_throughput'] = self.run_iperf_traffic(
                     testcase_params)
+            if self.testclass_params['log_power_metrics']:
+                if testcase_params['bler_measurement_length'] >= 5000 and self.testclass_params['traffic_type'] == 'PHY':
+                    time.sleep(testcase_params['bler_measurement_length']/1000 - 5)
+                    cputils.log_system_power_metrics(self.dut, verbose=0)
+                else:
+                    self.log.warning('Test too short to log metrics')
+
             result['bler_result'] = self.keysight_test_app.get_bler_result(
                 'NR5G', testcase_params['dl_cell_list'],
                 testcase_params['bler_measurement_length'])
