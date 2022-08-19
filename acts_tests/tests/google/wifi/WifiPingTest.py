@@ -638,7 +638,7 @@ class WifiPing_TwoChain_Test(WifiPingTest):
                                                   149, 153, 157, 161, '6g37',
                                                   '6g117', '6g213'
                                               ],
-                                              modes=['bw20', 'bw40', 'bw80'],
+                                              modes=['bw20', 'bw80', 'bw160'],
                                               test_types=[
                                                   'test_ping_range',
                                                   'test_fast_ping_rtt',
@@ -658,7 +658,7 @@ class WifiPing_PerChainRange_Test(WifiPingTest):
                                                   149, 153, 157, 161, '6g37',
                                                   '6g117', '6g213'
                                               ],
-                                              modes=['bw20', 'bw40', 'bw80'],
+                                              modes=['bw20', 'bw80', 'bw160'],
                                               test_types=['test_ping_range'])
 
 
@@ -670,7 +670,7 @@ class WifiPing_LowPowerAP_Test(WifiPingTest):
             ap_power='low_power',
             chain_mask=['0', '1', '2x2'],
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['bw20', 'bw40', 'bw80'],
+            modes=['bw20', 'bw80'],
             test_types=['test_ping_range'])
 
 
