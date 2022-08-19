@@ -340,15 +340,24 @@ class TelephonyBaseTest(BaseTestClass):
             # eSIM needs activation
             activate_esim_using_suw(ad)
             ensure_phone_idle(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file)
+            if getattr(ad, 'mep', False):
+                setup_droid_properties(self.log, ad, sim_conf_file, True)
+            else:
+                setup_droid_properties(self.log, ad, sim_conf_file)
         elif self.user_params.get("Attenuator"):
             ad.log.info("Device in chamber room")
             ensure_phone_idle(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file)
+            if getattr(ad, 'mep', False):
+                setup_droid_properties(self.log, ad, sim_conf_file, True)
+            else:
+                setup_droid_properties(self.log, ad, sim_conf_file)
         else:
             self.wait_for_sim_ready(ad)
             ensure_phone_default_state(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file)
+            if getattr(ad, 'mep', False):
+                setup_droid_properties(self.log, ad, sim_conf_file, True)
+            else:
+                setup_droid_properties(self.log, ad, sim_conf_file)
 
         if getattr(ad, 'dsds', False):
             default_slot = getattr(ad, "default_slot", 0)
