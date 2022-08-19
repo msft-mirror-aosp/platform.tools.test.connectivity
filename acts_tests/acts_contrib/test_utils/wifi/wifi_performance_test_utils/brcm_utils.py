@@ -405,6 +405,7 @@ class LinkLayerStats():
         self.llstats_enabled = llstats_enabled
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
+        self.bandwidth = None
 
     def update_stats(self):
         if self.llstats_enabled:
@@ -414,8 +415,9 @@ class LinkLayerStats():
                 self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
 
                 wl_join = self.dut.adb.shell("wl status")
-                self.bandwidth = int(
-                    re.search(self.BW_REGEX, wl_join).group('bandwidth'))
+                if not self.bandwidth:
+                    self.bandwidth = int(
+                        re.search(self.BW_REGEX, wl_join).group('bandwidth'))
             except:
                 llstats_output = ''
         else:
