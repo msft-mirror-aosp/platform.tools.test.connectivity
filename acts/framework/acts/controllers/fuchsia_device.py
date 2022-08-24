@@ -372,7 +372,6 @@ class FuchsiaDevice:
         self.package_server = None
 
         self.init_libraries()
-        self.init_package_server()
 
         self.setup_commands = fd_conf_data.get('setup_commands', [])
         self.teardown_commands = fd_conf_data.get('teardown_commands', [])
@@ -535,7 +534,7 @@ class FuchsiaDevice:
         # Contains WLAN policy functions like save_network, remove_network, etc
         self.wlan_policy_controller = WlanPolicyController(self)
 
-    def init_package_server(self):
+    def start_package_server(self):
         if not self.pm_binary_path or not self.packages_path:
             self.log.warn(
                 "Either pm_binary_path or packages_path is not specified. "
