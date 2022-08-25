@@ -19,14 +19,15 @@ the Sponge test result properties. Uses the built in flashing tool for
 fuchsia_devices.
 """
 from acts import asserts
+from acts import signals
 from acts.base_test import BaseTestClass
-from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
 from acts.utils import get_device
 
 MAX_FLASH_ATTEMPTS = 3
 
 
 class FlashTest(BaseTestClass):
+
     def setup_class(self):
         super().setup_class()
         success_str = ("Congratulations! Fuchsia controllers have been "
@@ -46,10 +47,9 @@ class FlashTest(BaseTestClass):
                 'DUT_VERSION': version,
             }})
             self.log.info("DUT version found: {}".format(version))
-        except ValueError as err:
-            self.log.warn("Failed to determine DUT: %s" % err)
-        except DeviceOffline as err:
-            self.log.warn("Failed to get DUT's version: %s" % err)
+        except Exception as err:
+            raise signals.TestAbortAll(
+                f'Failed to get DUT version: {err}') from err
 
         return super().teardown_class()
 

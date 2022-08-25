@@ -211,7 +211,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         """
         self._socket_send_SCPI_command(
             self.SCPI_IMPORT_SCPI_FILE_CMD.format(path))
-        time.sleep(30)
+        time.sleep(45)
 
     def destroy(self):
         """Close socket connection with UXM. """
@@ -352,8 +352,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             self._socket_send_SCPI_command(
                 "BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly")
             try:
-                self.wait_until_attached_one_cell(first_cell_type,
-                                                  first_cell_number, dut,
+                self.wait_until_attached_one_cell(second_cell_type,
+                                                  second_cell_number, dut,
                                                   timeout, attach_retries,
                                                   False)
             except Exception as exc:

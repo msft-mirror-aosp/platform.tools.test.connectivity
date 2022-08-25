@@ -110,6 +110,7 @@ from acts_contrib.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts_contrib.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_slot_index_from_subid
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_by_adb
+from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_logical_slot
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
@@ -212,12 +213,12 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
     setattr(ad, 'telephony', device_props)
 
 
-def setup_droid_properties(log, ad, sim_filename=None):
+def setup_droid_properties(log, ad, sim_filename=None, all_sub=False):
 
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
-    refresh_droid_config(log, ad)
+    refresh_droid_config(log, ad, all_sub)
     sim_data = {}
     if sim_filename:
         try:
@@ -281,12 +282,13 @@ def setup_droid_properties(log, ad, sim_filename=None):
     ad.log.debug("telephony = %s", ad.telephony)
 
 
-def refresh_droid_config(log, ad):
+def refresh_droid_config(log, ad, all_sub = False):
     """ Update Android Device telephony records for each sub_id.
 
     Args:
         log: log object
         ad: android device object
+        all_sub: True to record all sub id(include inactive SIM.)
 
     Returns:
         None
@@ -310,7 +312,7 @@ def refresh_droid_config(log, ad):
         else:
             isopportunistic = -1
 
-        if sim_slot != INVALID_SIM_SLOT_INDEX:
+        if sim_slot != INVALID_SIM_SLOT_INDEX or all_sub:
             if sub_id not in ad.telephony["subscription"]:
                 ad.telephony["subscription"][sub_id] = {}
             sub_record = ad.telephony["subscription"][sub_id]
@@ -1071,12 +1073,12 @@ def dumpsys_carrier_config(ad):
     else:
         phone_count = ad.droid.telephonyGetPhoneCount()
 
-    slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
+    slot_0_subid = get_subid_from_logical_slot(ad, 0)
     if slot_0_subid != INVALID_SUB_ID:
         configs[slot_0_subid] = {}
 
     if phone_count == 2:
-        slot_1_subid = get_subid_from_slot_index(ad.log, ad, 1)
+        slot_1_subid = get_subid_from_logical_slot(ad, 1)
         if slot_1_subid != INVALID_SUB_ID:
             configs[slot_1_subid] = {}
 
@@ -3014,8 +3016,8 @@ def change_slot(ad: AndroidDevice, sim_slot: Sequence[SimSlotInfo],
         "am broadcast -a android.telephony.euicc.action.TEST_PROFILE "
         "-n com.google.android.euicc/com.android.euicc.receiver."
         "ProfileTestReceiver --es 'operation' 'changeSlot' --es "
-        "'simSlotMapping' \"[{'port':%d,'physical':%d,'logical':1},{'port':%d,"
-        "'physical':%d,'logical':0}]\"" % (port_id[0], phy_slot_id[0],
+        "'simSlotMapping' \"[{'port':%d,'physical':%d,'logical':0},{'port':%d,"
+        "'physical':%d,'logical':1}]\"" % (port_id[0], phy_slot_id[0],
         port_id[1], phy_slot_id[1]))
     time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
@@ -3027,6 +3029,7 @@ def change_slot(ad: AndroidDevice, sim_slot: Sequence[SimSlotInfo],
                 ad.log, ad, sim_slot[1].value[0]) != INVALID_SUB_ID):
             if (set(sim_state) - {
                 SIM_STATE_UNKNOWN, SIM_STATE_ABSENT, SIM_STATE_NOT_READY}):
+                get_phone_capability(ad)
                 return True
         timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)

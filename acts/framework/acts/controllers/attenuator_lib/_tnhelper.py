@@ -79,7 +79,7 @@ class _TNHelper(object):
         """
         logging.debug('Diagnosing telnet connection')
         try:
-            job_result = job.run('ping {} -c 5 -i 0.1'.format(
+            job_result = job.run('ping {} -c 5 -i 0.2'.format(
                 self._ip_address))
         except:
             logging.error("Unable to ping telnet server.")

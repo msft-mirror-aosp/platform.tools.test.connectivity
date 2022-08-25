@@ -541,6 +541,11 @@ class FuchsiaWlanDevice(WlanDevice):
         """
         if not test_interface:
             test_interface = self.get_default_wlan_test_interface()
+
+        # A package server is necessary to acquire the iperf3 client for
+        # some builds.
+        self.device.start_package_server()
+
         return iperf_client.IPerfClientOverSsh(
             {
                 'user': 'fuchsia',
