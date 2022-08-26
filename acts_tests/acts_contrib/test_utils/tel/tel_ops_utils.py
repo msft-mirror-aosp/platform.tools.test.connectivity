@@ -15,11 +15,7 @@
 #   limitations under the License.
 
 import time
-from acts_contrib.test_utils.net import ui_utils
-from acts_contrib.test_utils.tel.tel_defines import MOBILE_DATA
-from acts_contrib.test_utils.tel.tel_defines import USE_SIM
 from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_task
-from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
@@ -63,37 +59,3 @@ def initiate_call_verify_operation(log,
         caller.log.error("Unable to hang up the call")
         return False
     return True
-
-def get_resource_value(ad, label_text= None):
-    """Get current resource value
-
-    Args:
-        ad:  android device object as caller.
-        label_text: Enter text to be detected
-
-    Return:
-        node attribute value
-    """
-    if label_text == USE_SIM:
-        resource_id = 'android:id/switch_widget'
-        label_resource_id = 'com.android.settings:id/switch_text'
-        node_attribute = 'checked'
-    elif label_text == MOBILE_DATA:
-        resource_id = 'android:id/switch_widget'
-        label_resource_id = 'android:id/widget_frame'
-        label_text = ''
-        node_attribute = 'checked'
-    else:
-        ad.log.error(
-            'Missing arguments, resource_id, label_text and node_attribute'
-            )
-
-    resource = {
-        'resource_id': resource_id,
-    }
-    node = ui_utils.wait_and_get_xml_node(ad,
-                                        timeout=30,
-                                        sibling=resource,
-                                        text=label_text,
-                                        resource_id=label_resource_id)
-    return node.attributes[node_attribute].value
