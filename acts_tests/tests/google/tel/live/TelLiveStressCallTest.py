@@ -193,8 +193,12 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             #check for sim and service
             ensure_phone_subscription(self.log, ad)
 
+        setup_begin_time = get_current_epoch_time()
         if setup_func and not setup_func(setup_arg):
             self.log.error("Test setup %s failed", setup_func.__name__)
+            self._take_bug_report(
+                "%s_%s" % (self.test_name, setup_func.__name__),
+                setup_begin_time)
             return False
         fail_count = collections.defaultdict(int)
         for i in range(1, self.phone_call_iteration + 1):
