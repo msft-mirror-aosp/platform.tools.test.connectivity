@@ -144,11 +144,11 @@ def update_voice_call_type_dict(dut, key):
     Return:
         voice_call_type: Voice call status
     """
-    if dut in voice_call_type.keys():
-        voice_call_type[dut][key] += 1
-    else:
+    if dut not in voice_call_type.keys():
         voice_call_type[dut] = {key:0}
-        voice_call_type[dut][key] += 1
+    if key not in voice_call_type[dut].keys():
+        voice_call_type[dut].update({key:0})
+    voice_call_type[dut][key] += 1
     return voice_call_type
 
 
