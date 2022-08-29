@@ -1997,8 +1997,7 @@ class CommandInput(cmd.Cmd):
         """
         cmd = "Kill A2DP service"
         try:
-            result = self.pri_dut.control_daemon("bt-a2dp.cmx", "stop")
-            self.log.info(result)
+            self.pri_dut.start_v1_component("bt-a2dp")
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
