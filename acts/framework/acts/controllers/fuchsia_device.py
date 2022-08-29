@@ -116,6 +116,9 @@ START_SL4F_V2_CMD = 'start_sl4f'
 
 VALID_ASSOCIATION_MECHANISMS = {None, 'policy', 'drivers'}
 
+# The default package repository for all components.
+FUCHSIA_PACKAGE_REPO_NAME = 'fuchsia.com'
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -307,7 +310,6 @@ class FuchsiaDevice:
         self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self.config_country_code = fd_conf_data.get(
             'country_code', FUCHSIA_DEFAULT_COUNTRY_CODE_US).upper()
-        self._persistent_ssh_conn = None
 
         # WLAN interface info is populated inside configure_wlan
         self.wlan_client_interfaces = {}
@@ -934,8 +936,9 @@ class FuchsiaDevice:
                                              self.ssh_config,
                                              ssh_port=self.ssh_port,
                                              connect_timeout=connect_timeout)
+            # Some commands depend on a pseudo-tty being allocated (e.g. run -d)
             cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
-                ssh_conn.exec_command(test_cmd, timeout=timeout))
+                ssh_conn.exec_command(test_cmd, timeout=timeout, get_pty=True))
             result = SshResults(cmd_result_stdin, cmd_result_stdout,
                                 cmd_result_stderr, cmd_result_stdout.channel)
         except Exception as e:
@@ -1144,103 +1147,42 @@ class FuchsiaDevice:
         ps_cmd = self.send_command_ssh("ps")
         return process_name in ps_cmd.stdout
 
-    def check_process_with_expectation(self, process_name, expectation=None):
-        """Checks the state of a process on the Fuchsia device and returns
-        true or false depending the stated expectation
+    def start_v1_component(self,
+                           component,
+                           timeout_sec=5,
+                           repo=FUCHSIA_PACKAGE_REPO_NAME):
+        """Start a CFv1 component in the background.
 
         Args:
-            process_name: The name of the process to check for.
-            expectation: The state expectation of state of process
-        Returns:
-            True if the state of the process matches the expectation
-            False if the state of the process does not match the expectation
-        """
-        process_state = self.check_process_state(process_name)
-        if expectation in DAEMON_ACTIVATED_STATES:
-            return process_state
-        elif expectation in DAEMON_DEACTIVATED_STATES:
-            return not process_state
-        else:
-            raise ValueError("Invalid expectation value (%s). abort!" %
-                             expectation)
+            component: Name of the component without ".cmx"
 
-    def control_daemon(self, process_name, action):
-        """Starts or stops a process on a Fuchsia device
+        Raises:
+            TimeoutError: when the component doesn't launch within timeout_sec
+        """
+        self.send_command_ssh(
+            f'run -d fuchsia-pkg://{repo}/{component}#meta/{component}.cmx')
+
+        timeout = time.perf_counter() + timeout_sec
+        while True:
+            if self.check_process_state(f'{component}.cmx'):
+                return
+            if time.perf_counter() > timeout:
+                raise TimeoutError(
+                    f'Failed to start "{component}.cmx" after {timeout_sec}s')
+
+    def stop_v1_component(self, component):
+        """Stop all instances of a CFv1 component.
 
         Args:
-            process_name: the name of the process to start or stop
-            action: specify whether to start or stop a process
+            component: Name of the component without ".cmx"
         """
-        if not (process_name[-4:] == '.cmx' or process_name[-4:] == '.cml'):
-            process_name = '%s.cmx' % process_name
-        unable_to_connect_msg = None
-        process_state = False
         try:
-            if not self._persistent_ssh_conn:
-                self._persistent_ssh_conn = (create_ssh_connection(
-                    self.ip,
-                    self.ssh_username,
-                    self.ssh_config,
-                    ssh_port=self.ssh_port))
-            self._persistent_ssh_conn.exec_command(
-                "killall %s" % process_name, timeout=CHANNEL_OPEN_TIMEOUT)
-            # This command will effectively stop the process but should
-            # be used as a cleanup before starting a process.  It is a bit
-            # confusing to have the msg saying "attempting to stop
-            # the process" after the command already tried but since both start
-            # and stop need to run this command, this is the best place
-            # for the command.
-            if action in DAEMON_ACTIVATED_STATES:
-                self.log.debug("Attempting to start Fuchsia "
-                               "devices services.")
-                self._persistent_ssh_conn.exec_command(
-                    "run fuchsia-pkg://fuchsia.com/%s#meta/%s &" %
-                    (process_name[:-4], process_name))
-                process_initial_msg = (
-                    "%s has not started yet. Waiting %i second and "
-                    "checking again." %
-                    (process_name, DAEMON_INIT_TIMEOUT_SEC))
-                process_timeout_msg = ("Timed out waiting for %s to start." %
-                                       process_name)
-                unable_to_connect_msg = ("Unable to start %s no Fuchsia "
-                                         "device via SSH. %s may not "
-                                         "be started." %
-                                         (process_name, process_name))
-            elif action in DAEMON_DEACTIVATED_STATES:
-                process_initial_msg = ("%s is running. Waiting %i second and "
-                                       "checking again." %
-                                       (process_name, DAEMON_INIT_TIMEOUT_SEC))
-                process_timeout_msg = ("Timed out waiting trying to kill %s." %
-                                       process_name)
-                unable_to_connect_msg = ("Unable to stop %s on Fuchsia "
-                                         "device via SSH. %s may "
-                                         "still be running." %
-                                         (process_name, process_name))
-            else:
-                raise FuchsiaDeviceError(FUCHSIA_INVALID_CONTROL_STATE %
-                                         action)
-            timeout_counter = 0
-            while not process_state:
-                self.log.info(process_initial_msg)
-                time.sleep(DAEMON_INIT_TIMEOUT_SEC)
-                timeout_counter += 1
-                process_state = (self.check_process_with_expectation(
-                    process_name, expectation=action))
-                if timeout_counter == (DAEMON_INIT_TIMEOUT_SEC * 3):
-                    self.log.info(process_timeout_msg)
-                    break
-            if not process_state:
-                raise FuchsiaDeviceError(FUCHSIA_COULD_NOT_GET_DESIRED_STATE %
-                                         (action, process_name))
-        except Exception as e:
-            self.log.info(unable_to_connect_msg)
+            self.send_command_ssh(f'killall {component}.cmx')
+        except FuchsiaSSHError as e:
+            if e.result.exit_status == 255:
+                # No tasks found
+                return
             raise e
-        finally:
-            # TODO(http://b/230890623): Refactor control_daemon to split cleanup.
-            if action == 'stop' and (process_name == 'sl4f'
-                                     or process_name == 'sl4f.cmx'):
-                self._persistent_ssh_conn.close()
-                self._persistent_ssh_conn = None
 
     def check_connect_response(self, connect_response):
         if connect_response.get("error") is None:
@@ -1359,7 +1301,8 @@ class FuchsiaDevice:
                     "Running SL4F in CFv1 mode, "
                     "this is deprecated for images built after 5/9/2022, "
                     "see https://fxbug.dev/77056 for more info.")
-                self.control_daemon("sl4f.cmx", "start")
+                self.stop_v1_component("sl4f")
+                self.start_v1_component("sl4f")
                 self.sl4f_v1 = True
 
     def stop_sl4f_on_fuchsia_device(self):
@@ -1372,7 +1315,7 @@ class FuchsiaDevice:
                        self.ip)
         if self.ssh_config and self.sl4f_v1:
             try:
-                self.control_daemon("sl4f.cmx", "stop")
+                self.stop_v1_component("sl4f")
             except Exception as err:
                 self.log.exception("Failed to stop sl4f.cmx with: %s. "
                                    "This is expected if running CFv2." % err)
