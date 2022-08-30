@@ -3010,6 +3010,8 @@ def change_slot(ad: AndroidDevice, sim_slot: Sequence[SimSlotInfo],
     Returns:
         True if success, False otherwise.
     """
+    if not getattr(ad, "mep", False): return
+
     port_id = [sim_slot[0].value[1], sim_slot[1].value[1]]
     phy_slot_id = [sim_slot[0].value[2], sim_slot[1].value[2]]
     ad.adb.shell(
