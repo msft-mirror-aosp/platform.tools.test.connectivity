@@ -86,30 +86,32 @@ def start_pixellogger_always_on_logging(ad):
         return True
 
 
-def start_dsp_logger_p21(ad, retry=3):
-    """Start DSP logging for P21 devices.
+def start_dsp_logger(ad, p21 = False, retry = 3):
+    """Start DSP logging for P21/P22 devices.
 
     Args:
         ad: Android object.
+        p21: True if p21 device, False otherwise.
         retry: times of retry to enable DSP logger.
 
     Returns:
         True if DSP logger is enabled correctly. Otherwise False.
     """
-    if not getattr(ad, "dsp_log_p21", False): return
+    registry_name = "!LTEL1.HAL.DSP clkgating Enb/Dis" if p21 else "NASU.LCPU.LOG.SWITCH"
+    nv_value = "00" if p21 else "02"
 
     def _is_dsp_enabled(ad):
-        return "00" in ad.adb.shell('am instrument -w -e request '
-            'at+googgetnv=\\"\\!LTEL1\\.HAL\\.DSP\\ clkgating\\ Enb\\/Dis\\" '
-            '-e response wait "com.google.mdstest/com.google.mdstest.'
-            'instrument.ModemATCommandInstrumentation"')
+        return nv_value in ad.adb.shell('am instrument -w -e request '
+            f'at+googgetnv=\\"{registry_name}\\" -e response wait '
+            'com.google.mdstest/com.google.mdstest.instrument.'
+            'ModemATCommandInstrumentation')
 
     for _ in range(retry):
         if not _is_dsp_enabled(ad):
             ad.adb.shell('am instrument -w -e request at+googsetnv=\\"'
-                '\\!LTEL1\\.HAL\\.DSP\\ clkgating\\ Enb\\/Dis\\"\\,0\\,\\"'
-                '00\\" -e response wait "com.google.mdstest/com.google.mdstest.'
-                'instrument.ModemATCommandInstrumentation"')
+                f'\\{registry_name}\\",0,\\"{nv_value}\\" -e response wait '
+                'com.google.mdstest/com.google.mdstest.instrument.'
+                'ModemATCommandInstrumentation')
             time.sleep(3)
         else:
             ad.log.info("DSP logger is enabled, reboot to start.")
