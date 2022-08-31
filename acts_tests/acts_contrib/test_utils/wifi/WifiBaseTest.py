@@ -48,6 +48,8 @@ class WifiBaseTest(BaseTestClass):
         self.enable_packet_log = False
         self.packet_log_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
         self.packet_log_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
+        self.tcpdump_proc = []
+        self.packet_log_pid = {}
 
     def setup_class(self):
         if hasattr(self, 'attenuators') and self.attenuators:
