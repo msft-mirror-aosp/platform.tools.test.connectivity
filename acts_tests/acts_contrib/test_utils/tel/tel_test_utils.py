@@ -483,7 +483,8 @@ def toggle_airplane_mode_by_adb(log, ad, new_state=None):
     ad.log.info("Change airplane mode from %s to %s", cur_state, new_state)
     try:
         ad.adb.shell("settings put global airplane_mode_on %s" % int(new_state))
-        ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
+        ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE "
+                     "--ez state %s" % new_state)
     except Exception as e:
         ad.log.error(e)
         return False
