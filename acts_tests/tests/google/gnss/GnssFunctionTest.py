@@ -69,6 +69,7 @@ class GnssFunctionTest(BaseTestClass):
                       "standalone_ws_criteria", "standalone_hs_criteria",
                       "supl_cs_criteria",
                       "supl_hs_criteria",
+                      "standalone_cs_criteria",
                       "wearable_reboot_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
