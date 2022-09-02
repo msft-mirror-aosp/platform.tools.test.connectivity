@@ -64,6 +64,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import initial_set_up_fo
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_default_sub_for_all_services
 from acts_contrib.test_utils.tel.tel_test_utils import activate_esim_using_suw
 from acts_contrib.test_utils.tel.tel_test_utils import activate_google_fi_account
+from acts_contrib.test_utils.tel.tel_test_utils import adb_disable_verity
 from acts_contrib.test_utils.tel.tel_test_utils import add_google_account
 from acts_contrib.test_utils.tel.tel_test_utils import build_id_override
 from acts_contrib.test_utils.tel.tel_test_utils import check_google_fi_activated
@@ -262,6 +263,13 @@ class TelephonyBaseTest(BaseTestClass):
             raise signals.TestAbortClass("unable to load the SIM")
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
+        adb_disable_verity(ad)
+        build_id = ad.build_info["build_id"].replace(".", r"\.")
+        ad.adb.shell("sed -i '/^ro.build.id=/ "
+                     f"s/{build_id}/&_test/g' /system/build.prop")
+        ad.adb.shell("sed -i '/^ro.build.description=/ "
+                     f"s/{build_id}/&_test/g' /system/build.prop")
+
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         ad.sdm_log = getattr(ad, "sdm_log", self.sdm_log)
         ad.dsp_log = getattr(ad, "dsp_log", self.dsp_log)
