@@ -363,7 +363,17 @@ class TelephonyBaseTest(BaseTestClass):
             else:
                 setup_droid_properties(self.log, ad, sim_conf_file)
 
-        if getattr(ad, 'dsds', False):
+        if getattr(ad, 'mep', False):
+            default_slot = getattr(ad, "default_slot", 1)
+            if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
+                ad.log.info("Slot %s is the default slot.", default_slot)
+                set_default_sub_for_all_services(ad, default_slot)
+            else:
+                ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
+                    default_slot, 1-default_slot)
+                set_default_sub_for_all_services(ad, 1-default_slot)
+                setattr(ad, "default_slot", 1-default_slot)
+        elif getattr(ad, 'dsds', False):
             default_slot = getattr(ad, "default_slot", 0)
             if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
                 ad.log.info("Slot %s is the default slot.", default_slot)
