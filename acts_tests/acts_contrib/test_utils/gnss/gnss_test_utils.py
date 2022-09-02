@@ -1036,7 +1036,6 @@ def wait_n_mins_for_gnss_tracking(ad, begin_time, testtime, api_type="gnss",
         # add sleep here to avoid too many request and cause device not responding
         time.sleep(1)
 
-# TODO: (diegowchung) GnssFunctionTest has similar function, need to handle the duplication
 def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
     """Run GNSS TTFF test with selected mode and parse the results.
 
