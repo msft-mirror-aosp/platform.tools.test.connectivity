@@ -169,6 +169,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.cbrs_check_interval = int(
             self.user_params.get("cbrs_check_interval", 100))
         self.dut_incall = False
+        self.wfc_nw_gen = self.user_params.get("wfc_nw_gen", None)
         self.dsds_esim = self.user_params.get("dsds_esim", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
         telephony_info = getattr(self.dut, "telephony", {})
@@ -252,7 +253,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         for ad in self.android_devices:
             if not phone_setup_iwlan(
                     self.log, ad, True, WFC_MODE_CELLULAR_PREFERRED,
-                    self.wifi_network_ssid, self.wifi_network_pass):
+                    self.wifi_network_ssid, self.wifi_network_pass,
+                    nw_gen=self.wfc_nw_gen, nr_type= self.nr_type):
                 ad.log.error("Failed to setup WFC.")
                 return False
         return True
@@ -494,7 +496,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 call_stats_check=self.call_stats_check,
                 voice_type_init=voice_type_init,
                 result_info = self.result_info)
-            self.result_collection[RESULTS_LIST[call_setup_result.result_value]] += 1
 
         if not call_setup_result:
             get_telephony_signal_strength(ads[0])
@@ -563,7 +564,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             if self.nsa_5g_for_stress:
                 for ad in (ads[0], ads[1]):
-                    if not is_current_network_5g(ad, self.nr_type):
+                    if not is_current_network_5g(ad, nr_type=self.nr_type):
                         ad.log.error("Phone not attached on 5G")
         for ad in ads:
             if not wait_for_call_id_clearing(ad,
@@ -602,11 +603,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                                      self.user_params["gps_log_file"])
             for reason in failure_reasons:
                 self.result_info["Call %s Failure" % reason] += 1
-            for ad in ads:
-                log_path = os.path.join(self.log_path, test_name,
+            if self.get_binder_logs:
+                for ad in ads:
+                    log_path = os.path.join(self.log_path, test_name,
                                         "%s_binder_logs" % ad.serial)
-                os.makedirs(log_path, exist_ok=True)
-                ad.pull_files(BINDER_LOGS, log_path)
+                    os.makedirs(log_path, exist_ok=True)
+                    ad.pull_files(BINDER_LOGS, log_path)
             try:
                 self._take_bug_report(test_name, begin_time)
             except Exception as e:
@@ -806,7 +808,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
-        self.tel_logger.set_result(self.result_collection)
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],

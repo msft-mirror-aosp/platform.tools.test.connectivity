@@ -101,9 +101,8 @@ def _syslog_log_test_begin(event):
     test_instance = event.test_class
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
-            if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s BEGIN %s" %
-                                    (TEST_CASE_TOKEN, event.test_case_name))
+            fd.logging_lib.logI("%s BEGIN %s" %
+                                (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -118,9 +117,8 @@ def _syslog_log_test_end(event):
     test_instance = event.test_class
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
-            if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s END %s" %
-                                    (TEST_CASE_TOKEN, event.test_case_name))
+            fd.logging_lib.logI("%s END %s" %
+                                (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -638,7 +636,7 @@ class BaseTestClass(MoblyBaseTest):
                                 tag="",
                                 name_func=None,
                                 format_args=False):
-        """Deprecated. Please use setup_generated_tests and generate_tests.
+        """Deprecated. Please use pre_run and generate_tests.
 
         Generated test cases are not written down as functions, but as a list
         of parameter sets. This way we reduce code repetition and improve
@@ -766,7 +764,7 @@ class BaseTestClass(MoblyBaseTest):
             The test results object of this class.
         """
         # Executes pre-setup procedures, like generating test methods.
-        if not self._setup_generated_tests():
+        if not self._pre_run():
             return self.results
 
         self.register_test_class_event_subscriptions()

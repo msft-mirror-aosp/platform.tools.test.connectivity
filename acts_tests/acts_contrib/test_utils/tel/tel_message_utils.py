@@ -32,6 +32,7 @@ from acts_contrib.test_utils.tel.tel_defines import EventSmsSentFailure
 from acts_contrib.test_utils.tel.tel_defines import EventSmsSentSuccess
 from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts_contrib.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
+from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_MMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION
 from acts_contrib.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION
@@ -157,6 +158,12 @@ def message_test(
         log, ad_mt, 'general', None, False, None, None, None, None, 'sms')
     verify_caller_func = None
     verify_callee_func = None
+
+    if long_msg:
+      for ad in [ad_mo, ad_mt]:
+        ad.root_adb()
+        # set max sms length to 10000 for long sms test
+        ad.adb.shell("settings put global sms_outgoing_check_max_count 10000")
 
     if mo_rat:
         mo_phone_setup_argv = (
@@ -1548,7 +1555,7 @@ def wait_for_matching_mms(log,
                           ad_rx,
                           phonenumber_tx,
                           text,
-                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+                          max_wait_time=MAX_WAIT_TIME_MMS_RECEIVE):
     """Wait for matching incoming SMS.
 
     Args:
@@ -1577,7 +1584,7 @@ def mms_send_receive_verify(log,
                             ad_tx,
                             ad_rx,
                             array_message,
-                            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
+                            max_wait_time=MAX_WAIT_TIME_MMS_RECEIVE,
                             expected_result=True,
                             slot_id_rx=None):
     """Send MMS, receive MMS, and verify content and sender's number.
@@ -1666,7 +1673,7 @@ def mms_send_receive_verify_for_subscription(
         subid_tx,
         subid_rx,
         array_payload,
-        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+        max_wait_time=MAX_WAIT_TIME_MMS_RECEIVE):
     """Send MMS, receive MMS, and verify content and sender's number.
 
         Send (several) MMS from droid_tx to droid_rx.
@@ -1754,7 +1761,7 @@ def mms_send_receive_verify_for_subscription(
 
 def mms_receive_verify_after_call_hangup(
         log, ad_tx, ad_rx, array_message,
-        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+        max_wait_time=MAX_WAIT_TIME_MMS_RECEIVE):
     """Verify the suspanded MMS during call will send out after call release.
 
         Hangup call from droid_tx to droid_rx.
@@ -1780,7 +1787,7 @@ def mms_receive_verify_after_call_hangup_for_subscription(
         subid_tx,
         subid_rx,
         array_payload,
-        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+        max_wait_time=MAX_WAIT_TIME_MMS_RECEIVE):
     """Verify the suspanded MMS during call will send out after call release.
 
         Hangup call from droid_tx to droid_rx.

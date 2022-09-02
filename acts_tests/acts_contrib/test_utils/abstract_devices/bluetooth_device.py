@@ -58,6 +58,7 @@ class BluetoothDevice(object):
     Attributes:
         device: A generic Bluetooth device.
     """
+
     def __init__(self, device):
         self.device = device
         self.log = logging
@@ -364,6 +365,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
     Attributes:
         android_device: An Android Bluetooth device.
     """
+
     def __init__(self, android_device):
         super().__init__(android_device)
         self.gatt_timeout = 10
@@ -833,6 +835,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
     Attributes:
         fuchsia_device: A Fuchsia Bluetooth device.
     """
+
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
 
@@ -843,12 +846,12 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
     def start_profile_a2dp_sink(self):
         """ Starts the A2DP sink profile.
         """
-        self.device.control_daemon("bt-a2dp-sink.cmx", "start")
+        self.device.start_v1_component("bt-a2dp-sink")
 
     def stop_profile_a2dp_sink(self):
         """ Stops the A2DP sink profile.
         """
-        self.device.control_daemon("bt-a2dp-sink.cmx", "stop")
+        self.device.stop_v1_component("bt-a2dp-sink")
 
     def start_pairing_helper(self):
         self.device.bts_lib.acceptPairing()

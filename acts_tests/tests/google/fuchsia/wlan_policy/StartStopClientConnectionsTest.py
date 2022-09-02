@@ -14,13 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
+
 from acts import signals
 from acts.controllers.access_point import setup_ap
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
-import time
 
 DISCONNECTED = "Disconnected"
 CONNECTION_STOPPED = "ConnectionStopped"

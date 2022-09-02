@@ -18,10 +18,13 @@ import logging
 import os
 import re
 import time
+from typing import Set
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib.extended_capabilities import ExtendedCapabilities
 from acts.controllers.utils_lib.commands import shell
+from acts.libs.proc.job import Result
 
 
 class Error(Exception):
@@ -136,6 +139,63 @@ class Hostapd(object):
         except ValueError:
             raise Error('Internal error: current channel could not be parsed')
         return channel
+
+    def _list_sta(self) -> Result:
+        """List all associated STA MAC addresses.
+
+        Returns:
+            acts.libs.proc.job.Result containing the results of the command.
+        Raises: See _run_hostapd_cli_cmd
+        """
+        list_sta_cmd = 'list_sta'
+        return self._run_hostapd_cli_cmd(list_sta_cmd)
+
+    def get_stas(self) -> Set[str]:
+        """Return MAC addresses of all associated STAs."""
+        list_sta_result = self._list_sta()
+        stas = set()
+        for line in list_sta_result.stdout:
+            # Each line must be a valid MAC address. Capture it.
+            m = re.match(r'((?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2})', line)
+            if m:
+                stas.add(m.group(1))
+        return stas
+
+    def _sta(self, sta_mac: str) -> Result:
+        """Return hostapd's detailed info about an associated STA.
+
+        Returns:
+            acts.libs.proc.job.Result containing the results of the command.
+        Raises: See _run_hostapd_cli_cmd
+        """
+        sta_cmd = 'sta {}'.format(sta_mac)
+        return self._run_hostapd_cli_cmd(sta_cmd)
+
+    def get_sta_extended_capabilities(self,
+                                      sta_mac: str) -> ExtendedCapabilities:
+        """Get extended capabilities for the given STA, as seen by the AP.
+
+        Args:
+            sta_mac: MAC address of the STA in question.
+        Returns:
+            Extended capabilities of the given STA.
+        Raises:
+            Error if extended capabilities for the STA cannot be obtained.
+        """
+        sta_result = self._sta(sta_mac)
+        # hostapd ext_capab field is a hex encoded string representation of the
+        # 802.11 extended capabilities structure, each byte represented by two
+        # chars (each byte having format %02x).
+        m = re.search(r'ext_capab=([0-9A-Faf]+)', sta_result.stdout,
+                      re.MULTILINE)
+        if not m:
+            raise Error('Failed to get ext_capab from STA details')
+        raw_ext_capab = m.group(1)
+        try:
+            return ExtendedCapabilities(bytearray.fromhex(raw_ext_capab))
+        except ValueError:
+            raise Error(
+                f'ext_capab contains invalid hex string repr {raw_ext_capab}')
 
     def is_alive(self):
         """

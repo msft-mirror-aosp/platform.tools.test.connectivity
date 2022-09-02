@@ -30,44 +30,12 @@ from acts.libs.proc import job
 
 PROVISIONED_STATE_GOOD = 1
 
-MOCK_IP_ADDRESSES = """eno1 100.127.110.79
-eno1 2401:fa00:480:7a00:8d4f:85ff:cc5c:787e
-eno1 2401:fa00:480:7a00:459:b993:fcbf:1419
-eno1 fe80::c66d:3c75:2cec:1d72
-enx00e04c000d06 192.168.42.220
-enx00e04c000d06 fe80::2c68:f1b7:eaaa:52e7"""
+MOCK_ENO1_IP_ADDRESSES = """100.127.110.79
+2401:fa00:480:7a00:8d4f:85ff:cc5c:787e
+2401:fa00:480:7a00:459:b993:fcbf:1419
+fe80::c66d:3c75:2cec:1d72"""
 
-MOCK_IFCONFIG_OUTPUT = """eno1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 100.127.110.79  netmask 255.255.255.0  broadcast 100.127.110.255
-        inet6 2401:fa00:480:7a00:8d4f:85ff:cc5c:787e  prefixlen 64  scopeid 0x0<global>
-        inet6 fe80::c66d:3c75:2cec:1d72  prefixlen 64  scopeid 0x20<link>
-        inet6 2401:fa00:480:7a00:459:b993:fcbf:1419  prefixlen 64  scopeid 0x0<global>
-        ether 54:b2:03:13:36:05  txqueuelen 1000  (Ethernet)
-        RX packets 32943262  bytes 13324306863 (13.3 GB)
-        RX errors 669  dropped 0  overruns 0  frame 669
-        TX packets 4778580  bytes 3012041798 (3.0 GB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-        device interrupt 16  memory 0xdf200000-df220000
-
-enx00e04c000d06: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 192.168.42.220  netmask 255.255.255.0  broadcast 192.168.42.255
-        inet6 fe80::2c68:f1b7:eaaa:52e7  prefixlen 64  scopeid 0x20<link>
-        ether 00:e0:4c:00:0d:06  txqueuelen 1000  (Ethernet)
-        RX packets 10212416  bytes 3204008175 (3.2 GB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 9868425  bytes 5641667955 (5.6 GB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        inet6 ::1  prefixlen 128  scopeid 0x10<host>
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 42779835  bytes 6144028882 (6.1 GB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 42779835  bytes 6144028882 (6.1 GB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-"""
+MOCK_WLAN1_IP_ADDRESSES = ""
 
 FUCHSIA_INTERFACES = {
     'id':
@@ -157,8 +125,6 @@ CORRECT_EMPTY_IP_LIST = {
 
 FUCHSIA_INIT_SERVER = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
                        'init_sl4f_connection')
-FUCHSIA_INIT_FFX = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
-                    'init_ffx_connection')
 FUCHSIA_SET_CONTROL_PATH_CONFIG = ('acts.controllers.fuchsia_device.'
                                    'FuchsiaDevice._set_control_path_config')
 FUCHSIA_START_SERVICES = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
@@ -322,8 +288,8 @@ class ConcurrentActionsTest(unittest.TestCase):
         values returned from each individual callable in the order passed in.
         """
         ret_values = utils.run_concurrent_actions_no_raise(
-            lambda: self.function_returns_passed_in_arg(
-                'ARG1'), lambda: self.function_returns_passed_in_arg('ARG2'),
+            lambda: self.function_returns_passed_in_arg('ARG1'),
+            lambda: self.function_returns_passed_in_arg('ARG2'),
             lambda: self.function_returns_passed_in_arg('ARG3'))
 
         self.assertEqual(len(ret_values), 3)
@@ -354,8 +320,8 @@ class ConcurrentActionsTest(unittest.TestCase):
         """
 
         ret_values = utils.run_concurrent_actions(
-            lambda: self.function_returns_passed_in_arg(
-                'ARG1'), lambda: self.function_returns_passed_in_arg('ARG2'),
+            lambda: self.function_returns_passed_in_arg('ARG1'),
+            lambda: self.function_returns_passed_in_arg('ARG2'),
             lambda: self.function_returns_passed_in_arg('ARG3'))
 
         self.assertEqual(len(ret_values), 3)
@@ -412,6 +378,7 @@ class SuppressLogOutputTest(unittest.TestCase):
 
 
 class IpAddressUtilTest(unittest.TestCase):
+
     def test_positive_ipv4_normal_address(self):
         ip_address = "192.168.1.123"
         self.assertTrue(utils.is_valid_ipv4_address(ip_address))
@@ -459,10 +426,8 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch('acts.libs.proc.job.run')
     def test_local_get_interface_ip_addresses_full(self, job_mock):
         job_mock.side_effect = [
-            job.Result(stdout=bytes(MOCK_IP_ADDRESSES, 'utf-8'),
+            job.Result(stdout=bytes(MOCK_ENO1_IP_ADDRESSES, 'utf-8'),
                        encoding='utf-8'),
-            job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
-                       encoding='utf-8')
         ]
         self.assertEqual(utils.get_interface_ip_addresses(job, 'eno1'),
                          CORRECT_FULL_IP_LIST)
@@ -470,10 +435,8 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch('acts.libs.proc.job.run')
     def test_local_get_interface_ip_addresses_empty(self, job_mock):
         job_mock.side_effect = [
-            job.Result(stdout=bytes(MOCK_IP_ADDRESSES, 'utf-8'),
+            job.Result(stdout=bytes(MOCK_WLAN1_IP_ADDRESSES, 'utf-8'),
                        encoding='utf-8'),
-            job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
-                       encoding='utf-8')
         ]
         self.assertEqual(utils.get_interface_ip_addresses(job, 'wlan1'),
                          CORRECT_EMPTY_IP_LIST)
@@ -481,10 +444,8 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch('acts.controllers.utils_lib.ssh.connection.SshConnection.run')
     def test_ssh_get_interface_ip_addresses_full(self, ssh_mock):
         ssh_mock.side_effect = [
-            job.Result(stdout=bytes(MOCK_IP_ADDRESSES, 'utf-8'),
+            job.Result(stdout=bytes(MOCK_ENO1_IP_ADDRESSES, 'utf-8'),
                        encoding='utf-8'),
-            job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
-                       encoding='utf-8')
         ]
         self.assertEqual(
             utils.get_interface_ip_addresses(SshConnection('mock_settings'),
@@ -493,10 +454,8 @@ class IpAddressUtilTest(unittest.TestCase):
     @mock.patch('acts.controllers.utils_lib.ssh.connection.SshConnection.run')
     def test_ssh_get_interface_ip_addresses_empty(self, ssh_mock):
         ssh_mock.side_effect = [
-            job.Result(stdout=bytes(MOCK_IP_ADDRESSES, 'utf-8'),
+            job.Result(stdout=bytes(MOCK_WLAN1_IP_ADDRESSES, 'utf-8'),
                        encoding='utf-8'),
-            job.Result(stdout=bytes(MOCK_IFCONFIG_OUTPUT, 'utf-8'),
-                       encoding='utf-8')
         ]
         self.assertEqual(
             utils.get_interface_ip_addresses(SshConnection('mock_settings'),
@@ -507,7 +466,7 @@ class IpAddressUtilTest(unittest.TestCase):
     def test_android_get_interface_ip_addresses_full(self, is_bootloader,
                                                      adb_mock):
         adb_mock().shell.side_effect = [
-            MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
+            MOCK_ENO1_IP_ADDRESSES,
         ]
         self.assertEqual(
             utils.get_interface_ip_addresses(AndroidDevice(), 'eno1'),
@@ -518,20 +477,21 @@ class IpAddressUtilTest(unittest.TestCase):
     def test_android_get_interface_ip_addresses_empty(self, is_bootloader,
                                                       adb_mock):
         adb_mock().shell.side_effect = [
-            MOCK_IP_ADDRESSES, MOCK_IFCONFIG_OUTPUT
+            MOCK_WLAN1_IP_ADDRESSES,
         ]
         self.assertEqual(
             utils.get_interface_ip_addresses(AndroidDevice(), 'wlan1'),
             CORRECT_EMPTY_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)
-    @mock.patch(FUCHSIA_INIT_FFX)
     @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
     @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
-    def test_fuchsia_get_interface_ip_addresses_full(
-            self, list_interfaces_mock, start_services_mock, control_path_mock,
-            ffx_mock, fuchsia_device_mock):
+    def test_fuchsia_get_interface_ip_addresses_full(self,
+                                                     list_interfaces_mock,
+                                                     start_services_mock,
+                                                     control_path_mock,
+                                                     fuchsia_device_mock):
         # Will never actually be created/used.
         logging.log_path = '/tmp/unit_test_garbage'
 
@@ -543,13 +503,14 @@ class IpAddressUtilTest(unittest.TestCase):
             CORRECT_FULL_IP_LIST)
 
     @mock.patch(FUCHSIA_INIT_SERVER)
-    @mock.patch(FUCHSIA_INIT_FFX)
     @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
     @mock.patch(FUCHSIA_START_SERVICES)
     @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
-    def test_fuchsia_get_interface_ip_addresses_empty(
-            self, list_interfaces_mock, start_services_mock, control_path_mock,
-            ffx_mock, fuchsia_device_mock):
+    def test_fuchsia_get_interface_ip_addresses_empty(self,
+                                                      list_interfaces_mock,
+                                                      start_services_mock,
+                                                      control_path_mock,
+                                                      fuchsia_device_mock):
         # Will never actually be created/used.
         logging.log_path = '/tmp/unit_test_garbage'
 
@@ -562,7 +523,9 @@ class IpAddressUtilTest(unittest.TestCase):
 
 
 class GetDeviceTest(unittest.TestCase):
+
     class TestDevice:
+
         def __init__(self, id, device_type=None) -> None:
             self.id = id
             if device_type:

@@ -348,6 +348,7 @@ gatt_cb_strings = {
     "desc_read": "GattConnect{}onDescriptorRead",
     "desc_read_req": "GattServer{}onDescriptorReadRequest",
     "rd_remote_rssi": "GattConnect{}onReadRemoteRssi",
+    "rd_remote_ble_rssi": "BleScan{}onScanResults",
     "gatt_serv_disc": "GattConnect{}onServicesDiscovered",
     "serv_added": "GattServer{}onServiceAdded",
     "mtu_changed": "GattConnect{}onMtuChanged",

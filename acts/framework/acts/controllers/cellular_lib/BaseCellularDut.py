@@ -23,6 +23,7 @@ class PreferredNetworkType(Enum):
     LTE_ONLY = 'lte-only'
     GSM_ONLY = 'gsm-only'
     WCDMA_ONLY = 'wcdma-only'
+    NR_LTE = 'nr-lte'
 
 
 class BaseCellularDut():
@@ -75,4 +76,12 @@ class BaseCellularDut():
         """ Wrapper for the method with the same name in tel_utils.
 
         Will be deprecated and replaced by get_rx_tx_power_levels. """
+        raise NotImplementedError()
+
+    def start_modem_logging(self):
+        """ Starts on-device log collection. """
+        raise NotImplementedError()
+
+    def stop_modem_logging(self):
+        """ Stops log collection and pulls logs. """
         raise NotImplementedError()

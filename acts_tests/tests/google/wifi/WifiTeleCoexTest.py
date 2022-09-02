@@ -4,6 +4,7 @@ import queue
 import time
 
 import acts.base_test
+import acts_contrib.test_utils.tel.tel_wifi_utils
 import acts_contrib.test_utils.wifi.wifi_test_utils as wifi_utils
 import acts_contrib.test_utils.tel.tel_test_utils as tele_utils
 import acts_contrib.test_utils.tel.tel_mms_utils as mms_utils
@@ -17,6 +18,7 @@ from acts_contrib.test_utils.tel.tel_ims_utils import toggle_volte
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_setup_voice_general
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
+from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_network_generation
 from acts_contrib.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 from acts_contrib.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import phone_idle_iwlan
@@ -212,7 +214,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         """
         tele_utils.toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
-        if not tele_utils.ensure_network_generation(
+        if not ensure_network_generation(
                 self.log,
                 self.android_devices[0],
                 GEN_4G,
@@ -224,7 +226,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
             return False
         tele_utils.toggle_airplane_mode(self.log, self.android_devices[0],
                              is_airplane_mode)
-        if not tele_utils.ensure_wifi_connected(self.log, self.android_devices[0],
+        if not tel_wifi_utils.ensure_wifi_connected(self.log, self.android_devices[0],
                                      self.wifi_network_ssid,
                                      self.wifi_network_pass):
             self.log.error("{} connect WiFI failed".format(

@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import enum
+
 ###############################################
 # TIMERS
 ###############################################
@@ -89,6 +91,10 @@ MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION = 60
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS.
 MAX_WAIT_TIME_SMS_RECEIVE = 120
+
+# Max time to wait after MT MMS was sent and before device
+# actually receive this MT SMS.
+MAX_WAIT_TIME_MMS_RECEIVE = 300
 
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS in case of collision.
@@ -255,6 +261,9 @@ SIM2_SLOT_INDEX = 1
 # invalid Subscription ID
 INVALID_SUB_ID = -1
 
+# invalid port index
+INVALID_PORT_INDEX = -1
+
 # invalid SIM slot index
 INVALID_SIM_SLOT_INDEX = -1
 
@@ -402,7 +411,7 @@ GOOGLE_CBRS_CARRIER_ID = 2340
 GOOGLE_FI_CARRIER_ID = 1989
 
 # List of Chipset models
-CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha"]
+CHIPSET_MODELS_LIST = ["sdm", "msm", "kon", "lit", "laha", "taro"]
 # SMS over wifi providers
 SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
                            "dtag")
@@ -706,6 +715,7 @@ PLMN_ADB_PROPERTY = "gsm.sim.operator.numeric"
 WAIT_TIME_FOR_ALERTS_TO_POPULATE = 60
 WAIT_TIME_FOR_UI = 5
 SCROLL_DOWN = "input swipe 300 900 300 300"
+KEYEVENT_DEL = 'input keyevent KEYCODE_DEL'
 WAIT_TIME_FOR_ALERT_TO_RECEIVE = 15
 DEFAULT_SOUND_TIME = 16
 DEFAULT_VIBRATION_TIME = 10
@@ -748,6 +758,7 @@ NEWZEALAND = "newzealand"
 OMAN = "oman"
 PERU_ENTEL = "peru_entel"
 PERU_TELEFONICA = "peru_telefonica"
+SPAIN_TELEFONICA = "spain_telefonica"
 PUERTORICO = "puertorico"
 ROMANIA = "romania"
 SAUDIARABIA = "saudiarabia"
@@ -978,6 +989,16 @@ class CarrierConfigs:
     DEFAULT_WFC_IMS_MODE_INT = "carrier_default_wfc_ims_mode_int"
     DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL = "carrier_default_wfc_ims_roaming_enabled_bool"
     DEFAULT_WFC_IMS_ROAMING_MODE_INT = "carrier_default_wfc_ims_roaming_mode_int"
+
+
+class SimSlotInfo(enum.Enum):
+    """Mapping table of SIM_SLOT.
+
+    [SIM_SLOT_ID, PORT_ID, PHYSICAL_SLOT_ID]
+    """
+    SLOT_0 = [0, 0, 1]
+    SLOT_1 = [1, 0, 0]
+    SLOT_2 = [2, 1, 0]
 
 
 """

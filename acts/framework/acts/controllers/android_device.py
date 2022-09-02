@@ -559,6 +559,17 @@ class AndroidDevice:
         }
         return info
 
+    def add_device_info(self, name, info):
+        """Add custom device info to the user_added_info section.
+
+        Adding the same info name the second time will override existing info.
+
+        Args:
+          name: string, name of this info.
+          info: serializable, content of the info.
+        """
+        self._user_added_device_info.update({name: info})
+
     def sdk_api_level(self):
         if self._sdk_api_level is not None:
             return self._sdk_api_level
@@ -1207,8 +1218,7 @@ class AndroidDevice:
             if crashes:
                 crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
-            test_name = test_name or time.strftime("%Y-%m-%d-%Y-%H-%M-%S")
-            crash_log_path = os.path.join(self.log_path, test_name,
+            crash_log_path = os.path.join(self.device_log_path,
                                           "Crashes_%s" % self.serial)
             os.makedirs(crash_log_path, exist_ok=True)
             self.pull_files(crash_reports, crash_log_path)
