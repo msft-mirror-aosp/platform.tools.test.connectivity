@@ -419,16 +419,9 @@ class GnssSuplTest(BaseTestClass):
             gutils.fastboot_factory_reset(self.ad, True)
             self.ad.unlock_screen(password=None)
             self.init_device()
-            begin_time = get_current_epoch_time()
-            self.run_ttff(mode="cs", criteria=self.standalone_cs_criteria)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            if not gutils.check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                          criteria=self.supl_cs_criteria):
-                raise signals.TestFailure("SUPL after Factory Reset test %d "
-                                          "times -> FAIL" % times)
-            self.ad.log.info("SUPL after Factory Reset test %d times -> "
-                             "PASS" % times)
+            self.ad.log.info("SUPL after factory reset round %d" % times)
+            self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
+            self.ad.log.info("SUPL after Factory Reset round %d -> PASS" % times)
 
     @test_tracker_info(uuid="9f565b32-9938-42c0-a29d-f4d28b5f4d75")
     def test_supl_system_server_restart(self):
