@@ -28,6 +28,7 @@ class GnssSuplTest(BaseTestClass):
             "weak_signal_supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
             "qdsp6m_path", "collect_logs", "ttff_test_cycle", "project_limit_lte",
             "project_limit_lte_btwifi", "weak_gnss_signal_attenuation", "supl_capabilities",
+            "no_gnss_signal_attenuation",
         ]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID

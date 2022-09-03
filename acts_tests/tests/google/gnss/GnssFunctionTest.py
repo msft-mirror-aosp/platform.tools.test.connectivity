@@ -73,7 +73,7 @@ class GnssFunctionTest(BaseTestClass):
                       "wearable_reboot_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
-                      "no_gnss_signal_attenuation", "gnss_init_error_list",
+                      "gnss_init_error_list",
                       "gnss_init_error_allowlist", "pixel_lab_location",
                       "qdsp6m_path", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
@@ -236,8 +236,8 @@ class GnssFunctionTest(BaseTestClass):
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
         self.ad.droid.connectivityToggleAirplaneMode(True)
-        gutils.run_ttff_via_gtw_gpstool(mode, criteria, self.ttff_test_cycle,
-                                        self.pixel_lab_location)
+        gutils.run_ttff_via_gtw_gpstool(
+            self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location)
 
     """ Test Cases """
 
@@ -535,8 +535,9 @@ class GnssFunctionTest(BaseTestClass):
         disable_vendor_orbit_assistance_data(self.ad)
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_mobile_data(self.ad, False)
-        gutils.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria, self.ttff_test_cycle,
-                                        self.pixel_lab_location)
+        gutils.run_ttff_via_gtw_gpstool(
+            self.ad, "cs", self.standalone_cs_criteria, self.ttff_test_cycle,
+            self.pixel_lab_location)
 
     @test_tracker_info(uuid="2a9f2890-3c0a-48b8-821d-bf97e36355e9")
     def test_quick_toggle_gnss_state(self):
