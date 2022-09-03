@@ -59,9 +59,9 @@ def generate_test_name(settings):
     for cap in hostapd_constants.N_CAPABILITIES_MAPPING.keys():
         if cap in settings['n_capabilities']:
             ret.append(hostapd_constants.N_CAPABILITIES_MAPPING[cap])
-    return 'test_%s_%s_%s_%s_%s' % (settings['frequency'], settings['chbw'],
-                                    settings['security'], settings['n_mode'],
-                                    ''.join(ret))
+    return 'test_11n_%s_%s_%s_%s_%s' % (settings['frequency'],
+                                        settings['chbw'], settings['security'],
+                                        settings['n_mode'], ''.join(ret))
 
 
 class WlanPhyCompliance11NTest(WifiBaseTest):
