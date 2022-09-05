@@ -263,13 +263,6 @@ class TelephonyBaseTest(BaseTestClass):
             raise signals.TestAbortClass("unable to load the SIM")
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
-        adb_disable_verity(ad)
-        build_id = ad.build_info["build_id"].replace(".", r"\.")
-        ad.adb.shell("sed -i '/^ro.build.id=/ "
-                     f"s/{build_id}/&_test/g' /system/build.prop")
-        ad.adb.shell("sed -i '/^ro.build.description=/ "
-                     f"s/{build_id}/&_test/g' /system/build.prop")
-
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         ad.sdm_log = getattr(ad, "sdm_log", self.sdm_log)
         ad.dsp_log = getattr(ad, "dsp_log", self.dsp_log)
@@ -284,6 +277,14 @@ class TelephonyBaseTest(BaseTestClass):
                 new_build_id=self.user_params.get("build_id_override_with",
                                                   None),
                 postfix=build_postfix)
+
+        adb_disable_verity(ad)
+        build_id = ad.build_info["build_id"].replace(".", r"\.")
+        ad.adb.shell("sed -i '/^ro.build.id=/ "
+                     f"s/{build_id}/&_test/g' /system/build.prop")
+        ad.adb.shell("sed -i '/^ro.build.description=/ "
+                     f"s/{build_id}/&_test/g' /system/build.prop")
+
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
         list_of_models = CHIPSET_MODELS_LIST
