@@ -14,12 +14,15 @@
 import os
 import socket
 import time
+from unittest.mock import DEFAULT
+import paramiko
+import re
 
 from acts.controllers.cellular_simulator import AbstractCellularSimulator
 
 
 class UXMCellularSimulator(AbstractCellularSimulator):
-    """A cellular simulator for UXM callbox. """
+    """A cellular simulator for UXM callbox."""
 
     # Keys to obtain data from cell_info dictionary.
     KEY_CELL_NUMBER = "cell_number"
@@ -41,18 +44,42 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     SCPI_GET_CELL_STATUS = 'BSE:STATus:{}:{}?'
     SCPI_CHECK_CONNECTION_CMD = '*IDN?\n'
 
-    def __init__(self, ip_address, custom_files):
+    # UXM's Test Application recovery
+    TA_BOOT_TIME = 100
+
+    # shh command
+    SSH_START_GUI_APP_CMD_FORMAT = 'psexec -s -d -i 1 "{exe_path}"'
+    SSH_CHECK_APP_RUNNING_CMD_FORMAT = 'tasklist | findstr /R {regex_app_name}'
+
+    # start process success regex
+    PSEXEC_PROC_STARTED_REGEX_FORMAT = 'started on * with process ID {proc_id}'
+
+    def __init__(self, ip_address,
+                 custom_files, uxm_user,
+                 ssh_private_key_to_uxm,
+                 ta_exe_path, ta_exe_name):
         """Initializes the cellular simulator.
 
         Args:
-            ip_address: the ip address of dektop where Keysight Test Application
+            ip_address: the ip address of host where Keysight Test Application (TA)
                 is installed.
             custom_files: a list of file path for custom files.
+            uxm_user: username of host where Keysight TA resides.
+            ssh_private_key_to_uxm: private key for key based ssh to
+                host where Keysight TA resides.
+            ta_exe_path: path to TA exe.
+            ta_exe_name: name of TA exe.
         """
         super().__init__()
         self.custom_files = custom_files
         self.rockbottom_script = None
         self.cells = []
+        self.uxm_ip = ip_address
+        self.uxm_user = uxm_user
+        self.ssh_private_key_to_uxm = ssh_private_key_to_uxm
+        self.ta_exe_path = ta_exe_path
+        self.ta_exe_name = ta_exe_name
+        self.ssh_client = self._create_ssh_client()
 
         # get roclbottom file
         for file in self.custom_files:
@@ -60,9 +87,75 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 self.rockbottom_script = file
 
         # connect to Keysight Test Application via socket
-        self.socket = self._socket_connect(ip_address, self.UXM_PORT)
+        self.recovery_ta()
+        self.socket = self._socket_connect(self.uxm_ip, self.UXM_PORT)
         self.check_socket_connection()
         self.timeout = 120
+
+    def _create_ssh_client(self):
+        """Create a ssh client to host."""
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        mykey = paramiko.Ed25519Key.from_private_key_file(
+            self.ssh_private_key_to_uxm)
+        ssh.connect(hostname=self.uxm_ip, username=self.uxm_user, pkey=mykey)
+        self.log.info('SSH client to %s is connected' % self.uxm_ip)
+        return ssh
+
+    def is_ta_running(self):
+        is_running_cmd = self.SSH_CHECK_APP_RUNNING_CMD_FORMAT.format(
+            regex_app_name=self.ta_exe_name)
+        stdin, stdout, stderr = self.ssh_client.exec_command(is_running_cmd)
+        stdin.close()
+        err = ''.join(stderr.readlines())
+        out = ''.join(stdout.readlines())
+        final_output = str(out) + str(err)
+        self.log.info(final_output)
+        return (out != '' and err == '')
+
+    def _start_test_app(self):
+        """Start Test Application on Windows."""
+        # start GUI exe via ssh
+        start_app_cmd = self.SSH_START_GUI_APP_CMD_FORMAT.format(
+            exe_path=self.ta_exe_path
+        )
+        stdin, stdout, stderr = self.ssh_client.exec_command(start_app_cmd)
+        self.log.info(f'Command sent to {self.uxm_ip}: {start_app_cmd}')
+        stdin.close()
+        err = ''.join(stderr.readlines())
+        out = ''.join(stdout.readlines())
+        # psexec return process ID as part of the exit code
+        exit_status = stderr.channel.recv_exit_status()
+        is_started = re.search(
+            self.PSEXEC_PROC_STARTED_REGEX_FORMAT.format(proc_id=exit_status),
+            err[-1]
+        )
+        if is_started:
+            raise RuntimeError('Fail to start TA: ' + out + err)
+        # wait for ta completely boot up
+        self.log.info('TA is starting')
+        time.sleep(self.TA_BOOT_TIME)
+
+    def recovery_ta(self):
+        """Start TA if it is not running."""
+        if not self.is_ta_running():
+            self._start_test_app()
+            # checking if ta booting process complete
+            # by checking socket connection
+            s = None
+            retries = 12
+            for _ in range(retries):
+                try:
+                    s = self._socket_connect(self.uxm_ip, self.UXM_PORT)
+                    s.close()
+                    return
+                except ConnectionRefusedError as cre:
+                    self.log.info(
+                        'Connection refused, wait 10s for TA to boot')
+                    time.sleep(10)
+            raise RuntimeError(
+                'TA does not start on time'
+            )
 
     def set_rockbottom_script_path(self, path):
         """Set path to rockbottom script.
@@ -275,6 +368,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 device unable to connect to cell.
         """
         # airplane mode off
+        # dut.ad.adb.shell('settings put secure adaptive_connectivity_enabled 0')
         dut.toggle_airplane_mode(False)
         time.sleep(5)
         # turn cell on
@@ -289,6 +383,9 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             self.log.info(f'cell state: {cell_state}')
             if cell_state == 'CONN\n':
                 return True
+            if cell_state == 'OFF\n':
+                self.turn_cell_on(cell_type, cell_number)
+                time.sleep(5)
             if change_dut_setting_allow:
                 if (index % 4) == 0:
                     dut.ad.reboot()
@@ -296,7 +393,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                         self.dut_rockbottom(dut)
                     else:
                         self.log.warning(
-                            f'Rockbottom script {self} was not executed after reboot')
+                            f'Rockbottom script {self} was not executed after reboot'
+                        )
                 else:
                     # airplane mode on
                     dut.toggle_airplane_mode(True)
@@ -305,7 +403,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                     dut.toggle_airplane_mode(False)
 
         # Phone cannot connected to basestation of callbox
-        raise AbstractCellularSimulator.CellularSimulatorError(
+        raise RuntimeError(
             f'Phone was unable to connect to cell: {cell_type}-{cell_number}')
 
     def wait_until_attached(self, dut, timeout, attach_retries):
