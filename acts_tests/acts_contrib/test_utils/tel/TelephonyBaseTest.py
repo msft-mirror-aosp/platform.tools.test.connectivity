@@ -278,13 +278,6 @@ class TelephonyBaseTest(BaseTestClass):
                                                   None),
                 postfix=build_postfix)
 
-        adb_disable_verity(ad)
-        build_id = ad.build_info["build_id"].replace(".", r"\.")
-        ad.adb.shell("sed -i '/^ro.build.id=/ "
-                     f"s/{build_id}/&_test/g' /system/build.prop")
-        ad.adb.shell("sed -i '/^ro.build.description=/ "
-                     f"s/{build_id}/&_test/g' /system/build.prop")
-
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
         list_of_models = CHIPSET_MODELS_LIST
@@ -297,10 +290,21 @@ class TelephonyBaseTest(BaseTestClass):
                              % phone_mode)
                 reboot_device(ad)
 
+        if "_test" not in ad.build_info["build_id"]:
+            ad.ensure_verity_disabled()
+            ad.adb.remount()
+            build_id = ad.build_info["build_id"].replace(".", r"\.")
+            ad.adb.shell("sed -i '/^ro.build.id=/ "
+                        f"s/{build_id}/&_test/g' /system/build.prop")
+            ad.adb.shell("sed -i '/^ro.build.description=/ "
+                        f"s/{build_id}/&_test/g' /system/build.prop")
+
         if ad.dsp_log:
             start_dsp_logger(ad)
         if ad.dsp_log_p21:
             start_dsp_logger(ad, p21=True)
+        else:
+            ad.reboot()
         stop_qxdm_logger(ad)
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
