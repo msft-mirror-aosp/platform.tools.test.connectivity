@@ -59,6 +59,7 @@ class GnssSuplTest(BaseTestClass):
         gutils.init_gtw_gpstool(self.ad)
         gutils.disable_vendor_orbit_assistance_data(self.ad)
         self.enable_supl_over_wifi()
+        gutils.reboot(self.ad)
 
     def enable_supl_over_wifi(self):
         try:
