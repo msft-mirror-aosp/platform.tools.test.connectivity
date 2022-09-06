@@ -103,7 +103,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.cmx.lte_rrc_state_change_timer = time
 
 
-    def set_band(self, bts_index, band, frequency_range=None):
+    def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
 
         Args:
@@ -111,11 +111,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             band: the new band
         """
         self.log.info('set band to {}'.format(band))
-        if frequency_range:
-            self.bts[bts_index].set_band(
-                    int(band), frequency_range=frequency_range)
-        else:
-            self.bts[bts_index].set_band(int(band))
+        self.bts[bts_index].set_band(int(band))
 
     def get_duplex_mode(self, band):
         """ Determines if the band uses FDD or TDD duplex mode
