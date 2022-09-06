@@ -489,6 +489,8 @@ class BaseStation(object):
             band: band of cell.
         """
         self._cell.set_band(band)
+        logger.info('The band is set to {} and is {} after setting'.format(
+                band, self.band))
 
     def set_dl_mac_padding(self, state):
         """Enables/Disables downlink padding at the mac layer.
@@ -923,7 +925,7 @@ class NrBaseStation(BaseStation):
         """Gets the downlink channel of cell.
 
         Return:
-            the downlink channel (earfcn) in int.
+            the downlink channel (nr_arfcn) in int.
         """
         return int(self._cell.get_dl_ref_a())
 
@@ -958,27 +960,6 @@ class NrBaseStation(BaseStation):
             return CarrierBandwidth(2 + bandwidth // 10)
         else:
             return CarrierBandwidth(bandwidth // 5 - 1)
-
-    def set_band(self, band, frequency_range=None):
-        """Sets the Band of cell.
-
-        Args:
-            band: band of cell.
-            frequency_range: LOW, MID and HIGH for NR cell
-        """
-        from mrtype.frequency import FrequencyRange
-        if not frequency_range or frequency_range.upper() == 'LOW':
-            frequency_range = FrequencyRange.LOW
-        elif frequency_range.upper() == 'MID':
-            frequency_range = FrequencyRange.MID
-        elif frequency_range.upper() == 'HIGH':
-            frequency_range = FrequencyRange.HIGH
-        else:
-            raise CmxError('Wrong type FrequencyRange')
-
-        self._cell.set_dl_ref_a_offset(band, frequency_range)
-        logger.info('The band is set to {} and is {} after setting'.format(
-                band, self.band))
 
     def set_bandwidth(self, bandwidth, scs=None):
         """Sets the channel bandwidth of the cell.
@@ -1030,7 +1011,7 @@ class NrBaseStation(BaseStation):
         is_on = self._cell.is_on()
         if is_on:
             self._cell.stop()
-        self._cc.set_dl_mimo_mode(DownlinkMimoMode.Enum(mimo.value))
+        self._config_scheduler(dl_mimo_mode=DownlinkMimoMode.Enum(mimo.value))
         if is_on:
             self._cell.start()
 
