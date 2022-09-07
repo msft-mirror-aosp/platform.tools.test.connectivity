@@ -24,15 +24,22 @@ class PowerTelPDCCHTest(base_test.PowerCellularLabBaseTest):
 
     In this test the UE is only listening and decoding the PDCCH channel. """
 
-    # ODPM modem power record name
+    # ODPM report
     ODPM_MODEM_RECORD_NAME = '[VSYS_PWR_MODEM]:Modem'
 
     # conversion unit
     S_TO_MS_FACTOR = 1000
 
+    # kibble report
+    KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
+
+    # params key
+    MONSOON_VOLTAGE_KEY = 'mon_voltage'
+
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.odpm_power = None
+        self.odpm_power = 0
+        self.kibble_system_power = 0
 
     def power_pdcch_test(self):
         """ Measures power during PDCCH only.
@@ -84,6 +91,22 @@ class PowerTelPDCCHTest(base_test.PowerCellularLabBaseTest):
                             self.log.info(
                                 'odpm power: ' + str(odpm_power) + ' mW'
                             )
+        # getting system power if kibble is on
+        test_run_debug_log_path = os.path.join(
+            context_path, 'test_run_debug.txt'
+        )
+        self.log.debug('test_run_debug path: ' + test_run_debug_log_path)
+        with open(test_run_debug_log_path, 'r') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                if self.KIBBLE_SYSTEM_RECORD_NAME in line:
+                    value_line = f.readline()
+                    system_power_str = value_line.split(':')[1].strip()
+                    monsoon_voltage = self.test_params[self.MONSOON_VOLTAGE_KEY]
+                    self.kibble_system_power = float(system_power_str) * monsoon_voltage
+                    break
 
         # Check if power measurement is within the required values
         self.pass_fail_check(self.avg_current)

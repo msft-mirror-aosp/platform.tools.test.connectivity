@@ -53,8 +53,10 @@ class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
         system_power = None
         modem_kibble_power = None
 
-        if hasattr(self, 'Bits'):
+        # check if test is running with bits
+        if hasattr(self, 'bitses'):
             modem_kibble_power = self.power_results.get(self.test_name, None)
+            system_power = self.kibble_system_power
         else:
             system_power = self.power_results.get(self.test_name, None)
 
