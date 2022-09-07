@@ -28,7 +28,7 @@ class GnssSuplTest(BaseTestClass):
             "weak_signal_supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
             "qdsp6m_path", "collect_logs", "ttff_test_cycle", "project_limit_lte",
             "project_limit_lte_btwifi", "weak_gnss_signal_attenuation", "supl_capabilities",
-            "no_gnss_signal_attenuation",
+            "no_gnss_signal_attenuation", "set_attenuator"
         ]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
@@ -91,6 +91,7 @@ class GnssSuplTest(BaseTestClass):
         if self.collect_logs:
             gutils.stop_pixel_logger(self.ad)
             stop_adb_tcpdump(self.ad)
+        if self.set_attenuator:
             gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
                                               self.default_gnss_signal_attenuation)
 
