@@ -197,7 +197,7 @@ class CellularBaseTest(base_test.BaseTestClass):
                                    ta_exe_path=None,
                                    ta_exe_name= None)
             for param in ('uxm_ip', 'uxm_user',
-                          'ssh_private_key_to_uxm', 'ta_exe_path'
+                          'ssh_private_key_to_uxm', 'ta_exe_path',
                           'ta_exe_name', 'custom_files'):
                 if getattr(self, param) is None:
                     raise RuntimeError('The uxm cellular simulator '
