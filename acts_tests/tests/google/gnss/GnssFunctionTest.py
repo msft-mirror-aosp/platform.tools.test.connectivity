@@ -77,7 +77,8 @@ class GnssFunctionTest(BaseTestClass):
                       "gnss_init_error_allowlist", "pixel_lab_location",
                       "qdsp6m_path", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
-                      "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold"]
+                      "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold",
+                      "set_attenuator"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -97,6 +98,7 @@ class GnssFunctionTest(BaseTestClass):
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
+        if self.set_attenuator:
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
         # TODO (b/202101058:chenstanley): Need to double check how to disable wifi successfully in wearable projects.
@@ -112,6 +114,7 @@ class GnssFunctionTest(BaseTestClass):
         if self.collect_logs:
             gutils.stop_pixel_logger(self.ad)
             stop_adb_tcpdump(self.ad)
+        if self.set_attenuator:
             set_attenuator_gnss_signal(self.ad, self.attenuators,
                                        self.default_gnss_signal_attenuation)
         # TODO(chenstanley): sim structure issue
