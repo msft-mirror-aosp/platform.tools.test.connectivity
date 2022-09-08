@@ -372,6 +372,12 @@ class FuchsiaDevice:
         # not present.
         self.sl4f_v1 = False
 
+        # TODO(b/241310375): Remove this hack once SL4F only starts when it's
+        # needed. This is necessary for flashing between different versions of
+        # Fuchsia.
+        if fd_conf_data.get('skip_start_services'):
+            return
+
         try:
             self.start_services()
             self.run_commands_from_config(self.setup_commands)
