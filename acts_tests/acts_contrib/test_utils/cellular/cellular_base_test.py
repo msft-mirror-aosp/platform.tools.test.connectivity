@@ -191,7 +191,24 @@ class CellularBaseTest(base_test.BaseTestClass):
                                                self.cmx500_port)
 
         elif self.uxm_ip:
-            return uxm.UXMCellularSimulator(self.uxm_ip, self.custom_files)
+            # unpack additional uxm info
+            self.unpack_userparams(uxm_user=None,
+                                   ssh_private_key_to_uxm=None,
+                                   ta_exe_path=None,
+                                   ta_exe_name= None)
+            for param in ('uxm_ip', 'uxm_user',
+                          'ssh_private_key_to_uxm', 'ta_exe_path',
+                          'ta_exe_name', 'custom_files'):
+                if getattr(self, param) is None:
+                    raise RuntimeError('The uxm cellular simulator '
+                                       'requires %s to be set in the '
+                                       'config file.' % key)
+            return uxm.UXMCellularSimulator(self.uxm_ip,
+                                            self.custom_files,
+                                            self.uxm_user,
+                                            self.ssh_private_key_to_uxm,
+                                            self.ta_exe_path,
+                                            self.ta_exe_name)
 
         else:
             raise RuntimeError(
