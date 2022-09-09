@@ -825,7 +825,7 @@ class FuchsiaDevice:
         # Verify SL4F is up.
         self.log.info('Verifying SL4F commands can run.')
         try:
-            self.hwinfo_lib.getDeviceInfo()
+            self.wlan_lib.wlanGetIfaceIdList()
         except Exception as err:
             raise ConnectionError(
                 'Failed to connect and run command via SL4F. Err: %s' % err)
