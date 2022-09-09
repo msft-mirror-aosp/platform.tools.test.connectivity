@@ -68,12 +68,12 @@ class BtFuchsiaEPTest(BaseTestClass):
         """
         ssh_timeout = 30
         for fd in self.fuchsia_devices:
-            fd.send_command_ssh("killall bt-a2dp*",
-                                timeout=ssh_timeout,
-                                skip_status_code_check=True)
-            fd.send_command_ssh("killall bt-avrcp*",
-                                timeout=ssh_timeout,
-                                skip_status_code_check=True)
+            fd.ssh.run("killall bt-a2dp*",
+                       timeout=ssh_timeout,
+                       skip_status_code_check=True)
+            fd.ssh.run("killall bt-avrcp*",
+                       timeout=ssh_timeout,
+                       skip_status_code_check=True)
 
     def _unbond_all_known_devices(self):
         """For all Fuchsia devices, unbond any known pairings.
