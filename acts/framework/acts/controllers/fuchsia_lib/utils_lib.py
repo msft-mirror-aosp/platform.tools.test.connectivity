@@ -76,6 +76,8 @@ def get_private_key(ip_address, ssh_config):
     raise Exception('No valid ssh key type found', exceptions)
 
 
+# TODO(b/244747218): Remove once IPerfClient and FuchsiaSyslogProcess are
+# refactored away from this method.
 @backoff.on_exception(
     backoff.constant,
     (paramiko.ssh_exception.SSHException,
@@ -158,41 +160,6 @@ def get_ssh_key_for_host(host, ssh_config_file):
         raise FileNotFoundError('Specified IdentityFile %s for %s in %s not '
                                 'existing anymore.' % (path, host, ssh_config))
     return path
-
-
-class SshResults:
-    """Class representing the results from a SSH command to mimic the output
-    of the job.Result class in ACTS.  This is to reduce the changes needed from
-    swapping the ssh connection in ACTS to paramiko.
-
-    Attributes:
-        stdin: The file descriptor to the input channel of the SSH connection.
-        stdout: The file descriptor to the stdout of the SSH connection.
-        stderr: The file descriptor to the stderr of the SSH connection.
-        exit_status: The file descriptor of the SSH command.
-    """
-
-    def __init__(self, stdin, stdout, stderr, exit_status):
-        self._raw_stdout = stdout.read()
-        self._stdout = self._raw_stdout.decode('utf-8', errors='replace')
-        self._stderr = stderr.read().decode('utf-8', errors='replace')
-        self._exit_status = exit_status.recv_exit_status()
-
-    @property
-    def stdout(self):
-        return self._stdout
-
-    @property
-    def raw_stdout(self):
-        return self._raw_stdout
-
-    @property
-    def stderr(self):
-        return self._stderr
-
-    @property
-    def exit_status(self):
-        return self._exit_status
 
 
 def flash(fuchsia_device,
@@ -303,9 +270,9 @@ def reboot_to_bootloader(fuchsia_device,
             # after this command.  There is no check so if there is an
             # expectation of the device being in fastboot, then some
             # other check needs to be done.
-            fuchsia_device.send_command_ssh(
+            fuchsia_device.ssh.run(
                 'dm rb',
-                timeout=fuchsia_reconnect_after_reboot_time,
+                timeout_sec=fuchsia_reconnect_after_reboot_time,
                 skip_status_code_check=True)
     else:
         pass

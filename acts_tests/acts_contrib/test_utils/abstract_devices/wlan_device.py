@@ -464,7 +464,7 @@ class FuchsiaWlanDevice(WlanDevice):
             return False
 
     def send_command(self, command):
-        return self.device.send_command_ssh(str(command)).stdout
+        return self.device.ssh.run(str(command)).stdout
 
     def get_interface_ip_addresses(self, interface):
         return get_interface_ip_addresses(self.device, interface)
@@ -552,5 +552,6 @@ class FuchsiaWlanDevice(WlanDevice):
                 'host': self.device.ip,
                 'ssh_config': self.device.ssh_config
             },
+            ssh_provider=self.device.ssh,
             use_paramiko=True,
             test_interface=test_interface)
