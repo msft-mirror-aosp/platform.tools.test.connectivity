@@ -62,6 +62,7 @@ class AbstractCellularSimulator:
             config: a BaseSimulation.BtsConfig object.
             bts_index: the base station number.
         """
+        self.log.info('The config for {} is {}'.format(bts_index, str(config)))
 
         if config.output_power:
             self.set_output_power(bts_index, config.output_power)
@@ -71,6 +72,10 @@ class AbstractCellularSimulator:
 
         if isinstance(config, cellular_lib.LteCellConfig.LteCellConfig):
             self.configure_lte_bts(config, bts_index)
+
+        if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
+            self.configure_nr_bts(config, bts_index)
+
 
     def configure_lte_bts(self, config, bts_index=0):
         """ Commands the equipment to setup an LTE base station with the
@@ -159,6 +164,43 @@ class AbstractCellularSimulator:
             if config.drx_long_cycle_offset is not None:
                 self.set_drx_long_cycle_offset(bts_index,
                                                config.drx_long_cycle_offset)
+
+    def configure_nr_bts(self, config, bts_index=1):
+        """ Commands the equipment to setup an LTE base station with the
+        required configuration.
+
+        Args:
+            config: an LteSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        if config.band:
+            self.set_band(bts_index, config.band)
+
+        if config.nr_arfcn:
+            self.set_downlink_channel_number(bts_index, config.nr_arfcn)
+
+        if config.bandwidth:
+            self.set_bandwidth(bts_index, config.bandwidth)
+
+        if config.mimo_mode:
+            self.set_mimo_mode(bts_index, config.mimo_mode)
+
+        if config.scheduling_mode:
+
+            if (config.scheduling_mode ==
+                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+                    and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
+                             and config.ul_mcs)):
+                raise ValueError('When the scheduling mode is set to manual, '
+                                 'the RB and MCS parameters are required.')
+
+            # If scheduling mode is set to Dynamic, the RB and MCS parameters
+            # will be ignored by set_scheduling_mode.
+            self.set_scheduling_mode(bts_index, config.scheduling_mode,
+                                     config.dl_mcs, config.ul_mcs,
+                                     config.dl_rbs, config.ul_rbs)
+        if config.mac_padding is not None:
+            self.set_mac_padding(bts_index, config.mac_padding)
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
