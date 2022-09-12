@@ -166,54 +166,6 @@ def get_instances(fds_conf_data):
     return [FuchsiaDevice(fd_conf_data) for fd_conf_data in fds_conf_data]
 
 
-def find_routes_to(dest_ip):
-    """Find the routes used to reach a destination.
-
-    Look through the routing table for the routes that would be used without
-    sending any packets. This is especially helpful for when the device is
-    currently unreachable.
-
-    Only natively supported on Linux. MacOS has iproute2mac, but it doesn't
-    support JSON formatted output.
-
-    TODO(http://b/238924195): Add support for MacOS.
-
-    Args:
-        dest_ip: IP address of the destination
-
-    Throws:
-        CalledProcessError: if the ip command returns a non-zero exit code
-        JSONDecodeError: if the ip command doesn't return JSON
-
-    """
-    resp = subprocess.run(f"ip -json route get {dest_ip}".split(),
-                          capture_output=True,
-                          check=True)
-    return json.loads(resp.stdout)
-
-
-def find_host_ip(device_ip):
-    """Find the host's source IP used to reach a device.
-
-    Not all host interfaces can talk to a given device. This limitation can
-    either be physical through hardware or virtual through routing tables.
-    Look through the routing table without sending any packets then return the
-    preferred source IP address.
-
-    Args:
-        device_ip: IP address of the device
-    """
-    routes = find_routes_to(device_ip)
-    if len(routes) != 1:
-        raise FuchsiaDeviceError(
-            f"Expected only one route to {device_ip}, got {routes}")
-
-    route = routes[0]
-    if not 'prefsrc' in route:
-        raise FuchsiaDeviceError(f'Route does not contain "srcpref": {route}')
-    return route["prefsrc"]
-
-
 class FuchsiaDevice:
     """Class representing a Fuchsia device.
 
@@ -480,24 +432,16 @@ class FuchsiaDevice:
                 "This is usually required for the Fuchsia iPerf3 client or "
                 "other testing utilities not on device cache.")
             return
+        if self.package_server:
+            self.log.warn(
+                "Skipping to start the package server since is already running"
+            )
+            return
 
         self.package_server = PackageServer(self.pm_binary_path,
                                             self.packages_path)
         self.package_server.start()
-
-        # Remove any existing repositories that may be stale.
-        try:
-            self.ssh.run("pkgctl repo rm fuchsia-pkg://fuchsia.com")
-        except FuchsiaSSHError as e:
-            if not 'NOT_FOUND' in e.result.stderr:
-                raise e
-
-        # Configure the device with the new repository.
-        host_ip = find_host_ip(self.ip)
-        repo_url = f"http://{host_ip}:{self.package_server.port}"
-        self.ssh.run(
-            f"pkgctl repo add url -f 2 -n fuchsia.com {repo_url}/config.json")
-        self.log.info(f'Added repo "fuchsia.com" from {repo_url}')
+        self.package_server.configure_device(self.ssh)
 
     @backoff.on_exception(
         backoff.constant,
