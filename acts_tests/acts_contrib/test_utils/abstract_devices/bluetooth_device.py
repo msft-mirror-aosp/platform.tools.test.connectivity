@@ -426,7 +426,6 @@ class AndroidBluetoothDevice(BluetoothDevice):
         """ Just pass for Android as there is no concept of initializing
         a Bluetooth controller.
         """
-        pass
 
     def start_pairing_helper(self):
         """ Starts the Android pairing helper.
@@ -761,7 +760,6 @@ class AndroidBluetoothDevice(BluetoothDevice):
             profile_id: The profile ID to set.
         """
         # Android devices currently have no hooks to modify the SDP record.
-        pass
 
     def sdp_add_service(self, sdp_record):
         """Adds an SDP service record.
@@ -772,7 +770,6 @@ class AndroidBluetoothDevice(BluetoothDevice):
                 None if failed.
         """
         # Android devices currently have no hooks to modify the SDP record.
-        pass
 
     def sdp_clean_up(self):
         """Cleans up all objects related to SDP.
@@ -783,7 +780,6 @@ class AndroidBluetoothDevice(BluetoothDevice):
         """Initializes SDP on the device.
         """
         # Android devices currently have no hooks to modify the SDP record.
-        pass
 
     def sdp_remove_service(self, service_id):
         """Removes a service based on an input id.
@@ -791,7 +787,6 @@ class AndroidBluetoothDevice(BluetoothDevice):
             service_id: The service ID to remove.
         """
         # Android devices currently have no hooks to modify the SDP record.
-        pass
 
     def unbond_all_known_devices(self):
         """ Unbond all known remote devices.
@@ -858,7 +853,6 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
 
     def bluetooth_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
-        pass
 
     def set_discoverable(self, is_discoverable):
         """ Sets the device's discoverability.
@@ -1231,7 +1225,6 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
 
     def reset_bluetooth(self):
         """Stub for Fuchsia implementation."""
-        pass
 
     def sdp_add_search(self, attribute_list, profile_id):
         """Adds an SDP search record.
@@ -1314,7 +1307,6 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
             log: The informative log.
         """
         self.device.logging_lib.logI(log)
-        pass
 
     def unbond_all_known_devices(self):
         """ Unbond all known remote devices.
@@ -1398,7 +1390,6 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
                         self.log.info("\t\tstr val: {}".format(str_value))
                     except Exception as err:
                         self.log.error(err)
-                        pass
         except Exception as err:
             self.log.error(fail_err.forma(err))
 

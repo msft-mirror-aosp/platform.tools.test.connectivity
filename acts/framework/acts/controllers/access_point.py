@@ -17,7 +17,6 @@
 import collections
 import ipaddress
 import os
-import re
 import time
 from typing import FrozenSet, Set
 

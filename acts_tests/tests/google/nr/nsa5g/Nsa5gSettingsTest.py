@@ -13,12 +13,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 '''
     Test Script for Telephony Settings on nsa 5G
 '''
-
-import time
 
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -40,8 +37,8 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
 
-
     """ Tests Begin """
+
     @test_tracker_info(uuid='57debc2d-ca17-4363-8d03-9bc068fdc624')
     @TelephonyBaseTest.tel_test_wrap
     def test_5g_nsa_disable_enable_sim(self):

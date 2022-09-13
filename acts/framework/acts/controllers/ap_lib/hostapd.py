@@ -15,7 +15,6 @@
 import collections
 import itertools
 import logging
-import os
 import re
 import time
 from typing import Set
