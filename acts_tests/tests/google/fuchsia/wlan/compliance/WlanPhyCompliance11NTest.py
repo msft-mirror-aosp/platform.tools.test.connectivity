@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import itertools
-import re
 
 from acts import asserts
 from acts import utils
