@@ -58,7 +58,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         self.stress_test_number = self.get_stress_test_number()
         self.carrier_configs = dumpsys_carrier_config(self.dut)
         self.dut_subID = get_outgoing_voice_sub_id(self.dut)
-        self.dut_capabilities = self.dut.telephony["subscription"][self.dut_subID].get("capabilities", [])
+        self.dut_capabilities = self.dut.telephony["subscription"][
+            self.dut_subID].get("capabilities", [])
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
@@ -92,7 +93,6 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         2. Check the carrier_configs are expected value.
 
         """
-        pass
 
     @test_tracker_info(uuid="64deba57-c1c2-422f-b771-639c95edfbc0")
     @TelephonyBaseTest.tel_test_wrap
@@ -402,11 +402,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """
         caller, callee = self.android_devices[0], self.android_devices[1]
 
-        return att_apn_test(self.log,
-                            caller,
-                            callee,
-                            GEN_4G,
-                            msg_type='sms')
+        return att_apn_test(self.log, caller, callee, GEN_4G, msg_type='sms')
 
     @test_tracker_info(uuid='7ba6eccd-5115-495a-8298-a1b41e5115d8')
     @TelephonyBaseTest.tel_test_wrap
@@ -429,8 +425,4 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """
         caller, callee = self.android_devices[0], self.android_devices[1]
 
-        return att_apn_test(self.log,
-                            caller,
-                            callee,
-                            GEN_4G,
-                            msg_type='mms')
+        return att_apn_test(self.log, caller, callee, GEN_4G, msg_type='mms')

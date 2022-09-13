@@ -21,7 +21,6 @@ Required custom config parameters:
 """
 from acts.base_test import BaseTestClass
 from command_input import CommandInput
-from queue import Empty
 
 
 class BluetoothCmdLineTest(BaseTestClass):

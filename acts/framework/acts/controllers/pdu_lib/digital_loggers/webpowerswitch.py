@@ -17,7 +17,6 @@
 from acts.controllers import pdu
 
 import dlipower
-import time
 
 
 class PduDevice(pdu.PduDevice):
@@ -32,6 +31,7 @@ class PduDevice(pdu.PduDevice):
         - WebPowerSwitch II
         - Ethernet Power Controller III
     """
+
     def __init__(self, host, username, password):
         """
         Note: This may require allowing plaintext password sign in on the

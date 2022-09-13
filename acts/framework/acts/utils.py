@@ -540,7 +540,6 @@ def sync_device_time(ad):
 class TimeoutError(Exception):
     """Exception for timeout decorator related errors.
     """
-    pass
 
 
 def _timeout_handler(signum, frame):
@@ -567,7 +566,6 @@ def timeout(sec):
     """
 
     def decorator(func):
-
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if sec:
