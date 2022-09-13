@@ -28,6 +28,7 @@ from acts import records
 from acts import signals
 from acts import utils
 from acts.base_test import BaseTestClass
+from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.keys import Config
 from acts.libs.utils.multithread import multithread_func
@@ -88,6 +89,9 @@ from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+
+
+REMOUNT_REBOOT_MSG = "Now reboot your device for settings to take effect"
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -292,7 +296,11 @@ class TelephonyBaseTest(BaseTestClass):
 
         if "_test" not in ad.build_info["build_id"]:
             ad.ensure_verity_disabled()
-            ad.adb.remount()
+            try:
+                ad.adb.remount()
+            except AdbCommandError as e:
+                if REMOUNT_REBOOT_MSG in e.stderr:
+                    ad.reboot()
             build_id = ad.build_info["build_id"].replace(".", r"\.")
             ad.adb.shell("sed -i '/^ro.build.id=/ "
                         f"s/{build_id}/&_test/g' /system/build.prop")
