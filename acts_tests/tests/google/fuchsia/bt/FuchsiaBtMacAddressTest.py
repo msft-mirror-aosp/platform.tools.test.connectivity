@@ -21,8 +21,6 @@ Setup:
 This test requires at least two fuchsia devices.
 """
 
-import time
-
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
