@@ -36,6 +36,7 @@ from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import radvd
 from acts.controllers.ap_lib import radvd_config
 from acts.controllers.ap_lib.extended_capabilities import ExtendedCapabilities
+from acts.controllers.ap_lib.wireless_network_management import BssTransitionManagementRequest
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
@@ -907,3 +908,13 @@ class AccessPoint(object):
             raise ValueError(f'Invalid identifier {identifier} given')
         instance = self._aps.get(identifier)
         return instance.hostapd.get_sta_extended_capabilities(sta_mac)
+
+    def send_bss_transition_management_req(
+            self, identifier, sta_mac: str,
+            request: BssTransitionManagementRequest):
+        """Send a BSS Transition Management request to an associated STA."""
+        if identifier not in list(self._aps.keys()):
+            raise ValueError('Invalid identifier {identifier} given')
+        instance = self._aps.get(identifier)
+        return instance.hostapd.send_bss_transition_management_req(
+            sta_mac, request)
