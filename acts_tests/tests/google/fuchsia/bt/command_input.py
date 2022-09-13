@@ -725,7 +725,6 @@ class CommandInput(cmd.Cmd):
                         print("    str val: {}".format(str_value))
                     except Exception as err:
                         print(err)
-                        pass
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -956,7 +955,6 @@ class CommandInput(cmd.Cmd):
                               format(char_uuid, write_result['result']))
                     except Exception as err:
                         print("error writing char {}".format(err))
-                        pass
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 

@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import re
-
 from acts import asserts
 from acts import utils
 from acts.controllers.access_point import setup_ap

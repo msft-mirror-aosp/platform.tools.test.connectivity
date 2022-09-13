@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import os
-import time
 import unittest
 from unittest.mock import patch
 

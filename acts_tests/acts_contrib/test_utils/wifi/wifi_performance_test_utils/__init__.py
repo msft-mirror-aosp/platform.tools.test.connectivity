@@ -52,6 +52,7 @@ CHANNEL_TO_BAND_MAP = {
 # Decorators
 def nonblocking(f):
     """Creates a decorator transforming function calls to non-blocking"""
+
     def wrap(*args, **kwargs):
         executor = ThreadPoolExecutor(max_workers=1)
         thread_future = executor.submit(f, *args, **kwargs)
@@ -124,9 +125,7 @@ def extract_sub_dict(full_dict, fields):
 
 
 # Miscellaneous Wifi Utilities
-def check_skip_conditions(testcase_params,
-                          dut,
-                          access_point,
+def check_skip_conditions(testcase_params, dut, access_point,
                           ota_chamber=None):
     """Checks if test should be skipped."""
     # Check battery level before test
@@ -636,7 +635,6 @@ def get_connected_rssi(dut,
         all reported RSSI values (signal_poll, per chain, etc.) and their
         statistics
     """
-    pass
 
 
 @nonblocking
@@ -656,7 +654,6 @@ def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
         scan_rssi: dict containing the measurement results as well as the
         statistics of the scan RSSI for all BSSIDs in tracked_bssids
     """
-    pass
 
 
 @detect_wifi_decorator
@@ -667,13 +664,11 @@ def get_sw_signature(dut):
         bdf_signature: signature consisting of last three digits of bdf cksums
         fw_signature: floating point firmware version, i.e., major.minor
     """
-    pass
 
 
 @detect_wifi_decorator
 def get_country_code(dut):
     """Function that returns the current wifi country code."""
-    pass
 
 
 @detect_wifi_decorator
@@ -688,19 +683,16 @@ def push_config(dut, config_file):
         dut: dut to push bdf file to
         config_file: path to bdf_file to push
     """
-    pass
 
 
 @detect_wifi_decorator
 def start_wifi_logging(dut):
     """Function to start collecting wifi-related logs"""
-    pass
 
 
 @detect_wifi_decorator
 def stop_wifi_logging(dut):
     """Function to start collecting wifi-related logs"""
-    pass
 
 
 @detect_wifi_decorator
@@ -712,19 +704,16 @@ def push_firmware(dut, firmware_files):
         firmware_files: path to wlanmdsp.mbn file
         datamsc_file: path to Data.msc file
     """
-    pass
 
 
 @detect_wifi_decorator
 def disable_beamforming(dut):
     """Function to disable beamforming."""
-    pass
 
 
 @detect_wifi_decorator
 def set_nss_capability(dut, nss):
     """Function to set number of spatial streams supported."""
-    pass
 
 
 @detect_wifi_decorator
@@ -735,7 +724,6 @@ def set_chain_mask(dut, chain_mask):
         dut: android device
         chain_mask: desired chain mask in [0, 1, '2x2']
     """
-    pass
 
 
 # Link layer stats utilities

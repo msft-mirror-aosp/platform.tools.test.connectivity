@@ -18,8 +18,6 @@
 """
 
 import pprint
-import random
-import time
 
 from acts.controllers import android_device
 from acts_contrib.test_utils.fuchsia.bt_test_utils import le_scan_for_device_by_name

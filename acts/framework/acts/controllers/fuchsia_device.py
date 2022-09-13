@@ -115,7 +115,6 @@ class FuchsiaDeviceError(signals.ControllerError):
 
 class FuchsiaConfigError(signals.ControllerError):
     """Incorrect FuchsiaDevice configuration."""
-    pass
 
 
 def create(configs):
@@ -1239,7 +1238,6 @@ class FuchsiaDevice:
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
-
     def process(self, msg, kwargs):
         msg = "[FuchsiaDevice|%s] %s" % (self.extra["ip"], msg)
         return msg, kwargs

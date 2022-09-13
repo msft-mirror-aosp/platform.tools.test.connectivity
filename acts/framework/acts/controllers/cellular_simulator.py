@@ -76,7 +76,6 @@ class AbstractCellularSimulator:
         if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
             self.configure_nr_bts(config, bts_index)
 
-
     def configure_lte_bts(self, config, bts_index=0):
         """ Commands the equipment to setup an LTE base station with the
         required configuration.
@@ -488,4 +487,3 @@ class AbstractCellularSimulator:
 class CellularSimulatorError(Exception):
     """ Exceptions thrown when the cellular equipment is unreachable or it
     returns an error after receiving a command. """
-    pass

@@ -129,7 +129,6 @@ def get_soft_ap_params_from_config_or_default(config):
 
 class StressTestIterationFailure(Exception):
     """Used to differentiate a subtest failure from an actual exception"""
-    pass
 
 
 class SoftApTest(WifiBaseTest):
@@ -999,9 +998,9 @@ class SoftApTest(WifiBaseTest):
                 'Err: %s' % err)
 
     def soft_ap_toggle_with_client_mode_iteration(
-        self,
-        settings,
-        current_state,
+            self,
+            settings,
+            current_state,
     ):
         """Runs single iteration of SoftAP toggle stress with client mode test.
 
