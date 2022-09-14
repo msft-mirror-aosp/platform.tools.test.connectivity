@@ -329,11 +329,9 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def wifi_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
-        pass
 
     def reset_wifi(self):
         """Stub for Fuchsia implementation."""
-        pass
 
     def take_bug_report(self, test_name=None, begin_time=None):
         """Stub for Fuchsia implementation."""
@@ -341,11 +339,9 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def get_log(self, test_name, begin_time):
         """Stub for Fuchsia implementation."""
-        pass
 
     def turn_location_off_and_scan_toggle_off(self):
         """Stub for Fuchsia implementation."""
-        pass
 
     def associate(self,
                   target_ssid,
