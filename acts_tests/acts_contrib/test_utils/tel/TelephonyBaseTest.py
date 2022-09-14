@@ -301,6 +301,7 @@ class TelephonyBaseTest(BaseTestClass):
             except AdbCommandError as e:
                 if REMOUNT_REBOOT_MSG in e.stderr:
                     ad.reboot()
+                    ad.adb.remount()
             build_id = ad.build_info["build_id"].replace(".", r"\.")
             ad.adb.shell("sed -i '/^ro.build.id=/ "
                         f"s/{build_id}/&_test/g' /system/build.prop")
