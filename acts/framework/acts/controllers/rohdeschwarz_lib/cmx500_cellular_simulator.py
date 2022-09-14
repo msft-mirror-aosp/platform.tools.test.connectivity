@@ -14,13 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
 from acts.controllers.rohdeschwarz_lib import cmx500
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteBandwidth
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteState
 from acts.controllers import cellular_simulator as cc
 from acts.controllers.cellular_lib import LteSimulation
-
 
 CMX_TM_MAPPING = {
     LteSimulation.TransmissionMode.TM1: cmx500.TransmissionModes.TM1,
@@ -98,10 +96,9 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             time: time in seconds for the timer to expire
         """
         self.log.info('set timer enabled to {} and the time to {}'.format(
-                enabled, time))
+            enabled, time))
         self.cmx.rrc_state_change_time_enable = enabled
         self.cmx.lte_rrc_state_change_timer = time
-
 
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
@@ -180,7 +177,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             bandwidth: the new bandwidth in MHz
         """
         self.log.info('set bandwidth of bts {} to {}'.format(
-                bts_index, bandwidth))
+            bts_index, bandwidth))
         self.bts[bts_index].set_bandwidth(int(bandwidth))
 
     def set_downlink_channel_number(self, bts_index, channel_number):
@@ -190,8 +187,8 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             channel_number: the new channel number (earfcn)
         """
-        self.log.info('Sets the downlink channel number to {}'.format(
-                channel_number))
+        self.log.info(
+            'Sets the downlink channel number to {}'.format(channel_number))
         self.bts[bts_index].set_dl_channel(channel_number)
 
     def set_mimo_mode(self, bts_index, mimo_mode):
@@ -216,8 +213,13 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         tmode = CMX_TM_MAPPING[tmode]
         self.bts[bts_index].set_transmission_mode(tmode)
 
-    def set_scheduling_mode(self, bts_index, scheduling, mcs_dl=None,
-                            mcs_ul=None, nrb_dl=None, nrb_ul=None):
+    def set_scheduling_mode(self,
+                            bts_index,
+                            scheduling,
+                            mcs_dl=None,
+                            mcs_ul=None,
+                            nrb_dl=None,
+                            nrb_ul=None):
         """ Sets the scheduling mode for the indicated base station.
 
         Args:
@@ -242,8 +244,10 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             log_list.append('nrb_ul: {}'.format(nrb_ul))
 
         self.log.info('set scheduling mode to {}'.format(','.join(log_list)))
-        self.bts[bts_index].set_scheduling_mode(
-                mcs_dl=mcs_dl, mcs_ul=mcs_ul, nrb_dl=nrb_dl, nrb_ul=nrb_ul)
+        self.bts[bts_index].set_scheduling_mode(mcs_dl=mcs_dl,
+                                                mcs_ul=mcs_ul,
+                                                nrb_dl=nrb_dl,
+                                                nrb_ul=nrb_ul)
 
     def set_dl_256_qam_enabled(self, bts_index, enabled):
         """ Determines what MCS table should be used for the downlink.

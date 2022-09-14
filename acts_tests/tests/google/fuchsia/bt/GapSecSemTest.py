@@ -30,7 +30,6 @@ from acts_contrib.test_utils.fuchsia.bt_test_utils import get_link_keys
 from acts_contrib.test_utils.fuchsia.bt_test_utils import unbond_all_known_devices
 from contextlib import suppress
 import inspect
-import time
 
 
 class GapSecSemTest(BaseTestClass):

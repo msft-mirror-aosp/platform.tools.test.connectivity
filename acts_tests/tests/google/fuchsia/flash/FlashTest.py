@@ -27,7 +27,6 @@ MAX_FLASH_ATTEMPTS = 3
 
 
 class FlashTest(BaseTestClass):
-
     def setup_class(self):
         super().setup_class()
         success_str = ("Congratulations! Fuchsia controllers have been "
@@ -91,4 +90,3 @@ class FlashTest(BaseTestClass):
         Useful for when flashing the device is not necessary; specify ACTS to
         only run this test from the test class.
         """
-        pass
