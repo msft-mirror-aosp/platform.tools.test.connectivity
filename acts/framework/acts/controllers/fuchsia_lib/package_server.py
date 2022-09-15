@@ -14,27 +14,101 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from datetime import datetime
 import json
 import os
 import socket
 import subprocess
 import time
 
+from dataclasses import dataclass
+from datetime import datetime
+from io import FileIO
+from typing import Optional
+
 from acts import context
 from acts import logger
 from acts import signals
 from acts import utils
 
-PM_REPO_URL = "fuchsia.com"
-PM_FULL_REPO_URL = "fuchsia-pkg://" + PM_REPO_URL
+from acts.controllers.fuchsia_lib.ssh import FuchsiaSSHError, SSHProvider
+from acts.tracelogger import TraceLogger
+
+DEFAULT_FUCHSIA_REPO_NAME = "fuchsia.com"
 PM_SERVE_STOP_TIMEOUT_SEC = 5
 
 
-def random_port():
+class PackageServerError(signals.TestAbortClass):
+    pass
+
+
+def random_port() -> int:
     s = socket.socket()
     s.bind(('', 0))
     return s.getsockname()[1]
+
+
+@dataclass
+class Route:
+    """Represent a route in the routing table."""
+    preferred_source: Optional[str]
+
+
+def find_routes_to(dest_ip) -> list[Route]:
+    """Find the routes used to reach a destination.
+
+    Look through the routing table for the routes that would be used without
+    sending any packets. This is especially helpful for when the device is
+    currently unreachable.
+
+    Only natively supported on Linux. MacOS has iproute2mac, but it doesn't
+    support JSON formatted output.
+
+    TODO(http://b/238924195): Add support for MacOS.
+
+    Args:
+        dest_ip: IP address of the destination
+
+    Throws:
+        CalledProcessError: if the ip command returns a non-zero exit code
+        JSONDecodeError: if the ip command doesn't return JSON
+
+    Returns:
+        Routes with destination to dest_ip.
+    """
+    resp = subprocess.run(f"ip -json route get {dest_ip}".split(),
+                          capture_output=True,
+                          check=True)
+    routes = json.loads(resp.stdout)
+    return [Route(r.get("prefsrc")) for r in routes]
+
+
+def find_host_ip(device_ip: str) -> str:
+    """Find the host's source IP used to reach a device.
+
+    Not all host interfaces can talk to a given device. This limitation can
+    either be physical through hardware or virtual through routing tables.
+    Look through the routing table without sending any packets then return the
+    preferred source IP address.
+
+    Args:
+        device_ip: IP address of the device
+
+    Raises:
+        PackageServerError: if there are multiple or no routes to device_ip, or
+            if the route doesn't contain "prefsrc"
+
+    Returns:
+        The host IP used to reach device_ip.
+    """
+    routes = find_routes_to(device_ip)
+    if len(routes) != 1:
+        raise PackageServerError(
+            f"Expected only one route to {device_ip}, got {routes}")
+
+    route = routes[0]
+    if not route.preferred_source:
+        raise PackageServerError(f'Route does not contain "prefsrc": {route}')
+    return route.preferred_source
 
 
 class PackageServer:
@@ -47,24 +121,28 @@ class PackageServer:
         port: Port to listen on for package serving.
     """
 
-    def __init__(self, binary_path, packages_path):
+    def __init__(self, binary_path: str, packages_path: str) -> None:
         """
         Args:
             binary_path: Path to ffx binary.
             packages_path: Path to amber-files.
         """
-        self.port = random_port()
-        self.log = logger.create_tagged_trace_logger(f"pm")
+        self.log: TraceLogger = logger.create_tagged_trace_logger(f"pm")
         self.binary_path = binary_path
         self.packages_path = packages_path
+        self.port = random_port()
 
-        self._server_log = None
-        self._server_proc = None
+        self._server_log: Optional[FileIO] = None
+        self._server_proc: Optional[subprocess.Popen] = None
 
         self._assert_repo_has_not_expired()
 
-    def _assert_repo_has_not_expired(self):
-        """Abort if the repository metadata has expired."""
+    def _assert_repo_has_not_expired(self) -> None:
+        """Abort if the repository metadata has expired.
+
+        Raises:
+            TestAbortClass: when the timestamp.json file has expired
+        """
         with open(f'{self.packages_path}/repository/timestamp.json', 'r') as f:
             data = json.load(f)
             expiresAtRaw = data["signed"]["expires"]
@@ -74,7 +152,7 @@ class PackageServer:
                     f'{self.packages_path}/repository/timestamp.json has expired on {expiresAtRaw}'
                 )
 
-    def start(self):
+    def start(self) -> None:
         """Start the package server.
 
         Does not check for errors; view the log file for any errors.
@@ -101,11 +179,43 @@ class PackageServer:
         self._wait_for_server()
         self.log.info(f'Serving packages on port {self.port}')
 
-    def _wait_for_server(self, timeout_sec=5):
+    def configure_device(self,
+                         device_ssh: SSHProvider,
+                         repo_name=DEFAULT_FUCHSIA_REPO_NAME) -> None:
+        """Configure the device to use this package server.
+
+        Args:
+            device_ssh: Device SSH transport channel
+            repo_name: Name of the repo to alias this package server
+        """
+        # Remove any existing repositories that may be stale.
+        try:
+            device_ssh.run(f'pkgctl repo rm fuchsia-pkg://{repo_name}')
+        except FuchsiaSSHError as e:
+            if not 'NOT_FOUND' in e.result.stderr:
+                raise e
+
+        # Configure the device with the new repository.
+        host_ip = find_host_ip(device_ssh.ip)
+        repo_url = f"http://{host_ip}:{self.port}"
+        device_ssh.run(
+            f"pkgctl repo add url -f 2 -n {repo_name} {repo_url}/config.json")
+        self.log.info(
+            f'Added repo "{repo_name}" as {repo_url} on device {device_ssh.ip}'
+        )
+
+    def _wait_for_server(self, timeout_sec: int = 5) -> None:
         """Wait for the server to expose the correct port.
 
         The package server takes some time to start. Call this after launching
         the server to avoid race condition.
+
+        Args:
+            timeout_sec: Seconds to wait until raising TimeoutError
+
+        Raises:
+            TimeoutError: when timeout_sec has expired without a successful
+                connection to the package server
         """
         timeout = time.perf_counter() + timeout_sec
         while True:
@@ -115,10 +225,6 @@ class PackageServer:
                 return
             except ConnectionRefusedError:
                 continue
-            except Exception as e:
-                # Expected errors should be listed above. This is an unexpected
-                # error.
-                self.log.error(e)
             finally:
                 if time.perf_counter() > timeout:
                     self._server_log.close()
@@ -128,7 +234,7 @@ class PackageServer:
                         f"pm serve failed to expose port {self.port} after {timeout_sec}s. Logs:\n{logs}"
                     )
 
-    def stop_server(self):
+    def stop_server(self) -> None:
         """Stop the package server."""
         if not self._server_proc:
             self.log.warn(
@@ -151,6 +257,6 @@ class PackageServer:
         self._log_path = None
         self._server_log = None
 
-    def clean_up(self):
+    def clean_up(self) -> None:
         if self._server_proc:
             self.stop_server()

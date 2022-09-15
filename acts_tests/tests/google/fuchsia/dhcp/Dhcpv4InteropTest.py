@@ -348,7 +348,6 @@ class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
 
 
 class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
-
     def setup_test(self):
         super().setup_test()
         self.extra_addresses = []
@@ -359,7 +358,6 @@ class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
         super().teardown_test()
         for ip in self.extra_addresses:
             self.ap_ip_cmd.remove_ipv4_address(self.ap_params['id'], ip)
-            pass
 
     def test_duplicate_address_assignment(self):
         """It's possible for a DHCP server to assign an address that already exists on the network.

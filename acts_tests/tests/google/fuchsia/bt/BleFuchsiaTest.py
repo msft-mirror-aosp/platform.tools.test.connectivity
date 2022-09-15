@@ -16,9 +16,7 @@
 """This scrip tests various BLE apis for Fuchsia devices.
 """
 
-import pprint
 import random
-import time
 
 from acts.base_test import BaseTestClass
 from acts_contrib.test_utils.fuchsia.bt_test_utils import le_scan_for_device_by_name

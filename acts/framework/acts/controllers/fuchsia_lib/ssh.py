@@ -40,24 +40,18 @@ class FuchsiaSSHError(signals.TestError):
 
 class FuchsiaSSHTransportError(signals.TestError):
     """Failure to send an SSH command."""
-    pass
 
 
 class SSHResults:
     """Results from an SSH command."""
 
-    _raw_stdout: bytes
-    _stdout: str
-    _stderr: str
-    _exit_status: int
-
     def __init__(self, stdout: paramiko.channel.ChannelFile,
-                 stderr: paramiko.channel.ChannelStderrFile):
+                 stderr: paramiko.channel.ChannelStderrFile) -> None:
         """Create SSHResults from paramiko channels."""
         self._raw_stdout = stdout.read()
         self._stdout = self._raw_stdout.decode('utf-8', errors='replace')
         self._stderr = stderr.read().decode('utf-8', errors='replace')
-        self._exit_status = stdout.channel.recv_exit_status()
+        self._exit_status: int = stdout.channel.recv_exit_status()
 
     def __str__(self):
         if self.exit_status == 0:
@@ -77,7 +71,7 @@ class SSHResults:
         return self._exit_status
 
     @property
-    def raw_stdout(self) -> str:
+    def raw_stdout(self) -> bytes:
         return self._raw_stdout
 
 
@@ -88,7 +82,7 @@ class SSHProvider:
                  ip: str,
                  port: int,
                  private_key_file_name: str,
-                 timeout_sec: int = DEFAULT_SSH_TIMEOUT_SEC):
+                 timeout_sec: int = DEFAULT_SSH_TIMEOUT_SEC) -> None:
         """
         Args:
             ip: IP used by the SSH server on the device.

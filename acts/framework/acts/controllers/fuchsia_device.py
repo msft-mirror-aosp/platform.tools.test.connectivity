@@ -44,13 +44,16 @@ from acts.controllers.fuchsia_lib.bt.hfp_lib import FuchsiaHfpLib
 from acts.controllers.fuchsia_lib.bt.rfcomm_lib import FuchsiaRfcommLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
 from acts.controllers.fuchsia_lib.ffx import FFX
+from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.lib_controllers.netstack_controller import NetstackController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
+from acts.controllers.fuchsia_lib.package_server import PackageServer
 from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
+from acts.controllers.fuchsia_lib.ssh import DEFAULT_SSH_PORT, DEFAULT_SSH_USER, SSHProvider, FuchsiaSSHError
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import create_syslog_process
 from acts.controllers.fuchsia_lib.utils_lib import flash
@@ -58,8 +61,6 @@ from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyL
 from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
-from acts.controllers.fuchsia_lib.package_server import PackageServer
-from acts.controllers.fuchsia_lib.ssh import DEFAULT_SSH_PORT, DEFAULT_SSH_USER, SSHProvider, FuchsiaSSHError
 
 MOBLY_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -114,7 +115,6 @@ class FuchsiaDeviceError(signals.ControllerError):
 
 class FuchsiaConfigError(signals.ControllerError):
     """Incorrect FuchsiaDevice configuration."""
-    pass
 
 
 def create(configs):
@@ -164,54 +164,6 @@ def get_instances(fds_conf_data):
     """
 
     return [FuchsiaDevice(fd_conf_data) for fd_conf_data in fds_conf_data]
-
-
-def find_routes_to(dest_ip):
-    """Find the routes used to reach a destination.
-
-    Look through the routing table for the routes that would be used without
-    sending any packets. This is especially helpful for when the device is
-    currently unreachable.
-
-    Only natively supported on Linux. MacOS has iproute2mac, but it doesn't
-    support JSON formatted output.
-
-    TODO(http://b/238924195): Add support for MacOS.
-
-    Args:
-        dest_ip: IP address of the destination
-
-    Throws:
-        CalledProcessError: if the ip command returns a non-zero exit code
-        JSONDecodeError: if the ip command doesn't return JSON
-
-    """
-    resp = subprocess.run(f"ip -json route get {dest_ip}".split(),
-                          capture_output=True,
-                          check=True)
-    return json.loads(resp.stdout)
-
-
-def find_host_ip(device_ip):
-    """Find the host's source IP used to reach a device.
-
-    Not all host interfaces can talk to a given device. This limitation can
-    either be physical through hardware or virtual through routing tables.
-    Look through the routing table without sending any packets then return the
-    preferred source IP address.
-
-    Args:
-        device_ip: IP address of the device
-    """
-    routes = find_routes_to(device_ip)
-    if len(routes) != 1:
-        raise FuchsiaDeviceError(
-            f"Expected only one route to {device_ip}, got {routes}")
-
-    route = routes[0]
-    if not 'prefsrc' in route:
-        raise FuchsiaDeviceError(f'Route does not contain "srcpref": {route}')
-    return route["prefsrc"]
 
 
 class FuchsiaDevice:
@@ -423,6 +375,12 @@ class FuchsiaDevice:
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
 
+        # Grab commands from FuchsiaHardwarePowerStatecontrolLib
+        self.hardware_power_statecontrol_lib = (
+            FuchsiaHardwarePowerStatecontrolLib(self.address,
+                                                self.test_counter,
+                                                self.client_id))
+
         # Grab commands from FuchsiaLoggingLib
         self.logging_lib = FuchsiaLoggingLib(self.address, self.test_counter,
                                              self.client_id)
@@ -480,24 +438,16 @@ class FuchsiaDevice:
                 "This is usually required for the Fuchsia iPerf3 client or "
                 "other testing utilities not on device cache.")
             return
+        if self.package_server:
+            self.log.warn(
+                "Skipping to start the package server since is already running"
+            )
+            return
 
         self.package_server = PackageServer(self.pm_binary_path,
                                             self.packages_path)
         self.package_server.start()
-
-        # Remove any existing repositories that may be stale.
-        try:
-            self.ssh.run("pkgctl repo rm fuchsia-pkg://fuchsia.com")
-        except FuchsiaSSHError as e:
-            if not 'NOT_FOUND' in e.result.stderr:
-                raise e
-
-        # Configure the device with the new repository.
-        host_ip = find_host_ip(self.ip)
-        repo_url = f"http://{host_ip}:{self.package_server.port}"
-        self.ssh.run(
-            f"pkgctl repo add url -f 2 -n fuchsia.com {repo_url}/config.json")
-        self.log.info(f'Added repo "fuchsia.com" from {repo_url}')
+        self.package_server.configure_device(self.ssh)
 
     @backoff.on_exception(
         backoff.constant,
@@ -1288,7 +1238,6 @@ class FuchsiaDevice:
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
-
     def process(self, msg, kwargs):
         msg = "[FuchsiaDevice|%s] %s" % (self.extra["ip"], msg)
         return msg, kwargs
