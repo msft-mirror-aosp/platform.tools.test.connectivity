@@ -11,7 +11,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
 
 from acts import context
 import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
@@ -25,7 +24,7 @@ class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
     CUSTOM_PROP_KEY_BUILD_TYPE = 'build_type'
     CUSTOM_PROP_KEY_SYSTEM_POWER = 'system_power'
     CUSTOM_PROP_KEY_MODEM_BASEBAND = 'baseband'
-    CUSTOM_PROP_KEY_MODEM_ODPM_POWER= 'modem_opdm_power'
+    CUSTOM_PROP_KEY_MODEM_ODPM_POWER = 'modem_opdm_power'
     CUSTOM_PROP_KEY_DEVICE_NAME = 'device'
     CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE = 'device_build_phase'
     CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER = 'modem_kibble_power'
@@ -45,8 +44,7 @@ class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
         device_info = self.cellular_dut.ad.device_info
         device_name = device_info.get('model', 'Unknown')
         device_build_phase = self.cellular_dut.ad.adb.getprop(
-            'ro.boot.hardware.revision'
-        )
+            'ro.boot.hardware.revision')
 
         # power measurement results
         odpm_power = self.odpm_power

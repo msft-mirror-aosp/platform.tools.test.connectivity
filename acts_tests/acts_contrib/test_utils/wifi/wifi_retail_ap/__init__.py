@@ -280,7 +280,6 @@ class WifiRetailAP(object):
         Function implementation is AP dependent and intended to perform any
         necessary reset operations as part of controller destroy.
         """
-        pass
 
     def read_ap_settings(self):
         """Function that reads current ap settings.

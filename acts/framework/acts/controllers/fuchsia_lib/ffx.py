@@ -31,12 +31,10 @@ FFX_DEFAULT_COMMAND_TIMEOUT: int = 60
 
 class FFXError(signals.TestError):
     """Non-zero error code returned from a ffx command."""
-    pass
 
 
 class FFXTimeout(signals.TestError):
     """Timed out running a ffx command."""
-    pass
 
 
 class FFX:
@@ -275,8 +273,8 @@ class FFX:
             self._has_logged_version = True
             self.compare_version(result)
 
-    def compare_version(
-            self, target_show_result: subprocess.CompletedProcess) -> None:
+    def compare_version(self, target_show_result: subprocess.CompletedProcess
+                        ) -> None:
         """Compares the version of Fuchsia with the version of ffx.
 
         Args:
