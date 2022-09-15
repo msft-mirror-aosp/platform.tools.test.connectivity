@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
 from acts_contrib.test_utils.tel.tel_data_utils import active_file_download_task
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
@@ -22,10 +21,7 @@ from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.tel.tel_voice_utils import wait_and_answer_call
 
 
-def initiate_call_verify_operation(log,
-                                    caller,
-                                    callee,
-                                    download=False):
+def initiate_call_verify_operation(log, caller, callee, download=False):
     """Initiate call and verify operations with an option of data idle or data download
 
     Args:
@@ -38,16 +34,17 @@ def initiate_call_verify_operation(log,
         True: if call initiated and verified operations successfully
         False: for errors
     """
-    caller_number = caller.telephony['subscription'][
-        get_outgoing_voice_sub_id(caller)]['phone_num']
-    callee_number = callee.telephony['subscription'][
-        get_outgoing_voice_sub_id(callee)]['phone_num']
+    caller_number = caller.telephony['subscription'][get_outgoing_voice_sub_id(
+        caller)]['phone_num']
+    callee_number = callee.telephony['subscription'][get_outgoing_voice_sub_id(
+        callee)]['phone_num']
     if not initiate_call(log, caller, callee_number):
         caller.log.error("Phone was unable to initate a call")
         return False
 
     if not wait_and_answer_call(log, callee, caller_number):
-        callee.log.error("Callee failed to receive incoming call or answered the call.")
+        callee.log.error(
+            "Callee failed to receive incoming call or answered the call.")
         return False
 
     if download:

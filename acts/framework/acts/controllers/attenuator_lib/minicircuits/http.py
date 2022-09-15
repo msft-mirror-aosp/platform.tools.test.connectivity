@@ -84,7 +84,6 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         Since this controller is based on HTTP requests, there is no connection
         teardowns required.
         """
-        pass
 
     def set_atten(self, idx, value, strict=True, retry=False, **_):
         """This function sets the attenuation of an attenuator given its index

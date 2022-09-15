@@ -40,7 +40,6 @@ class FuchsiaSSHError(signals.TestError):
 
 class FuchsiaSSHTransportError(signals.TestError):
     """Failure to send an SSH command."""
-    pass
 
 
 class SSHResults:

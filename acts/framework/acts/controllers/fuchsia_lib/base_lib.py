@@ -14,16 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import collections
 import json
 import logging
-import math
-import os
-import random
-import re
 import requests
-import socket
-import time
 
 from urllib.parse import urlparse
 
