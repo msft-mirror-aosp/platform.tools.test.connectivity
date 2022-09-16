@@ -1396,6 +1396,62 @@ class Nsa5gDSDSMessageTest(TelephonyBaseTest):
             streaming=True)
 
     # e+e
+    @test_tracker_info(uuid="3233f15d-0b42-4215-88af-ccb78bce5cc1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_sms_mo_esim_port_0_5g_nsa_volte_esim_port_1_5g_nsa_volte_dds_1(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_1,
+            dds_slot=1,
+            msg_type="SMS",
+            direction="mo",
+            streaming=False)
+
+    @test_tracker_info(uuid="213be122-d935-49c2-9db5-cb1828c23687")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_sms_mt_esim_port_0_5g_nsa_volte_esim_port_1_5g_nsa_volte_dds_1(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_1,
+            dds_slot=1,
+            msg_type="SMS",
+            direction="mt",
+            streaming=False)
+
+    @test_tracker_info(uuid="22441a1d-0152-4870-a14c-7f733e82b417")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_sms_mo_esim_port_1_5g_nsa_volte_esim_port_0_5g_nsa_volte_dds_2(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_2,
+            dds_slot=2,
+            msg_type="SMS",
+            direction="mo",
+            streaming=False)
+
+    @test_tracker_info(uuid="cf6871f4-8ad2-4f2a-8ae0-72ee030e42cd")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_sms_mt_esim_port_1_5g_nsa_volte_esim_port_0_5g_nsa_volte_dds_2(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_2,
+            dds_slot=2,
+            msg_type="SMS",
+            direction="mt",
+            streaming=False)
+
     @test_tracker_info(uuid="56ec2aa6-e3ca-4f1b-8167-6276842610d2")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_sms_mo_esim_port_1_5g_nsa_volte_esim_port_0_5g_nsa_volte_dds_1(self):
@@ -1449,6 +1505,62 @@ class Nsa5gDSDSMessageTest(TelephonyBaseTest):
             test_slot=SimSlotInfo.SLOT_1,
             dds_slot=2,
             msg_type="SMS",
+            direction="mt",
+            streaming=False)
+
+    @test_tracker_info(uuid="b1da493c-aa11-4bf4-814d-ecd2fdffb835")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mms_mo_esim_port_0_5g_nsa_volte_esim_port_1_5g_nsa_volte_dds_1(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_1,
+            dds_slot=1,
+            msg_type="MMS",
+            direction="mo",
+            streaming=False)
+
+    @test_tracker_info(uuid="7bbd85ca-7484-4850-99c9-00761715af5f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mms_mt_esim_port_0_5g_nsa_volte_esim_port_1_5g_nsa_volte_dds_1(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_1,
+            dds_slot=1,
+            msg_type="MMS",
+            direction="mt",
+            streaming=False)
+
+    @test_tracker_info(uuid="02d00988-5d41-467b-9eaa-abb84a5e89f6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mms_mo_esim_port_1_5g_nsa_volte_esim_port_0_5g_nsa_volte_dds_2(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_2,
+            dds_slot=2,
+            msg_type="MMS",
+            direction="mo",
+            streaming=False)
+
+    @test_tracker_info(uuid="fc3ce672-d9a8-4346-b46d-bbc9c0c8db35")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mms_mt_esim_port_1_5g_nsa_volte_esim_port_0_5g_nsa_volte_dds_2(self):
+        return dsds_message_streaming_test(
+            self.log,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["5g_volte", "5g_volte"],
+            test_slot=SimSlotInfo.SLOT_2,
+            dds_slot=2,
+            msg_type="MMS",
             direction="mt",
             streaming=False)
 
