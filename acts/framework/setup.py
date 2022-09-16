@@ -24,7 +24,6 @@ import sys
 
 install_requires = [
     'backoff',
-    'dlipower',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
     'grpcio',
@@ -207,7 +206,10 @@ def main():
                      include_package_data=True,
                      tests_require=['pytest'],
                      install_requires=install_requires,
-                     extras_require={'dev': DEV_PACKAGES},
+                     extras_require={
+                         'dev': DEV_PACKAGES,
+                         'digital_loggers_pdu': ['dlipower'],
+                     },
                      scripts=scripts,
                      cmdclass={
                          'test': PyTest,
