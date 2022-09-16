@@ -69,6 +69,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_mess
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts_contrib.test_utils.tel.tel_subscription_utils import set_default_sub_for_all_services
 from acts_contrib.test_utils.tel.tel_test_utils import _is_attached
 from acts_contrib.test_utils.tel.tel_test_utils import _is_attached_for_subscription
 from acts_contrib.test_utils.tel.tel_test_utils import _wait_for_droid_in_state
@@ -1595,6 +1596,26 @@ def ensure_phone_subscription(log, ad):
             break
         else:
             ad.log.info("Did not find valid data or voice sub id")
+            if getattr(ad, 'mep', False):
+                default_slot = getattr(ad, "default_slot", 1)
+                if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
+                    ad.log.info("Slot %s is the default slot.", default_slot)
+                    set_default_sub_for_all_services(ad, default_slot)
+                else:
+                    ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
+                        default_slot, 1-default_slot)
+                    set_default_sub_for_all_services(ad, 1-default_slot)
+                    setattr(ad, "default_slot", 1-default_slot)
+            elif getattr(ad, 'dsds', False):
+                default_slot = getattr(ad, "default_slot", 0)
+                if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
+                    ad.log.info("Slot %s is the default slot.", default_slot)
+                    set_default_sub_for_all_services(ad, default_slot)
+                else:
+                    ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
+                        default_slot, 1-default_slot)
+                    set_default_sub_for_all_services(ad, 1-default_slot)
+                    setattr(ad, "default_slot", 1-default_slot)
             time.sleep(5)
             duration += 5
     else:
