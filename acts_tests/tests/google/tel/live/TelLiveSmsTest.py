@@ -58,8 +58,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     def _get_wfc_mode(self, ad):
         # Verizon doesn't supports wfc mode as WFC_MODE_WIFI_PREFERRED
-        carrier = ad.adb.getprop("gsm.sim.operator.alpha")
-        if carrier == "Verizon":
+        carrier = ad.telephony["subscription"][sub_id]["operator"]
+        if carrier == CARRIER_VZW:
             wfc = WFC_MODE_CELLULAR_PREFERRED
         else:
             wfc = WFC_MODE_WIFI_PREFERRED

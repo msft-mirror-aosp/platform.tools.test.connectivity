@@ -24,7 +24,6 @@ import sys
 
 install_requires = [
     'backoff',
-    'dlipower',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
     'grpcio',
@@ -37,14 +36,12 @@ install_requires = [
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
     'pylibftdi',
-    'pynacl==1.4.0',
     'pyserial',
     'pyyaml>=5.1',
     'requests',
     'retry',
     'scapy',
     'usbinfo',
-    'xlsxwriter',
     'zeroconf'
 ]
 
@@ -64,7 +61,7 @@ if sys.version_info < (3, 7):
     versioned_deps['scipy'] = 'scipy<1.6'
     versioned_deps['protobuf'] = 'protobuf==3.20.1'
     versioned_deps['typing_extensions'] = 'typing_extensions==4.1.1'
-if (sys.version_info.major, sys.version_info.minor) == (3,6):
+if (sys.version_info.major, sys.version_info.minor) == (3, 6):
     versioned_deps['dataclasses'] = 'dataclasses==0.8'
 if sys.version_info < (3, 6):
     versioned_deps['numpy'] = 'numpy<1.19'
@@ -209,7 +206,10 @@ def main():
                      include_package_data=True,
                      tests_require=['pytest'],
                      install_requires=install_requires,
-                     extras_require={'dev': DEV_PACKAGES},
+                     extras_require={
+                         'dev': DEV_PACKAGES,
+                         'digital_loggers_pdu': ['dlipower'],
+                     },
                      scripts=scripts,
                      cmdclass={
                          'test': PyTest,
