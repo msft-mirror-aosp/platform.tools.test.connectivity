@@ -196,7 +196,7 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
     """
     siminfo = ad.adb.shell(
         "content query --uri content://telephony/siminfo")
-    if "port_index" in siminfo:
+    if "port_index" in siminfo and getattr(ad, "mep", False):
         pattern_port = re.compile(r"port_index=(\d)")
         pattern_sub = re.compile(r" _id=(\d+)")
         pattern_embedded = re.compile(r"is_embedded=(\d+)")
@@ -439,9 +439,9 @@ def set_dds_on_slot_0(ad):
         return False
     operator = get_operatorname_from_slot_index(ad, 0)
     if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
-        ad.log.info("Current DDS is already on %s", operator)
+        ad.log.info("Current DDS is already on Sub %s(%s)", sub_id, operator)
         return True
-    ad.log.info("Setting DDS on %s", operator)
+    ad.log.info("Setting DDS on Sub %s(%s)", sub_id, operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
     if get_default_data_sub_id(ad) == sub_id:
@@ -457,9 +457,9 @@ def set_dds_on_slot_1(ad):
         return False
     operator = get_operatorname_from_slot_index(ad, 1)
     if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
-        ad.log.info("Current DDS is already on %s", operator)
+        ad.log.info("Current DDS is already on Sub %s(%s)", sub_id, operator)
         return True
-    ad.log.info("Setting DDS on %s", operator)
+    ad.log.info("Setting DDS on Sub %s(%s)", sub_id, operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
     if get_default_data_sub_id(ad) == sub_id:
@@ -487,9 +487,9 @@ def set_dds_on_slot(ad, dds_slot):
         return False
     operator = get_operatorname_from_slot_index(ad, dds_slot)
     if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
-        ad.log.info("Current DDS is already on %s", operator)
+        ad.log.info("Current DDS is already on Sub %s(%s)", sub_id, operator)
         return True
-    ad.log.info("Setting DDS on %s", operator)
+    ad.log.info("Setting DDS on Sub %s(%s)", sub_id, operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
     if get_default_data_sub_id(ad) == sub_id:
