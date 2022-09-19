@@ -32,9 +32,7 @@ install_requires = [
     # b/148695846, b/148814743
     'mock==3.0.5',
     'Monsoon',
-    # paramiko-ng is needed vs paramiko as currently paramiko does not support
-    # ed25519 ssh keys, which is what Fuchsia uses.
-    'paramiko-ng',
+    'paramiko[ed25519]',
     'pylibftdi',
     'pyserial',
     'pyyaml>=5.1',
