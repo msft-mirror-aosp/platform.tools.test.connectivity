@@ -23,7 +23,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from io import FileIO
-from typing import Optional
+from typing import List, Optional
 
 from acts import context
 from acts import logger
@@ -53,7 +53,7 @@ class Route:
     preferred_source: Optional[str]
 
 
-def find_routes_to(dest_ip) -> list[Route]:
+def find_routes_to(dest_ip) -> List[Route]:
     """Find the routes used to reach a destination.
 
     Look through the routing table for the routes that would be used without
