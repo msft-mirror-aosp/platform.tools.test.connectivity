@@ -17,19 +17,23 @@ import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
 
 
 class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
-    def test_preset_sa_pdcch(self):
+    def teardown_test(self):
+        super().teardown_test()
+        self.sponge_upload()
+
+    def test_preset_sa_pdcch_fr1(self):
         self.power_pdcch_test()
 
-    def test_preset_nsa_pdcch(self):
+    def test_preset_nsa_pdcch_fr1(self):
         self.power_pdcch_test()
 
     def test_preset_LTE_pdcch(self):
         self.power_pdcch_test()
 
-    def test_preset_sa_cdrx(self):
+    def test_preset_sa_cdrx_fr1(self):
         self.power_pdcch_test()
 
-    def test_preset_nsa_cdrx(self):
+    def test_preset_nsa_cdrx_fr1(self):
         self.power_pdcch_test()
 
     def test_preset_LTE_cdrx(self):

@@ -43,16 +43,12 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         super().setup_class()
 
         # Unpack test parameters used in this class
-        self.unpack_userparams(ssh_host_ip=None,
-                               host_username=None,
-                               client_ssh_private_key_file=None,
-                               iperf_exe_path=None,
+        self.unpack_userparams(iperf_exe_path=None,
                                ue_ip=None,
                                iperf_host_ip=None)
 
         # Verify required config
-        for param in ('ssh_host_ip', 'host_username', 'client_ssh_private_key_file',
-                  'iperf_exe_path', 'ue_ip', 'iperf_host_ip'):
+        for param in ('iperf_exe_path', 'ue_ip', 'iperf_host_ip'):
             if getattr(self, param) is None:
                 raise RuntimeError(
                     f'Parameter "{param}" is required to run this type of test')
@@ -63,8 +59,8 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
             return False
 
         # setup ssh client
-        self.ssh_iperf_client = self._create_ssh_client()
-        self.ssh_iperf_server = self._create_ssh_client()
+        self.ssh_iperf_client = self.cellular_simulator.create_ssh_client()
+        self.ssh_iperf_server = self.cellular_simulator.create_ssh_client()
 
     def power_tel_traffic_test(self):
         """Measure power while data is transferring."""
@@ -74,18 +70,6 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
 
         # Measure power
         self.collect_power_data()
-
-    def _create_ssh_client(self):
-        """Create a ssh client to host."""
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        mykey = paramiko.Ed25519Key.from_private_key_file(
-            self.client_ssh_private_key_file)
-        ssh.connect(hostname=self.ssh_host_ip,
-                    username=self.host_username,
-                    pkey=mykey)
-        self.log.info('SSH client to %s is connected' % self.ssh_host_ip)
-        return ssh
 
     def _exec_ssh_cmd(self, ssh_client, cmd):
         """Execute command on given ssh client.
@@ -129,5 +113,15 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
 
 class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
 
+    def teardown_test(self):
+        super().teardown_test()
+        self.sponge_upload()
+
     def test_preset_LTE_traffic(self):
+        self.power_tel_traffic_test()
+
+    def test_preset_nsa_traffic_fr1(self):
+        self.power_tel_traffic_test()
+
+    def test_preset_sa_traffic_fr1(self):
         self.power_tel_traffic_test()

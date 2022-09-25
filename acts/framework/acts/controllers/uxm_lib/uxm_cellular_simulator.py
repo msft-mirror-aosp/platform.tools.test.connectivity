@@ -73,10 +73,11 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.cells = []
         self.uxm_ip = ip_address
         self.uxm_user = uxm_user
-        self.ssh_private_key_to_uxm = ssh_private_key_to_uxm
+        self.ssh_private_key_to_uxm = os.path.expanduser(
+                                        ssh_private_key_to_uxm)
         self.ta_exe_path = ta_exe_path
         self.ta_exe_name = ta_exe_name
-        self.ssh_client = self._create_ssh_client()
+        self.ssh_client = self.create_ssh_client()
 
         # get roclbottom file
         for file in self.custom_files:
@@ -89,7 +90,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.check_socket_connection()
         self.timeout = 120
 
-    def _create_ssh_client(self):
+    def create_ssh_client(self):
         """Create a ssh client to host."""
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -360,26 +361,33 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             AbstractCellularSimulator.CellularSimulatorError:
                 device unable to connect to cell.
         """
-        # airplane mode off
-        # dut.ad.adb.shell('settings put secure adaptive_connectivity_enabled 0')
-        dut.toggle_airplane_mode(False)
+        # airplane mode on
+        dut.toggle_airplane_mode(True)
         time.sleep(5)
+
         # turn cell on
         self.turn_cell_on(cell_type, cell_number)
         time.sleep(5)
 
+        # airplane mode off
+        dut.toggle_airplane_mode(False)
+        time.sleep(5)
+
         # waits for connect
         for index in range(1, attach_retries):
-            # airplane mode on
-            time.sleep(wait_for_camp_interval)
-            cell_state = self.get_cell_status(cell_type, cell_number)
-            self.log.info(f'cell state: {cell_state}')
-            if cell_state == 'CONN\n':
-                return True
-            if cell_state == 'OFF\n':
-                self.turn_cell_on(cell_type, cell_number)
+            count = 0
+            while count < wait_for_camp_interval:
                 time.sleep(5)
+                cell_state = self.get_cell_status(cell_type, cell_number)
+                self.log.info(f'cell state: {cell_state}')
+                if cell_state == 'CONN\n':
+                    return True
+                if cell_state == 'OFF\n':
+                    self.turn_cell_on(cell_type, cell_number)
+                    time.sleep(5)
+                count += 5
             if change_dut_setting_allow:
+                # reboot device after certain tries
                 if (index % 4) == 0:
                     dut.ad.reboot()
                     if self.rockbottom_script:
