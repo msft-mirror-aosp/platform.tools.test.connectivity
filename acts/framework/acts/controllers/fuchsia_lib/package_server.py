@@ -16,14 +16,16 @@
 
 import json
 import os
+import shutil
 import socket
 import subprocess
+import tarfile
+import tempfile
 import time
 
 from dataclasses import dataclass
 from datetime import datetime
-from io import FileIO
-from typing import List, Optional
+from typing import TextIO, List, Optional
 
 from acts import context
 from acts import logger
@@ -112,30 +114,35 @@ def find_host_ip(device_ip: str) -> str:
 
 
 class PackageServer:
-    """Package manager for Fuchsia; an interface to the "pm" CLI tool.
+    """Package manager for Fuchsia; an interface to the "pm" CLI tool."""
 
-    Attributes:
-        log: Logger for the device-specific instance of ffx.
-        binary_path: Path to the pm binary.
-        packages_path: Path to amber-files.
-        port: Port to listen on for package serving.
-    """
-
-    def __init__(self, binary_path: str, packages_path: str) -> None:
+    def __init__(self, packages_archive_path: str) -> None:
         """
         Args:
-            binary_path: Path to ffx binary.
-            packages_path: Path to amber-files.
+            packages_archive_path: Path to an archive containing the pm binary
+                and amber-files.
         """
-        self.log: TraceLogger = logger.create_tagged_trace_logger(f"pm")
-        self.binary_path = binary_path
-        self.packages_path = packages_path
-        self.port = random_port()
+        self.log: TraceLogger = logger.create_tagged_trace_logger("pm")
 
-        self._server_log: Optional[FileIO] = None
+        self._server_log: Optional[TextIO] = None
         self._server_proc: Optional[subprocess.Popen] = None
+        self._log_path: Optional[str] = None
+
+        self._tmp_dir = tempfile.mkdtemp(prefix="packages-")
+        tar = tarfile.open(packages_archive_path, "r:gz")
+        tar.extractall(self._tmp_dir)
+
+        self._binary_path = os.path.join(self._tmp_dir, "pm")
+        self._packages_path = os.path.join(self._tmp_dir, "amber-files")
+        self._port = random_port()
 
         self._assert_repo_has_not_expired()
+
+    def clean_up(self) -> None:
+        if self._server_proc:
+            self.stop_server()
+        if self._tmp_dir:
+            shutil.rmtree(self._tmp_dir)
 
     def _assert_repo_has_not_expired(self) -> None:
         """Abort if the repository metadata has expired.
@@ -143,13 +150,13 @@ class PackageServer:
         Raises:
             TestAbortClass: when the timestamp.json file has expired
         """
-        with open(f'{self.packages_path}/repository/timestamp.json', 'r') as f:
+        with open(f'{self._packages_path}/repository/timestamp.json', 'r') as f:
             data = json.load(f)
             expiresAtRaw = data["signed"]["expires"]
             expiresAt = datetime.strptime(expiresAtRaw, '%Y-%m-%dT%H:%M:%SZ')
             if expiresAt <= datetime.now():
                 raise signals.TestAbortClass(
-                    f'{self.packages_path}/repository/timestamp.json has expired on {expiresAtRaw}'
+                    f'{self._packages_path}/repository/timestamp.json has expired on {expiresAtRaw}'
                 )
 
     def start(self) -> None:
@@ -163,7 +170,7 @@ class PackageServer:
             )
             return
 
-        pm_command = f'{self.binary_path} serve -c 2 -repo {self.packages_path} -l :{self.port}'
+        pm_command = f'{self._binary_path} serve -c 2 -repo {self._packages_path} -l :{self._port}'
 
         root_dir = context.get_current_context().get_full_output_path()
         epoch = utils.get_current_epoch_time()
@@ -177,7 +184,7 @@ class PackageServer:
                                              stdout=self._server_log,
                                              stderr=subprocess.STDOUT)
         self._wait_for_server()
-        self.log.info(f'Serving packages on port {self.port}')
+        self.log.info(f'Serving packages on port {self._port}')
 
     def configure_device(self,
                          device_ssh: SSHProvider,
@@ -197,7 +204,7 @@ class PackageServer:
 
         # Configure the device with the new repository.
         host_ip = find_host_ip(device_ssh.ip)
-        repo_url = f"http://{host_ip}:{self.port}"
+        repo_url = f"http://{host_ip}:{self._port}"
         device_ssh.run(
             f"pkgctl repo add url -f 2 -n {repo_name} {repo_url}/config.json")
         self.log.info(
@@ -220,18 +227,20 @@ class PackageServer:
         timeout = time.perf_counter() + timeout_sec
         while True:
             try:
-                socket.create_connection(('127.0.0.1', self.port),
+                socket.create_connection(('127.0.0.1', self._port),
                                          timeout=timeout)
                 return
             except ConnectionRefusedError:
                 continue
             finally:
                 if time.perf_counter() > timeout:
-                    self._server_log.close()
-                    with open(self._log_path, 'r') as f:
-                        logs = f.read()
+                    if self._server_log:
+                        self._server_log.close()
+                    if self._log_path:
+                        with open(self._log_path, 'r') as f:
+                            logs = f.read()
                     raise TimeoutError(
-                        f"pm serve failed to expose port {self.port} after {timeout_sec}s. Logs:\n{logs}"
+                        f"pm serve failed to expose port {self._port} after {timeout_sec}s. Logs:\n{logs}"
                     )
 
     def stop_server(self) -> None:
@@ -251,12 +260,9 @@ class PackageServer:
             self._server_proc.kill()
             self._server_proc.wait(timeout=PM_SERVE_STOP_TIMEOUT_SEC)
         finally:
-            self._server_log.close()
+            if self._server_log:
+                self._server_log.close()
 
         self._server_proc = None
         self._log_path = None
         self._server_log = None
-
-    def clean_up(self) -> None:
-        if self._server_proc:
-            self.stop_server()
