@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import Optional
 import backoff
 import json
 import logging
@@ -198,25 +199,26 @@ class FuchsiaDevice:
         self.conf_data = fd_conf_data
         if "ip" not in fd_conf_data:
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
-        self.ip = fd_conf_data["ip"]
-        self.orig_ip = fd_conf_data["ip"]
-        self.sl4f_port = fd_conf_data.get("sl4f_port", 80)
-        self.ssh_port = fd_conf_data.get("ssh_port", DEFAULT_SSH_PORT)
-        self.ssh_config = fd_conf_data.get("ssh_config", None)
-        self.ssh_priv_key = fd_conf_data.get("ssh_priv_key", None)
-        self.authorized_file = fd_conf_data.get("authorized_file_loc", None)
-        self.serial_number = fd_conf_data.get("serial_number", None)
-        self.device_type = fd_conf_data.get("device_type", None)
-        self.product_type = fd_conf_data.get("product_type", None)
-        self.board_type = fd_conf_data.get("board_type", None)
-        self.build_number = fd_conf_data.get("build_number", None)
-        self.build_type = fd_conf_data.get("build_type", None)
-        self.server_path = fd_conf_data.get("server_path", None)
-        self.specific_image = fd_conf_data.get("specific_image", None)
-        self.ffx_binary_path = fd_conf_data.get("ffx_binary_path", None)
-        self.pm_binary_path = fd_conf_data.get("pm_binary_path", None)
-        self.packages_path = fd_conf_data.get("packages_path", None)
-        self.mdns_name = fd_conf_data.get("mdns_name", None)
+        self.ip: str = fd_conf_data["ip"]
+        self.orig_ip: str = fd_conf_data["ip"]
+        self.sl4f_port: int = fd_conf_data.get("sl4f_port", 80)
+        self.ssh_port: int = fd_conf_data.get("ssh_port", DEFAULT_SSH_PORT)
+        self.ssh_config: Optional[str] = fd_conf_data.get("ssh_config", None)
+        self.ssh_priv_key: Optional[str] = fd_conf_data.get("ssh_priv_key", None)
+        self.authorized_file: Optional[str] = fd_conf_data.get("authorized_file_loc", None)
+        self.serial_number: Optional[str] = fd_conf_data.get("serial_number", None)
+        self.device_type: Optional[str] = fd_conf_data.get("device_type", None)
+        self.product_type: Optional[str] = fd_conf_data.get("product_type", None)
+        self.board_type: Optional[str] = fd_conf_data.get("board_type", None)
+        self.build_number: Optional[str] = fd_conf_data.get("build_number", None)
+        self.build_type: Optional[str] = fd_conf_data.get("build_type", None)
+        self.server_path: Optional[str] = fd_conf_data.get("server_path", None)
+        self.specific_image: Optional[str] = fd_conf_data.get("specific_image", None)
+        self.ffx_binary_path: Optional[str] = fd_conf_data.get("ffx_binary_path", None)
+        # Path to a tar.gz archive with pm and amber-files, as necessary for
+        # starting a package server.
+        self.packages_archive_path: Optional[str] = fd_conf_data.get("packages_archive_path", None)
+        self.mdns_name: Optional[str] = fd_conf_data.get("mdns_name", None)
 
         # Instead of the input ssh_config, a new config is generated with proper
         # ControlPath to the test output directory.
@@ -429,9 +431,9 @@ class FuchsiaDevice:
         self.wlan_policy_controller = WlanPolicyController(self)
 
     def start_package_server(self):
-        if not self.pm_binary_path or not self.packages_path:
+        if not self.packages_archive_path:
             self.log.warn(
-                "Either pm_binary_path or packages_path is not specified. "
+                "packages_archive_path is not specified. "
                 "Assuming a package server is already running and configured on "
                 "the DUT. If this is not the case, either run your own package "
                 "server, or configure these fields appropriately. "
@@ -444,8 +446,7 @@ class FuchsiaDevice:
             )
             return
 
-        self.package_server = PackageServer(self.pm_binary_path,
-                                            self.packages_path)
+        self.package_server = PackageServer(self.packages_archive_path)
         self.package_server.start()
         self.package_server.configure_device(self.ssh)
 
