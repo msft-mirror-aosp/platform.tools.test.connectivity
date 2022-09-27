@@ -19,24 +19,20 @@ import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
     # command to start iperf server on UE
     START_IPERF_SV_UE_CMD = 'nohup > /dev/null 2>&1 sh -c "iperf3 -s -i1 -p5201 > /dev/null  &"'
+
     # command to start iperf server on UE
     # (require: 1.path to iperf exe 2.hostname/hostIP)
     START_IPERF_CLIENT_UE_CMD = (
         'nohup > /dev/null 2>&1 sh -c '
         '"iperf3 -c {iperf_host_ip} -i1 -p5202 -w8m -t2000 > /dev/null &"')
+
     #command to start iperf server on host()
     START_IPERF_SV_HOST_CMD = '{exe_path}\\iperf3 -s -p5202'
+
     # command to start iperf client on host
     # (require: 1.path to iperf exe 2.UE IP)
     START_IPERF_CLIENT_HOST_CMD = (
         '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201')
-
-    # Key for custom_property in Sponge
-    CUSTOM_PROP_KEY_BUILD_ID = 'build_id'
-    CUSTOM_PROP_KEY_INCR_BUILD_ID = 'incremental_build_id'
-    CUSTOM_PROP_KEY_BUILD_TYPE = 'build_type'
-    CUSTOM_PROP_KEY_POWER_MEASURE = 'power_measure'
-    CUSTOM_PROP_KEY_MODEM_BASEBAND = 'baseband'
 
     def __init__(self, controllers):
         super().__init__(controllers)
@@ -69,35 +65,6 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         # setup ssh client
         self.ssh_iperf_client = self._create_ssh_client()
         self.ssh_iperf_server = self._create_ssh_client()
-
-    def teardown_test(self):
-        """Tear down necessary objects after test case is finished. """
-        super().teardown_test()
-
-        # close ssh connection
-        if self.ssh_iperf_server:
-            self.ssh_iperf_server.close()
-        if self.ssh_iperf_client:
-            self.ssh_iperf_client.close()
-
-        # write result to sponge
-        build_info = self.cellular_dut.ad.build_info
-        build_id = build_info.get('build_id', 'Unknown')
-        incr_build_id = build_info.get('incremental_build_id', 'Unknown')
-        modem_base_band = self.cellular_dut.ad.adb.getprop(
-            'gsm.version.baseband')
-        build_type = build_info.get('build_type', 'Unknown')
-        power_measure = self.power_results.get(self.test_name, None)
-        self.record_data({
-            'Test Name': self.test_name,
-            'sponge_properties': {
-                self.CUSTOM_PROP_KEY_POWER_MEASURE: power_measure,
-                self.CUSTOM_PROP_KEY_BUILD_ID: build_id,
-                self.CUSTOM_PROP_KEY_INCR_BUILD_ID: incr_build_id,
-                self.CUSTOM_PROP_KEY_MODEM_BASEBAND: modem_base_band,
-                self.CUSTOM_PROP_KEY_BUILD_TYPE: build_type
-            },
-        })
 
     def power_tel_traffic_test(self):
         """Measure power while data is transferring."""
