@@ -22,10 +22,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 class FuchsiaBtsLib(BaseLib):
     # Class representing the Bluetooth Access Library.
 
-    def __init__(self, addr, tc, client_id):
+    def __init__(self, addr):
         self.address = addr
-        self.test_counter = tc
-        self.client_id = client_id
 
     def setDiscoverable(self, discoverable):
         """Sets the device to be discoverable over BR/EDR.
@@ -39,10 +37,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothSetDiscoverable"
         test_args = {"discoverable": discoverable}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def setName(self, name):
         """Sets the local Bluetooth name of the device.
@@ -55,10 +51,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothSetName"
         test_args = {"name": name}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def inputPairingPin(self, pin):
         """Inputs the pairing pin to the Fuchsia devices' pairing delegate.
@@ -71,10 +65,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothInputPairingPin"
         test_args = {"pin": pin}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def getPairingPin(self):
         """Gets the pairing pin from the Fuchsia devices' pairing delegate.
@@ -84,10 +76,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothGetPairingPin"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def initBluetoothSys(self):
         """Initialises the Bluetooth sys Interface proxy in SL4F.
@@ -97,10 +87,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothInitSys"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def requestDiscovery(self, discovery):
         """Start or stop Bluetooth Control device discovery.
@@ -114,10 +102,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothRequestDiscovery"
         test_args = {"discovery": discovery}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def getKnownRemoteDevices(self):
         """Get known remote BR/EDR and LE devices.
@@ -127,10 +113,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothGetKnownRemoteDevices"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def forgetDevice(self, identifier):
         """Forgets a devices pairing.
@@ -143,10 +127,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothForgetDevice"
         test_args = {"identifier": identifier}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def disconnectDevice(self, identifier):
         """Disconnects a devices.
@@ -159,10 +141,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothDisconnectDevice"
         test_args = {"identifier": identifier}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def connectDevice(self, identifier):
         """Connects to a devices.
@@ -175,10 +155,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothConnectDevice"
         test_args = {"identifier": identifier}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def getActiveAdapterAddress(self):
         """Gets the current Active Adapter's address.
@@ -188,10 +166,8 @@ class FuchsiaBtsLib(BaseLib):
         """
         test_cmd = "bt_sys_facade.BluetoothGetActiveAdapterAddress"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def pair(self, identifier, pairing_security_level, non_bondable,
              transport):
@@ -222,9 +198,8 @@ class FuchsiaBtsLib(BaseLib):
             "non_bondable": non_bondable,
             "transport": transport,
         }
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-        return self.send_command(test_id, test_cmd, test_args)
+
+        return self.send_command(test_cmd, test_args)
 
     def acceptPairing(self,
                       input_capabilities="NONE",
@@ -250,6 +225,5 @@ class FuchsiaBtsLib(BaseLib):
             "input": input_capabilities,
             "output": output_capabilities,
         }
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-        return self.send_command(test_id, test_cmd, test_args)
+
+        return self.send_command(test_cmd, test_args)
