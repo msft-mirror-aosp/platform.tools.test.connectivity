@@ -22,6 +22,7 @@ from typing import Set
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.extended_capabilities import ExtendedCapabilities
+from acts.controllers.ap_lib.wireless_network_management import BssTransitionManagementRequest
 from acts.controllers.utils_lib.commands import shell
 from acts.libs.proc.job import Result
 
@@ -153,7 +154,7 @@ class Hostapd(object):
         """Return MAC addresses of all associated STAs."""
         list_sta_result = self._list_sta()
         stas = set()
-        for line in list_sta_result.stdout:
+        for line in list_sta_result.stdout.splitlines():
             # Each line must be a valid MAC address. Capture it.
             m = re.match(r'((?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2})', line)
             if m:
@@ -195,6 +196,59 @@ class Hostapd(object):
         except ValueError:
             raise Error(
                 f'ext_capab contains invalid hex string repr {raw_ext_capab}')
+
+    def _bss_tm_req(self, client_mac: str,
+                    request: BssTransitionManagementRequest) -> Result:
+        """Send a hostapd BSS Transition Management request command to a STA.
+
+        Args:
+            client_mac: MAC address that will receive the request.
+            request: BSS Transition Management request that will be sent.
+        Returns:
+            acts.libs.proc.job.Result containing the results of the command.
+        Raises: See _run_hostapd_cli_cmd
+        """
+        bss_tm_req_cmd = f'bss_tm_req {client_mac}'
+
+        if request.abridged:
+            bss_tm_req_cmd += ' abridged=1'
+        if request.bss_termination_included and request.bss_termination_duration:
+            bss_tm_req_cmd += f' bss_term={request.bss_termination_duration.duration}'
+        if request.disassociation_imminent:
+            bss_tm_req_cmd += ' disassoc_imminent=1'
+        if request.disassociation_timer is not None:
+            bss_tm_req_cmd += f' disassoc_timer={request.disassociation_timer}'
+        if request.preferred_candidate_list_included:
+            bss_tm_req_cmd += ' pref=1'
+        if request.session_information_url:
+            bss_tm_req_cmd += f' url={request.session_information_url}'
+        if request.validity_interval:
+            bss_tm_req_cmd += f' valid_int={request.validity_interval}'
+
+        # neighbor= can appear multiple times, so it requires special handling.
+        for neighbor in request.candidate_list:
+            bssid = neighbor.bssid
+            bssid_info = hex(neighbor.bssid_information)
+            op_class = neighbor.operating_class
+            chan_num = neighbor.channel_number
+            phy_type = int(neighbor.phy_type)
+            bss_tm_req_cmd += f' neighbor={bssid},{bssid_info},{op_class},{chan_num},{phy_type}'
+
+        return self._run_hostapd_cli_cmd(bss_tm_req_cmd)
+
+    def send_bss_transition_management_req(
+            self, sta_mac: str,
+            request: BssTransitionManagementRequest) -> Result:
+        """Send a BSS Transition Management request to an associated STA.
+
+        Args:
+            sta_mac: MAC address of the STA in question.
+            request: BSS Transition Management request that will be sent.
+        Returns:
+            acts.libs.proc.job.Result containing the results of the command.
+        Raises: See _run_hostapd_cli_cmd
+        """
+        return self._bss_tm_req(sta_mac, request)
 
     def is_alive(self):
         """
