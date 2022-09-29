@@ -15,7 +15,6 @@
 #   limitations under the License.
 import os
 
-from acts import context
 import acts_contrib.test_utils.power.cellular.cellular_power_base_test as base_test
 
 
@@ -23,23 +22,6 @@ class PowerTelPDCCHTest(base_test.PowerCellularLabBaseTest):
     """ PDCCH only power test.
 
     In this test the UE is only listening and decoding the PDCCH channel. """
-
-    # ODPM report
-    ODPM_MODEM_RECORD_NAME = '[VSYS_PWR_MODEM]:Modem'
-
-    # conversion unit
-    S_TO_MS_FACTOR = 1000
-
-    # kibble report
-    KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
-
-    # params key
-    MONSOON_VOLTAGE_KEY = 'mon_voltage'
-
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.odpm_power = 0
-        self.kibble_system_power = 0
 
     def power_pdcch_test(self):
         """ Measures power during PDCCH only.
@@ -51,62 +33,6 @@ class PowerTelPDCCHTest(base_test.PowerCellularLabBaseTest):
 
         # Measure power
         self.collect_power_data()
-
-        # getting ODPM modem power value
-        context_path = context.get_current_context().get_full_output_path()
-        self.log.debug(
-            'class PowerTelPDCCHTest context path: ' + context_path
-        )
-        odpm_path = os.path.join(context_path, '../../odpm')
-        self.log.debug('opdm path: ' + odpm_path)
-        self.log.debug('ODPM list files: ')
-        self.log.debug(os.listdir(odpm_path))
-
-        elapsed_time = None
-        for file in os.listdir(odpm_path):
-            if 'after' in file and self.test_name in file:
-                file_path = os.path.join(odpm_path, file)
-                with open(file_path, 'r') as f:
-                    for line in f:
-                        if 'Elapsed time' in line:
-                            # time elapsed in mS
-                            # between 2 adb OPDM cmd
-                            elapsed_time = line.split(':')[1].strip().split(' ')[0]
-                            self.log.info('ODPM elapsed time: ' + elapsed_time)
-                        if self.ODPM_MODEM_RECORD_NAME in line:
-                            # change in cumulative enery in mWs
-                            # between 2 adb OPDM cmd
-                            delta_start_idx = line.index('(')
-                            delta_str = line[delta_start_idx+1:-2].strip()
-                            self.log.info(
-                                self.ODPM_MODEM_RECORD_NAME
-                                + ' delta: '
-                                + delta_str
-                                + ' mWs'
-                            )
-                            # calculate OPDM power
-                            elapsed_time_s = float(elapsed_time) / self.S_TO_MS_FACTOR
-                            odpm_power = float(delta_str) / elapsed_time_s
-                            self.odpm_power = odpm_power
-                            self.log.info(
-                                'odpm power: ' + str(odpm_power) + ' mW'
-                            )
-        # getting system power if kibble is on
-        test_run_debug_log_path = os.path.join(
-            context_path, 'test_run_debug.txt'
-        )
-        self.log.debug('test_run_debug path: ' + test_run_debug_log_path)
-        with open(test_run_debug_log_path, 'r') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                if self.KIBBLE_SYSTEM_RECORD_NAME in line:
-                    value_line = f.readline()
-                    system_power_str = value_line.split(':')[1].strip()
-                    monsoon_voltage = self.test_params[self.MONSOON_VOLTAGE_KEY]
-                    self.kibble_system_power = float(system_power_str) * monsoon_voltage
-                    break
 
         # Check if power measurement is within the required values
         self.pass_fail_check(self.avg_current)
