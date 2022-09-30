@@ -47,6 +47,8 @@ class PresetSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table,
                          nr_mode)
+        # require param for idle test case
+        self.rrc_sc_timer = 0
 
         # Set to KeySight APN
         log.info('Configuring APN.')
