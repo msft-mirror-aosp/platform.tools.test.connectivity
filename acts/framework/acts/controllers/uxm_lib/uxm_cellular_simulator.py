@@ -42,6 +42,9 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
     SCPI_GET_CELL_STATUS = 'BSE:STATus:{}:{}?'
     SCPI_CHECK_CONNECTION_CMD = '*IDN?\n'
+    # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
+    SCPI_RRC_RELEASE_LTE_CMD = 'BSE:FUNCtion:{}:{}:RELease:SEND'
+    SCPI_RRC_RELEASE_NR_CMD = 'BSE:CONFig:{}:{}:RCONtrol:RRC:STARt RRELease'
 
     # UXM's Test Application recovery
     TA_BOOT_TIME = 100
@@ -73,10 +76,11 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.cells = []
         self.uxm_ip = ip_address
         self.uxm_user = uxm_user
-        self.ssh_private_key_to_uxm = ssh_private_key_to_uxm
+        self.ssh_private_key_to_uxm = os.path.expanduser(
+                                        ssh_private_key_to_uxm)
         self.ta_exe_path = ta_exe_path
         self.ta_exe_name = ta_exe_name
-        self.ssh_client = self._create_ssh_client()
+        self.ssh_client = self.create_ssh_client()
 
         # get roclbottom file
         for file in self.custom_files:
@@ -89,7 +93,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.check_socket_connection()
         self.timeout = 120
 
-    def _create_ssh_client(self):
+    def create_ssh_client(self):
         """Create a ssh client to host."""
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -360,26 +364,33 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             AbstractCellularSimulator.CellularSimulatorError:
                 device unable to connect to cell.
         """
-        # airplane mode off
-        # dut.ad.adb.shell('settings put secure adaptive_connectivity_enabled 0')
-        dut.toggle_airplane_mode(False)
+        # airplane mode on
+        dut.toggle_airplane_mode(True)
         time.sleep(5)
+
         # turn cell on
         self.turn_cell_on(cell_type, cell_number)
         time.sleep(5)
 
+        # airplane mode off
+        dut.toggle_airplane_mode(False)
+        time.sleep(5)
+
         # waits for connect
         for index in range(1, attach_retries):
-            # airplane mode on
-            time.sleep(wait_for_camp_interval)
-            cell_state = self.get_cell_status(cell_type, cell_number)
-            self.log.info(f'cell state: {cell_state}')
-            if cell_state == 'CONN\n':
-                return True
-            if cell_state == 'OFF\n':
-                self.turn_cell_on(cell_type, cell_number)
+            count = 0
+            while count < wait_for_camp_interval:
                 time.sleep(5)
+                cell_state = self.get_cell_status(cell_type, cell_number)
+                self.log.info(f'cell state: {cell_state}')
+                if cell_state == 'CONN\n':
+                    return True
+                if cell_state == 'OFF\n':
+                    self.turn_cell_on(cell_type, cell_number)
+                    time.sleep(5)
+                count += 5
             if change_dut_setting_allow:
+                # reboot device after certain tries
                 if (index % 4) == 0:
                     dut.ad.reboot()
                     if self.rockbottom_script:
@@ -677,8 +688,38 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        raise NotImplementedError(
-            'This UXM callbox simulator does not support this feature.')
+        # turn on RRC release
+        cell_type = self.cells[0][self.KEY_CELL_TYPE]
+        cell_number = self.cells[0][self.KEY_CELL_NUMBER]
+
+        # choose cmd base on cell type
+        cmd = None
+        if cell_type == 'LTE':
+            cmd = self.SCPI_RRC_RELEASE_LTE_CMD
+        else:
+            cmd = self.SCPI_RRC_RELEASE_NR_CMD
+
+        if not cmd:
+            raise RuntimeError('Can choose IDLE cmd base on cell type.')
+
+        self._socket_send_SCPI_command(cmd.format(cell_type, cell_number))
+        # wait for SCPI RRC cmd complete
+        time.sleep(5)
+
+        # checking status
+        count = 0
+        wait_interval = 5
+        self.log.info('Wait for IDLE state.')
+        while count < timeout:
+            cell_state = self.get_cell_status(cell_type, cell_number)
+            self.log.info(f'cell state: {cell_state}')
+            if cell_state == 'IDLE':
+                return
+            time.sleep(wait_interval)
+            count += wait_interval
+
+        if cell_state != 'IDLE\n':
+            raise RuntimeError('RRC release fail.')
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""

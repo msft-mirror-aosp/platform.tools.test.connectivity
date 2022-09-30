@@ -19,6 +19,7 @@ import os
 import acts_contrib.test_utils.power.PowerBaseTest as PBT
 import acts_contrib.test_utils.cellular.cellular_base_test as CBT
 from acts_contrib.test_utils.power import plot_utils
+from acts import context
 
 
 class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
@@ -27,6 +28,28 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
     Inherits from both PowerBaseTest and CellularBaseTest so it has methods to
     collect power measurements and run a cellular simulation.
     """
+    # Key for ODPM report
+    ODPM_ENERGY_TABLE_NAME = 'PowerStats HAL 2.0 energy meter'
+    ODPM_MODEM_CHANNEL_NAME = '[VSYS_PWR_MODEM]:Modem'
+
+    # Key for custom_property in Sponge
+    CUSTOM_PROP_KEY_BUILD_ID = 'build_id'
+    CUSTOM_PROP_KEY_INCR_BUILD_ID = 'incremental_build_id'
+    CUSTOM_PROP_KEY_BUILD_TYPE = 'build_type'
+    CUSTOM_PROP_KEY_SYSTEM_POWER = 'system_power'
+    CUSTOM_PROP_KEY_MODEM_BASEBAND = 'baseband'
+    CUSTOM_PROP_KEY_MODEM_ODPM_POWER= 'modem_odpm_power'
+    CUSTOM_PROP_KEY_DEVICE_NAME = 'device'
+    CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE = 'device_build_phase'
+    CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER = 'modem_kibble_power'
+    CUSTOM_PROP_KEY_TEST_NAME = 'test_name'
+
+    # kibble report
+    KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
+
+    # params key
+    MONSOON_VOLTAGE_KEY = 'mon_voltage'
+
     def __init__(self, controllers):
         """ Class initialization.
 
@@ -137,3 +160,150 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
                     csvfile.write('\n{},{},{}'.format(
                         band, pathloss.get('dl', 'Error'),
                         pathloss.get('ul', 'Error')))
+
+    def get_odpm_values(self):
+        """Get power measure from ODPM.
+
+        Parsing energy table in ODPM file
+        and convert to.
+        Returns:
+            odpm_power_results: a dictionary
+                has key as channel name,
+                and value as power measurement of that channel.
+        """
+        self.log.info('Start calculating power by channel from ODPM report.')
+        odpm_power_results = {}
+
+        # device before P21 don't have ODPM reading
+        if not self.odpm_folder:
+            return odpm_power_results
+
+        # getting ODPM modem power value
+        odpm_file_name = '{}.{}.dumpsys_odpm_{}.txt'.format(
+            self.__class__.__name__,
+            self.current_test_name,
+            'after')
+        odpm_file_path = os.path.join(self.odpm_folder, odpm_file_name)
+
+        elapsed_time = None
+        with open(odpm_file_path, 'r') as f:
+            # find energy table in ODPM report
+            for line in f:
+                if self.ODPM_ENERGY_TABLE_NAME in line:
+                    break
+
+            # get elapse time 2 adb ODPM cmd (mS)
+            elapsed_time_str = f.readline()
+            elapsed_time = float(elapsed_time_str
+                                    .split(':')[1]
+                                    .strip()
+                                    .split(' ')[0])
+            self.log.info(elapsed_time_str)
+
+            # skip column name row
+            next(f)
+
+            # get power of different channel from odpm report
+            for line in f:
+                if 'End' in line:
+                    break
+                else:
+                    # parse columns
+                    # example result of line.strip().split()
+                    # ['[VSYS_PWR_DISPLAY]:Display', '1039108.42', 'mWs', '(', '344.69)']
+                    channel, _, _, _, delta_str = line.strip().split()
+                    delta = float(delta_str[:-2].strip())
+
+                    # calculate OPDM power
+                    # delta is a different in cumulative energy
+                    # between 2 adb ODPM cmd
+                    elapsed_time_s = elapsed_time / 1000
+                    power = delta / elapsed_time_s
+                    odpm_power_results[channel] = power
+                    self.log.info(
+                        channel + ' ' + str(power) + ' mW'
+                    )
+        return odpm_power_results
+
+    def get_system_power(self):
+        """Parsing system power from test_run_debug file.
+
+        Kibble measurements are available in test_run_debug.
+        This frunction iterates through test_run_debug file
+        to get system power.
+        Returns:
+            kibble_system_power: system power value in mW.
+        """
+        kibble_system_power = 0
+
+        # getting system power if kibble is on
+        context_path = context.get_current_context().get_full_output_path()
+        test_run_debug_log_path = os.path.join(
+            context_path, 'test_run_debug.txt'
+        )
+        self.log.debug('test_run_debug path: ' + test_run_debug_log_path)
+        with open(test_run_debug_log_path, 'r') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                if self.KIBBLE_SYSTEM_RECORD_NAME in line:
+                    value_line = f.readline()
+                    system_power_str = value_line.split(':')[1].strip()
+                    monsoon_voltage = self.test_params[self.MONSOON_VOLTAGE_KEY]
+                    kibble_system_power = float(system_power_str) * monsoon_voltage
+                    break
+        return kibble_system_power
+
+    def sponge_upload(self):
+        """Upload result to sponge as custom field."""
+        # test name
+        test_name_arr = self.current_test_name.split('_')
+        test_name_for_sponge = ''.join(
+            word[0].upper() + word[1:].lower()
+                for word in test_name_arr
+                    if word not in ('preset', 'test')
+        )
+
+        # build info
+        build_info = self.cellular_dut.ad.build_info
+        build_id = build_info.get('build_id', 'Unknown')
+        incr_build_id = build_info.get('incremental_build_id', 'Unknown')
+        modem_base_band = self.cellular_dut.ad.adb.getprop(
+            'gsm.version.baseband')
+        build_type = build_info.get('build_type', 'Unknown')
+
+        # device info
+        device_info = self.cellular_dut.ad.device_info
+        device_name = device_info.get('model', 'Unknown')
+        device_build_phase = self.cellular_dut.ad.adb.getprop(
+            'ro.boot.hardware.revision'
+        )
+
+        # power measurement results
+        odpm_power_results = self.get_odpm_values()
+        odpm_power = odpm_power_results.get(self.ODPM_MODEM_CHANNEL_NAME, 0)
+        system_power = 0
+        modem_kibble_power = 0
+
+        if hasattr(self, 'bitses'):
+            modem_kibble_power = self.power_results.get(self.test_name, None)
+            system_power = self.get_system_power()
+        else:
+            system_power = self.power_results.get(self.test_name, None)
+
+        self.record_data({
+            'Test Name': self.test_name,
+            'sponge_properties': {
+                self.CUSTOM_PROP_KEY_SYSTEM_POWER: system_power,
+                self.CUSTOM_PROP_KEY_BUILD_ID: build_id,
+                self.CUSTOM_PROP_KEY_INCR_BUILD_ID: incr_build_id,
+                self.CUSTOM_PROP_KEY_MODEM_BASEBAND: modem_base_band,
+                self.CUSTOM_PROP_KEY_BUILD_TYPE: build_type,
+                self.CUSTOM_PROP_KEY_MODEM_ODPM_POWER: odpm_power,
+                self.CUSTOM_PROP_KEY_DEVICE_NAME: device_name,
+                self.CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE: device_build_phase,
+                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER: modem_kibble_power,
+                self.CUSTOM_PROP_KEY_TEST_NAME: test_name_for_sponge
+            },
+        })
