@@ -34,15 +34,6 @@ COMMAND_REMOVE_ALL_NETWORKS = "wlan_policy.remove_all_networks"
 COMMAND_GET_UPDATE = "wlan_policy.get_update"
 
 
-def main(argv):
-    if len(argv) > 1:
-        raise app.UsageError('Too many command-line arguments.')
-
-
-if __name__ == '__main__':
-    app.run(main)
-
-
 class FuchsiaWlanPolicyLib(BaseLib):
     def __init__(self, addr, tc, client_id):
         self.address = addr
@@ -187,16 +178,6 @@ class FuchsiaWlanPolicyLib(BaseLib):
             independent from previous tests.
         """
         test_cmd = COMMAND_SET_NEW_LISTENER
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, {})
-
-    def wlanRemoveAllNetworks(self):
-        """ Deletes all saved networks on the device. Relies directly on the get_saved_networks and
-            remove_network commands
-        """
-        test_cmd = COMMAND_REMOVE_ALL_NETWORKS
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 

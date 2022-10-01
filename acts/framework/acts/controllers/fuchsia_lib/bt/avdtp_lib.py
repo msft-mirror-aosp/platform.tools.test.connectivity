@@ -229,22 +229,6 @@ class FuchsiaAvdtpLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def establishStream(self, peer_id):
-        """Sends the AVDTP command to input peer_id: establish stream
-
-        Args:
-            peer_id: The peer id to send the AVDTP command to.
-
-        Returns:
-            Dictionary, None if success, error if error.
-        """
-        test_cmd = "avdtp_facade.AvdtpEstablishStream"
-        test_args = {"identifier": peer_id}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
     def removeService(self):
         """Removes the AVDTP service from the Fuchsia device
 
