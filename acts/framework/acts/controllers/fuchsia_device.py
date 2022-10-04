@@ -54,7 +54,7 @@ from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.package_server import PackageServer
 from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
-from acts.controllers.fuchsia_lib.ssh import DEFAULT_SSH_PORT, DEFAULT_SSH_USER, SSHProvider, FuchsiaSSHError
+from acts.controllers.fuchsia_lib.ssh import DEFAULT_SSH_PORT, DEFAULT_SSH_USER, SSHConfig, SSHProvider, FuchsiaSSHError
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import create_syslog_process
 from acts.controllers.fuchsia_lib.utils_lib import flash
@@ -204,20 +204,28 @@ class FuchsiaDevice:
         self.sl4f_port: int = fd_conf_data.get("sl4f_port", 80)
         self.ssh_port: int = fd_conf_data.get("ssh_port", DEFAULT_SSH_PORT)
         self.ssh_config: Optional[str] = fd_conf_data.get("ssh_config", None)
-        self.ssh_priv_key: Optional[str] = fd_conf_data.get("ssh_priv_key", None)
-        self.authorized_file: Optional[str] = fd_conf_data.get("authorized_file_loc", None)
-        self.serial_number: Optional[str] = fd_conf_data.get("serial_number", None)
+        self.ssh_priv_key: Optional[str] = fd_conf_data.get(
+            "ssh_priv_key", None)
+        self.authorized_file: Optional[str] = fd_conf_data.get(
+            "authorized_file_loc", None)
+        self.serial_number: Optional[str] = fd_conf_data.get(
+            "serial_number", None)
         self.device_type: Optional[str] = fd_conf_data.get("device_type", None)
-        self.product_type: Optional[str] = fd_conf_data.get("product_type", None)
+        self.product_type: Optional[str] = fd_conf_data.get(
+            "product_type", None)
         self.board_type: Optional[str] = fd_conf_data.get("board_type", None)
-        self.build_number: Optional[str] = fd_conf_data.get("build_number", None)
+        self.build_number: Optional[str] = fd_conf_data.get(
+            "build_number", None)
         self.build_type: Optional[str] = fd_conf_data.get("build_type", None)
         self.server_path: Optional[str] = fd_conf_data.get("server_path", None)
-        self.specific_image: Optional[str] = fd_conf_data.get("specific_image", None)
-        self.ffx_binary_path: Optional[str] = fd_conf_data.get("ffx_binary_path", None)
+        self.specific_image: Optional[str] = fd_conf_data.get(
+            "specific_image", None)
+        self.ffx_binary_path: Optional[str] = fd_conf_data.get(
+            "ffx_binary_path", None)
         # Path to a tar.gz archive with pm and amber-files, as necessary for
         # starting a package server.
-        self.packages_archive_path: Optional[str] = fd_conf_data.get("packages_archive_path", None)
+        self.packages_archive_path: Optional[str] = fd_conf_data.get(
+            "packages_archive_path", None)
         self.mdns_name: Optional[str] = fd_conf_data.get("mdns_name", None)
 
         # Instead of the input ssh_config, a new config is generated with proper
@@ -481,7 +489,8 @@ class FuchsiaDevice:
                 raise FuchsiaConfigError(
                     'Must provide "ssh_priv_key: <file path>" in the device config'
                 )
-            self._ssh = SSHProvider(self.ip, self.ssh_port, self.ssh_priv_key)
+            self._ssh = SSHProvider(
+                SSHConfig(self.ip, self.ssh_priv_key, port=self.ssh_port))
         return self._ssh
 
     @ssh.deleter
@@ -548,22 +557,19 @@ class FuchsiaDevice:
             skip_status_code_check = 'true' == str(
                 cmd_dict.get('skip_status_code_check', False)).lower()
 
-            try:
-                if skip_status_code_check:
-                    self.log.info(
-                        f'Running command "{cmd}" and ignoring result.')
-                else:
-                    self.log.info(f'Running command "{cmd}".')
+            if skip_status_code_check:
+                self.log.info(f'Running command "{cmd}" and ignoring result.')
+            else:
+                self.log.info(f'Running command "{cmd}".')
 
-                result = self.ssh.run(
-                    cmd,
-                    timeout_sec=timeout,
-                    skip_status_code_check=skip_status_code_check)
+            try:
+                result = self.ssh.run(cmd, timeout_sec=timeout)
                 self.log.debug(result)
             except FuchsiaSSHError as e:
-                raise FuchsiaDeviceError(
-                    'Failed device specific commands for initial configuration'
-                ) from e
+                if not skip_status_code_check:
+                    raise FuchsiaDeviceError(
+                        'Failed device specific commands for initial configuration'
+                    ) from e
 
     def build_id(self, test_id):
         """Concatenates client_id and test_id to form a command_id
@@ -689,10 +695,13 @@ class FuchsiaDevice:
                 with utils.SuppressLogOutput():
                     self.clean_up_services()
                     self.stop_sl4f_on_fuchsia_device()
-                    self.ssh.run(
-                        'dm reboot',
-                        timeout_sec=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
-                        skip_status_code_check=True)
+                    try:
+                        self.ssh.run(
+                            'dm reboot',
+                            timeout_sec=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME)
+                    except FuchsiaSSHError as e:
+                        if 'closed by remote host' not in e.result.stderr:
+                            raise e
             else:
                 self.log.info('Calling SL4F reboot command.')
                 self.clean_up_services()
@@ -1239,6 +1248,7 @@ class FuchsiaDevice:
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
+
     def process(self, msg, kwargs):
         msg = "[FuchsiaDevice|%s] %s" % (self.extra["ip"], msg)
         return msg, kwargs

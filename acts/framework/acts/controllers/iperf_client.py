@@ -24,7 +24,7 @@ from acts import context
 from acts import utils
 from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import AndroidDevice
-from acts.controllers.fuchsia_lib.ssh import SSHProvider, SSHResults
+from acts.controllers.fuchsia_lib.ssh import SSHProvider, SSHResult
 from acts.controllers.iperf_server import _AndroidDeviceBridge
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import ssh_is_connected
@@ -235,8 +235,7 @@ class IPerfClientOverSsh(IPerfClientBase):
                         ssh_config=self._ssh_settings.ssh_config)
                 _, cmd_result_stdout, cmd_result_stderr = (
                     self._ssh_session.exec_command(iperf_cmd, timeout=timeout))
-                iperf_process = SSHResults(cmd_result_stdout,
-                                           cmd_result_stderr)
+                iperf_process = SSHResult(cmd_result_stdout, cmd_result_stderr)
             else:
                 iperf_process = self._ssh_session.run(iperf_cmd,
                                                       timeout=timeout)

@@ -20,6 +20,7 @@ This test only requires two fuchsia devices.
 
 from acts import signals
 from acts.base_test import BaseTestClass
+from acts.controllers.fuchsia_lib.ssh import FuchsiaSSHError
 from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.bt.bt_test_utils import generate_id_by_size
 from acts_contrib.test_utils.fuchsia.bt_test_utils import bredr_scan_for_device_by_name
@@ -68,12 +69,11 @@ class BtFuchsiaEPTest(BaseTestClass):
         """
         ssh_timeout = 30
         for fd in self.fuchsia_devices:
-            fd.ssh.run("killall bt-a2dp*",
-                       timeout=ssh_timeout,
-                       skip_status_code_check=True)
-            fd.ssh.run("killall bt-avrcp*",
-                       timeout=ssh_timeout,
-                       skip_status_code_check=True)
+            try:
+                fd.ssh.run("killall bt-a2dp*", timeout_sec=ssh_timeout)
+                fd.ssh.run("killall bt-avrcp*", timeout_sec=ssh_timeout)
+            except FuchsiaSSHError:
+                pass
 
     def _unbond_all_known_devices(self):
         """For all Fuchsia devices, unbond any known pairings.
