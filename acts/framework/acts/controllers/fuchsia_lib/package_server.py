@@ -150,7 +150,8 @@ class PackageServer:
         Raises:
             TestAbortClass: when the timestamp.json file has expired
         """
-        with open(f'{self._packages_path}/repository/timestamp.json', 'r') as f:
+        with open(f'{self._packages_path}/repository/timestamp.json',
+                  'r') as f:
             data = json.load(f)
             expiresAtRaw = data["signed"]["expires"]
             expiresAt = datetime.strptime(expiresAtRaw, '%Y-%m-%dT%H:%M:%SZ')
@@ -187,28 +188,28 @@ class PackageServer:
         self.log.info(f'Serving packages on port {self._port}')
 
     def configure_device(self,
-                         device_ssh: SSHProvider,
+                         ssh: SSHProvider,
                          repo_name=DEFAULT_FUCHSIA_REPO_NAME) -> None:
         """Configure the device to use this package server.
 
         Args:
-            device_ssh: Device SSH transport channel
+            ssh: Device SSH transport channel
             repo_name: Name of the repo to alias this package server
         """
         # Remove any existing repositories that may be stale.
         try:
-            device_ssh.run(f'pkgctl repo rm fuchsia-pkg://{repo_name}')
+            ssh.run(f'pkgctl repo rm fuchsia-pkg://{repo_name}')
         except FuchsiaSSHError as e:
-            if not 'NOT_FOUND' in e.result.stderr:
+            if 'NOT_FOUND' not in e.result.stderr:
                 raise e
 
         # Configure the device with the new repository.
-        host_ip = find_host_ip(device_ssh.ip)
+        host_ip = find_host_ip(ssh.config.host_name)
         repo_url = f"http://{host_ip}:{self._port}"
-        device_ssh.run(
+        ssh.run(
             f"pkgctl repo add url -f 2 -n {repo_name} {repo_url}/config.json")
         self.log.info(
-            f'Added repo "{repo_name}" as {repo_url} on device {device_ssh.ip}'
+            f'Added repo "{repo_name}" as {repo_url} on device {ssh.config.host_name}'
         )
 
     def _wait_for_server(self, timeout_sec: int = 5) -> None:
