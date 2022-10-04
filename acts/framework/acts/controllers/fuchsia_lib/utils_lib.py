@@ -27,6 +27,7 @@ import usbinfo
 
 from acts import utils
 from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
+from acts.controllers.fuchsia_lib.ssh import FuchsiaSSHError
 from acts.libs.proc import job
 from acts.utils import get_fuchsia_mdns_ipv6_address
 
@@ -270,10 +271,12 @@ def reboot_to_bootloader(fuchsia_device,
             # after this command.  There is no check so if there is an
             # expectation of the device being in fastboot, then some
             # other check needs to be done.
-            fuchsia_device.ssh.run(
-                'dm rb',
-                timeout_sec=fuchsia_reconnect_after_reboot_time,
-                skip_status_code_check=True)
+            try:
+                fuchsia_device.ssh.run(
+                    'dm rb', timeout_sec=fuchsia_reconnect_after_reboot_time)
+            except FuchsiaSSHError as e:
+                if 'closed by remote host' not in e.result.stderr:
+                    raise e
     else:
         pass
         ## Todo: Add elif for SL4F if implemented in SL4F
