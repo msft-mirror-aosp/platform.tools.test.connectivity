@@ -10,6 +10,7 @@ from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.tel import tel_logging_utils
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
 
 class GnssVendorFeaturesTest(BaseTestClass):
@@ -40,7 +41,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
     def setup_test(self):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.get_baseband_and_gms_version(self.ad)
-        self.ad.droid.connectivityToggleAirplaneMode(False)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
         if gutils.is_wearable_btwifi(self.ad):
             wutils.wifi_toggle_state(self.ad, True)
             gutils.connect_to_wifi_network(self.ad,
@@ -68,7 +69,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
 
     def connect_to_wifi_with_airplane_mode_on(self):
         self.ad.log.info("Turn airplane mode on")
-        self.ad.droid.connectivityToggleAirplaneMode(True)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
 
@@ -83,7 +84,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
         gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         gutils.check_xtra_download(self.ad, begin_time)
         self.ad.log.info("Turn airplane mode on")
-        self.ad.droid.connectivityToggleAirplaneMode(True)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         gutils.start_gnss_by_gtw_gpstool(self.ad, True)
         gutils.start_ttff_by_gtw_gpstool(self.ad, mode, iteration=self.ttff_test_cycle)
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time, self.pixel_lab_location)

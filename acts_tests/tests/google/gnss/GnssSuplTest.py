@@ -14,6 +14,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 
@@ -71,7 +72,7 @@ class GnssSuplTest(BaseTestClass):
     def setup_test(self):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.get_baseband_and_gms_version(self.ad)
-        self.ad.droid.connectivityToggleAirplaneMode(False)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
         if gutils.is_wearable_btwifi(self.ad):
             wutils.wifi_toggle_state(self.ad, True)
             gutils.connect_to_wifi_network(self.ad,
@@ -128,7 +129,7 @@ class GnssSuplTest(BaseTestClass):
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
 
     def connect_to_wifi_with_airplane_mode_on(self):
-        self.ad.droid.connectivityToggleAirplaneMode(True)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
 
