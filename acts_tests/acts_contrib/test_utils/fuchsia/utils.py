@@ -72,7 +72,10 @@ def http_file_download_by_curl(fd,
     finally:
         if remove_file_after_check:
             fd.log.info(f'Remove the downloaded file {file_path}')
-            fd.ssh.run(f'rm {file_path}', skip_status_code_check=True)
+            try:
+                fd.ssh.run(f'rm {file_path}')
+            except FuchsiaSSHError:
+                pass
 
 
 def _generate_file_directory_and_file_name(url, out_path):

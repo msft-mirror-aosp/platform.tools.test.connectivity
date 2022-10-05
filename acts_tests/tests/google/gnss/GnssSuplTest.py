@@ -421,6 +421,8 @@ class GnssSuplTest(BaseTestClass):
             gutils.fastboot_factory_reset(self.ad, True)
             self.ad.unlock_screen(password=None)
             self.init_device()
+            if not verify_internet_connection(self.ad.log, self.ad, retries=3, expected_state=True):
+                raise signals.TestFailure("No internet connection on round {times}")
             self.ad.log.info("SUPL after factory reset round %d" % times)
             self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
             self.ad.log.info("SUPL after Factory Reset round %d -> PASS" % times)
