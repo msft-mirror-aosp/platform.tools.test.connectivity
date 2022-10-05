@@ -740,3 +740,45 @@ class GnssFunctionTest(BaseTestClass):
         result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location)
         gutils.validate_location_fix_rate(self.ad, result, run_time=2,
                                           fix_rate_criteria=0.95)
+
+
+    @test_tracker_info(uuid="7b0cd50b-1143-4673-8add-0766ba27bde3")
+    def test_power_save_mode_should_apply_latest_measurement_setting(self):
+        """Ensure power save mode will apply the GNSS measurement setting.
+
+        1. Turn off full GNSS measurement.
+        2. Run tracking for 2 mins
+        3. Check the power save mode status
+        4. Turn on full GNSS measurement and re-register measurement callback
+        6. Run tracking for 30s
+        7. Check the power save mode status
+        8. Turn off full GNSS measurement and re-register measurement callback
+        9. Run tracking for 2 mins
+        10. Check the power save mode status
+        """
+        def wait_for_power_state_changes(wait_time):
+            gutils.re_register_measurement_callback(self.ad)
+            tracking_begin_time = get_current_epoch_time()
+            gutils.wait_n_mins_for_gnss_tracking(self.ad, tracking_begin_time, testtime=wait_time)
+            return tracking_begin_time
+
+        gutils.start_pixel_logger(self.ad)
+        with gutils.run_gnss_tracking(self.ad, criteria=self.supl_cs_criteria, meas_flag=True):
+            start_time = wait_for_power_state_changes(wait_time=2)
+            gutils.check_power_save_mode_status(
+                self.ad, full_power=False, begin_time=start_time,
+                brcm_error_allowlist=self.brcm_error_log_allowlist)
+
+            with gutils.full_gnss_measurement(self.ad):
+                start_time = wait_for_power_state_changes(wait_time=0.5)
+                gutils.check_power_save_mode_status(
+                    self.ad, full_power=True, begin_time=start_time,
+                    brcm_error_allowlist=self.brcm_error_log_allowlist)
+
+            start_time = wait_for_power_state_changes(wait_time=2)
+            gutils.check_power_save_mode_status(
+                self.ad, full_power=False, begin_time=start_time,
+                brcm_error_allowlist=self.brcm_error_log_allowlist)
+
+        gutils.stop_pixel_logger(self.ad)
+
