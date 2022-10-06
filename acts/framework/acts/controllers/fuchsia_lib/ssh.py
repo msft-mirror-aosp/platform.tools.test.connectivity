@@ -103,6 +103,7 @@ class SSHConfig:
     server_alive_interval: int = DEFAULT_SSH_SERVER_ALIVE_INTERVAL
     strict_host_key_checking: bool = False
     user_known_hosts_file: str = "/dev/null"
+    log_level: str = "ERROR"
 
     def full_command(self, command: str) -> List[str]:
         return [
@@ -120,9 +121,11 @@ class SSHConfig:
             '-o',
             f'ServerAliveInterval={self.server_alive_interval}',
             '-o',
-            f'StrictHostKeyChecking={self.strict_host_key_checking}',
+            f'StrictHostKeyChecking={"yes" if self.strict_host_key_checking else "no"}',
             '-o',
             f'UserKnownHostsFile={self.user_known_hosts_file}',
+            '-o',
+            f'LogLevel={self.log_level}',
             f'{self.user}@{self.host_name}'
         ] + command.split()
 
@@ -174,6 +177,7 @@ class SSHProvider:
 
     def _run(self, command: str, timeout_sec: int) -> SSHResult:
         full_command = self.config.full_command(command)
+        self.log.debug(f'Running "{" ".join(full_command)}"')
         try:
             process = subprocess.run(full_command,
                                      capture_output=True,
