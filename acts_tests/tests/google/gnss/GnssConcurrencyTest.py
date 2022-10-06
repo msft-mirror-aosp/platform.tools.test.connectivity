@@ -25,6 +25,7 @@ from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 
 CONCURRENCY_TYPE = {
@@ -354,7 +355,7 @@ class GnssConcurrencyTest(BaseTestClass):
         """
         self.add_ttff_conf(mode)
         gutils.push_lhd_overlay(self.ad)
-        self.ad.droid.connectivityToggleAirplaneMode(True)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         self.update_gps_conf(ONCHIP_CONFIG[1], ONCHIP_CONFIG[0])
         gutils.clear_aiding_data_by_gtw_gpstool(self.ad)
         self.ad.reboot(self.ad)

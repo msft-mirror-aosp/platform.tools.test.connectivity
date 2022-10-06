@@ -29,6 +29,7 @@ from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_bootloader_utils import flash_radio
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts_contrib.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
+from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 from acts_contrib.test_utils.gnss.gnss_test_utils import get_baseband_and_gms_version
 from acts_contrib.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_signal
@@ -123,7 +124,7 @@ class GnssFunctionTest(BaseTestClass):
                 hangup_call(self.ad.log, self.ad)
         if self.ad.droid.connectivityCheckAirplaneMode():
             self.ad.log.info("Force airplane mode off")
-            self.ad.droid.connectivityToggleAirplaneMode(False)
+            toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
         if not is_wearable_btwifi(self.ad) and self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
         if not is_mobile_data_on(self.ad):
@@ -238,7 +239,7 @@ class GnssFunctionTest(BaseTestClass):
         """
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         self.ad.log.info("Turn airplane mode on")
-        self.ad.droid.connectivityToggleAirplaneMode(True)
+        toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         gutils.run_ttff_via_gtw_gpstool(
             self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location)
 
