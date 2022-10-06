@@ -767,10 +767,8 @@ class FuchsiaDevice:
         while time.time() < end_time:
             try:
                 self.ssh.run('\n')
-            except Exception:
-                self.log.debug(
-                    'Could not SSH to device. Retrying in 1 second.')
-                time.sleep(1)
+            except Exception as e:
+                self.log.debug(f'Retrying SSH to device. Details: {e}')
             else:
                 break
         else:
