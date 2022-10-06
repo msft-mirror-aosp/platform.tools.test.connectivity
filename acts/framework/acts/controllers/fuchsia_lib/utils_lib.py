@@ -263,20 +263,19 @@ def reboot_to_bootloader(fuchsia_device,
     if use_ssh:
         logging.info('Sending reboot command via SSH to '
                      'get into bootloader.')
-        with utils.SuppressLogOutput():
-            fuchsia_device.clean_up_services()
-            fuchsia_device.stop_sl4f_on_fuchsia_device()
-            # Sending this command will put the device in fastboot
-            # but it does not guarantee the device will be in fastboot
-            # after this command.  There is no check so if there is an
-            # expectation of the device being in fastboot, then some
-            # other check needs to be done.
-            try:
-                fuchsia_device.ssh.run(
-                    'dm rb', timeout_sec=fuchsia_reconnect_after_reboot_time)
-            except FuchsiaSSHError as e:
-                if 'closed by remote host' not in e.result.stderr:
-                    raise e
+        fuchsia_device.clean_up_services()
+        fuchsia_device.stop_sl4f_on_fuchsia_device()
+        # Sending this command will put the device in fastboot
+        # but it does not guarantee the device will be in fastboot
+        # after this command.  There is no check so if there is an
+        # expectation of the device being in fastboot, then some
+        # other check needs to be done.
+        try:
+            fuchsia_device.ssh.run(
+                'dm rb', timeout_sec=fuchsia_reconnect_after_reboot_time)
+        except FuchsiaSSHError as e:
+            if 'closed by remote host' not in e.result.stderr:
+                raise e
     else:
         pass
         ## Todo: Add elif for SL4F if implemented in SL4F
