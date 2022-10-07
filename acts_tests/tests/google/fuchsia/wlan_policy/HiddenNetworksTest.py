@@ -98,7 +98,7 @@ class HiddenNetworksTest(WifiBaseTest):
 
             while time.time() < start_time + TIME_ATTEMPT_SCANS:
                 num_performed_scans = num_performed_scans + 1
-                scan_result = fd.wlan_policy_lib.wlanScanForNetworks()
+                scan_result = fd.sl4f.wlan_policy_lib.wlanScanForNetworks()
                 if scan_result["error"] != None:
                     self.log.warn("Failed to scan for networks with error %s" %
                                   scan_result["error"])
