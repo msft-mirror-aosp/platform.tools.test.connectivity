@@ -20,6 +20,7 @@ import requests
 
 from urllib.parse import urlparse
 
+from acts import logger
 from acts import utils
 from acts.libs.proc import job
 
@@ -28,25 +29,19 @@ class DeviceOffline(Exception):
     """Exception if the device is no longer reachable via the network."""
 
 
+class SL4FCommandFailed(Exception):
+    """A SL4F command to the server failed."""
+
+
 class BaseLib():
-    def __init__(self, addr, tc, client_id):
+
+    def __init__(self, addr):
         self.address = addr
-        self.test_counter = tc
-        self.client_id = client_id
 
-    def build_id(self, test_id):
-        """Concatenates client_id and test_id to form a command_id.
-
-        Args:
-            test_id: string, unique identifier of test command.
-        """
-        return self.client_id + "." + str(test_id)
-
-    def send_command(self, test_id, test_cmd, test_args, response_timeout=30):
+    def send_command(self, test_cmd, test_args, response_timeout=30):
         """Builds and sends a JSON command to SL4F server.
 
         Args:
-            test_id: string, unique identifier of test command.
             test_cmd: string, sl4f method name of command.
             test_args: dictionary, arguments required to execute test_cmd.
             response_timeout: int, seconds to wait for a response before
@@ -58,16 +53,23 @@ class BaseLib():
         if not utils.can_ping(job, urlparse(self.address).hostname):
             raise DeviceOffline("FuchsiaDevice %s is not reachable via the "
                                 "network." % urlparse(self.address).hostname)
+        # id is required by the SL4F server to parse test_data but is not
+        # currently used.
         test_data = json.dumps({
             "jsonrpc": "2.0",
-            "id": test_id,
+            "id": "",
             "method": test_cmd,
             "params": test_args
         })
         try:
-            return requests.get(url=self.address,
-                                data=test_data,
-                                timeout=response_timeout).json()
+            response = requests.get(url=self.address,
+                                    data=test_data,
+                                    timeout=response_timeout).json()
+            # If the SL4F command fails it returns a str, without an 'error'
+            # field to get.
+            if not isinstance(response, dict):
+                raise SL4FCommandFailed(response)
+            return response
         except requests.exceptions.Timeout as e:
             if not utils.can_ping(job, urlparse(self.address).hostname):
                 raise DeviceOffline(
