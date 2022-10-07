@@ -766,7 +766,7 @@ class FuchsiaDevice:
         end_time = time.time() + ssh_timeout
         while time.time() < end_time:
             try:
-                self.ssh.run('\n')
+                self.ssh.run('echo')
             except Exception as e:
                 self.log.debug(f'Retrying SSH to device. Details: {e}')
             else:
