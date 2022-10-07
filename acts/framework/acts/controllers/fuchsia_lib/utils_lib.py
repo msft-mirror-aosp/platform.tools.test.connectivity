@@ -263,8 +263,6 @@ def reboot_to_bootloader(fuchsia_device,
     if use_ssh:
         logging.info('Sending reboot command via SSH to '
                      'get into bootloader.')
-        fuchsia_device.clean_up_services()
-        fuchsia_device.stop_sl4f_on_fuchsia_device()
         # Sending this command will put the device in fastboot
         # but it does not guarantee the device will be in fastboot
         # after this command.  There is no check so if there is an
@@ -343,10 +341,6 @@ def run_flash_script(fuchsia_device, flash_dir):
         fuchsia_device.ip = mdns_ip
         fuchsia_device.address = "http://[{}]:{}".format(
             fuchsia_device.ip, fuchsia_device.sl4f_port)
-        fuchsia_device.init_address = fuchsia_device.address + "/init"
-        fuchsia_device.cleanup_address = fuchsia_device.address + "/cleanup"
-        fuchsia_device.print_address = fuchsia_device.address + "/print_clients"
-        fuchsia_device.init_libraries()
     else:
         raise ValueError('Invalid IP: %s after flashing.' %
                          fuchsia_device.mdns_name)

@@ -52,13 +52,13 @@ class WlanDeprecatedConfigurationTest(WifiBaseTest):
             ConnectionError, if SL4F calls fail
             AttributeError, if no interface has role 'Ap'
         """
-        wlan_ifaces = self.dut.device.wlan_lib.wlanGetIfaceIdList()
+        wlan_ifaces = self.dut.device.sl4f.wlan_lib.wlanGetIfaceIdList()
         if wlan_ifaces.get('error'):
             raise ConnectionError('Failed to get wlan interface IDs: %s' %
                                   wlan_ifaces['error'])
 
         for wlan_iface in wlan_ifaces['result']:
-            iface_info = self.dut.device.wlan_lib.wlanQueryInterface(
+            iface_info = self.dut.device.sl4f.wlan_lib.wlanQueryInterface(
                 wlan_iface)
             if iface_info.get('error'):
                 raise ConnectionError('Failed to query wlan iface: %s' %
@@ -78,7 +78,7 @@ class WlanDeprecatedConfigurationTest(WifiBaseTest):
         """
         self.log.info('Starting SoftAP on Fuchsia device (%s).' %
                       self.dut.device.ip)
-        response = self.dut.device.wlan_ap_policy_lib.wlanStartAccessPoint(
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStartAccessPoint(
             DEFAULT_SSID, DEFAULT_SECURITY, DEFAULT_PASSWORD,
             DEFAULT_CONNECTIVITY_MODE, DEFAULT_OPERATING_BAND)
         if response.get('error'):
@@ -92,7 +92,8 @@ class WlanDeprecatedConfigurationTest(WifiBaseTest):
             ConnectionError, if SL4F call fails.
         """
         self.log.info('Stopping SoftAP.')
-        response = self.dut.device.wlan_ap_policy_lib.wlanStopAllAccessPoint()
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStopAllAccessPoint(
+        )
         if response.get('error'):
             raise ConnectionError('Failed to stop SoftAP: %s' %
                                   response['error'])
@@ -108,7 +109,7 @@ class WlanDeprecatedConfigurationTest(WifiBaseTest):
         self.log.info(
             'Suggesting AP mac addr (%s) via wlan_deprecated_configuration_lib.'
             % mac_addr)
-        response = (self.dut.device.wlan_deprecated_configuration_lib.
+        response = (self.dut.device.sl4f.wlan_deprecated_configuration_lib.
                     wlanSuggestAccessPointMacAddress(mac_addr))
         if response.get('error'):
             asserts.fail('Failed to suggest AP mac address (%s): %s' %
