@@ -2366,11 +2366,11 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist):
                 for attr in brcm_log_error_pattern:
                     if attr in line:
                         benign_log = False
-                        for allow_log in brcm_error_log_allowlist:
-                            if allow_log in line:
+                        for regex_pattern in brcm_error_log_allowlist:
+                            if re.search(regex_pattern, line):
                                 benign_log = True
                                 ad.log.info("\"%s\" is in allow-list and removed "
-                                            "from error." % allow_log)
+                                            "from error." % line)
                         if not benign_log:
                             brcm_error_log_list.append(line)
 
