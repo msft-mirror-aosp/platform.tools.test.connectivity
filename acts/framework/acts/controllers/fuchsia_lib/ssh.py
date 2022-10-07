@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import subprocess
+import time
 
 from dataclasses import dataclass
 from typing import List, Union
@@ -27,6 +28,8 @@ DEFAULT_SSH_PORT: int = 22
 DEFAULT_SSH_TIMEOUT_SEC: int = 60
 DEFAULT_SSH_CONNECT_TIMEOUT_SEC: int = 30
 DEFAULT_SSH_SERVER_ALIVE_INTERVAL: int = 30
+# The default package repository for all components.
+FUCHSIA_PACKAGE_REPO_NAME = 'fuchsia.com'
 
 
 class SSHResult:
@@ -203,3 +206,43 @@ class SSHProvider:
             raise SSHTimeout(e) from e
 
         return SSHResult(process)
+
+    def start_v1_component(self,
+                           component: str,
+                           timeout_sec: int = 5,
+                           repo: str = FUCHSIA_PACKAGE_REPO_NAME) -> None:
+        """Start a CFv1 component in the background.
+
+        Args:
+            component: Name of the component without ".cmx".
+            timeout_sec: Seconds to wait for the process to show up in 'ps'.
+            repo: Default package repository for all components.
+
+        Raises:
+            TimeoutError: when the component doesn't launch within timeout_sec
+        """
+        self.run(
+            f'run -d fuchsia-pkg://{repo}/{component}#meta/{component}.cmx')
+
+        timeout = time.perf_counter() + timeout_sec
+        while True:
+            ps_cmd = self.run("ps")
+            if f'{component}.cmx' in ps_cmd.stdout:
+                return
+            if time.perf_counter() > timeout:
+                raise TimeoutError(
+                    f'Failed to start "{component}.cmx" after {timeout_sec}s')
+
+    def stop_v1_component(self, component: str) -> None:
+        """Stop all instances of a CFv1 component.
+
+        Args:
+            component: Name of the component without ".cmx"
+        """
+        try:
+            self.run(f'killall {component}.cmx')
+        except FuchsiaSSHError as e:
+            if e.result.exit_status == 255:
+                # No tasks found
+                return
+            raise e
