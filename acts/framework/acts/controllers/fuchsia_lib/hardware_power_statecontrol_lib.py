@@ -23,10 +23,9 @@ HW_PWR_STATE_CONTROL_TIMEOUT = 5
 
 
 class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
-    def __init__(self, addr, tc, client_id):
+
+    def __init__(self, addr):
         self.address = addr
-        self.test_counter = tc
-        self.client_id = client_id
 
     def suspendReboot(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Reboot.
@@ -36,11 +35,8 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendReboot"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
         try:
-            response = self.send_command(test_id,
-                                         test_cmd,
+            response = self.send_command(test_cmd,
                                          test_args,
                                          response_timeout=timeout)
         except (ConnectionResetError, base_lib.DeviceOffline,
@@ -57,11 +53,8 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendRebootBootloader"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
         try:
-            response = self.send_command(test_id,
-                                         test_cmd,
+            response = self.send_command(test_cmd,
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
@@ -77,11 +70,8 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendPoweroff"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
         try:
-            response = self.send_command(test_id,
-                                         test_cmd,
+            response = self.send_command(test_cmd,
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
@@ -97,11 +87,8 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendMexec"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
         try:
-            response = self.send_command(test_id,
-                                         test_cmd,
+            response = self.send_command(test_cmd,
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
@@ -117,11 +104,8 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendRam"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
         try:
-            response = self.send_command(test_id,
-                                         test_cmd,
+            response = self.send_command(test_cmd,
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,

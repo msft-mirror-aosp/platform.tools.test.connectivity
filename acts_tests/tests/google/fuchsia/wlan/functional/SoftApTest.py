@@ -234,7 +234,7 @@ class SoftApTest(WifiBaseTest):
 
         self.log.info('Starting SoftAP on DUT with settings: %s' % settings)
 
-        response = self.dut.device.wlan_ap_policy_lib.wlanStartAccessPoint(
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStartAccessPoint(
             ssid, security_type, password, connectivity_mode, operating_band)
         if response.get('error'):
             raise EnvironmentError('SL4F: Failed to setup SoftAP. Err: %s' %
@@ -256,7 +256,7 @@ class SoftApTest(WifiBaseTest):
         security_type = settings['security_type']
         password = settings.get('password', '')
 
-        response = self.dut.device.wlan_ap_policy_lib.wlanStopAccessPoint(
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStopAccessPoint(
             ssid, security_type, password)
         if response.get('error'):
             raise EnvironmentError('SL4F: Failed to stop SoftAP. Err: %s' %
@@ -268,7 +268,8 @@ class SoftApTest(WifiBaseTest):
         Raises:
             EnvironmentError, if StopAllAps call fails.
         """
-        response = self.dut.device.wlan_ap_policy_lib.wlanStopAllAccessPoint()
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStopAllAccessPoint(
+        )
         if response.get('error'):
             raise EnvironmentError(
                 'SL4F: Failed to stop all SoftAPs. Err: %s' %
@@ -998,9 +999,9 @@ class SoftApTest(WifiBaseTest):
                 'Err: %s' % err)
 
     def soft_ap_toggle_with_client_mode_iteration(
-            self,
-            settings,
-            current_state,
+        self,
+        settings,
+        current_state,
     ):
         """Runs single iteration of SoftAP toggle stress with client mode test.
 

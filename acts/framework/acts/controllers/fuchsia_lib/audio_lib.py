@@ -21,10 +21,9 @@ import base64
 
 
 class FuchsiaAudioLib(BaseLib):
-    def __init__(self, addr, tc, client_id):
+
+    def __init__(self, addr):
         self.address = addr
-        self.test_counter = tc
-        self.client_id = client_id
         self.log = logger.create_tagged_trace_logger('FuchsiaAudioLib')
 
     def startOutputSave(self):
@@ -35,10 +34,8 @@ class FuchsiaAudioLib(BaseLib):
         """
         test_cmd = "audio_facade.StartOutputSave"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def stopOutputSave(self):
         """Stops saving audio output on the device
@@ -48,10 +45,8 @@ class FuchsiaAudioLib(BaseLib):
         """
         test_cmd = "audio_facade.StopOutputSave"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)
 
     def getOutputAudio(self, save_path):
         """Gets the saved audio in base64 encoding. Use base64.b64decode.
@@ -64,10 +59,8 @@ class FuchsiaAudioLib(BaseLib):
         """
         test_cmd = "audio_facade.GetOutputAudio"
         test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        result = self.send_command(test_id, test_cmd, test_args)
+        result = self.send_command(test_cmd, test_args)
         if result.get("error") is not None:
             self.log.error("Failed to get recorded audio.")
             return False
