@@ -77,7 +77,7 @@ class SSHTimeout(signals.TestError):
 
     def __init__(self, err: subprocess.TimeoutExpired):
         super().__init__(
-            f'SSH command "{err.command}" timed out after {err.timeout}s, '
+            f'SSH command "{err.cmd}" timed out after {err.timeout}s, '
             f'stdout="{err.stdout}", stderr="{err.stderr}"')
 
 
