@@ -932,7 +932,8 @@ def start_ttff_by_gtw_gpstool(ad,
                               raninterval=False,
                               mininterval=10,
                               maxinterval=40,
-                              hot_warm_sleep=300):
+                              hot_warm_sleep=300,
+                              timeout=60):
     """Identify which TTFF mode for different test items.
 
     Args:
@@ -944,6 +945,7 @@ def start_ttff_by_gtw_gpstool(ad,
         mininterval: Minimum value of random interval pool. The unit is second.
         maxinterval: Maximum value of random interval pool. The unit is second.
         hot_warm_sleep: Wait time for acquiring Almanac.
+        timeout: TTFF time out. The unit is second.
     Returns:
         latest_start_time: (Datetime) the start time of latest successful TTFF
     """
@@ -2185,7 +2187,7 @@ def launch_eecoexer(ad):
         raise signals.TestError("Failed to launch EEcoexer.")
 
 
-def excute_eecoexer_function(ad, eecoexer_args):
+def execute_eecoexer_function(ad, eecoexer_args):
     """Execute EEcoexer commands.
 
     Args:
@@ -2379,11 +2381,11 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist, stop_logger=
                 for attr in brcm_log_error_pattern:
                     if attr in line:
                         benign_log = False
-                        for allow_log in brcm_error_log_allowlist:
-                            if allow_log in line:
+                        for regex_pattern in brcm_error_log_allowlist:
+                            if re.search(regex_pattern, line):
                                 benign_log = True
                                 ad.log.info("\"%s\" is in allow-list and removed "
-                                            "from error." % allow_log)
+                                            "from error." % line)
                         if not benign_log:
                             brcm_error_log_list.append(line)
 
@@ -2705,7 +2707,9 @@ def bcm_gps_ignore_rom_alm(ad):
         ad: An AndroidDevice object.
     """
     search_line_tag = '<gll\n'
-    append_line_str = ['       IgnoreRomAlm=\"true\"\n']
+    append_line_str = ['       IgnoreRomAlm=\"true\"\n',
+                       '       AutoColdStartSignal=\"SIMULATED\"\n',
+                       '       IgnoreJniTime=\"true\"\n']
     bcm_gps_xml_update_option(ad, "add", search_line_tag, append_line_str)
 
 

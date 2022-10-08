@@ -364,7 +364,7 @@ class FuchsiaWlanDevice(WlanDevice):
             True if successfully connected to WLAN, False if not.
         """
         if self.device.association_mechanism == 'drivers':
-            bss_scan_response = self.device.wlan_lib.wlanScanForBSSInfo()
+            bss_scan_response = self.device.sl4f.wlan_lib.wlanScanForBSSInfo()
             if bss_scan_response.get('error'):
                 self.log.error('Scan for BSS info failed. Err: %s' %
                                bss_scan_response['error'])
@@ -378,7 +378,7 @@ class FuchsiaWlanDevice(WlanDevice):
                     % target_ssid)
                 return False
 
-            connection_response = self.device.wlan_lib.wlanConnectToNetwork(
+            connection_response = self.device.sl4f.wlan_lib.wlanConnectToNetwork(
                 target_ssid, bss_descs_for_ssid[0], target_pwd=target_pwd)
             return self.device.check_connect_response(connection_response)
         else:
@@ -390,14 +390,14 @@ class FuchsiaWlanDevice(WlanDevice):
            Asserts if disconnect was not successful.
         """
         if self.device.association_mechanism == 'drivers':
-            disconnect_response = self.device.wlan_lib.wlanDisconnect()
+            disconnect_response = self.device.sl4f.wlan_lib.wlanDisconnect()
             return self.device.check_disconnect_response(disconnect_response)
         else:
             return self.device.wlan_policy_controller.remove_all_networks_and_wait_for_no_connections(
             )
 
     def status(self):
-        return self.device.wlan_lib.wlanStatus()
+        return self.device.sl4f.wlan_lib.wlanStatus()
 
     def can_ping(self,
                  dest_ip,
@@ -434,7 +434,7 @@ class FuchsiaWlanDevice(WlanDevice):
         Returns:
             A list of wlan interface IDs.
         """
-        return self.device.wlan_lib.wlanGetIfaceIdList().get('result')
+        return self.device.sl4f.wlan_lib.wlanGetIfaceIdList().get('result')
 
     def get_default_wlan_test_interface(self):
         """Returns name of the WLAN client interface"""
@@ -451,7 +451,7 @@ class FuchsiaWlanDevice(WlanDevice):
         Returns:
             True if successfully destroyed wlan interface, False if not.
         """
-        result = self.device.wlan_lib.wlanDestroyIface(iface_id)
+        result = self.device.sl4f.wlan_lib.wlanDestroyIface(iface_id)
         if result.get('error') is None:
             return True
         else:

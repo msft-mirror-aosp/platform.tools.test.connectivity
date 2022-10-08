@@ -32,8 +32,8 @@ class BluetoothCmdLineTest(BaseTestClass):
         if dut:
             if dut == 'fuchsia_devices':
                 self.dut = self.fuchsia_devices[0]
-                self.dut.bts_lib.initBluetoothSys()
-                self.dut.sdp_lib.init()
+                self.dut.sl4f.bts_lib.initBluetoothSys()
+                self.dut.sl4f.sdp_lib.init()
             elif dut == 'android_devices':
                 self.dut = self.android_devices[0]
             else:

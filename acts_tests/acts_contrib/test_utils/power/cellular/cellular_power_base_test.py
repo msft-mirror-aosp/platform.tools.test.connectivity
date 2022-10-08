@@ -43,9 +43,16 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
     CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE = 'device_build_phase'
     CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER = 'modem_kibble_power'
     CUSTOM_PROP_KEY_TEST_NAME = 'test_name'
+    CUSTOM_PROP_KEY_MODEM_KIBBLE_WO_PCIE_POWER = 'modem_kibble_power_wo_pcie'
+    CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER = 'modem_kibble_pcie_power'
 
     # kibble report
     KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
+    MODEM_PCIE_RAIL_LIST = [
+        'C4_23__PP1800_L2C_PCIEG3:mW',
+        'C2_23__PP1200_L9C_PCIE:mW',
+        'C2_06__PP0850_L8C_PCIE:mW'
+    ]
 
     # params key
     MONSOON_VOLTAGE_KEY = 'mon_voltage'
@@ -255,8 +262,39 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
                     break
         return kibble_system_power
 
+    def get_modem_pcie_power(self):
+        """Get PCIE MODEM values from kibble json."""
+        modem_pcie_power = 0
+        # find kibble rail data json file path.
+        kibble_dir = os.path.join(self.root_output_path, 'Kibble')
+        kibble_json_path = None
+        for f in os.listdir(kibble_dir):
+            if '.json' in f:
+                kibble_json_path = os.path.join(kibble_dir, f)
+                self.log.info('Kibble json file path: ' + kibble_json_path)
+        kibble_rails_data = None
+        if kibble_json_path:
+            with open(kibble_json_path, 'r') as f:
+                kibble_rails_data = json.load(f)
+
+        # parsing modem pcie power rails.
+        self.log.info('Parsing MODEM PCIE power.')
+        if kibble_rails_data:
+            for data_dict in kibble_rails_data:
+                # format of data_dict['name']: _._.rail_name:unit
+                channel = data_dict['name'].split('.')[-1]
+                if channel in self.MODEM_PCIE_RAIL_LIST:
+                    self.log.info(channel + ': ' + str(data_dict['avg']))
+                    modem_pcie_power += data_dict['avg']
+        return modem_pcie_power
+
     def sponge_upload(self):
         """Upload result to sponge as custom field."""
+        self.log.info('=====> power monitor info')
+        for key in self.power_monitor.__dict__.keys():
+            self.log.info(key + ': ')
+            self.log.info(self.power_monitor.__dict__[key])
+            self.log.info('\n')
         # test name
         test_name_arr = self.current_test_name.split('_')
         test_name_for_sponge = ''.join(
@@ -286,11 +324,19 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
         system_power = 0
         modem_kibble_power = 0
 
+        # if kibbles are using, get power from kibble
         if hasattr(self, 'bitses'):
             modem_kibble_power = self.power_results.get(self.test_name, None)
             system_power = self.get_system_power()
         else:
             system_power = self.power_results.get(self.test_name, None)
+
+        # modem kibble power without pcie
+        modem_kibble_power_wo_pcie = 0
+        modem_pcie = 0
+        if modem_kibble_power:
+            modem_pcie = self.get_modem_pcie_power()
+            modem_kibble_power_wo_pcie = modem_kibble_power - modem_pcie
 
         self.record_data({
             'Test Name': self.test_name,
@@ -304,6 +350,8 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
                 self.CUSTOM_PROP_KEY_DEVICE_NAME: device_name,
                 self.CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE: device_build_phase,
                 self.CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER: modem_kibble_power,
-                self.CUSTOM_PROP_KEY_TEST_NAME: test_name_for_sponge
+                self.CUSTOM_PROP_KEY_TEST_NAME: test_name_for_sponge,
+                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_WO_PCIE_POWER: modem_kibble_power_wo_pcie,
+                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER: modem_pcie
             },
         })
