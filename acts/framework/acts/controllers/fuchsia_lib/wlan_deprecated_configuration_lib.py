@@ -21,10 +21,9 @@ COMMAND_SUGGEST_AP_MAC_ADDR = 'wlan_deprecated.suggest_ap_mac'
 
 
 class FuchsiaWlanDeprecatedConfigurationLib(BaseLib):
-    def __init__(self, addr, tc, client_id):
+
+    def __init__(self, addr):
         self.address = addr
-        self.test_counter = tc
-        self.client_id = client_id
         self.log = logger.create_tagged_trace_logger(str(addr))
 
     def wlanSuggestAccessPointMacAddress(self, addr):
@@ -36,7 +35,5 @@ class FuchsiaWlanDeprecatedConfigurationLib(BaseLib):
         """
         test_cmd = COMMAND_SUGGEST_AP_MAC_ADDR
         test_args = {'mac': addr}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
 
-        return self.send_command(test_id, test_cmd, test_args)
+        return self.send_command(test_cmd, test_args)

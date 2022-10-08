@@ -17,7 +17,7 @@
 import os
 from acts_contrib.test_utils.gnss.GnssBlankingBase import GnssBlankingBase
 from acts_contrib.test_utils.gnss.dut_log_test_utils import get_gpstool_logs
-from acts_contrib.test_utils.gnss.gnss_test_utils import excute_eecoexer_function
+from acts_contrib.test_utils.gnss.gnss_test_utils import execute_eecoexer_function
 
 
 class GnssHsSenTest(GnssBlankingBase):
@@ -41,49 +41,35 @@ class GnssHsSenTest(GnssBlankingBase):
         # Get parameters from user_params.
         first_wait = self.user_params.get('first_wait', 300)
         wait_between_pwr = self.user_params.get('wait_between_pwr', 60)
-        gnss_pwr_sweep = self.user_params.get('gnss_pwr_sweep')
-        gnss_init_pwr = gnss_pwr_sweep.get('init')
-        self.gnss_simulator_power_level = gnss_init_pwr[0]
-        self.sa_sensitivity = gnss_init_pwr[1]
-        self.gnss_pwr_lvl_offset = gnss_init_pwr[2]
-        gnss_pwr_fine_sweep = gnss_pwr_sweep.get('fine_sweep')
         ttft_iteration = self.user_params.get('ttff_iteration', 25)
 
         # Start the test item with gnss_init_power_setting.
-        if self.gnss_init_power_setting(first_wait):
-            self.log.info('Successfully set the GNSS power level to %d' %
-                          self.sa_sensitivity)
+        ret, pwr_lvl = self.gnss_init_power_setting(first_wait)
+        if ret:
+            self.log.info(f'Successfully set the GNSS power level to {pwr_lvl}')
             # Create gnss log folders for init and cellular sweep
             gnss_init_log_dir = os.path.join(self.gnss_log_path, 'GNSS_init')
 
             # Pull all exist GPStool logs into GNSS_init folder
             get_gpstool_logs(self.dut, gnss_init_log_dir, False)
 
-            if cellular_enable:
-                self.log.info('Start cellular coexistence test.')
-                # Set cellular Tx power level.
-                eecoex_cmd = self.eecoex_func.format('Infinity')
-                eecoex_cmd_file_str = eecoex_cmd.replace(',', '_')
-                excute_eecoexer_function(self.dut, eecoex_cmd)
-            else:
-                self.log.info('Start stand alone test.')
-                eecoex_cmd_file_str = 'Stand_alone'
-
-            for i, gnss_pwr in enumerate(gnss_pwr_fine_sweep):
-                self.log.info('Start fine GNSS power level sweep part %d' %
-                              (i + 1))
-                sweep_start = gnss_pwr[0]
-                sweep_stop = gnss_pwr[1]
-                sweep_offset = gnss_pwr[2]
-                self.log.info(
-                    'The GNSS simulator (start, stop, offset): (%.1f, %.1f, %.1f)'
-                    % (sweep_start, sweep_stop, sweep_offset))
-                result, sensitivity = self.hot_start_gnss_power_sweep(
-                    sweep_start, sweep_stop, sweep_offset, wait_between_pwr,
-                    ttft_iteration, True, eecoex_cmd_file_str)
-                if not result:
-                    break
-            self.log.info('The sensitivity level is: %.1f' % sensitivity)
+        if cellular_enable:
+            self.log.info('Start cellular coexistence test.')
+            # Set cellular Tx power level.
+            eecoex_cmd = self.eecoex_func.format('Infinity')
+            eecoex_cmd_file_str = eecoex_cmd.replace(',', '_')
+            execute_eecoexer_function(self.dut, eecoex_cmd)
+        else:
+            self.log.info('Start stand alone test.')
+            eecoex_cmd_file_str = 'Stand_alone'
+        for i, gnss_pwr_swp in enumerate(self.gnss_pwr_sweep_fine_sweep_ls):
+            self.log.info(f'Start fine GNSS power level sweep part {i + 1}')
+            result, sensitivity = self.hot_start_gnss_power_sweep(
+                gnss_pwr_swp, wait_between_pwr, ttft_iteration, True,
+                eecoex_cmd_file_str)
+            if not result:
+                break
+        self.log.info(f'The sensitivity level is: {sensitivity}')
 
     def test_hot_start_sensitivity_search(self):
         """

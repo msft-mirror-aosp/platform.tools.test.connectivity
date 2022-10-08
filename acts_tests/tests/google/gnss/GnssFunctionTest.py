@@ -45,13 +45,11 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import check_network_location
 from acts_contrib.test_utils.gnss.gnss_test_utils import launch_google_map
 from acts_contrib.test_utils.gnss.gnss_test_utils import check_location_api
 from acts_contrib.test_utils.gnss.gnss_test_utils import set_battery_saver_mode
-from acts_contrib.test_utils.gnss.gnss_test_utils import disable_vendor_orbit_assistance_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
-from acts_contrib.test_utils.gnss.gnss_test_utils import enable_supl_mode
 from acts_contrib.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import grant_location_permission
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
@@ -536,7 +534,6 @@ class GnssFunctionTest(BaseTestClass):
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        disable_vendor_orbit_assistance_data(self.ad)
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         set_mobile_data(self.ad, False)
         gutils.run_ttff_via_gtw_gpstool(
@@ -558,7 +555,6 @@ class GnssFunctionTest(BaseTestClass):
         Expected Results:
             No single Timeout is seen in 10 iterations.
         """
-        enable_supl_mode(self.ad)
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
         start_toggle_gnss_by_gtw_gpstool(
             self.ad, iteration=self.ttff_test_cycle)
@@ -577,7 +573,6 @@ class GnssFunctionTest(BaseTestClass):
             Location fixed within supl_hs_criteria.
         """
         overall_test_result = []
-        enable_supl_mode(self.ad)
         process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
         start_gnss_by_gtw_gpstool(self.ad, False)
         for test_loop in range(1, 11):

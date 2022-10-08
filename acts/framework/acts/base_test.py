@@ -101,8 +101,9 @@ def _syslog_log_test_begin(event):
     test_instance = event.test_class
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
-            fd.logging_lib.logI("%s BEGIN %s" %
-                                (TEST_CASE_TOKEN, event.test_case_name))
+            if hasattr(fd, '_sl4f'):
+                fd.sl4f.logging_lib.logI(
+                    "%s BEGIN %s" % (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -117,8 +118,9 @@ def _syslog_log_test_end(event):
     test_instance = event.test_class
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
-            fd.logging_lib.logI("%s END %s" %
-                                (TEST_CASE_TOKEN, event.test_case_name))
+            if hasattr(fd, '_sl4f'):
+                fd.sl4f.logging_lib.logI(
+                    "%s END %s" % (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -403,6 +405,7 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
+
     def _on_pass(self, record):
         """Proxy function to guarantee the base implementation of on_pass is
         called.
@@ -427,6 +430,7 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
+
     def _on_skip(self, record):
         """Proxy function to guarantee the base implementation of on_skip is
         called.
@@ -448,6 +452,7 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
+
     def _on_exception(self, record):
         """Proxy function to guarantee the base implementation of on_exception
         is called.
@@ -469,6 +474,7 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
+
     def on_retry(self):
         """Function to run before retrying a test through get_func_with_retry.
 
@@ -476,6 +482,7 @@ class BaseTestClass(MoblyBaseTest):
         can be used to modify internal test parameters, for example, to retry
         a test with slightly different input variables.
         """
+
     def _exec_procedure_func(self, func, tr_record):
         """Executes a procedure function like on_pass, on_fail etc.
 
@@ -814,8 +821,10 @@ class BaseTestClass(MoblyBaseTest):
         # Run tests in order.
         test_case_iterations = self.user_params.get(
             keys.Config.key_test_case_iterations.value, 1)
-        if any([substr in self.__class__.__name__ for substr in
-                ['Preflight', 'Postflight']]):
+        if any([
+                substr in self.__class__.__name__
+                for substr in ['Preflight', 'Postflight']
+        ]):
             test_case_iterations = 1
         try:
             for test_name, test_func in tests:

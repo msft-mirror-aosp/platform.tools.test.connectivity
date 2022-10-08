@@ -79,7 +79,8 @@ class StartStopClientConnectionsTest(WifiBaseTest):
             without error. This does not validate that a connection will be
             attempted. This will fail the test if there is an error sending the
             connect request, or if we don't get the expected connect response."""
-        result_connect = fd.wlan_policy_lib.wlanConnect(ssid, security_type)
+        result_connect = fd.sl4f.wlan_policy_lib.wlanConnect(
+            ssid, security_type)
         if result_connect.get("error") != None:
             self.log.error("Error occurred requesting a connection: %s" %
                            result_connect.get("error"))
@@ -109,8 +110,8 @@ class StartStopClientConnectionsTest(WifiBaseTest):
         start_time = time.time()
         curr_state = None
         while time.time() < start_time + timeout:
-            fd.wlan_policy_lib.wlanSetNewListener()
-            curr_state = fd.wlan_policy_lib.wlanGetUpdate()
+            fd.sl4f.wlan_policy_lib.wlanSetNewListener()
+            curr_state = fd.sl4f.wlan_policy_lib.wlanGetUpdate()
             if curr_state.get("error"):
                 self.log.error("Error occurred getting status update: %s" %
                                curr_state.get("error"))
