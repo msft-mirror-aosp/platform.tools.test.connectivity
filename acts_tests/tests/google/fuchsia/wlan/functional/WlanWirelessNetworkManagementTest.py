@@ -76,11 +76,11 @@ class WlanWirelessNetworkManagementTest(WifiBaseTest):
         self.dut.disconnect()
         self.access_point.stop_all_aps()
 
-    def setup_ap(self,
-                 ssid: str,
-                 channel: int = hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                 wnm_features: FrozenSet[
-                     hostapd_constants.WnmFeature] = frozenset()):
+    def setup_ap(
+        self,
+        ssid: str,
+        channel: int = hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+        wnm_features: FrozenSet[hostapd_constants.WnmFeature] = frozenset()):
         """Sets up an AP using the provided parameters.
 
         Args:
@@ -106,13 +106,13 @@ class WlanWirelessNetworkManagementTest(WifiBaseTest):
             ValueError if there is no DUT client interface.
             ConnectionError if the DUT interface query fails.
         """
-        wlan_ifaces = self.dut.device.wlan_lib.wlanGetIfaceIdList()
+        wlan_ifaces = self.dut.device.sl4f.wlan_lib.wlanGetIfaceIdList()
         if wlan_ifaces.get('error'):
             raise ConnectionError('Failed to get wlan interface IDs: %s' %
                                   wlan_ifaces['error'])
 
         for wlan_iface in wlan_ifaces['result']:
-            iface_info = self.dut.device.wlan_lib.wlanQueryInterface(
+            iface_info = self.dut.device.sl4f.wlan_lib.wlanQueryInterface(
                 wlan_iface)
             if iface_info.get('error'):
                 raise ConnectionError('Failed to query wlan iface: %s' %
@@ -167,8 +167,8 @@ class WlanWirelessNetworkManagementTest(WifiBaseTest):
         # Verify that DUT is actually associated (as seen from AP).
         client_mac = self._get_client_mac()
         asserts.assert_true(
-            client_mac in self.access_point.get_stas(
-                self.access_point.wlan_2g),
+            client_mac
+            in self.access_point.get_stas(self.access_point.wlan_2g),
             'Client MAC not included in list of associated STAs on the 2.4GHz band'
         )
 
@@ -208,6 +208,6 @@ class WlanWirelessNetworkManagementTest(WifiBaseTest):
 
         # DUT should have stayed associated to original AP.
         asserts.assert_true(
-            client_mac in self.access_point.get_stas(
-                self.access_point.wlan_2g),
+            client_mac
+            in self.access_point.get_stas(self.access_point.wlan_2g),
             'DUT lost association on the 2.4GHz band after BTM request')

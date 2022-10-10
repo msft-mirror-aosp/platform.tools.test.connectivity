@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import logging
+import subprocess
 import time
 import unittest
 
@@ -25,6 +26,8 @@ from acts import signals
 from acts.controllers.adb_lib.error import AdbError
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.fuchsia_device import FuchsiaDevice
+from acts.controllers.fuchsia_lib.sl4f import SL4F
+from acts.controllers.fuchsia_lib.ssh import SSHConfig, SSHProvider, SSHResult
 from acts.controllers.utils_lib.ssh.connection import SshConnection
 from acts.libs.proc import job
 
@@ -122,17 +125,6 @@ CORRECT_EMPTY_IP_LIST = {
     'ipv6_private_local': [],
     'ipv6_public': []
 }
-
-FUCHSIA_INIT_SERVER = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
-                       'init_sl4f_connection')
-FUCHSIA_SET_CONTROL_PATH_CONFIG = ('acts.controllers.fuchsia_device.'
-                                   'FuchsiaDevice._set_control_path_config')
-FUCHSIA_START_SERVICES = ('acts.controllers.fuchsia_device.FuchsiaDevice.'
-                          'start_services')
-FUCHSIA_NETSTACK_LIST_INTERFACES = (
-    'acts.controllers.'
-    'fuchsia_lib.netstack.netstack_lib.'
-    'FuchsiaNetstackLib.netstackListInterfaces')
 
 
 class ByPassSetupWizardTests(unittest.TestCase):
@@ -483,39 +475,63 @@ class IpAddressUtilTest(unittest.TestCase):
             utils.get_interface_ip_addresses(AndroidDevice(), 'wlan1'),
             CORRECT_EMPTY_IP_LIST)
 
-    @mock.patch(FUCHSIA_INIT_SERVER)
-    @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
-    @mock.patch(FUCHSIA_START_SERVICES)
-    @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
+    @mock.patch('acts.controllers.fuchsia_device.FuchsiaDevice.sl4f',
+                new_callable=mock.PropertyMock)
+    @mock.patch('acts.controllers.fuchsia_lib.ssh.SSHProvider.run')
+    @mock.patch(
+        'acts.controllers.fuchsia_lib.sl4f.SL4F._verify_sl4f_connection')
+    @mock.patch('acts.controllers.fuchsia_device.'
+                'FuchsiaDevice._set_control_path_config')
+    @mock.patch('acts.controllers.'
+                'fuchsia_lib.netstack.netstack_lib.'
+                'FuchsiaNetstackLib.netstackListInterfaces')
     def test_fuchsia_get_interface_ip_addresses_full(self,
                                                      list_interfaces_mock,
-                                                     start_services_mock,
                                                      control_path_mock,
-                                                     fuchsia_device_mock):
-        # Will never actually be created/used.
+                                                     verify_sl4f_conn_mock,
+                                                     ssh_run_mock, sl4f_mock):
+        # Configure the log path which is required by ACTS logger.
         logging.log_path = '/tmp/unit_test_garbage'
 
+        ssh = SSHProvider(SSHConfig('192.168.1.1', 22, '/dev/null'))
+        ssh_run_mock.return_value = SSHResult(
+            subprocess.CompletedProcess([], 0, stdout=b'', stderr=b''))
+
+        sl4f_mock.return_value = SL4F(ssh, 'http://192.168.1.1:80')
+        verify_sl4f_conn_mock.return_value = None
+
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
-        fuchsia_device_mock.return_value = None
         self.assertEqual(
             utils.get_interface_ip_addresses(
                 FuchsiaDevice({'ip': '192.168.1.1'}), 'eno1'),
             CORRECT_FULL_IP_LIST)
 
-    @mock.patch(FUCHSIA_INIT_SERVER)
-    @mock.patch(FUCHSIA_SET_CONTROL_PATH_CONFIG)
-    @mock.patch(FUCHSIA_START_SERVICES)
-    @mock.patch(FUCHSIA_NETSTACK_LIST_INTERFACES)
+    @mock.patch('acts.controllers.fuchsia_device.FuchsiaDevice.sl4f',
+                new_callable=mock.PropertyMock)
+    @mock.patch('acts.controllers.fuchsia_lib.ssh.SSHProvider.run')
+    @mock.patch(
+        'acts.controllers.fuchsia_lib.sl4f.SL4F._verify_sl4f_connection')
+    @mock.patch('acts.controllers.fuchsia_device.'
+                'FuchsiaDevice._set_control_path_config')
+    @mock.patch('acts.controllers.'
+                'fuchsia_lib.netstack.netstack_lib.'
+                'FuchsiaNetstackLib.netstackListInterfaces')
     def test_fuchsia_get_interface_ip_addresses_empty(self,
                                                       list_interfaces_mock,
-                                                      start_services_mock,
                                                       control_path_mock,
-                                                      fuchsia_device_mock):
-        # Will never actually be created/used.
+                                                      verify_sl4f_conn_mock,
+                                                      ssh_run_mock, sl4f_mock):
+        # Configure the log path which is required by ACTS logger.
         logging.log_path = '/tmp/unit_test_garbage'
 
+        ssh = SSHProvider(SSHConfig('192.168.1.1', 22, '/dev/null'))
+        ssh_run_mock.return_value = SSHResult(
+            subprocess.CompletedProcess([], 0, stdout=b'', stderr=b''))
+
+        sl4f_mock.return_value = SL4F(ssh, 'http://192.168.1.1:80')
+        verify_sl4f_conn_mock.return_value = None
+
         list_interfaces_mock.return_value = FUCHSIA_INTERFACES
-        fuchsia_device_mock.return_value = None
         self.assertEqual(
             utils.get_interface_ip_addresses(
                 FuchsiaDevice({'ip': '192.168.1.1'}), 'wlan1'),

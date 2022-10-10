@@ -66,7 +66,7 @@ class WlanPolicyController:
 
         # Kill basemgr (Component v1 version of session manager)
         while time.time() < end_time:
-            response = self.device.basemgr_lib.killBasemgr()
+            response = self.device.sl4f.basemgr_lib.killBasemgr()
             if not response.get('error'):
                 self.log.debug('Basemgr kill call successfully issued.')
                 break
@@ -90,7 +90,8 @@ class WlanPolicyController:
         controller_errors = []
         while time.time() < end_time:
             # Create a client controller
-            response = self.device.wlan_policy_lib.wlanCreateClientController()
+            response = self.device.sl4f.wlan_policy_lib.wlanCreateClientController(
+            )
             if response.get('error'):
                 controller_errors.append(response['error'])
                 self.log.debug(response['error'])
@@ -98,7 +99,7 @@ class WlanPolicyController:
                 continue
             # Attempt to use the client controller (failure indicates a closed
             # channel, meaning the client controller was rejected.
-            response = self.device.wlan_policy_lib.wlanGetSavedNetworks()
+            response = self.device.sl4f.wlan_policy_lib.wlanGetSavedNetworks()
             if response.get('error'):
                 controller_errors.append(response['error'])
                 self.log.debug(response['error'])
@@ -151,7 +152,7 @@ class WlanPolicyController:
 
         Returns:
             True, if successful. False otherwise."""
-        start_response = self.device.wlan_policy_lib.wlanStartClientConnections(
+        start_response = self.device.sl4f.wlan_policy_lib.wlanStartClientConnections(
         )
         if start_response.get('error'):
             self.log.error('Failed to start client connections. Err: %s' %
@@ -165,7 +166,8 @@ class WlanPolicyController:
 
         Returns:
             True, if successful. False otherwise."""
-        stop_response = self.device.wlan_policy_lib.wlanStopClientConnections()
+        stop_response = self.device.sl4f.wlan_policy_lib.wlanStopClientConnections(
+        )
         if stop_response.get('error'):
             self.log.error('Failed to stop client connections. Err: %s' %
                            stop_response['error'])
@@ -180,7 +182,7 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             password: string, the credential of the network if applicable
             timeout: int, time in seconds to wait for connection
 
@@ -191,7 +193,7 @@ class WlanPolicyController:
         if not self.save_network(ssid, security, password=password):
             return False
         # Make connect call and check response
-        self.device.wlan_policy_lib.wlanSetNewListener()
+        self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
         if not self.send_connect_command(ssid, security):
             return False
         return self.wait_for_connect(ssid, security, timeout=timeout)
@@ -210,7 +212,7 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             password: string, the credential of the network if applicable
             timeout: int, time in seconds to wait for connection
 
@@ -234,7 +236,7 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             password: string, the credential of the network if applicable
             state: string, The connection state we are expecting, ie "Disconnected" or
                 "Failed"
@@ -245,7 +247,7 @@ class WlanPolicyController:
         Returns:
             True, if successful. False otherwise.
         """
-        self.device.wlan_policy_lib.wlanSetNewListener()
+        self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
         if not self.remove_network(ssid, security_type, password=password):
             return False
         return self.wait_for_disconnect(ssid,
@@ -261,7 +263,7 @@ class WlanPolicyController:
         Returns:
             True, if successful. False otherwise.
         """
-        self.device.wlan_policy_lib.wlanSetNewListener()
+        self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
         if not self.remove_all_networks():
             self.log.error('Failed to remove all networks. Cannot continue to '
                            'wait_for_no_connections.')
@@ -273,13 +275,13 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             password: string, the credential of the network if applicable
 
         Returns:
             True, if successful. False otherwise.
         """
-        save_response = self.device.wlan_policy_lib.wlanSaveNetwork(
+        save_response = self.device.sl4f.wlan_policy_lib.wlanSaveNetwork(
             ssid, security_type, target_pwd=password)
         if save_response.get('error'):
             self.log.error('Failed to save network %s with error: %s' %
@@ -292,13 +294,13 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             password: string, the credential of the network if applicable
 
         Returns:
             True, if successful. False otherwise.
         """
-        remove_response = self.device.wlan_policy_lib.wlanRemoveNetwork(
+        remove_response = self.device.sl4f.wlan_policy_lib.wlanRemoveNetwork(
             ssid, security_type, target_pwd=password)
         if remove_response.get('error'):
             self.log.error('Failed to remove network %s with error: %s' %
@@ -312,7 +314,7 @@ class WlanPolicyController:
         Returns:
             True, if successful. False otherwise.
         """
-        remove_all_response = self.device.wlan_policy_lib.wlanRemoveAllNetworks(
+        remove_all_response = self.device.sl4f.wlan_policy_lib.wlanRemoveAllNetworks(
         )
         if remove_all_response.get('error'):
             self.log.error('Error occurred removing all networks: %s' %
@@ -329,7 +331,7 @@ class WlanPolicyController:
         Raises:
             WlanPolicyControllerError, if retrieval fails.
         """
-        saved_networks_response = self.device.wlan_policy_lib.wlanGetSavedNetworks(
+        saved_networks_response = self.device.sl4f.wlan_policy_lib.wlanGetSavedNetworks(
         )
         if saved_networks_response.get('error'):
             raise WlanPolicyControllerError(
@@ -344,13 +346,13 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             password: string, the credential of the network if applicable
 
         Returns:
             True, if command send successfully. False otherwise.
         """
-        connect_response = self.device.wlan_policy_lib.wlanConnect(
+        connect_response = self.device.sl4f.wlan_policy_lib.wlanConnect(
             ssid, security_type)
         if connect_response.get('error'):
             self.log.error(
@@ -363,7 +365,7 @@ class WlanPolicyController:
         """ Wait until the device has connected to the specified network.
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             timeout: int, seconds to wait for a update showing connection
         Returns:
             True if we see a connect to the network, False otherwise.
@@ -375,7 +377,7 @@ class WlanPolicyController:
             time_left = max(1, int(end_time - time.time()))
 
             try:
-                update = self.device.wlan_policy_lib.wlanGetUpdate(
+                update = self.device.sl4f.wlan_policy_lib.wlanGetUpdate(
                     timeout=time_left)
             except requests.exceptions.Timeout:
                 self.log.error('Timed out waiting for response from device '
@@ -383,7 +385,7 @@ class WlanPolicyController:
                                'connect. Device took too long to connect or '
                                'the request timed out for another reason.' %
                                ssid)
-                self.device.wlan_policy_lib.wlanSetNewListener()
+                self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
                 return False
             if update.get('error'):
                 # This can occur for many reasons, so it is not necessarily a
@@ -420,7 +422,7 @@ class WlanPolicyController:
 
         Args:
             ssid: string, the network name
-            security: string, security type of network (see wlan_policy_lib)
+            security: string, security type of network (see sl4f.wlan_policy_lib)
             state: string, The connection state we are expecting, ie "Disconnected" or
                 "Failed"
             status: string, The disconnect status we expect, it "ConnectionStopped" or
@@ -438,7 +440,7 @@ class WlanPolicyController:
         while time.time() < end_time:
             time_left = max(1, int(end_time - time.time()))
             try:
-                update = self.device.wlan_policy_lib.wlanGetUpdate(
+                update = self.device.sl4f.wlan_policy_lib.wlanGetUpdate(
                     timeout=time_left)
             except requests.exceptions.Timeout:
                 self.log.error(
@@ -446,7 +448,7 @@ class WlanPolicyController:
                     'while waiting for network with SSID "%s" to '
                     'disconnect. Device took too long to disconnect '
                     'or the request timed out for another reason.' % ssid)
-                self.device.wlan_policy_lib.wlanSetNewListener()
+                self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
                 return False
 
             if update.get('error'):
@@ -508,18 +510,18 @@ class WlanPolicyController:
         # If there are already no existing connections when this function is called,
         # then an update won't be generated by the device, and we'll time out.
         # Force an update by getting a new listener.
-        self.device.wlan_policy_lib.wlanSetNewListener()
+        self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
         end_time = time.time() + timeout
         while time.time() < end_time:
             time_left = max(1, int(end_time - time.time()))
             try:
-                update = self.device.wlan_policy_lib.wlanGetUpdate(
+                update = self.device.sl4f.wlan_policy_lib.wlanGetUpdate(
                     timeout=time_left)
             except requests.exceptions.Timeout:
                 self.log.info(
                     "Timed out getting status update while waiting for all"
                     " connections to end.")
-                self.device.wlan_policy_lib.wlanSetNewListener()
+                self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
                 return False
 
             if update["error"] != None:
@@ -546,7 +548,7 @@ class WlanPolicyController:
         """
         # Save preexisting saved networks
         preserved_networks_and_state = {}
-        saved_networks_response = self.device.wlan_policy_lib.wlanGetSavedNetworks(
+        saved_networks_response = self.device.sl4f.wlan_policy_lib.wlanGetSavedNetworks(
         )
         if saved_networks_response.get('error'):
             raise WlanPolicyControllerError(
@@ -562,8 +564,8 @@ class WlanPolicyController:
                 'Failed to clear networks and disconnect at FuchsiaDevice creation.'
             )
 
-        self.device.wlan_policy_lib.wlanSetNewListener()
-        update_response = self.device.wlan_policy_lib.wlanGetUpdate()
+        self.device.sl4f.wlan_policy_lib.wlanSetNewListener()
+        update_response = self.device.sl4f.wlan_policy_lib.wlanGetUpdate()
         update_result = update_response.get('result', {})
         if update_result.get('state'):
             preserved_networks_and_state[CLIENT_STATE] = update_result['state']
