@@ -344,3 +344,30 @@ def run_flash_script(fuchsia_device, flash_dir):
     else:
         raise ValueError('Invalid IP: %s after flashing.' %
                          fuchsia_device.mdns_name)
+
+
+def wait_for_port(host: str, port: int, timeout_sec: int = 5) -> None:
+    """Wait for the host to start accepting connections on the port.
+
+    Some services take some time to start. Call this after launching the service
+    to avoid race conditions.
+
+    Args:
+        host: IP of the running service.
+        port: Port of the running service.
+        timeout_sec: Seconds to wait until raising TimeoutError
+
+    Raises:
+        TimeoutError: when timeout_sec has expired without a successful
+            connection to the service
+    """
+    timeout = time.perf_counter() + timeout_sec
+    while True:
+        try:
+            with socket.create_connection((host, port), timeout=timeout_sec):
+                return
+        except ConnectionRefusedError as e:
+            if time.perf_counter() > timeout:
+                raise TimeoutError(
+                    f'Waited over {timeout_sec}s for the service to start '
+                    f'accepting connections at {host}:{port}') from e
