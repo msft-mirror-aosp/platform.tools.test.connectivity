@@ -20,6 +20,7 @@ import tempfile
 import subprocess
 
 from pathlib import Path
+from typing import Any, MutableMapping, Optional
 
 from acts import context
 from acts import logger
@@ -66,9 +67,9 @@ class FFX:
         self.ip = ip
         self.ssh_private_key_path = ssh_private_key_path
 
-        self._env_config_path = None
-        self._ssh_auth_sock_path = None
-        self._overnet_socket_path = None
+        self._env_config_path: Optional[str] = None
+        self._ssh_auth_sock_path: Optional[str] = None
+        self._overnet_socket_path: Optional[str] = None
         self._has_been_reachable = False
         self._has_logged_version = False
 
@@ -162,7 +163,7 @@ class FFX:
         self._overnet_socket_path = tempfile.mkstemp(
             suffix="overnet_socket")[1]
 
-        config = {
+        config: MutableMapping[str, Any] = {
             "target": {
                 "default": self.mdns_name,
             },
