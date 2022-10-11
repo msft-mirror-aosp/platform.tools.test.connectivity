@@ -22,6 +22,7 @@ from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import GEN_5G
 from acts_contrib.test_utils.tel.tel_phone_setup_utils import ensure_phones_idle
 from acts_contrib.test_utils.tel.tel_settings_utils import att_apn_test
+from acts_contrib.test_utils.tel.tel_settings_utils import tmo_apn_test
 from acts_contrib.test_utils.tel.tel_settings_utils import toggle_mobile_data_test
 from acts_contrib.test_utils.tel.tel_settings_utils import toggle_sim_test
 
@@ -103,12 +104,7 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         """
         caller, callee = self.android_devices[0], self.android_devices[1]
 
-        return att_apn_test(self.log,
-                            caller,
-                            callee,
-                            GEN_5G,
-                            nr_type='nsa',
-                            msg_type='sms')
+        return att_apn_test(self.log, caller, callee, GEN_5G, nr_type='nsa', msg_type='sms')
 
     @test_tracker_info(uuid='5a295807-c5cb-4a5a-ad25-e44d4a16cfe6')
     @TelephonyBaseTest.tel_test_wrap
@@ -131,9 +127,50 @@ class Nsa5gSettingsTest(TelephonyBaseTest):
         """
         caller, callee = self.android_devices[0], self.android_devices[1]
 
-        return att_apn_test(self.log,
-                            caller,
-                            callee,
-                            GEN_5G,
-                            nr_type='nsa',
-                            msg_type='mms')
+        return att_apn_test(self.log, caller, callee, GEN_5G, nr_type='nsa', msg_type='mms')
+
+    @test_tracker_info(uuid='952b3861-0516-42e6-a221-23934bdab13c')
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_apn_settings_tmo_sms(self):
+        """Test TMO APN and SMS
+
+        Steps:
+            1. Provision device to nsa 5G
+            2. Launch Settings - Network & Internet
+            3. Click on SIMs
+            4. Click on Access Point Names
+            5. Add New APN
+            6. Save New APN
+            7. Switch APN to New APN
+            8. Check Network is connected to nsa 5G
+            9. Send SMS
+
+        Returns:
+            True is tests passes else False
+        """
+        caller, callee = self.android_devices[0], self.android_devices[1]
+
+        return tmo_apn_test(self.log, caller, callee, GEN_5G, nr_type='nsa', msg_type='sms')
+
+    @test_tracker_info(uuid='62d66d9e-b7de-419b-b079-9d0112cb28dc')
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_apn_settings_tmo_mms(self):
+        """Test TMO APN and MMS
+
+        Steps:
+            1. Provision device to nsa 5G
+            2. Launch Settings - Network & Internet
+            3. Click on SIMs
+            4. Click on Access Point Names
+            5. Add New APN
+            6. Add ATT APN details and Save
+            7. Switch APN to New APN
+            8. Check Network is connected to nsa 5G
+            9. Send MMS
+
+        Returns:
+            True is tests passes else False
+        """
+        caller, callee = self.android_devices[0], self.android_devices[1]
+
+        return tmo_apn_test(self.log, caller, callee, GEN_5G, nr_type='nsa', msg_type='mms')
