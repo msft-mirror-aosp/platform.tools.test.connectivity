@@ -469,7 +469,7 @@ def tmo_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
 
     ui_utils.wait_and_click(caller, text='OK', resource_id='android:id/button1')
 
-    ui_utils.wait_and_click(caller, content_desc='More options'))
+    ui_utils.wait_and_click(caller, content_desc='More options')
 
     ui_utils.wait_and_click(caller, text='Save', resource_id='android:id/title')
 
