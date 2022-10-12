@@ -8,6 +8,7 @@ from acts.test_decorators import test_tracker_info
 from acts.utils import get_current_epoch_time
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.gnss import supl
+from acts_contrib.test_utils.gnss import gnss_defines
 from acts_contrib.test_utils.tel.tel_data_utils import http_file_download_by_sl4a
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
@@ -100,7 +101,13 @@ class GnssSuplTest(BaseTestClass):
         if self.collect_logs:
             self.ad.take_bug_report(test_name, begin_time)
             gutils.get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+            self.get_brcm_gps_xml_to_sponge()
             get_tcpdump_log(self.ad, test_name, begin_time)
+
+    def get_brcm_gps_xml_to_sponge(self):
+        # request from b/250506003 - to check the SUPL setting
+        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            self.ad.pull_files(gnss_defines.BCM_GPS_XML_PATH, self.ad.device_log_path)
 
     def run_ttff(self, mode, criteria):
         """Triggers TTFF.
