@@ -237,11 +237,7 @@ class FuchsiaDevice:
         self.default_preserve_saved_networks = fd_conf_data.get(
             'preserve_saved_networks', True)
 
-        if utils.is_valid_ipv4_address(self.ip):
-            self.address = "http://{}:{}".format(self.ip, self.sl4f_port)
-        elif utils.is_valid_ipv6_address(self.ip):
-            self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
-        else:
+        if not utils.is_valid_ipv4_address(self.ip) and not utils.is_valid_ipv6_address(self.ip):
             mdns_ip = None
             for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
                 mdns_ip = get_fuchsia_mdns_ipv6_address(self.ip)
@@ -254,7 +250,6 @@ class FuchsiaDevice:
                 # unless one was explicitly provided.
                 self.mdns_name = self.mdns_name or self.ip
                 self.ip = mdns_ip
-                self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
             else:
                 raise ValueError('Invalid IP: %s' % self.ip)
 
@@ -282,7 +277,7 @@ class FuchsiaDevice:
         server on the host device when it is required.
         """
         if not hasattr(self, '_sl4f'):
-            self._sl4f = SL4F(self.ssh, self.address)
+            self._sl4f = SL4F(self.ssh, self.sl4f_port)
             self.log.info('Started SL4F server')
         return self._sl4f
 

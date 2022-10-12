@@ -14,8 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts import logger
+import ipaddress
 
+from acts import logger
 from acts.controllers.fuchsia_lib.audio_lib import FuchsiaAudioLib
 from acts.controllers.fuchsia_lib.basemgr_lib import FuchsiaBasemgrLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
@@ -27,15 +28,17 @@ from acts.controllers.fuchsia_lib.bt.hfp_lib import FuchsiaHfpLib
 from acts.controllers.fuchsia_lib.bt.rfcomm_lib import FuchsiaRfcommLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
 from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
-from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
+from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.ssh import SSHProvider, FuchsiaSSHError
+from acts.controllers.fuchsia_lib.utils_lib import wait_for_port
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 
+DEFAULT_SL4F_PORT = 80
 START_SL4F_V2_CMD = 'start_sl4f'
 
 
@@ -48,18 +51,24 @@ class SL4F:
         log: Logger for the device-specific instance of SL4F.
     """
 
-    def __init__(self, ssh: SSHProvider, address: str) -> None:
+    def __init__(self,
+                 ssh: SSHProvider,
+                 port: int = DEFAULT_SL4F_PORT) -> None:
         """
         Args:
             ssh: SSHProvider transport to start and stop SL4F.
-            address: http address for SL4F server including SL4F port.
+            port: Port for the SL4F server to listen on.
         """
-        self.ssh = ssh
-        self.address = address
-        self.log = logger.create_tagged_trace_logger(f"SL4F | {address}")
+        host = ipaddress.ip_address(ssh.config.host_name)
+        if host.version == 4:
+            self.address = f'http://{host}:{port}'
+        elif host.version == 6:
+            self.address = f'http://[{host}]:{port}'
+
+        self.log = logger.create_tagged_trace_logger(f"SL4F | {self.address}")
 
         try:
-            self.ssh.run(START_SL4F_V2_CMD).stdout
+            ssh.run(START_SL4F_V2_CMD).stdout
         except FuchsiaSSHError:
             # TODO(fxbug.dev/99331) Remove support to run SL4F in CFv1 mode
             # once ACTS no longer use images that comes with only CFv1 SL4F.
@@ -67,9 +76,10 @@ class SL4F:
                 "Running SL4F in CFv1 mode, "
                 "this is deprecated for images built after 5/9/2022, "
                 "see https://fxbug.dev/77056 for more info.")
-            self.ssh.stop_v1_component("sl4f")
-            self.ssh.start_v1_component("sl4f")
+            ssh.stop_v1_component("sl4f")
+            ssh.start_v1_component("sl4f")
 
+        wait_for_port(str(host), port)
         self._init_libraries()
         self._verify_sl4f_connection()
 

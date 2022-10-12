@@ -15,14 +15,15 @@
 #   limitations under the License.
 
 import json
-import logging
-import requests
 
+from typing import Any, Mapping
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
-from acts import logger
 from acts import utils
 from acts.libs.proc import job
+
+DEFAULT_SL4F_RESPONSE_TIMEOUT_SEC = 30
 
 
 class DeviceOffline(Exception):
@@ -38,45 +39,57 @@ class BaseLib():
     def __init__(self, addr):
         self.address = addr
 
-    def send_command(self, test_cmd, test_args, response_timeout=30):
+    def send_command(
+        self,
+        cmd: str,
+        args: Mapping[str, Any],
+        response_timeout: int = DEFAULT_SL4F_RESPONSE_TIMEOUT_SEC
+    ) -> Mapping[str, Any]:
         """Builds and sends a JSON command to SL4F server.
 
         Args:
-            test_cmd: string, sl4f method name of command.
-            test_args: dictionary, arguments required to execute test_cmd.
-            response_timeout: int, seconds to wait for a response before
-                throwing an exception. Defaults to no timeout.
+            cmd: SL4F method name of command.
+            args: Arguments required to execute cmd.
+            response_timeout: Seconds to wait for a response before
+                throwing an exception.
 
         Returns:
-            Dictionary, Result of sl4f command executed.
+            Response from SL4F server.
         """
-        if not utils.can_ping(job, urlparse(self.address).hostname):
-            raise DeviceOffline("FuchsiaDevice %s is not reachable via the "
-                                "network." % urlparse(self.address).hostname)
-        # id is required by the SL4F server to parse test_data but is not
-        # currently used.
-        test_data = json.dumps({
+        data = json.dumps({
             "jsonrpc": "2.0",
+            # id is required by the SL4F server to parse test_data but is not
+            # currently used.
             "id": "",
-            "method": test_cmd,
-            "params": test_args
-        })
+            "method": cmd,
+            "params": args
+        }).encode("utf-8")
+
+        req = Request(self.address,
+                      data=data,
+                      headers={
+                          "Content-Type": "application/json; charset=utf-8",
+                          "Content-Length": len(data),
+                      })
+
         try:
-            response = requests.get(url=self.address,
-                                    data=test_data,
-                                    timeout=response_timeout).json()
-            # If the SL4F command fails it returns a str, without an 'error'
-            # field to get.
-            if not isinstance(response, dict):
-                raise SL4FCommandFailed(response)
-            return response
-        except requests.exceptions.Timeout as e:
-            if not utils.can_ping(job, urlparse(self.address).hostname):
+            response = urlopen(req, timeout=response_timeout)
+        except TimeoutError as e:
+            host = urlparse(self.address).hostname
+            if not utils.can_ping(job, host):
                 raise DeviceOffline(
-                    "FuchsiaDevice %s is not reachable via the "
-                    "network." % urlparse(self.address).hostname)
-            else:
-                logging.debug(
-                    'FuchsiaDevice %s is online but SL4f call timed out.' %
-                    urlparse(self.address).hostname)
-                raise e
+                    f'FuchsiaDevice {host} is not reachable via the network.')
+            raise e
+
+        response_body = response.read().decode("utf-8")
+        try:
+            response_json = json.loads(response_body)
+        except json.JSONDecodeError as e:
+            raise SL4FCommandFailed(response_body) from e
+
+        # If the SL4F command fails it returns a str, without an 'error' field
+        # to get.
+        if not isinstance(response_json, dict):
+            raise SL4FCommandFailed(response_json)
+
+        return response_json
