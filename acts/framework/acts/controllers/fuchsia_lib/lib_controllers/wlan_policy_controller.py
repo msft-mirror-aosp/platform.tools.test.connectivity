@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import requests
 import time
 
 from acts import logger
@@ -379,7 +378,7 @@ class WlanPolicyController:
             try:
                 update = self.device.sl4f.wlan_policy_lib.wlanGetUpdate(
                     timeout=time_left)
-            except requests.exceptions.Timeout:
+            except TimeoutError:
                 self.log.error('Timed out waiting for response from device '
                                'while waiting for network with SSID "%s" to '
                                'connect. Device took too long to connect or '
@@ -442,7 +441,7 @@ class WlanPolicyController:
             try:
                 update = self.device.sl4f.wlan_policy_lib.wlanGetUpdate(
                     timeout=time_left)
-            except requests.exceptions.Timeout:
+            except TimeoutError:
                 self.log.error(
                     'Timed out waiting for response from device '
                     'while waiting for network with SSID "%s" to '
@@ -517,7 +516,7 @@ class WlanPolicyController:
             try:
                 update = self.device.sl4f.wlan_policy_lib.wlanGetUpdate(
                     timeout=time_left)
-            except requests.exceptions.Timeout:
+            except TimeoutError:
                 self.log.info(
                     "Timed out getting status update while waiting for all"
                     " connections to end.")
