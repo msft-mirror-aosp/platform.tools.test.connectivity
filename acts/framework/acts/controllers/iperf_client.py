@@ -24,10 +24,8 @@ from acts import context
 from acts import utils
 from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import AndroidDevice
-from acts.controllers.fuchsia_lib.ssh import SSHProvider, SSHResult
+from acts.controllers.fuchsia_lib.ssh import SSHProvider
 from acts.controllers.iperf_server import _AndroidDeviceBridge
-from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
-from acts.controllers.fuchsia_lib.utils_lib import ssh_is_connected
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.libs.proc import job
@@ -62,7 +60,6 @@ def create(configs):
         elif type(c) is dict and 'ssh_config' in c:
             results.append(
                 IPerfClientOverSsh(c['ssh_config'],
-                                   use_paramiko=c.get('use_paramiko'),
                                    test_interface=c.get('test_interface')))
         else:
             results.append(IPerfClient())
@@ -175,7 +172,6 @@ class IPerfClientOverSsh(IPerfClientBase):
 
     def __init__(self,
                  ssh_config: str,
-                 use_paramiko: bool = False,
                  test_interface: str = None,
                  ssh_provider: SSHProvider = None):
         self._ssh_provider = ssh_provider
@@ -187,9 +183,6 @@ class IPerfClientOverSsh(IPerfClientBase):
                     self._ssh_settings.hostname)
                 if mdns_ip:
                     self._ssh_settings.hostname = mdns_ip
-        # use_paramiko may be passed in as a string (from JSON), so this line
-        # guarantees it is a converted to a bool.
-        self._use_paramiko = str(use_paramiko).lower() == 'true'
         self._ssh_session = None
         self.start_ssh()
 
@@ -224,18 +217,6 @@ class IPerfClientOverSsh(IPerfClientBase):
             if self._ssh_provider:
                 iperf_process = self._ssh_provider.run(iperf_cmd,
                                                        timeout_sec=timeout)
-            elif self._use_paramiko:
-                if not ssh_is_connected(self._ssh_session):
-                    logging.info('Lost SSH connection to %s. Reconnecting.' %
-                                 self._ssh_settings.hostname)
-                    self._ssh_session.close()
-                    self._ssh_session = create_ssh_connection(
-                        ip_address=self._ssh_settings.hostname,
-                        ssh_username=self._ssh_settings.username,
-                        ssh_config=self._ssh_settings.ssh_config)
-                _, cmd_result_stdout, cmd_result_stderr = (
-                    self._ssh_session.exec_command(iperf_cmd, timeout=timeout))
-                iperf_process = SSHResult(cmd_result_stdout, cmd_result_stderr)
             else:
                 iperf_process = self._ssh_session.run(iperf_cmd,
                                                       timeout=timeout)
@@ -261,14 +242,7 @@ class IPerfClientOverSsh(IPerfClientBase):
             # SSH sessions are created by the provider.
             return
         if not self._ssh_session:
-            if self._use_paramiko:
-                self._ssh_session = create_ssh_connection(
-                    ip_address=self._ssh_settings.hostname,
-                    ssh_username=self._ssh_settings.username,
-                    ssh_config=self._ssh_settings.ssh_config)
-            else:
-                self._ssh_session = connection.SshConnection(
-                    self._ssh_settings)
+            self._ssh_session = connection.SshConnection(self._ssh_settings)
 
     def close_ssh(self):
         """Closes the ssh session to the iperf client, if one exists, preventing
