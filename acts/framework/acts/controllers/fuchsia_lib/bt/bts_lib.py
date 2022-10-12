@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import requests
-
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 
