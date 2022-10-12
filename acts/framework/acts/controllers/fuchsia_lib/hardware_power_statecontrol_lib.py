@@ -14,8 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import http
-import requests
 
 import acts.controllers.fuchsia_lib.base_lib as base_lib
 
@@ -27,6 +27,17 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
     def __init__(self, addr):
         self.address = addr
 
+    def send_command(self, test_cmd, test_args, response_timeout=30):
+        """Wrap send_command to allow disconnects after sending the request."""
+        try:
+            response = super().send_command(test_cmd, test_args,
+                                            response_timeout)
+        except (TimeoutError, http.client.RemoteDisconnected,
+                base_lib.DeviceOffline) as e:
+            logging.warn(f'Error while sending power command: {e}')
+            return
+        return response
+
     def suspendReboot(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Reboot.
 
@@ -35,15 +46,7 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendReboot"
         test_args = {}
-        try:
-            response = self.send_command(test_cmd,
-                                         test_args,
-                                         response_timeout=timeout)
-        except (ConnectionResetError, base_lib.DeviceOffline,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ReadTimeout):
-            return
-        return response
+        return self.send_command(test_cmd, test_args, response_timeout=timeout)
 
     def suspendRebootBootloader(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Reboot Bootloader
@@ -53,14 +56,7 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendRebootBootloader"
         test_args = {}
-        try:
-            response = self.send_command(test_cmd,
-                                         test_args,
-                                         response_timeout=timeout)
-        except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected, base_lib.DeviceOffline):
-            return
-        return response
+        return self.send_command(test_cmd, test_args, response_timeout=timeout)
 
     def suspendPoweroff(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Poweroff
@@ -70,14 +66,7 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendPoweroff"
         test_args = {}
-        try:
-            response = self.send_command(test_cmd,
-                                         test_args,
-                                         response_timeout=timeout)
-        except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected, base_lib.DeviceOffline):
-            return
-        return response
+        return self.send_command(test_cmd, test_args, response_timeout=timeout)
 
     def suspendMexec(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Mexec
@@ -87,14 +76,7 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendMexec"
         test_args = {}
-        try:
-            response = self.send_command(test_cmd,
-                                         test_args,
-                                         response_timeout=timeout)
-        except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected, base_lib.DeviceOffline):
-            return
-        return response
+        return self.send_command(test_cmd, test_args, response_timeout=timeout)
 
     def suspendRam(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Ram
@@ -104,11 +86,4 @@ class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendRam"
         test_args = {}
-        try:
-            response = self.send_command(test_cmd,
-                                         test_args,
-                                         response_timeout=timeout)
-        except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected, base_lib.DeviceOffline):
-            return
-        return response
+        return self.send_command(test_cmd, test_args, response_timeout=timeout)

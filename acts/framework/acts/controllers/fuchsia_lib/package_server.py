@@ -33,6 +33,7 @@ from acts import signals
 from acts import utils
 
 from acts.controllers.fuchsia_lib.ssh import FuchsiaSSHError, SSHProvider
+from acts.controllers.fuchsia_lib.utils_lib import wait_for_port
 from acts.tracelogger import TraceLogger
 
 DEFAULT_FUCHSIA_REPO_NAME = "fuchsia.com"
@@ -184,7 +185,18 @@ class PackageServer:
                                              preexec_fn=os.setpgrp,
                                              stdout=self._server_log,
                                              stderr=subprocess.STDOUT)
-        self._wait_for_server()
+        try:
+            wait_for_port('127.0.0.1', self._port)
+        except TimeoutError as e:
+            if self._server_log:
+                self._server_log.close()
+            if self._log_path:
+                with open(self._log_path, 'r') as f:
+                    logs = f.read()
+            raise TimeoutError(
+                f"pm serve failed to expose port {self._port}. Logs:\n{logs}"
+            ) from e
+
         self.log.info(f'Serving packages on port {self._port}')
 
     def configure_device(self,
@@ -211,38 +223,6 @@ class PackageServer:
         self.log.info(
             f'Added repo "{repo_name}" as {repo_url} on device {ssh.config.host_name}'
         )
-
-    def _wait_for_server(self, timeout_sec: int = 5) -> None:
-        """Wait for the server to expose the correct port.
-
-        The package server takes some time to start. Call this after launching
-        the server to avoid race condition.
-
-        Args:
-            timeout_sec: Seconds to wait until raising TimeoutError
-
-        Raises:
-            TimeoutError: when timeout_sec has expired without a successful
-                connection to the package server
-        """
-        timeout = time.perf_counter() + timeout_sec
-        while True:
-            try:
-                socket.create_connection(('127.0.0.1', self._port),
-                                         timeout=timeout)
-                return
-            except ConnectionRefusedError:
-                continue
-            finally:
-                if time.perf_counter() > timeout:
-                    if self._server_log:
-                        self._server_log.close()
-                    if self._log_path:
-                        with open(self._log_path, 'r') as f:
-                            logs = f.read()
-                    raise TimeoutError(
-                        f"pm serve failed to expose port {self._port} after {timeout_sec}s. Logs:\n{logs}"
-                    )
 
     def stop_server(self) -> None:
         """Stop the package server."""
