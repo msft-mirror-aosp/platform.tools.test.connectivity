@@ -11,8 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import os
+import time
 
-import paramiko
 import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 
 
@@ -22,9 +23,7 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
 
     # command to start iperf server on UE
     # (require: 1.path to iperf exe 2.hostname/hostIP)
-    START_IPERF_CLIENT_UE_CMD = (
-        'nohup > /dev/null 2>&1 sh -c '
-        '"iperf3 -c {iperf_host_ip} -i1 -p5202 -w8m -t2000 > /dev/null &"')
+    START_IPERF_CLIENT_UE_CMD = 'nohup > /dev/null 2>&1 sh -c "iperf3 -c {iperf_host_ip} -i1 -p5202 -w8m -t2000 > /dev/null &"'
 
     #command to start iperf server on host()
     START_IPERF_SV_HOST_CMD = '{exe_path}\\iperf3 -s -p5202'
@@ -38,6 +37,7 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         super().__init__(controllers)
         self.ssh_iperf_client = None
         self.ssh_iperf_server = None
+        self.iperf_out_err = {}
 
     def setup_class(self):
         super().setup_class()
@@ -65,11 +65,17 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
     def power_tel_traffic_test(self):
         """Measure power while data is transferring."""
         # Start data traffic
-        self.start_downlink_process()
         self.start_uplink_process()
+        self.start_downlink_process()
 
         # Measure power
         self.collect_power_data()
+
+        # Write iperf log
+        self.ssh_iperf_server.close()
+        self._write_iperf_log('uplink.txt', self.ssh_iperf_server)
+        self.ssh_iperf_client.close()
+        self._write_iperf_log('downlink.txt', self.ssh_iperf_client)
 
     def _exec_ssh_cmd(self, ssh_client, cmd):
         """Execute command on given ssh client.
@@ -79,17 +85,16 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
             cmd: command to execute via ssh.
         """
         self.log.info('Sending cmd to ssh host: ' + cmd)
-        stdin, _, _ = ssh_client.exec_command(cmd, get_pty=True)
+        stdin, stdout, stderr = ssh_client.exec_command(cmd, get_pty=True)
         stdin.close()
-        # TODO: stdout.readline cause program to hang
-        # implement a workaround to getting response
-        # from executed command
+        self.iperf_out_err[ssh_client] = (stdout, stderr)
 
     def start_downlink_process(self):
         """UE transfer data to host."""
         self.log.info('Start downlink process')
         # start UE iperf server
         self.cellular_dut.ad.adb.shell(self.START_IPERF_SV_UE_CMD)
+        self.log.info('cmd sent to UE: ' + self.START_IPERF_SV_UE_CMD)
         self.log.info('UE iperf server started')
         # start host iperf client
         cmd = self.START_IPERF_CLIENT_HOST_CMD.format(
@@ -105,10 +110,34 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         cmd = self.START_IPERF_SV_HOST_CMD.format(exe_path=self.iperf_exe_path)
         self._exec_ssh_cmd(self.ssh_iperf_server, cmd)
         self.log.info('Host iperf server started')
+        time.sleep(5)
         # start UE iperf
-        self.cellular_dut.ad.adb.shell(
-            self.START_IPERF_CLIENT_UE_CMD.format(iperf_host_ip=self.iperf_host_ip))
+        adb_cmd = self.START_IPERF_CLIENT_UE_CMD.format(iperf_host_ip=self.iperf_host_ip)
+        self.cellular_dut.ad.adb.shell(adb_cmd)
+        self.log.info('cmd sent to UE: ' + adb_cmd)
         self.log.info('UE iperf client started')
+        time.sleep(5)
+
+    def _write_iperf_log(self, file_name, ssh):
+        """ Writing ssh stdout and stdin to log file.
+
+        Args:
+            file_name: log file name to write log to.
+            ssh: paramiko client object.
+        """
+        iperf_log_dir = os.path.join(self.root_output_path, 'iperf')
+        os.makedirs(iperf_log_dir, exist_ok=True)
+        iperf_log_file_path = os.path.join(iperf_log_dir, file_name)
+        with open(iperf_log_file_path, 'w') as f:
+            out, err = self.iperf_out_err[ssh]
+            out_content = ''.join(out.readlines())
+            err_content = ''.join(err.readlines())
+            f.write(out_content)
+            f.write('\nErrors:\n')
+            f.write(err_content)
+
+    def teardown_test(self):
+        super().teardown_test()
 
 
 class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
