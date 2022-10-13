@@ -11,11 +11,10 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-
-from acts import context
-import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 import time
+
+import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
+
 
 class PowerTelAirplaneModeTest(PWCEL.PowerCellularLabBaseTest):
 
@@ -31,9 +30,10 @@ class PowerTelAirplaneModeTest(PWCEL.PowerCellularLabBaseTest):
         self.collect_power_data()
         # Check if power measurement is within the required values
         self.pass_fail_check(self.avg_current)
+
     def teardown_test(self):
       	super().teardown_test()
-      	self.sponge_upload()
+        self.sponge_upload()
 
 
 class PowerTelAirplaneMode_Test(PowerTelAirplaneModeTest):

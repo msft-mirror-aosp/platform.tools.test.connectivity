@@ -36,7 +36,6 @@ import threading
 import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
-from zeroconf import IPVersion, Zeroconf
 
 from acts import signals
 from acts.controllers.adb_lib.error import AdbError
@@ -1821,6 +1820,8 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
     Returns:
         string, IPv6 link-local address
     """
+    from zeroconf import IPVersion, Zeroconf
+
     if not device_mdns_name:
         return None
 

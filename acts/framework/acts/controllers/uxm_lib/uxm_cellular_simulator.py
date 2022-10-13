@@ -337,8 +337,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                                      cell_number,
                                      dut,
                                      wait_for_camp_interval,
-                                     attach_retries,
-                                     change_dut_setting_allow=True):
+                                     attach_retries):
         """Wait until connect to given UXM cell.
 
         After turn off airplane mode, sleep for
@@ -356,13 +355,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             attach_retries: number of retry
                 to wait for device
                 to connect to 1 basestation.
-            change_dut_setting_allow: turn on/off APM
-                or reboot device helps with device camp time.
-                However, if we are trying to connect to second cell
-                changing APM status or reboot is not allowed.
         Raise:
-            AbstractCellularSimulator.CellularSimulatorError:
-                device unable to connect to cell.
+            RuntimeError: device unable to connect to cell.
         """
         # airplane mode on
         dut.toggle_airplane_mode(True)
@@ -376,35 +370,38 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         dut.toggle_airplane_mode(False)
         time.sleep(5)
 
+        polling_interval = 5
         # waits for connect
         for index in range(1, attach_retries):
             count = 0
+            # check connection in small interval
             while count < wait_for_camp_interval:
                 time.sleep(5)
                 cell_state = self.get_cell_status(cell_type, cell_number)
                 self.log.info(f'cell state: {cell_state}')
                 if cell_state == 'CONN\n':
+                    # wait for connection stable
+                    time.sleep(10)
                     return True
                 if cell_state == 'OFF\n':
                     self.turn_cell_on(cell_type, cell_number)
                     time.sleep(5)
-                count += 5
-            if change_dut_setting_allow:
-                # reboot device after certain tries
-                if (index % 4) == 0:
-                    dut.ad.reboot()
-                    if self.rockbottom_script:
-                        self.dut_rockbottom(dut)
-                    else:
-                        self.log.warning(
-                            f'Rockbottom script {self} was not executed after reboot'
-                        )
+                count += polling_interval
+
+            if (index % 4) == 0:
+                dut.ad.reboot()
+                if self.rockbottom_script:
+                    self.dut_rockbottom(dut)
                 else:
-                    # airplane mode on
-                    dut.toggle_airplane_mode(True)
-                    time.sleep(5)
-                    # airplane mode off
-                    dut.toggle_airplane_mode(False)
+                    self.log.warning(
+                        f'Rockbottom script {self} was not executed after reboot'
+                    )
+            else:
+                dut.toggle_airplane_mode(True)
+                time.sleep(5)
+                dut.toggle_airplane_mode(False)
+                time.sleep(5)
+            polling_interval += 5
 
         # Phone cannot connected to basestation of callbox
         raise RuntimeError(
@@ -429,37 +426,39 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             second_cell_number = self.cells[1][self.KEY_CELL_NUMBER]
 
         # connect to 1st cell
-        try:
-            self.wait_until_attached_one_cell(first_cell_type,
-                                              first_cell_number, dut, timeout,
-                                              attach_retries)
-        except Exception as exc:
-            raise RuntimeError(f'Cannot connect to first cell') from exc
+        self.wait_until_attached_one_cell(first_cell_type,
+                                          first_cell_number, dut, timeout,
+                                          attach_retries)
 
-        # connect to 2nd cell
+        # aggregation to NR
         if len(self.cells) == 2:
             self.turn_cell_on(
                 second_cell_type,
                 second_cell_number,
             )
-            self._socket_send_SCPI_command(
-                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL None')
-            self._socket_send_SCPI_command(
-                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:UL None')
-            self._socket_send_SCPI_command(
-                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL CELL1')
-            self._socket_send_SCPI_command(
-                'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL CELL1')
-            time.sleep(1)
-            self._socket_send_SCPI_command(
-                "BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly")
-            try:
-                self.wait_until_attached_one_cell(second_cell_type,
-                                                  second_cell_number, dut,
-                                                  timeout, attach_retries,
-                                                  False)
-            except Exception as exc:
-                raise RuntimeError(f'Cannot connect to second cell') from exc
+
+            for _ in range(1, attach_retries):
+                self.log.info('Try to aggregate to NR.')
+                self._socket_send_SCPI_command(
+                    'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL None')
+                self._socket_send_SCPI_command(
+                    'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:UL None')
+                self._socket_send_SCPI_command(
+                    'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL CELL1')
+                self._socket_send_SCPI_command(
+                    'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL CELL1')
+                time.sleep(1)
+                self._socket_send_SCPI_command(
+                    "BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly")
+                time.sleep(10)
+                cell_state = self.get_cell_status(second_cell_type, second_cell_number)
+                self.log.info(f'cell state: {cell_state}')
+                if cell_state == 'CONN\n':
+                    return
+                # wait for LTE cell to connect again
+                time.sleep(30)
+
+            raise RuntimeError(f'Fail to aggregate to NR from LTE.')
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """Configures the LTE RRC state change timer.

@@ -44,6 +44,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import system_file_push
 from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
 from acts_contrib.test_utils.tel.tel_test_utils import verify_default_telephony_setting
 from acts_contrib.test_utils.tel.tel_settings_utils import att_apn_test
+from acts_contrib.test_utils.tel.tel_settings_utils import tmo_apn_test
 from acts_contrib.test_utils.tel.tel_settings_utils import toggle_mobile_data_test
 from acts_contrib.test_utils.tel.tel_settings_utils import toggle_sim_test
 from acts.utils import set_mobile_data_always_on
@@ -384,7 +385,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
     @test_tracker_info(uuid='9f0cb1cd-6dff-4736-a7f7-3d08af782575')
     @TelephonyBaseTest.tel_test_wrap
     def test_att_apn_settings_sms_lte(self):
-        """Test sim disable and enable
+        """Test ATT APN and SMS
 
         Steps:
             1. Provision device to LTE
@@ -407,7 +408,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
     @test_tracker_info(uuid='7ba6eccd-5115-495a-8298-a1b41e5115d8')
     @TelephonyBaseTest.tel_test_wrap
     def test_att_apn_settings_mms_lte(self):
-        """Test sim disable and enable
+        """Test ATT APN and MMS
 
         Steps:
             1. Provision device to LTE
@@ -426,3 +427,49 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         caller, callee = self.android_devices[0], self.android_devices[1]
 
         return att_apn_test(self.log, caller, callee, GEN_4G, msg_type='mms')
+
+    @test_tracker_info(uuid='ea6886e0-5a34-4b62-9a2b-d81d109284ae')
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tmo_apn_settings_sms_lte(self):
+        """Test TMO APN and SMS
+
+        Steps:
+            1. Provision device to LTE
+            2. Launch Settings - Network & Internet
+            3. Click on SIMs
+            4. Click on Access Point Names
+            5. Add New APN
+            6. Add TMO APN details and Save New APN
+            7. Switch APN to New APN
+            8. Check Network is connected to LTE
+            9. Send SMS
+
+        Returns:
+            True is tests passes else False
+        """
+        caller, callee = self.android_devices[0], self.android_devices[1]
+
+        return tmo_apn_test(self.log, caller, callee, GEN_4G, msg_type='sms')
+
+    @test_tracker_info(uuid='08b4b549-cacb-481a-b6ea-7368b5608009')
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tmo_apn_settings_mms_lte(self):
+        """Test APN test and MMS
+
+        Steps:
+            1. Provision device to LTE
+            2. Launch Settings - Network & Internet
+            3. Click on SIMs
+            4. Click on Access Point Names
+            5. Add New APN
+            6. Add TMO APN details and Save
+            7. Switch APN to New APN
+            8. Check Network is connected to LTE
+            9. Send MMS
+
+        Returns:
+            True is tests passes else False
+        """
+        caller, callee = self.android_devices[0], self.android_devices[1]
+
+        return tmo_apn_test(self.log, caller, callee, GEN_4G, msg_type='mms')

@@ -549,5 +549,4 @@ class FuchsiaWlanDevice(WlanDevice):
                 'ssh_config': self.device.ssh_config
             },
             ssh_provider=self.device.ssh,
-            use_paramiko=True,
             test_interface=test_interface)
