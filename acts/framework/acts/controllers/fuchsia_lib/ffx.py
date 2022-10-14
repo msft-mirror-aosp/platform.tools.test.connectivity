@@ -18,6 +18,7 @@ import json
 import os
 import tempfile
 import subprocess
+import time
 
 from pathlib import Path
 from typing import Any, MutableMapping, Optional
@@ -33,6 +34,16 @@ FFX_DEFAULT_COMMAND_TIMEOUT: int = 60
 
 class FFXError(signals.TestError):
     """Non-zero error code returned from a ffx command."""
+
+    def __init__(self, command: str,
+                 process: subprocess.CalledProcessError) -> None:
+        self.command = command
+        self.stdout: str = process.stdout.decode('utf-8', errors='replace')
+        self.stderr: str = process.stderr.decode('utf-8', errors='replace')
+        self.exit_status = process.returncode
+
+    def __str__(self) -> str:
+        return f'ffx subcommand "{self.command}" returned {self.exit_status}, stdout: "{self.stdout}", stderr: "{self.stderr}"'
 
 
 class FFXTimeout(signals.TestError):
@@ -128,12 +139,7 @@ class FFX:
                                     timeout=timeout_sec,
                                     check=not skip_status_code_check)
         except subprocess.CalledProcessError as e:
-            self.log.warning(f'Ran "{full_command}", exit code {e.returncode}')
-            self.log.warning(f'stdout: {e.stdout}')
-            self.log.warning(f'stderr: {e.stderr}')
-            raise FFXError(
-                f'Non-zero exit code ({e.returncode}) when running "{full_command}": {e.stderr}'
-            )
+            raise FFXError(command, e) from e
         except subprocess.TimeoutExpired as e:
             raise FFXTimeout(f'Timed out running "{full_command}"') from e
 
@@ -221,7 +227,9 @@ class FFX:
         # The ffx daemon will started automatically when needed. There is no
         # need to start it manually here.
 
-    def verify_reachable(self) -> None:
+    def verify_reachable(self,
+                         timeout_sec: int = FFX_DEFAULT_COMMAND_TIMEOUT
+                         ) -> None:
         """Verify the target is reachable via RCS and various services.
 
         Blocks until the device allows for an RCS connection. If the device
@@ -234,7 +242,11 @@ class FFX:
         When called for the first time, the versions will be checked for
         compatibility.
 
+        Args:
+            timeout_sec: Seconds to wait for reachability check
+
         Raises:
+            FFXError: when an unknown error occurs
             FFXTimeout: when the target is unreachable
         """
         cmd = "target wait"
@@ -244,17 +256,24 @@ class FFX:
             # TODO(https://fxbug.dev/105530): Update manual target parsing in
             # ffx.
             cmd = f"target add {self.ip}"
-        try:
-            self.run(cmd, timeout_sec=5, skip_reachability_check=True)
-        except FFXTimeout:
-            longer_wait_sec = 60
-            self.log.info(
-                "Device is not immediately available via ffx." +
-                f" Waiting up to {longer_wait_sec} seconds for device to be reachable."
-            )
-            self.run(cmd,
-                     timeout_sec=longer_wait_sec,
-                     skip_reachability_check=True)
+
+        timeout = time.perf_counter() + timeout_sec
+        while True:
+            try:
+                self.run(cmd, timeout_sec=5, skip_reachability_check=True)
+                break
+            except FFXError as e:
+                if 'took too long connecting to ascendd socket' in e.stderr:
+                    err = e
+                else:
+                    raise e
+            except FFXTimeout as e:
+                err = e
+
+            if time.perf_counter() > timeout:
+                raise FFXTimeout(
+                    f'Waited over {timeout_sec}s for ffx to become reachable'
+                ) from err
 
         # Use a shorter timeout than default because device information
         # gathering can hang for a long time if the device is not actually
