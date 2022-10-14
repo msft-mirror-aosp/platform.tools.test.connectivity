@@ -17,6 +17,7 @@
 import os
 import logging
 import psutil
+import socket
 import tarfile
 import tempfile
 import time
@@ -37,8 +38,7 @@ FUCHSIA_SDK_URL = "gs://fuchsia-sdk/development"
 FUCHSIA_RELEASE_TESTING_URL = "gs://fuchsia-release-testing/images"
 
 
-def flash(fuchsia_device,
-          use_ssh=False,
+def flash(fuchsia_device, use_ssh=False,
           fuchsia_reconnect_after_reboot_time=5):
     """A function to flash, not pave, a fuchsia_device
 
