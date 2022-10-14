@@ -32,7 +32,7 @@ class PowerTelAirplaneModeTest(PWCEL.PowerCellularLabBaseTest):
         self.pass_fail_check(self.avg_current)
 
     def teardown_test(self):
-      	super().teardown_test()
+        super().teardown_test()
         self.sponge_upload()
 
 
