@@ -27,6 +27,7 @@ from acts import logger
 from acts import signals
 from acts import utils
 
+
 FFX_DEFAULT_COMMAND_TIMEOUT: int = 60
 
 
@@ -274,8 +275,8 @@ class FFX:
             self._has_logged_version = True
             self.compare_version(result)
 
-    def compare_version(self, target_show_result: subprocess.CompletedProcess
-                        ) -> None:
+    def compare_version(
+            self, target_show_result: subprocess.CompletedProcess) -> None:
         """Compares the version of Fuchsia with the version of ffx.
 
         Args:
