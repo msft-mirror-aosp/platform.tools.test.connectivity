@@ -17,6 +17,7 @@
 import ipaddress
 
 from acts import logger
+from acts.controllers.fuchsia_lib import utils_lib
 from acts.controllers.fuchsia_lib.audio_lib import FuchsiaAudioLib
 from acts.controllers.fuchsia_lib.basemgr_lib import FuchsiaBasemgrLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
@@ -32,7 +33,6 @@ from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaR
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.ssh import SSHProvider, FuchsiaSSHError
-from acts.controllers.fuchsia_lib.utils_lib import wait_for_port
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
@@ -51,8 +51,7 @@ class SL4F:
         log: Logger for the device-specific instance of SL4F.
     """
 
-    def __init__(self,
-                 ssh: SSHProvider,
+    def __init__(self, ssh: SSHProvider,
                  port: int = DEFAULT_SL4F_PORT) -> None:
         """
         Args:
@@ -79,7 +78,7 @@ class SL4F:
             ssh.stop_v1_component("sl4f")
             ssh.start_v1_component("sl4f")
 
-        wait_for_port(str(host), port)
+        utils_lib.wait_for_port(str(host), port)
         self._init_libraries()
         self._verify_sl4f_connection()
 
