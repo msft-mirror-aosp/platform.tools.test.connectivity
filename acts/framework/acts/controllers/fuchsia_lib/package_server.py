@@ -21,7 +21,6 @@ import socket
 import subprocess
 import tarfile
 import tempfile
-import time
 
 from dataclasses import dataclass
 from datetime import datetime
