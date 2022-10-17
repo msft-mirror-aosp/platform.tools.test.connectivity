@@ -70,6 +70,7 @@ class GnssConcurrencyTest(BaseTestClass):
         self.ad.adb.shell("sync")
 
     def setup_test(self):
+        gutils.log_current_epoch_time(self.ad, "test_start_time")
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.start_pixel_logger(self.ad)
         start_adb_tcpdump(self.ad)
@@ -81,6 +82,7 @@ class GnssConcurrencyTest(BaseTestClass):
     def teardown_test(self):
         gutils.stop_pixel_logger(self.ad)
         stop_adb_tcpdump(self.ad)
+        gutils.log_current_epoch_time(self.ad, "test_end_time")
 
     def on_fail(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)

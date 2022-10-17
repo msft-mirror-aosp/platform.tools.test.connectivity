@@ -55,6 +55,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import grant_location_permissi
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_wearable_btwifi
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_device_wearable
+from acts_contrib.test_utils.gnss.gnss_test_utils import log_current_epoch_time
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
@@ -94,6 +95,7 @@ class GnssFunctionTest(BaseTestClass):
         _init_device(self.ad)
 
     def setup_test(self):
+        log_current_epoch_time(self.ad, "test_start_time")
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
@@ -133,6 +135,7 @@ class GnssFunctionTest(BaseTestClass):
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE network.")
+        log_current_epoch_time(self.ad, "test_end_time")
 
     def on_fail(self, test_name, begin_time):
         if self.collect_logs:
