@@ -40,6 +40,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_sig
 from acts_contrib.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
+from acts_contrib.test_utils.gnss.gnss_test_utils import log_current_epoch_time
 
 
 class FlpTtffTest(BaseTestClass):
@@ -63,6 +64,7 @@ class FlpTtffTest(BaseTestClass):
         _init_device(self.ad)
 
     def setup_test(self):
+        log_current_epoch_time(self.ad, "test_start_time")
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
@@ -85,6 +87,7 @@ class FlpTtffTest(BaseTestClass):
             set_wifi_and_bt_scanning(self.ad, True)
         if self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
+        log_current_epoch_time(self.ad, "test_end_time")
 
     def on_pass(self, test_name, begin_time):
         if self.collect_logs:

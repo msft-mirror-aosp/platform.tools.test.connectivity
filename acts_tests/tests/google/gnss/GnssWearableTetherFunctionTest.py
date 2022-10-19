@@ -61,6 +61,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         gutils.reboot(self.phone)
 
     def setup_test(self):
+        gutils.log_current_epoch_time(self.ad, "test_start_time")
         gutils.get_baseband_and_gms_version(self.watch)
         gutils.clear_logd_gnss_qxdm_log(self.watch)
         gutils.clear_logd_gnss_qxdm_log(self.phone)
@@ -81,6 +82,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         if self.watch.droid.connectivityCheckAirplaneMode():
             self.watch.log.info("Force airplane mode off")
             toggle_airplane_mode(self.watch.log, self.watch, new_state=False)
+        gutils.log_current_epoch_time(self.ad, "test_end_time")
 
     def on_fail(self, test_name, begin_time):
         self.watch.take_bug_report(test_name, begin_time)
