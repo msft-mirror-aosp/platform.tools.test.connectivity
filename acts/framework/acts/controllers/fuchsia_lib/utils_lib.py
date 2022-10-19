@@ -14,10 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import backoff
 import os
 import logging
-import paramiko
 import psutil
 import socket
 import tarfile
@@ -26,17 +24,9 @@ import time
 import usbinfo
 
 from acts import utils
-from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
 from acts.controllers.fuchsia_lib.ssh import FuchsiaSSHError
 from acts.libs.proc import job
 from acts.utils import get_fuchsia_mdns_ipv6_address
-
-logging.getLogger("paramiko").setLevel(logging.WARNING)
-# paramiko-ng will throw INFO messages when things get disconnect or cannot
-# connect perfectly the first time.  In this library those are all handled by
-# either retrying and/or throwing an exception for the appropriate case.
-# Therefore, in order to reduce confusion in the logs the log level is set to
-# WARNING.
 
 MDNS_LOOKUP_RETRY_MAX = 3
 FASTBOOT_TIMEOUT = 30
@@ -48,123 +38,7 @@ FUCHSIA_SDK_URL = "gs://fuchsia-sdk/development"
 FUCHSIA_RELEASE_TESTING_URL = "gs://fuchsia-release-testing/images"
 
 
-def get_private_key(ip_address, ssh_config):
-    """Tries to load various ssh key types.
-
-    Args:
-        ip_address: IP address of ssh server.
-        ssh_config: ssh_config location for the ssh server.
-    Returns:
-        The ssh private key
-    """
-    exceptions = []
-    try:
-        logging.debug('Trying to load SSH key type: ed25519')
-        return paramiko.ed25519key.Ed25519Key(
-            filename=get_ssh_key_for_host(ip_address, ssh_config))
-    except paramiko.SSHException as e:
-        exceptions.append(e)
-        logging.debug('Failed loading SSH key type: ed25519')
-
-    try:
-        logging.debug('Trying to load SSH key type: rsa')
-        return paramiko.RSAKey.from_private_key_file(
-            filename=get_ssh_key_for_host(ip_address, ssh_config))
-    except paramiko.SSHException as e:
-        exceptions.append(e)
-        logging.debug('Failed loading SSH key type: rsa')
-
-    raise Exception('No valid ssh key type found', exceptions)
-
-
-# TODO(b/244747218): Remove once IPerfClient and FuchsiaSyslogProcess are
-# refactored away from this method.
-@backoff.on_exception(
-    backoff.constant,
-    (paramiko.ssh_exception.SSHException,
-     paramiko.ssh_exception.AuthenticationException, socket.timeout,
-     socket.error, ConnectionRefusedError, ConnectionResetError),
-    interval=1.5,
-    max_tries=4)
-def create_ssh_connection(ip_address,
-                          ssh_username,
-                          ssh_config,
-                          ssh_port=22,
-                          connect_timeout=10,
-                          auth_timeout=10,
-                          banner_timeout=10):
-    """Creates and ssh connection to a Fuchsia device
-
-    Args:
-        ip_address: IP address of ssh server.
-        ssh_username: Username for ssh server.
-        ssh_config: ssh_config location for the ssh server.
-        ssh_port: port for the ssh server.
-        connect_timeout: Timeout value for connecting to ssh_server.
-        auth_timeout: Timeout value to wait for authentication.
-        banner_timeout: Timeout to wait for ssh banner.
-
-    Returns:
-        A paramiko ssh object
-    """
-    if not utils.can_ping(job, ip_address):
-        raise DeviceOffline("Device %s is not reachable via "
-                            "the network." % ip_address)
-    ssh_key = get_private_key(ip_address=ip_address, ssh_config=ssh_config)
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(hostname=ip_address,
-                       username=ssh_username,
-                       allow_agent=False,
-                       pkey=ssh_key,
-                       port=ssh_port,
-                       timeout=connect_timeout,
-                       auth_timeout=auth_timeout,
-                       banner_timeout=banner_timeout)
-    ssh_client.get_transport().set_keepalive(1)
-    return ssh_client
-
-
-def ssh_is_connected(ssh_client):
-    """Checks to see if the SSH connection is alive.
-    Args:
-        ssh_client: A paramiko SSH client instance.
-    Returns:
-          True if connected, False or None if not connected.
-    """
-    return ssh_client and ssh_client.get_transport().is_active()
-
-
-def get_ssh_key_for_host(host, ssh_config_file):
-    """Gets the SSH private key path from a supplied ssh_config_file and the
-       host.
-    Args:
-        host (str): The ip address or host name that SSH will connect to.
-        ssh_config_file (str): Path to the ssh_config_file that will be used
-            to connect to the host.
-
-    Returns:
-        path: A path to the private key for the SSH connection.
-    """
-    ssh_config = paramiko.SSHConfig()
-    user_config_file = os.path.expanduser(ssh_config_file)
-    if os.path.exists(user_config_file):
-        with open(user_config_file) as f:
-            ssh_config.parse(f)
-    user_config = ssh_config.lookup(host)
-
-    if 'identityfile' not in user_config:
-        raise ValueError('Could not find identity file in %s.' % ssh_config)
-
-    path = os.path.expanduser(user_config['identityfile'][0])
-    if not os.path.exists(path):
-        raise FileNotFoundError('Specified IdentityFile %s for %s in %s not '
-                                'existing anymore.' % (path, host, ssh_config))
-    return path
-
-
-def flash(fuchsia_device,
-          use_ssh=False,
+def flash(fuchsia_device, use_ssh=False,
           fuchsia_reconnect_after_reboot_time=5):
     """A function to flash, not pave, a fuchsia_device
 
@@ -344,3 +218,30 @@ def run_flash_script(fuchsia_device, flash_dir):
     else:
         raise ValueError('Invalid IP: %s after flashing.' %
                          fuchsia_device.mdns_name)
+
+
+def wait_for_port(host: str, port: int, timeout_sec: int = 5) -> None:
+    """Wait for the host to start accepting connections on the port.
+
+    Some services take some time to start. Call this after launching the service
+    to avoid race conditions.
+
+    Args:
+        host: IP of the running service.
+        port: Port of the running service.
+        timeout_sec: Seconds to wait until raising TimeoutError
+
+    Raises:
+        TimeoutError: when timeout_sec has expired without a successful
+            connection to the service
+    """
+    timeout = time.perf_counter() + timeout_sec
+    while True:
+        try:
+            with socket.create_connection((host, port), timeout=timeout_sec):
+                return
+        except ConnectionRefusedError as e:
+            if time.perf_counter() > timeout:
+                raise TimeoutError(
+                    f'Waited over {timeout_sec}s for the service to start '
+                    f'accepting connections at {host}:{port}') from e

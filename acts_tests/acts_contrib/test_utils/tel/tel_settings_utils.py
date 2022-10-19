@@ -23,6 +23,8 @@ from acts_contrib.test_utils.tel.tel_defines import KEYEVENT_DEL
 from acts_contrib.test_utils.tel.tel_defines import MOBILE_DATA
 from acts_contrib.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts_contrib.test_utils.tel.tel_defines import SCROLL_DOWN
+from acts_contrib.test_utils.tel.tel_defines import SCROLL_UP
+from acts_contrib.test_utils.tel.tel_defines import SLOW_SCROLL_DOWN
 from acts_contrib.test_utils.tel.tel_defines import USE_SIM
 from acts_contrib.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5g
@@ -44,6 +46,22 @@ ATT_APN = {
     'APN roaming protocol': 'IPv4',
     'MVNO type': 'None'
     }
+
+TMO_APN = {
+    'Name': 'TMOUS',
+    'APN': 'fast.t-mobile.com',
+    'MMSC': 'https://mms.msg.eng.t-mobile.com/mms/wapenc',
+    'MCC': '310',
+    'MNC': '260',
+    'APN type': 'default,supi,ia,mms,xcap',
+    'APN protocol': 'IPv6',
+    'APN roaming protocol': 'IPv4',
+    'MVNO type': 'None'
+    }
+
+TMO_BEARER = ['HSPA', 'EVDO_B', 'eHRPD', 'LTE', 'HSPAP', 'GPRS', 'EDGE', 'UMTS', '1xRTT', 'EVDO_0',
+            'EVDO_A', 'HSDPA', 'HSUPA', 'IS95A', 'IS95B','NR']
+
 
 def is_current_build_s(ad):
     """Verify current build is S
@@ -121,7 +139,6 @@ def toggle_sim_test(ad, nw_gen, nr_type=None):
         if not phone_setup_volte(ad.log, ad):
             ad.log.error('Phone failed to enable LTE')
             return False
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
     launch_SIMs_settings(ad)
 
     switch_value = get_resource_value(ad, USE_SIM)
@@ -200,7 +217,6 @@ def toggle_mobile_data_test(ad, nw_gen, nr_type=None):
         if not phone_setup_volte(ad.log, ad):
             ad.log.error('Phone failed to enable LTE')
             return False
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
     launch_SIMs_settings(ad)
     switch_value = get_resource_value(ad, MOBILE_DATA)
@@ -261,7 +277,6 @@ def verify_mcc_mnc_value(ad, current_value, expected_value, key):
         for _ in range(len(current_value)):
             caller.adb.shell(KEYEVENT_DEL)
         ui_utils.wait_and_input_text(ad, expected_value)
-        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         ui_utils.wait_and_click(caller, text='OK', resource_id='android:id/button1')
     ad.log.info('Verified Current %s value matched with required value', key)
 
@@ -275,10 +290,8 @@ def wait_and_input_value(ad, key, value):
     ui_utils.wait_and_click(ad, text=key)
     ad.log.info('Enter %s: %s' % (key, value))
     ui_utils.wait_and_input_text(ad, value)
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
     if key not in ['APN roaming protocol', 'APN protocol', 'MVNO type']:
         ui_utils.wait_and_click(ad, text='OK', resource_id='android:id/button1')
-        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
 def att_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
     """ATT APN Test
@@ -289,6 +302,7 @@ def att_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
         callee: android device object as callee.
         nw_gen: network generation the phone should be camped on.
         nr_type: check NR network.
+        msg_type: messaging type sms or mms
     """
     if nw_gen  == GEN_5G:
         mo_rat='5g'
@@ -299,8 +313,10 @@ def att_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
         if not phone_setup_volte(caller.log, caller):
             caller.log.error('Phone failed to enable LTE')
             return False
+    else:
+        mo_rat='general'
+
     launch_SIMs_settings(caller)
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
     # Scroll down
     if not ui_utils.has_element(caller, text='Access Point Names'):
@@ -309,7 +325,6 @@ def att_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
 
     ui_utils.wait_and_click(caller, text='Access Point Names')
     ui_utils.wait_and_click(caller, content_desc='New APN')
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
     wait_and_input_value(caller, 'Name', ATT_APN['Name'])
     wait_and_input_value(caller, 'APN', ATT_APN['APN'])
@@ -350,14 +365,117 @@ def att_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
     wait_and_input_value(caller, 'MVNO type', ATT_APN['MVNO type'])
 
     ui_utils.wait_and_click(caller, content_desc='More options')
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
     ui_utils.wait_and_click(caller, text='Save', resource_id='android:id/title')
-    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
 
     node = ui_utils.wait_and_get_xml_node(caller, timeout=30, text=ATT_APN['Name'])
     bounds = node.parentNode.nextSibling.attributes['bounds'].value
 
+    ui_utils.wait_and_click(caller,
+                            text='',
+                            resource_id='com.android.settings:id/apn_radiobutton',
+                            bounds= bounds)
+    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+
+    if msg_type is not None:
+        message_test(
+            log,
+            caller,
+            callee,
+            mo_rat=mo_rat,
+            mt_rat='general',
+            msg_type=msg_type)
+
+def tmo_apn_test(log, caller, callee, nw_gen, nr_type=None, msg_type=None):
+    """TMO APN Test
+
+    Args:
+        log: Log object.
+        caller: android device object as caller.
+        callee: android device object as callee.
+        nw_gen: network generation the phone should be camped on.
+        nr_type: check NR network.
+        msg_type: messaging type sms or mms
+    """
+    if nw_gen == GEN_5G:
+        mo_rat='5g'
+        if not provision_device_for_5g(caller.log, caller, nr_type=nr_type):
+            return False
+    elif nw_gen == GEN_4G:
+        mo_rat='volte'
+        if not phone_setup_volte(caller.log, caller):
+            caller.log.error('Phone failed to enable LTE')
+            return False
+    else:
+        mo_rat='general'
+
+    launch_SIMs_settings(caller)
+    time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+
+    if not ui_utils.has_element(caller, text='Access Point Names'):
+        for _ in range(5):
+            caller.adb.shell(SCROLL_DOWN)
+
+    ui_utils.wait_and_click(caller, text='Access Point Names')
+    ui_utils.wait_and_click(caller, content_desc='New APN')
+
+    wait_and_input_value(caller, 'Name', TMO_APN['Name'])
+    wait_and_input_value(caller, 'APN', TMO_APN['APN'])
+    wait_and_input_value(caller, 'MMSC', TMO_APN['MMSC'])
+
+    # Scroll down
+    caller.adb.shell(SLOW_SCROLL_DOWN)
+
+    caller.log.info('Enter MCC value: %s', TMO_APN['MCC'])
+    current_mcc_value = get_resource_value(caller,'MCC')
+    verify_mcc_mnc_value(caller, current_mcc_value, TMO_APN['MCC'], 'MCC')
+
+    # Scroll down
+    caller.adb.shell(SLOW_SCROLL_DOWN)
+
+    caller.log.info('Enter MNC value: %s', TMO_APN['MNC'])
+    current_mnc_value = get_resource_value(caller,'MNC')
+    verify_mcc_mnc_value(caller, current_mnc_value, TMO_APN['MNC'], 'MNC')
+
+    wait_and_input_value(caller, 'APN type', TMO_APN['APN type'])
+
+    # Scroll down
+    caller.adb.shell(SLOW_SCROLL_DOWN)
+
+    wait_and_input_value(caller, 'APN protocol', TMO_APN['APN protocol'])
+    wait_and_input_value(caller, 'APN roaming protocol', TMO_APN['APN roaming protocol'])
+
+    wait_and_input_value(caller, 'MVNO type', TMO_APN['MVNO type'])
+
+    caller.log.info('Click following supported network: %s', TMO_BEARER)
+    ui_utils.wait_and_click(caller, text='Bearer')
+    for network in TMO_BEARER:
+        if ((network == 'NR') or
+            (network == 'IS95B') or
+            (network ==  'IS95A') or
+            (network ==  'EVDO_0') or
+            (network ==  '1xRTT')):
+            # Scroll down
+            caller.adb.shell(SLOW_SCROLL_DOWN)
+            ui_utils.wait_and_click(caller, text=network)
+            caller.log.info('Enabled %s', network)
+            time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+            # Scroll up
+            caller.adb.shell(SCROLL_UP)
+        else:
+            ui_utils.wait_and_click(caller, text=network)
+            caller.log.info('Enabled %s', network)
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+
+    ui_utils.wait_and_click(caller, text='OK', resource_id='android:id/button1')
+
+    ui_utils.wait_and_click(caller, content_desc='More options')
+
+    ui_utils.wait_and_click(caller, text='Save', resource_id='android:id/title')
+
+    node = ui_utils.wait_and_get_xml_node(caller, timeout=30, text=TMO_APN['Name'])
+    bounds = node.parentNode.nextSibling.attributes['bounds'].value
+    caller.log.info('Bounds: %s', bounds)
     ui_utils.wait_and_click(caller,
                             text='',
                             resource_id='com.android.settings:id/apn_radiobutton',

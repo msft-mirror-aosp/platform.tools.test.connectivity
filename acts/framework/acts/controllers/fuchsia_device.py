@@ -36,7 +36,6 @@ from acts.controllers.fuchsia_lib.lib_controllers.netstack_controller import Net
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_controller import WlanController
 from acts.controllers.fuchsia_lib.lib_controllers.wlan_policy_controller import WlanPolicyController
 from acts.controllers.fuchsia_lib.package_server import PackageServer
-from acts.controllers.fuchsia_lib.session_manager_lib import FuchsiaSessionManagerLib
 from acts.controllers.fuchsia_lib.ssh import DEFAULT_SSH_PORT, DEFAULT_SSH_USER, SSHConfig, SSHProvider, FuchsiaSSHError
 from acts.controllers.fuchsia_lib.utils_lib import flash
 
@@ -237,11 +236,7 @@ class FuchsiaDevice:
         self.default_preserve_saved_networks = fd_conf_data.get(
             'preserve_saved_networks', True)
 
-        if utils.is_valid_ipv4_address(self.ip):
-            self.address = "http://{}:{}".format(self.ip, self.sl4f_port)
-        elif utils.is_valid_ipv6_address(self.ip):
-            self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
-        else:
+        if not utils.is_valid_ipv4_address(self.ip) and not utils.is_valid_ipv6_address(self.ip):
             mdns_ip = None
             for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
                 mdns_ip = get_fuchsia_mdns_ipv6_address(self.ip)
@@ -254,7 +249,6 @@ class FuchsiaDevice:
                 # unless one was explicitly provided.
                 self.mdns_name = self.mdns_name or self.ip
                 self.ip = mdns_ip
-                self.address = "http://[{}]:{}".format(self.ip, self.sl4f_port)
             else:
                 raise ValueError('Invalid IP: %s' % self.ip)
 
@@ -282,7 +276,7 @@ class FuchsiaDevice:
         server on the host device when it is required.
         """
         if not hasattr(self, '_sl4f'):
-            self._sl4f = SL4F(self.ssh, self.address)
+            self._sl4f = SL4F(self.ssh, self.sl4f_port)
             self.log.info('Started SL4F server')
         return self._sl4f
 
@@ -373,12 +367,7 @@ class FuchsiaDevice:
         self.wlan_controller = WlanController(self)
 
         # Contains WLAN policy functions like save_network, remove_network, etc
-        self.wlan_policy_controller = WlanPolicyController(self)
-
-        # TODO (b/249840399): Move to ffx module in future CL.
-        # Grab commands from FuchsiaSessionManagerLib. This library requires the
-        # fuchsia_device controller to use ffx commands.
-        self.session_manager_lib = FuchsiaSessionManagerLib(self)
+        self.wlan_policy_controller = WlanPolicyController(self.sl4f, self.ffx)
 
     def start_package_server(self):
         if not self.packages_archive_path:
@@ -497,8 +486,7 @@ class FuchsiaDevice:
         else:
             # This requires SL4F calls, so it can only happen with actual
             # devices, not with unit tests.
-            self.wlan_policy_controller._configure_wlan(
-                preserve_saved_networks)
+            self.wlan_policy_controller.configure_wlan(preserve_saved_networks)
 
         # Retrieve WLAN client and AP interfaces
         self.wlan_controller.update_wlan_interfaces()
@@ -736,7 +724,7 @@ class FuchsiaDevice:
         # If and only if wlan is configured, and using the policy layer
         if self.association_mechanism == 'policy':
             try:
-                self.wlan_policy_controller._clean_up()
+                self.wlan_policy_controller.clean_up()
             except Exception as err:
                 self.log.warning('Unable to clean up WLAN Policy layer: %s' %
                                  err)
