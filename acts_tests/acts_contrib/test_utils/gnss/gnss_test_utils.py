@@ -3192,3 +3192,7 @@ def run_gnss_tracking(ad, criteria, meas_flag):
         yield
     finally:
         start_gnss_by_gtw_gpstool(ad, state=False)
+
+def log_current_epoch_time(ad, sponge_key):
+    current_epoch_time = get_current_epoch_time()
+    ad.log.info(f"TestResult {sponge_key} {current_epoch_time}")

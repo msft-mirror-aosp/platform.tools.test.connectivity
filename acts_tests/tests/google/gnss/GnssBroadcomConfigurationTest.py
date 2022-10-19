@@ -272,6 +272,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
             shutil.rmtree(self.gps_config_path)
 
     def setup_test(self):
+        gutils.log_current_epoch_time(self.ad, "test_start_time")
         if gutils.check_chipset_vendor_by_qualcomm(self.ad):
             raise signals.TestSkip("Device is Qualcomm, skip the test")
         gutils.get_baseband_and_gms_version(self.ad)
@@ -281,6 +282,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.revert_gps_config()
             self.ad.reboot()
+        gutils.log_current_epoch_time(self.ad, "test_end_time")
 
     def on_fail(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)

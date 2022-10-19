@@ -71,6 +71,7 @@ class GnssSuplTest(BaseTestClass):
             self.ad.log.info("Skip enabling supl over wifi due to project not supported")
 
     def setup_test(self):
+        gutils.log_current_epoch_time(self.ad, "test_start_time")
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.get_baseband_and_gms_version(self.ad)
         toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
@@ -96,6 +97,7 @@ class GnssSuplTest(BaseTestClass):
         if self.set_attenuator:
             gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
                                               self.default_gnss_signal_attenuation)
+        gutils.log_current_epoch_time(self.ad, "test_end_time")
 
     def on_fail(self, test_name, begin_time):
         if self.collect_logs:
