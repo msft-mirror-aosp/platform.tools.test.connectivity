@@ -108,7 +108,25 @@ class SSHConfig:
     user_known_hosts_file: str = "/dev/null"
     log_level: str = "ERROR"
 
-    def full_command(self, command: str) -> List[str]:
+    def full_command(self, command: str, force_tty: bool = False) -> List[str]:
+        """Generate the complete command to execute command over SSH.
+
+        Args:
+            command: The command to run over SSH
+            force_tty: Force pseudo-terminal allocation. This can be used to
+                execute arbitrary screen-based programs on a remote machine,
+                which can be very useful, e.g. when implementing menu services.
+
+        Returns:
+            Arguments composing the complete call to SSH.
+        """
+        optional_flags = []
+        if force_tty:
+            # Multiple -t options force tty allocation, even if ssh has no local
+            # tty. This is necessary for launching ssh with subprocess without
+            # shell=True.
+            optional_flags.append('-tt')
+
         return [
             self.ssh_binary,
             # SSH flags
@@ -129,6 +147,7 @@ class SSHConfig:
             f'UserKnownHostsFile={self.user_known_hosts_file}',
             '-o',
             f'LogLevel={self.log_level}',
+        ] + optional_flags + [
             f'{self.user}@{self.host_name}'
         ] + command.split()
 
@@ -153,13 +172,15 @@ class SSHProvider:
     def run(self,
             command: str,
             timeout_sec: int = DEFAULT_SSH_TIMEOUT_SEC,
-            connect_retries: int = 3) -> SSHResult:
+            connect_retries: int = 3,
+            force_tty: bool = False) -> SSHResult:
         """Run a command on the device then exit.
 
         Args:
             command: String to send to the device.
             timeout_sec: Seconds to wait for the command to complete.
             connect_retries: Amount of times to retry connect on fail.
+            force_tty: Force pseudo-terminal allocation.
 
         Raises:
             FuchsiaSSHError: if the SSH command returns a non-zero status code
@@ -172,14 +193,14 @@ class SSHProvider:
         err: Exception
         for i in range(0, connect_retries):
             try:
-                return self._run(command, timeout_sec)
+                return self._run(command, timeout_sec, force_tty)
             except FuchsiaSSHTransportError as e:
                 err = e
                 self.log.warn(f'Connect failed: {e}')
         raise err
 
-    def _run(self, command: str, timeout_sec: int) -> SSHResult:
-        full_command = self.config.full_command(command)
+    def _run(self, command: str, timeout_sec: int, force_tty: bool) -> SSHResult:
+        full_command = self.config.full_command(command, force_tty)
         self.log.debug(f'Running "{" ".join(full_command)}"')
         try:
             process = subprocess.run(full_command,
@@ -195,11 +216,11 @@ class SSHProvider:
                     ) from e
                 if 'Connection timed out' in stderr:
                     raise FuchsiaSSHTransportError(
-                        f'Failed to establish a connection to {self.config.remote} within {timeout_sec}s'
+                        f'Failed to establish a connection to {self.config.host_name} within {timeout_sec}s'
                     ) from e
                 if 'Connection refused' in stderr:
                     raise FuchsiaSSHTransportError(
-                        f'Connection refused by {self.config.remote}') from e
+                        f'Connection refused by {self.config.host_name}') from e
 
             raise FuchsiaSSHError(command, SSHResult(e)) from e
         except subprocess.TimeoutExpired as e:
@@ -221,8 +242,10 @@ class SSHProvider:
         Raises:
             TimeoutError: when the component doesn't launch within timeout_sec
         """
+        # The "run -d" command will hang when executed without a pseudo-tty
+        # allocated.
         self.run(
-            f'run -d fuchsia-pkg://{repo}/{component}#meta/{component}.cmx')
+            f'run -d fuchsia-pkg://{repo}/{component}#meta/{component}.cmx', force_tty=True)
 
         timeout = time.perf_counter() + timeout_sec
         while True:
@@ -242,7 +265,6 @@ class SSHProvider:
         try:
             self.run(f'killall {component}.cmx')
         except FuchsiaSSHError as e:
-            if e.result.exit_status == 255:
-                # No tasks found
+            if 'no tasks found' in e.result.stderr:
                 return
             raise e
