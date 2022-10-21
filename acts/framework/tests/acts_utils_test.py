@@ -476,6 +476,8 @@ class IpAddressUtilTest(unittest.TestCase):
 
     @mock.patch('acts.controllers.fuchsia_device.FuchsiaDevice.sl4f',
                 new_callable=mock.PropertyMock)
+    @mock.patch('acts.controllers.fuchsia_device.FuchsiaDevice.ffx',
+                new_callable=mock.PropertyMock)
     @mock.patch('acts.controllers.fuchsia_lib.utils_lib.wait_for_port')
     @mock.patch('acts.controllers.fuchsia_lib.ssh.SSHProvider.run')
     @mock.patch(
@@ -488,7 +490,7 @@ class IpAddressUtilTest(unittest.TestCase):
     def test_fuchsia_get_interface_ip_addresses_full(
             self, list_interfaces_mock, control_path_mock,
             verify_sl4f_conn_mock, ssh_run_mock, wait_for_port_mock,
-            sl4f_mock):
+            ffx_mock, sl4f_mock):
         # Configure the log path which is required by ACTS logger.
         logging.log_path = '/tmp/unit_test_garbage'
 
@@ -510,6 +512,8 @@ class IpAddressUtilTest(unittest.TestCase):
 
     @mock.patch('acts.controllers.fuchsia_device.FuchsiaDevice.sl4f',
                 new_callable=mock.PropertyMock)
+    @mock.patch('acts.controllers.fuchsia_device.FuchsiaDevice.ffx',
+                new_callable=mock.PropertyMock)
     @mock.patch('acts.controllers.fuchsia_lib.utils_lib.wait_for_port')
     @mock.patch('acts.controllers.fuchsia_lib.ssh.SSHProvider.run')
     @mock.patch(
@@ -522,7 +526,7 @@ class IpAddressUtilTest(unittest.TestCase):
     def test_fuchsia_get_interface_ip_addresses_empty(
             self, list_interfaces_mock, control_path_mock,
             verify_sl4f_conn_mock, ssh_run_mock, wait_for_port_mock,
-            sl4f_mock):
+            ffx_mock, sl4f_mock):
         # Configure the log path which is required by ACTS logger.
         logging.log_path = '/tmp/unit_test_garbage'
 
