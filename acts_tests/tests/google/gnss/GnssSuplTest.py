@@ -28,9 +28,8 @@ class GnssSuplTest(BaseTestClass):
             "pixel_lab_network", "standalone_cs_criteria", "supl_cs_criteria", "supl_ws_criteria",
             "supl_hs_criteria", "weak_signal_supl_cs_criteria", "weak_signal_supl_ws_criteria",
             "weak_signal_supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
-            "qdsp6m_path", "collect_logs", "ttff_test_cycle", "project_limit_lte",
-            "project_limit_lte_btwifi", "weak_gnss_signal_attenuation", "supl_capabilities",
-            "no_gnss_signal_attenuation", "set_attenuator"
+            "qdsp6m_path", "collect_logs", "ttff_test_cycle", "weak_gnss_signal_attenuation",
+            "supl_capabilities", "no_gnss_signal_attenuation", "set_attenuator"
         ]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
@@ -40,15 +39,15 @@ class GnssSuplTest(BaseTestClass):
             self.ssid_map[SSID] = network
         self.init_device()
 
-    def runs_on_projects(self, projects):
-        """Check test case should be executed on specific projects
-        Args:
-            phone_projects: (list) list of project name,
-                default value: [] -> runs on all projects
+    def only_brcm_device_runs_wifi_case(self):
+        """SUPL over wifi is only supported by BRCM devices, for QUAL device, skip the test.
         """
-        if projects and self.ad.model not in projects:
-            raise signals.TestSkip("Not expected project, skip the test. Runs on %s, got: %s" %
-                                   (projects, self.ad.model))
+        if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+            raise signals.TestSkip("Qualcomm device doesn't support SUPL over wifi")
+
+    def wearable_btwifi_should_skip_mobile_data_case(self):
+        if gutils.is_wearable_btwifi(self.ad):
+            raise signals.TestSkip("Skip mobile data case for BtWiFi sku")
 
     def init_device(self):
         """Init GNSS test devices for SUPL suite."""
@@ -64,11 +63,8 @@ class GnssSuplTest(BaseTestClass):
         gutils.reboot(self.ad)
 
     def enable_supl_over_wifi(self):
-        try:
-            self.runs_on_projects(self.project_limit_lte_btwifi)
+        if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
             supl.set_supl_over_wifi_state(self.ad, turn_on=True)
-        except signals.TestSkip:
-            self.ad.log.info("Skip enabling supl over wifi due to project not supported")
 
     def setup_test(self):
         gutils.log_current_epoch_time(self.ad, "test_start_time")
@@ -474,9 +470,8 @@ class GnssSuplTest(BaseTestClass):
         - Connect to wifi
         - Run SUPL CS TTFF
         """
-        # We can't push real project name into git repo, so I will add the desired projects name
-        # into configuration file on g3 and read it from test cases
-        self.runs_on_projects(self.project_limit_lte)
+        self.only_brcm_device_runs_wifi_case()
+        self.wearable_btwifi_should_skip_mobile_data_case()
 
         self.connect_to_wifi_with_mobile_data_off()
 
@@ -491,7 +486,8 @@ class GnssSuplTest(BaseTestClass):
         - Connect to wifi
         - Run SUPL HS TTFF
         """
-        self.runs_on_projects(self.project_limit_lte)
+        self.only_brcm_device_runs_wifi_case()
+        self.wearable_btwifi_should_skip_mobile_data_case()
 
         self.connect_to_wifi_with_mobile_data_off()
 
@@ -506,7 +502,7 @@ class GnssSuplTest(BaseTestClass):
         - Connect to wifi
         - Run SUPL CS TTFF
         """
-        self.runs_on_projects(self.project_limit_lte_btwifi)
+        self.only_brcm_device_runs_wifi_case()
 
         self.connect_to_wifi_with_airplane_mode_on()
 
@@ -521,7 +517,7 @@ class GnssSuplTest(BaseTestClass):
         - Connect to wifi
         - Run SUPL WS TTFF
         """
-        self.runs_on_projects(self.project_limit_lte_btwifi)
+        self.only_brcm_device_runs_wifi_case()
 
         self.connect_to_wifi_with_airplane_mode_on()
 
@@ -535,7 +531,8 @@ class GnssSuplTest(BaseTestClass):
         - Connect to wifi
         - Run SUPL CS TTFF
         """
-        self.runs_on_projects(self.project_limit_lte)
+        self.only_brcm_device_runs_wifi_case()
+        self.wearable_btwifi_should_skip_mobile_data_case()
 
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
