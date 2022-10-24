@@ -97,7 +97,7 @@ def start_dsp_logger(ad, p21 = False, retry = 3):
     Returns:
         True if DSP logger is enabled correctly. Otherwise False.
     """
-    registry_name = "!LTEL1.HAL.DSP clkgating Enb/Dis" if p21 else "NASU.LCPU.LOG.SWITCH"
+    registry_name = "!LTEL1.HAL.DSP\\ clkgating\\ Enb/Dis" if p21 else "NASU.LCPU.LOG.SWITCH"
     nv_value = "00" if p21 else "02"
 
     def _is_dsp_enabled(ad):
@@ -109,7 +109,7 @@ def start_dsp_logger(ad, p21 = False, retry = 3):
     for _ in range(retry):
         if not _is_dsp_enabled(ad):
             ad.adb.shell('am instrument -w -e request at+googsetnv=\\"'
-                f'\\{registry_name}\\",0,\\"{nv_value}\\" -e response wait '
+                f'{registry_name}\\",0,\\"{nv_value}\\" -e response wait '
                 'com.google.mdstest/com.google.mdstest.instrument.'
                 'ModemATCommandInstrumentation')
             time.sleep(3)
