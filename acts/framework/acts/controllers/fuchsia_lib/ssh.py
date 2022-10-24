@@ -36,7 +36,7 @@ class SSHResult:
     """Result of an SSH command."""
 
     def __init__(
-        self, process: Union[subprocess.CompletedProcess[bytes],
+        self, process: Union[subprocess.CompletedProcess,
                              subprocess.CalledProcessError]
     ) -> None:
         self._raw_stdout = process.stdout
