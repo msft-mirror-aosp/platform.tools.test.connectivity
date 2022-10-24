@@ -310,7 +310,7 @@ class TelephonyBaseTest(BaseTestClass):
 
         if ad.dsp_log:
             start_dsp_logger(ad)
-        if ad.dsp_log_p21:
+        elif ad.dsp_log_p21:
             start_dsp_logger(ad, p21=True)
         else:
             ad.reboot()
