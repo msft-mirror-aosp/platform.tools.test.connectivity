@@ -312,20 +312,20 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
         try:
             sar_config['country'] = next(country
                                          for country in list_of_countries
-                                         if country in sar_line)
+                                         if country in sar_line.split('=')[0])
         except:
             sar_config['country'] = 'row'
 
         list_of_sar_states = ['grip', 'bt', 'hotspot']
         try:
             sar_config['state'] = next(state for state in list_of_sar_states
-                                       if state in sar_line)
+                                       if state in sar_line.split('=')[0])
         except:
             sar_config['state'] = 'head'
 
         list_of_bands = ['2g', '5g', '6g']
         sar_config['band'] = next(band for band in list_of_bands
-                                  if band in sar_line)
+                                  if band in sar_line.split('=')[0])
 
         sar_config['rsdb'] = 'rsdb' if 'rsdb' in sar_line else 'mimo'
         sar_config['airplane_mode'] = '_2=' in sar_line
@@ -607,19 +607,22 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
                       str) and '6g' in result['testcase_params']['channel']:
             mode = 'HE' + str(result['testcase_params']['bandwidth'])
         else:
-            mode = 'VHT' + str(result['testcase_params']['bandwidth'])
+            mode = 'HE' + str(result['testcase_params']['bandwidth'])
         regulatory_power = result['wl_curpower']['regulatory_limits'][(mode, 0,
                                                                        2)]
+        board_power = result['wl_curpower']['board_limits'][(mode, str(0), 2)]
+        # try:
+        sar_config, nvram_powers = self.get_sar_power_from_nvram(
+            result['testcase_params'])
+        # except:
+        #     nvram_powers = [99, 99]
+        #     sar_config = 'SAR DISABLED'
         try:
-            sar_config, nvram_powers = self.get_sar_power_from_nvram(
-                result['testcase_params'])
             csv_config, csv_powers = self.get_sar_power_from_csv(
                 result['testcase_params'])
         except:
             #get from wl_curpower
-            csv_powers = [30, 30]
-            nvram_powers = [30, 30]
-            sar_config = 'SAR DISABLED'
+            csv_powers = [99, 99]
         self.log.info("SAR state: {} ({})".format(
             result['testcase_params']['sar_state'],
             self.sar_state_mapping[result['testcase_params']['sar_state']],
@@ -628,12 +631,12 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             result['testcase_params']['country_code']))
         self.log.info('BRCM SAR Table: {}'.format(sar_config))
         expected_power = [
-            min([csv_powers[0], regulatory_power]) - 1.5,
-            min([csv_powers[1], regulatory_power]) - 1.5
+            min([csv_powers[0], regulatory_power, board_power]) - 1.5,
+            min([csv_powers[1], regulatory_power, board_power]) - 1.5
         ]
-        power_str = "NVRAM Powers: {}, CSV Powers: {}, Reg Powers: {}, Expected Powers: {}, Reported Powers: {}".format(
-            nvram_powers, csv_powers, [regulatory_power] * 2, expected_power,
-            result['tx_powers'])
+        power_str = "NVRAM Powers: {}, CSV Powers: {}, Reg Powers: {}, Board Power: {}, Expected Powers: {}, Reported Powers: {}".format(
+            nvram_powers, csv_powers, [regulatory_power] * 2,
+            [board_power] * 2, expected_power, result['tx_powers'])
         max_error = max([
             abs(expected_power[idx] - result['tx_powers'][idx])
             for idx in [0, 1]
@@ -695,11 +698,11 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
             # Set mcs
             if isinstance(testcase_params['channel'],
                           int) and testcase_params['channel'] < 13:
-                self.dut.adb.shell('wl 2g_rate -v 0x2 -b {}'.format(
+                self.dut.adb.shell('wl 2g_rate -e 0 -s 2 -b {}'.format(
                     testcase_params['bandwidth']))
             elif isinstance(testcase_params['channel'],
                             int) and testcase_params['channel'] > 13:
-                self.dut.adb.shell('wl 5g_rate -v 0x2 -b {}'.format(
+                self.dut.adb.shell('wl 5g_rate -e 0 -s 2 -b {}'.format(
                     testcase_params['bandwidth']))
             else:
                 self.dut.adb.shell('wl 6g_rate -e 0 -s 2 -b {}'.format(
@@ -954,3 +957,23 @@ class WifiTxPowerCheckTest(base_test.BaseTestClass):
                     partial(self._test_ping, testcase_params))
             test_cases.append(testcase_name)
         return test_cases
+
+
+class WifiTxPowerCheck_BasicSAR_Test(WifiTxPowerCheckTest):
+
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.testcase_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
+        self.tests = self.generate_test_cases(
+            ap_power='standard',
+            channels=[6, 36, 52, 100, 149, '6g37'],
+            modes=['bw20', 'bw160'],
+            test_types=[
+                'test_tx_power',
+            ],
+            country_codes=['US', 'GB', 'JP', 'CA'],
+            sar_states=[-1, 0, 1, 2, 3, 4])
