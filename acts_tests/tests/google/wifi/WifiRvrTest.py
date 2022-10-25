@@ -1017,6 +1017,7 @@ class WifiOtaRvrTest(WifiRvrTest):
                                     test_data['median_rvr'],
                                     legend='Median Throughput',
                                     marker='square')
+            test_id_phy = test_id + tuple('PHY')
             plots[test_id_phy].add_line(test_data['total_attenuation'],
                                         test_data['avg_rx_phy_rate'],
                                         legend='Average Rx Rate',
