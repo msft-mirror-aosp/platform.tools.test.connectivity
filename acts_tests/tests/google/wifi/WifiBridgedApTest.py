@@ -63,7 +63,7 @@ class WifiBridgedApTest(WifiBaseTest):
             raise signals.TestAbortClass("Legacy phone is not supported")
 
         req_params = ["dbs_supported_models"]
-        opt_param = ["cnss_diag_file", "pixel_models"]
+        opt_param = []
 
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
