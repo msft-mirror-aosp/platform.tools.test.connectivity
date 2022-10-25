@@ -55,15 +55,8 @@ class WifiBaseTest(BaseTestClass):
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
-        opt_param = ["pixel_models", "cnss_diag_file", "country_code_file"]
+        opt_param = ["country_code_file"]
         self.unpack_userparams(opt_param_names=opt_param)
-        if hasattr(self, "cnss_diag_file"):
-            if isinstance(self.cnss_diag_file, list):
-                self.cnss_diag_file = self.cnss_diag_file[0]
-            if not os.path.isfile(self.cnss_diag_file):
-                self.cnss_diag_file = os.path.join(
-                    self.user_params[Config.key_config_path.value],
-                    self.cnss_diag_file)
         if self.enable_packet_log and hasattr(self, "packet_capture"):
             self.packet_logger = self.packet_capture[0]
             self.packet_logger.configure_monitor_mode("2G", self.packet_log_2g)
@@ -83,11 +76,8 @@ class WifiBaseTest(BaseTestClass):
                     wutils.set_wifi_country_code(ad, self.country_code)
 
     def setup_test(self):
-        if (hasattr(self, "android_devices")
-                and hasattr(self, "cnss_diag_file")
-                and hasattr(self, "pixel_models")):
-            wutils.start_cnss_diags(self.android_devices, self.cnss_diag_file,
-                                    self.pixel_models)
+        if (hasattr(self, "android_devices")):
+            wutils.start_all_wlan_logs(self.android_devices)
         self.tcpdump_proc = []
         if hasattr(self, "android_devices"):
             for ad in self.android_devices:
@@ -98,10 +88,8 @@ class WifiBaseTest(BaseTestClass):
                                                     self.test_name)
 
     def teardown_test(self):
-        if (hasattr(self, "android_devices")
-                and hasattr(self, "cnss_diag_file")
-                and hasattr(self, "pixel_models")):
-            wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
+        if (hasattr(self, "android_devices")):
+            wutils.stop_all_wlan_logs(self.android_devices)
             for proc in self.tcpdump_proc:
                 nutils.stop_tcpdump(proc[0],
                                     proc[1],
@@ -120,11 +108,9 @@ class WifiBaseTest(BaseTestClass):
                 ad.take_bug_report(test_name, begin_time)
                 ad.cat_adb_log(test_name, begin_time)
                 wutils.get_ssrdumps(ad)
-            if (hasattr(self, "cnss_diag_file")
-                    and hasattr(self, "pixel_models")):
-                wutils.stop_cnss_diags(self.android_devices, self.pixel_models)
-                for ad in self.android_devices:
-                    wutils.get_cnss_diag_log(ad)
+            wutils.stop_all_wlan_logs(self.android_devices)
+            for ad in self.android_devices:
+                wutils.get_wlan_logs(ad)
             for proc in self.tcpdump_proc:
                 nutils.stop_tcpdump(proc[0], proc[1], self.test_name)
             self.tcpdump_proc = []
