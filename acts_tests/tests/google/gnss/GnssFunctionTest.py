@@ -92,7 +92,13 @@ class GnssFunctionTest(BaseTestClass):
         if self.collect_logs and gutils.check_chipset_vendor_by_qualcomm(self.ad):
             self.flash_new_radio_or_mbn()
             self.push_gnss_cfg()
-        _init_device(self.ad)
+        self.init_device()
+
+    def init_device(self):
+        gutils._init_device(self.ad)
+        gutils.enable_supl_mode(self.ad)
+        gutils.enable_vendor_orbit_assistance_data(self.ad)
+        gutils.disable_ramdump(self.ad)
 
     def setup_test(self):
         log_current_epoch_time(self.ad, "test_start_time")
@@ -106,7 +112,11 @@ class GnssFunctionTest(BaseTestClass):
         if is_wearable_btwifi(self.ad):
             wifi_toggle_state(self.ad, True)
             connect_to_wifi_network(
-            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+                self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        else:
+            wifi_toggle_state(self.ad, False)
+            set_mobile_data(self.ad, True)
+
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE network.")
@@ -125,10 +135,6 @@ class GnssFunctionTest(BaseTestClass):
         if self.ad.droid.connectivityCheckAirplaneMode():
             self.ad.log.info("Force airplane mode off")
             toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
-        if not is_wearable_btwifi(self.ad) and self.ad.droid.wifiCheckState():
-            wifi_toggle_state(self.ad, False)
-        if not is_mobile_data_on(self.ad):
-            set_mobile_data(self.ad, True)
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
             set_wifi_and_bt_scanning(self.ad, True)

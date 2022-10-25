@@ -51,14 +51,9 @@ class GnssSuplTest(BaseTestClass):
 
     def init_device(self):
         """Init GNSS test devices for SUPL suite."""
-        gutils.enable_gnss_verbose_logging(self.ad)
-        gutils.prepare_gps_overlay(self.ad)
-        gutils.enable_supl_mode(self.ad)
-        gutils.set_screen_always_on(self.ad)
-        gutils.check_location_service(self.ad)
-        gutils.disable_private_dns_mode(self.ad)
-        gutils.init_gtw_gpstool(self.ad)
+        gutils._init_device(self.ad)
         gutils.disable_vendor_orbit_assistance_data(self.ad)
+        gutils.enable_supl_mode(self.ad)
         self.enable_supl_over_wifi()
         gutils.reboot(self.ad)
 

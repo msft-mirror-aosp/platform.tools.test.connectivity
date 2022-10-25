@@ -18,6 +18,7 @@ from acts.base_test import BaseTestClass
 from acts.controllers.adb_lib.error import AdbCommandError
 from acts.libs.proc.job import TimeoutError
 from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 
 
@@ -259,13 +260,20 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         self.unpack_userparams(req_param_names=req_params)
 
         if not gutils.check_chipset_vendor_by_qualcomm(self.ad):
-            gutils._init_device(self.ad)
+            self.init_device()
             self.gps_config_path = tempfile.mkdtemp()
             self.gps_xml = GpsXml(self.ad)
             self.lhd_conf = LhdConf(self.ad)
             self.scd_conf = ScdConf(self.ad)
             self.enable_testing_setting()
             self.backup_gps_config()
+
+    def init_device(self):
+        gutils._init_device(self.ad)
+        gutils.enable_vendor_orbit_assistance_data(self.ad)
+        wutils.wifi_toggle_state(self.ad, True)
+        gutils.set_mobile_data(self.ad, state=True)
+
 
     def teardown_class(self):
         if hasattr(self, "gps_config_path") and os.path.isdir(self.gps_config_path):
