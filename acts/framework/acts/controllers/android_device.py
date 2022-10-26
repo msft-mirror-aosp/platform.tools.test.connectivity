@@ -1398,7 +1398,7 @@ class AndroidDevice:
             try:
                 completed = self.adb.getprop("sys.boot_completed")
                 if completed == '1':
-                    self.log.debug("devie has rebooted")
+                    self.log.debug("Device has rebooted")
                     return
             except AdbError:
                 # adb shell calls may fail during certain period of booting
