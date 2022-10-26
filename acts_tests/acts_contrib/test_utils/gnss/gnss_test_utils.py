@@ -274,6 +274,7 @@ def enable_vendor_orbit_assistance_data(ad):
     if is_device_wearable(ad):
         lto_mode_wearable(ad, True)
     elif check_chipset_vendor_by_qualcomm(ad):
+        disable_xtra_throttle(ad)
         reboot(ad)
     else:
         lto_mode(ad, True)
@@ -330,19 +331,12 @@ def _init_device(ad):
     check_location_service(ad)
     enable_gnss_verbose_logging(ad)
     prepare_gps_overlay(ad)
-    if check_chipset_vendor_by_qualcomm(ad):
-        disable_xtra_throttle(ad)
-    enable_supl_mode(ad)
     set_screen_always_on(ad)
-    wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
     ad.droid.bluetoothToggleState(False)
     set_wifi_and_bt_scanning(ad, True)
     disable_private_dns_mode(ad)
     init_gtw_gpstool(ad)
-    if not is_mobile_data_on(ad):
-        set_mobile_data(ad, True)
-    disable_ramdump(ad)
     if is_device_wearable(ad):
         disable_battery_defend(ad)
 
