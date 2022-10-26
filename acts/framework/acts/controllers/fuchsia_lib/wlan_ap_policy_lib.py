@@ -19,8 +19,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 class FuchsiaWlanApPolicyLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "wlan_ap_policy")
 
     def wlanStartAccessPoint(self, target_ssid, security_type, target_pwd,
                              connectivity_mode, operating_band):

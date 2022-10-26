@@ -21,8 +21,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 class FuchsiaLoggingLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "logging")
 
     def logE(self, message):
         """Log a message of level Error directly to the syslog.

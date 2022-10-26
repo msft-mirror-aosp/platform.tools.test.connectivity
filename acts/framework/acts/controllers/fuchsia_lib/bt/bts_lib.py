@@ -20,8 +20,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 class FuchsiaBtsLib(BaseLib):
     # Class representing the Bluetooth Access Library.
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "bt_sys")
 
     def setDiscoverable(self, discoverable):
         """Sets the device to be discoverable over BR/EDR.

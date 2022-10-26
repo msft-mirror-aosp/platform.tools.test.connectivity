@@ -15,12 +15,13 @@
 #   limitations under the License.
 
 import json
+import socket
 
 from typing import Any, Mapping
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from acts import utils
+from acts import logger, utils
 from acts.libs.proc import job
 
 DEFAULT_SL4F_RESPONSE_TIMEOUT_SEC = 30
@@ -36,8 +37,9 @@ class SL4FCommandFailed(Exception):
 
 class BaseLib():
 
-    def __init__(self, addr):
+    def __init__(self, addr: str, logger_tag: str) -> None:
         self.address = addr
+        self.log = logger.create_tagged_trace_logger(f"SL4F | {self.address} | {logger_tag}")
 
     def send_command(
         self,
@@ -55,35 +57,45 @@ class BaseLib():
 
         Returns:
             Response from SL4F server.
+
+        Throws:
+            TimeoutError: The HTTP request timed out waiting for a response
         """
-        data = json.dumps({
+        data = {
             "jsonrpc": "2.0",
             # id is required by the SL4F server to parse test_data but is not
             # currently used.
             "id": "",
             "method": cmd,
             "params": args
-        }).encode("utf-8")
-
+        }
+        data_json = json.dumps(data).encode("utf-8")
         req = Request(self.address,
-                      data=data,
+                      data=data_json,
                       headers={
                           "Content-Type": "application/json; charset=utf-8",
-                          "Content-Length": len(data),
+                          "Content-Length": len(data_json),
                       })
 
+        self.log.debug(f'Sending request "{cmd}" with {args}')
         try:
             response = urlopen(req, timeout=response_timeout)
-        except TimeoutError as e:
+        except (TimeoutError, socket.timeout) as e:
             host = urlparse(self.address).hostname
             if not utils.can_ping(job, host):
                 raise DeviceOffline(
                     f'FuchsiaDevice {host} is not reachable via the network.')
+            if type(e) == socket.timeout:
+                # socket.timeout was aliased to TimeoutError in Python 3.10. For
+                # older versions of Python, we need to cast to TimeoutError to
+                # provide a version-agnostic API.
+                raise TimeoutError("socket timeout") from e
             raise e
 
         response_body = response.read().decode("utf-8")
         try:
             response_json = json.loads(response_body)
+            self.log.debug(f'Received response for "{cmd}": {response_json}')
         except json.JSONDecodeError as e:
             raise SL4FCommandFailed(response_body) from e
 

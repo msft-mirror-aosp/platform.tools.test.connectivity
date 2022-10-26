@@ -31,9 +31,8 @@ COMMAND_QUERY_IFACE = "wlan.query_iface"
 
 class FuchsiaWlanLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
-        self.log = logger.create_tagged_trace_logger(str(addr))
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "wlan")
 
     def wlanStartScan(self):
         """ Starts a wlan scan

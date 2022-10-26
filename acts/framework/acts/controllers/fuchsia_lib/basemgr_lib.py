@@ -23,8 +23,8 @@ COMMAND_KILL_BASEMGR = 'basemgr_facade.KillBasemgr'
 
 class FuchsiaBasemgrLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "basemgr")
 
     def restartSession(self):
         """Restarts an ongoing basemgr session

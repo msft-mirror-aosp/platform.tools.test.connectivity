@@ -19,8 +19,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 class FuchsiaGattcLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "gatt_client")
 
     def bleStartBleScan(self, scan_filter):
         """Starts a BLE scan

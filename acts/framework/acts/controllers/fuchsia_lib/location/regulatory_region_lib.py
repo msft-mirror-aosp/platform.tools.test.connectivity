@@ -19,8 +19,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 class FuchsiaRegulatoryRegionLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "location_regulatory_region")
 
     # TODO(fxb/46727): Provide an analagous call to check the region
     # configured into the driver.
