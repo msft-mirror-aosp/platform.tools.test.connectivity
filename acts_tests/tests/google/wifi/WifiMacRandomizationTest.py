@@ -655,7 +655,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
             1. Add a network suggestion and verify device connects to it.
             2. Verify the device uses randomized MAC address for this network.
         """
-        network_suggestion = self.reference_networks[0]["5g"]
+        network_suggestion = self.reference_networks[0]["2g"]
         self._add_suggestion_and_verify_mac_randomization(network_suggestion)
 
     @test_tracker_info(uuid="144ad0b4-b79d-4b1d-a8a9-3c612a76c32c")
