@@ -24,9 +24,11 @@ import selenium
 import time
 from acts import logger
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as expected_conditions
 from webdriver_manager.chrome import ChromeDriverManager
+
 
 BROWSER_WAIT_SHORT = 1
 BROWSER_WAIT_MED = 3
@@ -134,6 +136,7 @@ class BlockingBrowser(selenium.webdriver.chrome.webdriver.WebDriver):
         self.chrome_options = selenium.webdriver.chrome.webdriver.Options()
         self.chrome_options.add_argument('--no-proxy-server')
         self.chrome_options.add_argument('--no-sandbox')
+        self.chrome_options.add_argument('--crash-dumps-dir=/tmp')
         self.chrome_options.add_argument('--allow-running-insecure-content')
         self.chrome_options.add_argument('--ignore-certificate-errors')
         self.chrome_capabilities = selenium.webdriver.common.desired_capabilities.DesiredCapabilities.CHROME.copy(
@@ -165,9 +168,10 @@ class BlockingBrowser(selenium.webdriver.chrome.webdriver.WebDriver):
                 continue
             try:
                 self.driver = selenium.webdriver.Chrome(
-                    executable_path=self.executable_path,
+                    service=ChromeService(self.executable_path),
                     options=self.chrome_options,
                     desired_capabilities=self.chrome_capabilities)
+                self.session_id = self.driver.session_id
                 return self
             except:
                 fcntl.flock(self.lock_file, fcntl.LOCK_UN)
