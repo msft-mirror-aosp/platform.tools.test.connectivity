@@ -22,9 +22,8 @@ import base64
 
 class FuchsiaAudioLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
-        self.log = logger.create_tagged_trace_logger('FuchsiaAudioLib')
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "audio")
 
     def startOutputSave(self):
         """Starts saving audio output on the device

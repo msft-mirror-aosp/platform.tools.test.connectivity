@@ -24,8 +24,8 @@ HW_PWR_STATE_CONTROL_TIMEOUT = 5
 
 class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "hardware_power_statecontrol")
 
     def send_command(self, test_cmd, test_args, response_timeout=30):
         """Wrap send_command to allow disconnects after sending the request."""

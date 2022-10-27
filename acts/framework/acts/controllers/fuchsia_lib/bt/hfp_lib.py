@@ -19,8 +19,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 class FuchsiaHfpLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "hfp")
 
     def init(self):
         """Initializes the HFP service.
