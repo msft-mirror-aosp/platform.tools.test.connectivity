@@ -21,8 +21,8 @@ import uuid
 
 class FuchsiaBleLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "ble")
 
     def _convert_human_readable_uuid_to_byte_list(self, readable_uuid):
         """Converts a readable uuid to a byte list.

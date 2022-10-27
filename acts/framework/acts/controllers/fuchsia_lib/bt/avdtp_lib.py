@@ -19,8 +19,8 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 class FuchsiaAvdtpLib(BaseLib):
 
-    def __init__(self, addr):
-        self.address = addr
+    def __init__(self, addr: str) -> None:
+        super().__init__(addr, "avdtp")
 
     def init(self, initiator_delay=None):
         """Initializes the AVDTP service with optional initiator_delay.
