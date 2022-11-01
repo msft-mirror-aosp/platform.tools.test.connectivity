@@ -186,7 +186,7 @@ class CellularLteSensitivityTest(CellularLteSingleCellPeakThroughputTest):
                     'cell_list'][0]['band'] == current_band:
                 reference_test = testcase_name
                 reference_sensitivity = testcase_data['sensitivity']
-        if reference_test and reference_sensitivity:
+        if reference_test and reference_sensitivity and not self.retry_flag:
             start_atten = reference_sensitivity + self.testclass_params[
                 'adjacent_mcs_gap']
             self.log.info(

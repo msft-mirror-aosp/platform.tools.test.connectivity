@@ -105,10 +105,12 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         self.process_testclass_results()
 
     def setup_test(self):
+        self.retry_flag = False
         if self.testclass_params['enable_pixel_logs']:
             cputils.start_pixel_logger(self.dut)
 
     def teardown_test(self):
+        self.retry_flag = False
         self.log.info('Turing airplane mode on')
         asserts.assert_true(utils.force_airplane_mode(self.dut, True),
                             'Can not turn on airplane mode.')
@@ -136,6 +138,7 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         if self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
             self.log.info('Turning LTE off.')
             self.keysight_test_app.set_cell_state('LTE', 'CELL1', 0)
+        self.retry_flag = True
 
     def pass_fail_check(self):
         pass
@@ -293,14 +296,16 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                     result['lte_tput_result']['total']['DL']['max_tput'],
                     result['lte_tput_result']['total']['DL']
                     ['theoretical_tput']))
-            self.log.info(
-                "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
-                .format(
-                    result['lte_tput_result']['total']['UL']['min_tput'],
-                    result['lte_tput_result']['total']['UL']['average_tput'],
-                    result['lte_tput_result']['total']['UL']['max_tput'],
-                    result['lte_tput_result']['total']['UL']
-                    ['theoretical_tput']))
+            if self.testclass_params['lte_ul_mac_padding']:
+                self.log.info(
+                    "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
+                    .format(
+                        result['lte_tput_result']['total']['UL']['min_tput'],
+                        result['lte_tput_result']['total']['UL']
+                        ['average_tput'],
+                        result['lte_tput_result']['total']['UL']['max_tput'],
+                        result['lte_tput_result']['total']['UL']
+                        ['theoretical_tput']))
             self.log.info("DL BLER: {:.2f}%\tUL BLER: {:.2f}%".format(
                 result['lte_bler_result']['total']['DL']['nack_ratio'] * 100,
                 result['lte_bler_result']['total']['UL']['nack_ratio'] * 100))
@@ -336,6 +341,8 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
             if cell['cell_type'] == 'LTE':
                 self.keysight_test_app.set_lte_cell_transmission_mode(
                     cell['cell_number'], cell['transmission_mode'])
+                self.keysight_test_app.set_lte_control_region_size(
+                    cell['cell_number'], 1)
             if cell['ul_enabled'] and cell['cell_type'] == 'NR5G':
                 self.keysight_test_app.set_cell_mimo_config(
                     cell['cell_type'], cell['cell_number'], 'UL',
@@ -347,7 +354,8 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 testcase_params['lte_dl_mcs'],
                 testcase_params['lte_ul_mcs_table'],
                 testcase_params['lte_ul_mcs'])
-            self.keysight_test_app.set_lte_ul_mac_padding(1)
+            self.keysight_test_app.set_lte_ul_mac_padding(
+                self.testclass_params['lte_ul_mac_padding'])
 
         # Turn on LTE cells
         for cell in testcase_params['endc_combo_config']['cell_list']:
@@ -428,6 +436,12 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
 
         # Run throughput test loop
         stop_counter = 0
+        if testcase_params['endc_combo_config']['nr_cell_count']:
+            self.keysight_test_app.select_display_tab('NR5G', 1, 'BTHR',
+                                                      'OTAGRAPH')
+        else:
+            self.keysight_test_app.select_display_tab('LTE', 1, 'BTHR',
+                                                      'OTAGRAPH')
         for power_idx in range(len(testcase_params['cell_power_sweep'][0])):
             result = collections.OrderedDict()
             # Set DL cell power
@@ -440,9 +454,6 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 self.keysight_test_app.set_cell_dl_power(
                     cell['cell_type'], cell['cell_number'], current_cell_power,
                     1)
-            self.keysight_test_app.select_display_tab('NR5G',
-                                                      cell['cell_number'],
-                                                      'BTHR', 'OTAGRAPH')
 
             # Start BLER and throughput measurements
             result = self.run_single_throughput_measurement(testcase_params)
