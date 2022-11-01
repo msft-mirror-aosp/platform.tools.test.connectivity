@@ -27,7 +27,7 @@ from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.controllers.utils_lib import ssh
 from acts_contrib.test_utils.cellular.keysight_5g_testapp import Keysight5GTestApp
-from acts_contrib.test_utils.cellular import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from Cellular5GFR2ThroughputTest import Cellular5GFR2ThroughputTest
