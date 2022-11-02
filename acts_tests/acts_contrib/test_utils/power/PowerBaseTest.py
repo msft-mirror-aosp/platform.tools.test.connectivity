@@ -154,7 +154,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                                iperf_duration=None,
                                pass_fail_tolerance=THRESHOLD_TOLERANCE_DEFAULT,
                                mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT,
-                               ap_dtim_period=None)
+                               ap_dtim_period=None,
+                               bits_root_rail_csv_export=False)
 
         # Setup the must have controllers, phone and monsoon
         self.dut = self.android_devices[0]
@@ -511,6 +512,7 @@ class PowerBaseTest(base_test.BaseTestClass):
                                    start_time=device_to_host_offset,
                                    monsoon_output_path=data_path)
         self.power_monitor.release_resources()
+        self.collect_raw_data_samples()
         self.power_monitor.connect_usb()
         self.dut.wait_for_boot_completion()
         time.sleep(10)
@@ -553,3 +555,9 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.log.warning('Cannot get iperf result. Setting to 0')
             throughput = 0
         return throughput
+
+    def collect_raw_data_samples(self):
+        if hasattr(self, 'bitses') and self.bits_root_rail_csv_export:
+            path = os.path.join(os.path.dirname(self.mon_info.data_path),
+                                'Kibble')
+            self.power_monitor.get_bits_root_rail_csv_export(path, self.test_name)
