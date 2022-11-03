@@ -18,6 +18,9 @@ import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 
 
 class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
+    # command to enable mobile data
+    ADB_CMD_ENABLE_MOBILE_DATA = 'svc data enable'
+
     # command to start iperf server on UE
     START_IPERF_SV_UE_CMD = 'nohup > /dev/null 2>&1 sh -c "iperf3 -s -i1 -p5201 > /dev/null  &"'
 
@@ -62,6 +65,8 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         self.ssh_iperf_client = self.cellular_simulator.create_ssh_client()
         self.ssh_iperf_server = self.cellular_simulator.create_ssh_client()
 
+        self.turn_on_mobile_data()
+
     def power_tel_traffic_test(self):
         """Measure power while data is transferring."""
         # Start data traffic
@@ -73,9 +78,11 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
 
         # Write iperf log
         self.ssh_iperf_server.close()
-        self._write_iperf_log('uplink.txt', self.ssh_iperf_server)
+        uplink_log_name = self.test_name + '_uplink.txt'
+        self._write_iperf_log(uplink_log_name, self.ssh_iperf_server)
         self.ssh_iperf_client.close()
-        self._write_iperf_log('downlink.txt', self.ssh_iperf_client)
+        downlink_log_name = self.test_name + '_downlink.txt'
+        self._write_iperf_log(downlink_log_name, self.ssh_iperf_client)
 
     def _exec_ssh_cmd(self, ssh_client, cmd):
         """Execute command on given ssh client.
@@ -136,6 +143,9 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
             f.write('\nErrors:\n')
             f.write(err_content)
 
+    def turn_on_mobile_data(self):
+        self.dut.adb.shell(self.ADB_CMD_ENABLE_MOBILE_DATA)
+
     def teardown_test(self):
         super().teardown_test()
 
@@ -145,6 +155,8 @@ class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
     def teardown_test(self):
         super().teardown_test()
         self.sponge_upload()
+        self.cellular_simulator.detach()
+        self.cellular_dut.toggle_airplane_mode(True)
 
     def test_preset_LTE_traffic(self):
         self.power_tel_traffic_test()

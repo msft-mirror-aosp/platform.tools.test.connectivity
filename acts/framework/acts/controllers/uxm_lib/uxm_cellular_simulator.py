@@ -406,6 +406,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 self.turn_cell_off(cell_type, cell_number)
                 time.sleep(5)
                 self.turn_cell_on(cell_type, cell_number)
+                time.sleep(5)
 
                 # Toggle APM off
                 dut.toggle_airplane_mode(False)
@@ -736,6 +737,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             cell_number = cell[self.KEY_CELL_NUMBER]
             self._socket_send_SCPI_command(
                 self.SCPI_CELL_OFF_CMD.format(cell_type, cell_number))
+            time.sleep(5)
 
     def stop(self):
         """Stops current simulation.
