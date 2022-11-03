@@ -579,8 +579,11 @@ class GnssFunctionTest(BaseTestClass):
             Location fixed within supl_hs_criteria.
         """
         overall_test_result = []
+        # As b/252971345 requests, we need the log before reboot for debugging.
+        gutils.start_pixel_logger(self.ad)
         process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
         start_gnss_by_gtw_gpstool(self.ad, False)
+        gutils.stop_pixel_logger(self.ad)
         for test_loop in range(1, 11):
             reboot(self.ad)
             gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
