@@ -48,6 +48,7 @@ class Keysight5GTestApp(object):
         self.test_app.write_termination = '\n'
         self.test_app.read_termination = '\n'
         self.test_app.query_delay = VISA_QUERY_DELAY
+        self.last_loaded_scpi = None
 
         inst_id = self.send_cmd('*IDN?', 1)
         if 'Keysight' not in inst_id[0]:
@@ -124,8 +125,16 @@ class Keysight5GTestApp(object):
                 raise RuntimeError('Lost connection to test app.')
             return None
 
-    def import_scpi_file(self, file_name):
-        "Function to import SCPI file specified in file_name."
+    def import_scpi_file(self, file_name, check_last_loaded=0):
+        """Function to import SCPI file specified in file_name.
+
+        Args:
+            file_name: name of SCPI file to run
+            check_last_loaded: flag to check last loaded scpi and
+            only load if different.
+        """
+        if file_name == self.last_loaded_scpi and check_last_loaded:
+            self.log.info('Skipping SCPI import.')
         self.send_cmd("SYSTem:SCPI:IMPort '{}'".format(file_name))
         while int(self.send_cmd('SYSTem:SCPI:IMPort:STATus?', 1)):
             self.send_cmd('*OPC?', 1)
@@ -385,6 +394,18 @@ class Keysight5GTestApp(object):
             self.send_cmd('BSE:CONFig:{}:{}:PHY:DL:ANTenna:CONFig {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), mimo_config))
 
+    #@assert_cell_off_decorator
+    def set_lte_cell_transmission_mode(self, cell, transmission_mode):
+        """Function to set LTE cell transmission mode.
+
+        Args:
+            cell: cell/carrier number
+            transmission_mode: one of TM1, TM2, TM3, TM4 ...
+        """
+        self.assert_cell_off('LTE', cell)
+        self.send_cmd('BSE:CONFig:LTE:{}:RRC:TMODe {}'.format(
+            Keysight5GTestApp._format_cells(cell), transmission_mode))
+
     def set_cell_dl_power(self, cell_type, cell, power, full_bw):
         """Function to set cell power
 
@@ -481,10 +502,16 @@ class Keysight5GTestApp(object):
             dl_mcs: mcs index to use on DL
             ul_mcs: mcs index to use on UL
         """
+        if dl_mcs_table == 'QAM256':
+            dl_mcs_table_formatted = 'ASUBframe'
+        elif dl_mcs_table == 'QAM1024':
+            dl_mcs_table_formatted = 'ASUB1024'
+        elif dl_mcs_table == 'QAM64':
+            dl_mcs_table_formatted = 'DISabled'
         self.assert_cell_off('LTE', cell)
         self.send_cmd(
             'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL", "DL:MCS:TABle", "{}"'
-            .format(dl_mcs_table))
+            .format(dl_mcs_table_formatted))
         self.send_cmd(
             'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL:SFALL:CWALL", "DL:IMCS", "{}"'
             .format(dl_mcs))
@@ -584,12 +611,12 @@ class Keysight5GTestApp(object):
                 'BSE:MEASure:NR5G:BTHRoughput:{}:THRoughput:OTA:{}?'.format(
                     link, Keysight5GTestApp._format_cells(cell)), 1)
         tput_result = {
-            'frame_count': tput_response[0],
-            'current_tput': tput_response[1],
-            'min_tput': tput_response[2],
-            'max_tput': tput_response[3],
-            'average_tput': tput_response[4],
-            'theoretical_tput': tput_response[5]
+            'frame_count': tput_response[0] / 1e6,
+            'current_tput': tput_response[1] / 1e6,
+            'min_tput': tput_response[2] / 1e6,
+            'max_tput': tput_response[3] / 1e6,
+            'average_tput': tput_response[4] / 1e6,
+            'theoretical_tput': tput_response[5] / 1e6,
         }
         return tput_result
 
@@ -604,7 +631,7 @@ class Keysight5GTestApp(object):
             cell_type: LTE or NR5G
             cells: list of cells to query for throughput data
         Returns:
-            tput_result: dict containing all throughput statistics
+            tput_result: dict containing all throughput statistics in Mbps
         """
         if not isinstance(cells, list):
             cells = [cells]

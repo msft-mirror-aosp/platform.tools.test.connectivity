@@ -534,6 +534,26 @@ class Bits(object):
 
         return list(power_metrics.import_raw_data(file_path))
 
+    def get_bits_root_rail_csv_export(self, file_path=None, collection_name=None):
+        """Export raw data samples for root rail in csv format.
+
+        Args:
+            file_path: Path to save the export file.
+            collection_name: Name of collection to be exported on client.
+        """
+        if file_path is None:
+            raise ValueError('file_path cannot be None')
+        if collection_name is None:
+            raise ValueError('collection_name cannot be None')
+        try:
+            key = self._root_rail.split(':')[0] + ':mW'
+            file_name = 'raw_data_' + collection_name + '.csv'
+            raw_bits_data_path = os.path.join(file_path, file_name)
+            self._client.export_as_csv([key], collection_name,
+                                       raw_bits_data_path)
+        except Exception as e:
+            logging.warning('Failed to save raw data due to :  {}'.format(e))
+
     def teardown(self):
         if self._service is None:
             return

@@ -337,6 +337,9 @@ class Cellular5GFR1ThroughputTest(base_test.BaseTestClass):
             self.keysight_test_app.set_cell_mimo_config(
                 cell['cell_type'], cell['cell_number'], 'DL',
                 cell['dl_mimo_config'])
+            if cell['cell_type'] == 'LTE':
+                self.keysight_test_app.set_lte_cell_transmission_mode(
+                    cell['cell_number'], cell['transmission_mode'])
             if cell['ul_enabled'] and cell['cell_type'] == 'NR5G':
                 self.keysight_test_app.set_cell_mimo_config(
                     cell['cell_type'], cell['cell_number'], 'UL',
@@ -513,23 +516,21 @@ class Cellular5GFR1ThroughputTest(base_test.BaseTestClass):
                 self.log.info(
                     "DL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
                     .format(
-                        result['nr_tput_result']['total']['DL']['min_tput'] /
-                        1e6,
-                        result['nr_tput_result']['total']['DL']['average_tput']
-                        / 1e6,
-                        result['nr_tput_result']['total']['DL']['max_tput'] /
-                        1e6, result['nr_tput_result']['total']['DL']
-                        ['theoretical_tput'] / 1e6))
+                        result['nr_tput_result']['total']['DL']['min_tput'],
+                        result['nr_tput_result']['total']['DL']
+                        ['average_tput'],
+                        result['nr_tput_result']['total']['DL']['max_tput'],
+                        result['nr_tput_result']['total']['DL']
+                        ['theoretical_tput']))
                 self.log.info(
                     "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
                     .format(
-                        result['nr_tput_result']['total']['UL']['min_tput'] /
-                        1e6,
-                        result['nr_tput_result']['total']['UL']['average_tput']
-                        / 1e6,
-                        result['nr_tput_result']['total']['UL']['max_tput'] /
-                        1e6, result['nr_tput_result']['total']['UL']
-                        ['theoretical_tput'] / 1e6))
+                        result['nr_tput_result']['total']['UL']['min_tput'],
+                        result['nr_tput_result']['total']['UL']
+                        ['average_tput'],
+                        result['nr_tput_result']['total']['UL']['max_tput'],
+                        result['nr_tput_result']['total']['UL']
+                        ['theoretical_tput']))
                 self.log.info("DL BLER: {:.2f}%\tUL BLER: {:.2f}%".format(
                     result['nr_bler_result']['total']['DL']['nack_ratio'] *
                     100,
@@ -541,21 +542,21 @@ class Cellular5GFR1ThroughputTest(base_test.BaseTestClass):
                 self.log.info(
                     "DL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
                     .format(
-                        result['lte_tput_result']['total']['DL']['min_tput'] /
-                        1e6, result['lte_tput_result']['total']['DL']
-                        ['average_tput'] / 1e6,
-                        result['lte_tput_result']['total']['DL']['max_tput'] /
-                        1e6, result['lte_tput_result']['total']['DL']
-                        ['theoretical_tput'] / 1e6))
+                        result['lte_tput_result']['total']['DL']['min_tput'],
+                        result['lte_tput_result']['total']['DL']
+                        ['average_tput'],
+                        result['lte_tput_result']['total']['DL']['max_tput'],
+                        result['lte_tput_result']['total']['DL']
+                        ['theoretical_tput']))
                 self.log.info(
                     "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
                     .format(
-                        result['lte_tput_result']['total']['UL']['min_tput'] /
-                        1e6, result['lte_tput_result']['total']['UL']
-                        ['average_tput'] / 1e6,
-                        result['lte_tput_result']['total']['UL']['max_tput'] /
-                        1e6, result['lte_tput_result']['total']['UL']
-                        ['theoretical_tput'] / 1e6))
+                        result['lte_tput_result']['total']['UL']['min_tput'],
+                        result['lte_tput_result']['total']['UL']
+                        ['average_tput'],
+                        result['lte_tput_result']['total']['UL']['max_tput'],
+                        result['lte_tput_result']['total']['UL']
+                        ['theoretical_tput']))
                 self.log.info("DL BLER: {:.2f}%\tUL BLER: {:.2f}%".format(
                     result['lte_bler_result']['total']['DL']['nack_ratio'] *
                     100,
@@ -650,8 +651,8 @@ class Cellular_LTE_FR1_ENDC_ThroughputTest(Cellular5GFR1ThroughputTest):
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
         self.tests = self.generate_test_cases([(27, 4), (4, 27)],
-                                              lte_dl_mcs_table='ASUBframes',
-                                              lte_ul_mcs_table='QAM64',
+                                              lte_dl_mcs_table='QAM256',
+                                              lte_ul_mcs_table='QAM256',
                                               schedule_scenario='FULL_TPUT',
                                               transform_precoding=0)
 
@@ -692,6 +693,8 @@ class Cellular_LTE_FR1_ENDC_ThroughputTest(Cellular5GFR1ThroughputTest):
                     'FDD'] else 'TDD'
                 cell_config['dl_mimo_config'] = 'D{nss}U{nss}'.format(
                     nss=dl_config_match.group('mimo_config'))
+                cell_config['transmission_mode'] = 'TM3' if int(
+                    dl_config_match.group('mimo_config')) > 1 else 'TM2'
                 lte_carriers.append(cell_config['cell_number'])
             else:
                 cell_config['cell_type'] = 'NR5G'
@@ -795,6 +798,8 @@ class Cellular_SingleCell_ThroughputTest(Cellular5GFR1ThroughputTest):
                 test_config['lte_duplex_mode'],
                 'dl_mimo_config':
                 'D{nss}U{nss}'.format(nss=test_config['lte_dl_mimo_config']),
+                'transmission_mode':
+                'TM3' if int(test_config['lte_dl_mimo_config']) > 1 else 'TM2',
                 'ul_mimo_config':
                 'D{nss}U{nss}'.format(nss=test_config['lte_ul_mimo_config'])
             }
@@ -859,7 +864,7 @@ class Cellular_FR1_SingleCell_ThroughputTest(Cellular_SingleCell_ThroughputTest
             schedule_scenario='FULL_TPUT',
             transform_precoding=0,
             lte_dl_mcs=4,
-            lte_dl_mcs_table='ASUBframes',
+            lte_dl_mcs_table='QAM256',
             lte_ul_mcs=4,
             lte_ul_mcs_table='QAM64')
 
@@ -902,8 +907,7 @@ class Cellular_LTE_SingleCell_ThroughputTest(Cellular_SingleCell_ThroughputTest
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
         self.tests = self.generate_test_cases(lte_mcs_pair_list=[
-            (('ASUBframes', 27), ('QAM256', 4)),
-            (('ASUBframes', 4), ('QAM256', 27))
+            (('QAM256', 27), ('QAM256', 4)), (('QAM256', 4), ('QAM256', 27))
         ],
                                               schedule_scenario='FULL_TPUT',
                                               transform_precoding=0)
@@ -920,8 +924,9 @@ class Cellular_LTE_SingleCell_ThroughputTest(Cellular_SingleCell_ThroughputTest
                     continue
                 endc_combo_config = self.generate_endc_combo_config(
                     test_config)
-                test_name = 'test_lte_B{}_dl_mcs{}_ul_mcs{}'.format(
-                    test_config['lte_band'], lte_mcs_pair[0], lte_mcs_pair[1])
+                test_name = 'test_lte_B{}_dl_{}_mcs{}_ul_{}_mcs{}'.format(
+                    test_config['lte_band'], lte_mcs_pair[0][0],
+                    lte_mcs_pair[0][1], lte_mcs_pair[1][0], lte_mcs_pair[1][1])
                 test_params = collections.OrderedDict(
                     endc_combo_config=endc_combo_config,
                     lte_dl_mcs_table=lte_mcs_pair[0][0],
