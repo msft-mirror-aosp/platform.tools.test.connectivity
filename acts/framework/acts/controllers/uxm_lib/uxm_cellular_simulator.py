@@ -388,6 +388,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                     time.sleep(5)
                 count += polling_interval
 
+            # reboot device on every fifth try
             if (index % 4) == 0:
                 dut.ad.reboot()
                 if self.rockbottom_script:
@@ -397,8 +398,16 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                         f'Rockbottom script {self} was not executed after reboot'
                     )
             else:
+                # Toggle APM on
                 dut.toggle_airplane_mode(True)
                 time.sleep(5)
+
+                # Toggle simulator cell
+                self.turn_cell_off(cell_type, cell_number)
+                time.sleep(5)
+                self.turn_cell_on(cell_type, cell_number)
+
+                # Toggle APM off
                 dut.toggle_airplane_mode(False)
                 time.sleep(5)
             polling_interval += 5
