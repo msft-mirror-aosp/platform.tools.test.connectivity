@@ -33,18 +33,18 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     # UXM SCPI COMMAND
     SCPI_IMPORT_STATUS_QUERY_CMD = 'SYSTem:SCPI:IMPort:STATus?'
     SCPI_SYSTEM_ERROR_CHECK_CMD = 'SYST:ERR?\n'
+    SCPI_CHECK_CONNECTION_CMD = '*IDN?\n'
+    SCPI_DEREGISTER_UE_IMS = 'SYSTem:IMS:SERVer:UE:DERegister'
     # require: path to SCPI file
     SCPI_IMPORT_SCPI_FILE_CMD = 'SYSTem:SCPI:IMPort "{}"\n'
     # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
     SCPI_CELL_ON_CMD = 'BSE:CONFig:{}:{}:ACTive 1'
-    # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
     SCPI_CELL_OFF_CMD = 'BSE:CONFig:{}:{}:ACTive 0'
-    # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
     SCPI_GET_CELL_STATUS = 'BSE:STATus:{}:{}?'
-    SCPI_CHECK_CONNECTION_CMD = '*IDN?\n'
-    # require: 1. cell type (E.g. NR5G), 2. cell number (E.g CELL1)
     SCPI_RRC_RELEASE_LTE_CMD = 'BSE:FUNCtion:{}:{}:RELease:SEND'
     SCPI_RRC_RELEASE_NR_CMD = 'BSE:CONFig:{}:{}:RCONtrol:RRC:STARt RRELease'
+    # require cell number
+    SCPI_CREATE_DEDICATED_BEARER = 'BSE:FUNCtion:LTE:{}:NAS:EBID10:DEDicated:CREate'
 
     # UXM's Test Application recovery
     TA_BOOT_TIME = 100
@@ -174,6 +174,22 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         if not cell_info:
             raise ValueError('Missing cell info from configurations file')
         self.cells = cell_info
+
+    def deregister_ue_ims(self):
+        """Remove UE IMS profile from UXM."""
+        self._socket_send_SCPI_command(
+                self.SCPI_DEREGISTER_UE_IMS)
+
+    def create_dedicated_bearer(self):
+        """Create a dedicated bearer setup for ims call.
+
+        After UE connected and register on UXM IMS tab.
+        It is required to create a dedicated bearer setup
+        with EPS bearer ID 10.
+        """
+        cell_number = self.cells[0][self.KEY_CELL_NUMBER]
+        self._socket_send_SCPI_command(
+                self.SCPI_CREATE_DEDICATED_BEARER.format(cell_number))
 
     def turn_cell_on(self, cell_type, cell_number):
         """Turn UXM's cell on.
@@ -349,7 +365,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 which we are trying to connect to.
             cell_number: ordinal number of a cell
                 which we are trying to connect to.
-            dut: a CellularAndroid controller.
+            dut: a AndroidCellular controller.
             wait_for_camp_interval: sleep interval,
                 wait for device to camp.
             attach_retries: number of retry
@@ -358,6 +374,13 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         Raise:
             RuntimeError: device unable to connect to cell.
         """
+        change_key_NR_cmd = 'BSE:CONFig:NR5G:CELL1:SECurity:AUTHenticate:KEY:TYPE TEST3GPP'
+        change_key_LTE_cmd = 'BSE:CONFig:LTE:SECurity:AUTHenticate:KEY TEST3GPP'
+        self._socket_send_SCPI_command(change_key_LTE_cmd)
+        time.sleep(5)
+        self._socket_send_SCPI_command(change_key_NR_cmd)
+        time.sleep(5)
+
         # airplane mode on
         dut.toggle_airplane_mode(True)
         time.sleep(5)
@@ -711,6 +734,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         if not cmd:
             raise RuntimeError('Can choose IDLE cmd base on cell type.')
 
+        # RRC release
         self._socket_send_SCPI_command(cmd.format(cell_type, cell_number))
         # wait for SCPI RRC cmd complete
         time.sleep(5)
@@ -722,8 +746,11 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         while count < timeout:
             cell_state = self.get_cell_status(cell_type, cell_number)
             self.log.info(f'cell state: {cell_state}')
-            if cell_state == 'IDLE':
+            if cell_state == 'IDLE\n':
                 return
+            elif cell_state == 'CONN\n':
+                # RRC release
+                self._socket_send_SCPI_command(cmd.format(cell_type, cell_number))
             time.sleep(wait_interval)
             count += wait_interval
 
@@ -735,8 +762,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         for cell in self.cells:
             cell_type = cell[self.KEY_CELL_TYPE]
             cell_number = cell[self.KEY_CELL_NUMBER]
-            self._socket_send_SCPI_command(
-                self.SCPI_CELL_OFF_CMD.format(cell_type, cell_number))
+            self.turn_cell_off(cell_type, cell_number)
             time.sleep(5)
 
     def stop(self):
@@ -756,3 +782,4 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         """Stops transmitting data from the instrument to the DUT. """
         raise NotImplementedError(
             'This UXM callbox simulator does not support this feature.')
+
