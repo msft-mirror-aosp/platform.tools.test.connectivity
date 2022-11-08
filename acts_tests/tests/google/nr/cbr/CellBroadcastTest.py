@@ -120,6 +120,9 @@ from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 
+VIBRATION_START_TIME = "startTime"
+VIBRATION_END_TIME = "endTime"
+INVALID_VIBRATION_TIME = "0"
 
 class CellBroadcastTest(TelephonyBaseTest):
     def setup_class(self):
@@ -374,8 +377,12 @@ class CellBroadcastTest(TelephonyBaseTest):
         out = ad.adb.shell(DUMPSYS_VIBRATION)
         if out:
             try:
-                starttime = out.split()[2].split('.')[0]
-                endtime = out.split()[5].split('.')[0]
+                starttime = self._get_vibration_time(ad, out, time_info=VIBRATION_START_TIME)
+                if starttime == INVALID_VIBRATION_TIME:
+                    return False
+                endtime = self._get_vibration_time(ad, out, time_info=VIBRATION_END_TIME)
+                if endtime == INVALID_VIBRATION_TIME:
+                    return False
                 starttime = self._convert_formatted_time_to_secs(starttime)
                 endtime = self._convert_formatted_time_to_secs(endtime)
                 vibration_time = endtime - starttime
@@ -392,6 +399,14 @@ class CellBroadcastTest(TelephonyBaseTest):
                 return False
         return False
 
+
+    def _get_vibration_time(self, ad, out, time_info=VIBRATION_START_TIME):
+        vibration_info_list = out.split(',')
+        for info in vibration_info_list:
+            if time_info in info:
+                return info.strip().split(' ')[2].split('.')[0]
+        ad.log.error(" Not found %s in the vibration info!", time_info)
+        return INVALID_VIBRATION_TIME
 
     def _verify_sound(self, ad, begintime, expectedtime, offset, calling_package=CBR_PACKAGE):
         if not self.verify_sound:
