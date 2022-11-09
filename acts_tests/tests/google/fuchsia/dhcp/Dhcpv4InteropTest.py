@@ -163,7 +163,7 @@ class Dhcpv4InteropFixture(WifiBaseTest):
             'seconds.' % (interface, timeout))
         timeout = time.time() + timeout
         while time.time() < timeout:
-            ip_addrs = self.dut.get_interface_ip_addresses(interface)
+            ip_addrs = self.dut.device.get_interface_ip_addresses(interface)
 
             if len(ip_addrs['ipv4_private']) > 0:
                 ip = ip_addrs['ipv4_private'][0]
@@ -348,6 +348,7 @@ class Dhcpv4InteropBasicTest(Dhcpv4InteropFixture):
 
 
 class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
+
     def setup_test(self):
         super().setup_test()
         self.extra_addresses = []
