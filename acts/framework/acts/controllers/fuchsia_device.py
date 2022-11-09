@@ -28,7 +28,7 @@ from acts import signals
 from acts import utils
 from acts.controllers import pdu
 from acts.libs.proc import job
-from acts.utils import get_fuchsia_mdns_ipv6_address
+from acts.utils import get_fuchsia_mdns_ipv6_address, get_interface_ip_addresses
 
 from acts.controllers.fuchsia_lib.ffx import FFX
 from acts.controllers.fuchsia_lib.sl4f import SL4F
@@ -79,6 +79,7 @@ FUCHSIA_DEFAULT_COUNTRY_CODE_US = 'US'
 MDNS_LOOKUP_RETRY_MAX = 3
 
 VALID_ASSOCIATION_MECHANISMS = {None, 'policy', 'drivers'}
+IP_ADDRESS_TIMEOUT = 15
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -236,7 +237,8 @@ class FuchsiaDevice:
         self.default_preserve_saved_networks = fd_conf_data.get(
             'preserve_saved_networks', True)
 
-        if not utils.is_valid_ipv4_address(self.ip) and not utils.is_valid_ipv6_address(self.ip):
+        if not utils.is_valid_ipv4_address(
+                self.ip) and not utils.is_valid_ipv6_address(self.ip):
             mdns_ip = None
             for retry_counter in range(MDNS_LOOKUP_RETRY_MAX):
                 mdns_ip = get_fuchsia_mdns_ipv6_address(self.ip)
@@ -733,6 +735,68 @@ class FuchsiaDevice:
 
         if self.package_server:
             self.package_server.clean_up()
+
+    def get_interface_ip_addresses(self, interface):
+        return get_interface_ip_addresses(self, interface)
+
+    def wait_for_ipv4_addr(self, interface: str) -> None:
+        """Checks if device has an ipv4 private address. Sleeps 1 second between
+        retries.
+
+        Args:
+            interface: name of interface from which to get ipv4 address.
+
+        Raises:
+            ConnectionError, if device does not have an ipv4 address after all
+            timeout.
+        """
+        self.log.info(
+            f'Checking for valid ipv4 addr. Retry {IP_ADDRESS_TIMEOUT} seconds.'
+        )
+        timeout = time.time() + IP_ADDRESS_TIMEOUT
+        while time.time() < timeout:
+            ip_addrs = self.get_interface_ip_addresses(interface)
+
+            if len(ip_addrs['ipv4_private']) > 0:
+                self.log.info("Device has an ipv4 address: "
+                              f"{ip_addrs['ipv4_private'][0]}")
+                break
+            else:
+                self.log.debug(
+                    'Device does not yet have an ipv4 address...retrying in 1 '
+                    'second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Device failed to get an ipv4 address.')
+
+    def wait_for_ipv6_addr(self, interface: str) -> None:
+        """Checks if device has an ipv6 private local address. Sleeps 1 second
+        between retries.
+
+        Args:
+            interface: name of interface from which to get ipv6 address.
+
+        Raises:
+            ConnectionError, if device does not have an ipv6 address after all
+            timeout.
+        """
+        self.log.info(
+            f'Checking for valid ipv6 addr. Retry {IP_ADDRESS_TIMEOUT} seconds.'
+        )
+        timeout = time.time() + IP_ADDRESS_TIMEOUT
+        while time.time() < timeout:
+            ip_addrs = self.get_interface_ip_addresses(interface)
+            if len(ip_addrs['ipv6_private_local']) > 0:
+                self.log.info("Device has an ipv6 private local address: "
+                              f"{ip_addrs['ipv6_private_local'][0]}")
+                break
+            else:
+                self.log.debug(
+                    'Device does not yet have an ipv6 address...retrying in 1 '
+                    'second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Device failed to get an ipv6 address.')
 
     def _check_reachable(self,
                          timeout_sec: int = FUCHSIA_DEFAULT_CONNECT_TIMEOUT
