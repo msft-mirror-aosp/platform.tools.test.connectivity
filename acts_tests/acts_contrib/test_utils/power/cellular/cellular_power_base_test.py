@@ -290,11 +290,6 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
 
     def sponge_upload(self):
         """Upload result to sponge as custom field."""
-        self.log.info('=====> power monitor info')
-        for key in self.power_monitor.__dict__.keys():
-            self.log.info(key + ': ')
-            self.log.info(self.power_monitor.__dict__[key])
-            self.log.info('\n')
         # test name
         test_name_arr = self.current_test_name.split('_')
         test_name_for_sponge = ''.join(

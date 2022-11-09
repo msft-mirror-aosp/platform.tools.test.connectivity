@@ -21,6 +21,9 @@ class PowerTelIdle_Preset_Test(cipt.PowerTelIdleTest):
     def teardown_test(self):
         super().teardown_test()
         self.sponge_upload()
+        self.dut.adb.shell('svc data enable')
+        self.cellular_simulator.detach()
+        self.cellular_dut.toggle_airplane_mode(True)
 
     def test_preset_LTE_idle(self):
         self.power_tel_idle_test(filter_results=False)

@@ -20,6 +20,8 @@ class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
     def teardown_test(self):
         super().teardown_test()
         self.sponge_upload()
+        self.cellular_simulator.detach()
+        self.cellular_dut.toggle_airplane_mode(True)
 
     def test_preset_sa_pdcch_fr1(self):
         self.power_pdcch_test()
