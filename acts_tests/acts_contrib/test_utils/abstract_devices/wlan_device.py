@@ -16,15 +16,17 @@
 
 import inspect
 import logging
+import time
 
 import acts_contrib.test_utils.wifi.wifi_test_utils as awutils
-from acts.utils import get_interface_ip_addresses
 from acts.utils import adb_shell_ping
 
 from acts import asserts
 from acts.controllers import iperf_client
 from acts.controllers.fuchsia_device import FuchsiaDevice
 from acts.controllers.android_device import AndroidDevice
+
+FUCHSIA_VALID_SECURITY_TYPES = {"none", "wep", "wpa", "wpa2", "wpa3"}
 
 
 def create_wlan_device(hardware_device):
@@ -41,9 +43,6 @@ def create_wlan_device(hardware_device):
     else:
         raise ValueError('Unable to create WlanDevice for type %s' %
                          type(hardware_device))
-
-
-FUCHSIA_VALID_SECURITY_TYPES = {"none", "wep", "wpa", "wpa2", "wpa3"}
 
 
 class WlanDevice(object):
@@ -134,10 +133,6 @@ class WlanDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def send_command(self, command):
-        raise NotImplementedError("{} must be defined.".format(
-            inspect.currentframe().f_code.co_name))
-
-    def get_interface_ip_addresses(self, interface):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
@@ -260,9 +255,6 @@ class AndroidWlanDevice(WlanDevice):
 
     def send_command(self, command):
         return self.device.adb.shell(str(command))
-
-    def get_interface_ip_addresses(self, interface):
-        return get_interface_ip_addresses(self.device, interface)
 
     def is_connected(self, ssid=None):
         wifi_info = self.device.droid.wifiGetConnectionInfo()
@@ -461,9 +453,6 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def send_command(self, command):
         return self.device.ssh.run(str(command)).stdout
-
-    def get_interface_ip_addresses(self, interface):
-        return get_interface_ip_addresses(self.device, interface)
 
     def is_connected(self, ssid=None):
         """ Determines if wlan_device is connected to wlan network.

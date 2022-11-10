@@ -258,7 +258,7 @@ class WlanRvrTest(WifiBaseTest):
             iperf_server_ip_addresses = (
                 self.iperf_server.get_interface_ip_addresses(
                     self.iperf_server.test_interface))
-            dut_ip_addresses = self.dut.get_interface_ip_addresses(
+            dut_ip_addresses = self.dut.device.get_interface_ip_addresses(
                 self.dut_iperf_client.test_interface)
 
             self.log.info(
@@ -285,6 +285,7 @@ class WlanRvrTest(WifiBaseTest):
             'IPv4 addresses are not available on both the DUT and iperf server.'
         )
 
+    # TODO (b/258264565): Merge with fuchsia_device wait_for_ipv6_addr.
     def _wait_for_dad(self, device, test_interface):
         """Wait for Duplicate Address Detection to resolve so that an
         private-local IPv6 address is available for test.
@@ -386,7 +387,7 @@ class WlanRvrTest(WifiBaseTest):
                 self.log.info('Waiting for DUT to complete Duplicate Address '
                               'Detection for "{}"...'.format(
                                   self.dut_iperf_client.test_interface))
-                _ = self._wait_for_dad(self.dut,
+                _ = self._wait_for_dad(self.dut.device,
                                        self.dut_iperf_client.test_interface)
             else:
                 raise ValueError('Invalid IP version: {}'.format(ip_version))
@@ -507,7 +508,7 @@ class WlanRvrTest(WifiBaseTest):
                     relative_attn.append(value_to_insert)
                     attn_value_inserted = True
 
-            dut_ip_addresses = self.dut.get_interface_ip_addresses(
+            dut_ip_addresses = self.dut.device.get_interface_ip_addresses(
                 self.dut_iperf_client.test_interface)
             if ip_version == 4:
                 if not dut_ip_addresses['ipv4_private']:
