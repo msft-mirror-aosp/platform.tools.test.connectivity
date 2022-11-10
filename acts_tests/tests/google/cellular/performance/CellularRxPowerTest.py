@@ -26,8 +26,8 @@ from acts import base_test
 from acts import utils
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts_contrib.test_utils.cellular.keysight_5g_testapp import Keysight5GTestApp
-from acts_contrib.test_utils.cellular import cellular_performance_test_utils as cputils
-from acts_contrib.test_utils.cellular.shannon_log_parser import ShannonLogger
+from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.cellular.performance.shannon_log_parser import ShannonLogger
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts_contrib.test_utils.wifi.wifi_performance_test_utils.bokeh_figure import BokehFigure
 from functools import partial
