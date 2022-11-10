@@ -135,6 +135,13 @@ class PingStressTest(WifiBaseTest):
 
         self.dut.associate(self.ssid)
 
+        # Wait till the DUT has valid IP addresses after connecting.
+        self.dut.device.wait_for_ipv4_addr(
+            self.dut.device.wlan_client_test_interface_name)
+        self.dut.device.wait_for_ipv6_addr(
+            self.dut.device.wlan_client_test_interface_name)
+        self.log.info("DUT has valid IP addresses on test network")
+
     def teardown_class(self):
         self.dut.disconnect()
         self.dut.reset_wifi()
