@@ -29,7 +29,7 @@ from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.controllers.utils_lib import ssh
 from acts.controllers import iperf_server as ipf
 from acts_contrib.test_utils.cellular.keysight_5g_testapp import Keysight5GTestApp
-from acts_contrib.test_utils.cellular import cellular_performance_test_utils as cputils
+from acts_contrib.test_utils.cellular.performance import cellular_performance_test_utils as cputils
 from acts_contrib.test_utils.wifi import wifi_performance_test_utils as wputils
 
 from functools import partial
@@ -240,17 +240,6 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                         result.get('iperf_throughput', 0)
                     })
 
-    def test_load_scpi(self):
-        """Test to load SCPI file defined in config file.
-
-        This test loads the SCPI file referenced in the config file under
-        throughput test params scpi_file parameter. It is often a useful test
-        to run before other throughput tests as it sets the test application
-        and callbox into a know good state.
-        """
-        self.keysight_test_app.import_scpi_file(
-            self.testclass_params['scpi_file'])
-
     def setup_tester(self, testcase_params):
         if not self.keysight_test_app.get_cell_state('LTE', 'CELL1'):
             self.log.info('Turning LTE on.')
@@ -263,6 +252,8 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                                                  testcase_params['band'])
             self.keysight_test_app.set_cell_mimo_config(
                 'NR5G', cell, 'DL', testcase_params['dl_mimo_config'])
+            self.keysight_test_app.set_cell_dl_power(
+                'NR5G', cell, testcase_params['cell_power_list'][0], 1)
         for cell in testcase_params['ul_cell_list']:
             self.keysight_test_app.set_cell_mimo_config(
                 'NR5G', cell, 'UL', testcase_params['ul_mimo_config'])
@@ -362,8 +353,11 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
                 result['iperf_throughput'] = self.run_iperf_traffic(
                     testcase_params)
             if self.testclass_params['log_power_metrics']:
-                if testcase_params['bler_measurement_length'] >= 5000 and self.testclass_params['traffic_type'] == 'PHY':
-                    time.sleep(testcase_params['bler_measurement_length']/1000 - 5)
+                if testcase_params[
+                        'bler_measurement_length'] >= 5000 and self.testclass_params[
+                            'traffic_type'] == 'PHY':
+                    time.sleep(testcase_params['bler_measurement_length'] /
+                               1000 - 5)
                     cputils.log_system_power_metrics(self.dut, verbose=0)
                 else:
                     self.log.warning('Test too short to log metrics')
@@ -379,19 +373,17 @@ class Cellular5GFR2ThroughputTest(base_test.BaseTestClass):
             self.log.info(
                 "DL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
                 .format(
-                    result['tput_result']['total']['DL']['min_tput'] / 1e6,
-                    result['tput_result']['total']['DL']['average_tput'] / 1e6,
-                    result['tput_result']['total']['DL']['max_tput'] / 1e6,
-                    result['tput_result']['total']['DL']['theoretical_tput'] /
-                    1e6))
+                    result['tput_result']['total']['DL']['min_tput'],
+                    result['tput_result']['total']['DL']['average_tput'],
+                    result['tput_result']['total']['DL']['max_tput'],
+                    result['tput_result']['total']['DL']['theoretical_tput']))
             self.log.info(
                 "UL PHY Tput (Mbps):\tMin: {:.2f},\tAvg: {:.2f},\tMax: {:.2f},\tTheoretical: {:.2f}"
                 .format(
-                    result['tput_result']['total']['UL']['min_tput'] / 1e6,
-                    result['tput_result']['total']['UL']['average_tput'] / 1e6,
-                    result['tput_result']['total']['UL']['max_tput'] / 1e6,
-                    result['tput_result']['total']['UL']['theoretical_tput'] /
-                    1e6))
+                    result['tput_result']['total']['UL']['min_tput'],
+                    result['tput_result']['total']['UL']['average_tput'],
+                    result['tput_result']['total']['UL']['max_tput'],
+                    result['tput_result']['total']['UL']['theoretical_tput']))
             self.log.info("DL BLER: {:.2f}%\tUL BLER: {:.2f}%".format(
                 result['bler_result']['total']['DL']['nack_ratio'] * 100,
                 result['bler_result']['total']['UL']['nack_ratio'] * 100))
