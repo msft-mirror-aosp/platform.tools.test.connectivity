@@ -45,6 +45,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     SCPI_RRC_RELEASE_NR_CMD = 'BSE:CONFig:{}:{}:RCONtrol:RRC:STARt RRELease'
     # require cell number
     SCPI_CREATE_DEDICATED_BEARER = 'BSE:FUNCtion:LTE:{}:NAS:EBID10:DEDicated:CREate'
+    SCPI_CHANGE_SIM_NR_CMD = 'BSE:CONFig:NR5G:CELL1:SECurity:AUTHenticate:KEY:TYPE {}'
+    SCPI_CHANGE_SIM_LTE_CMD = 'BSE:CONFig:LTE:SECurity:AUTHenticate:KEY {}'
 
     # UXM's Test Application recovery
     TA_BOOT_TIME = 100
@@ -374,12 +376,13 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         Raise:
             RuntimeError: device unable to connect to cell.
         """
-        change_key_NR_cmd = 'BSE:CONFig:NR5G:CELL1:SECurity:AUTHenticate:KEY:TYPE TEST3GPP'
-        change_key_LTE_cmd = 'BSE:CONFig:LTE:SECurity:AUTHenticate:KEY TEST3GPP'
-        self._socket_send_SCPI_command(change_key_LTE_cmd)
-        time.sleep(5)
-        self._socket_send_SCPI_command(change_key_NR_cmd)
-        time.sleep(5)
+        sim_type = 'TEST3GPP'
+        self._socket_send_SCPI_command(
+            self.SCPI_CHANGE_SIM_NR_CMD.format(sim_type))
+        time.sleep(2)
+        self._socket_send_SCPI_command(
+            self.SCPI_CHANGE_SIM_LTE_CMD.format(sim_type))
+        time.sleep(2)
 
         # airplane mode on
         dut.toggle_airplane_mode(True)
@@ -393,8 +396,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         dut.toggle_airplane_mode(False)
         time.sleep(5)
 
-        polling_interval = 5
-        # waits for connect
+        interval = 5
+        # waits for device to camp
         for index in range(1, attach_retries):
             count = 0
             # check connection in small interval
@@ -404,23 +407,28 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 self.log.info(f'cell state: {cell_state}')
                 if cell_state == 'CONN\n':
                     # wait for connection stable
-                    time.sleep(10)
-                    return True
+                    time.sleep(15)
+                    # check connection status again
+                    cell_state = self.get_cell_status(cell_type, cell_number)
+                    self.log.info(f'cell state: {cell_state}')
+                    if cell_state == 'CONN\n':
+                        return True
                 if cell_state == 'OFF\n':
                     self.turn_cell_on(cell_type, cell_number)
                     time.sleep(5)
-                count += polling_interval
+                count += interval
 
-            # reboot device on every fifth try
-            if (index % 4) == 0:
+            # reboot device on every fourth try
+            if (index % 3) == 0:
                 dut.ad.reboot()
                 if self.rockbottom_script:
                     self.dut_rockbottom(dut)
                 else:
                     self.log.warning(
-                        f'Rockbottom script {self} was not executed after reboot'
+                        f'Rockbottom script was not executed after reboot.'
                     )
-            else:
+            # toggle APM and cell on/off
+            elif (index % 2) == 0:
                 # Toggle APM on
                 dut.toggle_airplane_mode(True)
                 time.sleep(5)
@@ -434,7 +442,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 # Toggle APM off
                 dut.toggle_airplane_mode(False)
                 time.sleep(5)
-            polling_interval += 5
+            # increase length of small waiting interval
+            interval += 5
 
         # Phone cannot connected to basestation of callbox
         raise RuntimeError(
@@ -483,13 +492,18 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 time.sleep(1)
                 self._socket_send_SCPI_command(
                     "BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:APPly")
+                # wait for status stable
                 time.sleep(10)
                 cell_state = self.get_cell_status(second_cell_type, second_cell_number)
                 self.log.info(f'cell state: {cell_state}')
                 if cell_state == 'CONN\n':
                     return
-                # wait for LTE cell to connect again
-                time.sleep(30)
+                else:
+                    self.turn_cell_off(second_cell_type, second_cell_number)
+                    # wait for LTE cell to connect again
+                    self.wait_until_attached_one_cell(first_cell_type,
+                                            first_cell_number, dut, 120,
+                                            2)
 
             raise RuntimeError(f'Fail to aggregate to NR from LTE.')
 
@@ -732,30 +746,22 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             cmd = self.SCPI_RRC_RELEASE_NR_CMD
 
         if not cmd:
-            raise RuntimeError('Can choose IDLE cmd base on cell type.')
-
-        # RRC release
-        self._socket_send_SCPI_command(cmd.format(cell_type, cell_number))
-        # wait for SCPI RRC cmd complete
-        time.sleep(5)
+            raise RuntimeError(f'Cell type [{cell_type}] is not supporting IDLE.')
 
         # checking status
-        count = 0
-        wait_interval = 5
         self.log.info('Wait for IDLE state.')
-        while count < timeout:
+        for _ in range(5):
             cell_state = self.get_cell_status(cell_type, cell_number)
             self.log.info(f'cell state: {cell_state}')
-            if cell_state == 'IDLE\n':
-                return
-            elif cell_state == 'CONN\n':
+            if cell_state == 'CONN\n':
                 # RRC release
                 self._socket_send_SCPI_command(cmd.format(cell_type, cell_number))
-            time.sleep(wait_interval)
-            count += wait_interval
+                # wait for status stable
+                time.sleep(30)
+            elif cell_state == 'IDLE\n':
+                return
 
-        if cell_state != 'IDLE\n':
-            raise RuntimeError('RRC release fail.')
+        raise RuntimeError('RRC release fail.')
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
