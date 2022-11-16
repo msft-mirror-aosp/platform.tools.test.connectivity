@@ -96,7 +96,8 @@ class CellularBaseTest(base_test.BaseTestClass):
                                cmx500_ip=None,
                                cmx500_port=None,
                                modem_logging=None,
-                               uxm_ip=None)
+                               uxm_ip=None,
+                               disable_data=None)
 
         # Load calibration tables
         filename_calibration_table = (
@@ -258,6 +259,13 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         # Changing cell parameters requires the phone to be detached
         self.simulation.detach()
+
+        # Disable or enable data according to the config. Data is on by default
+        if self.disable_data:
+            self.log.info('disable data for the test')
+        else:
+            self.log.info('enable data for the test')
+        self.cellular_dut.toggle_data(not self.disable_data)
 
         # Configure simulation with parameters loaded from json file
         sim_params = self.test_configs.get(self.test_name)

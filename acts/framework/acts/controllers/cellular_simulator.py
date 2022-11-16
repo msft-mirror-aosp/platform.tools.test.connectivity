@@ -62,7 +62,12 @@ class AbstractCellularSimulator:
             config: a BaseSimulation.BtsConfig object.
             bts_index: the base station number.
         """
-        self.log.info('The config for {} is {}'.format(bts_index, str(config)))
+
+        config_vars = vars(config)
+        config_dict = {key: config_vars[key]
+                       for key in config_vars if config_vars[key]}
+        self.log.info('The config for {} is {}'.format(
+            bts_index, config_dict))
 
         if config.output_power:
             self.set_output_power(bts_index, config.output_power)
