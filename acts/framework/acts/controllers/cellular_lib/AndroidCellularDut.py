@@ -17,6 +17,7 @@
 from acts.controllers.android_lib.tel import tel_utils
 from acts.controllers.cellular_lib import BaseCellularDut
 import os
+import time
 
 GET_BUILD_VERSION = 'getprop ro.build.version.release'
 PIXELLOGGER_CONTROL = 'am broadcast -n com.android.pixellogger/.receiver.' \
@@ -88,15 +89,18 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
           type: an instance of class PreferredNetworkType
         """
 
+        self.log.info('setting preferred network type: {}'.format(type))
         # If android version is S or later, uses bit mask to set and return.
         version = self.ad.adb.shell(GET_BUILD_VERSION)
+        self.log.info('The android version is {}'.format(version))
         try:
             version_in_number = int(version)
             if version_in_number > 11:
-                set_network_cmd = 'cmd phone set-allowed-network-types-for-users '
-                set_network_cmd += NETWORK_TYPE_TO_BITMASK[type]
+                base_cmd = 'cmd phone set-allowed-network-types-for-users -s 0 '
+                set_network_cmd = base_cmd + NETWORK_TYPE_TO_BITMASK[type]
                 self.ad.adb.shell(set_network_cmd)
-                get_network_cmd = 'cmd phone get-allowed-network-types-for-users'
+                get_network_cmd = ('cmd phone '
+                                   'get-allowed-network-types-for-users -s 0')
                 allowed_network = self.ad.adb.shell(get_network_cmd)
                 self.log.info('The allowed network: {}'.format(allowed_network))
                 return
@@ -134,3 +138,22 @@ class AndroidCellularDut(BaseCellularDut.BaseCellularDut):
         output_path = self.ad.device_log_path + '/modem/'
         os.makedirs(output_path, exist_ok=True)
         self.ad.adb.shell(PIXELLOGGER_CONTROL.format('false'))
+
+    def toggle_data(self, new_state=True):
+        """ Turns on/off of the cellular data.
+
+        Args:
+            new_state: True to enable cellular data
+        """
+        self.log.info('Toggles cellular data on: {}'.format(new_state))
+        if new_state:
+            self.ad.adb.shell('settings put global mobile_data 1')
+            self.ad.adb.shell('svc data enable')
+            time.sleep(5)
+            self.log.info('global mobile data: {}'.format(
+                self.ad.adb.shell('settings get global mobile_data')))
+        else:
+            self.ad.adb.shell('settings put global mobile_data 0')
+            self.ad.adb.shell('svc data disable')
+            self.log.info('global mobile data: {}'.format(
+                self.ad.adb.shell('settings get global mobile_data')))

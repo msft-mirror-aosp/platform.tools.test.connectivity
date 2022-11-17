@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
+
 from acts.controllers.rohdeschwarz_lib import cmx500
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteBandwidth
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteState
@@ -44,6 +46,9 @@ CMX_MIMO_MAPPING = {
 class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMX 500
     controller. """
+
+    # The maximum power that the equipment is able to transmit
+    MAX_DL_POWER = -25
 
     def __init__(self, ip_address, port='5025'):
         """ Initializes the cellular simulator.
@@ -331,6 +336,31 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.wait_until_communication_state()
         self.bts[1].attach_as_secondary_cell()
+        time.sleep(10)
+
+        self.log.info('set lte cdrx for nr nsa scenario')
+        self.bts[0].set_cdrx_config()
+        time.sleep(5)
+
+        self.log.info('Disables mac padding')
+        self.bts[0].set_dl_mac_padding(False)
+        self.bts[1].set_dl_mac_padding(False)
+        time.sleep(5)
+
+        self.log.info('configure flexible slots and wait for 5 seconds')
+        self.bts[1].config_flexible_slots()
+        time.sleep(5)
+
+        self.log.info('disable all ul subframes of the lte cell')
+        self.bts[0].disable_all_ul_subframes()
+        time.sleep(30)
+
+        self.log.info('Disables Nr UL slots')
+        self.bts[1].disable_all_ul_slots()
+        time.sleep(5)
+
+        self.log.info('The radio connectivity is {}'.format(
+            self.cmx.dut.state.radio_connectivity))
 
     def wait_until_attached(self, timeout=120):
         """ Waits until the DUT is attached to the primary carrier.
