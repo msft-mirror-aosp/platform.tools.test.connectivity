@@ -196,6 +196,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.call_stats_check = self.user_params.get("call_stats_check", False)
         self.nsa_5g_for_stress = self.user_params.get("nsa_5g_for_stress", False)
         self.nr_type = self.user_params.get("nr_type", 'nsa')
+        self.idle_period = self.user_params.get("idle_period", False)
+        self.min_pause_duration = int(self.user_params.get("min_pause_duration", 180))
+        self.max_pause_duration = int(self.user_params.get("max_pause_duration", 600))
+        self.call_pause_intervals = int(self.user_params.get("call_pause_intervals", 10))
+        self.pause=False
         return True
 
     def setup_test(self):
@@ -313,6 +318,9 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _send_message(self, max_wait_time=2 * MAX_WAIT_TIME_SMS_RECEIVE):
         slot_id_rx = None
+        if self.pause and self.idle_period:
+            self.log.info("PAUSE MESSAGE TEST FOR %s seconds", self.pause_duration)
+            time.sleep(self.pause_duration)
         if self.single_phone_test:
             ads = [self.dut, self.dut]
         else:
@@ -436,6 +444,16 @@ class TelLiveStressTest(TelephonyBaseTest):
         test_name = "%s_No_%s_phone_call" % (self.test_name, the_number)
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s for %s seconds begin", log_msg, duration)
+
+        if self.idle_period:
+            call_iteration = self.call_pause_intervals if self.call_pause_intervals != 0 else 1
+            if the_number % call_iteration == 0:
+                self.pause=True
+                self.pause_duration = random.randrange(
+                    self.min_pause_duration, self.max_pause_duration)
+                self.log.info("PAUSE CALLING TEST FOR %s seconds", self.pause_duration)
+                time.sleep(self.pause_duration)
+                self.pause=False
 
         if self.call_stats_check:
             voice_type_init = check_voice_network_type(ads, voice_init=True)
@@ -864,6 +882,9 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _data_download(self, file_names=[]):
         begin_time = get_current_epoch_time()
         slot_id = random.randint(0,1)
+        if self.pause and self.idle_period:
+            self.log.info("PAUSE DATA TEST FOR %s seconds", self.pause_duration)
+            time.sleep(self.pause_duration)
         if self.dsds_esim:
             sub_id = get_subid_from_slot_index(self.log, self.dut, slot_id)
             self.dut.log.info("Data - slot_Id %d", slot_id)
