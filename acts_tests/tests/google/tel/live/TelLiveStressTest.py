@@ -120,6 +120,7 @@ RESULTS_LIST = {-2: "UNAVAILABLE_NETWORK_TYPE",
                  8: "CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED",
                  9: "CALL_HANGUP_FAIL",
                  10: "CALL_ID_CLEANUP_FAIL"}
+voice_call_failure_dict = {}
 
 
 class TelLiveStressTest(TelephonyBaseTest):
@@ -517,6 +518,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                     return True
             self.log.error("%s: Setup Call failed.", log_msg)
             failure_reasons.add("Setup")
+            if self.call_stats_check:
+                network = ads[0].droid.telephonyGetCurrentVoiceNetworkType()
+                ads[0].log.debug("Call Setup failure RAT is %s", network)
+                self.result_info["Call Failures"] = self._update_call_failure(str(ads[0].serial),
+                                                                             "Call Setup Failure",
+                                                                             network)
             result = False
         else:
             elapsed_time = 0
@@ -549,6 +556,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                                             1)
                                     continue
                         failure_reasons.add("Maintenance")
+                        if self.call_stats_check:
+                            network = ad.droid.telephonyGetCurrentVoiceNetworkType()
+                            ad.log.debug("Call Maintenance failure RAT is %s", network)
+                            self.result_info["Call Failures"] = self._update_call_failure(
+                                                                      str(ad.serial),
+                                                                      "Call Maintenance Failure",
+                                                                      network)
                         last_call_drop_reason(ad, begin_time)
                         hangup_call(self.log, ads[0])
                         result = False
@@ -769,6 +783,16 @@ class TelLiveStressTest(TelephonyBaseTest):
             return False
         else:
             return True
+
+    def _update_call_failure(self, dut, key, network):
+        if dut not in voice_call_failure_dict.keys():
+            voice_call_failure_dict[dut] = {key:{network:0}}
+        if key not in voice_call_failure_dict[dut].keys():
+            voice_call_failure_dict[dut].update({key:{network:0}})
+        if network not in voice_call_failure_dict[dut][key].keys():
+            voice_call_failure_dict[dut][key].update({network:0})
+        voice_call_failure_dict[dut][key][network] += 1
+        return voice_call_failure_dict
 
     def _cbrs_data_check_test(self, begin_time, expected_cbrs=True,
                               test_time="before"):
