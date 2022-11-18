@@ -29,15 +29,15 @@ from acts_contrib.test_utils.tel.tel_test_utils import reboot_device
 from acts_contrib.test_utils.tel.tel_test_utils import get_device_epoch_time
 
 
-class CellBroadcastInitializationTest(BaseTestClass):
+class CellBroadcastInitializationTest(TelephonyBaseTest):
     def setup_test(self):
-        super().setup_class()
+        TelephonyBaseTest.setup_class()
         self.number_of_devices = 1
         self.cbr_init_iteration = self.user_params.get("cbr_init_iteration",
                                                        50)
 
     def teardown_class(self):
-        super().teardown_class(self)
+        TelephonyBaseTest.teardown_class(self)
 
     def _get_current_time_in_secs(self, ad):
         try:
