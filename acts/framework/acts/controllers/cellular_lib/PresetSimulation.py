@@ -101,11 +101,7 @@ class PresetSimulation(BaseSimulation):
             RuntimeError: simulation fail to start
                 due to unable to connect dut and cells.
         """
-
-        try:
-            self.attach()
-        except Exception as exc:
-            raise RuntimeError('Simulation fail to start.') from exc
+        self.attach()
 
     def attach(self):
         """Attach UE to the callbox.
