@@ -116,6 +116,7 @@ XTRA_SERVER_3="http://"
 """
 _BRCM_DUTY_CYCLE_PATTERN = re.compile(r".*PGLOR,\d+,STA.*")
 _WEARABLE_QCOM_VENDOR_REGEX = re.compile(r"init.svc.qcom")
+_GPS_ELAPSED_REALTIME_DIFF_TOLERANCE = 500_000
 
 class GnssTestUtilsError(Exception):
     pass
@@ -3272,3 +3273,38 @@ def log_current_epoch_time(ad, sponge_key):
     """
     current_epoch_time = get_current_epoch_time() // 1000
     ad.log.info(f"TestResult {sponge_key} {current_epoch_time}")
+
+
+def validate_diff_of_gps_clock_elapsed_realtime(ad, start_time):
+    """Validates the diff of gps clock and elapsed realtime should be stable.
+
+    Args:
+        ad: The device under test.
+        start_time: When should the validation start. For BRCM devices, the PPS feature takes some
+            time after first fixed to start working. Therefore we should ignore some data.
+    """
+    last_gps_elapsed_realtime_diff = 0
+    variation_diff = {}
+
+    for clock in GnssMeasurement(ad).get_gnss_clock_info():
+        if clock.event_time < start_time:
+            continue
+
+        if not bool(last_gps_elapsed_realtime_diff):
+            last_gps_elapsed_realtime_diff = clock.gps_elapsed_realtime_diff
+            continue
+
+        current_gps_elapsed_realtime_diff = clock.gps_elapsed_realtime_diff
+        variation_diff[clock.event_time] = abs(
+            current_gps_elapsed_realtime_diff - last_gps_elapsed_realtime_diff)
+        last_gps_elapsed_realtime_diff = current_gps_elapsed_realtime_diff
+
+    over_criteria_data = [
+        (event_time, diff) for (event_time, diff) in variation_diff.items() if (
+            diff > _GPS_ELAPSED_REALTIME_DIFF_TOLERANCE)
+    ]
+
+    asserts.assert_true(
+        [] == over_criteria_data,
+        msg=f"Following data are over criteria: {over_criteria_data}",
+    )

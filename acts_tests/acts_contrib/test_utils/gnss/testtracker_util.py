@@ -24,6 +24,7 @@ TEST_NAME_BY_TESTTRACKER_UUID = {
     "test_measure_adr_rate_after_10_mins_tracking": "7ebf3b52-229a-4eaf-bbff-7c527e4a1d7c",
     "test_hal_crashing_should_resume_tracking": "0aee4450-edce-4e1a-8744-70d8c01937b0",
     "test_power_save_mode_should_apply_latest_measurement_setting": "59a14da2-40df-4106-a190-dcbcd2e877e0",
+    "test_the_diff_of_gps_clock_and_elapsed_realtime_should_be_stable": "ea6ba987-216c-4cd0-89bc-eace8a691210",
     # GnssConcurrencyTest
     "test_gnss_concurrency_location_1_chre_1": "cbd9ff54-4405-44a4-ac20-de33278406d1",
     "test_gnss_concurrency_location_1_chre_8": "ab56cb47-384e-4269-b2d8-6e80ce066de2",

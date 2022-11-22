@@ -14,8 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import datetime
 import os
 import re
+import time
 import fnmatch
 
 from acts import asserts
@@ -59,6 +61,8 @@ from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
+
+_PPS_KICKIN_WAITING_TIME_IN_SECOND = 10
 
 class GnssFunctionTest(BaseTestClass):
     """ GNSS Function Tests"""
@@ -812,3 +816,13 @@ class GnssFunctionTest(BaseTestClass):
 
         gutils.stop_pixel_logger(self.ad)
 
+    def test_the_diff_of_gps_clock_and_elapsed_realtime_should_be_stable(self):
+        with gutils.full_gnss_measurement(self.ad):
+            first_fixed_time = gnss_tracking_via_gtw_gpstool(
+                self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
+                testtime=3, meas_flag=True)
+
+        start_time = first_fixed_time + datetime.timedelta(
+            seconds=time.timezone + _PPS_KICKIN_WAITING_TIME_IN_SECOND)
+        self.ad.log.debug("Start time is %s" % start_time)
+        gutils.validate_diff_of_gps_clock_elapsed_realtime(self.ad, start_time)
