@@ -135,7 +135,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
 
     """ Test Cases """
 
-    @test_tracker_info(uuid="2c62183a-4354-4efc-92f2-84580cbd3398")
+    @test_tracker_info(uuid="318d5f34-7e42-458f-8e62-5f61e1ec4e58")
     def test_lto_download_after_reboot(self):
         """Verify LTO data could be downloaded and injected after device reboot.
 
@@ -164,7 +164,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         asserts.assert_true(all(reboot_lto_test_results_all),
                                 "Fail to Download and Inject LTO File.")
 
-    @test_tracker_info(uuid="7ed596df-df71-42ca-bdb3-69a3cad81963")
+    @test_tracker_info(uuid="4a9b795b-08b6-4ee9-940f-53e20244c30d")
     def test_flp_ttff_cs(self):
         """Verify FLP TTFF Cold Start while tether with phone.
 
@@ -180,7 +180,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("cs", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="de19617c-1f03-4077-99af-542b300ab4ed")
+    @test_tracker_info(uuid="3ddca330-d245-45e0-9cef-bf590dd3923d")
     def test_flp_ttff_ws(self):
         """Verify FLP TTFF Warm Start while tether with phone.
 
@@ -196,7 +196,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("ws", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="c58c90ae-9f4a-4619-a9f8-f2f98c930008")
+    @test_tracker_info(uuid="7f2d669a-46bb-4334-99ed-e678804a15a8")
     def test_flp_ttff_hs(self):
         """Verify FLP TTFF Hot Start while tether with phone.
 
@@ -212,7 +212,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("hs", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="ca955ad3-e2eb-4fde-af2b-3e19abe47792")
+    @test_tracker_info(uuid="7808684c-bfbc-4702-aca6-c568c2d44e90")
     def test_tracking_during_bt_disconnect_resume(self):
         """Verify tracking is correct during Bluetooth disconnect and resume.
 
@@ -254,7 +254,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
             gutils.parse_gtw_gpstool_log(self.watch, self.pixel_lab_location, api_type="FLP")
             start_gnss_by_gtw_gpstool(self.phone, False, api_type="FLP")
 
-    @test_tracker_info(uuid="654a8f1b-f9c6-433e-a21f-59224cce822e")
+    @test_tracker_info(uuid="4e7c1985-b16c-495e-87f9-a725809353f5")
     def test_oobe_first_fix(self):
         """Verify first fix after OOBE pairing within the criteria
 
@@ -289,7 +289,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         toggle_airplane_mode(self.watch.log, self.watch, new_state=False)
         self.watch.log.info("Turn airplane mode off")
 
-    @test_tracker_info(uuid="e2044177-3468-46be-9d4f-f2ecbda33b87")
+    @test_tracker_info(uuid="4ebff8ad-6e81-4f93-837b-20a0949605d4")
     def test_oobe_first_fix_with_network_connection(self):
         """Verify first fix after OOBE pairing within the criteria
 
@@ -320,7 +320,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         self.watch.log.info(f"TestResult Max_OOBE_First_Fix {max(oobe_results_all)}")
         self.watch.log.info(f"TestResult Avg_OOBE_First_Fix {statistics.mean(oobe_results_all)}")
 
-    @test_tracker_info(uuid="8aae176b-cbf6-47cf-a725-b591640aa4f8")
+    @test_tracker_info(uuid="9baaea85-4859-4008-bec2-48067a9d9419")
     def test_far_start_ttff(self):
         """Verify Far Start (Warm Start v4) TTFF within the criteria
 
