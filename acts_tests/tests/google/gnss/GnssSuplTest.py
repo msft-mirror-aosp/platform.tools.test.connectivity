@@ -133,7 +133,7 @@ class GnssSuplTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
 
-    @test_tracker_info(uuid="ff318483-411c-411a-8b1a-422bd54f4a3f")
+    @test_tracker_info(uuid="6c794396-46e8-4674-8985-49a7b3059372")
     def test_supl_capabilities(self):
         """Verify SUPL capabilities.
 
@@ -158,7 +158,7 @@ class GnssSuplTest(BaseTestClass):
                                                     self.supl_capabilities))
 
 
-    @test_tracker_info(uuid="a59c72af-5d56-4d88-9746-ae2749cac671")
+    @test_tracker_info(uuid="ae8b6d54-bdd6-44a1-b1fa-4e90e0318080")
     def test_supl_ttff_cs(self):
         """Verify SUPL functionality of TTFF Cold Start.
 
@@ -172,7 +172,7 @@ class GnssSuplTest(BaseTestClass):
         """
         self.run_ttff("cs", self.supl_cs_criteria)
 
-    @test_tracker_info(uuid="9a91c8ad-1978-414a-a9ac-8ebc782f77ff")
+    @test_tracker_info(uuid="65f25e0b-c6d0-47c5-ab1f-0b02b621411d")
     def test_supl_ttff_ws(self):
         """Verify SUPL functionality of TTFF Warm Start.
 
@@ -186,7 +186,7 @@ class GnssSuplTest(BaseTestClass):
         """
         self.run_ttff("ws", self.supl_ws_criteria)
 
-    @test_tracker_info(uuid="bbd5aad4-3309-4579-a3b2-a06bfb674dfa")
+    @test_tracker_info(uuid="a2267586-97e9-465c-8d3a-22882c8671e7")
     def test_supl_ttff_hs(self):
         """Verify SUPL functionality of TTFF Hot Start.
 
@@ -200,7 +200,7 @@ class GnssSuplTest(BaseTestClass):
         """
         self.run_ttff("hs", self.supl_hs_criteria)
 
-    @test_tracker_info(uuid="60c0aeec-0c8f-4a96-bc6c-05cba1260e73")
+    @test_tracker_info(uuid="ed815ab3-2470-4a2b-b29a-434c38c24c24")
     def test_supl_ongoing_call(self):
         """Verify SUPL functionality during phone call.
 
@@ -222,7 +222,7 @@ class GnssSuplTest(BaseTestClass):
             raise signals.TestFailure("Call is not connected.")
         self.run_ttff("cs", self.supl_cs_criteria)
 
-    @test_tracker_info(uuid="df605509-328f-43e8-b6d8-00635bf701ef")
+    @test_tracker_info(uuid="7015ff04-05e6-4e89-ae4a-da53573ae4c3")
     def test_supl_downloading_files(self):
         """Verify SUPL functionality when downloading files.
 
@@ -253,7 +253,7 @@ class GnssSuplTest(BaseTestClass):
 
         asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
-    @test_tracker_info(uuid="66b9f9d4-1397-4da7-9e55-8b89b1732017")
+    @test_tracker_info(uuid="47a44eb7-4437-4fc2-b5dd-8e55fcd1a91e")
     def test_supl_watching_youtube(self):
         """Verify SUPL functionality when watching video on youtube.
 
@@ -281,7 +281,7 @@ class GnssSuplTest(BaseTestClass):
 
         asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
-    @test_tracker_info(uuid="a748af8b-e1eb-4ec6-bde3-74bcefa1c680")
+    @test_tracker_info(uuid="e07463a9-5cf7-4ac9-92b8-5f0c0b6c6f89")
     def test_supl_modem_ssr(self):
         """Verify SUPL functionality after modem silent reboot /
         GPS daemons restart.
@@ -322,7 +322,7 @@ class GnssSuplTest(BaseTestClass):
         asserts.assert_true(all(supl_ssr_test_result_all),
                             "TTFF fails to reach designated criteria")
 
-    @test_tracker_info(uuid="085b86a9-0212-4c0f-8ca1-2e467a0a2e6e")
+    @test_tracker_info(uuid="156d84c5-8fc6-436a-bc38-ef6c699b6f29")
     def test_supl_after_regain_gnss_signal(self):
         """Verify SUPL functionality after regain GNSS signal.
 
@@ -360,7 +360,7 @@ class GnssSuplTest(BaseTestClass):
         asserts.assert_true(all(supl_no_gnss_signal_all),
                             "Fail to get location update")
 
-    @test_tracker_info(uuid="3ff2f2fa-42d8-47fa-91de-060816cca9df")
+    @test_tracker_info(uuid="aa644d09-645a-415e-9cf1-5fd067607c24")
     def test_supl_ttff_cs_weak_gnss_signal(self):
         """Verify SUPL functionality of TTFF Cold Start under weak GNSS signal.
 
@@ -375,7 +375,7 @@ class GnssSuplTest(BaseTestClass):
         """
         self.supl_ttff_weak_gnss_signal("cs", self.weak_signal_supl_cs_criteria)
 
-    @test_tracker_info(uuid="d72364d4-dad8-4d46-8190-87183def9822")
+    @test_tracker_info(uuid="05ba12b4-4953-48d6-b905-3fce743afcd9")
     def test_supl_ttff_ws_weak_gnss_signal(self):
         """Verify SUPL functionality of TTFF Warm Start under weak GNSS signal.
 
@@ -390,7 +390,7 @@ class GnssSuplTest(BaseTestClass):
         """
         self.supl_ttff_weak_gnss_signal("ws", self.weak_signal_supl_ws_criteria)
 
-    @test_tracker_info(uuid="aeb95733-9829-470d-bfc7-e3b059bf881f")
+    @test_tracker_info(uuid="11c0e96f-a9c4-47b9-8caa-bfa3c46b44bd")
     def test_supl_ttff_hs_weak_gnss_signal(self):
         """Verify SUPL functionality of TTFF Hot Start under weak GNSS signal.
 
@@ -405,7 +405,7 @@ class GnssSuplTest(BaseTestClass):
         """
         self.supl_ttff_weak_gnss_signal("hs", self.weak_signal_supl_hs_criteria)
 
-    @test_tracker_info(uuid="4ad4a371-949a-42e1-b1f4-628c79fa8ddc")
+    @test_tracker_info(uuid="85bd25e8-48b3-4cc2-a6ca-42c5106f0cff")
     def test_supl_factory_reset(self):
         """Verify SUPL functionality after factory reset.
 
@@ -428,7 +428,7 @@ class GnssSuplTest(BaseTestClass):
             self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
             self.ad.log.info("SUPL after Factory Reset round %d -> PASS" % times)
 
-    @test_tracker_info(uuid="9f565b32-9938-42c0-a29d-f4d28b5f4d75")
+    @test_tracker_info(uuid="bbe81393-f152-4f46-a9c6-692fb26f309e")
     def test_supl_system_server_restart(self):
         """Verify SUPL functionality after system server restart.
 
@@ -456,7 +456,7 @@ class GnssSuplTest(BaseTestClass):
         asserts.assert_true(all(overall_test_result),
                             "SUPL fail after system server restart.")
 
-    @test_tracker_info(uuid="4a364e0f-926d-45ff-b3f0-733b5e30e073")
+    @test_tracker_info(uuid="862e4c26-816d-4630-b8ff-35ffad66461d")
     def test_cs_ttff_supl_over_wifi_with_mobile_data_off(self):
         """ Test supl can works through wifi with mobile data off
 
@@ -472,7 +472,7 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
 
-    @test_tracker_info(uuid="4adce337-b79b-4085-9d3d-7cdd88dc4643")
+    @test_tracker_info(uuid="53864161-d17a-4fd9-897c-6d85401fab86")
     def test_hs_ttff_supl_over_wifi_with_mobile_data_off(self):
         """ Test supl can works through wifi with mobile data off
 
@@ -488,7 +488,7 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff("hs", self.supl_hs_criteria)
 
-    @test_tracker_info(uuid="18c316ef-6a70-4709-a71c-12ec3e5326d6")
+    @test_tracker_info(uuid="4b2882f8-2966-4b44-9a31-37318beb84bf")
     def test_cs_ttff_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
 
@@ -503,7 +503,7 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
 
-    @test_tracker_info(uuid="afcab5bd-b2a9-4846-929c-3aa2596a6044")
+    @test_tracker_info(uuid="a7f77afe-c82e-4b1b-ae54-e3fea17bf721")
     def test_ws_ttff_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
 
@@ -518,7 +518,7 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff("ws", self.supl_ws_criteria)
 
-    @test_tracker_info(uuid="b13b8589-946b-48c7-b1a6-7399b4b12440")
+    @test_tracker_info(uuid="bc9de22f-90a0-4f2b-8052-cb4529f745e3")
     def test_supl_with_wifi_connected_and_mobile_data_on(self):
         """ Test supl can works on both wifi / mobile data features are turned on
 
