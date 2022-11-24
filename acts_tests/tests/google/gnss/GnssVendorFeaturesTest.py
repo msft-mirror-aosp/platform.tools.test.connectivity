@@ -366,7 +366,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
         asserts.assert_true(all(overall_test_result),
                             "XTRA/LTO fail after system server restart.")
 
-    @test_tracker_info(uuid="318d5f34-7e42-458f-8e62-5f61e1ec4e58")
+    @test_tracker_info(uuid="579d249e-d533-4979-915f-b3a7d847546e")
     def test_lto_download_after_reboot(self):
         """Verify LTO data could be downloaded and injected after device reboot.
 
@@ -394,7 +394,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
         asserts.assert_true(all(reboot_lto_test_results_all),
                                 "Fail to Download and Inject LTO File.")
 
-    @test_tracker_info(uuid="4a4f38be-9155-4ea1-adf7-7c72be4bc553")
+    @test_tracker_info(uuid="938cbc1f-0374-473c-b4c1-1b4af734f16a")
     def test_ws_with_assist(self):
         """Verify Warm Start functionality with existed LTO data.
 
@@ -409,7 +409,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
         """
         self.ttff_with_assist("ws", self.xtra_ws_criteria)
 
-    @test_tracker_info(uuid="25d4ad0b-e6be-438e-810b-1811cca22c07")
+    @test_tracker_info(uuid="9eae7b7d-9356-4fd8-bc18-f9d93aa0a92b")
     def test_cs_with_assist(self):
         """Verify Cold Start functionality with existed LTO data.
 

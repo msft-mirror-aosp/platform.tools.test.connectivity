@@ -134,37 +134,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
                     "seconds." % (self.ttff_mode.get(mode), criteria))
 
     """ Test Cases """
-
-    @test_tracker_info(uuid="318d5f34-7e42-458f-8e62-5f61e1ec4e58")
-    def test_lto_download_after_reboot(self):
-        """Verify LTO data could be downloaded and injected after device reboot.
-
-        Steps:
-            1. Reboot device.
-            2. Verify whether LTO is auto downloaded and injected without trigger GPS.
-            3. Repeat Step 1 to Step 2 for 5 times.
-
-        Expected Results:
-            LTO data is properly downloaded and injected at the first time tether to phone.
-        """
-        reboot_lto_test_results_all = []
-        gutils.disable_supl_mode(self.watch)
-        for times in range(1, 6):
-            delete_lto_file(self.watch)
-            gutils.reboot(self.watch)
-            self.start_qxdm_and_tcpdump_log()
-            # Wait 20 seconds for boot busy and lto auto-download time
-            time.sleep(20)
-            begin_time = get_current_epoch_time()
-            reboot_lto_test_result = gutils.check_xtra_download(self.watch, begin_time)
-            self.watch.log.info("Iteration %d => %s" % (times, reboot_lto_test_result))
-            reboot_lto_test_results_all.append(reboot_lto_test_result)
-            gutils.stop_pixel_logger(self.watch)
-            tutils.stop_adb_tcpdump(self.watch)
-        asserts.assert_true(all(reboot_lto_test_results_all),
-                                "Fail to Download and Inject LTO File.")
-
-    @test_tracker_info(uuid="4a9b795b-08b6-4ee9-940f-53e20244c30d")
+    @test_tracker_info(uuid="6dec9502-7e74-4590-b174-be822ceefcdb")
     def test_flp_ttff_cs(self):
         """Verify FLP TTFF Cold Start while tether with phone.
 
@@ -180,7 +150,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("cs", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="3ddca330-d245-45e0-9cef-bf590dd3923d")
+    @test_tracker_info(uuid="ddb8f09d-4757-42ae-9707-1fdb38187d1f")
     def test_flp_ttff_ws(self):
         """Verify FLP TTFF Warm Start while tether with phone.
 
@@ -196,7 +166,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("ws", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="7f2d669a-46bb-4334-99ed-e678804a15a8")
+    @test_tracker_info(uuid="19a997da-7c36-4fef-bf68-497d7c21163f")
     def test_flp_ttff_hs(self):
         """Verify FLP TTFF Hot Start while tether with phone.
 
@@ -212,7 +182,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("hs", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="7808684c-bfbc-4702-aca6-c568c2d44e90")
+    @test_tracker_info(uuid="c9e26620-e518-4c7d-afcc-f81f6d3971bb")
     def test_tracking_during_bt_disconnect_resume(self):
         """Verify tracking is correct during Bluetooth disconnect and resume.
 
@@ -254,7 +224,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
             gutils.parse_gtw_gpstool_log(self.watch, self.pixel_lab_location, api_type="FLP")
             start_gnss_by_gtw_gpstool(self.phone, False, api_type="FLP")
 
-    @test_tracker_info(uuid="4e7c1985-b16c-495e-87f9-a725809353f5")
+    @test_tracker_info(uuid="432e799c-3d02-46de-84d5-d5a22feceef8")
     def test_oobe_first_fix(self):
         """Verify first fix after OOBE pairing within the criteria
 
@@ -289,7 +259,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         toggle_airplane_mode(self.watch.log, self.watch, new_state=False)
         self.watch.log.info("Turn airplane mode off")
 
-    @test_tracker_info(uuid="4ebff8ad-6e81-4f93-837b-20a0949605d4")
+    @test_tracker_info(uuid="66264dac-50d0-4bc0-be72-6dbe9159587b")
     def test_oobe_first_fix_with_network_connection(self):
         """Verify first fix after OOBE pairing within the criteria
 
@@ -320,7 +290,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         self.watch.log.info(f"TestResult Max_OOBE_First_Fix {max(oobe_results_all)}")
         self.watch.log.info(f"TestResult Avg_OOBE_First_Fix {statistics.mean(oobe_results_all)}")
 
-    @test_tracker_info(uuid="9baaea85-4859-4008-bec2-48067a9d9419")
+    @test_tracker_info(uuid="4693b424-1a24-4002-b51d-df6b6bb91830")
     def test_far_start_ttff(self):
         """Verify Far Start (Warm Start v4) TTFF within the criteria
 
