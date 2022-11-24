@@ -2704,7 +2704,7 @@ def bcm_gps_xml_update_option(ad,
             fout.write(line)
     elif option == "delete":
         for line in lines:
-            if line in delete_txt:
+            if delete_txt in line:
                 ad.log.info("Delete line: '{}' in gps.xml.".format(line.strip()))
                 continue
             fout.write(line)
@@ -2716,12 +2716,38 @@ def bcm_gps_xml_update_option(ad,
     # remove temp folder
     shutil.rmtree(tmp_log_path, ignore_errors=True)
 
+def bcm_gps_ignore_warmstandby(ad):
+    """ remove warmstandby setting in BCM gps.xml to reset tracking filter
+    Args:
+        ad: An AndroidDevice object.
+    """
+    search_line_tag = '<gll\n'
+    delete_line_str = 'WarmStandbyTimeout1Seconds'
+    bcm_gps_xml_update_option(ad,
+                              "delete",
+                              search_line_tag,
+                              append_txt=None,
+                              update_txt=None,
+                              delete_txt=delete_line_str)
+
+    search_line_tag = '<gll\n'
+    delete_line_str = 'WarmStandbyTimeout2Seconds'
+    bcm_gps_xml_update_option(ad,
+                              "delete",
+                              search_line_tag,
+                              append_txt=None,
+                              update_txt=None,
+                              delete_txt=delete_line_str)
 
 def bcm_gps_ignore_rom_alm(ad):
     """ Update BCM gps.xml with ignoreRomAlm="True"
     Args:
         ad: An AndroidDevice object.
     """
+    search_line_tag = '<hal\n'
+    append_line_str = ['       IgnoreJniTime=\"true\"\n']
+    bcm_gps_xml_update_option(ad, "add", search_line_tag, append_line_str)
+
     search_line_tag = '<gll\n'
     append_line_str = ['       IgnoreRomAlm=\"true\"\n',
                        '       AutoColdStartSignal=\"SIMULATED\"\n',

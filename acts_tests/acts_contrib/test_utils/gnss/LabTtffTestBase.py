@@ -211,6 +211,8 @@ class LabTtffTestBase(BaseTestClass):
             self.dut.adb.shell(copy_cmd)
             gutils.delete_bcm_nvmem_sto_file(self.dut)
             gutils.bcm_gps_ignore_rom_alm(self.dut)
+            if self.current_test_name == "test_tracking_power_sweep":
+                gutils.bcm_gps_ignore_warmstandby(self.dut)
             # Reboot DUT to apply the setting
             gutils.reboot(self.dut)
         self.gnss_simulator.connect()
@@ -237,6 +239,7 @@ class LabTtffTestBase(BaseTestClass):
         # Restore the gps.xml everytime after the test.
         if self.diag_option == "BCM":
             # Restore gps.xml
+            gutils.remount_device(self.dut)
             rm_cmd = f'rm -rf {BCM_GPS_XML_PATH}'
             restore_cmd = f'cp {self.gps_xml_bk_path} {BCM_GPS_XML_PATH}'
             self.dut.adb.shell(rm_cmd)
