@@ -498,21 +498,21 @@ class GnssConcurrencyTest(BaseTestClass):
         freq = [self.onchip_interval, 1]
         self.run_engine_switching_test(freq)
 
-    @test_tracker_info(uuid="5ee88c02-161a-465d-97c3-0bae76bd247b")
+    @test_tracker_info(uuid="736da33a-a976-44b6-93b3-bcfd847dd03d")
     def test_mcu_cs_ttff(self):
         mode = "CS"
         self.preset_mcu_test(mode)
         self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
         self.reset_mcu_test(mode)
 
-    @test_tracker_info(uuid="439c7934-c559-4e1a-97d0-cf6ed84786ca")
+    @test_tracker_info(uuid="e3457e35-9872-4677-8170-bc30d84798c0")
     def test_mcu_ws_ttff(self):
         mode = "WS"
         self.preset_mcu_test(mode)
         self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
         self.reset_mcu_test(mode)
 
-    @test_tracker_info(uuid="ac4ceede-bef5-4a28-bd85-e2a96fbd3012")
+    @test_tracker_info(uuid="0e1ce60d-e257-4dc5-b927-7ae97c8386b6")
     def test_mcu_hs_ttff(self):
         mode = "HS"
         self.preset_mcu_test(mode)
