@@ -405,8 +405,14 @@ def connect_to_wifi_network(ad, network):
     ad.ed.clear_all_events()
     wutils.reset_wifi(ad)
     wutils.start_wifi_connection_scan_and_ensure_network_found(ad, SSID)
-    wutils.wifi_connect(ad, network, num_of_tries=5)
-
+    for i in range(5):
+        wutils.wifi_connect(ad, network, check_connectivity=False)
+        # Validates wifi connection with ping_gateway=False to avoid issue like
+        # b/254913994.
+        if wutils.validate_connection(ad, ping_gateway=False):
+            ad.log.info("WiFi connection is validated")
+            return
+    raise signals.TestError("Failed to connect WiFi")
 
 def set_wifi_and_bt_scanning(ad, state=True):
     """Set Wi-Fi and Bluetooth scanning on/off in Settings -> Location
