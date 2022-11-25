@@ -346,7 +346,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
             self.scd_conf.disable_diagnostic_log()
             self.lhd_conf.disable_diagnostic_log()
 
-    @test_tracker_info(uuid="1dd68d9c-38b0-4fbc-8635-1228c72872ff")
+    @test_tracker_info(uuid="d1310171-1641-4fa2-8802-cca7ce33bbd4")
     def test_gps_logenabled_setting(self):
         """Verify the LogEnabled setting in gps.xml / scd.conf / lhd.conf
         Steps:
@@ -375,7 +375,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         except FileNotFoundError:
             self.ad.log.info("Test pass because no BRCM log files/folders was found")
 
-    @test_tracker_info(uuid="152a12e0-7957-47e0-9ea7-14725254fd1d")
+    @test_tracker_info(uuid="ebe30341-4097-4e2c-b104-0c592f1f9e83")
     def test_gps_supllogenable_setting(self):
         """Verify SuplLogEnable in gps.xml
         Steps:
@@ -402,7 +402,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         result = is_supl_log_exist_after_supl_request()
         asserts.assert_false(result, "SuplLogEnable is disable, should not find supl log file")
 
-    @test_tracker_info(uuid="892d0037-8c0c-45b6-bd0f-9e4073d37232")
+    @test_tracker_info(uuid="099aea19-5078-447c-925f-01a702624884")
     def test_lhe_setting(self):
         """Verify lhefailsafe / lheconsole setting in lhd.conf
         Steps:
