@@ -2944,3 +2944,38 @@ def validate_ping_between_two_clients(dut1, dut2):
                              timeout=20),
         "%s ping %s failed" % (dut2.serial, dut1_ip))
 
+def get_wear_wifimediator_disable_status(ad):
+    """Gets WearWifiMediator disable status.
+
+    Args:
+        ad: Android Device
+
+    Returns:
+        True if WearWifiMediator is disabled, False otherwise.
+    """
+    status = ad.adb.shell("settings get global cw_disable_wifimediator")
+    if status == "1":
+        ad.log.info("WearWifiMediator is DISABLED")
+        status = True
+    else:
+        ad.log.info("WearWifiMediator is ENABLED")
+        status = False
+    return status
+
+def disable_wear_wifimediator(ad, state):
+    """Disables WearWifiMediator.
+
+    Args:
+        ad: Android Device
+        state: True to disable, False otherwise.
+    """
+    if state:
+        ad.log.info("Disabling WearWifiMediator.....")
+        ad.adb.shell("settings put global cw_disable_wifimediator 1")
+        asserts.assert_true(get_wear_wifimediator_disable_status(ad),
+                            "WearWifiMediator should be disabled")
+    else:
+        ad.log.info("Enabling WearWifiMediator.....")
+        ad.adb.shell("settings put global cw_disable_wifimediator 0")
+        asserts.assert_false(get_wear_wifimediator_disable_status(ad),
+                             "WearWifiMediator should be enabled")
