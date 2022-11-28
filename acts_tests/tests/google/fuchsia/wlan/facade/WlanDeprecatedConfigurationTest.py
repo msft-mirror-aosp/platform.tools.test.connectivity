@@ -65,8 +65,14 @@ class WlanDeprecatedConfigurationTest(WifiBaseTest):
                                       iface_info['error'])
 
             if iface_info['result']['role'] == AP_ROLE:
-                return utils.mac_address_list_to_str(
-                    iface_info['result']['mac_addr'])
+                if 'mac_addr' in iface_info['result']:
+                    return utils.mac_address_list_to_str(
+                            iface_info['result']['mac_addr'])
+                elif 'sta_addr' in iface_info['result']:
+                    return utils.mac_address_list_to_str(
+                            iface_info['result']['sta_addr'])
+                raise AttributeError(
+                    'AP iface info does not contain MAC address.')
         raise AttributeError(
             'Failed to get ap interface mac address. No AP interface found.')
 
