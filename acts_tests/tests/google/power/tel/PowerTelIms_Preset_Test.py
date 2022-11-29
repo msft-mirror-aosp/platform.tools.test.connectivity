@@ -48,6 +48,12 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
         """ Executed only once when initializing the class. """
         super().setup_class()
 
+        # switch to HCCU correct settings.
+        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
+
+        self.log.info('Disable mobile data.')
+        self.dut.adb.shell('svc data disable')
+
         # Enable IMS on UE
         self.log.info('Enable VoLTE using adb command.')
         self.dut.adb.shell(self.ADB_CMD_ENABLE_IMS)
@@ -81,21 +87,22 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
         )
 
     def setup_test(self):
-        super().setup_test()
         # Enable NR if it is VoNR test case
         self.log.info(f'test name: {self.test_name}')
         if 'NR' in self.test_name:
             self.log.info('Enable VoNR for UE.')
             self.enable_ims_nr()
+        super().setup_test()
 
-    def set_nv(self, name, idx, val):
-        self.log.info('Set NV: [{name}] at index [{idx}] to [{val}].')
+    def set_nv(self, nv_name, index, value):
+        self.log.info(f'Set NV: [{nv_name}] at index [{index}] to [{value}].')
         cmd = self.ADB_SET_GOOG_NV.format(
-            nv_name = name,
-            index = idx,
-            value = val
+            nv_name = nv_name,
+            index = index,
+            value = value
         )
         self.cellular_dut.ad.adb.shell(cmd)
+        time.sleep(2)
 
     def enable_ims_nr(self):
         # TODO: set value for registries (hex byte)
@@ -138,7 +145,6 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
                 value = '11'
             )
 
-        # reboot
         self.dut.reboot()
 
         #TODO(hmtuan): confirm all registries are expected
@@ -151,12 +157,16 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
         threshold value. """
         # create dedicated bearer
         self.log.info('create dedicated bearer.')
-        self.cellular_simulator.create_dedicated_bearer()
-        time.sleep(15)
+        if 'LTE' in self.test_name:
+            self.cellular_simulator.create_dedicated_bearer()
+
+        time.sleep(5)
 
         # Initiate the voice call
         self.log.info('Callbox initiates call to UE.')
         self.ims_client.initiate_call('001010123456789')
+
+        time.sleep(5)
 
         # pick up call
         self.log.info('UE pick up call.')
@@ -188,6 +198,10 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
 class PowerTelIms_Preset_Test(PowerTelImsPresetTest):
     def teardown_test(self):
         super().teardown_test()
+        self.log.info('Enable mobile data.')
+        self.dut.adb.shell('svc data enable')
+        self.cellular_simulator.detach()
+        self.cellular_dut.toggle_airplane_mode(True)
         self.sponge_upload()
 
     def test_preset_LTE_voice(self):
