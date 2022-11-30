@@ -2210,6 +2210,21 @@ def execute_eecoexer_function(ad, eecoexer_args):
     ad.adb.shell(wait_for_cmd)
 
 
+def get_process_pid(ad, process_name):
+    """Gets the process PID
+
+    Args:
+        ad: The device under test
+        process_name: The name of the process
+
+    Returns:
+        The PID of the process
+    """
+    command = f"ps -A | grep {process_name} |  awk '{{print $2}}'"
+    pid = ad.adb.shell(command)
+    return pid
+
+
 def restart_gps_daemons(ad):
     """Restart GPS daemons by killing services of gpsd, lhd and scd.
 
@@ -2219,21 +2234,21 @@ def restart_gps_daemons(ad):
     gps_daemons_list = ["gpsd", "lhd", "scd"]
     ad.root_adb()
     for service in gps_daemons_list:
-        begin_time = get_current_epoch_time()
         time.sleep(3)
         ad.log.info("Kill GPS daemon \"%s\"" % service)
-        ad.adb.shell("killall %s" % service)
+        service_pid = get_process_pid(ad, service)
+        ad.log.debug("%s PID: %s" % (service, service_pid))
+        ad.adb.shell(f"kill -9 {service_pid}")
         # Wait 3 seconds for daemons and services to start.
         time.sleep(3)
-        restart_services = ad.search_logcat("starting service", begin_time)
-        for restart_service in restart_services:
-            if service in restart_service["log_message"]:
-                ad.log.info(restart_service["log_message"])
-                ad.log.info(
-                    "GPS daemon \"%s\" restarts successfully." % service)
-                break
-        else:
+
+        new_pid = get_process_pid(ad, service)
+        ad.log.debug("%s new PID: %s" % (service, new_pid))
+        if not new_pid or service_pid == new_pid:
             raise signals.TestError("Unable to restart \"%s\"" % service)
+
+        ad.log.info("GPS daemon \"%s\" restarts successfully. PID from %s to %s" % (
+            service, service_pid, new_pid))
 
 
 def is_device_wearable(ad):
@@ -3086,9 +3101,8 @@ def restart_hal_service(ad):
         ad: AndroidDevice object
     """
     ad.log.info("Restart HAL service")
-    get_hal_pid_cmd = ("ps -A | grep 'android.hardware."
-                       "gnss@[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}-service' | awk '{print $2}'")
-    hal_pid = ad.adb.shell(get_hal_pid_cmd)
+    hal_process_name = "'android.hardware.gnss@[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}-service'"
+    hal_pid = get_process_pid(ad, hal_process_name)
     ad.log.info("HAL pid: %s" % hal_pid)
 
     # Retry kill process if the PID is the same as original one
@@ -3098,7 +3112,7 @@ def restart_hal_service(ad):
 
         # Waits for the HAL service to restart up to 4 seconds.
         for _ in range(4):
-            new_hal_pid = ad.adb.shell(get_hal_pid_cmd)
+            new_hal_pid = get_process_pid(ad, hal_process_name)
             ad.log.info("New HAL pid: %s" % new_hal_pid)
             if new_hal_pid:
                 if hal_pid != new_hal_pid:

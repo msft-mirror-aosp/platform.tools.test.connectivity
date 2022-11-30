@@ -16,10 +16,10 @@
 import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
 
 
-class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
+class PowerTelPdcchFr2_Preset_Test(cppt.PowerTelPDCCHTest):
     def setup_class(self):
         super().setup_class()
-        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
+        self.cellular_simulator.switch_HCCU_settings(is_fr2=True)
 
     def teardown_test(self):
         super().teardown_test()
@@ -27,21 +27,8 @@ class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
         self.cellular_simulator.detach()
         self.cellular_dut.toggle_airplane_mode(True)
 
-    def test_preset_sa_pdcch_fr1(self):
+    def test_preset_nsa_cdrx_fr2(self):
         self.power_pdcch_test()
 
-    def test_preset_nsa_pdcch_fr1(self):
+    def test_preset_nsa_pdcch_fr2(self):
         self.power_pdcch_test()
-
-    def test_preset_LTE_pdcch(self):
-        self.power_pdcch_test()
-
-    def test_preset_sa_cdrx_fr1(self):
-        self.power_pdcch_test()
-
-    def test_preset_nsa_cdrx_fr1(self):
-        self.power_pdcch_test()
-
-    def test_preset_LTE_cdrx(self):
-        self.power_pdcch_test()
-

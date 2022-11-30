@@ -37,6 +37,9 @@ class PowerTelAirplaneModeTest(PWCEL.PowerCellularLabBaseTest):
 
 
 class PowerTelAirplaneMode_Test(PowerTelAirplaneModeTest):
+    def setup_class(self):
+        super().setup_class()
+        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
 
     def test_airplane_mode(self):
         self.power_tel_airplane_mode_test()
