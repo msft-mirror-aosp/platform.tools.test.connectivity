@@ -151,6 +151,9 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
 
 
 class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
+    def setup_class(self):
+        super().setup_class()
+        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
 
     def teardown_test(self):
         super().teardown_test()
@@ -165,4 +168,18 @@ class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
         self.power_tel_traffic_test()
 
     def test_preset_sa_traffic_fr1(self):
+        self.power_tel_traffic_test()
+
+class PowerTelTrafficFr2_Preset_Test(PowerTelTrafficPresetTest):
+    def setup_class(self):
+        super().setup_class()
+        self.cellular_simulator.switch_HCCU_settings(is_fr2=True)
+
+    def teardown_test(self):
+        super().teardown_test()
+        self.sponge_upload()
+        self.cellular_simulator.detach()
+        self.cellular_dut.toggle_airplane_mode(True)
+
+    def test_preset_nsa_traffic_fr2(self):
         self.power_tel_traffic_test()

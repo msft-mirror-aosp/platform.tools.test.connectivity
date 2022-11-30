@@ -56,11 +56,11 @@ class ImsApiConnector():
             target_port= self.ims_app_port)
         )
 
-        self.log.debug(f'Payload to create ims app link: {request_data}')
         request_data = {
             "targetIpAddress": self.ims_app_ip,
             "targetWcfPort": self.ims_app_port
         }
+        self.log.debug(f'Payload to create ims app link: {request_data}')
         r = requests.post(url = self.get_base_url(), json = request_data)
 
         self.log.info('HTTP request sent:')
