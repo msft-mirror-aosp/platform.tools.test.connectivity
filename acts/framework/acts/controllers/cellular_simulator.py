@@ -62,7 +62,12 @@ class AbstractCellularSimulator:
             config: a BaseSimulation.BtsConfig object.
             bts_index: the base station number.
         """
-        self.log.info('The config for {} is {}'.format(bts_index, str(config)))
+
+        config_vars = vars(config)
+        config_dict = {key: config_vars[key]
+                       for key in config_vars if config_vars[key]}
+        self.log.info('The config for {} is {}'.format(
+            bts_index, config_dict))
 
         if config.output_power:
             self.set_output_power(bts_index, config.output_power)
@@ -75,7 +80,6 @@ class AbstractCellularSimulator:
 
         if isinstance(config, cellular_lib.NrCellConfig.NrCellConfig):
             self.configure_nr_bts(config, bts_index)
-
 
     def configure_lte_bts(self, config, bts_index=0):
         """ Commands the equipment to setup an LTE base station with the
@@ -488,4 +492,3 @@ class AbstractCellularSimulator:
 class CellularSimulatorError(Exception):
     """ Exceptions thrown when the cellular equipment is unreachable or it
     returns an error after receiving a command. """
-    pass

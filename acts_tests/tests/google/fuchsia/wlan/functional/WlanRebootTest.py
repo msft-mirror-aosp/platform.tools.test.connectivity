@@ -32,6 +32,7 @@ from acts.controllers.ap_lib.hostapd_utils import generate_random_password
 from acts.controllers.ap_lib.radvd import Radvd
 from acts.controllers.ap_lib import radvd_constants
 from acts.controllers.ap_lib.radvd_config import RadvdConfig
+from acts.controllers.fuchsia_device import IP_ADDRESS_TIMEOUT
 from acts_contrib.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts_contrib.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
@@ -65,7 +66,6 @@ SECURITY_MODES = [
 DEFAULT_IPERF_TIMEOUT = 30
 
 DUT_NETWORK_CONNECTION_TIMEOUT = 60
-DUT_IP_ADDRESS_TIMEOUT = 15
 
 # Constants for Custom Reboot Tests
 ALL = 'all'
@@ -215,65 +215,6 @@ class WlanRebootTest(WifiBaseTest):
 
         self.log.info('Network (SSID: %s) is up.' % ssid)
 
-    def wait_until_dut_gets_ipv4_addr(self, interface):
-        """Checks if device has an ipv4 private address. Sleeps 1 second between
-        retries.
-
-        Args:
-            interface: string, name of interface from which to get ipv4 address.
-
-        Raises:
-            ConnectionError, if DUT does not have an ipv4 address after all
-            timeout.
-        """
-        self.log.info(
-            'Checking if DUT has received an ipv4 addr. Will retry for %s '
-            'seconds.' % self.dut_ip_address_timeout)
-        timeout = time.time() + self.dut_ip_address_timeout
-        while time.time() < timeout:
-            ip_addrs = self.dut.get_interface_ip_addresses(interface)
-
-            if len(ip_addrs['ipv4_private']) > 0:
-                self.log.info('DUT has an ipv4 address: %s' %
-                              ip_addrs['ipv4_private'][0])
-                break
-            else:
-                self.log.debug(
-                    'DUT does not yet have an ipv4 address...retrying in 1 '
-                    'second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('DUT failed to get an ipv4 address.')
-
-    def wait_until_dut_gets_ipv6_addr(self, interface):
-        """Checks if device has an ipv6 private local address. Sleeps 1 second
-        between retries.
-
-        Args:
-            interface: string, name of interface from which to get ipv6 address.
-
-        Raises:
-            ConnectionError, if DUT does not have an ipv6 address after all
-            timeout.
-        """
-        self.log.info(
-            'Checking if DUT has received an ipv6 addr. Will retry for %s '
-            'seconds.' % self.dut_ip_address_timeout)
-        timeout = time.time() + self.dut_ip_address_timeout
-        while time.time() < timeout:
-            ip_addrs = self.dut.get_interface_ip_addresses(interface)
-            if len(ip_addrs['ipv6_private_local']) > 0:
-                self.log.info('DUT has an ipv6 private local address: %s' %
-                              ip_addrs['ipv6_private_local'][0])
-                break
-            else:
-                self.log.debug(
-                    'DUT does not yet have an ipv6 address...retrying in 1 '
-                    'second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('DUT failed to get an ipv6 address.')
-
     def setup_iperf_server_on_ap(self, band):
         """Configures iperf server based on the tests band.
 
@@ -337,7 +278,7 @@ class WlanRebootTest(WifiBaseTest):
             ConnectionError, if traffic is not passed successfully in both
                 directions.
         """
-        dut_ip_addresses = self.dut.get_interface_ip_addresses(
+        dut_ip_addresses = self.dut.device.get_interface_ip_addresses(
             iperf_client_on_dut.test_interface)
 
         iperf_server_ip_address = self.get_iperf_server_address(
@@ -575,9 +516,9 @@ class WlanRebootTest(WifiBaseTest):
         if not self.skip_iperf:
             dut_test_interface = self.iperf_client_on_dut.test_interface
             if ipv4:
-                self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
+                self.dut.device.wait_for_ipv4_addr(dut_test_interface)
             if ipv6:
-                self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
+                self.dut.device.wait_for_ipv6_addr(dut_test_interface)
 
             self.iperf_server_on_ap = self.setup_iperf_server_on_ap(band)
             self.iperf_server_on_ap.start()
@@ -635,9 +576,9 @@ class WlanRebootTest(WifiBaseTest):
 
                 if not self.skip_iperf:
                     if ipv4:
-                        self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
+                        self.dut.device.wait_for_ipv4_addr(dut_test_interface)
                     if ipv6:
-                        self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
+                        self.dut.device.wait_for_ipv6_addr(dut_test_interface)
 
                     self.iperf_server_on_ap.start()
 
@@ -843,4 +784,4 @@ class WlanRebootTest(WifiBaseTest):
         self.dut_network_connection_timeout = self.wlan_reboot_test_params.get(
             'dut_network_connection_timeout', DUT_NETWORK_CONNECTION_TIMEOUT)
         self.dut_ip_address_timeout = self.wlan_reboot_test_params.get(
-            'dut_ip_address_timeout', DUT_IP_ADDRESS_TIMEOUT)
+            'dut_ip_address_timeout', IP_ADDRESS_TIMEOUT)

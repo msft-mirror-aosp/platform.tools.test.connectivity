@@ -14,7 +14,6 @@
 import os
 import socket
 import time
-from unittest.mock import DEFAULT
 import paramiko
 import re
 
@@ -54,10 +53,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     # start process success regex
     PSEXEC_PROC_STARTED_REGEX_FORMAT = 'started on * with process ID {proc_id}'
 
-    def __init__(self, ip_address,
-                 custom_files, uxm_user,
-                 ssh_private_key_to_uxm,
-                 ta_exe_path, ta_exe_name):
+    def __init__(self, ip_address, custom_files, uxm_user,
+                 ssh_private_key_to_uxm, ta_exe_path, ta_exe_name):
         """Initializes the cellular simulator.
 
         Args:
@@ -117,8 +114,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         """Start Test Application on Windows."""
         # start GUI exe via ssh
         start_app_cmd = self.SSH_START_GUI_APP_CMD_FORMAT.format(
-            exe_path=self.ta_exe_path
-        )
+            exe_path=self.ta_exe_path)
         stdin, stdout, stderr = self.ssh_client.exec_command(start_app_cmd)
         self.log.info(f'Command sent to {self.uxm_ip}: {start_app_cmd}')
         stdin.close()
@@ -128,8 +124,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         exit_status = stderr.channel.recv_exit_status()
         is_started = re.search(
             self.PSEXEC_PROC_STARTED_REGEX_FORMAT.format(proc_id=exit_status),
-            err[-1]
-        )
+            err[-1])
         if is_started:
             raise RuntimeError('Fail to start TA: ' + out + err)
         # wait for ta completely boot up
@@ -153,9 +148,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                     self.log.info(
                         'Connection refused, wait 10s for TA to boot')
                     time.sleep(10)
-            raise RuntimeError(
-                'TA does not start on time'
-            )
+            raise RuntimeError('TA does not start on time')
 
     def set_rockbottom_script_path(self, path):
         """Set path to rockbottom script.

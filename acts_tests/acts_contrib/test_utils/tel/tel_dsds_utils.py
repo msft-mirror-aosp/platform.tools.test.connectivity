@@ -98,7 +98,7 @@ def dsds_dds_swap_message_streaming_test(
     direction: str = "mt",
     streaming: bool = True,
     expected_result: bool = True) -> bool:
-    """Make MO and MT message at specific slot in specific RAT with DDS at
+    """Make MO/MT message at specific slot in specific RAT with DDS at
     specific slot and do the same steps after dds swap.
 
     Args:

@@ -115,6 +115,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
     The class is to be used within context managers (e.g. with statements) to
     ensure locks are always properly released.
     """
+
     def __init__(self, headless, timeout):
         """Constructor for BlockingBrowser class.
 
@@ -245,6 +246,7 @@ class WifiRetailAP(object):
     If some functions such as set_power not supported by ap, checks will raise
     exceptions.
     """
+
     def __init__(self, ap_settings):
         self.ap_settings = ap_settings.copy()
         self.log = logger.create_tagged_trace_logger('AccessPoint|{}'.format(
@@ -274,7 +276,6 @@ class WifiRetailAP(object):
         Function implementation is AP dependent and intended to perform any
         necessary reset operations as part of controller destroy.
         """
-        pass
 
     def read_ap_settings(self):
         """Function that reads current ap settings.

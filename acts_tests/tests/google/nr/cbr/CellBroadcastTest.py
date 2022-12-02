@@ -31,7 +31,10 @@ from acts.utils import load_config
 from acts.utils import start_standing_subprocess
 from acts.utils import wait_for_standing_subprocess
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH, GERMANY_TELEKOM, QATAR_VODAFONE
+from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
+from acts_contrib.test_utils.tel.tel_defines import GERMANY_TELEKOM
+from acts_contrib.test_utils.tel.tel_defines import QATAR_VODAFONE
+from acts_contrib.test_utils.tel.tel_defines import CBR_APEX_PACKAGE
 from acts_contrib.test_utils.tel.tel_defines import CLEAR_NOTIFICATION_BAR
 from acts_contrib.test_utils.tel.tel_defines import DEFAULT_ALERT_TYPE
 from acts_contrib.test_utils.tel.tel_defines import EXPAND_NOTIFICATION_BAR
@@ -107,7 +110,6 @@ from acts_contrib.test_utils.tel.tel_data_utils import wait_for_data_connection
 from acts_contrib.test_utils.tel.tel_wifi_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
-from acts_contrib.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts_contrib.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts_contrib.test_utils.net import ui_utils as uutils
 from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
@@ -120,6 +122,9 @@ from acts_contrib.test_utils.tel.tel_5g_test_utils import provision_device_for_5
 from acts_contrib.test_utils.tel.tel_ims_utils import set_wfc_mode_for_subscription
 from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 
+VIBRATION_START_TIME = "startTime"
+VIBRATION_END_TIME = "endTime"
+INVALID_VIBRATION_TIME = "0"
 
 class CellBroadcastTest(TelephonyBaseTest):
     def setup_class(self):
@@ -184,6 +189,10 @@ class CellBroadcastTest(TelephonyBaseTest):
         self.emergency_alert_settings_dict = load_config(self.emergency_alert_settings)
         self.emergency_alert_channels_dict = load_config(self.emergency_alert_channels)
         self._verify_cbr_test_apk_install(self.android_devices[0])
+        self.cbr_version = ""
+        self.cbr_upgrade_version = ""
+        self.cbr_rollback_version = ""
+
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -374,8 +383,12 @@ class CellBroadcastTest(TelephonyBaseTest):
         out = ad.adb.shell(DUMPSYS_VIBRATION)
         if out:
             try:
-                starttime = out.split()[2].split('.')[0]
-                endtime = out.split()[5].split('.')[0]
+                starttime = self._get_vibration_time(ad, out, time_info=VIBRATION_START_TIME)
+                if starttime == INVALID_VIBRATION_TIME:
+                    return False
+                endtime = self._get_vibration_time(ad, out, time_info=VIBRATION_END_TIME)
+                if endtime == INVALID_VIBRATION_TIME:
+                    return False
                 starttime = self._convert_formatted_time_to_secs(starttime)
                 endtime = self._convert_formatted_time_to_secs(endtime)
                 vibration_time = endtime - starttime
@@ -392,6 +405,14 @@ class CellBroadcastTest(TelephonyBaseTest):
                 return False
         return False
 
+
+    def _get_vibration_time(self, ad, out, time_info=VIBRATION_START_TIME):
+        vibration_info_list = out.split(',')
+        for info in vibration_info_list:
+            if time_info in info:
+                return info.strip().split(' ')[2].split('.')[0]
+        ad.log.error(" Not found %s in the vibration info!", time_info)
+        return INVALID_VIBRATION_TIME
 
     def _verify_sound(self, ad, begintime, expectedtime, offset, calling_package=CBR_PACKAGE):
         if not self.verify_sound:
@@ -592,7 +613,64 @@ class CellBroadcastTest(TelephonyBaseTest):
         return result
 
 
+    def _settings_upgrade_cbr_test_flow(self,
+                                        region,
+                                        upgrade_cbr_train_build=False,
+                                        rollback_cbr_train_build=False):
+        """Verifies wea alert settings for upgrade and rollback of a new cbr build.
+
+        The method is also able to verify alert settings on the device UI after
+            upgrading a new cbr build and rolling back.
+        The full path of the new cbr build to be upgraded should be specified
+            in the flag of acts config file, cbr_train_build.
+
+        Args:
+            upgrade_cbr_train_build: perform installing cbr build if True.
+            rollback_cbr_train_build: perform cbr package rollback if True.
+        """
+        ad = self.android_devices[0]
+        result = True
+        self._set_device_to_specific_region(ad, region)
+        time.sleep(WAIT_TIME_FOR_UI)
+
+        test_iteration = [True, rollback_cbr_train_build]
+
+        if upgrade_cbr_train_build:
+            if not self._install_verify_upgrade_cbr_train_build(ad):
+                return False;
+
+        for index in range(len(test_iteration)):
+            test_wea_default_settings = test_iteration[index]
+            if test_wea_default_settings:
+                time.sleep(WAIT_TIME_FOR_UI)
+                if not self._verify_wea_default_settings(ad, region):
+                    result = False
+                log_screen_shot(ad, "default_settings_%s" % region)
+                self._close_wea_settings_page(ad)
+                # Here close wea setting UI and then immediately open the UI that sometimes causes
+                # failing to open the wea setting UI. So we just delay 1 sec after closing
+                # the wea setting UI.
+                time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+                if not self._verify_wea_toggle_settings(ad, region):
+                    log_screen_shot(ad, "toggle_settings_%s" % region)
+                    result = False
+                get_screen_shot_log(ad)
+                self._close_wea_settings_page(ad)
+
+                if index == 0 and rollback_cbr_train_build:
+                    if not self._rollback_verify_original_cbr_build(ad):
+                        return False;
+
+        return result
+
+
     def _send_receive_test_flow(self, region, test_channel=None):
+        """Verifies wea alert channels.
+
+        Args:
+            test_channel: specify a specific alert channel to be tested. Otherwise,
+                          all alert channels will be tested.
+        """
         ad = self.android_devices[0]
         result = True
         self._set_device_to_specific_region(ad, region)
@@ -602,6 +680,49 @@ class CellBroadcastTest(TelephonyBaseTest):
         if not self._verify_send_receive_wea_alerts(ad, region, test_channel=test_channel):
             result = False
         get_screen_shot_log(ad)
+        return result
+
+
+    def _send_receive_upgrade_cbr_test_flow(self, region,
+                                            test_channel=None,
+                                            upgrade_cbr_train_build=False,
+                                            rollback_cbr_train_build=False):
+        """Verifies wea alert channels for upgrade and rollback of a new cbr build.
+
+        The method is also able to verify alert channels on the device after upgrading
+            a new cbr build and rolling back.
+        The full path of the new cbr build to be upgraded should be specified in the flag
+            of acts config file, cbr_train_build.
+        Args:
+            test_channel: specify a specific alert channel to be tested. Otherwise,
+                            all alert channels will be tested.
+            upgrade_cbr_train_build: perform installing cbr build if True.
+            rollback_cbr_train_build: perform cbr package rollback if True.
+        """
+        ad = self.android_devices[0]
+        result = True
+        self._set_device_to_specific_region(ad, region)
+
+        test_iteration = [True, rollback_cbr_train_build]
+
+        if upgrade_cbr_train_build:
+            if not self._install_verify_upgrade_cbr_train_build(ad):
+                return False;
+
+        for index in range(len(test_iteration)):
+            test_wea_default_settings = test_iteration[index]
+            if test_wea_default_settings:
+                time.sleep(WAIT_TIME_FOR_UI)
+                ad.log.info("disable DND: %s", CMD_DND_OFF)
+                ad.adb.shell(CMD_DND_OFF)
+                if not self._verify_send_receive_wea_alerts(ad,
+                                                            region,
+                                                            test_channel=test_channel):
+                    result = False
+                get_screen_shot_log(ad)
+                if index == 0 and rollback_cbr_train_build:
+                    if not self._rollback_verify_original_cbr_build(ad):
+                        return False;
         return result
 
 
@@ -661,6 +782,110 @@ class CellBroadcastTest(TelephonyBaseTest):
             ad.log.error("WFC is not enabled")
             return False
         return True
+
+    def _execute_command_line(self, ad, command):
+        """ Executes command line.
+
+        Returns:
+            [True, stdout] if successful. Otherwise, [False, stderr].
+        """
+        ad.log.info("Execute %s", command)
+        install_proc = start_standing_subprocess(command)
+        wait_for_standing_subprocess(install_proc)
+        out, err = install_proc.communicate()
+        if err:
+            ad.log.error("stderr: %s", err.decode('utf-8'))
+            return [False, err.decode('utf-8')]
+        ad.log.info("stdout: %s",out.decode('utf-8'))
+        return [True, out.decode('utf-8')]
+
+
+    def _get_current_cbr_build_version_code(self, ad):
+        """ Gets the version code of CBR package.
+
+        Returns:
+            Version code if the rollback is successful. Otherwise, None.
+        """
+        cbr_version_code_command = f'adb shell pm list packages --apex-only' + \
+                                   f' --show-versioncode | grep {CBR_APEX_PACKAGE}'
+        result, out = self._execute_command_line(ad, cbr_version_code_command)
+        if not result:
+            return None
+        version_code_regex = f'^package:{CBR_APEX_PACKAGE}\sversionCode:(\d+)$'
+        version_code = re.findall(version_code_regex, out)
+        if not version_code:
+            ad.log.error("Fail to filter version code, check the match pattern: %s!",
+                         version_code_regex)
+            return None
+        ad.log.info("The version of %s in the device is %s.", CBR_APEX_PACKAGE, version_code)
+
+        return version_code
+
+
+
+    def _install_cbr_train_build(self, ad):
+        """ Installs a rollback-enabled CBR train build.
+
+        Returns:
+            True if the rollback is successful. Otherwise, False.
+        """
+
+        cbr_train_build = self.user_params.get("cbr_train_build", "")
+        if not cbr_train_build:
+            ad.log.error("Not define 'cbr_train_build' flag in the config file.")
+            return False
+        ad.log.info("Install %s.", cbr_train_build)
+        cbr_install_command = f'adb install-multi-package  --staged' \
+                              f' --enable-rollback {cbr_train_build}'
+        result, out = self._execute_command_line(ad, cbr_install_command)
+
+        return result
+
+    def _install_verify_upgrade_cbr_train_build(self, ad):
+        """Installs and verifies upgraded cbr train build."""
+
+        self.cbr_version = self._get_current_cbr_build_version_code(ad)
+        if self.cbr_version is None:
+            ad.log.error("Unexpectedly Fail to get cbr version.")
+            return False;
+        if not self._install_cbr_train_build(ad):
+            return False
+        reboot_device(ad)
+        self.cbr_upgrade_version = self._get_current_cbr_build_version_code(ad)
+        if self.cbr_upgrade_version is None:
+            ad.log.error("Unexpectedly Fail to get cbr version.")
+            return False;
+        ad.log.info("The new installed cbr version is %s", self.cbr_upgrade_version)
+        if self.cbr_version[0] == self.cbr_upgrade_version[0]:
+            ad.log.error("The upgrade version shouldn't be the same as the original version,"
+                         " roll back the cbr build!")
+            return False;
+        return True;
+
+    def _rollback_cbr_train_build(self, ad):
+        """ Rolls back to the previous CBR build.
+
+        Returns:
+            True if the rollback is successful. Otherwise, False.
+         """
+        ad.log.info("Roll back CBR module...")
+        cbr_rollback_command = f'adb shell pm rollback-app {CBR_APEX_PACKAGE}'
+        result, out = self._execute_command_line(ad, cbr_rollback_command)
+
+        return result
+
+    def _rollback_verify_original_cbr_build(self, ad):
+        """ Checks if the cbr build is rolled back the factory build. """
+        if not self._rollback_cbr_train_build(ad):
+            return False
+        reboot_device(ad)
+        self.cbr_rollback_version = self._get_current_cbr_build_version_code(ad)
+        ad.log.info("The rollback cbr version is %s", self.cbr_rollback_version)
+        if self.cbr_version[0] != self.cbr_rollback_version[0]:
+            ad.log.error("The rollback version should be the same as the original version!")
+            return False;
+        return True
+
     """ Tests Begin """
 
 
@@ -2678,3 +2903,942 @@ class CellBroadcastTest(TelephonyBaseTest):
         get_screen_shot_log(ad)
 
         return result
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_uae_upgrading_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for UAE
+
+        configures the device to UAE
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(UAE,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_australia_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for AUSTRALIA
+
+        configures the device to Australia
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(AUSTRALIA,
+                                        upgrade_cbr_train_build=True,
+                                        rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_france_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for FRANCE
+
+        configures the device to France
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(FRANCE,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_japan_kddi_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Japan (KDDI)
+
+        configures the device to Japan (KDDI)
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(JAPAN_KDDI,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_newzealand_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for NZ
+
+        configures the device to NZ
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(NEWZEALAND,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_hongkong_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for HongKong
+
+        configures the device to HongKong
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(HONGKONG,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_chile_entel_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Chile Entel
+
+        configures the device to Chile Entel
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(CHILE_ENTEL,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_chile_telefonica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Chile Telefonica
+
+        configures the device to Chile Telefonica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(CHILE_TELEFONICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_peru_entel_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Peru_Entel
+
+        configures the device to Peru_Entel
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(PERU_ENTEL,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_peru_telefonica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Peru_Telefonica
+
+        configures the device to Peru Telefonica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(PERU_TELEFONICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_spain_telefonica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Spain_Telefonica
+
+        configures the device to Spain Telefonica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(SPAIN_TELEFONICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_elsalvador_telefonica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for
+            Elsalvador_Telefonica
+
+        configures the device to Elsalvador Telefonica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ELSALVADOR_TELEFONICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_mexico_telefonica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Mexico_Telefonica
+
+        configures the device to Mexico Telefonica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(MEXICO_TELEFONICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_korea_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Korea
+
+        configures the device to Korea
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(KOREA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_taiwan_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Taiwan
+
+        configures the device to Taiwan
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+        the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(TAIWAN,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_canada_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Canada
+
+        configures the device to Canada
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(CANADA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_brazil_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Brazil
+
+        configures the device to Brazil
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(BRAZIL,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_columbia_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Columbia
+
+        configures the device to Columbia
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(COLUMBIA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_ecuador_telefonica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Ecuador Telefonica
+
+        configures the device to Ecuador Telefonica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ECUADOR_TELEFONICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_ecuador_claro_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Ecuador Claro
+
+        configures the device to Ecuador Claro
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ECUADOR_CLARO,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_puertorico_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Puertorico
+
+        configures the device to Puertorico
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(PUERTORICO,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_netherlands_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Netherlands
+
+        configures the device to Netherlands
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(NETHERLANDS,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_romania_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Romania
+
+        configures the device to Romania
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ROMANIA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_estonia_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Estonia
+
+        configures the device to Estonia
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ESTONIA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_lithuania_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Lithuania
+
+        configures the device to Lithuania
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(LITHUANIA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_latvia_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Latvia
+
+        configures the device to Latvia
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(LATVIA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_greece_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Greece
+
+        configures the device to Greece
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(GREECE,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_italy_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Italy
+
+        configures the device to Italy
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ITALY,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_southafrica_upgrade_rollback_cbr_build(self):
+        """ Verifies wea after upgrading a new cbr build and rollback for SouthAfrica
+
+        configures the device to SouthAfrica
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(SOUTHAFRICA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_uk_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for UK
+
+        configures the device to UK
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(UK,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_israel_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Israel
+
+        configures the device to Israel
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(ISRAEL,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_oman_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Oman
+
+        configures the device to Oman
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(OMAN,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_japan_softbank_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Japan (Softbank)
+
+        configures the device to Japan (Softbank)
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(JAPAN_SOFTBANK,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_saudiarabia_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for SaudiArabia
+
+        configures the device to SaudiArabia
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(SAUDIARABIA,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_att_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for US ATT
+
+        configures the device to US ATT
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(US_ATT,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_tmo_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for US TMO
+
+        configures the device to US TMO
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(US_TMO,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_vzw_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for US VZW
+
+        configures the device to US VZW
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(US_VZW,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_germany_telekom_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Germany telecom
+
+        configures the device to Germany telecom
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(GERMANY_TELEKOM,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_qatar_vodafone_upgrade_rollback_cbr_build(self):
+        """ Verifies wea settings after upgrading a new cbr build and rollback for Qatar vodafone
+
+        configures the device to Qatar vodafone
+        upgrades a new cbr build
+        reports errors if the versions of the upgraded cbr build and
+            the factory cbr build are the same
+        verifies alert names and its default values
+        toggles the alert twice if available
+        rolls back the factory cbr build
+        reports errors if the versions of the factory cbr build and
+            the rollback cbr build are different
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_upgrade_cbr_test_flow(QATAR_VODAFONE,
+                                                    upgrade_cbr_train_build=True,
+                                                    rollback_cbr_train_build=True)
+
+

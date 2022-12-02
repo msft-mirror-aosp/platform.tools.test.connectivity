@@ -14,13 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
+import time
+
 from acts.controllers.rohdeschwarz_lib import cmx500
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteBandwidth
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteState
 from acts.controllers import cellular_simulator as cc
 from acts.controllers.cellular_lib import LteSimulation
-
 
 CMX_TM_MAPPING = {
     LteSimulation.TransmissionMode.TM1: cmx500.TransmissionModes.TM1,
@@ -46,6 +46,9 @@ CMX_MIMO_MAPPING = {
 class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMX 500
     controller. """
+
+    # The maximum power that the equipment is able to transmit
+    MAX_DL_POWER = -25
 
     def __init__(self, ip_address, port='5025'):
         """ Initializes the cellular simulator.
@@ -98,10 +101,9 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             time: time in seconds for the timer to expire
         """
         self.log.info('set timer enabled to {} and the time to {}'.format(
-                enabled, time))
+            enabled, time))
         self.cmx.rrc_state_change_time_enable = enabled
         self.cmx.lte_rrc_state_change_timer = time
-
 
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
@@ -180,7 +182,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             bandwidth: the new bandwidth in MHz
         """
         self.log.info('set bandwidth of bts {} to {}'.format(
-                bts_index, bandwidth))
+            bts_index, bandwidth))
         self.bts[bts_index].set_bandwidth(int(bandwidth))
 
     def set_downlink_channel_number(self, bts_index, channel_number):
@@ -190,8 +192,8 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             channel_number: the new channel number (earfcn)
         """
-        self.log.info('Sets the downlink channel number to {}'.format(
-                channel_number))
+        self.log.info(
+            'Sets the downlink channel number to {}'.format(channel_number))
         self.bts[bts_index].set_dl_channel(channel_number)
 
     def set_mimo_mode(self, bts_index, mimo_mode):
@@ -216,8 +218,13 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         tmode = CMX_TM_MAPPING[tmode]
         self.bts[bts_index].set_transmission_mode(tmode)
 
-    def set_scheduling_mode(self, bts_index, scheduling, mcs_dl=None,
-                            mcs_ul=None, nrb_dl=None, nrb_ul=None):
+    def set_scheduling_mode(self,
+                            bts_index,
+                            scheduling,
+                            mcs_dl=None,
+                            mcs_ul=None,
+                            nrb_dl=None,
+                            nrb_ul=None):
         """ Sets the scheduling mode for the indicated base station.
 
         Args:
@@ -242,8 +249,10 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
             log_list.append('nrb_ul: {}'.format(nrb_ul))
 
         self.log.info('set scheduling mode to {}'.format(','.join(log_list)))
-        self.bts[bts_index].set_scheduling_mode(
-                mcs_dl=mcs_dl, mcs_ul=mcs_ul, nrb_dl=nrb_dl, nrb_ul=nrb_ul)
+        self.bts[bts_index].set_scheduling_mode(mcs_dl=mcs_dl,
+                                                mcs_ul=mcs_ul,
+                                                nrb_dl=nrb_dl,
+                                                nrb_ul=nrb_ul)
 
     def set_dl_256_qam_enabled(self, bts_index, enabled):
         """ Determines what MCS table should be used for the downlink.
@@ -327,6 +336,31 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.wait_until_communication_state()
         self.bts[1].attach_as_secondary_cell()
+        time.sleep(10)
+
+        self.log.info('set lte cdrx for nr nsa scenario')
+        self.bts[0].set_cdrx_config()
+        time.sleep(5)
+
+        self.log.info('Disables mac padding')
+        self.bts[0].set_dl_mac_padding(False)
+        self.bts[1].set_dl_mac_padding(False)
+        time.sleep(5)
+
+        self.log.info('configure flexible slots and wait for 5 seconds')
+        self.bts[1].config_flexible_slots()
+        time.sleep(5)
+
+        self.log.info('disable all ul subframes of the lte cell')
+        self.bts[0].disable_all_ul_subframes()
+        time.sleep(30)
+
+        self.log.info('Disables Nr UL slots')
+        self.bts[1].disable_all_ul_slots()
+        time.sleep(5)
+
+        self.log.info('The radio connectivity is {}'.format(
+            self.cmx.dut.state.radio_connectivity))
 
     def wait_until_attached(self, timeout=120):
         """ Waits until the DUT is attached to the primary carrier.

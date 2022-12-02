@@ -128,6 +128,44 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
             streaming=False)
 
     # e+e
+    @test_tracker_info(uuid="618fc3c8-1cb9-4346-957e-bd129e3a5426")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_call_mo_volte_esim_port_0_dds_slot_1(self):
+        """A MO VoLTE call dialed at eSIM port 0, where
+            - eSIM port 0 VoLTE
+            - eSIM port 1 VoLTE
+            - DDS at eSIM port 0 (SimSlotInfo.SLOT_1)
+        """
+        return dsds_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["volte", "volte"],
+            dds_slot=1,
+            test_slot=SimSlotInfo.SLOT_1,
+            direction="mo",
+            streaming=False)
+
+    @test_tracker_info(uuid="5374d0a5-5846-43cf-af4d-db4c76abaf66")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_call_mt_volte_esim_port_0_dds_slot_1(self):
+        """A MT VoLTE call received at eSIM port 0, where
+            - eSIM port 0 VoLTE
+            - eSIM port 1 VoLTE
+            - DDS at eSIM port 0 (SimSlotInfo.SLOT_1)
+        """
+        return dsds_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["volte", "volte"],
+            dds_slot=1,
+            test_slot=SimSlotInfo.SLOT_1,
+            direction="mt",
+            streaming=False)
+
     @test_tracker_info(uuid="b10751c8-57c0-42b9-870b-9b99fd9fc9f8")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_voice_call_mo_volte_esim_port_0_dds_slot_2(self):
@@ -163,6 +201,44 @@ class TelLiveGFTDSDSVoiceTest(TelephonyBaseTest):
             test_rat=["volte", "volte"],
             dds_slot=2,
             test_slot=SimSlotInfo.SLOT_1,
+            direction="mt",
+            streaming=False)
+
+    @test_tracker_info(uuid="b0c42973-319e-4fa0-8f32-7fc07862a229")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_call_mo_volte_esim_port_1_dds_slot_2(self):
+        """A MO VoLTE call dialed at eSIM port 1, where
+            - eSIM port 0 VoLTE
+            - eSIM port 1 VoLTE
+            - DDS at eSIM port 1 (SimSlotInfo.SLOT_2)
+        """
+        return dsds_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["volte", "volte"],
+            dds_slot=2,
+            test_slot=SimSlotInfo.SLOT_2,
+            direction="mo",
+            streaming=False)
+
+    @test_tracker_info(uuid="5ddd3e86-e568-4bd8-acd7-f9f44a802b2d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_voice_call_mt_volte_esim_port_1_dds_slot_2(self):
+        """A MT VoLTE call received at eSIM port 1, where
+            - eSIM port 0 VoLTE
+            - eSIM port 1 VoLTE
+            - DDS at eSIM port 1 (SimSlotInfo.SLOT_2)
+        """
+        return dsds_call_streaming_test(
+            self.log,
+            self.tel_logger,
+            self.android_devices,
+            sim_slot=[SimSlotInfo.SLOT_1, SimSlotInfo.SLOT_2],
+            test_rat=["volte", "volte"],
+            dds_slot=2,
+            test_slot=SimSlotInfo.SLOT_2,
             direction="mt",
             streaming=False)
 
