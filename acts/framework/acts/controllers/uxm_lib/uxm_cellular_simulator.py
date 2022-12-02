@@ -77,7 +77,7 @@ class SocketWrapper():
                 self._encode_format
             )
         except socket.timeout as e:
-            self._logger('Socket timeout while receiving response.')
+            self._logger.info('Socket timeout while receiving response.')
             self.close()
             raise
 
@@ -122,6 +122,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     # shh command
     SSH_START_GUI_APP_CMD_FORMAT = 'psexec -s -d -i 1 "{exe_path}"'
     SSH_CHECK_APP_RUNNING_CMD_FORMAT = 'tasklist | findstr /R {regex_app_name}'
+    SSH_KILL_PROCESS_BY_NAME = 'taskkill /IM {process_name} /F'
+    UXM_TEST_APP_NAME = 'TestApp.exe'
 
     # start process success regex
     PSEXEC_PROC_STARTED_REGEX_FORMAT = 'started on * with process ID {proc_id}'
@@ -182,6 +184,9 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         # hccu socket
         self.hccu_socket_port = self.HHCU_SOCKET_PORT
         self.hccu_socket = SocketWrapper(self.uxm_ip, self.hccu_socket_port)
+
+    def socket_connect(self):
+        self.socket = self._socket_connect(self.uxm_ip, self.UXM_SOCKET_PORT)
 
     def switch_HCCU_scenario(self, scenario_name: str):
         cmd = self.HCCU_SCPI_CHANGE_SCENARIO_CMD.format(
@@ -260,7 +265,9 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             return
 
         self.log.info('UXM has incorrect HCCU setup, start changing setup.')
-        # close socket to TA
+        # terminate TA and close socket
+        self.log.info('Terminate TA before switch HCCU settings.')
+        self.terminate_process(self.UXM_TEST_APP_NAME)
         self.socket.close()
 
         # change hccu setup
@@ -270,17 +277,20 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         else:
             data = self.HCCU_FR1_SETUP_NAME
             scenario_name = self.HCCU_FR1_SCENARIO
+        self.log.info('Switch HCCU setup.')
         self.switch_HCCU_setup(data)
         time.sleep(10)
         if not self.wait_until_hccu_operational():
             raise RuntimeError('Fail to switch HCCU setup.')
 
         # change scenario
+        self.log.info('Ativate HCCU scenario.')
         self.switch_HCCU_scenario(scenario_name)
         time.sleep(40)
         if not self.wait_until_hccu_operational():
             raise RuntimeError('Fail to switch HCCU scenario.')
 
+        # start TA and reconnect socket.
         self.recovery_ta()
         self.socket = self._socket_connect(self.uxm_ip, self.UXM_SOCKET_PORT)
 
@@ -293,6 +303,18 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         ssh.connect(hostname=self.uxm_ip, username=self.uxm_user, pkey=mykey)
         self.log.info('SSH client to %s is connected' % self.uxm_ip)
         return ssh
+
+    def terminate_process(self, process_name):
+        cmd = self.SSH_KILL_PROCESS_BY_NAME.format(
+            process_name=process_name
+        )
+        stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+        stdin.close()
+        err = ''.join(stderr.readlines())
+        out = ''.join(stdout.readlines())
+        final_output = str(out) + str(err)
+        self.log.info(final_output)
+        return out
 
     def is_ta_running(self):
         is_running_cmd = self.SSH_CHECK_APP_RUNNING_CMD_FORMAT.format(
@@ -584,14 +606,13 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.turn_cell_on(cell_type, cell_number)
         time.sleep(5)
 
-        # airplane mode off
-        dut.toggle_airplane_mode(False)
-        time.sleep(5)
-
         interval = 10
         # waits for device to camp
         for index in range(1, attach_retries):
             count = 0
+            # airplane mode off
+            dut.toggle_airplane_mode(False)
+            time.sleep(5)
             # check connection in small interval
             while count < wait_for_camp_interval:
                 time.sleep(interval)

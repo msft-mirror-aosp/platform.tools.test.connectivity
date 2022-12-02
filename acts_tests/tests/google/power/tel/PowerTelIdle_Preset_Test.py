@@ -18,6 +18,10 @@ import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 
 
 class PowerTelIdle_Preset_Test(PWCEL.PowerCellularLabBaseTest):
+    def setup_class(self):
+        super().setup_class()
+        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
+
     def power_tel_idle_test(self):
         """ Measures power when the device is on RRC idle state."""
         idle_wait_time = self.simulation.rrc_sc_timer + 30
