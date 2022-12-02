@@ -32,6 +32,39 @@ from acts.utils import start_standing_subprocess
 from acts.utils import wait_for_standing_subprocess
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
+from acts_contrib.test_utils.tel.tel_defines import UK_EE
+from acts_contrib.test_utils.tel.tel_defines import COLUMBIA_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import JAPAN_EMOBILE
+from acts_contrib.test_utils.tel.tel_defines import JAPAN_WIRELESSCITYPLANNING
+from acts_contrib.test_utils.tel.tel_defines import JAPAN_DOCOMO
+from acts_contrib.test_utils.tel.tel_defines import JAPAN_RAKUTEN
+from acts_contrib.test_utils.tel.tel_defines import KOREA_SKT
+from acts_contrib.test_utils.tel.tel_defines import KOREA_LGU
+from acts_contrib.test_utils.tel.tel_defines import VENEZUELA
+from acts_contrib.test_utils.tel.tel_defines import RUSSIA
+from acts_contrib.test_utils.tel.tel_defines import RUSSIA_MEGAFON
+from acts_contrib.test_utils.tel.tel_defines import TURKEY
+from acts_contrib.test_utils.tel.tel_defines import US
+from acts_contrib.test_utils.tel.tel_defines import US_SPRINT
+from acts_contrib.test_utils.tel.tel_defines import US_USC
+from acts_contrib.test_utils.tel.tel_defines import AZERBAIJAN
+from acts_contrib.test_utils.tel.tel_defines import CHINA
+from acts_contrib.test_utils.tel.tel_defines import SOUTHAFRICA_TELKOM
+from acts_contrib.test_utils.tel.tel_defines import GUATEMALA_TELEFONICA
+from acts_contrib.test_utils.tel.tel_defines import INDIA
+from acts_contrib.test_utils.tel.tel_defines import HUNGARY_TELEKOM
+from acts_contrib.test_utils.tel.tel_defines import CROATIA_HRVATSKI
+from acts_contrib.test_utils.tel.tel_defines import CZECH_TMOBILE
+from acts_contrib.test_utils.tel.tel_defines import SLOVAKIA_TELEKOM
+from acts_contrib.test_utils.tel.tel_defines import AUSTRIA_MAGENTA
+from acts_contrib.test_utils.tel.tel_defines import POLAND_TMOBILE
+from acts_contrib.test_utils.tel.tel_defines import AUSTRIA_TMOBILE
+from acts_contrib.test_utils.tel.tel_defines import MACEDONIA_TELEKOM
+from acts_contrib.test_utils.tel.tel_defines import MONTENEGRO_TELEKOM
+from acts_contrib.test_utils.tel.tel_defines import MEXICO
+from acts_contrib.test_utils.tel.tel_defines import BAHAMAS
+from acts_contrib.test_utils.tel.tel_defines import UKRAINE
+from acts_contrib.test_utils.tel.tel_defines import NORWAY
 from acts_contrib.test_utils.tel.tel_defines import GERMANY_TELEKOM
 from acts_contrib.test_utils.tel.tel_defines import QATAR_VODAFONE
 from acts_contrib.test_utils.tel.tel_defines import CBR_APEX_PACKAGE
@@ -266,10 +299,22 @@ class CellBroadcastTest(TelephonyBaseTest):
             uutils.wait_and_click(ad, text=alert_text)
 
     def _has_element(self, ad, alert_text=None):
+        # The Saudiarabia has an alert setting, "Alerts", whose name is the same as the title of
+        #  Wireless emergency alerts UI. We have to skip the title node of Wireless emergency
+        #  alerts UI. So set matching_node to 2 if searching "Alerts" setting.
         if alert_text == "Alerts":
-            return uutils.has_element(ad, text=alert_text, matching_node=2)
+            element_exist = uutils.has_element(ad, text=alert_text, matching_node=2)
         else:
-            return uutils.has_element(ad, text=alert_text)
+            element_exist = uutils.has_element(ad, text=alert_text)
+        # Checks if the alert title node also has a sibling node for switch button.
+        if element_exist:
+            if alert_text == "Alerts":
+                node = uutils.wait_and_get_xml_node(ad, timeout=30, matching_node=2, text=alert_text)
+            else:
+                node = uutils.wait_and_get_xml_node(ad, timeout=30, text=alert_text)
+            if not node.parentNode.nextSibling.firstChild:
+                element_exist = False
+        return element_exist
 
     def _open_wea_settings_page(self, ad):
         ad.adb.shell("am start -a %s -n %s/%s" % (MAIN_ACTIVITY, CBR_PACKAGE, CBR_ACTIVITY))
@@ -305,6 +350,9 @@ class CellBroadcastTest(TelephonyBaseTest):
         ad.adb.push("%s %s" % (self.carrier_test_conf, carrier_test_config_xml))
 
         # reboot device
+        reboot_device(ad)
+        # b/259586331#18 reboot twice to ensure the correct subscription info of the new region
+        # is correctly loaded to CBR module.
         reboot_device(ad)
         time.sleep(WAIT_TIME_FOR_ALERTS_TO_POPULATE)
 
@@ -1501,6 +1549,466 @@ class CellBroadcastTest(TelephonyBaseTest):
         return self._settings_test_flow(QATAR_VODAFONE)
 
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_mexico(self):
+        """ Verifies Wireless Emergency Alert settings for Mexico
+
+        configures the device to Mexico
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(MEXICO)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_bahamas(self):
+        """ Verifies Wireless Emergency Alert settings for Bahamas
+
+        configures the device to Bahamas
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(BAHAMAS)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_uk_ee(self):
+        """ Verifies Wireless Emergency Alert settings for UK_EE
+
+        configures the device to UK EE
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(UK_EE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_columbia_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for COLUMBIA_TELEFONICA
+
+        configures the device to COLUMBIA TELEFONICA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(COLUMBIA_TELEFONICA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_japan_emobile(self):
+        """ Verifies Wireless Emergency Alert settings for JAPAN_EMOBILE
+
+        configures the device to JAPAN EMOBILE
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(JAPAN_EMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_japan_wirelesscityplanning(self):
+        """ Verifies Wireless Emergency Alert settings for JAPAN_WIRELESSCITYPLANNING
+
+        configures the device to JAPAN WIRELESS CITY PLANNING
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(JAPAN_WIRELESSCITYPLANNING)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_japan_docomo(self):
+        """ Verifies Wireless Emergency Alert settings for JAPAN_DOCOMO
+
+        configures the device to JAPAN DOCOMO
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(JAPAN_DOCOMO)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_japan_rakuten(self):
+        """ Verifies Wireless Emergency Alert settings for JAPAN_RAKUTEN
+
+        configures the device to JAPAN RAKUTEN
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(JAPAN_RAKUTEN)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_korea_skt(self):
+        """ Verifies Wireless Emergency Alert settings for KOREA_SKT
+
+        configures the device to KOREA SKT
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(KOREA_SKT)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_korea_lgu(self):
+        """ Verifies Wireless Emergency Alert settings for KOREA_LGU
+
+        configures the device to KOREA LGU
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(KOREA_LGU)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_venezuela(self):
+        """ Verifies Wireless Emergency Alert settings for VENEZUELA
+
+        configures the device to VENEZUELA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(VENEZUELA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_russia(self):
+        """ Verifies Wireless Emergency Alert settings for RUSSIA
+
+        configures the device to RUSSIA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(RUSSIA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_russia_megafon(self):
+        """ Verifies Wireless Emergency Alert settings for RUSSIA_MEGAFON
+
+        configures the device to RUSSIA MEGAFON
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(RUSSIA_MEGAFON)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_turkey(self):
+        """ Verifies Wireless Emergency Alert settings for TURKEY
+
+        configures the device to TURKEY
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(TURKEY)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us(self):
+        """ Verifies Wireless Emergency Alert settings for US
+
+        configures the device to US
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(US)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_sprint(self):
+        """ Verifies Wireless Emergency Alert settings for US_SPRINT
+
+        configures the device to US SPRINT
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(US_SPRINT)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_us_usc(self):
+        """ Verifies Wireless Emergency Alert settings for US_USC
+
+        configures the device to US USC
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(US_USC)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_azerbaijan(self):
+        """ Verifies Wireless Emergency Alert settings for AZERBAIJAN
+
+        configures the device to AZERBAIJAN
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(AZERBAIJAN)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_china(self):
+        """ Verifies Wireless Emergency Alert settings for CHINA
+
+        configures the device to CHINA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(CHINA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_southafrica_telkom(self):
+        """ Verifies Wireless Emergency Alert settings for SOUTHAFRICA_TELKOM
+
+        configures the device to SOUTH AFRICA TELKOM
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(SOUTHAFRICA_TELKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_guatemala_telefonica(self):
+        """ Verifies Wireless Emergency Alert settings for GUATEMALA_TELEFONICA
+
+        configures the device to GUATEMALA TELEFONICA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(GUATEMALA_TELEFONICA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_india(self):
+        """ Verifies Wireless Emergency Alert settings for INDIA
+
+        configures the device to INDIA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(INDIA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_hungary_telekom(self):
+        """ Verifies Wireless Emergency Alert settings for HUNGARY_TELEKOM
+
+        configures the device to HUNGARY TELEKOM
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(HUNGARY_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_croatia_hrvatski(self):
+        """ Verifies Wireless Emergency Alert settings for CROATIA_HRVATSKI
+
+        configures the device to CROATIA HRVATSKI
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(CROATIA_HRVATSKI)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_czech_tmobile(self):
+        """ Verifies Wireless Emergency Alert settings for CZECH_TMOBILE
+
+        configures the device to CZECH TMOBILE
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(CZECH_TMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_slovakia_telekom(self):
+        """ Verifies Wireless Emergency Alert settings for SLOVAKIA_TELEKOM
+
+        configures the device to SLOVAKIA TELEKOM
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(SLOVAKIA_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_austria_magenta(self):
+        """ Verifies Wireless Emergency Alert settings for AUSTRIA_MAGENTA
+
+        configures the device to AUSTRIA MAGENTA
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(AUSTRIA_MAGENTA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_poland_tmobile(self):
+        """ Verifies Wireless Emergency Alert settings for POLAND_TMOBILE
+
+        configures the device to POLAND TMOBILE
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(POLAND_TMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_austria_tmobile(self):
+        """ Verifies Wireless Emergency Alert settings for AUSTRIA_TMOBILE
+
+        configures the device to AUSTRIA TMOBILE
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(AUSTRIA_TMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_macedonia_telekom(self):
+        """ Verifies Wireless Emergency Alert settings for MACEDONIA_TELEKOM
+
+        configures the device to MACEDONIA TELEKOM
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(MACEDONIA_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_montenegro_telekom(self):
+        """ Verifies Wireless Emergency Alert settings for MONTENEGRO_TELEKOM
+
+        configures the device to MONTENEGRO TELEKOM
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(MONTENEGRO_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_ukraine(self):
+        """ Verifies Wireless Emergency Alert settings for UKRAINE
+
+        configures the device to UKRAINE
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(UKRAINE)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_alert_settings_norway(self):
+        """ Verifies Wireless Emergency Alert settings for NORWAY
+
+        configures the device to NORWAY
+        verifies alert names and its default values
+        toggles the alert twice if available
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._settings_test_flow(NORWAY)
+
     @test_tracker_info(uuid="f3a99475-a23f-427c-a371-d2a46d357d75")
     @TelephonyBaseTest.tel_test_wrap
     def test_send_receive_alerts_australia(self):
@@ -2162,6 +2670,518 @@ class CellBroadcastTest(TelephonyBaseTest):
             True if pass; False if fail and collects screenshot
         """
         return self._send_receive_test_flow(QATAR_VODAFONE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_mexico(self):
+        """ Verifies Wireless Emergency Alerts for Mexico.
+
+        configures the device to Mexico
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(MEXICO)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_bahamas(self):
+        """ Verifies Wireless Emergency Alerts for Bahamas.
+
+        configures the device to Bahamas
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(BAHAMAS)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_uk_ee(self):
+        """ Verifies Wireless Emergency Alerts for UK_EE.
+
+        configures the device to UK EE
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(UK_EE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_columbia_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for COLUMBIA_TELEFONICA.
+
+        configures the device to COLUMBIA TELEFONICA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(COLUMBIA_TELEFONICA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_japan_emobile(self):
+        """ Verifies Wireless Emergency Alerts for JAPAN_EMOBILE.
+
+        configures the device to JAPAN EMOBILE
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(JAPAN_EMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_japan_wirelesscityplanning(self):
+        """ Verifies Wireless Emergency Alerts for JAPAN_WIRELESSCITYPLANNING.
+
+        configures the device to JAPAN WIRELESS CITY PLANNING
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(JAPAN_WIRELESSCITYPLANNING)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_japan_docomo(self):
+        """ Verifies Wireless Emergency Alerts for JAPAN_DOCOMO.
+
+        configures the device to JAPAN DOCOMO
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(JAPAN_DOCOMO)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_japan_rakuten(self):
+        """ Verifies Wireless Emergency Alerts for JAPAN_RAKUTEN.
+
+        configures the device to JAPAN RAKUTEN
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(JAPAN_RAKUTEN)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_korea_skt(self):
+        """ Verifies Wireless Emergency Alerts for KOREA_SKT.
+
+        configures the device to KOREA SKT
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(KOREA_SKT)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_korea_lgu(self):
+        """ Verifies Wireless Emergency Alerts for KOREA_LGU.
+
+        configures the device to KOREA LGU
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(KOREA_LGU)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_venezuela(self):
+        """ Verifies Wireless Emergency Alerts for VENEZUELA.
+
+        configures the device to VENEZUELA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(VENEZUELA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_russia(self):
+        """ Verifies Wireless Emergency Alerts for RUSSIA.
+
+        configures the device to RUSSIA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(RUSSIA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_russia_megafon(self):
+        """ Verifies Wireless Emergency Alerts for RUSSIA_MEGAFON.
+
+        configures the device to RUSSIA MEGAFON
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(RUSSIA_MEGAFON)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_turkey(self):
+        """ Verifies Wireless Emergency Alerts for TURKEY.
+
+        configures the device to TURKEY
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(TURKEY)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_us(self):
+        """ Verifies Wireless Emergency Alerts for US.
+
+        configures the device to US
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(US)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_us_sprint(self):
+        """ Verifies Wireless Emergency Alerts for US_SPRINT.
+
+        configures the device to US SPRINT
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(US_SPRINT)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_us_usc(self):
+        """ Verifies Wireless Emergency Alerts for US_USC.
+
+        configures the device to US USC
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(US_USC)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_azerbaijan(self):
+        """ Verifies Wireless Emergency Alerts for AZERBAIJAN.
+
+        configures the device to AZERBAIJAN
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(AZERBAIJAN)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_china(self):
+        """ Verifies Wireless Emergency Alerts for CHINA.
+
+        configures the device to CHINA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(CHINA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_southafrica_telkom(self):
+        """ Verifies Wireless Emergency Alerts for SOUTHAFRICA_TELKOM.
+
+        configures the device to SOUTHAFRICA TELKOM
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(SOUTHAFRICA_TELKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_guatemala_telefonica(self):
+        """ Verifies Wireless Emergency Alerts for GUATEMALA_TELEFONICA.
+
+        configures the device to GUATEMALA TELEFONICA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(GUATEMALA_TELEFONICA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_india(self):
+        """ Verifies Wireless Emergency Alerts for INDIA.
+
+        configures the device to INDIA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(INDIA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_hungary_telekom(self):
+        """ Verifies Wireless Emergency Alerts for HUNGARY_TELEKOM.
+
+        configures the device to HUNGARY_TELEKOM
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(HUNGARY_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_croatia_hrvatski(self):
+        """ Verifies Wireless Emergency Alerts for CROATIA_HRVATSKI.
+
+        configures the device to CROATIA HRVATSKI
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(CROATIA_HRVATSKI)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_czech_tmobile(self):
+        """ Verifies Wireless Emergency Alerts for CZECH_TMOBILE.
+
+        configures the device to CZECH TMOBILE
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(CZECH_TMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_slovakia_telekom(self):
+        """ Verifies Wireless Emergency Alerts for SLOVAKIA_TELEKOM.
+
+        configures the device to SLOVAKIA TELEKOM
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(SLOVAKIA_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_austria_magenta(self):
+        """ Verifies Wireless Emergency Alerts for AUSTRIA_MAGENTA.
+
+        configures the device to AUSTRIA MAGENTA
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(AUSTRIA_MAGENTA)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_poland_tmobile(self):
+        """ Verifies Wireless Emergency Alerts for POLAND_TMOBILE.
+
+        configures the device to POLAND TMOBILE
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(POLAND_TMOBILE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_macedonia_telekom(self):
+        """ Verifies Wireless Emergency Alerts for MACEDONIA_TELEKOM.
+
+        configures the device to MACEDONIA TELEKOM
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(MACEDONIA_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_montenegro_telekom(self):
+        """ Verifies Wireless Emergency Alerts for MONTENEGRO_TELEKOM.
+
+        configures the device to MONTENEGRO_TELEKOM
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(MONTENEGRO_TELEKOM)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_ukraine(self):
+        """ Verifies Wireless Emergency Alerts for UKRAINE.
+
+        configures the device to UKRAINE
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(UKRAINE)
+
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_send_receive_alerts_norway(self):
+        """ Verifies Wireless Emergency Alerts for NORWAY.
+
+        configures the device to NORWAY
+        send alerts across all channels,
+        verify if alert is received correctly
+        verify sound and vibration timing
+        click on OK/exit alert and verify text
+
+        Returns:
+            True if pass; False if fail and collects screenshot
+        """
+        return self._send_receive_test_flow(NORWAY)
 
 
     @TelephonyBaseTest.tel_test_wrap
