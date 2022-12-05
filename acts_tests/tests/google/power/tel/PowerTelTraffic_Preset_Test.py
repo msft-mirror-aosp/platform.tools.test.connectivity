@@ -14,11 +14,10 @@
 import os
 import time
 
-from acts import signals
-import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
-from acts.controllers.cellular_lib import AndroidCellularDut
+import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
-class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
+
+class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
     # command to enable mobile data
     ADB_CMD_ENABLE_MOBILE_DATA = 'svc data enable'
 
@@ -29,13 +28,16 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
     # (require: 1.path to iperf exe 2.hostname/hostIP)
     START_IPERF_CLIENT_UE_CMD = 'nohup > /dev/null 2>&1 sh -c "iperf3 -c {iperf_host_ip} -i1 -p5202 -w8m -t2000 > /dev/null &"'
 
-    #command to start iperf server on host()
+    # command to start iperf server on host()
     START_IPERF_SV_HOST_CMD = '{exe_path}\\iperf3 -s -p5202'
 
     # command to start iperf client on host
     # (require: 1.path to iperf exe 2.UE IP)
     START_IPERF_CLIENT_HOST_CMD = (
         '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201')
+
+    START_IPERF_CLIENT_HOST_CMD_FR2 = (
+        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -P32')
 
     def __init__(self, controllers):
         super().__init__(controllers)
@@ -59,8 +61,7 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
 
     def setup_test(self):
         # Call parent method first to setup simulation
-        if not super().setup_test():
-            return False
+        super().setup_test()
 
         # setup ssh client
         self.ssh_iperf_client = self.cellular_simulator.create_ssh_client()
@@ -107,9 +108,18 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         self.log.info('UE iperf server started')
         time.sleep(5)
         # start host iperf client
-        cmd = self.START_IPERF_CLIENT_HOST_CMD.format(
-            exe_path=self.iperf_exe_path,
-            ue_ip=self.ue_ip)
+        cmd = None
+        if 'fr2' in self.test_name:
+            cmd = self.START_IPERF_CLIENT_HOST_CMD_FR2.format(
+                exe_path=self.iperf_exe_path,
+                ue_ip=self.ue_ip)
+        else:
+            cmd = self.START_IPERF_CLIENT_HOST_CMD.format(
+                exe_path=self.iperf_exe_path,
+                ue_ip=self.ue_ip)
+
+        if not cmd:
+            raise RuntimeError('Cannot format command to start iperf client.')
         self._exec_ssh_cmd(self.ssh_iperf_client, cmd)
         self.log.info('Host iperf client started')
         time.sleep(5)
@@ -123,7 +133,8 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
         self.log.info('Host iperf server started')
         time.sleep(5)
         # start UE iperf
-        adb_cmd = self.START_IPERF_CLIENT_UE_CMD.format(iperf_host_ip=self.iperf_host_ip)
+        adb_cmd = self.START_IPERF_CLIENT_UE_CMD.format(
+            iperf_host_ip=self.iperf_host_ip)
         self.cellular_dut.ad.adb.shell(adb_cmd)
         self.log.info('cmd sent to UE: ' + adb_cmd)
         self.log.info('UE iperf client started')
@@ -150,44 +161,9 @@ class PowerTelTrafficPresetTest(PWCEL.PowerCellularLabBaseTest):
     def turn_on_mobile_data(self):
         self.dut.adb.shell(self.ADB_CMD_ENABLE_MOBILE_DATA)
 
-    def teardown_test(self):
-        super().teardown_test()
-
 
 class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
-    def setup_class(self):
-        super().setup_class()
-        self.need_retry = False
-        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
-
-    def setup_test(self):
-        try:
-            super().setup_test()
-        except BrokenPipeError:
-            self.log.info('TA crashed test need retry.')
-            self.need_retry = True
-            self.cellular_simulator.recovery_ta()
-            self.cellular_simulator.socket_connect()
-        except:
-            self.log.info('Waiting for device to on.')
-            self.dut.adb.wait_for_device()
-            self.cellular_dut = AndroidCellularDut.AndroidCellularDut(
-            self.android_devices[0], self.log)
-            self.dut.root_adb()
-            # Restart SL4A
-            self.dut.start_services()
-            self.need_retry = True
-
-    def teardown_test(self):
-        super().teardown_test()
-        self.sponge_upload()
-        self.cellular_simulator.detach()
-        self.cellular_dut.toggle_airplane_mode(True)
-
     def test_preset_LTE_traffic(self):
-        if self.need_retry:
-            self.need_retry = False
-            raise signals.TestError('Test retry.')
         self.power_tel_traffic_test()
 
     def test_preset_nsa_traffic_fr1(self):
@@ -196,16 +172,7 @@ class PowerTelTraffic_Preset_Test(PowerTelTrafficPresetTest):
     def test_preset_sa_traffic_fr1(self):
         self.power_tel_traffic_test()
 
+
 class PowerTelTrafficFr2_Preset_Test(PowerTelTrafficPresetTest):
-    def setup_class(self):
-        super().setup_class()
-        self.cellular_simulator.switch_HCCU_settings(is_fr2=True)
-
-    def teardown_test(self):
-        super().teardown_test()
-        self.sponge_upload()
-        self.cellular_simulator.detach()
-        self.cellular_dut.toggle_airplane_mode(True)
-
     def test_preset_nsa_traffic_fr2(self):
         self.power_tel_traffic_test()

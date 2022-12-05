@@ -13,10 +13,10 @@
 #   limitations under the License.
 import time
 
-import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
+import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
 
-class PowerTelAirplaneModeTest(PWCEL.PowerCellularLabBaseTest):
+class PowerTelAirplaneModeTest(PB.PowerCellularPresetLabBaseTest):
 
     def power_tel_airplane_mode_test(self):
         """Measure power while airplane mode is on. """
@@ -31,14 +31,6 @@ class PowerTelAirplaneModeTest(PWCEL.PowerCellularLabBaseTest):
         # Check if power measurement is within the required values
         self.pass_fail_check(self.avg_current)
 
-    def teardown_test(self):
-        super().teardown_test()
-        self.sponge_upload()
-
-
 class PowerTelAirplaneMode_Test(PowerTelAirplaneModeTest):
-    def setup_class(self):
-        super().setup_class()
-
     def test_airplane_mode(self):
         self.power_tel_airplane_mode_test()
