@@ -2815,7 +2815,6 @@ def disable_ramdump(ad):
     ad.start_adb_logcat()
 
 
-@retry(Exception, tries=3, delay=30)
 def deep_suspend_device(ad):
     """Force DUT to enter deep suspend mode
 
