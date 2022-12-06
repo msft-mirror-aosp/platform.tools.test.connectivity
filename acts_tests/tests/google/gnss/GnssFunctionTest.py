@@ -767,6 +767,10 @@ class GnssFunctionTest(BaseTestClass):
             gutils.wait_n_mins_for_gnss_tracking(self.ad, tracking_begin_time, testtime=wait_time)
             return tracking_begin_time
 
+        if self.ad.model.lower() == "sunfish":
+            raise signals.TestSkip(
+                "According to b/241049795, it's HW issue and won't be fixed.")
+
         gutils.start_pixel_logger(self.ad)
         with gutils.run_gnss_tracking(self.ad, criteria=self.supl_cs_criteria, meas_flag=True):
             start_time = wait_for_power_state_changes(wait_time=2)
