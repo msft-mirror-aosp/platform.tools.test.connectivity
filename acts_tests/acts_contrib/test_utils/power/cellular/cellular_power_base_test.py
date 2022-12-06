@@ -49,14 +49,9 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
     # kibble report
     KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
     MODEM_PCIE_RAIL_LIST = [
-        'C4_23__PP1800_L2C_PCIEG3',
-        'C2_23__PP1200_L9C_PCIE',
-        'C2_06__PP0850_L8C_PCIE'
-    ]
-
-    MODEM_RAIL_LIST = [
-        'C1_43__VSENSE_VSYS_PWR_MODEM',
-        'C1_43__VSYS_PWR_MODEM'
+        'C4_23__PP1800_L2C_PCIEG3:mW',
+        'C2_23__PP1200_L9C_PCIE:mW',
+        'C2_06__PP0850_L8C_PCIE:mW'
     ]
 
     # params key
@@ -272,29 +267,25 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
         modem_pcie_power = 0
         # find kibble rail data json file path.
         kibble_dir = os.path.join(self.root_output_path, 'Kibble')
-        kibble_csv_path = None
+        kibble_json_path = None
         for f in os.listdir(kibble_dir):
-            if self.test_name in f and '.csv' in f:
-                kibble_csv_path = os.path.join(kibble_dir, f)
-                self.log.info('Kibble csv file path: ' + kibble_csv_path)
-                break
+            if '.json' in f:
+                kibble_json_path = os.path.join(kibble_dir, f)
+                self.log.info('Kibble json file path: ' + kibble_json_path)
+        kibble_rails_data = None
+        if kibble_json_path:
+            with open(kibble_json_path, 'r') as f:
+                kibble_rails_data = json.load(f)
 
         # parsing modem pcie power rails.
         self.log.info('Parsing MODEM PCIE power.')
-        modem_rail = 0
-        if kibble_csv_path:
-            with open(kibble_csv_path, 'r') as f:
-                for line in f:
-                    # railname,val,mA,val,mV,val,mW
-                    railname, _, _, _, _, power, _ = line.split(',')
-                    if railname in self.MODEM_PCIE_RAIL_LIST:
-                        self.log.info(railname + ': ' + power)
-                        modem_pcie_power += float(power)
-                    elif railname in self.MODEM_RAIL_LIST:
-                        self.log.info(railname + ': ' + power)
-                        modem_rail = float(power)
-        if modem_rail:
-            self.power_results[self.test_name] = modem_rail
+        if kibble_rails_data:
+            for data_dict in kibble_rails_data:
+                # format of data_dict['name']: _._.rail_name:unit
+                channel = data_dict['name'].split('.')[-1]
+                if channel in self.MODEM_PCIE_RAIL_LIST:
+                    self.log.info(channel + ': ' + str(data_dict['avg']))
+                    modem_pcie_power += data_dict['avg']
         return modem_pcie_power
 
     def sponge_upload(self):
@@ -330,16 +321,17 @@ class PowerCellularLabBaseTest(CBT.CellularBaseTest, PBT.PowerBaseTest):
 
         # if kibbles are using, get power from kibble
         if hasattr(self, 'bitses'):
-            # modem kibble power without pcie
-            modem_kibble_power_wo_pcie = 0
-            modem_pcie = 0
-            modem_pcie = self.get_modem_pcie_power()
             modem_kibble_power = self.power_results.get(self.test_name, None)
-            modem_kibble_power_wo_pcie = modem_kibble_power - modem_pcie
             system_power = self.get_system_power()
         else:
             system_power = self.power_results.get(self.test_name, None)
 
+        # modem kibble power without pcie
+        modem_kibble_power_wo_pcie = 0
+        modem_pcie = 0
+        if modem_kibble_power:
+            modem_pcie = self.get_modem_pcie_power()
+            modem_kibble_power_wo_pcie = modem_kibble_power - modem_pcie
 
         self.record_data({
             'Test Name': self.test_name,

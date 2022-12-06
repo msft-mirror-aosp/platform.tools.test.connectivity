@@ -31,16 +31,6 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
         '--ez vonr_setting_visibility_bool true '
         '--ez vonr_enabled_bool true')
 
-    ADB_CMD_DISABLE_IMS = ('am broadcast '
-        '-a com.google.android.carrier.action.LOCAL_OVERRIDE '
-        '-n com.google.android.carrier/.ConfigOverridingReceiver '
-        '--ez carrier_volte_available_bool false '
-        '--ez carrier_wfc_ims_available_bool false '
-        '--ez carrier_vt_available_bool false '
-        '--ez carrier_supports_ss_over_ut_bool false '
-        '--ez vonr_setting_visibility_bool false '
-        '--ez vonr_enabled_bool false')
-
     # set NV command
     # !NRCAPA.Gen.VoiceOverNr, 0, 01
     ADB_SET_GOOG_NV = 'echo at+googsetnv="{nv_name}",{index},"{value}" > /dev/umts_router'
@@ -147,7 +137,7 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
                 index = '0',
                 value = '11'
             )
-        else:
+        elif self.cellular_dut.ad.model == 'cheetah':
             # For P22, NASU.NR.CONFIG.MODE to 11
             self.set_nv(
                 nv_name = 'NASU.NR.CONFIG.MODE',
@@ -203,11 +193,6 @@ class PowerTelImsPresetTest(PWCEL.PowerCellularLabBaseTest):
         self.ims_client.remove_ims_app_link()
         self.cellular_dut.toggle_airplane_mode(True)
         self.cellular_simulator.detach()
-
-    def teardown_class(self):
-        super().teardown_class()
-        self.log.info('Disable IMS.')
-        self.dut.adb.shell(self.ADB_CMD_DISABLE_IMS)
 
 
 class PowerTelIms_Preset_Test(PowerTelImsPresetTest):
