@@ -174,7 +174,6 @@ class ReducedPdcch(Enum):
 
 
 class Cmw500(abstract_inst.SocketInstrument):
-
     def __init__(self, ip_addr, port):
         """Init method to setup variables for controllers.
 
@@ -449,6 +448,28 @@ class Cmw500(abstract_inst.SocketInstrument):
             lte measurement object.
         """
         return LteMeasurement(self)
+
+    def set_sms(self, message):
+        """Sets the SMS message to be sent to the DUT.
+
+        Args:
+            message: the SMS message to send.
+        """
+        cmd = 'CONFigure:LTE:SIGN:SMS:OUTGoing:INTernal "{}"'.format(message)
+        self.send_and_recv(cmd)
+
+    def send_sms(self):
+        """Sends the currently set SMS message."""
+        self.send_and_recv('CALL:LTE:SIGN:PSWitched:ACTion SMS;*OPC?')
+        timeout = time.time() + STATE_CHANGE_TIMEOUT
+        while time.time() < timeout:
+            state = self.send_and_recv(
+                'SENSe:LTE:SIGN:SMS:OUTGoing:INFO:LMSent?')
+            if state == "SUCC":
+                return
+            time.sleep(1)
+
+        raise CmwError('Failed to send SMS message')
 
 
 class BaseStation(object):
@@ -890,7 +911,8 @@ class BaseStation(object):
     @property
     def dl_antenna(self):
         """Gets dl antenna count of cell."""
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas?'.format(self._bts)
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas?'.format(
+            self._bts)
         return self._cmw.send_and_recv(cmd)
 
     @dl_antenna.setter
@@ -1108,9 +1130,7 @@ class BaseStation(object):
         raise NotImplementedError()
 
 
-
 class LteMeasurement(object):
-
     def __init__(self, cmw):
         self._cmw = cmw
 
