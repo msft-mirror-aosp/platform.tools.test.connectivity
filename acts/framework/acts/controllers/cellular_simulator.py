@@ -64,10 +64,11 @@ class AbstractCellularSimulator:
         """
 
         config_vars = vars(config)
-        config_dict = {key: config_vars[key]
-                       for key in config_vars if config_vars[key]}
-        self.log.info('The config for {} is {}'.format(
-            bts_index, config_dict))
+        config_dict = {
+            key: config_vars[key]
+            for key in config_vars if config_vars[key]
+        }
+        self.log.info('The config for {} is {}'.format(bts_index, config_dict))
 
         if config.output_power:
             self.set_output_power(bts_index, config.output_power)
@@ -485,6 +486,14 @@ class AbstractCellularSimulator:
 
         Returns:
             The PUSCH power in the primary input port.
+        """
+        raise NotImplementedError()
+
+    def send_sms(self, message):
+        """ Sends an SMS message to the DUT.
+
+        Args:
+            message: the SMS message to send.
         """
         raise NotImplementedError()
 
