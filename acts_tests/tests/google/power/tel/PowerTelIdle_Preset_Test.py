@@ -14,14 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
+import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
 
-class PowerTelIdle_Preset_Test(PWCEL.PowerCellularLabBaseTest):
-    def setup_class(self):
-        super().setup_class()
-        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
-
+class PowerTelIdle_Preset_Test(PB.PowerCellularPresetLabBaseTest):
     def power_tel_idle_test(self):
         """ Measures power when the device is on RRC idle state."""
         idle_wait_time = self.simulation.rrc_sc_timer + 30
@@ -33,12 +29,6 @@ class PowerTelIdle_Preset_Test(PWCEL.PowerCellularLabBaseTest):
 
         # Check if power measurement is below the required value
         self.pass_fail_check(self.avg_current)
-
-    def teardown_test(self):
-        super().teardown_test()
-        self.sponge_upload()
-        self.cellular_simulator.detach()
-        self.cellular_dut.toggle_airplane_mode(True)
 
     def test_preset_LTE_idle(self):
         self.power_tel_idle_test()

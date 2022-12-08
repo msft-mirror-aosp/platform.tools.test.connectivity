@@ -27,6 +27,12 @@ class PresetSimulation(BaseSimulation):
     KEY_CELL_INFO = "cell_info"
     KEY_SCPI_FILE_NAME = "scpi_file"
 
+    NETWORK_BIT_MASK = {
+        'nr_lte': '11000001000000000000'
+    }
+    ADB_CMD_LOCK_NETWORK = 'cmd phone set-allowed-network-types-for-users -s 0 {network_bit_mask}'
+    NR_LTE_BIT_MASK_KEY = 'nr_lte'
+
     def __init__(self,
                  simulator,
                  log,
@@ -59,6 +65,11 @@ class PresetSimulation(BaseSimulation):
         self.dut.toggle_data_roaming(True)
 
         # Force device to LTE only so that it connects faster
+        # lock_network_cmd = self.ADB_CMD_LOCK_NETWORK.format(
+        #     network_bit_mask=self.NETWORK_BIT_MASK[self.NR_LTE_BIT_MASK_KEY]
+        # )
+        # res = str(self.dut.ad.adb.shell(lock_network_cmd))
+        # self.log.info('NR|LTE network lock: ' + res)
         try:
             self.dut.set_preferred_network_type(
                 BaseCellularDut.PreferredNetworkType.NR_LTE)
