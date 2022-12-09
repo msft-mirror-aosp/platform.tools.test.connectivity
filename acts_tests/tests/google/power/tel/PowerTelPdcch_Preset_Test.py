@@ -11,21 +11,22 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
+class PowerTelPdcch_Preset_Test(PB.PowerCellularPresetLabBaseTest):
+    def power_pdcch_test(self):
+        """ Measures power during PDCCH only.
 
-import acts_contrib.test_utils.power.cellular.cellular_pdcch_power_test as cppt
+        There's nothing to do here other than starting the power measurement
+        and deciding for pass or fail, as the base class will handle attaching.
+        Requirements for this test are that mac padding is off and that the
+        inactivity timer is not enabled. """
 
+        # Measure power
+        self.collect_power_data()
 
-class PowerTelPdcch_Preset_Test(cppt.PowerTelPDCCHTest):
-    def setup_class(self):
-        super().setup_class()
-        self.cellular_simulator.switch_HCCU_settings(is_fr2=False)
-
-    def teardown_test(self):
-        super().teardown_test()
-        self.sponge_upload()
-        self.cellular_simulator.detach()
-        self.cellular_dut.toggle_airplane_mode(True)
+        # Check if power measurement is within the required values
+        self.pass_fail_check(self.avg_current)
 
     def test_preset_sa_pdcch_fr1(self):
         self.power_pdcch_test()
