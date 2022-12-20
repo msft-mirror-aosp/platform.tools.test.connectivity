@@ -91,7 +91,6 @@ class LabTtffTestBase(BaseTestClass):
         self.mdsapp = None
         self.modemparfile = None
         self.nv_dict = None
-        self.gtw_gpstool_apk = None
         self.scenario_power = None
         self.ttff_timeout = None
         self.test_types = None
