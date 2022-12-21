@@ -125,6 +125,7 @@ from acts_contrib.test_utils.tel.tel_ims_utils import wait_for_wfc_enabled
 VIBRATION_START_TIME = "startTime"
 VIBRATION_END_TIME = "endTime"
 INVALID_VIBRATION_TIME = "0"
+INVALID_SUBSCRIPTION_ID = -1
 
 class CellBroadcastTest(TelephonyBaseTest):
     def setup_class(self):
@@ -158,26 +159,24 @@ class CellBroadcastTest(TelephonyBaseTest):
         for info in subInfo:
             if info["simSlotIndex"] >= 0:
                 self.slot_sub_id_list[info["subscriptionId"]] = info["simSlotIndex"]
-        if len(subInfo) > 1:
-            self.android_devices[0].log.info("device is operated at DSDS!")
-        else:
-            self.android_devices[0].log.info("device is operated at single SIM!")
-        self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
-        # If device doesn't set the preferred voice subscription id, set the preferred voice to the sub id of pSIM.
-        if self.current_sub_id < 0:
+        self._check_multisim()
+        self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultSubId()
+        # Sets default sub id to pSIM to avoid crashing if returning INVALID_SUBSCRIPTION_ID.
+        if self.current_sub_id == INVALID_SUBSCRIPTION_ID:
             for sub_id in self.slot_sub_id_list.keys():
                 if self.slot_sub_id_list[sub_id] == 0:
                     psim_sub_id = sub_id
                     break;
-            self.android_devices[0].droid.subscriptionSetDefaultVoiceSubId(psim_sub_id)
-            self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId()
+            self.android_devices[0].droid.subscriptionSetDefaultSubId(psim_sub_id)
+            self.current_sub_id = self.android_devices[0].droid.subscriptionGetDefaultSubId()
 
-        self.android_devices[0].log.info("Active slot: %d, active voice subscription id: %d",
-                                         self.slot_sub_id_list[self.current_sub_id], self.current_sub_id)
+        self.android_devices[0].log.info("Active slot: %d, active subscription id: %d",
+                                         self.slot_sub_id_list[self.current_sub_id],
+                                         self.current_sub_id)
 
         if hasattr(self, "carrier_test_conf"):
             if isinstance(self.carrier_test_conf, list):
-                self.carrier_test_conf = self.carrier_test_conf[self.slot_sub_id_list[self.current_sub_id]]
+                self.carrier_test_conf = self.carrier_test_conf[0]
             if not os.path.isfile(self.carrier_test_conf):
                 self.carrier_test_conf = os.path.join(
                     self.user_params[Config.key_config_path.value],
@@ -200,6 +199,13 @@ class CellBroadcastTest(TelephonyBaseTest):
 
     def teardown_class(self):
         TelephonyBaseTest.teardown_class(self)
+
+
+    def _check_multisim(self):
+        if "dsds" in self.android_devices[0].adb.shell("getprop | grep persist.radio.multisim.config"):
+            self.android_devices[0].log.info("device is operated at DSDS!")
+        else:
+            self.android_devices[0].log.info("device is operated at single SIM!")
 
 
     def _verify_cbr_test_apk_install(self, ad):
@@ -225,6 +231,26 @@ class CellBroadcastTest(TelephonyBaseTest):
     def _disable_vibration_check_for_11(self):
         if self.android_devices[0].adb.getprop("ro.build.version.release") in ("11", "R"):
             self.verify_vibration = False
+
+    def _get_carrier_test_config_name(self):
+        build_version = self.android_devices[0].adb.getprop("ro.build.version.release")
+        self.android_devices[0].log.info("The device's android release build version: %s",
+                                         build_version)
+        slot_index = self.slot_sub_id_list[self.current_sub_id]
+        try:
+            # S build and below only apply to the single sim, use carrier_test_conf.xml.
+            if type(int(build_version)) == int and int(build_version) <= 12:
+                return f'{CARRIER_TEST_CONF_XML_PATH}carrier_test_conf.xml'
+            # T build and above apply to the dual sim, use carrier_test_conf_sim0.xml or
+            # carrier_test_conf_sim1.xml
+            return f'{CARRIER_TEST_CONF_XML_PATH}carrier_test_conf_sim{slot_index}.xml'
+        except ValueError:
+            # S build and below only apply to the single sim, use carrier_test_conf.xml.
+            if build_version <= "S":
+                return f'{CARRIER_TEST_CONF_XML_PATH}carrier_test_conf.xml'
+            # T build and above apply to the dual sim, use carrier_test_conf_sim0.xml or
+            # carrier_test_conf_sim1.xml
+            return f'{CARRIER_TEST_CONF_XML_PATH}carrier_test_conf_sim{slot_index}.xml'
 
     def _get_toggle_value(self, ad, alert_text=None):
         if alert_text == "Alerts":
@@ -274,8 +300,9 @@ class CellBroadcastTest(TelephonyBaseTest):
         tree.write(self.carrier_test_conf)
 
         # push carrier xml to device
-        ad.log.info("push %s to %s" % (self.carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
-        ad.adb.push("%s %s" % (self.carrier_test_conf, CARRIER_TEST_CONF_XML_PATH))
+        carrier_test_config_xml = self._get_carrier_test_config_name()
+        ad.log.info("push %s to %s" % (self.carrier_test_conf, carrier_test_config_xml))
+        ad.adb.push("%s %s" % (self.carrier_test_conf, carrier_test_config_xml))
 
         # reboot device
         reboot_device(ad)
