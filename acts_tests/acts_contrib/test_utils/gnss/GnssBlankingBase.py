@@ -22,6 +22,10 @@ from collections import namedtuple
 from itertools import product
 from numpy import arange
 from pandas import DataFrame, merge
+from acts.signals import TestError
+from acts.signals import TestFailure
+from acts.logger import epoch_to_log_line_timestamp
+from acts.context import get_current_context
 from acts_contrib.test_utils.gnss import LabTtffTestBase as lttb
 from acts_contrib.test_utils.gnss.LabTtffTestBase import glob_re
 from acts_contrib.test_utils.gnss.gnss_test_utils import launch_eecoexer
@@ -34,10 +38,6 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts_contrib.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
 from acts_contrib.test_utils.gnss.dut_log_test_utils import get_gpstool_logs
 from acts_contrib.test_utils.gnss.gnss_testlog_utils import parse_gpstool_ttfflog_to_df
-from acts.signals import TestError
-from acts.signals import TestFailure
-from acts.logger import epoch_to_log_line_timestamp
-from acts.context import get_current_context
 
 
 def range_wi_end(dut, start, stop, step):
@@ -123,6 +123,7 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         self.gsm_sweep_params = None
         self.lte_tdd_pc3_sweep_params = None
         self.lte_tdd_pc2_sweep_params = None
+        self.coex_stop_cmd = None
         self.scen_sweep = False
         self.gnss_pwr_sweep_init_ls = []
         self.gnss_pwr_sweep_fine_sweep_ls = []
@@ -172,7 +173,7 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         self.stop_and_pull_dut_gnss_log(gnss_vendor_log_path)
 
         # Stop cellular Tx and close GPStool and EEcoexer APPs.
-        self.stop_cell_tx()
+        self.stop_coex_tx()
         self.log.debug('Close GPStool APP')
         self.dut.force_stop_apk("com.android.gpstool")
         self.log.debug('Close EEcoexer APP')
@@ -223,16 +224,14 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
             else:
                 self.log.error(f'{key} is a unsupported key in gnss_pwr_sweep.')
 
-    def stop_cell_tx(self):
+    def stop_coex_tx(self):
         """
         Stop EEcoexer Tx power.
         """
-        # EEcoexer cellular stop Tx command.
-        stop_cell_tx_cmd = 'CELLR,19'
-
         # Stop cellular Tx by EEcoexer.
-        self.log.info(f'Stop EEcoexer Test Command: {stop_cell_tx_cmd}')
-        execute_eecoexer_function(self.dut, stop_cell_tx_cmd)
+        if self.coex_stop_cmd:
+            self.log.info(f'Stop EEcoexer Test Command: {self.coex_stop_cmd}')
+            execute_eecoexer_function(self.dut, self.coex_stop_cmd)
 
     def analysis_ttff_ffpe(self, ttff_data, json_tag=''):
         """
@@ -272,7 +271,7 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
                                  ttff_data_df,
                                  left_on='loop',
                                  right_on='ttff_loop')
-        except: # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             self.log.warning("Can't merge ttff_data and df.")
         df_ttff_ffpe['test_case'] = json_tag
 
@@ -355,7 +354,7 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         try:
             ttff_data = process_ttff_by_gtw_gpstool(self.dut, begin_time,
                                                     self.simulator_location)
-        except: # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             self.log.warning('Fail to acquire TTFF data. Retry again.')
             begin_time = self.hot_start_ttff_ffpe_process(iteration, wait)
             ttff_data = process_ttff_by_gtw_gpstool(self.dut, begin_time,
@@ -414,8 +413,6 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         """
 
         # Calculate loop range list from gnss_simulator_power_level and sa_sensitivity
-        # range_ls = range_wi_end(self.dut, start_pwr, stop_pwr, offset)
-        # sweep_range = ','.join([str(x) for x in range_ls])
 
         self.log.debug(
             f'Start the GNSS simulator power sweep. The sweep tuple is [{sweep_ls}]'
@@ -430,13 +427,15 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
         # Sweep GNSS simulator power level in range_ls.
         # Do hot start for every power level.
         # Check the TTFF result if it can pass the criteria.
-        gnss_pwr_params = (self.gnss_simulator_power_level)
-        previous_pwr_lvl = gnss_pwr_params
-        current_pwr_lvl = ()
+        gnss_pwr_params = None
+        previous_pwr_lvl = None
+        current_pwr_lvl = None
         return_pwr_lvl = {}
         for j, gnss_pwr_params in enumerate(sweep_ls[1]):
             json_tag = f'{title}_'
             current_pwr_lvl = gnss_pwr_params
+            if j == 0:
+                previous_pwr_lvl = current_pwr_lvl
             for i, pwr in enumerate(gnss_pwr_params):
                 sat_sys = sweep_ls[0][i].get('sat').upper()
                 band = sweep_ls[0][i].get('band').upper()
@@ -495,31 +494,6 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
 
         return ret, gnss_pwr_lvl
 
-    #def start_gnss_and_wait(self, wait=60):
-    #    """
-    #    The process of enable gnss and spend the wait time for GNSS to
-    #    gather enoung information that make sure the stability of testing.
-
-
-#
-#    Args:
-#        wait: wait time between power sweep.
-#            Type, int.
-#            Default, 60.
-#    """
-#    # Create log path for waiting section logs of GPStool.
-#    gnss_wait_log_dir = os.path.join(self.gnss_log_path, 'GNSS_wait')
-#
-#    # Enable GNSS to receive satellites' signals for "wait_between_pwr" seconds.
-#    self.log.info('Enable GNSS for searching satellites')
-#    start_gnss_by_gtw_gpstool(self.dut, state=True)
-#    self.log.info(f'Wait for {wait} seconds')
-#    sleep(wait)
-#
-#    # Stop GNSS and pull the logs.
-#    start_gnss_by_gtw_gpstool(self.dut, state=False)
-#    get_gpstool_logs(self.dut, gnss_wait_log_dir, False)
-
     def cell_power_sweep(self):
         """
         Linear search cellular power level. Doing GNSS hot start with cellular coexistence
@@ -574,7 +548,7 @@ class GnssBlankingBase(lttb.LabTtffTestBase):
                         power_th = power_search_ls[i - 1]
 
                 # Stop cellular Tx after a test cycle.
-                self.stop_cell_tx()
+                self.stop_coex_tx()
 
         else:
             # Run the stand alone test item.
