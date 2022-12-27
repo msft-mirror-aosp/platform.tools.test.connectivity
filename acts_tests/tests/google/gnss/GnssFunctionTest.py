@@ -78,7 +78,7 @@ class GnssFunctionTest(BaseTestClass):
                       "qdsp6m_path", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
                       "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold",
-                      "set_attenuator"]
+                      "set_attenuator", "weak_signal_criteria"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -248,6 +248,73 @@ class GnssFunctionTest(BaseTestClass):
             self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location)
 
     """ Test Cases """
+
+    @test_tracker_info(uuid="8169c19d-ba2a-4fef-969b-87f793f4e699")
+    def test_cs_first_fixed_system_server_restart(self):
+        """Verify cs first fixed after system server restart.
+
+        Steps:
+            1. Get location fixed within supl_cs_criteria.
+            2. Restarts android runtime.
+            3. Get location fixed within supl_cs_criteria.
+
+        Expected Results:
+            Location fixed within supl_cs_criteria.
+        """
+        overall_test_result = []
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
+        for test_loop in range(1, 6):
+            gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.restart_runtime()
+            self.ad.unlock_screen(password=None)
+            test_result = gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
+            overall_test_result.append(test_result)
+
+        asserts.assert_true(all(overall_test_result),
+                            "SUPL fail after system server restart.")
+
+    @test_tracker_info(uuid="247110d9-1c9e-429e-8e73-f16dd4a1ac74")
+    def test_cs_ttff_after_gps_service_restart(self):
+        """Verify cs ttff after modem silent reboot / GPS daemons restart.
+
+        Steps:
+            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
+            2. Wait 1 minute for modem to recover.
+            3. TTFF Cold Start for 3 iteration.
+            4. Repeat Step 1. to Step 3. for 5 times.
+
+        Expected Results:
+            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
+        """
+        supl_ssr_test_result_all = []
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
+        for times in range(1, 6):
+            begin_time = get_current_epoch_time()
+            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+                test_info = "Modem SSR"
+                gutils.gnss_trigger_modem_ssr_by_mds(self.ad)
+            else:
+                test_info = "restarting GPS daemons"
+                gutils.restart_gps_daemons(self.ad)
+            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                                expected_state=True):
+                raise signals.TestFailure("Fail to connect to LTE network.")
+            gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
+            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
+            ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                    self.pixel_lab_location)
+            supl_ssr_test_result = gutils.check_ttff_data(
+                self.ad, ttff_data, ttff_mode="Cold Start",
+                criteria=self.supl_cs_criteria)
+            self.ad.log.info("SUPL after %s test %d times -> %s" % (
+                test_info, times, supl_ssr_test_result))
+            supl_ssr_test_result_all.append(supl_ssr_test_result)
+
+        asserts.assert_true(all(supl_ssr_test_result_all),
+                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="b3d20ecb-3727-48ed-8a03-19694cc726c1")
     def test_gnss_one_hour_tracking(self):
@@ -527,24 +594,56 @@ class GnssFunctionTest(BaseTestClass):
         """
         self.standalone_ttff_airplane_mode_on("hs", self.standalone_hs_criteria)
 
-    @test_tracker_info(uuid="cd279a18-6aa9-43ee-b2bb-18fe50c6116a")
-    def test_gnss_mobile_data_off(self):
-        """Verify Standalone GNSS functionality while mobile radio is off.
+    @test_tracker_info(uuid="1980f980-3134-47b0-8dd8-9c5af6b742a6")
+    def test_cs_ttff_in_weak_gnss_signal(self):
+        """Verify TTFF cold start under weak GNSS signal.
 
         Steps:
-            1. Disable mobile data.
+            1. Set attenuation value to weak GNSS signal.
             2. TTFF Cold Start for 10 iteration.
-            3. Enable mobile data.
 
         Expected Results:
-            All Standalone TTFF Cold Start results should be within
-            standalone_cs_criteria.
+            TTFF CS results should be within weak_signal_criteria.
         """
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        set_mobile_data(self.ad, False)
-        gutils.run_ttff_via_gtw_gpstool(
-            self.ad, "cs", self.standalone_cs_criteria, self.ttff_test_cycle,
-            self.pixel_lab_location)
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
+        gutils.run_ttff(self.ad, mode="cs", criteria=self.weak_signal_criteria,
+                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
+                        collect_logs=self.collect_logs)
+
+    @test_tracker_info(uuid="d77c8db1-687b-48c5-8101-e4267da05995")
+    def test_ws_ttff_in_weak_gnss_signal(self):
+        """Verify TTFF warm start under weak GNSS signal.
+
+        Steps:
+            2. Set attenuation value to weak GNSS signal.
+            3. TTFF Warm Start for 10 iteration.
+
+        Expected Results:
+            TTFF WS result should be within weak_signal_criteria.
+        """
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
+        gutils.run_ttff(self.ad, mode="ws", criteria=self.weak_signal_criteria,
+                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
+                        collect_logs=self.collect_logs)
+
+    @test_tracker_info(uuid="dd4ccd93-9e49-45c2-a3ea-40781a40b820")
+    def test_hs_ttff_in_weak_gnss_signal(self):
+        """Verify TTFF hot start under weak GNSS signal.
+
+        Steps:
+            2. Set attenuation value to weak GNSS signal.
+            3. TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            TTFF HS result should be within weak_signal_criteria.
+        """
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
+        gutils.run_ttff(self.ad, mode="hs", criteria=self.weak_signal_criteria,
+                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
+                        collect_logs=self.collect_logs)
 
     @test_tracker_info(uuid="36c14727-5de7-4589-ad1b-9119f9d9bb52")
     def test_quick_toggle_gnss_state(self):
