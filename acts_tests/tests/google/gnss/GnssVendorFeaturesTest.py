@@ -137,63 +137,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="c7b223a9-954b-4ff7-bd3f-eebd6afaa9fb")
-    def test_xtra_ttff_cs_weak_gnss_signal(self):
-        """Verify XTRA/LTO functionality of TTFF Cold Start under weak GNSS
-        signal.
-
-        Steps:
-            2. Set attenuation value to weak GNSS signal.
-            3. TTFF Cold Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Cold Start results should be within
-            weak_signal_xtra_cs_criteria.
-        """
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                          self.weak_gnss_signal_attenuation)
-        gutils.run_ttff(self.ad, mode="cs", criteria=self.weak_signal_xtra_cs_criteria,
-                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
-                        collect_logs=self.collect_logs)
-
-    @test_tracker_info(uuid="efcd6661-75f6-4806-be58-05e1ceb75e71")
-    def test_xtra_ttff_ws_weak_gnss_signal(self):
-        """Verify XTRA/LTO functionality of TTFF Warm Start under weak GNSS
-        signal.
-
-        Steps:
-            2. Set attenuation value to weak GNSS signal.
-            3. TTFF Warm Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Warm Start results should be within
-            weak_signal_xtra_ws_criteria.
-        """
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                          self.weak_gnss_signal_attenuation)
-        gutils.run_ttff(self.ad, mode="ws", criteria=self.weak_signal_xtra_ws_criteria,
-                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
-                        collect_logs=self.collect_logs)
-
-    @test_tracker_info(uuid="33d01871-f3f4-42d0-a38f-ac2ca96bc479")
-    def test_xtra_ttff_hs_weak_gnss_signal(self):
-        """Verify XTRA/LTO functionality of TTFF Hot Start under weak GNSS
-        signal.
-
-        Steps:
-            2. Set attenuation value to weak GNSS signal.
-            3. TTFF Hot Start for 10 iteration.
-
-        Expected Results:
-            XTRA/LTO TTFF Hot Start results should be within
-            weak_signal_xtra_hs_criteria.
-        """
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                          self.weak_gnss_signal_attenuation)
-        gutils.run_ttff(self.ad, mode="hs", criteria=self.weak_signal_xtra_hs_criteria,
-                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
-                        collect_logs=self.collect_logs)
-
     @test_tracker_info(uuid="5c0f95d2-7c76-45ca-95c8-304c742e0c82")
     def test_xtra_ttff_cs_wifi(self):
         """Verify XTRA/LTO functionality of TTFF Cold Start with WiFi.
@@ -245,46 +188,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
         gutils.run_ttff(self.ad, mode="hs", criteria=self.xtra_hs_criteria,
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
-
-    @test_tracker_info(uuid="898387f0-169d-4669-a862-77351cb9a7bc")
-    def test_xtra_modem_ssr(self):
-        """Verify XTRA/LTO functionality after modem silent reboot /
-        GPS daemons restart.
-
-        Steps:
-            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
-            2. Wait 1 minute for modem to recover.
-            3. XTRA/LTO TTFF Cold Start for 3 iteration.
-            4. Repeat Step1. to Step 3. for 5 times.
-
-        Expected Results:
-            All XTRA/LTO TTFF Cold Start results should be within
-            xtra_cs_criteria.
-        """
-        xtra_ssr_test_result_all = []
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for times in range(1, 6):
-            begin_time = get_current_epoch_time()
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                test_info = "XTRA after Modem SSR"
-                gutils.gnss_trigger_modem_ssr_by_mds(self.ad)
-            else:
-                test_info = "LTO after restarting GPS daemons"
-                gutils.restart_gps_daemons(self.ad)
-            if not verify_internet_connection(self.ad.log, self.ad, retries=3, expected_state=True):
-                raise signals.TestFailure("Fail to connect to internet.")
-            gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            xtra_ssr_test_result = gutils.check_ttff_data(
-                self.ad, ttff_data, ttff_mode="Cold Start",
-                criteria=self.xtra_cs_criteria)
-            self.ad.log.info("%s test %d times -> %s" % (
-                test_info, times, xtra_ssr_test_result))
-            xtra_ssr_test_result_all.append(xtra_ssr_test_result)
-        asserts.assert_true(all(xtra_ssr_test_result_all),
-                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="d260a510-941a-48c7-a545-d7239f8f03dc")
     def test_xtra_download_mobile_data(self):
@@ -339,32 +242,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
             self.ad.log.info("Iteration %d => %s" % (i, wifi_xtra_result))
         asserts.assert_true(all(wifi_xtra_result_all),
                             "Fail to Download and Inject XTRA/LTO File.")
-
-    @test_tracker_info(uuid="6f58ab10-7124-4fb4-8be3-097eea0f42c4")
-    def test_xtra_system_server_restart(self):
-        """Verify XTRA/LTO functionality after system server restart.
-
-        Steps:
-            2. Get location fixed within xtra_cs_criteria.
-            3. Restarts android runtime.
-            4. Get location fixed within xtra_cs_criteria.
-
-        Expected Results:
-            Location fixed within xtra_cs_criteria.
-        """
-        overall_test_result = []
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for test_loop in range(1, 6):
-            gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
-            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.restart_runtime()
-            self.ad.unlock_screen(password=None)
-            test_result = gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
-            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
-            overall_test_result.append(test_result)
-        asserts.assert_true(all(overall_test_result),
-                            "XTRA/LTO fail after system server restart.")
 
     @test_tracker_info(uuid="579d249e-d533-4979-915f-b3a7d847546e")
     def test_lto_download_after_reboot(self):
