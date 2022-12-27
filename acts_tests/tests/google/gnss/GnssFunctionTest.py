@@ -78,7 +78,7 @@ class GnssFunctionTest(BaseTestClass):
                       "qdsp6m_path", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
                       "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold",
-                      "set_attenuator", "weak_signal_criteria"]
+                      "set_attenuator", "weak_signal_criteria", "weak_signal_cs_criteria"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -603,11 +603,11 @@ class GnssFunctionTest(BaseTestClass):
             2. TTFF Cold Start for 10 iteration.
 
         Expected Results:
-            TTFF CS results should be within weak_signal_criteria.
+            TTFF CS results should be within weak_signal_cs_criteria.
         """
         gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
                                           self.weak_gnss_signal_attenuation)
-        gutils.run_ttff(self.ad, mode="cs", criteria=self.weak_signal_criteria,
+        gutils.run_ttff(self.ad, mode="cs", criteria=self.weak_signal_cs_criteria,
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
