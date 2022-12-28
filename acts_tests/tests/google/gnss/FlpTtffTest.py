@@ -17,7 +17,6 @@
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
 from acts.utils import get_current_epoch_time
 from acts_contrib.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
@@ -41,6 +40,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts_contrib.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts_contrib.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 from acts_contrib.test_utils.gnss.gnss_test_utils import log_current_epoch_time
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 
 
 class FlpTtffTest(BaseTestClass):
@@ -65,6 +65,7 @@ class FlpTtffTest(BaseTestClass):
 
     def setup_test(self):
         log_current_epoch_time(self.ad, "test_start_time")
+        log_testtracker_uuid(self.ad, self.current_test_name)
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
@@ -127,7 +128,6 @@ class FlpTtffTest(BaseTestClass):
 
     """ Test Cases """
 
-    @test_tracker_info(uuid="c11ada6a-d7ad-4dc8-9d4a-0ae3cb9dfa8e")
     def test_flp_one_hour_tracking(self):
         """Verify FLP tracking performance of position error.
 
@@ -143,7 +143,6 @@ class FlpTtffTest(BaseTestClass):
                                       api_type="flp", testtime=60)
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="flp")
 
-    @test_tracker_info(uuid="8bc4e82d-fdce-4ee8-af8c-5e4a925b5360")
     def test_flp_ttff_strong_signal_wifiscan_on_wifi_connect(self):
         """Verify FLP TTFF Hot Start and Cold Start under strong GNSS signals
         with WiFi scanning on and connected.
@@ -166,7 +165,6 @@ class FlpTtffTest(BaseTestClass):
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
 
-    @test_tracker_info(uuid="adc1a0c7-3635-420d-9481-0f5816c58334")
     def test_flp_ttff_strong_signal_wifiscan_on_wifi_not_connect(self):
         """Verify FLP TTFF Hot Start and Cold Start under strong GNSS signals
         with WiFi scanning on and not connected.
@@ -186,7 +184,6 @@ class FlpTtffTest(BaseTestClass):
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
 
-    @test_tracker_info(uuid="3ec3cee2-b881-4c61-9df1-b6b81fcd4527")
     def test_flp_ttff_strong_signal_wifiscan_off(self):
         """Verify FLP TTFF Hot Start and Cold Start with WiFi scanning OFF
            under strong GNSS signals.
@@ -205,7 +202,6 @@ class FlpTtffTest(BaseTestClass):
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
 
-    @test_tracker_info(uuid="03c0d34f-8312-48d5-8753-93b09151233a")
     def test_flp_ttff_weak_signal_wifiscan_on_wifi_connect(self):
         """Verify FLP TTFF Hot Start and Cold Start under Weak GNSS signals
         with WiFi scanning on and connected
@@ -231,7 +227,6 @@ class FlpTtffTest(BaseTestClass):
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
 
-    @test_tracker_info(uuid="13daf7b3-5ac5-4107-b3dc-a3a8b5589fed")
     def test_flp_ttff_weak_signal_wifiscan_on_wifi_not_connect(self):
         """Verify FLP TTFF Hot Start and Cold Start under Weak GNSS signals
         with WiFi scanning on and not connected.
@@ -254,7 +249,6 @@ class FlpTtffTest(BaseTestClass):
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
 
-    @test_tracker_info(uuid="1831f80f-099f-46d2-b484-f332046d5a4d")
     def test_flp_ttff_weak_signal_wifiscan_off(self):
         """Verify FLP TTFF Hot Start and Cold Start with WiFi scanning OFF
            under weak GNSS signals.

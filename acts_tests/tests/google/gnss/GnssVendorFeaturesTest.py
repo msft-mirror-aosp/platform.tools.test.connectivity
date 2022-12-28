@@ -3,10 +3,10 @@ import time
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
 from acts.utils import get_current_epoch_time
 from acts_contrib.test_utils.gnss import gnss_constant
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.tel import tel_logging_utils
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
@@ -40,6 +40,7 @@ class GnssVendorFeaturesTest(BaseTestClass):
 
     def setup_test(self):
         gutils.log_current_epoch_time(self.ad, "test_start_time")
+        log_testtracker_uuid(self.ad, self.current_test_name)
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.get_baseband_and_gms_version(self.ad)
         toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
@@ -95,7 +96,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
             result, "TTFF %s fails to reach designated criteria of %d "
                     "seconds." % (gnss_constant.TTFF_MODE.get(mode), criteria))
 
-    @test_tracker_info(uuid="da0bf0a1-d635-4942-808a-30070cfb2c78")
     def test_xtra_ttff_cs_mobile_data(self):
         """Verify XTRA/LTO functionality of TTFF Cold Start with mobile data.
 
@@ -109,7 +109,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="95f17477-c88e-4663-a0ab-c09dc1706f75")
     def test_xtra_ttff_ws_mobile_data(self):
         """Verify XTRA/LTO functionality of TTFF Warm Start with mobile data.
 
@@ -123,7 +122,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="bf13e2e4-79c9-4769-9dfd-81b085112744")
     def test_xtra_ttff_hs_mobile_data(self):
         """Verify XTRA/LTO functionality of TTFF Hot Start with mobile data.
 
@@ -137,7 +135,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="5c0f95d2-7c76-45ca-95c8-304c742e0c82")
     def test_xtra_ttff_cs_wifi(self):
         """Verify XTRA/LTO functionality of TTFF Cold Start with WiFi.
 
@@ -155,7 +152,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="507b2da1-c58d-4bca-810b-b274082a21c4")
     def test_xtra_ttff_ws_wifi(self):
         """Verify XTRA/LTO functionality of TTFF Warm Start with WiFi.
 
@@ -172,7 +168,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="69d1998a-dd78-46a9-904d-d28f07dc3ef2")
     def test_xtra_ttff_hs_wifi(self):
         """Verify XTRA/LTO functionality of TTFF Hot Start with WiFi.
 
@@ -189,7 +184,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
                         test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
                         collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="d260a510-941a-48c7-a545-d7239f8f03dc")
     def test_xtra_download_mobile_data(self):
         """Verify XTRA/LTO data could be downloaded via mobile data.
 
@@ -215,7 +209,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
         asserts.assert_true(all(mobile_xtra_result_all),
                             "Fail to Download and Inject XTRA/LTO File.")
 
-    @test_tracker_info(uuid="e1dec4d2-4a85-4680-92df-57c972c084aa")
     def test_xtra_download_wifi(self):
         """Verify XTRA/LTO data could be downloaded via WiFi.
 
@@ -243,7 +236,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
         asserts.assert_true(all(wifi_xtra_result_all),
                             "Fail to Download and Inject XTRA/LTO File.")
 
-    @test_tracker_info(uuid="579d249e-d533-4979-915f-b3a7d847546e")
     def test_lto_download_after_reboot(self):
         """Verify LTO data could be downloaded and injected after device reboot.
 
@@ -271,7 +263,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
         asserts.assert_true(all(reboot_lto_test_results_all),
                                 "Fail to Download and Inject LTO File.")
 
-    @test_tracker_info(uuid="938cbc1f-0374-473c-b4c1-1b4af734f16a")
     def test_ws_with_assist(self):
         """Verify Warm Start functionality with existed LTO data.
 
@@ -286,7 +277,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
         """
         self.ttff_with_assist("ws", self.xtra_ws_criteria)
 
-    @test_tracker_info(uuid="9eae7b7d-9356-4fd8-bc18-f9d93aa0a92b")
     def test_cs_with_assist(self):
         """Verify Cold Start functionality with existed LTO data.
 

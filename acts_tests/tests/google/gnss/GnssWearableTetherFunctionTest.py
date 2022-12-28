@@ -19,7 +19,7 @@ import statistics
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.tel import tel_logging_utils as tutils
 from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connection
@@ -62,6 +62,7 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
 
     def setup_test(self):
         gutils.log_current_epoch_time(self.watch, "test_start_time")
+        log_testtracker_uuid(self.watch, self.current_test_name)
         gutils.get_baseband_and_gms_version(self.watch)
         gutils.clear_logd_gnss_qxdm_log(self.watch)
         gutils.clear_logd_gnss_qxdm_log(self.phone)
@@ -134,7 +135,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
                     "seconds." % (self.ttff_mode.get(mode), criteria))
 
     """ Test Cases """
-    @test_tracker_info(uuid="6dec9502-7e74-4590-b174-be822ceefcdb")
     def test_flp_ttff_cs(self):
         """Verify FLP TTFF Cold Start while tether with phone.
 
@@ -150,7 +150,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("cs", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="ddb8f09d-4757-42ae-9707-1fdb38187d1f")
     def test_flp_ttff_ws(self):
         """Verify FLP TTFF Warm Start while tether with phone.
 
@@ -166,7 +165,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("ws", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="19a997da-7c36-4fef-bf68-497d7c21163f")
     def test_flp_ttff_hs(self):
         """Verify FLP TTFF Hot Start while tether with phone.
 
@@ -182,7 +180,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         """
         self.flp_ttff("hs", self.flp_ttff_max_threshold, self.pixel_lab_location)
 
-    @test_tracker_info(uuid="c9e26620-e518-4c7d-afcc-f81f6d3971bb")
     def test_tracking_during_bt_disconnect_resume(self):
         """Verify tracking is correct during Bluetooth disconnect and resume.
 
@@ -224,7 +221,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
             gutils.parse_gtw_gpstool_log(self.watch, self.pixel_lab_location, api_type="FLP")
             start_gnss_by_gtw_gpstool(self.phone, False, api_type="FLP")
 
-    @test_tracker_info(uuid="432e799c-3d02-46de-84d5-d5a22feceef8")
     def test_oobe_first_fix(self):
         """Verify first fix after OOBE pairing within the criteria
 
@@ -259,7 +255,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         toggle_airplane_mode(self.watch.log, self.watch, new_state=False)
         self.watch.log.info("Turn airplane mode off")
 
-    @test_tracker_info(uuid="66264dac-50d0-4bc0-be72-6dbe9159587b")
     def test_oobe_first_fix_with_network_connection(self):
         """Verify first fix after OOBE pairing within the criteria
 
@@ -290,7 +285,6 @@ class GnssWearableTetherFunctionTest(BaseTestClass):
         self.watch.log.info(f"TestResult Max_OOBE_First_Fix {max(oobe_results_all)}")
         self.watch.log.info(f"TestResult Avg_OOBE_First_Fix {statistics.mean(oobe_results_all)}")
 
-    @test_tracker_info(uuid="4693b424-1a24-4002-b51d-df6b6bb91830")
     def test_far_start_ttff(self):
         """Verify Far Start (Warm Start v4) TTFF within the criteria
 
