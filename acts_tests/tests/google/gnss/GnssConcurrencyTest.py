@@ -21,7 +21,7 @@ from datetime import datetime
 from acts import utils
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts_contrib.test_utils.tel.tel_logging_utils import start_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
@@ -71,6 +71,7 @@ class GnssConcurrencyTest(BaseTestClass):
 
     def setup_test(self):
         gutils.log_current_epoch_time(self.ad, "test_start_time")
+        log_testtracker_uuid(self.ad, self.current_test_name)
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.start_pixel_logger(self.ad)
         start_adb_tcpdump(self.ad)
@@ -422,58 +423,49 @@ class GnssConcurrencyTest(BaseTestClass):
             f"TestResult {mode}_AVG_TTFF {statistics.mean(ttff_res)}")
 
     # Concurrency Test Cases
-    @test_tracker_info(uuid="cbd9ff54-4405-44a4-ac20-de33278406d1")
-    def test_gnss_concurrency_ct1(self):
+    def test_gnss_concurrency_location_1_chre_1(self):
         test_duration = 15
         criteria = {"ap_location": 1, "gnss": 1, "gnss_meas": 1}
         self.run_gnss_concurrency_test(criteria, test_duration)
 
-    @test_tracker_info(uuid="ab56cb47-384e-4269-b2d8-6e80ce066de2")
-    def test_gnss_concurrency_ct2(self):
+    def test_gnss_concurrency_location_1_chre_8(self):
         test_duration = 30
         criteria = {"ap_location": 1, "gnss": 8, "gnss_meas": 8}
         self.run_gnss_concurrency_test(criteria, test_duration)
 
-    @test_tracker_info(uuid="e64fa984-6219-43dd-96d6-d4141b2da1cd")
-    def test_gnss_concurrency_ct3(self):
+    def test_gnss_concurrency_location_15_chre_8(self):
         test_duration = 60
         criteria = {"ap_location": 15, "gnss": 8, "gnss_meas": 8}
         self.run_gnss_concurrency_test(criteria, test_duration)
 
-    @test_tracker_info(uuid="217f3ab6-25c9-4092-8fe1-f4e4199d60c6")
-    def test_gnss_concurrency_aoc1(self):
+    def test_gnss_concurrency_location_61_chre_1(self):
         test_duration = 120
         criteria = {"ap_location": 61, "gnss": 1, "gnss_meas": 1}
         self.run_gnss_concurrency_test(criteria, test_duration)
 
-    @test_tracker_info(uuid="c32ca948-0414-4529-98d0-8351b5f31bab")
-    def test_gnss_concurrency_aoc2(self):
+    def test_gnss_concurrency_location_61_chre_10(self):
         test_duration = 120
         criteria = {"ap_location": 61, "gnss": 10, "gnss_meas": 10}
         self.run_gnss_concurrency_test(criteria, test_duration)
 
     # CHRE Only Test Cases
-    @test_tracker_info(uuid="9dae57f3-70f9-4328-a448-925da88725ac")
-    def test_gnss_chre1(self):
+    def test_gnss_chre_1(self):
         test_duration = 15
         criteria = {"gnss": 1, "gnss_meas": 1}
         self.run_chre_only_test(criteria, test_duration)
 
-    @test_tracker_info(uuid="a8c8f7fa-4dfd-42d8-ac6a-c3e3f186e317")
-    def test_gnss_chre2(self):
+    def test_gnss_chre_8(self):
         test_duration = 30
         criteria = {"gnss": 8, "gnss_meas": 8}
         self.run_chre_only_test(criteria, test_duration)
 
     # Interval tests
-    @test_tracker_info(uuid="53b161e5-335e-44a7-ae2e-eae7464a2b37")
     def test_variable_interval_via_chre(self):
         test_duration = 10
         intervals = [0.1, 0.5, 1.5]
         for interval in intervals:
             self.get_chre_ttff(interval, test_duration)
 
-    @test_tracker_info(uuid="6b525afa-1427-4a99-906f-bc0aab6d4d30")
     def test_variable_interval_via_framework(self):
         test_duration = 10
         intervals = [0, 0.5, 1.5]
@@ -486,33 +478,28 @@ class GnssConcurrencyTest(BaseTestClass):
             self.parse_concurrency_result(begin_time, "ap_location", criteria)
 
     # Engine switching test
-    @test_tracker_info(uuid="07e0e138-4966-4307-b600-0521e626b967")
     def test_gps_engine_switching_host_to_onchip(self):
         self.is_brcm_test()
         freq = [1, self.onchip_interval]
         self.run_engine_switching_test(freq)
 
-    @test_tracker_info(uuid="564a229e-e784-43af-b430-4ab14656cfdc")
     def test_gps_engine_switching_onchip_to_host(self):
         self.is_brcm_test()
         freq = [self.onchip_interval, 1]
         self.run_engine_switching_test(freq)
 
-    @test_tracker_info(uuid="736da33a-a976-44b6-93b3-bcfd847dd03d")
     def test_mcu_cs_ttff(self):
         mode = "CS"
         self.preset_mcu_test(mode)
         self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
         self.reset_mcu_test(mode)
 
-    @test_tracker_info(uuid="e3457e35-9872-4677-8170-bc30d84798c0")
     def test_mcu_ws_ttff(self):
         mode = "WS"
         self.preset_mcu_test(mode)
         self.run_mcu_ttff_loops(mode, self.ttff_test_cycle)
         self.reset_mcu_test(mode)
 
-    @test_tracker_info(uuid="0e1ce60d-e257-4dc5-b927-7ae97c8386b6")
     def test_mcu_hs_ttff(self):
         mode = "HS"
         self.preset_mcu_test(mode)
