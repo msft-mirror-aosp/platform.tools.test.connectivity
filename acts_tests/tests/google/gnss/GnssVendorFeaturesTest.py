@@ -21,8 +21,6 @@ class GnssVendorFeaturesTest(BaseTestClass):
         req_params = ["pixel_lab_network", "default_gnss_signal_attenuation", "pixel_lab_location",
                       "qdsp6m_path", "collect_logs", "ttff_test_cycle", "standalone_cs_criteria",
                       "xtra_cs_criteria",  "xtra_ws_criteria", "xtra_hs_criteria",
-                      "weak_signal_xtra_cs_criteria", "weak_signal_xtra_ws_criteria",
-                      "weak_signal_xtra_hs_criteria", "weak_gnss_signal_attenuation",
                       "set_attenuator"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID

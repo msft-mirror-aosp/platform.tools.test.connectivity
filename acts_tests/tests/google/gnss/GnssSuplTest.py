@@ -26,9 +26,8 @@ class GnssSuplTest(BaseTestClass):
         self.ad = self.android_devices[0]
         req_params = [
             "pixel_lab_network", "standalone_cs_criteria", "supl_cs_criteria", "supl_ws_criteria",
-            "supl_hs_criteria", "weak_signal_supl_cs_criteria", "weak_signal_supl_ws_criteria",
-            "weak_signal_supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
-            "qdsp6m_path", "collect_logs", "ttff_test_cycle", "weak_gnss_signal_attenuation",
+            "supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
+            "qdsp6m_path", "collect_logs", "ttff_test_cycle",
             "supl_capabilities", "no_gnss_signal_attenuation", "set_attenuator"
         ]
         self.unpack_userparams(req_param_names=req_params)
