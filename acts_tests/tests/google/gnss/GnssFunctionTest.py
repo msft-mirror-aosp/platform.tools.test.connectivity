@@ -335,8 +335,8 @@ class GnssFunctionTest(BaseTestClass):
                                           fix_rate_criteria=0.99)
         gutils.verify_gps_time_should_be_close_to_device_time(self.ad, location_data)
 
-    def test_dpo_function(self):
-        """Verify DPO Functionality.
+    def test_duty_cycle_function(self):
+        """Verify duty cycle Functionality.
 
         Steps:
             1. Launch GTW_GPSTool.
@@ -345,7 +345,7 @@ class GnssFunctionTest(BaseTestClass):
             4. Calculate the count diff of "HardwareClockDiscontinuityCount"
 
         Expected Results:
-            DPO should be engaged in 5 minutes GNSS tracking.
+            Duty cycle should be engaged in 5 minutes GNSS tracking.
         """
         tracking_minutes = 5
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
