@@ -15,9 +15,9 @@ import time
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts.controllers.adb_lib.error import AdbCommandError
 from acts.libs.proc.job import TimeoutError
-from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 
@@ -281,6 +281,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
 
     def setup_test(self):
         gutils.log_current_epoch_time(self.ad, "test_start_time")
+        log_testtracker_uuid(self.ad, self.current_test_name)
         if gutils.check_chipset_vendor_by_qualcomm(self.ad):
             raise signals.TestSkip("Device is Qualcomm, skip the test")
         gutils.get_baseband_and_gms_version(self.ad)
@@ -346,7 +347,6 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
             self.scd_conf.disable_diagnostic_log()
             self.lhd_conf.disable_diagnostic_log()
 
-    @test_tracker_info(uuid="d1310171-1641-4fa2-8802-cca7ce33bbd4")
     def test_gps_logenabled_setting(self):
         """Verify the LogEnabled setting in gps.xml / scd.conf / lhd.conf
         Steps:
@@ -375,7 +375,6 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         except FileNotFoundError:
             self.ad.log.info("Test pass because no BRCM log files/folders was found")
 
-    @test_tracker_info(uuid="ebe30341-4097-4e2c-b104-0c592f1f9e83")
     def test_gps_supllogenable_setting(self):
         """Verify SuplLogEnable in gps.xml
         Steps:
@@ -402,7 +401,6 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         result = is_supl_log_exist_after_supl_request()
         asserts.assert_false(result, "SuplLogEnable is disable, should not find supl log file")
 
-    @test_tracker_info(uuid="099aea19-5078-447c-925f-01a702624884")
     def test_lhe_setting(self):
         """Verify lhefailsafe / lheconsole setting in lhd.conf
         Steps:

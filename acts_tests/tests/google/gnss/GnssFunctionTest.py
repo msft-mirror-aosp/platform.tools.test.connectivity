@@ -21,7 +21,6 @@ import fnmatch
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import get_current_epoch_time
 from acts.utils import unzip_maintain_permissions
@@ -56,6 +55,7 @@ from acts_contrib.test_utils.gnss.gnss_test_utils import is_mobile_data_on
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_wearable_btwifi
 from acts_contrib.test_utils.gnss.gnss_test_utils import is_device_wearable
 from acts_contrib.test_utils.gnss.gnss_test_utils import log_current_epoch_time
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 
@@ -78,7 +78,7 @@ class GnssFunctionTest(BaseTestClass):
                       "qdsp6m_path", "ttff_test_cycle",
                       "collect_logs", "dpo_threshold",
                       "brcm_error_log_allowlist", "onchip_interval", "adr_ratio_threshold",
-                      "set_attenuator"]
+                      "set_attenuator", "weak_signal_criteria", "weak_signal_cs_criteria"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -102,6 +102,7 @@ class GnssFunctionTest(BaseTestClass):
 
     def setup_test(self):
         log_current_epoch_time(self.ad, "test_start_time")
+        log_testtracker_uuid(self.current_test_name)
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
@@ -249,7 +250,71 @@ class GnssFunctionTest(BaseTestClass):
 
     """ Test Cases """
 
-    @test_tracker_info(uuid="b3d20ecb-3727-48ed-8a03-19694cc726c1")
+    def test_cs_first_fixed_system_server_restart(self):
+        """Verify cs first fixed after system server restart.
+
+        Steps:
+            1. Get location fixed within supl_cs_criteria.
+            2. Restarts android runtime.
+            3. Get location fixed within supl_cs_criteria.
+
+        Expected Results:
+            Location fixed within supl_cs_criteria.
+        """
+        overall_test_result = []
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
+        for test_loop in range(1, 6):
+            gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.restart_runtime()
+            self.ad.unlock_screen(password=None)
+            test_result = gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
+            overall_test_result.append(test_result)
+
+        asserts.assert_true(all(overall_test_result),
+                            "SUPL fail after system server restart.")
+
+    def test_cs_ttff_after_gps_service_restart(self):
+        """Verify cs ttff after modem silent reboot / GPS daemons restart.
+
+        Steps:
+            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
+            2. Wait 1 minute for modem to recover.
+            3. TTFF Cold Start for 3 iteration.
+            4. Repeat Step 1. to Step 3. for 5 times.
+
+        Expected Results:
+            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
+        """
+        supl_ssr_test_result_all = []
+        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
+        for times in range(1, 6):
+            begin_time = get_current_epoch_time()
+            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
+                test_info = "Modem SSR"
+                gutils.gnss_trigger_modem_ssr_by_mds(self.ad)
+            else:
+                test_info = "restarting GPS daemons"
+                gutils.restart_gps_daemons(self.ad)
+            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                                expected_state=True):
+                raise signals.TestFailure("Fail to connect to LTE network.")
+            gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
+            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
+            ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                    self.pixel_lab_location)
+            supl_ssr_test_result = gutils.check_ttff_data(
+                self.ad, ttff_data, ttff_mode="Cold Start",
+                criteria=self.supl_cs_criteria)
+            self.ad.log.info("SUPL after %s test %d times -> %s" % (
+                test_info, times, supl_ssr_test_result))
+            supl_ssr_test_result_all.append(supl_ssr_test_result)
+
+        asserts.assert_true(all(supl_ssr_test_result_all),
+                            "TTFF fails to reach designated criteria")
+
     def test_gnss_one_hour_tracking(self):
         """Verify GNSS tracking performance of signal strength and position
         error.
@@ -270,7 +335,6 @@ class GnssFunctionTest(BaseTestClass):
                                           fix_rate_criteria=0.99)
         gutils.verify_gps_time_should_be_close_to_device_time(self.ad, location_data)
 
-    @test_tracker_info(uuid="0bbfb818-da93-41d7-8d83-15bc53d8d2cf")
     def test_dpo_function(self):
         """Verify DPO Functionality.
 
@@ -300,7 +364,6 @@ class GnssFunctionTest(BaseTestClass):
                                                self.dpo_threshold,
                                                self.brcm_error_log_allowlist)
 
-    @test_tracker_info(uuid="c661780d-4864-4292-9988-88f64448fb78")
     def test_gnss_init_error(self):
         """Check if there is any GNSS initialization error after reboot.
 
@@ -330,7 +393,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(error_mismatch, "Error message found after GNSS "
                                             "init")
 
-    @test_tracker_info(uuid="89bb8103-a3af-4953-8f07-e43c7e829bdd")
     def test_sap_valid_modes(self):
         """Verify SAP Valid Modes.
 
@@ -349,7 +411,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true("SAP=PREMIUM" in sap_state,
                             "Wrong SAP Valid Modes is set")
 
-    @test_tracker_info(uuid="6f59d0f5-569c-4d52-990b-0042123b70ab")
     def test_network_location_provider_cell(self):
         """Verify LocationManagerService API reports cell Network Location.
 
@@ -374,7 +435,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(test_result_all),
                             "Fail to get networkLocationType=cell")
 
-    @test_tracker_info(uuid="eec8b4bd-6990-4098-ad7a-acc19574bdee")
     def test_network_location_provider_wifi(self):
         """Verify LocationManagerService API reports wifi Network Location.
 
@@ -398,7 +458,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(test_result_all),
                             "Fail to get networkLocationType=wifi")
 
-    @test_tracker_info(uuid="06aa85a2-7c3a-453a-b765-dc9ea6ee6b9b")
     def test_gmap_location_report_gps_network(self):
         """Verify GnssLocationProvider API reports location to Google Map
            when GPS and Location Accuracy are on.
@@ -423,7 +482,6 @@ class GnssFunctionTest(BaseTestClass):
             self.ad.log.info("Iteration %d => %s" % (i, test_result))
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
-    @test_tracker_info(uuid="36347b6e-d03e-4773-82bf-2e12d4f4dd0d")
     def test_gmap_location_report_gps(self):
         """Verify GnssLocationProvider API reports location to Google Map
            when GPS is on and Location Accuracy is off.
@@ -453,7 +511,6 @@ class GnssFunctionTest(BaseTestClass):
         check_location_service(self.ad)
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
-    @test_tracker_info(uuid="040556bf-1ffc-4db2-b2c5-19c4da19a256")
     def test_gmap_location_report_battery_saver(self):
         """Verify GnssLocationProvider API reports location to Google Map
            when Battery Saver is enabled.
@@ -482,7 +539,6 @@ class GnssFunctionTest(BaseTestClass):
         set_battery_saver_mode(self.ad, False)
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
-    @test_tracker_info(uuid="bc3d509c-0392-4af1-a0d0-68fd01167573")
     def test_gnss_ttff_cs_airplane_mode_on(self):
         """Verify Standalone GNSS functionality of TTFF Cold Start while
         airplane mode is on.
@@ -497,7 +553,6 @@ class GnssFunctionTest(BaseTestClass):
         """
         self.standalone_ttff_airplane_mode_on("cs", self.standalone_cs_criteria)
 
-    @test_tracker_info(uuid="dcafc69a-095e-4d58-8afb-5276c5763f4d")
     def test_gnss_ttff_ws_airplane_mode_on(self):
         """Verify Standalone GNSS functionality of TTFF Warm Start while
         airplane mode is on.
@@ -512,7 +567,6 @@ class GnssFunctionTest(BaseTestClass):
         """
         self.standalone_ttff_airplane_mode_on("ws", self.standalone_ws_criteria)
 
-    @test_tracker_info(uuid="090ea66c-19a1-4d0b-8c7e-dbc967597764")
     def test_gnss_ttff_hs_airplane_mode_on(self):
         """Verify Standalone GNSS functionality of TTFF Hot Start while
         airplane mode is on.
@@ -527,26 +581,54 @@ class GnssFunctionTest(BaseTestClass):
         """
         self.standalone_ttff_airplane_mode_on("hs", self.standalone_hs_criteria)
 
-    @test_tracker_info(uuid="cd279a18-6aa9-43ee-b2bb-18fe50c6116a")
-    def test_gnss_mobile_data_off(self):
-        """Verify Standalone GNSS functionality while mobile radio is off.
+    def test_cs_ttff_in_weak_gnss_signal(self):
+        """Verify TTFF cold start under weak GNSS signal.
 
         Steps:
-            1. Disable mobile data.
+            1. Set attenuation value to weak GNSS signal.
             2. TTFF Cold Start for 10 iteration.
-            3. Enable mobile data.
 
         Expected Results:
-            All Standalone TTFF Cold Start results should be within
-            standalone_cs_criteria.
+            TTFF CS results should be within weak_signal_cs_criteria.
         """
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        set_mobile_data(self.ad, False)
-        gutils.run_ttff_via_gtw_gpstool(
-            self.ad, "cs", self.standalone_cs_criteria, self.ttff_test_cycle,
-            self.pixel_lab_location)
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
+        gutils.run_ttff(self.ad, mode="cs", criteria=self.weak_signal_cs_criteria,
+                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
+                        collect_logs=self.collect_logs)
 
-    @test_tracker_info(uuid="36c14727-5de7-4589-ad1b-9119f9d9bb52")
+    def test_ws_ttff_in_weak_gnss_signal(self):
+        """Verify TTFF warm start under weak GNSS signal.
+
+        Steps:
+            2. Set attenuation value to weak GNSS signal.
+            3. TTFF Warm Start for 10 iteration.
+
+        Expected Results:
+            TTFF WS result should be within weak_signal_criteria.
+        """
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
+        gutils.run_ttff(self.ad, mode="ws", criteria=self.weak_signal_criteria,
+                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
+                        collect_logs=self.collect_logs)
+
+    def test_hs_ttff_in_weak_gnss_signal(self):
+        """Verify TTFF hot start under weak GNSS signal.
+
+        Steps:
+            2. Set attenuation value to weak GNSS signal.
+            3. TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            TTFF HS result should be within weak_signal_criteria.
+        """
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
+        gutils.run_ttff(self.ad, mode="hs", criteria=self.weak_signal_criteria,
+                        test_cycle=self.ttff_test_cycle, base_lat_long=self.pixel_lab_location,
+                        collect_logs=self.collect_logs)
+
     def test_quick_toggle_gnss_state(self):
         """Verify GNSS can still work properly after quick toggle GNSS off
         to on.
@@ -565,7 +647,6 @@ class GnssFunctionTest(BaseTestClass):
         start_toggle_gnss_by_gtw_gpstool(
             self.ad, iteration=self.ttff_test_cycle)
 
-    @test_tracker_info(uuid="79be8ab6-26cb-4d1a-b3d3-4e5681766901")
     def test_gnss_init_after_reboot(self):
         """Verify SUPL and XTRA/LTO functionality after reboot.
 
@@ -603,7 +684,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(overall_test_result),
                             "GNSS init fail after reboot.")
 
-    @test_tracker_info(uuid="767c3024-0db4-4d40-9b03-f30355d72a06")
     def test_host_gnssstatus_validation(self):
         """Verify GnssStatus integrity during host tracking for 1 minute.
 
@@ -620,7 +700,6 @@ class GnssFunctionTest(BaseTestClass):
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss",
                               validate_gnssstatus=True)
 
-    @test_tracker_info(uuid="afb08722-2c79-46a6-80fd-9ede5018e384")
     def test_onchip_gnssstatus_validation(self):
         """Verify GnssStatus integrity during onchip tracking for 1 minute.
 
@@ -639,7 +718,6 @@ class GnssFunctionTest(BaseTestClass):
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss",
                               validate_gnssstatus=True)
 
-    @test_tracker_info(uuid="140a7763-f42c-4917-a71f-fbc0626c1609")
     def test_location_update_after_resuming_from_deep_suspend(self):
         """Verify the GPS location reported after resume from suspend mode
         1. Enable GPS location report for 1 min to make sure the GPS is working
@@ -673,7 +751,6 @@ class GnssFunctionTest(BaseTestClass):
         gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
                                           fix_rate_criteria=0.99)
 
-    @test_tracker_info(uuid="04b529f1-a99d-4b18-9bba-41e008249f7a")
     def test_location_mode_in_battery_saver_with_screen_off(self):
         """Ensure location request with foreground permission can work
         in battery saver mode (screen off)
@@ -697,7 +774,6 @@ class GnssFunctionTest(BaseTestClass):
         finally:
             gutils.set_battery_saver_mode(self.ad, state=False)
 
-    @test_tracker_info(uuid="7ebf3b52-229a-4eaf-bbff-7c527e4a1d7c")
     def test_measure_adr_rate_after_10_mins_tracking(self):
         """Verify ADR rate
 
@@ -717,7 +793,6 @@ class GnssFunctionTest(BaseTestClass):
             gutils.validate_adr_rate(self.ad, pass_criteria=float(adr_threshold))
 
 
-    @test_tracker_info(uuid="0aee4450-edce-4e1a-8744-70d8c01937b0")
     def test_hal_crashing_should_resume_tracking(self):
         """Make sure location request can be resumed after HAL restart.
 
@@ -747,7 +822,6 @@ class GnssFunctionTest(BaseTestClass):
                                           fix_rate_criteria=0.95)
 
 
-    @test_tracker_info(uuid="59a14da2-40df-4106-a190-dcbcd2e877e0")
     def test_power_save_mode_should_apply_latest_measurement_setting(self):
         """Ensure power save mode will apply the GNSS measurement setting.
 
