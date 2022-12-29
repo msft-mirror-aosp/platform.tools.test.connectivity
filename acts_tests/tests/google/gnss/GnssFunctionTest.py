@@ -102,7 +102,7 @@ class GnssFunctionTest(BaseTestClass):
 
     def setup_test(self):
         log_current_epoch_time(self.ad, "test_start_time")
-        log_testtracker_uuid(self.current_test_name)
+        log_testtracker_uuid(self.ad, self.current_test_name)
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
