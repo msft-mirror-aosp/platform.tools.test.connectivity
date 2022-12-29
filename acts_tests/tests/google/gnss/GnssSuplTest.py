@@ -4,11 +4,10 @@ import time
 from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
-from acts.test_decorators import test_tracker_info
-from acts.utils import get_current_epoch_time
 from acts_contrib.test_utils.gnss import gnss_test_utils as gutils
 from acts_contrib.test_utils.gnss import supl
 from acts_contrib.test_utils.gnss import gnss_defines
+from acts_contrib.test_utils.gnss.testtracker_util import log_testtracker_uuid
 from acts_contrib.test_utils.tel.tel_data_utils import http_file_download_by_sl4a
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 from acts_contrib.test_utils.tel.tel_logging_utils import stop_adb_tcpdump
@@ -26,9 +25,8 @@ class GnssSuplTest(BaseTestClass):
         self.ad = self.android_devices[0]
         req_params = [
             "pixel_lab_network", "standalone_cs_criteria", "supl_cs_criteria", "supl_ws_criteria",
-            "supl_hs_criteria", "weak_signal_supl_cs_criteria", "weak_signal_supl_ws_criteria",
-            "weak_signal_supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
-            "qdsp6m_path", "collect_logs", "ttff_test_cycle", "weak_gnss_signal_attenuation",
+            "supl_hs_criteria", "default_gnss_signal_attenuation", "pixel_lab_location",
+            "qdsp6m_path", "collect_logs", "ttff_test_cycle",
             "supl_capabilities", "no_gnss_signal_attenuation", "set_attenuator"
         ]
         self.unpack_userparams(req_param_names=req_params)
@@ -63,6 +61,7 @@ class GnssSuplTest(BaseTestClass):
 
     def setup_test(self):
         gutils.log_current_epoch_time(self.ad, "test_start_time")
+        log_testtracker_uuid(self.ad, self.current_test_name)
         gutils.clear_logd_gnss_qxdm_log(self.ad)
         gutils.get_baseband_and_gms_version(self.ad)
         toggle_airplane_mode(self.ad.log, self.ad, new_state=False)
@@ -133,7 +132,6 @@ class GnssSuplTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
 
-    @test_tracker_info(uuid="6c794396-46e8-4674-8985-49a7b3059372")
     def test_supl_capabilities(self):
         """Verify SUPL capabilities.
 
@@ -158,7 +156,6 @@ class GnssSuplTest(BaseTestClass):
                                                     self.supl_capabilities))
 
 
-    @test_tracker_info(uuid="ae8b6d54-bdd6-44a1-b1fa-4e90e0318080")
     def test_supl_ttff_cs(self):
         """Verify SUPL functionality of TTFF Cold Start.
 
@@ -172,7 +169,6 @@ class GnssSuplTest(BaseTestClass):
         """
         self.run_ttff("cs", self.supl_cs_criteria)
 
-    @test_tracker_info(uuid="65f25e0b-c6d0-47c5-ab1f-0b02b621411d")
     def test_supl_ttff_ws(self):
         """Verify SUPL functionality of TTFF Warm Start.
 
@@ -186,7 +182,6 @@ class GnssSuplTest(BaseTestClass):
         """
         self.run_ttff("ws", self.supl_ws_criteria)
 
-    @test_tracker_info(uuid="a2267586-97e9-465c-8d3a-22882c8671e7")
     def test_supl_ttff_hs(self):
         """Verify SUPL functionality of TTFF Hot Start.
 
@@ -200,7 +195,6 @@ class GnssSuplTest(BaseTestClass):
         """
         self.run_ttff("hs", self.supl_hs_criteria)
 
-    @test_tracker_info(uuid="4b2882f8-2966-4b44-9a31-37318beb84bf")
     def test_cs_ttff_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
 
@@ -215,7 +209,6 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff(mode="cs", criteria=self.supl_cs_criteria)
 
-    @test_tracker_info(uuid="a7f77afe-c82e-4b1b-ae54-e3fea17bf721")
     def test_ws_ttff_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
 
@@ -230,7 +223,6 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff("ws", self.supl_ws_criteria)
 
-    @test_tracker_info(uuid="bc9de22f-90a0-4f2b-8052-cb4529f745e3")
     def test_hs_ttff_supl_over_wifi_with_airplane_mode_on(self):
         """ Test supl can works through wifi with airplane mode on
 
