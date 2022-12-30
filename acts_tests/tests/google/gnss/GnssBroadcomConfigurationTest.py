@@ -389,6 +389,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         """
         def is_supl_log_exist_after_supl_request():
             self.gps_xml.remove_supl_logs()
+            self.ad.reboot()
             self.run_gps_and_capture_log()
             return self.gps_xml.is_supl_log_file_exist()
 
@@ -396,7 +397,6 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
         asserts.assert_true(result, "SuplLogEnable is enable, should find supl log file")
 
         self.gps_xml.disable_supl_log()
-        self.ad.reboot()
 
         result = is_supl_log_exist_after_supl_request()
         asserts.assert_false(result, "SuplLogEnable is disable, should not find supl log file")
