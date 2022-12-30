@@ -3,7 +3,7 @@ TEST_NAME_BY_TESTTRACKER_UUID = {
     "test_cs_first_fixed_system_server_restart": "8169c19d-ba2a-4fef-969b-87f793f4e699",
     "test_cs_ttff_after_gps_service_restart": "247110d9-1c9e-429e-8e73-f16dd4a1ac74",
     "test_gnss_one_hour_tracking": "b3d20ecb-3727-48ed-8a03-19694cc726c1",
-    "test_dpo_function": "0bbfb818-da93-41d7-8d83-15bc53d8d2cf",
+    "test_duty_cycle_function": "0bbfb818-da93-41d7-8d83-15bc53d8d2cf",
     "test_gnss_init_error": "c661780d-4864-4292-9988-88f64448fb78",
     "test_sap_valid_modes": "89bb8103-a3af-4953-8f07-e43c7e829bdd",
     "test_network_location_provider_cell": "6f59d0f5-569c-4d52-990b-0042123b70ab",
