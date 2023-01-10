@@ -270,6 +270,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
 
     def init_device(self):
         gutils._init_device(self.ad)
+        gutils.enable_supl_mode(self.ad)
         gutils.enable_vendor_orbit_assistance_data(self.ad)
         wutils.wifi_toggle_state(self.ad, True)
         gutils.set_mobile_data(self.ad, state=True)
