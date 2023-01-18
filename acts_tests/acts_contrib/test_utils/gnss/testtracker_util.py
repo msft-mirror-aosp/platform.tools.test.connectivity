@@ -85,4 +85,4 @@ def log_testtracker_uuid(ad, current_test_name):
     current_test_uuid = TEST_NAME_BY_TESTTRACKER_UUID.get(
         current_test_name, None)
     if current_test_uuid:
-        ad.log.info(f"TestResult mobly_uuid {current_test_uuid}")
+        ad.log.info(f"TestResult mobly_uid {current_test_uuid}")
