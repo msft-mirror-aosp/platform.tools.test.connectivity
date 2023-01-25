@@ -503,6 +503,11 @@ class Keysight5GTestApp(object):
             'BSE:CONFig:LTE:SCHeduling:SETParameter "CELLALL:SFALL", "UL:IMCS", "{}"'
             .format(ul_mcs))
 
+    def set_lte_control_region_size(self, cell, num_symbols):
+        self.assert_cell_off('LTE', cell)
+        self.send_cmd('BSE:CONFig:LTE:{}:PHY:PCFich:CFI {}'.format(
+            Keysight5GTestApp._format_cells(cell), num_symbols))
+
     def set_lte_ul_mac_padding(self, mac_padding):
         self.assert_cell_off('LTE', 'CELL1')
         padding_str = 'TRUE' if mac_padding else 'FALSE'
