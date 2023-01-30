@@ -24,7 +24,11 @@ class AtUtil():
     def send(self, cmd: str,) -> Optional[str]:
         res = str(self.dut.adb.shell(cmd))
         self.log.info(f'cmd sent: {cmd}')
-        self.log.info(f'response: {res}')
+        self.log.debug(f'response: {res}')
+        if 'OK' in res:
+            self.log.info('Command executed.')
+        else:
+            self.log.error('Fail to executed command.')
         return res
 
     def lock_LTE(self):
@@ -133,7 +137,11 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         is_txas_disabled = self.at_util.disable_txas()
         self.log.info('Disable txas: ' + str(is_txas_disabled))
 
+        # get sim type
+        self.unpack_userparams(has_3gpp_sim=True)
+
     def setup_test(self):
+        self.cellular_simulator.set_sim_type(self.has_3gpp_sim)
         try:
             if 'LTE' in self.test_name:
                 self.at_util.lock_LTE()
@@ -154,6 +162,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         #     # self.dut.start_services()
         #     # self.need_retry = True
         #     raise signals.TestError('Device reboot mid test, retry needed.')
+
 
     def install_apk(self):
         for file in self.custom_files:
@@ -367,10 +376,10 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         modem_kibble_power = 0
 
         # if kibbles are using, get power from kibble
+        modem_kibble_power_wo_pcie = 0
+        modem_pcie = 0
         if hasattr(self, 'bitses'):
             # modem kibble power without pcie
-            modem_kibble_power_wo_pcie = 0
-            modem_pcie = 0
             modem_pcie = self.get_modem_pcie_power()
             modem_kibble_power = self.power_results.get(self.test_name, None)
             modem_kibble_power_wo_pcie = modem_kibble_power - modem_pcie

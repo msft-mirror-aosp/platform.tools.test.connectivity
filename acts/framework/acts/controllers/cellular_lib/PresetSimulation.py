@@ -64,20 +64,6 @@ class PresetSimulation(BaseSimulation):
         # Enable roaming on the phone
         self.dut.toggle_data_roaming(True)
 
-        # Force device to LTE only so that it connects faster
-        # lock_network_cmd = self.ADB_CMD_LOCK_NETWORK.format(
-        #     network_bit_mask=self.NETWORK_BIT_MASK[self.NR_LTE_BIT_MASK_KEY]
-        # )
-        # res = str(self.dut.ad.adb.shell(lock_network_cmd))
-        # self.log.info('NR|LTE network lock: ' + res)
-        try:
-            self.dut.set_preferred_network_type(
-                BaseCellularDut.PreferredNetworkType.NR_LTE)
-        except Exception as e:
-            # If this fails the test should be able to run anyways, even if it
-            # takes longer to find the cell.
-            self.log.warning('Setting preferred RAT failed: ' + str(e))
-
     def setup_simulator(self):
         """Do initial configuration in the simulator. """
         self.log.info('This simulation does not require initial setup.')

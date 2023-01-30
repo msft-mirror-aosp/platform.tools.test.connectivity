@@ -215,7 +215,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.log.debug(f'Sent command: {cmd}')
         # this is require for the command to take effect
         # because hccu's port need to be free.
-        self.hccu_socket.close
+        self.hccu_socket.close()
 
     def wait_until_hccu_operational(self, timeout=1200):
         """ Wait for hccu is ready to operate for a specified timeout.
@@ -564,6 +564,17 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         # Restart SL4A
         dut.ad.start_services()
 
+    def set_sim_type(self, is_3gpp_sim):
+        sim_type = 'KEYSight'
+        if is_3gpp_sim:
+            sim_type = 'TEST3GPP'
+        self._socket_send_SCPI_command(
+            self.SCPI_CHANGE_SIM_NR_CMD.format(sim_type))
+        time.sleep(2)
+        self._socket_send_SCPI_command(
+            self.SCPI_CHANGE_SIM_LTE_CMD.format(sim_type))
+        time.sleep(2)
+
     def wait_until_attached_one_cell(self,
                                      cell_type,
                                      cell_number,
@@ -590,14 +601,6 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         Raise:
             RuntimeError: device unable to connect to cell.
         """
-        sim_type = 'TEST3GPP'
-        self._socket_send_SCPI_command(
-            self.SCPI_CHANGE_SIM_NR_CMD.format(sim_type))
-        time.sleep(2)
-        self._socket_send_SCPI_command(
-            self.SCPI_CHANGE_SIM_LTE_CMD.format(sim_type))
-        time.sleep(2)
-
         # airplane mode on
         dut.toggle_airplane_mode(True)
         time.sleep(5)
