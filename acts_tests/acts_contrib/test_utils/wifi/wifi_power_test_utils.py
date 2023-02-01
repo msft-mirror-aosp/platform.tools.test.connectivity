@@ -118,15 +118,19 @@ def change_dtim_adb(ad, gEnableModulatedDTIM):
         time_limit_seconds = 60
         _wait_screen_off(ad, time_limit_seconds)
 
-    old_dtim = ad.adb.shell('wl bcn_li_dtim')
+    old_dtim = _read_dtim_adb(ad)
     ad.log.info('The dtim before change is {}'.format(old_dtim))
-    if int(old_dtim) == gEnableModulatedDTIM:
-        ad.log.info('Current DTIM is already the desired value,'
-                    'no need to reset it')
-        if screen_is_on:
-            ad.log.info('Changes the screen to the original on status')
-            ad.droid.wakeUpNow()
-        return
+    try:
+        if int(old_dtim) == gEnableModulatedDTIM:
+            ad.log.info('Current DTIM is already the desired value,'
+                        'no need to reset it')
+            if screen_is_on:
+                ad.log.info('Changes the screen to the original on status')
+                ad.droid.wakeUpNow()
+            return
+    except Exception as e:
+        ad.log.info('old_dtim is not available from adb')
+
     current_dtim = _set_dtim(ad, gEnableModulatedDTIM)
     ad.log.info(
         'Old DTIM is {}, current DTIM is {}'.format(old_dtim, current_dtim))
@@ -135,9 +139,18 @@ def change_dtim_adb(ad, gEnableModulatedDTIM):
         ad.droid.wakeUpNow()
 
 def _set_dtim(ad, gEnableModulatedDTIM):
-    ad.adb.shell("halutil -dtim_config {}".format(gEnableModulatedDTIM))
-    return ad.adb.shell('wl bcn_li_dtim')
+    out = ad.adb.shell("halutil -dtim_config {}".format(gEnableModulatedDTIM))
+    ad.log.info('set dtim to {}, stdout: {}'.format(
+        gEnableModulatedDTIM, out))
+    return _read_dtim_adb(ad)
 
+def _read_dtim_adb(ad):
+    try:
+        old_dtim = ad.adb.shell('wl bcn_li_dtim')
+        return old_dtim
+    except Exception as e:
+        ad.log.info('When reading dtim get error {}'.format(e))
+        return 'The dtim value is not available from adb'
 
 def _wait_screen_off(ad, time_limit_seconds):
     while time_limit_seconds > 0:

@@ -143,10 +143,11 @@ class TransmissionModes(Enum):
     TM9 = 9
 
 
+# For mimo 1x1, also set_num_crs_antenna_ports to 1
 MIMO_MAX_LAYER_MAPPING = {
-    MimoModes.MIMO1x1: 1,
+    MimoModes.MIMO1x1: 2,
     MimoModes.MIMO2x2: 2,
-    MimoModes.MIMO4x4: 3,
+    MimoModes.MIMO4x4: 4,
 }
 
 
@@ -174,15 +175,11 @@ class Cmx500(abstract_inst.SocketInstrument):
         # Stops all active cells if there is any
         self.disconnect()
 
-        # loads cell default settings from parameter file if there is one
-        default_setup_path = 'default_cell_setup.rsxp'
-        if path.exists(default_setup_path):
-            self._settings.session.set_test_param_files(default_setup_path)
-
         self.dut = self._network.get_dut()
         self.lte_cell = self._network.create_lte_cell('ltecell0')
         self.nr_cell = self._network.create_nr_cell('nrcell0')
         self._config_antenna_ports()
+
         self.lte_rrc_state_change_timer = DEFAULT_LTE_STATE_CHANGE_TIMER
         self.rrc_state_change_time_enable = False
         self.cell_switch_on_timer = DEFAULT_CELL_SWITCH_ON_TIMER
@@ -260,20 +257,31 @@ class Cmx500(abstract_inst.SocketInstrument):
     def disconnect(self):
         """Disconnect controller from device and switch to local mode."""
 
-        # Stops all lte and nr_cell
-        for cell in self._network.get_all_lte_cells():
-            if cell.is_on():
-                cell.stop()
-
-        for cell in self._network.get_all_nr_cells():
-            if cell.is_on():
-                cell.stop()
         self.bts.clear()
         self._network.reset()
 
     def enable_packet_switching(self):
         """Enable packet switching in call box."""
         raise NotImplementedError()
+
+    def get_cell_configs(self, cell):
+        """Getes cell settings.
+
+        This method is for debugging purpose. In XLAPI, there are many get
+        methods in the cell or component carrier object. When this method is
+        called, the corresponding value could be recorded with logging, which is
+        useful for debug.
+
+        Args:
+            cell: the lte or nr cell in xlapi
+        """
+        cell_getters = [attr for attr in dir(cell) if attr.startswith('get')]
+        for attr in cell_getters:
+            try:
+                getter = getattr(cell, attr)
+                logger.info('The {} is {}'.format(attr, getter()))
+            except Exception as e:
+                logger.warning('Error in get {}: {}'.format(attr,e))
 
     def get_base_station(self, bts_index=0):
         """Gets the base station object based on bts num. By default
@@ -345,11 +353,19 @@ class Cmx500(abstract_inst.SocketInstrument):
                     'The LTE cell status is {} after stop'.format(bts.is_on()))
 
     def switch_on_nsa_signalling(self):
+
+        from mrtype.counters import N310
+
         if self.bts:
             self.disconnect()
         logger.info('Switches on NSA signalling')
+
+        # Sets n310 timer to N310.N20 to make endc more stable
+        logger.info('set nr cell n310 timer to N310.N20')
+        self.nr_cell.set_n310(N310.N20)
         self.bts.append(LteBaseStation(self, self.lte_cell))
         self.bts.append(NrBaseStation(self, self.nr_cell))
+
         self.bts[0].start()
         lte_cell_status = self.bts[0].wait_cell_on(self.cell_switch_on_timer)
         if lte_cell_status:
@@ -363,6 +379,7 @@ class Cmx500(abstract_inst.SocketInstrument):
             logger.info('The NR cell status is on')
         else:
             raise CmxError('The NR cell cannot be switched on')
+        time.sleep(5)
 
     def update_lte_cell_config(self, config):
         """Updates lte cell settings with config."""
@@ -473,6 +490,10 @@ class BaseStation(object):
         if band.is_dl_only():
             return DuplexMode.DL_ONLY
 
+    def get_cc(self):
+        """Gets component carrier of the cell."""
+        return self._cc
+
     def is_on(self):
         """Verifies if the cell is turned on.
 
@@ -488,6 +509,8 @@ class BaseStation(object):
             band: band of cell.
         """
         self._cell.set_band(band)
+        logger.info('The band is set to {} and is {} after setting'.format(
+                band, self.band))
 
     def set_dl_mac_padding(self, state):
         """Enables/Disables downlink padding at the mac layer.
@@ -648,6 +671,11 @@ class LteBaseStation(BaseStation):
                 return LTE_MHZ_UPPER_BOUND_TO_RB[idx][1]
         return 100
 
+    def disable_all_ul_subframes(self):
+        """Disables all ul subframes for LTE cell."""
+        self._cc.disable_all_ul_subframes()
+        self._network.apply_changes()
+
     def set_bandwidth(self, bandwidth):
         """Sets the channel bandwidth of the cell.
 
@@ -655,6 +683,29 @@ class LteBaseStation(BaseStation):
             bandwidth: channel bandwidth of cell in MHz.
         """
         self._cell.set_bandwidth(self._to_rb_bandwidth(bandwidth))
+        self._network.apply_changes()
+
+    def set_cdrx_config(self):
+        """Sets LTE cdrx config for endc."""
+        from mrtype.lte.drx import (
+            LteDrxConfig,
+            LteDrxInactivityTimer,
+            LteDrxLongCycleStartOffset,
+            LteDrxOnDurationTimer,
+            LteDrxRetransmissionTimer,
+        )
+
+        logger.info('Config Lte drx config')
+        lte_drx_config = LteDrxConfig(
+            on_duration_timer=LteDrxOnDurationTimer.PSF_10,
+            inactivity_timer=LteDrxInactivityTimer.PSF_200,
+            retransmission_timer=LteDrxRetransmissionTimer.PSF_33,
+            long_cycle_start_offset=LteDrxLongCycleStartOffset.ms160(83),
+            short_drx= None
+        )
+        self._cmx.dut.lte_cell_group().set_drx_and_adjust_scheduler(
+            drx_config=lte_drx_config)
+        self._network.apply_changes()
 
     def set_cell_frequency_band(self, tdd_cfg=None, ssf_cfg=None):
         """Sets cell frequency band with tdd and ssf config.
@@ -779,9 +830,14 @@ class LteBaseStation(BaseStation):
         Args:
             transmission_mode: the download link transmission mode.
         """
+        from rs_mrt.testenvironment.signaling.sri.rat.lte import DlTransmissionMode
         if not isinstance(transmission_mode, TransmissionModes):
             raise CmxError('Wrong type of the trasmission mode')
-        self._config_scheduler(dl_tm=transmission_mode)
+        dl_tm = DlTransmissionMode(transmission_mode.value)
+        logger.info('set dl tm to {}'.format(dl_tm))
+        self._cc.set_dl_tm(dl_tm)
+        self._network.apply_changes()
+
 
     def set_ul_channel(self, channel):
         """Sets the up link channel number of cell.
@@ -917,12 +973,28 @@ class NrBaseStation(BaseStation):
                 logger.info('did not reach endc at {} s'.format(time_count))
         raise CmxError('Cannot reach endc after {} s'.format(endc_timer))
 
+    def config_flexible_slots(self):
+        """Configs flexible slots for NR cell."""
+
+        from rs_mrt.testenvironment.signaling.sri.rat.nr.config import CellFrequencyBandReq
+        from rs_mrt.testenvironment.signaling.sri.rat.common import SetupRelease
+
+        logger.info('Config flexible slots')
+        req= CellFrequencyBandReq()
+        req.band.frequency_range.fr1.tdd.tdd_config_common.setup_release = SetupRelease.RELEASE
+        self._cell.stub.SetCellFrequencyBand(req)
+        self._network.apply_changes()
+
+    def disable_all_ul_slots(self):
+        """Disables all ul slots for NR cell"""
+        self._cc.disable_all_ul_slots()
+
     @property
     def dl_channel(self):
         """Gets the downlink channel of cell.
 
         Return:
-            the downlink channel (earfcn) in int.
+            the downlink channel (nr_arfcn) in int.
         """
         return int(self._cell.get_dl_ref_a())
 
@@ -958,27 +1030,6 @@ class NrBaseStation(BaseStation):
         else:
             return CarrierBandwidth(bandwidth // 5 - 1)
 
-    def set_band(self, band, frequency_range=None):
-        """Sets the Band of cell.
-
-        Args:
-            band: band of cell.
-            frequency_range: LOW, MID and HIGH for NR cell
-        """
-        from mrtype.frequency import FrequencyRange
-        if not frequency_range or frequency_range.upper() == 'LOW':
-            frequency_range = FrequencyRange.LOW
-        elif frequency_range.upper() == 'MID':
-            frequency_range = FrequencyRange.MID
-        elif frequency_range.upper() == 'HIGH':
-            frequency_range = FrequencyRange.HIGH
-        else:
-            raise CmxError('Wrong type FrequencyRange')
-
-        self._cell.set_dl_ref_a_offset(band, frequency_range)
-        logger.info('The band is set to {} and is {} after setting'.format(
-                band, self.band))
-
     def set_bandwidth(self, bandwidth, scs=None):
         """Sets the channel bandwidth of the cell.
 
@@ -997,9 +1048,23 @@ class NrBaseStation(BaseStation):
         """Sets the downlink channel number of cell.
 
         Args:
-            channel: downlink channel number of cell.
+            channel: downlink channel number of cell or Frequency Range ('LOW',
+                     'MID' or 'HIGH').
         """
         from mrtype.nr.frequency import NrArfcn
+        from mrtype.frequency import FrequencyRange
+
+        # When the channel is string, set it use Frenquency Range
+        if isinstance(channel, str):
+            logger.info('Sets dl channel Frequency Range {}'.format(channel))
+            frequency_range = FrequencyRange.LOW
+            if channel.upper() == 'MID':
+                frequency_range = FrequencyRange.MID
+            elif channel.upper() == 'HIGH':
+                frequency_range = FrequencyRange.HIGH
+            self._cell.set_dl_ref_a_offset(self.band, frequency_range)
+            logger.info('The dl_channel was set to {}'.format(self.dl_channel))
+            return
         if self.dl_channel == channel:
             logger.info('The dl_channel was at {}'.format(self.dl_channel))
             return
@@ -1029,7 +1094,7 @@ class NrBaseStation(BaseStation):
         is_on = self._cell.is_on()
         if is_on:
             self._cell.stop()
-        self._cc.set_dl_mimo_mode(DownlinkMimoMode.Enum(mimo.value))
+        self._config_scheduler(dl_mimo_mode=DownlinkMimoMode.Enum(mimo.value))
         if is_on:
             self._cell.start()
 

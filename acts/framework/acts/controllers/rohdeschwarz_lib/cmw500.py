@@ -26,7 +26,18 @@ LTE_IDLE_RESP = 'IDLE'
 LTE_PSWITCHED_ON_RESP = 'ON'
 LTE_PSWITCHED_OFF_RESP = 'OFF'
 
+WCDMA_ATTACH_RESP = 'ATT'
+WCDMA_CESTABLISHED_RESP = 'CEST'
+WCDMA_PSWITCHED_ON_RESP = 'ON'
+
 STATE_CHANGE_TIMEOUT = 20
+
+
+class SignallingState(Enum):
+    """Signalling states common to all RATs."""
+    ON = 'ON'
+    OFF = 'OFF'
+    ReadyForHandover = 'RFH'
 
 
 class LteState(Enum):
@@ -54,6 +65,23 @@ class LteBandwidth(Enum):
     BANDWIDTH_10MHz = 'B100'
     BANDWIDTH_15MHz = 'B150'
     BANDWIDTH_20MHz = 'B200'
+
+
+def BandwidthFromFloat(bw):
+    if bw == 20:
+        return LteBandwidth.BANDWIDTH_20MHz
+    elif bw == 15:
+        return LteBandwidth.BANDWIDTH_15MHz
+    elif bw == 10:
+        return LteBandwidth.BANDWIDTH_10MHz
+    elif bw == 5:
+        return LteBandwidth.BANDWIDTH_5MHz
+    elif bw == 3:
+        return LteBandwidth.BANDWIDTH_3MHz
+    elif bw == 1.4:
+        return LteBandwidth.BANDWIDTH_1MHz
+
+    raise ValueError('Bandwidth {} MHz is not valid for LTE'.format(bandwidth))
 
 
 class DuplexMode(Enum):
@@ -174,7 +202,6 @@ class ReducedPdcch(Enum):
 
 
 class Cmw500(abstract_inst.SocketInstrument):
-
     def __init__(self, ip_addr, port):
         """Init method to setup variables for controllers.
 
@@ -218,6 +245,26 @@ class Cmw500(abstract_inst.SocketInstrument):
             time_elapsed += 1
         else:
             raise CmwError('Failed to turn {} LTE signalling.'.format(state))
+
+    def wait_for_response(self, cmd, allowed, timeout=120):
+        """Polls a specific query command until an allowed response is returned.
+
+        Args:
+            cmd: the query command string.
+            allowed: a collection of allowed string responses.
+            timeout: the maximum amount of time to wait for an allowed response.
+        """
+        time_elapsed = 0
+        while time_elapsed < timeout:
+            response = self.send_and_recv(cmd)
+
+            if response in allowed:
+                return
+
+            time.sleep(1)
+            time_elapsed += 1
+
+        raise CmwError('Failed to wait for valid response.')
 
     def enable_packet_switching(self):
         """Enable packet switching in call box."""
@@ -342,6 +389,15 @@ class Cmw500(abstract_inst.SocketInstrument):
         else:
             raise CmwError('Timeout before RRC state was {}.'.format(state))
 
+    def stop_all_signalling(self):
+        """Turns off all signaling applications, generators, or measurements."""
+        self.send_and_recv('SYSTem:SIGNaling:ALL:OFF')
+        self.wait_until_quiet()
+
+    def wait_until_quiet(self):
+        """Waits for all pending operations to stop on the callbox."""
+        self.send_and_recv('*OPC?')
+
     def reset(self):
         """System level reset"""
         self.send_and_recv('*RST; *OPC')
@@ -449,6 +505,28 @@ class Cmw500(abstract_inst.SocketInstrument):
             lte measurement object.
         """
         return LteMeasurement(self)
+
+    def set_sms(self, message):
+        """Sets the SMS message to be sent to the DUT.
+
+        Args:
+            message: the SMS message to send.
+        """
+        cmd = 'CONFigure:LTE:SIGN:SMS:OUTGoing:INTernal "{}"'.format(message)
+        self.send_and_recv(cmd)
+
+    def send_sms(self):
+        """Sends the currently set SMS message."""
+        self.send_and_recv('CALL:LTE:SIGN:PSWitched:ACTion SMS;*OPC?')
+        timeout = time.time() + STATE_CHANGE_TIMEOUT
+        while time.time() < timeout:
+            state = self.send_and_recv(
+                'SENSe:LTE:SIGN:SMS:OUTGoing:INFO:LMSent?')
+            if state == "SUCC":
+                return
+            time.sleep(1)
+
+        raise CmwError('Failed to send SMS message')
 
 
 class BaseStation(object):
@@ -884,13 +962,14 @@ class BaseStation(object):
             raise ValueError('dci_format should be the instance of DciFormat.')
 
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:DCIFormat {}'.format(
-            self._bts, dci_format)
+            self._bts, dci_format.value)
         self._cmw.send_and_recv(cmd)
 
     @property
     def dl_antenna(self):
         """Gets dl antenna count of cell."""
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas?'.format(self._bts)
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas?'.format(
+            self._bts)
         return self._cmw.send_and_recv(cmd)
 
     @dl_antenna.setter
@@ -903,7 +982,7 @@ class BaseStation(object):
         if not isinstance(num_antenna, MimoModes):
             raise ValueError('num_antenna should be an instance of MimoModes.')
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas {}'.format(
-            self._bts, num_antenna)
+            self._bts, num_antenna.value)
         self._cmw.send_and_recv(cmd)
 
     @property
@@ -924,6 +1003,13 @@ class BaseStation(object):
             self._bts, state.value)
         self._cmw.send_and_recv(cmd)
 
+    @property
+    def tpc_power_control(self):
+        """Gets the type of uplink power control used."""
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:SET?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @tpc_power_control.setter
     def tpc_power_control(self, set_type):
         """Set and execute the Up Link Power Control via TPC.
 
@@ -1108,15 +1194,113 @@ class BaseStation(object):
         raise NotImplementedError()
 
 
+class LteMeasurementState(Enum):
+    """Possible measurement states"""
+    OFF = 'OFF'
+    READY = 'RDY'
+    RUN = 'RUN'
+
+
+def _try_parse(s, fun):
+    try:
+        return fun(s)
+    except ValueError:
+        return None
+
 
 class LteMeasurement(object):
+    """ Class for measuring LTE performance """
+
+    INDEX_TX = 17
+    INDEX_TX_MIN = 17
+    INDEX_TX_MAX = 18
 
     def __init__(self, cmw):
         self._cmw = cmw
 
-    def intitilize_measurement(self):
-        """Initialize measurement modules."""
-        self._cmw.send_and_recv('INIT:LTE:MEAS:MEValuation')
+    @property
+    def sample_count(self):
+        """Gets the number of samples to use when calculating results."""
+        cmd = 'CONFigure:LTE:MEAS:MEValuation:SCOunt:MODulation?'
+        return self._cmw.send_and_recv(cmd)
+
+    @sample_count.setter
+    def sample_count(self, sample_count):
+        cmd = 'CONFigure:LTE:MEAS:MEValuation:SCOunt:MODulation {}'.format(
+            sample_count)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def average(self):
+        """Gets the average values of the most recent measurement.
+        Invalid measurements are set to None.
+        """
+        values = self._cmw.send_and_recv(
+            'FETch:LTE:MEAS:MEValuation:MODulation:AVERage?').split(',')
+        for i in range(0, 2):
+            values[i] = _try_parse(values[i], int)
+        for i in range(2, len(values)):
+            values[i] = _try_parse(values[i], float)
+        return values
+
+    @property
+    def extrema(self):
+        """Gets the extrema values of the most recent measurement.
+        Invalid measurements are set to None.
+        """
+        values = self._cmw.send_and_recv(
+            'FETch:LTE:MEAS:MEValuation:MODulation:EXTReme?').split(',')
+        for i in range(0, 2):
+            values[i] = _try_parse(values[i], int)
+        for i in range(2, len(values)):
+            values[i] = _try_parse(values[i], float)
+        return values
+
+    @property
+    def stdev(self):
+        """Gets the standard deviation of the most recent measurement.
+        Invalid measurements are set to None.
+        """
+        values = self._cmw.send_and_recv(
+            'FETch:LTE:MEAS:MEValuation:MODulation:SDEV?').split(',')
+        for i in range(0, 2):
+            values[i] = _try_parse(values[i], int)
+        for i in range(2, len(values)):
+            values[i] = _try_parse(values[i], float)
+        return values
+
+    @property
+    def tx_average(self):
+        """Gets the measured average Tx power (in dBm)."""
+        value = self.average[self.INDEX_TX]
+        if value is None:
+            raise ValueError("LteMeasurement has no value for tx_average")
+        return value
+
+    @property
+    def tx_min(self):
+        """Gets the measured minimum Tx power (in dBm)."""
+        value = self.extrema[self.INDEX_TX_MIN]
+        if value is None:
+            raise ValueError("LteMeasurement has no value for tx_min")
+        return value
+
+    @property
+    def tx_max(self):
+        """Gets the measured maximum Tx power (in dBm)."""
+        value = self.extrema[self.INDEX_TX_MAX]
+        if value is None:
+            raise ValueError("LteMeasurement has no value for tx_max")
+        return value
+
+    @property
+    def tx_stdev(self):
+        """Gets the measured Tx power standard deviation (in dBm)."""
+        value = self.stdev[self.INDEX_TX]
+        if value is None:
+            raise ValueError(
+                "LteMeasurement has no value for standard_deviation")
+        return value
 
     @property
     def measurement_repetition(self):
@@ -1148,12 +1332,35 @@ class LteMeasurement(object):
         return self._cmw.send_and_recv(
             'FETCh:LTE:MEAS:MEValuation:PMONitor:AVERage?')
 
+    @property
+    def state(self):
+        """Gets the state of the measurement."""
+        cmd = 'FETCh:LTE:MEAS:MEValuation:STATe?'
+        return LteMeasurementState(self._cmw.send_and_recv(cmd))
+
+    def initialize_measurement(self):
+        """Initialize measurement modules."""
+        self._cmw.send_and_recv(
+            'CONF:LTE:MEAS:MEV:RES:ALL ON,ON,ON,ON,ON,ON,ON,ON,ON,ON,ON,ON')
+        self._cmw.send_and_recv('ROUTe:LTE:MEAS:SCENario:CSPath "LTE Sig1"')
+        self._cmw.send_and_recv('INIT:LTE:MEAS:MEValuation;*OPC?')
+        self._wait_for_state({LteMeasurementState.RUN})
+
+    def run_measurement(self):
+        """Runs a single Tx multievaluation measurement to completion."""
+        self.stop_measurement()
+        self.measurement_repetition = RepetitionMode.SINGLESHOT
+        self.initialize_measurement()
+        self._wait_for_state({LteMeasurementState.READY}, timeout=120)
+
     def stop_measurement(self):
         """Stops the on-going measurement.
         This function call does not free up resources allocated for
         measurement. Instead it moves from RUN to RDY state.
         """
         self._cmw.send_and_recv('STOP:LTE:MEAS:MEValuation')
+        self._wait_for_state(
+            {LteMeasurementState.OFF, LteMeasurementState.READY})
 
     def abort_measurement(self):
         """Aborts the measurement abruptly.
@@ -1161,6 +1368,24 @@ class LteMeasurement(object):
         measurement and all the results will be wiped off.
         """
         self._cmw.send_and_recv('ABORt:LTE:MEAS:MEValuation')
+        self._wait_for_state({LteMeasurementState.OFF})
+
+    def _wait_for_state(self, states, timeout=10):
+        """Polls the measurement state until it reaches an allowable state
+
+        Args:
+            states: the allowed states
+            timeout: the maximum amount time to wait (in seconds)
+        """
+        while timeout > 0:
+            if self.state in states:
+                return
+
+            time.sleep(1)
+            timeout -= 1
+
+        raise CmwError(
+            'Failed to wait for LTE measurement state: {}.'.format(states))
 
 
 class CmwError(Exception):
