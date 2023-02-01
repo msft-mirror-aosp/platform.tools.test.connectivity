@@ -51,6 +51,7 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
     IMS_CLIENT_DEFAULT_IP = '127.0.0.1'
     IMS_CLIENT_DEFAULT_PORT = 8250
     IMS_CLIENT_DEFAULT_API_TOKEN = 'myclient'
+    IMS_API_CONNECTOR_DEFAULT_PORT = 5050
 
     # IMS available app
     IMS_CLIENT = 'client'
@@ -76,18 +77,12 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         set_phone_silent_mode(self.log, self.dut)
 
         # initialize ims simulator connector wrapper
-        self.unpack_userparams(api_connector_ip=None,
-                               api_connector_port=None,
+        self.unpack_userparams(api_connector_port=self.IMS_API_CONNECTOR_DEFAULT_PORT,
                                api_token=self.IMS_CLIENT_DEFAULT_API_TOKEN,
                                ims_client_ip=self.IMS_CLIENT_DEFAULT_IP,
                                ims_client_port=self.IMS_CLIENT_DEFAULT_PORT)
-        for param in ('api_connector_ip', 'api_connector_port'):
-            if getattr(self, param) is None:
-                raise RuntimeError('The uxm cellular simulator '
-                                   'requires %s to be set in the '
-                                   'config file.' % param)
         self.ims_client = ImsApiConnector(
-            self.api_connector_ip,
+            self.uxm_ip,
             self.api_connector_port,
             self.IMS_CLIENT,
             self.api_token,
