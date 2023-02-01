@@ -163,7 +163,7 @@ class Dhcpv4InteropFixture(WifiBaseTest):
             'seconds.' % (interface, timeout))
         timeout = time.time() + timeout
         while time.time() < timeout:
-            ip_addrs = self.dut.get_interface_ip_addresses(interface)
+            ip_addrs = self.dut.device.get_interface_ip_addresses(interface)
 
             if len(ip_addrs['ipv4_private']) > 0:
                 ip = ip_addrs['ipv4_private'][0]
@@ -359,7 +359,6 @@ class Dhcpv4DuplicateAddressTest(Dhcpv4InteropFixture):
         super().teardown_test()
         for ip in self.extra_addresses:
             self.ap_ip_cmd.remove_ipv4_address(self.ap_params['id'], ip)
-            pass
 
     def test_duplicate_address_assignment(self):
         """It's possible for a DHCP server to assign an address that already exists on the network.

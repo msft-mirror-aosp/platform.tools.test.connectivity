@@ -49,7 +49,7 @@ class WlanStatusTest(WifiBaseTest):
         for fd in self.fuchsia_devices:
             fd.deconfigure_wlan()
 
-            status = fd.wlan_lib.wlanStatus()
+            status = fd.sl4f.wlan_lib.wlanStatus()
             self.log.debug(status)
             if not status["error"] or status["result"]:
                 raise signals.TestFailure(
@@ -68,7 +68,7 @@ class WlanStatusTest(WifiBaseTest):
             fd.configure_wlan(association_mechanism='policy',
                               preserve_saved_networks=True)
 
-            status = fd.wlan_lib.wlanStatus()
+            status = fd.sl4f.wlan_lib.wlanStatus()
             self.log.debug(status)
             if status["error"] or not status["result"]:
                 raise signals.TestFailure(

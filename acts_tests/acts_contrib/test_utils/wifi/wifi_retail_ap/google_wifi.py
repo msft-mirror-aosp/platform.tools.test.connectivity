@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import collections.abc
 from acts.controllers import access_point
 from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import hostapd_security
@@ -27,6 +26,7 @@ class GoogleWifiAP(WifiRetailAP):
 
     This class is a work in progress
     """
+
     def __init__(self, ap_settings):
         super().__init__(ap_settings)
         # Initialize AP
@@ -93,6 +93,14 @@ class GoogleWifiAP(WifiRetailAP):
                 'subnet': '192.168.9.0/24'
             }
         }
+        for setting in self.default_settings.keys():
+            if setting in self.capabilities['interfaces']:
+                continue
+            elif setting not in self.ap_settings:
+                self.log.debug(
+                    '{0} {1} not found during init. Setting {0} = {1}'.format(
+                        setting, self.default_settings[setting]))
+                self.ap_settings[setting] = self.default_settings[setting]
 
         for interface in self.capabilities['interfaces']:
             for setting in self.default_settings[interface].keys():

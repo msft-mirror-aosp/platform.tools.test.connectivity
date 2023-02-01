@@ -184,7 +184,7 @@ class ChannelSweepTest(WifiBaseTest):
             country_code: string, the 2 character country code to set
         """
         self.log.info('Setting DUT country code to %s' % country_code)
-        country_code_response = self.dut.device.regulatory_region_lib.setRegion(
+        country_code_response = self.dut.device.sl4f.regulatory_region_lib.setRegion(
             country_code)
         if country_code_response.get('error'):
             raise EnvironmentError(
@@ -193,7 +193,7 @@ class ChannelSweepTest(WifiBaseTest):
 
         self.log.info('Verifying DUT country code was correctly set to %s.' %
                       country_code)
-        phy_ids_response = self.dut.device.wlan_lib.wlanPhyIdList()
+        phy_ids_response = self.dut.device.sl4f.wlan_lib.wlanPhyIdList()
         if phy_ids_response.get('error'):
             raise ConnectionError('Failed to get phy ids from DUT. Error: %s' %
                                   (country_code, phy_ids_response['error']))
@@ -201,7 +201,7 @@ class ChannelSweepTest(WifiBaseTest):
         end_time = time.time() + TIME_TO_WAIT_FOR_COUNTRY_CODE
         while time.time() < end_time:
             for id in phy_ids_response['result']:
-                get_country_response = self.dut.device.wlan_lib.wlanGetCountry(
+                get_country_response = self.dut.device.sl4f.wlan_lib.wlanGetCountry(
                     id)
                 if get_country_response.get('error'):
                     raise ConnectionError(

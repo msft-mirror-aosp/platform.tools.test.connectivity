@@ -35,7 +35,7 @@ class WlanFacadeTest(WifiBaseTest):
         self.dut = create_wlan_device(self.fuchsia_devices[0])
 
     def test_get_phy_id_list(self):
-        result = self.dut.device.wlan_lib.wlanPhyIdList()
+        result = self.dut.device.sl4f.wlan_lib.wlanPhyIdList()
         error = result['error']
         asserts.assert_true(error is None, error)
 
@@ -43,7 +43,7 @@ class WlanFacadeTest(WifiBaseTest):
         return True
 
     def test_get_country(self):
-        wlan_lib = self.dut.device.wlan_lib
+        wlan_lib = self.dut.device.sl4f.wlan_lib
 
         result = wlan_lib.wlanPhyIdList()
         error = result['error']
@@ -61,7 +61,7 @@ class WlanFacadeTest(WifiBaseTest):
         return True
 
     def test_get_dev_path(self):
-        wlan_lib = self.dut.device.wlan_lib
+        wlan_lib = self.dut.device.sl4f.wlan_lib
 
         result = wlan_lib.wlanPhyIdList()
         error = result['error']

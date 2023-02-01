@@ -28,6 +28,7 @@ from acts import records
 from acts import signals
 from acts import utils
 from acts.base_test import BaseTestClass
+from acts.controllers.adb_lib.error import AdbCommandError
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.keys import Config
 from acts.libs.utils.multithread import multithread_func
@@ -47,7 +48,7 @@ from acts_contrib.test_utils.tel.tel_logging_utils import disable_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import get_screen_shot_log
 from acts_contrib.test_utils.tel.tel_logging_utils import get_tcpdump_log
 from acts_contrib.test_utils.tel.tel_logging_utils import set_qxdm_logger_command
-from acts_contrib.test_utils.tel.tel_logging_utils import start_dsp_logger_p21
+from acts_contrib.test_utils.tel.tel_logging_utils import start_dsp_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_logger
 from acts_contrib.test_utils.tel.tel_logging_utils import start_qxdm_loggers
 from acts_contrib.test_utils.tel.tel_logging_utils import start_sdm_logger
@@ -64,6 +65,7 @@ from acts_contrib.test_utils.tel.tel_subscription_utils import initial_set_up_fo
 from acts_contrib.test_utils.tel.tel_subscription_utils import set_default_sub_for_all_services
 from acts_contrib.test_utils.tel.tel_test_utils import activate_esim_using_suw
 from acts_contrib.test_utils.tel.tel_test_utils import activate_google_fi_account
+from acts_contrib.test_utils.tel.tel_test_utils import adb_disable_verity
 from acts_contrib.test_utils.tel.tel_test_utils import add_google_account
 from acts_contrib.test_utils.tel.tel_test_utils import build_id_override
 from acts_contrib.test_utils.tel.tel_test_utils import check_google_fi_activated
@@ -87,6 +89,9 @@ from acts_contrib.test_utils.tel.tel_test_utils import unlock_sim
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts_contrib.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
 from acts_contrib.test_utils.tel.tel_wifi_utils import ensure_wifi_connected
+
+
+REMOUNT_REBOOT_MSG = "Now reboot your device for settings to take effect"
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -161,6 +166,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.qxdm_log = self.user_params.get("qxdm_log", True)
         self.sdm_log = self.user_params.get("sdm_log", False)
         self.tcpdump_log = self.user_params.get("tcpdump_log", True)
+        self.dsp_log = self.user_params.get("dsp_log", False)
         self.dsp_log_p21 = self.user_params.get("dsp_log_p21", False)
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
@@ -263,6 +269,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         ad.sdm_log = getattr(ad, "sdm_log", self.sdm_log)
+        ad.dsp_log = getattr(ad, "dsp_log", self.dsp_log)
         ad.dsp_log_p21 = getattr(ad, "dsp_log_p21", self.dsp_log_p21)
         if self.user_params.get("enable_connectivity_metrics", False):
             enable_connectivity_metrics(ad)
@@ -274,6 +281,7 @@ class TelephonyBaseTest(BaseTestClass):
                 new_build_id=self.user_params.get("build_id_override_with",
                                                   None),
                 postfix=build_postfix)
+
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
         list_of_models = CHIPSET_MODELS_LIST
@@ -286,8 +294,26 @@ class TelephonyBaseTest(BaseTestClass):
                              % phone_mode)
                 reboot_device(ad)
 
-        if ad.dsp_log_p21:
-            start_dsp_logger_p21(ad)
+        if "_test" not in ad.build_info["build_id"]:
+            ad.ensure_verity_disabled()
+            try:
+                ad.adb.remount()
+            except AdbCommandError as e:
+                if REMOUNT_REBOOT_MSG in e.stderr:
+                    ad.reboot()
+                    ad.adb.remount()
+            build_id = ad.build_info["build_id"].replace(".", r"\.")
+            ad.adb.shell("sed -i '/^ro.build.id=/ "
+                        f"s/{build_id}/&_test/g' /system/build.prop")
+            ad.adb.shell("sed -i '/^ro.build.description=/ "
+                        f"s/{build_id}/&_test/g' /system/build.prop")
+
+        if ad.dsp_log:
+            start_dsp_logger(ad)
+        elif ad.dsp_log_p21:
+            start_dsp_logger(ad, p21=True)
+        else:
+            ad.reboot()
         stop_qxdm_logger(ad)
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
@@ -340,17 +366,36 @@ class TelephonyBaseTest(BaseTestClass):
             # eSIM needs activation
             activate_esim_using_suw(ad)
             ensure_phone_idle(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file)
+            if getattr(ad, 'mep', False):
+                setup_droid_properties(self.log, ad, sim_conf_file, True)
+            else:
+                setup_droid_properties(self.log, ad, sim_conf_file)
         elif self.user_params.get("Attenuator"):
             ad.log.info("Device in chamber room")
             ensure_phone_idle(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file)
+            if getattr(ad, 'mep', False):
+                setup_droid_properties(self.log, ad, sim_conf_file, True)
+            else:
+                setup_droid_properties(self.log, ad, sim_conf_file)
         else:
             self.wait_for_sim_ready(ad)
             ensure_phone_default_state(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file)
+            if getattr(ad, 'mep', False):
+                setup_droid_properties(self.log, ad, sim_conf_file, True)
+            else:
+                setup_droid_properties(self.log, ad, sim_conf_file)
 
-        if getattr(ad, 'dsds', False):
+        if getattr(ad, 'mep', False):
+            default_slot = getattr(ad, "default_slot", 1)
+            if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
+                ad.log.info("Slot %s is the default slot.", default_slot)
+                set_default_sub_for_all_services(ad, default_slot)
+            else:
+                ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
+                    default_slot, 1-default_slot)
+                set_default_sub_for_all_services(ad, 1-default_slot)
+                setattr(ad, "default_slot", 1-default_slot)
+        elif getattr(ad, 'dsds', False):
             default_slot = getattr(ad, "default_slot", 0)
             if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
                 ad.log.info("Slot %s is the default slot.", default_slot)

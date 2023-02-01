@@ -36,7 +36,6 @@ import threading
 import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
-from zeroconf import IPVersion, Zeroconf
 
 from acts import signals
 from acts.controllers.adb_lib.error import AdbError
@@ -540,7 +539,6 @@ def sync_device_time(ad):
 class TimeoutError(Exception):
     """Exception for timeout decorator related errors.
     """
-    pass
 
 
 def _timeout_handler(signum, frame):
@@ -1437,7 +1435,7 @@ def get_interface_ip_addresses(comm_channel, interface):
             f'ip -o addr show {interface} | awk \'{{gsub("/", " "); print $4}}\''
         ).stdout.splitlines()
     elif type(comm_channel) is FuchsiaDevice:
-        interfaces = comm_channel.netstack_lib.netstackListInterfaces()
+        interfaces = comm_channel.sl4f.netstack_lib.netstackListInterfaces()
         err = interfaces.get('error')
         if err is not None:
             raise ActsUtilsError(f'Failed get_interface_ip_addresses: {err}')
@@ -1822,50 +1820,64 @@ def get_fuchsia_mdns_ipv6_address(device_mdns_name):
     Returns:
         string, IPv6 link-local address
     """
+    from zeroconf import IPVersion, Zeroconf
+
     if not device_mdns_name:
         return None
 
-    interfaces = psutil.net_if_addrs()
-    for interface in interfaces:
-        for addr in interfaces[interface]:
-            address = addr.address.split('%')[0]
-            if addr.family == socket.AF_INET6 and ipaddress.ip_address(
-                    address).is_link_local and address != 'fe80::1':
-                logging.info('Sending mDNS query for device "%s" using "%s"' %
-                             (device_mdns_name, addr.address))
-                try:
-                    zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
-                                        interfaces=[address])
-                except RuntimeError as e:
-                    if 'No adapter found for IP address' in e.args[0]:
-                        # Most likely, a device went offline and its control
-                        # interface was deleted. This is acceptable since the
-                        # device that went offline isn't guaranteed to be the
-                        # device we're searching for.
-                        logging.warning('No adapter found for "%s"' % address)
-                        continue
-                    raise
+    def mdns_query(interface, address):
+        logging.info(
+            f'Sending mDNS query for device "{device_mdns_name}" using "{address}"'
+        )
+        try:
+            zeroconf = Zeroconf(ip_version=IPVersion.V6Only,
+                                interfaces=[address])
+        except RuntimeError as e:
+            if 'No adapter found for IP address' in e.args[0]:
+                # Most likely, a device went offline and its control
+                # interface was deleted. This is acceptable since the
+                # device that went offline isn't guaranteed to be the
+                # device we're searching for.
+                logging.warning('No adapter found for "%s"' % address)
+                return None
+            raise
 
-                device_records = zeroconf.get_service_info(
-                    FUCHSIA_MDNS_TYPE,
-                    device_mdns_name + '.' + FUCHSIA_MDNS_TYPE)
+        device_records = zeroconf.get_service_info(
+            FUCHSIA_MDNS_TYPE, device_mdns_name + '.' + FUCHSIA_MDNS_TYPE)
 
-                if device_records:
-                    for device_address in device_records.parsed_addresses():
-                        device_ip_address = ipaddress.ip_address(
-                            device_address)
-                        scoped_address = '%s%%%s' % (device_address, interface)
-                        if (device_ip_address.version == 6
-                                and device_ip_address.is_link_local
-                                and can_ping(job, dest_ip=scoped_address)):
-                            logging.info('Found device "%s" at "%s"' %
-                                         (device_mdns_name, scoped_address))
-                            zeroconf.close()
-                            del zeroconf
-                            return scoped_address
+        if device_records:
+            for device_address in device_records.parsed_addresses():
+                device_ip_address = ipaddress.ip_address(device_address)
+                scoped_address = '%s%%%s' % (device_address, interface)
+                if (device_ip_address.version == 6
+                        and device_ip_address.is_link_local
+                        and can_ping(job, dest_ip=scoped_address)):
+                    logging.info('Found device "%s" at "%s"' %
+                                 (device_mdns_name, scoped_address))
+                    zeroconf.close()
+                    del zeroconf
+                    return scoped_address
 
-                zeroconf.close()
-                del zeroconf
+        zeroconf.close()
+        del zeroconf
+        return None
+
+    with ThreadPoolExecutor() as executor:
+        futures = []
+
+        interfaces = psutil.net_if_addrs()
+        for interface in interfaces:
+            for addr in interfaces[interface]:
+                address = addr.address.split('%')[0]
+                if addr.family == socket.AF_INET6 and ipaddress.ip_address(
+                        address).is_link_local and address != 'fe80::1':
+                    futures.append(
+                        executor.submit(mdns_query, interface, address))
+
+        for future in futures:
+            addr = future.result()
+            if addr:
+                return addr
 
     logging.error('Unable to find IP address for device "%s"' %
                   device_mdns_name)

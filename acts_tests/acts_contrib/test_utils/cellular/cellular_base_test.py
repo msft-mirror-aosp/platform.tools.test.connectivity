@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import time
 import json
 
 from acts import base_test
@@ -97,7 +96,8 @@ class CellularBaseTest(base_test.BaseTestClass):
                                cmx500_ip=None,
                                cmx500_port=None,
                                modem_logging=None,
-                               uxm_ip=None)
+                               uxm_ip=None,
+                               disable_data=None)
 
         # Load calibration tables
         filename_calibration_table = (
@@ -191,7 +191,21 @@ class CellularBaseTest(base_test.BaseTestClass):
                                                self.cmx500_port)
 
         elif self.uxm_ip:
-            return uxm.UXMCellularSimulator(self.uxm_ip, self.custom_files)
+            # unpack additional uxm info
+            self.unpack_userparams(uxm_user=None,
+                                   ssh_private_key_to_uxm=None,
+                                   ta_exe_path=None,
+                                   ta_exe_name=None)
+            for param in ('uxm_ip', 'uxm_user', 'ssh_private_key_to_uxm',
+                          'ta_exe_path', 'ta_exe_name', 'custom_files'):
+                if getattr(self, param) is None:
+                    raise RuntimeError('The uxm cellular simulator '
+                                       'requires %s to be set in the '
+                                       'config file.' % key)
+            return uxm.UXMCellularSimulator(self.uxm_ip, self.custom_files,
+                                            self.uxm_user,
+                                            self.ssh_private_key_to_uxm,
+                                            self.ta_exe_path, self.ta_exe_name)
 
         else:
             raise RuntimeError(
@@ -245,6 +259,13 @@ class CellularBaseTest(base_test.BaseTestClass):
 
         # Changing cell parameters requires the phone to be detached
         self.simulation.detach()
+
+        # Disable or enable data according to the config. Data is on by default
+        if self.disable_data:
+            self.log.info('disable data for the test')
+        else:
+            self.log.info('enable data for the test')
+        self.cellular_dut.toggle_data(not self.disable_data)
 
         # Configure simulation with parameters loaded from json file
         sim_params = self.test_configs.get(self.test_name)
@@ -350,15 +371,22 @@ class CellularBaseTest(base_test.BaseTestClass):
             type: defines the type of simulation to be started.
         """
         simulation_dictionary = {
-            self.PARAM_SIM_TYPE_LTE: lte_sim.LteSimulation,
-            self.PARAM_SIM_TYPE_LTE_CA: lte_sim.LteSimulation,
+            self.PARAM_SIM_TYPE_LTE:
+            lte_sim.LteSimulation,
+            self.PARAM_SIM_TYPE_LTE_CA:
+            lte_sim.LteSimulation,
             # The LteSimulation class is able to handle NR cells as well.
             # The long-term goal is to consolidate all simulation classes.
-            self.PARAM_SIM_TYPE_NR: lte_sim.LteSimulation,
-            self.PARAM_SIM_TYPE_UMTS: umts_sim.UmtsSimulation,
-            self.PARAM_SIM_TYPE_GSM: gsm_sim.GsmSimulation,
-            self.PARAM_SIM_TYPE_LTE_IMS: lteims_sim.LteImsSimulation,
-            self.PARAM_SIM_TYPE_PRESET: PresetSimulation.PresetSimulation,
+            self.PARAM_SIM_TYPE_NR:
+            lte_sim.LteSimulation,
+            self.PARAM_SIM_TYPE_UMTS:
+            umts_sim.UmtsSimulation,
+            self.PARAM_SIM_TYPE_GSM:
+            gsm_sim.GsmSimulation,
+            self.PARAM_SIM_TYPE_LTE_IMS:
+            lteims_sim.LteImsSimulation,
+            self.PARAM_SIM_TYPE_PRESET:
+            PresetSimulation.PresetSimulation,
         }
 
         if not sim_type in simulation_dictionary:

@@ -307,7 +307,7 @@ class ChannelSwitchTest(WifiBaseTest):
 
         self.log.info('Starting SoftAP on DUT')
 
-        response = self.dut.device.wlan_ap_policy_lib.wlanStartAccessPoint(
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStartAccessPoint(
             ssid, security_type, password, connectivity_mode, operating_band)
         if response.get('error'):
             raise EnvironmentError('SL4F: Failed to setup SoftAP. Err: %s' %
@@ -320,7 +320,8 @@ class ChannelSwitchTest(WifiBaseTest):
         Raises:
             EnvironmentError: if SoftAP stop call fails
         """
-        response = self.dut.device.wlan_ap_policy_lib.wlanStopAllAccessPoint()
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStopAllAccessPoint(
+        )
         if response.get('error'):
             raise EnvironmentError(
                 'SL4F: Failed to stop all SoftAPs. Err: %s' %
@@ -362,12 +363,12 @@ class ChannelSwitchTest(WifiBaseTest):
         """
         iface_ids = self.dut.get_wlan_interface_id_list()
         for iface_id in iface_ids:
-            query = self.dut.device.wlan_lib.wlanQueryInterface(iface_id)
+            query = self.dut.device.sl4f.wlan_lib.wlanQueryInterface(iface_id)
             if query['error']:
                 continue
             query_result = query['result']
             if type(query_result) is dict and query_result.get('role') == 'Ap':
-                status = self.dut.device.wlan_lib.wlanStatus(iface_id)
+                status = self.dut.device.sl4f.wlan_lib.wlanStatus(iface_id)
                 if status['error']:
                     continue
                 status_result = status['result']

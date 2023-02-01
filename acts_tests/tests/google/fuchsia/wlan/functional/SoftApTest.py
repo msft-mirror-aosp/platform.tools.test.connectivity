@@ -129,7 +129,6 @@ def get_soft_ap_params_from_config_or_default(config):
 
 class StressTestIterationFailure(Exception):
     """Used to differentiate a subtest failure from an actual exception"""
-    pass
 
 
 class SoftApTest(WifiBaseTest):
@@ -235,7 +234,7 @@ class SoftApTest(WifiBaseTest):
 
         self.log.info('Starting SoftAP on DUT with settings: %s' % settings)
 
-        response = self.dut.device.wlan_ap_policy_lib.wlanStartAccessPoint(
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStartAccessPoint(
             ssid, security_type, password, connectivity_mode, operating_band)
         if response.get('error'):
             raise EnvironmentError('SL4F: Failed to setup SoftAP. Err: %s' %
@@ -257,7 +256,7 @@ class SoftApTest(WifiBaseTest):
         security_type = settings['security_type']
         password = settings.get('password', '')
 
-        response = self.dut.device.wlan_ap_policy_lib.wlanStopAccessPoint(
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStopAccessPoint(
             ssid, security_type, password)
         if response.get('error'):
             raise EnvironmentError('SL4F: Failed to stop SoftAP. Err: %s' %
@@ -269,7 +268,8 @@ class SoftApTest(WifiBaseTest):
         Raises:
             EnvironmentError, if StopAllAps call fails.
         """
-        response = self.dut.device.wlan_ap_policy_lib.wlanStopAllAccessPoint()
+        response = self.dut.device.sl4f.wlan_ap_policy_lib.wlanStopAllAccessPoint(
+        )
         if response.get('error'):
             raise EnvironmentError(
                 'SL4F: Failed to stop all SoftAPs. Err: %s' %

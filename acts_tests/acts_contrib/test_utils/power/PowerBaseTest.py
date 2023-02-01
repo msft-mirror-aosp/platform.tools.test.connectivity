@@ -21,6 +21,7 @@ import re
 import time
 
 import acts.controllers.power_monitor as power_monitor_lib
+import acts.controllers.monsoon as monsoon_controller
 import acts.controllers.iperf_server as ipf
 from acts import asserts
 from acts import base_test
@@ -105,7 +106,14 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         Raises an exception if there are no controllers available.
         """
-        if hasattr(self, 'monsoons'):
+        if hasattr(self, 'bitses'):
+            if hasattr(self, 'monsoons'):
+                self.log.info('Destroying monsoon controller.')
+                monsoon_controller.destroy(self.monsoons)
+                time.sleep(2)
+            self.power_monitor = self.bitses[0]
+            self.power_monitor.setup(registry=self.user_params)
+        elif hasattr(self, 'monsoons'):
             self.power_monitor = power_monitor_lib.PowerMonitorMonsoonFacade(
                 self.monsoons[0])
             self.monsoons[0].set_max_current(8.0)
@@ -141,7 +149,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                                extra_wait=None,
                                iperf_duration=None,
                                pass_fail_tolerance=THRESHOLD_TOLERANCE_DEFAULT,
-                               mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT)
+                               mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT,
+                               ap_dtim_period=None)
 
         # Setup the must have controllers, phone and monsoon
         self.dut = self.android_devices[0]

@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import itertools
-import re
 
 from acts import asserts
 from acts import utils
@@ -59,9 +58,16 @@ def generate_test_name(settings):
     for cap in hostapd_constants.N_CAPABILITIES_MAPPING.keys():
         if cap in settings['n_capabilities']:
             ret.append(hostapd_constants.N_CAPABILITIES_MAPPING[cap])
-    return 'test_%s_%s_%s_%s_%s' % (settings['frequency'], settings['chbw'],
-                                    settings['security'], settings['n_mode'],
-                                    ''.join(ret))
+    # '+' is used by Mobile Harness as special character, don't use it in test names
+    if settings['chbw'] == 'HT40-':
+        chbw = "HT40Lower"
+    elif settings['chbw'] == 'HT40+':
+        chbw = "HT40Upper"
+    else:
+        chbw = settings['chbw']
+    return 'test_11n_%s_%s_%s_%s_%s' % (settings['frequency'], chbw,
+                                        settings['security'],
+                                        settings['n_mode'], ''.join(ret))
 
 
 class WlanPhyCompliance11NTest(WifiBaseTest):

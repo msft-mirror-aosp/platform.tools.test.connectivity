@@ -142,7 +142,7 @@ class WlanScanTest(WifiBaseTest):
 
     def teardown_test(self):
         for fd in self.fuchsia_devices:
-            fd.wlan_lib.wlanDisconnect()
+            fd.sl4f.wlan_lib.wlanDisconnect()
 
     def teardown_class(self):
         if self.start_access_point:
@@ -191,8 +191,8 @@ class WlanScanTest(WifiBaseTest):
         if 'password' in wlan_network_params:
             target_pwd = wlan_network_params['password']
 
-        bss_scan_response = fd.wlan_lib.wlanScanForBSSInfo().get('result')
-        connection_response = fd.wlan_lib.wlanConnectToNetwork(
+        bss_scan_response = fd.sl4f.wlan_lib.wlanScanForBSSInfo().get('result')
+        connection_response = fd.sl4f.wlan_lib.wlanConnectToNetwork(
             target_ssid,
             bss_scan_response[target_ssid][0],
             target_pwd=target_pwd)
@@ -206,7 +206,7 @@ class WlanScanTest(WifiBaseTest):
         """
         start_time = datetime.now()
 
-        scan_response = fd.wlan_lib.wlanStartScan()
+        scan_response = fd.sl4f.wlan_lib.wlanStartScan()
 
         # first check if we received an error
         if scan_response.get("error") is None:

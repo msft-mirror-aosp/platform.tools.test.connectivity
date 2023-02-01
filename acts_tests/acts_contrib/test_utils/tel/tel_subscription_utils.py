@@ -196,7 +196,7 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
     """
     siminfo = ad.adb.shell(
         "content query --uri content://telephony/siminfo")
-    if "port_index" in siminfo:
+    if "port_index" in siminfo and getattr(ad, "mep", False):
         pattern_port = re.compile(r"port_index=(\d)")
         pattern_sub = re.compile(r" _id=(\d+)")
         pattern_embedded = re.compile(r"is_embedded=(\d+)")
@@ -219,6 +219,24 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
         for info in subInfo:
             if info['simSlotIndex'] == sim_slot_index:
                 return info['subscriptionId']
+    return INVALID_SUB_ID
+
+
+def get_subid_from_logical_slot(ad, logical_slot):
+    """ Get the subscription ID for a SIM at a particular logical slot.
+
+    Args:
+        ad: android_device object.
+        logical_slot: The logical slot(0 or 1).
+
+    Returns:
+        result: Subscription ID
+    """
+    logical_slot = 1 if logical_slot else 0
+    subInfo = ad.droid.subscriptionGetAllSubInfoList()
+    for info in subInfo:
+        if info['simSlotIndex'] == logical_slot:
+            return info['subscriptionId']
     return INVALID_SUB_ID
 
 
@@ -421,9 +439,9 @@ def set_dds_on_slot_0(ad):
         return False
     operator = get_operatorname_from_slot_index(ad, 0)
     if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
-        ad.log.info("Current DDS is already on %s", operator)
+        ad.log.info("Current DDS is already on Sub %s(%s)", sub_id, operator)
         return True
-    ad.log.info("Setting DDS on %s", operator)
+    ad.log.info("Setting DDS on Sub %s(%s)", sub_id, operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
     if get_default_data_sub_id(ad) == sub_id:
@@ -439,9 +457,9 @@ def set_dds_on_slot_1(ad):
         return False
     operator = get_operatorname_from_slot_index(ad, 1)
     if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
-        ad.log.info("Current DDS is already on %s", operator)
+        ad.log.info("Current DDS is already on Sub %s(%s)", sub_id, operator)
         return True
-    ad.log.info("Setting DDS on %s", operator)
+    ad.log.info("Setting DDS on Sub %s(%s)", sub_id, operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
     if get_default_data_sub_id(ad) == sub_id:
@@ -456,6 +474,9 @@ def set_dds_on_slot(ad, dds_slot):
     Args:
         ad: android device object.
         dds_slot: the slot which be set to DDS.
+                  0 for pSIM,
+                  1 for eSIM port 0,
+                  2 for eSIM port 1.
 
     Returns:
         True if success, False if fail.
@@ -466,9 +487,9 @@ def set_dds_on_slot(ad, dds_slot):
         return False
     operator = get_operatorname_from_slot_index(ad, dds_slot)
     if ad.droid.subscriptionGetDefaultDataSubId() == sub_id:
-        ad.log.info("Current DDS is already on %s", operator)
+        ad.log.info("Current DDS is already on Sub %s(%s)", sub_id, operator)
         return True
-    ad.log.info("Setting DDS on %s", operator)
+    ad.log.info("Setting DDS on Sub %s(%s)", sub_id, operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
     if get_default_data_sub_id(ad) == sub_id:

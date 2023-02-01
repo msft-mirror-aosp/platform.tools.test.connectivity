@@ -18,27 +18,36 @@ import json
 import os
 import tempfile
 import subprocess
+import time
 
-from ipaddress import ip_address
 from pathlib import Path
+from typing import Any, MutableMapping, Optional
 
 from acts import context
 from acts import logger
 from acts import signals
 from acts import utils
-from acts.libs.proc import job
 
-FFX_DEFAULT_COMMAND_TIMEOUT = 60
+
+FFX_DEFAULT_COMMAND_TIMEOUT: int = 60
 
 
 class FFXError(signals.TestError):
     """Non-zero error code returned from a ffx command."""
-    pass
+
+    def __init__(self, command: str,
+                 process: subprocess.CalledProcessError) -> None:
+        self.command = command
+        self.stdout: str = process.stdout.decode('utf-8', errors='replace')
+        self.stderr: str = process.stderr.decode('utf-8', errors='replace')
+        self.exit_status = process.returncode
+
+    def __str__(self) -> str:
+        return f'ffx subcommand "{self.command}" returned {self.exit_status}, stdout: "{self.stdout}", stderr: "{self.stderr}"'
 
 
 class FFXTimeout(signals.TestError):
     """Timed out running a ffx command."""
-    pass
 
 
 class FFX:
@@ -53,10 +62,10 @@ class FFX:
     """
 
     def __init__(self,
-                 binary_path,
-                 mdns_name,
-                 ip=None,
-                 ssh_private_key_path=None):
+                 binary_path: str,
+                 mdns_name: str,
+                 ip: str = None,
+                 ssh_private_key_path: str = None):
         """
         Args:
             binary_path: Path to ffx binary.
@@ -70,13 +79,73 @@ class FFX:
         self.ip = ip
         self.ssh_private_key_path = ssh_private_key_path
 
+        self._env_config_path: Optional[str] = None
+        self._ssh_auth_sock_path: Optional[str] = None
+        self._overnet_socket_path: Optional[str] = None
+        self._has_been_reachable = False
+        self._has_logged_version = False
+
+    def clean_up(self) -> None:
+        if self._env_config_path:
+            self.run("daemon stop", skip_reachability_check=True)
+        if self._ssh_auth_sock_path:
+            Path(self._ssh_auth_sock_path).unlink(missing_ok=True)
+        if self._overnet_socket_path:
+            Path(self._overnet_socket_path).unlink(missing_ok=True)
+
         self._env_config_path = None
         self._ssh_auth_sock_path = None
         self._overnet_socket_path = None
         self._has_been_reachable = False
         self._has_logged_version = False
 
-    def _create_isolated_environment(self):
+    def run(self,
+            command: str,
+            timeout_sec: int = FFX_DEFAULT_COMMAND_TIMEOUT,
+            skip_status_code_check: bool = False,
+            skip_reachability_check: bool = False
+            ) -> subprocess.CompletedProcess:
+        """Runs an ffx command.
+
+        Verifies reachability before running, if it hasn't already.
+
+        Args:
+            command: Command to run with ffx.
+            timeout_sec: Seconds to wait for a command to complete.
+            skip_status_code_check: Whether to check for the status code.
+            verify_reachable: Whether to verify reachability before running.
+
+        Raises:
+            FFXTimeout: when the command times out.
+            FFXError: when the command returns non-zero and skip_status_code_check is False.
+
+        Returns:
+            The results of the command. Note subprocess.CompletedProcess returns
+            stdout and stderr as a byte-array, not a string. Treat these members
+            as such or convert to a string using bytes.decode('utf-8').
+        """
+        if not self._env_config_path:
+            self._create_isolated_environment()
+        if not self._has_been_reachable and not skip_reachability_check:
+            self.log.info(f'Verifying reachability before running "{command}"')
+            self.verify_reachable()
+
+        self.log.debug(f'Running "{command}".')
+        full_command = f'{self.binary_path} -e {self._env_config_path} {command}'
+
+        try:
+            result = subprocess.run(full_command.split(),
+                                    capture_output=True,
+                                    timeout=timeout_sec,
+                                    check=not skip_status_code_check)
+        except subprocess.CalledProcessError as e:
+            raise FFXError(command, e) from e
+        except subprocess.TimeoutExpired as e:
+            raise FFXTimeout(f'Timed out running "{full_command}"') from e
+
+        return result
+
+    def _create_isolated_environment(self) -> None:
         """ Create a new isolated environment for ffx.
 
         This is needed to avoid overlapping ffx daemons while testing in
@@ -101,7 +170,7 @@ class FFX:
         self._overnet_socket_path = tempfile.mkstemp(
             suffix="overnet_socket")[1]
 
-        config = {
+        config: MutableMapping[str, Any] = {
             "target": {
                 "default": self.mdns_name,
             },
@@ -158,7 +227,9 @@ class FFX:
         # The ffx daemon will started automatically when needed. There is no
         # need to start it manually here.
 
-    def verify_reachable(self):
+    def verify_reachable(self,
+                         timeout_sec: int = FFX_DEFAULT_COMMAND_TIMEOUT
+                         ) -> None:
         """Verify the target is reachable via RCS and various services.
 
         Blocks until the device allows for an RCS connection. If the device
@@ -171,7 +242,11 @@ class FFX:
         When called for the first time, the versions will be checked for
         compatibility.
 
+        Args:
+            timeout_sec: Seconds to wait for reachability check
+
         Raises:
+            FFXError: when an unknown error occurs
             FFXTimeout: when the target is unreachable
         """
         cmd = "target wait"
@@ -181,19 +256,24 @@ class FFX:
             # TODO(https://fxbug.dev/105530): Update manual target parsing in
             # ffx.
             cmd = f"target add {self.ip}"
-        try:
-            self.run(cmd,
-                     timeout_sec=5,
-                     skip_reachability_check=True)
-        except FFXTimeout:
-            longer_wait_sec = 60
-            self.log.info(
-                "Device is not immediately available via ffx." +
-                f" Waiting up to {longer_wait_sec} seconds for device to be reachable."
-            )
-            self.run(cmd,
-                     timeout_sec=longer_wait_sec,
-                     skip_reachability_check=True)
+
+        timeout = time.perf_counter() + timeout_sec
+        while True:
+            try:
+                self.run(cmd, timeout_sec=5, skip_reachability_check=True)
+                break
+            except FFXError as e:
+                if 'took too long connecting to ascendd socket' in e.stderr:
+                    err = e
+                else:
+                    raise e
+            except FFXTimeout as e:
+                err = e
+
+            if time.perf_counter() > timeout:
+                raise FFXTimeout(
+                    f'Waited over {timeout_sec}s for ffx to become reachable'
+                ) from err
 
         # Use a shorter timeout than default because device information
         # gathering can hang for a long time if the device is not actually
@@ -214,12 +294,13 @@ class FFX:
             self._has_logged_version = True
             self.compare_version(result)
 
-    def compare_version(self, target_show_result):
+    def compare_version(
+            self, target_show_result: subprocess.CompletedProcess) -> None:
         """Compares the version of Fuchsia with the version of ffx.
 
         Args:
-            target_show_result: job.Result, result of the target show command
-                with JSON output mode enabled
+            target_show_result: Result of the target show command with JSON
+                output mode enabled
         """
         result_json = json.loads(target_show_result.stdout)
         build_info = next(
@@ -236,68 +317,3 @@ class FFX:
                 "ffx versions that differ from device versions may" +
                 " have compatibility issues. It is recommended to" +
                 " use versions within 6 weeks of each other.")
-
-    def clean_up(self):
-        if self._env_config_path:
-            self.run("daemon stop", skip_reachability_check=True)
-        if self._ssh_auth_sock_path:
-            Path(self._ssh_auth_sock_path).unlink(missing_ok=True)
-        if self._overnet_socket_path:
-            Path(self._overnet_socket_path).unlink(missing_ok=True)
-
-        self._env_config_path = None
-        self._ssh_auth_sock_path = None
-        self._overnet_socket_path = None
-        self._has_been_reachable = False
-        self._has_logged_version = False
-
-    def run(self,
-            command,
-            timeout_sec=FFX_DEFAULT_COMMAND_TIMEOUT,
-            skip_status_code_check=False,
-            skip_reachability_check=False):
-        """Runs an ffx command.
-
-        Verifies reachability before running, if it hasn't already.
-
-        Args:
-            command: string, command to run with ffx.
-            timeout_sec: Seconds to wait for a command to complete.
-            skip_status_code_check: Whether to check for the status code.
-            verify_reachable: Whether to verify reachability before running.
-
-        Raises:
-            FFXTimeout: when the command times out.
-            FFXError: when the command returns non-zero and skip_status_code_check is False.
-
-        Returns:
-            A subprocess.CompletedProcess object containing the results of the
-            command. Note this object returns stdout and stderr as a byte-array,
-            not a string. Treat these members as such or convert to a string
-            using bytes.decode('utf-8').
-        """
-        if not self._env_config_path:
-            self._create_isolated_environment()
-        if not self._has_been_reachable and not skip_reachability_check:
-            self.log.info(f'Verifying reachability before running "{command}"')
-            self.verify_reachable()
-
-        self.log.debug(f'Running "{command}".')
-        full_command = f'{self.binary_path} -e {self._env_config_path} {command}'
-
-        try:
-            result = subprocess.run(full_command.split(),
-                                    capture_output=True,
-                                    timeout=timeout_sec,
-                                    check=not skip_status_code_check)
-        except subprocess.CalledProcessError as e:
-            self.log.warning(f'Ran "{full_command}", exit code {e.returncode}')
-            self.log.warning(f'stdout: {e.stdout}')
-            self.log.warning(f'stderr: {e.stderr}')
-            raise FFXError(
-                f'Non-zero exit code ({e.returncode}) when running "{full_command}": {e.stderr}'
-            )
-        except subprocess.TimeoutExpired as e:
-            raise FFXTimeout(f'Timed out running "{full_command}"') from e
-
-        return result

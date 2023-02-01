@@ -113,6 +113,10 @@ class WifiManagerTest(WifiBaseTest):
             acts.utils.force_airplane_mode(self.dut, False),
             "Can not turn airplane mode off: %s" % self.dut.serial)
 
+        if self.dut.model in self.user_params["google_pixel_watch_models"]:
+            if wutils.get_wear_wifimediator_disable_status(self.dut):
+                wutils.disable_wear_wifimediator(self.dut, False)
+
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
@@ -205,8 +209,8 @@ class WifiManagerTest(WifiBaseTest):
                 " match. \nBefore reboot = %s \n After reboot = %s" %
                 (networks, network_info))
             raise signals.TestFailure(msg)
-        current_count = 0
         # For each network, check if it exists in configured list after reboot
+        current_ssids = set()
         for network in networks:
             exists = wutils.match_networks({
                 WifiEnums.SSID_KEY: network[WifiEnums.SSID_KEY]
@@ -218,10 +222,10 @@ class WifiManagerTest(WifiBaseTest):
             # Get the new network id for each network after reboot.
             network[WifiEnums.NETID_KEY] = exists[0]['networkId']
             if exists[0]['status'] == 'CURRENT':
-                current_count += 1
+                current_ssids.add(network[WifiEnums.SSID_KEY])
                 # At any given point, there can only be one currently active
                 # network, defined with 'status':'CURRENT'
-                if current_count > 1:
+                if len(current_ssids) > 1:
                     raise signals.TestFailure("More than one network showing"
                                               "as 'CURRENT' after reboot")
 
@@ -634,6 +638,10 @@ class WifiManagerTest(WifiBaseTest):
     def test_scan_with_wifi_off_and_location_scan_off(self):
         """Turn off wifi and location scan"""
         self.turn_location_on_and_scan_toggle_off()
+
+        if self.dut.model in self.user_params["google_pixel_watch_models"]:
+            wutils.disable_wear_wifimediator(self.dut, True)
+
         wutils.wifi_toggle_state(self.dut, False)
 
         """Test wifi connection scan should fail."""
