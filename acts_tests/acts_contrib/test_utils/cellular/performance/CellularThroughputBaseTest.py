@@ -329,7 +329,7 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
             if cell['cell_type'] == 'NR5G':
                 self.keysight_test_app.set_nr_subcarrier_spacing(
                     cell['cell_number'], cell['subcarrier_spacing'])
-            if cell.get('channel', False):
+            if 'channel' in cell:
                 self.keysight_test_app.set_cell_channel(
                     cell['cell_type'], cell['cell_number'], cell['channel'])
             self.keysight_test_app.set_cell_bandwidth(cell['cell_type'],
@@ -348,6 +348,9 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                     cell['cell_type'], cell['cell_number'], 'UL',
                     cell['ul_mimo_config'])
 
+        if testcase_params.get('force_contiguous_nr_channel', False):
+            self.keysight_test_app.toggle_contiguous_nr_channels(1)
+
         if testcase_params['endc_combo_config']['lte_cell_count']:
             self.keysight_test_app.set_lte_cell_mcs(
                 'CELL1', testcase_params['lte_dl_mcs_table'],
@@ -356,6 +359,21 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
                 testcase_params['lte_ul_mcs'])
             self.keysight_test_app.set_lte_ul_mac_padding(
                 self.testclass_params['lte_ul_mac_padding'])
+
+        if testcase_params['endc_combo_config']['nr_cell_count']:
+            if 'schedule_scenario' in testcase_params:
+                self.keysight_test_app.set_nr_cell_schedule_scenario(
+                    'CELL1',
+                    testcase_params['schedule_scenario'])
+            self.keysight_test_app.set_nr_ul_dft_precoding(
+                'CELL1', testcase_params['transform_precoding'])
+            self.keysight_test_app.set_nr_cell_mcs(
+                'CELL1', testcase_params['nr_dl_mcs'],
+                testcase_params['nr_ul_mcs'])
+            self.keysight_test_app.set_dl_carriers(
+                testcase_params['endc_combo_config']['nr_dl_carriers'])
+            self.keysight_test_app.set_ul_carriers(
+                testcase_params['endc_combo_config']['nr_ul_carriers'])
 
         # Turn on LTE cells
         for cell in testcase_params['endc_combo_config']['cell_list']:
@@ -370,20 +388,6 @@ class CellularThroughputBaseTest(base_test.BaseTestClass):
         if testcase_params['endc_combo_config']['lte_scc_list']:
             self.keysight_test_app.apply_lte_carrier_agg(
                 testcase_params['endc_combo_config']['lte_scc_list'])
-
-        if testcase_params['endc_combo_config']['nr_cell_count']:
-            # self.keysight_test_app.set_nr_cell_schedule_scenario(
-            #     'CELL1',
-            #     testcase_params['schedule_scenario'])
-            self.keysight_test_app.set_nr_ul_dft_precoding(
-                'CELL1', testcase_params['transform_precoding'])
-            self.keysight_test_app.set_nr_cell_mcs(
-                'CELL1', testcase_params['nr_dl_mcs'],
-                testcase_params['nr_ul_mcs'])
-            self.keysight_test_app.set_dl_carriers(
-                testcase_params['endc_combo_config']['nr_dl_carriers'])
-            self.keysight_test_app.set_ul_carriers(
-                testcase_params['endc_combo_config']['nr_ul_carriers'])
 
         self.log.info('Waiting for LTE connections')
         # Turn airplane mode off

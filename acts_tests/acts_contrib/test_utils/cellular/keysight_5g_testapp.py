@@ -297,7 +297,7 @@ class Keysight5GTestApp(object):
         if cell_type == 'NR5G' and isinstance(
                 channel, str) and channel.lower() in ['low', 'mid', 'high']:
             self.send_cmd('BSE:CONFig:{}:{}:TESTChanLoc {}'.format(
-                cell_type, Keysight5GTestApp._format_cells(cell), channel))
+                cell_type, Keysight5GTestApp._format_cells(cell), channel.upper()))
         elif arfcn == 1:
             self.send_cmd('BSE:CONFig:{}:{}:DL:CHANnel {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell), channel))
@@ -305,6 +305,13 @@ class Keysight5GTestApp(object):
             self.send_cmd('BSE:CONFig:{}:{}:DL:FREQuency:MAIN {}'.format(
                 cell_type, Keysight5GTestApp._format_cells(cell),
                 channel * 1e6))
+
+    def toggle_contiguous_nr_channels(self, force_contiguous):
+        self.assert_cell_off('NR5G', 1)
+        self.log.warning('Forcing contiguous NR channels overrides channel config.')
+        self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 0')
+        if force_contiguous:
+            self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 1')
 
     def configure_contiguous_nr_channels(self, cell, band, channel):
         """Function to set cell frequency/channel
@@ -316,7 +323,7 @@ class Keysight5GTestApp(object):
         """
         self.assert_cell_off('NR5G', cell)
         self.send_cmd('BSE:CONFig:NR5G:PHY:OPTimize:CONTiguous:STATe 0')
-        if channel in ['low', 'mid', 'high']:
+        if channel.lower() in ['low', 'mid', 'high']:
             pcc_arfcn = cputils.PCC_PRESET_MAPPING[band][channel]
             self.set_cell_channel('NR5G', cell, pcc_arfcn, 1)
         else:
