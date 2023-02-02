@@ -61,7 +61,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
 
     @retry(tries=5, delay=10)
     def _set_country_code(self):
-      wutils..wifi_toggle_state(self.dut, True)
+      wutils.wifi_toggle_state(self.dut, True)
       wutils.set_wifi_country_code(self.dut, 'US')
 
     def teardown_test(self):
