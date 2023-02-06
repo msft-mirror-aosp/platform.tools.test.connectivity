@@ -99,8 +99,8 @@ class BokehFigure():
     def init_plot(self):
         self.plot = bokeh.plotting.figure(
             sizing_mode=self.fig_property['sizing_mode'],
-            plot_width=self.fig_property['width'],
-            plot_height=self.fig_property['height'],
+            width=self.fig_property['width'],
+            height=self.fig_property['height'],
             title=self.fig_property['title'],
             tools=self.TOOLS,
             x_axis_type=self.fig_property['x_axis_type'],

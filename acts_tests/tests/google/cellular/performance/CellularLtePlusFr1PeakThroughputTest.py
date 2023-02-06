@@ -259,7 +259,6 @@ class CellularLteFr1EndcPeakThroughputTest(CellularLtePlusFr1PeakThroughputTest
         self.tests = self.generate_test_cases([(27, 4), (4, 27)],
                                               lte_dl_mcs_table='QAM256',
                                               lte_ul_mcs_table='QAM256',
-                                              schedule_scenario='FULL_TPUT',
                                               transform_precoding=0)
 
     def generate_endc_combo_config(self, endc_combo_str):
@@ -489,29 +488,28 @@ class CellularFr1SingleCellPeakThroughputTest(CellularSingleCellThroughputTest
         self.testclass_params = self.user_params['throughput_test_params']
         self.tests = self.generate_test_cases(
             nr_mcs_pair_list=[(27, 4), (4, 27)],
-            channel_list=['LOW', 'MID', 'HIGH'],
-            schedule_scenario='FULL_TPUT',
+            nr_channel_list=['LOW', 'MID', 'HIGH'],
             transform_precoding=0,
             lte_dl_mcs=4,
             lte_dl_mcs_table='QAM256',
             lte_ul_mcs=4,
             lte_ul_mcs_table='QAM64')
 
-    def generate_test_cases(self, nr_mcs_pair_list, channel_list, **kwargs):
+    def generate_test_cases(self, nr_mcs_pair_list, nr_channel_list, **kwargs):
 
         test_cases = []
         with open(self.testclass_params['nr_single_cell_configs'],
                   'r') as csvfile:
             test_configs = csv.DictReader(csvfile)
-            for test_config, channel, nr_mcs_pair in itertools.product(
-                    test_configs, channel_list, nr_mcs_pair_list):
+            for test_config, nr_channel, nr_mcs_pair in itertools.product(
+                    test_configs, nr_channel_list, nr_mcs_pair_list):
                 if int(test_config['skip_test']):
                     continue
                 endc_combo_config = self.generate_endc_combo_config(
                     test_config)
-                endc_combo_config['cell_list'][1]['channel'] = channel
+                endc_combo_config['cell_list'][1]['channel'] = nr_channel
                 test_name = 'test_fr1_{}_{}_dl_mcs{}_ul_mcs{}'.format(
-                    test_config['nr_band'], channel.lower(), nr_mcs_pair[0],
+                    test_config['nr_band'], nr_channel.lower(), nr_mcs_pair[0],
                     nr_mcs_pair[1])
                 test_params = collections.OrderedDict(
                     endc_combo_config=endc_combo_config,
@@ -539,7 +537,6 @@ class CellularLteSingleCellPeakThroughputTest(CellularSingleCellThroughputTest
         self.tests = self.generate_test_cases(lte_mcs_pair_list=[
             (('QAM256', 27), ('QAM256', 4)), (('QAM256', 4), ('QAM256', 27))
         ],
-                                              schedule_scenario='FULL_TPUT',
                                               transform_precoding=0)
 
     def generate_test_cases(self, lte_mcs_pair_list, **kwargs):
