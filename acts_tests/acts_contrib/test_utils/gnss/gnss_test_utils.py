@@ -241,12 +241,6 @@ def enable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Enable SUPL mode.")
     ad.adb.shell("echo -e '\nSUPL_MODE=1' >> /etc/gps_debug.conf")
-    if is_device_wearable(ad):
-        lto_mode_wearable(ad, True)
-    elif not check_chipset_vendor_by_qualcomm(ad):
-        lto_mode(ad, True)
-    else:
-        reboot(ad)
 
 
 def disable_supl_mode(ad):
