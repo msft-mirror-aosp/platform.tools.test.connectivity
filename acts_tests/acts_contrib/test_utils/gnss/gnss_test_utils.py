@@ -951,6 +951,7 @@ def start_ttff_by_gtw_gpstool(ad,
         latest_start_time: (Datetime) the start time of latest successful TTFF
     """
     begin_time = get_current_epoch_time()
+    ad.log.debug("[start_ttff] Search logcat start time: %s" % begin_time)
     if (ttff_mode == "hs" or ttff_mode == "ws") and not aid_data:
         ad.log.info("Wait {} seconds to start TTFF {}...".format(
             hot_warm_sleep, ttff_mode.upper()))
@@ -984,7 +985,7 @@ def start_ttff_by_gtw_gpstool(ad,
         time.sleep(1)
         result = ad.search_logcat("act=com.android.gpstool.start_test_action", begin_time)
         if result:
-            ad.log.debug("TTFF start log" % result)
+            ad.log.debug("TTFF start log %s" % result)
             latest_start_time = max(list(map(lambda x: x['datetime_obj'], result)))
             ad.log.info("Send TTFF start_test_action successfully.")
             return latest_start_time
@@ -1369,11 +1370,13 @@ def check_ttff_data(ad, ttff_data, ttff_mode, criteria):
                 % (len(ttff_data.keys()), ttff_mode))
     ad.log.info("%s PASS criteria is %d seconds" % (ttff_mode, criteria))
     ad.log.debug("%s TTFF data: %s" % (ttff_mode, ttff_data))
-    ttff_property_key_and_value(ad, ttff_data, ttff_mode)
     if len(ttff_data.keys()) == 0:
         ad.log.error("GTW_GPSTool didn't process TTFF properly.")
-        return False
-    elif any(float(ttff_data[key].ttff_sec) == 0.0 for key in ttff_data.keys()):
+        raise ValueError("No ttff loop is done")
+
+    ttff_property_key_and_value(ad, ttff_data, ttff_mode)
+
+    if any(float(ttff_data[key].ttff_sec) == 0.0 for key in ttff_data.keys()):
         ad.log.error("One or more TTFF %s Timeout" % ttff_mode)
         return False
     elif any(float(ttff_data[key].ttff_sec) >= criteria for key in
