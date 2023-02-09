@@ -24,8 +24,8 @@ class AtUtil():
     def send(self, cmd: str,) -> Optional[str]:
         res = str(self.dut.adb.shell(cmd))
         self.log.info(f'cmd sent: {cmd}')
-        self.log.debug(f'response: {res}')
-        if 'OK' in res:
+        self.log.info(f'response: {res}')
+        if 'SUCCESS' in res:
             self.log.info('Command executed.')
         else:
             self.log.error('Fail to executed command.')
@@ -177,12 +177,17 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         #     # self.need_retry = True
         #     raise signals.TestError('Device reboot mid test, retry needed.')
 
-
     def install_apk(self):
+        sleep_time = 3
         for file in self.custom_files:
             if self.MDSTEST_APP_APK_NAME in file:
-                self.log.info('Found mdstest apk: ' + file)
-                self.cellular_dut.ad.adb.install(file)
+                if not self.cellular_dut.ad.is_apk_installed("com.google.mdstest"):
+                    self.cellular_dut.ad.adb.install("-r -g %s" % file, timeout=300, ignore_status=True)
+        time.sleep(sleep_time)
+        if self.cellular_dut.ad.is_apk_installed("com.google.mdstest"):
+            self.log.info('mdstest installed.')
+        else:
+            self.log.warning('fail to install mdstest.')
 
     def set_nv(self, nv_name, index, value):
         cmd = self.ADB_CMD_SET_NV.format(
