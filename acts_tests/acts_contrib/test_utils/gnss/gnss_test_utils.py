@@ -258,9 +258,8 @@ def disable_supl_mode(ad):
 
 def enable_vendor_orbit_assistance_data(ad):
     """Enable vendor assistance features.
-
-    For Qualcomm: Enable XTRA
-    For Broadcom: Enable LTO
+        For Qualcomm: Enable XTRA
+        For Broadcom: Enable LTO
 
     Args:
         ad: An AndroidDevice object.
@@ -291,6 +290,27 @@ def disable_vendor_orbit_assistance_data(ad):
         disable_qualcomm_orbit_assistance_data(ad)
     else:
         lto_mode(ad, False)
+
+def gla_mode(ad, state: bool):
+    """Enable or disable Google Location Accuracy feature.
+
+    Args:
+        ad: An AndroidDevice object.
+        state: True to enable GLA, False to disable GLA.
+    """
+    ad.root_adb()
+    if state:
+        ad.adb.shell('settings put global assisted_gps_enabled 1')
+        ad.log.info("Modify current GLA Mode to MS_BASED mode")
+    else:
+        ad.adb.shell('settings put global assisted_gps_enabled 0')
+        ad.log.info("Modify current GLA Mode to standalone mode")
+
+    out = int(ad.adb.shell("settings get global assisted_gps_enabled"))
+    if out == 1:
+        ad.log.info("GLA is enabled, MS_BASED mode")
+    else:
+        ad.log.info("GLA is disabled, standalone mode")
 
 
 def disable_qualcomm_orbit_assistance_data(ad):
@@ -1041,6 +1061,9 @@ def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
     Args:
         mode: "cs", "ws" or "hs"
         criteria: Criteria for the TTFF.
+
+    Returns:
+        ttff_data: A dict of all TTFF data.
     """
     # Before running TTFF, we will run tracking and try to get first fixed.
     # But the TTFF before TTFF doesn't apply to any criteria, so we set a maximum value.
@@ -1049,8 +1072,9 @@ def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
     ttff_data = process_ttff_by_gtw_gpstool(ad, ttff_start_time, true_location)
     result = check_ttff_data(ad, ttff_data, gnss_constant.TTFF_MODE.get(mode), criteria)
     asserts.assert_true(
-        result, "TTFF %s fails to reach designated criteria of %d "
+        result, "TTFF %s fails to reach designated criteria: %d "
                 "seconds." % (gnss_constant.TTFF_MODE.get(mode), criteria))
+    return ttff_data
 
 def parse_gtw_gpstool_log(ad, true_position, api_type="gnss", validate_gnssstatus=False):
     """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
@@ -3152,9 +3176,12 @@ def run_ttff(ad, mode, criteria, test_cycle, base_lat_long, collect_logs=False):
     Args:
         mode: "cs", "ws" or "hs"
         criteria: Criteria for the test.
+
+    Returns:
+        ttff_data: A dict of all TTFF data.
     """
     start_qxdm_and_tcpdump_log(ad, collect_logs)
-    run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, base_lat_long)
+    return run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, base_lat_long)
 
 
 def re_register_measurement_callback(dut):
