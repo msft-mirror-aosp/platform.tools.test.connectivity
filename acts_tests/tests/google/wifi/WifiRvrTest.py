@@ -368,7 +368,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         for idx in range(len(tput_below_limit)):
             if all(tput_below_limit[idx:]):
                 if idx == 0:
-                    #Throughput was never above limit
+                    # Throughput was never above limit
                     rvr_result['metrics']['high_tput_range'] = -1
                 else:
                     rvr_result['metrics']['high_tput_range'] = rvr_result[
@@ -504,7 +504,8 @@ class WifiRvrTest(base_test.BaseTestClass):
             if zero_counter == self.MAX_CONSECUTIVE_ZEROS:
                 self.log.info(
                     'Throughput stable at 0 Mbps. Stopping test now.')
-                zero_padding = len(testcase_params['atten_range']) - len(throughput)
+                zero_padding = len(
+                    testcase_params['atten_range']) - len(throughput)
                 throughput.extend([0] * zero_padding)
                 rx_phy_rate.extend([0] * zero_padding)
                 tx_phy_rate.extend([0] * zero_padding)
@@ -571,8 +572,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.sta_dut.droid.wakeLockAcquireDim()
         else:
             self.sta_dut.go_to_sleep()
-        if wputils.validate_network(self.sta_dut,
-                                    testcase_params['test_network']['SSID']):
+        if (wputils.validate_network(self.sta_dut,
+                                     testcase_params['test_network']['SSID'])
+                and not self.testclass_params.get('force_reconnect', 0)):
             self.log.info('Already connected to desired network')
         else:
             wutils.wifi_toggle_state(self.sta_dut, False)
