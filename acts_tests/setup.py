@@ -30,7 +30,12 @@ LOCAL_FRAMEWORK_DIR = '../acts/framework'
 
 acts_tests_dir = os.path.abspath(os.path.dirname(__file__))
 
-install_requires = ['soundfile']
+install_requires = [
+    # Require an older version of setuptools that does not enforce PEP 440.
+    # This must be added first.
+    'setuptools<66.0.0',
+    'soundfile'
+]
 
 if sys.version_info < (3, 6):
     # Python <= 3.5 uses bokeh up to 1.4.x
