@@ -114,6 +114,7 @@ XTRA_SERVER_1="http://"
 XTRA_SERVER_2="http://"
 XTRA_SERVER_3="http://"
 """
+_BRCM_DUTY_CYCLE_PATTERN = re.compile(r".*PGLOR,\d+,STA.*")
 
 
 class GnssTestUtilsError(Exception):
@@ -2364,6 +2365,8 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist, stop_logger=
     brcm_error_log_list = []
     pixellogger_path = (
         "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/.")
+    if not isinstance(nmea_pattern, re.Pattern):
+        nmea_pattern = re.compile(nmea_pattern)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         try:
@@ -2386,21 +2389,21 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist, stop_logger=
         for nmea_log_path in gl_logs:
             ad.log.info("Parsing log pattern of \"%s\" in %s" % (nmea_pattern,
                                                                  nmea_log_path))
-            brcm_log = open(nmea_log_path, "r", encoding="UTF-8", errors="ignore")
-            lines = brcm_log.readlines()
-            for line in lines:
-                if nmea_pattern in line:
-                    brcm_log_list.append(line)
-                for attr in brcm_log_error_pattern:
-                    if attr in line:
-                        benign_log = False
-                        for regex_pattern in brcm_error_log_allowlist:
-                            if re.search(regex_pattern, line):
-                                benign_log = True
-                                ad.log.info("\"%s\" is in allow-list and removed "
-                                            "from error." % line)
-                        if not benign_log:
-                            brcm_error_log_list.append(line)
+            with open(nmea_log_path, "r", encoding="UTF-8", errors="ignore") as lines:
+                for line in lines:
+                    line = line.strip()
+                    if nmea_pattern.fullmatch(line):
+                        brcm_log_list.append(line)
+                    for attr in brcm_log_error_pattern:
+                        if attr in line:
+                            benign_log = False
+                            for regex_pattern in brcm_error_log_allowlist:
+                                if re.search(regex_pattern, line):
+                                    benign_log = True
+                                    ad.log.debug("\"%s\" is in allow-list and removed "
+                                                "from error." % line)
+                            if not benign_log:
+                                brcm_error_log_list.append(line)
 
     brcm_error_log = "".join(brcm_error_log_list)
     return brcm_log_list, brcm_error_log
@@ -2415,9 +2418,10 @@ def _get_power_mode_log_from_pixel_logger(ad, brcm_error_log_allowlist, stop_pix
         stop_pixel_logger: To disable pixel logger when getting the log.
     """
     pglor_list, brcm_error_log = parse_brcm_nmea_log(
-        ad, "$PGLOR,11,STA", brcm_error_log_allowlist, stop_pixel_logger)
+        ad, _BRCM_DUTY_CYCLE_PATTERN, brcm_error_log_allowlist, stop_pixel_logger)
     if not pglor_list:
         raise signals.TestFailure("Fail to get DPO logs from pixel logger")
+
     return pglor_list, brcm_error_log
 
 
