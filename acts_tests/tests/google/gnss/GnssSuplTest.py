@@ -17,6 +17,7 @@ from acts_contrib.test_utils.tel.tel_test_utils import verify_internet_connectio
 from acts_contrib.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts_contrib.test_utils.tel.tel_voice_utils import initiate_call
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
+from acts.utils import get_current_epoch_time
 
 
 class GnssSuplTest(BaseTestClass):
@@ -108,8 +109,8 @@ class GnssSuplTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        gutils.run_ttff(self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location,
-                        self.collect_logs)
+        return gutils.run_ttff(self.ad, mode, criteria, self.ttff_test_cycle,
+                               self.pixel_lab_location, self.collect_logs)
 
     def supl_ttff_weak_gnss_signal(self, mode, criteria):
         """Verify SUPL TTFF functionality under weak GNSS signal.
@@ -131,6 +132,11 @@ class GnssSuplTest(BaseTestClass):
         toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+
+    def check_position_mode(self, begin_time: int, mode: str):
+        logcat_results = self.ad.search_logcat(
+            matching_string="setting position_mode to", begin_time=begin_time)
+        return all([result["log_message"].split(" ")[-1] == mode for result in logcat_results])
 
     def test_supl_capabilities(self):
         """Verify SUPL capabilities.
@@ -237,3 +243,52 @@ class GnssSuplTest(BaseTestClass):
 
         self.run_ttff("hs", self.supl_ws_criteria)
 
+    def test_ttff_gla_on(self):
+        """ Test the turn on "Google Location Accuracy" in settings work or not.
+
+        Test steps are executed in the following sequence.
+        - Turn off airplane mode
+        - Connect to Cellular
+        - Turn off LTO/RTO
+        - Turn on SUPL
+        - Turn on GLA
+        - Run CS TTFF
+
+        Expected Results:
+        - The position mode must be "MS_BASED"
+        - The TTFF time should be less than 10 seconds
+        """
+        begin_time = get_current_epoch_time()
+        gutils.gla_mode(self.ad, True)
+
+        self.run_ttff("cs", self.supl_cs_criteria)
+        asserts.assert_true(self.check_position_mode(begin_time, "MS_BASED"),
+                                msg=f"Fail to enter the MS_BASED mode")
+
+    def test_ttff_gla_off(self):
+        """ Test the turn off "Google Location Accuracy" in settings work or not.
+
+        Test steps are executed in the following sequence.
+        - Turn off airplane mode
+        - Connect to Cellular
+        - Turn off LTO/RTO
+        - Turn on SUPL
+        - Turn off GLA
+        - Run CS TTFF
+
+        Expected Results:
+        - The position mode must be "standalone"
+        - The TTFF time must be between slower than supl_ws and faster than standalone_cs.
+        """
+        begin_time = get_current_epoch_time()
+        gutils.gla_mode(self.ad, False)
+
+        ttff_data = self.run_ttff("cs", self.standalone_cs_criteria)
+
+        asserts.assert_true(any(float(ttff_data[key].ttff_sec) > self.supl_ws_criteria
+                                for key in ttff_data.keys()),
+                            msg=f"One or more TTFF Cold Start are faster than \
+                            test criteria {self.supl_ws_criteria} seconds")
+
+        asserts.assert_true(self.check_position_mode(begin_time, "standalone"),
+                                msg=f"Fail to enter the standalone mode")
