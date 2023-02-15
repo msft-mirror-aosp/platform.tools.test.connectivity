@@ -66,7 +66,7 @@ def nonblocking(f):
 def detect_wifi_platform(dut):
     if hasattr(dut, 'wifi_platform'):
         return dut.wifi_platform
-    qcom_check = len(dut.get_file_names('/vendor/firmware/wlan/qca_cld/'))
+    qcom_check = len(dut.get_file_names('/vendor/firmware/wlan/'))
     if qcom_check:
         dut.wifi_platform = 'qcom'
     else:
