@@ -114,6 +114,7 @@ XTRA_SERVER_1="http://"
 XTRA_SERVER_2="http://"
 XTRA_SERVER_3="http://"
 """
+_BRCM_DUTY_CYCLE_PATTERN = re.compile(r".*PGLOR,\d+,STA.*")
 
 
 class GnssTestUtilsError(Exception):
@@ -258,9 +259,8 @@ def disable_supl_mode(ad):
 
 def enable_vendor_orbit_assistance_data(ad):
     """Enable vendor assistance features.
-
-    For Qualcomm: Enable XTRA
-    For Broadcom: Enable LTO
+        For Qualcomm: Enable XTRA
+        For Broadcom: Enable LTO
 
     Args:
         ad: An AndroidDevice object.
@@ -291,6 +291,27 @@ def disable_vendor_orbit_assistance_data(ad):
         disable_qualcomm_orbit_assistance_data(ad)
     else:
         lto_mode(ad, False)
+
+def gla_mode(ad, state: bool):
+    """Enable or disable Google Location Accuracy feature.
+
+    Args:
+        ad: An AndroidDevice object.
+        state: True to enable GLA, False to disable GLA.
+    """
+    ad.root_adb()
+    if state:
+        ad.adb.shell('settings put global assisted_gps_enabled 1')
+        ad.log.info("Modify current GLA Mode to MS_BASED mode")
+    else:
+        ad.adb.shell('settings put global assisted_gps_enabled 0')
+        ad.log.info("Modify current GLA Mode to standalone mode")
+
+    out = int(ad.adb.shell("settings get global assisted_gps_enabled"))
+    if out == 1:
+        ad.log.info("GLA is enabled, MS_BASED mode")
+    else:
+        ad.log.info("GLA is disabled, standalone mode")
 
 
 def disable_qualcomm_orbit_assistance_data(ad):
@@ -1041,6 +1062,9 @@ def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
     Args:
         mode: "cs", "ws" or "hs"
         criteria: Criteria for the TTFF.
+
+    Returns:
+        ttff_data: A dict of all TTFF data.
     """
     # Before running TTFF, we will run tracking and try to get first fixed.
     # But the TTFF before TTFF doesn't apply to any criteria, so we set a maximum value.
@@ -1049,8 +1073,9 @@ def run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, true_location):
     ttff_data = process_ttff_by_gtw_gpstool(ad, ttff_start_time, true_location)
     result = check_ttff_data(ad, ttff_data, gnss_constant.TTFF_MODE.get(mode), criteria)
     asserts.assert_true(
-        result, "TTFF %s fails to reach designated criteria of %d "
+        result, "TTFF %s fails to reach designated criteria: %d "
                 "seconds." % (gnss_constant.TTFF_MODE.get(mode), criteria))
+    return ttff_data
 
 def parse_gtw_gpstool_log(ad, true_position, api_type="gnss", validate_gnssstatus=False):
     """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
@@ -2364,6 +2389,8 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist, stop_logger=
     brcm_error_log_list = []
     pixellogger_path = (
         "/sdcard/Android/data/com.android.pixellogger/files/logs/gps/.")
+    if not isinstance(nmea_pattern, re.Pattern):
+        nmea_pattern = re.compile(nmea_pattern)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         try:
@@ -2386,21 +2413,21 @@ def parse_brcm_nmea_log(ad, nmea_pattern, brcm_error_log_allowlist, stop_logger=
         for nmea_log_path in gl_logs:
             ad.log.info("Parsing log pattern of \"%s\" in %s" % (nmea_pattern,
                                                                  nmea_log_path))
-            brcm_log = open(nmea_log_path, "r", encoding="UTF-8", errors="ignore")
-            lines = brcm_log.readlines()
-            for line in lines:
-                if nmea_pattern in line:
-                    brcm_log_list.append(line)
-                for attr in brcm_log_error_pattern:
-                    if attr in line:
-                        benign_log = False
-                        for regex_pattern in brcm_error_log_allowlist:
-                            if re.search(regex_pattern, line):
-                                benign_log = True
-                                ad.log.info("\"%s\" is in allow-list and removed "
-                                            "from error." % line)
-                        if not benign_log:
-                            brcm_error_log_list.append(line)
+            with open(nmea_log_path, "r", encoding="UTF-8", errors="ignore") as lines:
+                for line in lines:
+                    line = line.strip()
+                    if nmea_pattern.fullmatch(line):
+                        brcm_log_list.append(line)
+                    for attr in brcm_log_error_pattern:
+                        if attr in line:
+                            benign_log = False
+                            for regex_pattern in brcm_error_log_allowlist:
+                                if re.search(regex_pattern, line):
+                                    benign_log = True
+                                    ad.log.debug("\"%s\" is in allow-list and removed "
+                                                "from error." % line)
+                            if not benign_log:
+                                brcm_error_log_list.append(line)
 
     brcm_error_log = "".join(brcm_error_log_list)
     return brcm_log_list, brcm_error_log
@@ -2415,9 +2442,10 @@ def _get_power_mode_log_from_pixel_logger(ad, brcm_error_log_allowlist, stop_pix
         stop_pixel_logger: To disable pixel logger when getting the log.
     """
     pglor_list, brcm_error_log = parse_brcm_nmea_log(
-        ad, "$PGLOR,11,STA", brcm_error_log_allowlist, stop_pixel_logger)
+        ad, _BRCM_DUTY_CYCLE_PATTERN, brcm_error_log_allowlist, stop_pixel_logger)
     if not pglor_list:
         raise signals.TestFailure("Fail to get DPO logs from pixel logger")
+
     return pglor_list, brcm_error_log
 
 
@@ -3152,9 +3180,12 @@ def run_ttff(ad, mode, criteria, test_cycle, base_lat_long, collect_logs=False):
     Args:
         mode: "cs", "ws" or "hs"
         criteria: Criteria for the test.
+
+    Returns:
+        ttff_data: A dict of all TTFF data.
     """
     start_qxdm_and_tcpdump_log(ad, collect_logs)
-    run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, base_lat_long)
+    return run_ttff_via_gtw_gpstool(ad, mode, criteria, test_cycle, base_lat_long)
 
 
 def re_register_measurement_callback(dut):
