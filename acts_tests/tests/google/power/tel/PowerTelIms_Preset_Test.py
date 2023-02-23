@@ -128,8 +128,8 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         # Turn of screen
         self.dut.droid.goToSleepNow()
 
-        # Measure power
-        self.collect_power_data()
+        # Measure power and check against threshold
+        self.collect_power_data_and_validate()
 
         # End the call
         hangup_call(self.log, self.dut)

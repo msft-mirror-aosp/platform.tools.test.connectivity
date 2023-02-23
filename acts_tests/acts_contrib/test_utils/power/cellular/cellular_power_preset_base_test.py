@@ -1,7 +1,8 @@
 import os
 from typing import Optional, List
 import time
-from acts import context
+
+from acts import asserts
 from acts import signals
 from acts.controllers.cellular_lib import AndroidCellularDut
 import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
@@ -14,6 +15,8 @@ class AtUtil():
         dut: AndroidDevice controller object.
     """
     ADB_CMD_DISABLE_TXAS = 'am instrument -w -e request at+googtxas=2 -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+    ADB_CMD_GET_TXAS = 'am instrument -w -e request at+googtxas? -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+    ADB_MODEM_STATUS = 'cat /sys/bus/platform/devices/cpif/modem_state'
 
     def __init__(self, dut, log) -> None:
         self.dut = dut
@@ -21,30 +24,40 @@ class AtUtil():
 
     # TODO: to be remove when b/261639867 complete,
     # and we are using parent method.
-    def send(self, cmd: str,) -> Optional[str]:
-        res = str(self.dut.adb.shell(cmd))
-        self.log.info(f'cmd sent: {cmd}')
-        self.log.info(f'response: {res}')
-        if 'SUCCESS' in res:
-            self.log.info('Command executed.')
-        else:
-            self.log.error('Fail to executed command.')
+    def send(self, cmd: str, retries: int=5) -> Optional[str]:
+        for _ in range(30):
+            modem_status = self.dut.adb.shell(self.ADB_MODEM_STATUS)
+            self.log.debug(f'Modem status: {modem_status}')
+            if modem_status == 'ONLINE':
+                break
+            time.sleep(1)
+
+        wait_for_device_ready_time = 2
+        for i in range(retries):
+            res = self.dut.adb.shell(cmd)
+            self.log.info(f'cmd sent: {cmd}')
+            self.log.debug(f'response: {res}')
+            if 'SUCCESS' in res and 'OK' in res:
+                return res
+            else:
+                self.log.warning('Fail to execute cmd, retry to send again.')
+                time.sleep(wait_for_device_ready_time)
+        self.log.error(f'Fail to execute cmd: {cmd}')
         return res
 
-    def lock_LTE(self):
+    def lock_band(self):
+        """Lock lte and nr bands.
+
+        LTE bands to be locked include B1, B4.
+        NR bands to belocked include n71, n78, n260.
+        """
         adb_enable_band_lock_lte = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Band.Select\ Enb\/\ Dis\",00,\"01\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
-        adb_set_band_lock_mode_lte = r'am instrument -w -e request at+GOOGSETNV=\"NASU.SIPC.NetworkMode.ManualMode\",0,\"0D\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
         adb_set_band_lock_bitmap_0 = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Enabled.RFBands.BitMap\",0,\"09,00,00,00,00,00,00,00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
         adb_set_band_lock_bitmap_1 = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Enabled.RFBands.BitMap\",1,\"00,00,00,00,00,00,00,00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
         adb_set_band_lock_bitmap_2 = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Enabled.RFBands.BitMap\",2,\"00,00,00,00,00,00,00,00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
         adb_set_band_lock_bitmap_3 = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Enabled.RFBands.BitMap\",3,\"00,00,00,00,00,00,00,00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
-
         # enable lte
         self.send(adb_enable_band_lock_lte)
-        time.sleep(2)
-
-        # OD is for NR/LTE in 4412 menu
-        self.send(adb_set_band_lock_mode_lte)
         time.sleep(2)
 
         # lock to B1 and B4
@@ -57,22 +70,41 @@ class AtUtil():
         self.send(adb_set_band_lock_bitmap_3)
         time.sleep(2)
 
-    def clear_lock_band(self):
-        adb_set_band_lock_mode_auto = r'am instrument -w -e request at+GOOGSETNV=\"NASU.SIPC.NetworkMode.ManualMode\",0,\"03\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
-        adb_disable_band_lock_lte = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Band.Select\ Enb\/\ Dis\",0,\"00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
-
-        # band lock mode auto
-        self.send(adb_set_band_lock_mode_auto)
+        adb_enable_band_lock_nr = r'am instrument -w -e request at+GOOGSETNV=\"!NRRRC.SIM_BASED_BAND_LIST_SUPPORT\",00,\"01\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        self.send(adb_enable_band_lock_nr)
         time.sleep(2)
+        adb_add_band_list_n71 = r'am instrument -w -e request at+GOOGSETNV=\"!NRRRC.SIM_OPERATOR_BAND_LIST\",00,\"47,00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        self.send(adb_add_band_list_n71)
+        time.sleep(2)
+        adb_add_band_list_n78 = r'am instrument -w -e request at+GOOGSETNV=\"!NRRRC.SIM_OPERATOR_BAND_LIST\",01,\"4E,00\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        self.send(adb_add_band_list_n78)
+        time.sleep(2)
+        adb_add_band_list_n260 = r'am instrument -w -e request at+GOOGSETNV=\"!NRRRC.SIM_OPERATOR_BAND_LIST\",02,\"04,01\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        self.send(adb_add_band_list_n260)
+        time.sleep(2)
+
+    def disable_lock_band_lte(self):
+        adb_disable_band_lock_lte = r'am instrument -w -e request at+GOOGSETNV=\"!SAEL3.Manual.Band.Select\ Enb\/\ Dis\",0,\"01\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
 
         # disable band lock lte
         self.send(adb_disable_band_lock_lte)
         time.sleep(2)
 
     def disable_txas(self):
+        res = self.send(self.ADB_CMD_GET_TXAS)
+        if '+GOOGGETTXAS:2' in res:
+            self.log.info('TXAS is in default.')
+            return res
         cmd = self.ADB_CMD_DISABLE_TXAS
         response = self.send(cmd)
         return 'OK' in response
+
+    def get_band_lock_info(self):
+        cmd = r'am instrument -w -e request at+GOOGGETNV=\"!SAEL3.Manual.Enabled.RFBands.BitMap\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        res = self.send(cmd)
+        cmd = r'am instrument -w -e request at+GOOGGETNV=\"!SAEL3.Manual.Band.Select\ Enb\/\ Dis\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        res = self.send(cmd)
+        return res
 
 class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     # Key for ODPM report
@@ -123,6 +155,19 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     ADB_CMD_SET_NV = ('am instrument -w '
                       '-e request at+googsetnv=\"{nv_name}\",{nv_index},\"{nv_value}\" '
                       '-e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"')
+    ADB_CMD_ENABLE_ALWAYS_ON_LOGGING = (
+        'am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver '
+        '-a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING '
+        '-e intent_key_enable "true" '
+        '-e intent_key_config "Lassen\ default" '
+        '--ei intent_key_max_log_size_mb 100 '
+        '--ei intent_key_max_number_of_files 20'
+    )
+    ADB_CMD_DISABLE_ALWAYS_ON_LOGGING = (
+        'am start-foreground-service -a '
+        'com.android.pixellogger.service.logging.LoggingService.ACTION_STOP_LOGGING')
+
+    ADB_CMD_TOGGLE_MODEM_LOG = 'setprop persist.vendor.sys.modem.logging.enable {state}'
 
     def __init__(self, controllers):
         super().__init__(controllers)
@@ -133,6 +178,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.mmwave_power = 0
         self.modem_power = 0
         self.monsoon_power = 0
+        self.kibble_error_range = 2
+        self.system_power = 0
+        self.odpm_power = 0
 
     def setup_class(self):
         super().setup_class()
@@ -144,21 +192,36 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.at_util = AtUtil(self.cellular_dut.ad, self.log)
 
         # preset UE.
+        self.log.info(f'Bug report mode: {self.bug_report}')
+        if self.bug_report:
+            self.toggle_modem_log(True)
+        else:
+            self.toggle_modem_log(False)
         self.log.info('Installing mdstest app.')
         self.install_apk()
 
+        # UE preset
         self.log.info('Disable antenna switch.')
-        is_txas_disabled = self.at_util.disable_txas()
-        self.log.info('Disable txas: ' + str(is_txas_disabled))
+        self.at_util.disable_txas()
+        time.sleep(10)
+
+        self.at_util.lock_band()
 
         # get sim type
         self.unpack_userparams(has_3gpp_sim=True)
 
+    def collect_power_data_and_validate(self):
+        super().collect_power_data()
+        # power measurement results
+        odpm_power_results = self.get_odpm_values()
+        self.odpm_power = odpm_power_results.get(self.ODPM_MODEM_CHANNEL_NAME, 0)
+        if hasattr(self, 'bitses'):
+            self.parse_power_rails_csv()
+
+        self.threshold_check()
+
     def setup_test(self):
-        self.cellular_simulator.set_sim_type(self.has_3gpp_sim)
         try:
-            if 'LTE' in self.test_name:
-                self.at_util.lock_LTE()
             super().setup_test()
         except BrokenPipeError:
             self.log.info('TA crashed test need retry.')
@@ -176,6 +239,21 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         #     # self.dut.start_services()
         #     # self.need_retry = True
         #     raise signals.TestError('Device reboot mid test, retry needed.')
+
+    def toggle_modem_log(self, new_state: bool, timeout: int=30):
+        new_state = str(new_state).lower()
+        current_state = self.cellular_dut.ad.adb.shell('getprop vendor.sys.modem.logging.status')
+        cmd = self.ADB_CMD_TOGGLE_MODEM_LOG.format(state=new_state)
+        if new_state != current_state:
+            self.cellular_dut.ad.adb.shell(cmd)
+            for _ in range(timeout):
+                self.log.debug(f'Wait for modem logging status to be {new_state}.')
+                time.sleep(1)
+                current_state = self.cellular_dut.ad.adb.shell('getprop vendor.sys.modem.logging.status')
+                if new_state == current_state:
+                    self.log.info(f'Always-on modem logging status is {new_state}.')
+                    return
+            raise RuntimeError(f'Fail to set modem logging to {new_state}.')
 
     def install_apk(self):
         sleep_time = 3
@@ -366,29 +444,23 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             'ro.boot.hardware.revision'
         )
 
-        # power measurement results
-        odpm_power_results = self.get_odpm_values()
-        odpm_power = odpm_power_results.get(self.ODPM_MODEM_CHANNEL_NAME, 0)
-        system_power = 0
-
         # if kibbles are using, get power from kibble
         modem_kibble_power_wo_pcie = 0
         if hasattr(self, 'bitses'):
-            self.parse_power_rails_csv()
             modem_kibble_power_wo_pcie = self.modem_power - self.pcie_power
-            system_power = self.monsoon_power
+            self.system_power = self.monsoon_power
         else:
-            system_power = self.power_results.get(self.test_name, 0)
+            self.system_power = self.power_results.get(self.test_name, 0)
 
         self.record_data({
             'Test Name': self.test_name,
             'sponge_properties': {
-                self.CUSTOM_PROP_KEY_SYSTEM_POWER: system_power,
+                self.CUSTOM_PROP_KEY_SYSTEM_POWER: self.system_power,
                 self.CUSTOM_PROP_KEY_BUILD_ID: build_id,
                 self.CUSTOM_PROP_KEY_INCR_BUILD_ID: incr_build_id,
                 self.CUSTOM_PROP_KEY_MODEM_BASEBAND: modem_base_band,
                 self.CUSTOM_PROP_KEY_BUILD_TYPE: build_type,
-                self.CUSTOM_PROP_KEY_MODEM_ODPM_POWER: odpm_power,
+                self.CUSTOM_PROP_KEY_MODEM_ODPM_POWER: self.odpm_power,
                 self.CUSTOM_PROP_KEY_DEVICE_NAME: device_name,
                 self.CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE: device_build_phase,
                 self.CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER: self.modem_power,
@@ -400,15 +472,50 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             },
         })
 
+    def threshold_check(self):
+        """Check the test result and decide if it passed or failed.
+
+        The threshold is provided in the config file. In this class, result is
+        current in mA.
+        """
+
+        if not self.threshold or self.test_name not in self.threshold:
+            self.log.error("No threshold is provided for the test '{}' in "
+                           "the configuration file.".format(self.test_name))
+            return
+        voltage = self.cellular_test_params['mon_voltage']
+        average_power = self.modem_power if self.modem_power else self.system_power
+        average_current = average_power / voltage
+        current_threshold = self.threshold[self.test_name]
+        acceptable_difference = max(
+            self.threshold[self.test_name] * self.pass_fail_tolerance,
+            self.kibble_error_range
+        )
+        if average_current:
+            asserts.assert_true(
+                abs(average_current - current_threshold) < acceptable_difference,
+                'Measured average current in [{}]: {:.2f}mA, which is '
+                'out of the acceptable range {:.2f}±{:.2f}mA'.format(
+                    self.test_name, average_current, current_threshold,
+                    acceptable_difference))
+            asserts.explicit_pass(
+                'Measurement finished for [{}]: {:.2f}mA, which is '
+                'within the acceptable range {:.2f}±{:.2f}'.format(
+                    self.test_name, average_current, current_threshold,
+                    acceptable_difference))
+        else:
+            asserts.fail(
+                'Something happened, measurement is not complete, test failed')
+
     def teardown_test(self):
         super().teardown_test()
         # restore device to ready state for next test
         self.log.info('Enable mobile data.')
-        self.dut.adb.shell('svc data enable')
+        self.cellular_dut.ad.adb.shell('svc data enable')
         self.cellular_simulator.detach()
         self.cellular_dut.toggle_airplane_mode(True)
 
         # processing result
         self.sponge_upload()
         if 'LTE' in self.test_name:
-            self.at_util.clear_lock_band()
+            self.at_util.disable_lock_band_lte()

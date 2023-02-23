@@ -76,8 +76,8 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
         time.sleep(5)
         self.start_downlink_process()
 
-        # Measure power
-        self.collect_power_data()
+        # Measure power and check against threshold
+        self.collect_power_data_and_validate()
 
         # Write iperf log
         self.ssh_iperf_server.close()

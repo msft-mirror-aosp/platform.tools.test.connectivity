@@ -546,23 +546,6 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         """
         self.import_configuration(path)
 
-    def dut_rockbottom(self, dut):
-        """Set the dut to rockbottom state.
-
-        Args:
-            dut: a CellularAndroid controller.
-        """
-        # The rockbottom script might include a device reboot, so it is
-        # necessary to stop SL4A during its execution.
-        dut.ad.stop_services()
-        self.log.info('Executing rockbottom script for ' + dut.ad.model)
-        os.chmod(self.rockbottom_script, 0o777)
-        os.system('{} {}'.format(self.rockbottom_script, dut.ad.serial))
-        # Make sure the DUT is in root mode after coming back
-        dut.ad.root_adb()
-        # Restart SL4A
-        dut.ad.start_services()
-
     def set_sim_type(self, is_3gpp_sim):
         sim_type = 'KEYSight'
         if is_3gpp_sim:
@@ -610,7 +593,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
 
         interval = 10
         # waits for device to camp
-        for index in range(1, attach_retries):
+        for index in range(1, attach_retries+1):
             count = 0
             # airplane mode off
             dut.toggle_airplane_mode(False)
@@ -636,12 +619,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             # reboot device
             if (index % 2) == 0:
                 dut.ad.reboot()
-                if self.rockbottom_script:
-                    self.dut_rockbottom(dut)
-                else:
-                    self.log.warning(
-                        f'Rockbottom script was not executed after reboot.'
-                    )
+
             # toggle APM and cell on/off
             elif (index % 1) == 0:
                 # Toggle APM on
@@ -694,7 +672,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 second_cell_number,
             )
 
-            for _ in range(1, attach_retries):
+            for _ in range(1, attach_retries+1):
                 self.log.info('Try to aggregate to NR.')
                 self._socket_send_SCPI_command(
                     'BSE:CONFig:LTE:CELL1:CAGGregation:AGGRegate:NRCC:DL None')
