@@ -30,7 +30,12 @@ LOCAL_FRAMEWORK_DIR = '../acts/framework'
 
 acts_tests_dir = os.path.abspath(os.path.dirname(__file__))
 
-install_requires = ['soundfile']
+install_requires = [
+    # Require an older version of setuptools that does not enforce PEP 440.
+    # This must be added first.
+    'setuptools<66.0.0',
+    'soundfile'
+]
 
 if sys.version_info < (3, 6):
     # Python <= 3.5 uses bokeh up to 1.4.x
@@ -97,36 +102,6 @@ class ActsContribDevelop(develop):
             _setup_acts_framework('develop', '-u')
         else:
             _setup_acts_framework('develop')
-
-
-class ActsContribInstallDependencies(cmd.Command):
-    """Installs only required packages
-
-    Installs all required packages for acts_contrib to work. Rather than using
-    the normal install system which creates links with the python egg, pip is
-    used to install the packages.
-    """
-
-    description = 'Install dependencies needed for acts_contrib packages.'
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        install_args = [sys.executable, '-m', 'pip', 'install']
-        subprocess.check_call(install_args + ['--upgrade', 'pip'])
-        required_packages = self.distribution.install_requires
-
-        for package in required_packages:
-            self.announce('Installing %s...' % package, log.INFO)
-            subprocess.check_call(install_args +
-                                  ['-v', '--no-cache-dir', package])
-
-        self.announce('Dependencies installed.')
 
 
 class ActsContribUninstall(cmd.Command):
@@ -206,7 +181,6 @@ def main():
                      cmdclass={
                          'install': ActsContribInstall,
                          'develop': ActsContribDevelop,
-                         'install_deps': ActsContribInstallDependencies,
                          'uninstall': ActsContribUninstall
                      },
                      url="http://www.android.com/")

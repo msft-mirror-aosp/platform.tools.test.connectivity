@@ -23,6 +23,9 @@ from setuptools.command import test
 import sys
 
 install_requires = [
+    # Require an older version of setuptools that does not enforce PEP 440.
+    # This must be added first.
+    'setuptools<66.0.0',
     'backoff',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
@@ -101,36 +104,6 @@ class PyTest(test.test):
                                   shell=True)
         result.communicate()
         sys.exit(result.returncode)
-
-
-class ActsInstallDependencies(cmd.Command):
-    """Installs only required packages
-
-    Installs all required packages for acts to work. Rather than using the
-    normal install system which creates links with the python egg, pip is
-    used to install the packages.
-    """
-
-    description = 'Install dependencies needed for acts to run on this machine.'
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        install_args = [sys.executable, '-m', 'pip', 'install']
-        subprocess.check_call(install_args + ['--upgrade', 'pip'])
-        required_packages = self.distribution.install_requires
-
-        for package in required_packages:
-            self.announce('Installing %s...' % package, log.INFO)
-            subprocess.check_call(install_args +
-                                  ['-v', '--no-cache-dir', package])
-
-        self.announce('Dependencies installed.')
 
 
 class ActsUninstall(cmd.Command):
@@ -212,7 +185,6 @@ def main():
                      scripts=scripts,
                      cmdclass={
                          'test': PyTest,
-                         'install_deps': ActsInstallDependencies,
                          'uninstall': ActsUninstall
                      },
                      url="http://www.android.com/")

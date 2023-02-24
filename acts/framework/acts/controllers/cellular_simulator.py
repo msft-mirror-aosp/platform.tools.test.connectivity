@@ -64,10 +64,11 @@ class AbstractCellularSimulator:
         """
 
         config_vars = vars(config)
-        config_dict = {key: config_vars[key]
-                       for key in config_vars if config_vars[key]}
-        self.log.info('The config for {} is {}'.format(
-            bts_index, config_dict))
+        config_dict = {
+            key: config_vars[key]
+            for key in config_vars if config_vars[key]
+        }
+        self.log.info('The config for {} is {}'.format(bts_index, config_dict))
 
         if config.output_power:
             self.set_output_power(bts_index, config.output_power)
@@ -463,6 +464,15 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
+    def wait_until_quiet(self, timeout=120):
+        """Waits for all pending operations to finish on the simulator.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        raise NotImplementedError()
+
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
         raise NotImplementedError()
@@ -485,6 +495,14 @@ class AbstractCellularSimulator:
 
         Returns:
             The PUSCH power in the primary input port.
+        """
+        raise NotImplementedError()
+
+    def send_sms(self, message):
+        """ Sends an SMS message to the DUT.
+
+        Args:
+            message: the SMS message to send.
         """
         raise NotImplementedError()
 
