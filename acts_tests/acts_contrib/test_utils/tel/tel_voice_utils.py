@@ -909,6 +909,9 @@ def call_setup_teardown_for_subscription(
             tel_result_wrapper.result_value = CallResult(
                 'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
     if not tel_result_wrapper:
+      if not hangup_call(self.log, ad_hangup):
+            self.log.error("Call Hangup Failed")
+            return False
         return tel_result_wrapper
 
     if call_stats_check:
@@ -2439,9 +2442,6 @@ def check_call_in_wfc(log, dut, dut_client):
     result = True
     if not call_setup_teardown(log, dut_client, dut,
                                dut, None, is_phone_in_call_iwlan):
-        if not call_setup_teardown(log, dut_client,
-                                   dut, dut, None,
-                                   is_phone_in_call_iwlan):
             dut.log.error("MT WFC call failed")
             result = False
     if not call_setup_teardown(log, dut, dut_client,
@@ -2455,9 +2455,6 @@ def check_call_in_volte(log, dut, dut_client):
     result = True
     if not call_setup_teardown(log, dut_client, dut,
                                dut, None, is_phone_in_call_volte):
-        if not call_setup_teardown(log, dut_client,
-                                   dut, dut, None,
-                                   is_phone_in_call_volte):
             dut.log.error("MT VoLTE call failed")
             result = False
     if not call_setup_teardown(log, dut, dut_client,
