@@ -1,6 +1,7 @@
 import os
 from typing import Optional, List
 import time
+import shlex
 
 from acts import asserts
 from acts import signals
@@ -17,6 +18,9 @@ class AtUtil():
     ADB_CMD_DISABLE_TXAS = 'am instrument -w -e request at+googtxas=2 -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
     ADB_CMD_GET_TXAS = 'am instrument -w -e request at+googtxas? -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
     ADB_MODEM_STATUS = 'cat /sys/bus/platform/devices/cpif/modem_state'
+    ADB_CMD_SET_NV = ('am instrument -w '
+                      '-e request \'at+googsetnv=\"{nv_name}\",{nv_index},\"{nv_value}\"\' '
+                      '-e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"')
 
     def __init__(self, dut, log) -> None:
         self.dut = dut
@@ -106,6 +110,55 @@ class AtUtil():
         res = self.send(cmd)
         return res
 
+    def set_nv(self, nv_name, index, value):
+        cmd = self.ADB_CMD_SET_NV.format(
+            nv_name=nv_name,
+            nv_index=index,
+            nv_value=value
+        )
+        res = self.send(cmd)
+        return res
+
+    def enable_ims_nr(self):
+        # set !NRCAPA.Gen.VoiceOverNr
+        self.set_nv(
+            nv_name = '!NRCAPA.Gen.VoiceOverNr',
+            index = '0',
+            value = '01'
+        )
+        # set PSS.AIMS.Enable.NRSACONTROL
+        self.set_nv(
+            nv_name = 'PSS.AIMS.Enable.NRSACONTROL',
+            index = '0',
+            value = '00'
+        )
+        # set DS.PSS.AIMS.Enable.NRSACONTROL
+        self.set_nv(
+            nv_name = 'DS.PSS.AIMS.Enable.NRSACONTROL',
+            index = '0',
+            value = '00'
+        )
+        if self.dut.model == 'oriole':
+            # For P21, NR.CONFIG.MODE/DS.NR.CONFIG.MODE
+            self.set_nv(
+                nv_name = 'NR.CONFIG.MODE',
+                index = '0',
+                value = '11'
+            )
+            # set DS.NR.CONFIG.MODE
+            self.set_nv(
+                nv_name = 'DS.NR.CONFIG.MODE',
+                index = '0',
+                value = '11'
+            )
+        else:
+            # For P22, NASU.NR.CONFIG.MODE to 11
+            self.set_nv(
+                nv_name = 'NASU.NR.CONFIG.MODE',
+                index = '0',
+                value = '11'
+            )
+
 class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     # Key for ODPM report
     ODPM_ENERGY_TABLE_NAME = 'PowerStats HAL 2.0 energy meter'
@@ -150,11 +203,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     MONSOON_VOLTAGE_KEY = 'mon_voltage'
 
     MDSTEST_APP_APK_NAME = 'mdstest.apk'
-    ADB_CMD_INSTALL = 'install {apk_path}'
-    ADB_CMD_DISABLE_TXAS = 'am instrument -w -e request at+googtxas=2 -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
-    ADB_CMD_SET_NV = ('am instrument -w '
-                      '-e request at+googsetnv=\"{nv_name}\",{nv_index},\"{nv_value}\" '
-                      '-e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"')
+
     ADB_CMD_ENABLE_ALWAYS_ON_LOGGING = (
         'am broadcast -n com.android.pixellogger/.receiver.AlwaysOnLoggingReceiver '
         '-a com.android.pixellogger.service.logging.LoggingService.ACTION_CONFIGURE_ALWAYS_ON_LOGGING '
@@ -266,55 +315,6 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self.log.info('mdstest installed.')
         else:
             self.log.warning('fail to install mdstest.')
-
-    def set_nv(self, nv_name, index, value):
-        cmd = self.ADB_CMD_SET_NV.format(
-            nv_name=nv_name,
-            nv_index=index,
-            nv_value=value
-        )
-        response = str(self.cellular_dut.ad.adb.shell(cmd))
-        self.log.info(response)
-
-    def enable_ims_nr(self):
-        # set !NRCAPA.Gen.VoiceOverNr
-        self.set_nv(
-            nv_name = '!NRCAPA.Gen.VoiceOverNr',
-            index = '0',
-            value = '01'
-        )
-        # set PSS.AIMS.Enable.NRSACONTROL
-        self.set_nv(
-            nv_name = 'PSS.AIMS.Enable.NRSACONTROL',
-            index = '0',
-            value = '00'
-        )
-        # set DS.PSS.AIMS.Enable.NRSACONTROL
-        self.set_nv(
-            nv_name = 'DS.PSS.AIMS.Enable.NRSACONTROL',
-            index = '0',
-            value = '00'
-        )
-        if self.cellular_dut.ad.model == 'oriole':
-            # For P21, NR.CONFIG.MODE/DS.NR.CONFIG.MODE
-            self.set_nv(
-                nv_name = 'NR.CONFIG.MODE',
-                index = '0',
-                value = '11'
-            )
-            # set DS.NR.CONFIG.MODE
-            self.set_nv(
-                nv_name = 'DS.NR.CONFIG.MODE',
-                index = '0',
-                value = '11'
-            )
-        else:
-            # For P22, NASU.NR.CONFIG.MODE to 11
-            self.set_nv(
-                nv_name = 'NASU.NR.CONFIG.MODE',
-                index = '0',
-                value = '11'
-            )
 
     def get_odpm_values(self):
         """Get power measure from ODPM.

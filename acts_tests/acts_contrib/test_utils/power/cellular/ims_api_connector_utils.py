@@ -5,14 +5,14 @@ import time
 class ImsApiConnector():
     """A wrapper class for Keysight Ims API Connector.
 
-    Keysight provided an API connector application
+    Keysight provided an API Connector application
     which is a HTTP server running on the same host
     as Keysight IMS server simulator and client simulator.
     It allows IMS simulator/app to be controlled via HTTP request.
 
     Attributes:
-        api_connector_ip: ip of http server.
-        api_connector_port: port of http server.
+        api_connector_ip: ip of host where API Connector reside.
+        api_connector_port: port of API Connector server.
         ims_app: type of ims app (client/server).
         api_token: an arbitrary and unique token-string
             to identify the link between API connector
@@ -180,6 +180,9 @@ class ImsApiConnector():
         is_registered_prop = self.get_ims_app_property('IComponentControl.IsRegistered')
         return is_registered_prop == 'True'
 
+    def hangup_call(self):
+        self.ims_api_call_method('IVoip.HangUp()')
+
     def initiate_call(self, callee_number, call_line_idx=0):
         """Dial to callee_number.
 
@@ -208,9 +211,13 @@ class ImsApiConnector():
         self.set_ims_app_property('IVoip.SelectedCallLine', call_line_idx)
 
         # check whether the call-line #1 is ready for dialling
-        is_line1_idle = self._is_line_idle(call_line_idx)
-        if not is_line1_idle:
-            raise RuntimeError('Call-line not is not in indle state.')
+        if not self._is_line_idle(call_line_idx):
+            self.log.info('Call-line not is not in indle state.')
+            self.log.info('Hangup call.')
+            self.hangup_call()
+            if not self._is_line_idle(call_line_idx):
+                raise RuntimeError(
+                    'Call-line not is not in indle state. Tried to hangup but fail.')
 
         # entering callee number for call-line #1
         self.log.info(f'Enter callee number: {callee_number}.')

@@ -16,9 +16,7 @@
 import time
 
 from acts_contrib.test_utils.power.cellular.ims_api_connector_utils import ImsApiConnector
-import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
 from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts_contrib.test_utils.tel.tel_voice_utils import hangup_call
 import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
 
@@ -96,7 +94,7 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.log.info(f'test name: {self.test_name}')
         if 'NR' in self.test_name:
             self.log.info('Enable VoNR for UE.')
-            self.enable_ims_nr()
+            self.at_util.enable_ims_nr()
         super().setup_test()
 
     def power_ims_call_test(self):
@@ -131,15 +129,11 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         # Measure power and check against threshold
         self.collect_power_data_and_validate()
 
-        # End the call
-        hangup_call(self.log, self.dut)
-
-        # Check if power measurement is within the required values
-        self.pass_fail_check()
-
     def teardown_test(self):
         super().teardown_test()
-        #self.cellular_simulator.deregister_ue_ims()
+        # End the call
+        self.log.info('Hangup.')
+        self.ims_client.hangup_call()
         self.ims_client.remove_ims_app_link()
 
     def teardown_class(self):
