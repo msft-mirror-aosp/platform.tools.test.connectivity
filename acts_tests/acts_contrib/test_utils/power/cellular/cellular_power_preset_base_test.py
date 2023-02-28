@@ -249,14 +249,17 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.log.info('Installing mdstest app.')
         self.install_apk()
 
-        # UE preset
-        self.log.info('Disable antenna switch.')
-        self.at_util.disable_txas()
-        time.sleep(10)
+        self.unpack_userparams(is_mdstest_supported=True)
+        self.log.info(f'Supports mdstest: {self.is_mdstest_supported}')
+        if self.is_mdstest_supported == 'True':
+            # UE preset
+            self.log.info('Disable antenna switch.')
+            self.at_util.disable_txas()
+            time.sleep(10)
 
-        self.at_util.lock_band()
+            self.at_util.lock_band()
 
-        # get sim type
+        # get sdim type
         self.unpack_userparams(has_3gpp_sim=True)
 
     def collect_power_data_and_validate(self):
@@ -291,14 +294,14 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     def toggle_modem_log(self, new_state: bool, timeout: int=30):
         new_state = str(new_state).lower()
-        current_state = self.cellular_dut.ad.adb.shell('getprop vendor.sys.modem.logging.status')
+        current_state = self.cellular_dut.ad.adb.shell('getprop persist.vendor.sys.modem.logging.enable')
         cmd = self.ADB_CMD_TOGGLE_MODEM_LOG.format(state=new_state)
         if new_state != current_state:
             self.cellular_dut.ad.adb.shell(cmd)
             for _ in range(timeout):
                 self.log.debug(f'Wait for modem logging status to be {new_state}.')
                 time.sleep(1)
-                current_state = self.cellular_dut.ad.adb.shell('getprop vendor.sys.modem.logging.status')
+                current_state = self.cellular_dut.ad.adb.shell('getprop persist.vendor.sys.modem.logging.enable')
                 if new_state == current_state:
                     self.log.info(f'Always-on modem logging status is {new_state}.')
                     return
