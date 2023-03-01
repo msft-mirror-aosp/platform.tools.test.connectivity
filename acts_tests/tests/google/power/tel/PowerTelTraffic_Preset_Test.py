@@ -80,6 +80,7 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.collect_power_data_and_validate()
 
     def teardown_test(self):
+        super().teardown_test()
         # Write iperf log
         self.ssh_iperf_server.close()
         uplink_log_name = self.test_name + '_uplink.txt'
