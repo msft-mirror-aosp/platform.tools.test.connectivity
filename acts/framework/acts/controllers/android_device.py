@@ -982,11 +982,11 @@ class AndroidDevice:
         Returns:
         Linux UID for the apk.
         """
-        output = self.adb.shell("dumpsys package %s | grep userId=" % apk_name,
+        output = self.adb.shell("dumpsys package %s | grep -e userId= -e appId=" % apk_name,
                                 ignore_status=True)
-        result = re.search(r"userId=(\d+)", output)
+        result = re.search(r"userId=(\d+)|appId=(\d+)", output)
         if result:
-            return result.group(1)
+            return result.group(1) if result.group(1) else result.group(2)
         else:
             None
 
