@@ -115,7 +115,7 @@ XTRA_SERVER_2="http://"
 XTRA_SERVER_3="http://"
 """
 _BRCM_DUTY_CYCLE_PATTERN = re.compile(r".*PGLOR,\d+,STA.*")
-
+_WEARABLE_QCOM_VENDOR_REGEX = re.compile(r"init.svc.qcom")
 
 class GnssTestUtilsError(Exception):
     pass
@@ -1973,10 +1973,13 @@ def check_chipset_vendor_by_qualcomm(ad):
     Returns:
         True if it's by Qualcomm. False irf not.
     """
-    ad.root_adb()
-    soc = str(ad.adb.shell("getprop gsm.version.ril-impl"))
-    ad.log.debug("SOC = %s" % soc)
-    return "Qualcomm" in soc
+    if is_device_wearable(ad):
+        props = str(ad.adb.shell("getprop"))
+        return True if _WEARABLE_QCOM_VENDOR_REGEX.search(props) else False
+    else:
+        soc = str(ad.adb.shell("getprop gsm.version.ril-impl"))
+        ad.log.debug("SOC = %s" % soc)
+        return "Qualcomm" in soc
 
 
 def delete_lto_file(ad):
