@@ -2685,65 +2685,48 @@ def delete_bcm_nvmem_sto_file(ad):
     ad.log.info("Delete BCM's NVMEM ephemeris files.\n%s" % status)
 
 
-def bcm_gps_xml_update_option(ad,
-                           option,
-                           search_line=None,
-                           append_txt=None,
-                           update_txt=None,
-                           delete_txt=None,
-                           gps_xml_path=BCM_GPS_XML_PATH):
-    """Append parameter setting in gps.xml for BCM solution
+def bcm_gps_xml_update_option(
+    ad, child_tag, items_to_update={}, items_to_delete=[], gps_xml_path=BCM_GPS_XML_PATH):
+    """Updates gps.xml attributes.
+
+    The process will go through update first then delete.
 
     Args:
-        option: A str to identify the operation (add/update/delete).
-        ad: An AndroidDevice object.
-        search_line: Pattern matching of target
-        line for appending new line data.
-        append_txt: New lines that will be appended after the search_line.
-        update_txt: New line to update the original file.
-        delete_txt: lines to delete from the original file.
-        gps_xml_path: gps.xml file location of DUT
+        ad: Device under test.
+        child_tag: (str) Which child node should be updated.
+        items_to_update: (dict) The attributes to be updated.
+        items_to_delete: (list) The attributes to be deleted.
+        gps_xml_path: (str) The gps.xml file path. Default is BCM_GPS_XML_PATH.
     """
     remount_device(ad)
-    #Update gps.xml
-    tmp_log_path = tempfile.mkdtemp()
-    ad.pull_files(gps_xml_path, tmp_log_path)
-    gps_xml_tmp_path = os.path.join(tmp_log_path, "gps.xml")
-    gps_xml_file = open(gps_xml_tmp_path, "r")
-    lines = gps_xml_file.readlines()
-    gps_xml_file.close()
-    fout = open(gps_xml_tmp_path, "w")
-    if option == "add":
-        for line in lines:
-            if line.strip() in append_txt:
-                ad.log.info("{} is already in the file. Skip".format(append_txt))
-                continue
-            fout.write(line)
-            if search_line in line:
-                for add_txt in append_txt:
-                    fout.write(add_txt)
-                    ad.log.info("Add new line: '{}' in gps.xml.".format(add_txt))
-    elif option == "update":
-        for line in lines:
-            if search_line in line:
-                ad.log.info(line)
-                fout.write(update_txt)
-                ad.log.info("Update line: '{}' in gps.xml.".format(update_txt))
-                continue
-            fout.write(line)
-    elif option == "delete":
-        for line in lines:
-            if delete_txt in line:
-                ad.log.info("Delete line: '{}' in gps.xml.".format(line.strip()))
-                continue
-            fout.write(line)
-    fout.close()
+    # to prevent adding nso into xml file
+    ElementTree.register_namespace("", "http://www.glpals.com/")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        local_xml = os.path.join(temp_dir, "gps.xml.ori")
+        modified_xml = os.path.join(temp_dir, "gps.xml")
+        ad.pull_files(gps_xml_path, local_xml)
+        xml_data = ElementTree.parse(local_xml)
+        root_data = xml_data.getroot()
+        child_node = None
 
-    # Update gps.xml with gps_new.xml
-    ad.push_system_file(gps_xml_tmp_path, gps_xml_path)
+        for node in root_data:
+            if node.tag.endswith(child_tag):
+                child_node = node
+                break
 
-    # remove temp folder
-    shutil.rmtree(tmp_log_path, ignore_errors=True)
+        if not child_node:
+            raise LookupError(f"Couldn't find node with {child_tag}")
+
+        for key, value in items_to_update.items():
+            child_node.attrib[key] = value
+
+        for key in items_to_delete:
+            if key in child_node.attrib:
+                child_node.attrib.pop(key)
+
+        xml_data.write(modified_xml, xml_declaration=True, encoding="utf-8", method="xml")
+        ad.push_system_file(modified_xml, gps_xml_path)
+    ad.log.info("Finish modify gps.xml")
 
 def bcm_gps_ignore_warmstandby(ad):
     """ remove warmstandby setting in BCM gps.xml to reset tracking filter
