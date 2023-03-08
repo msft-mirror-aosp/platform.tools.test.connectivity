@@ -8,6 +8,7 @@ and check if the setting is working.
 For more details, please refer to : go/p22_user_build_verification
 """
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -359,7 +360,8 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
             6. should not find slog in pixel logger log files
         """
         self.run_gps_and_capture_log()
-        result, _ = gutils.parse_brcm_nmea_log(self.ad, "slog    :", [])
+        pattern = re.compile(f".*slog\s+:.*")
+        result, _ = gutils.parse_brcm_nmea_log(self.ad, pattern, [])
         asserts.assert_true(bool(result), "LogEnabled is set to true, but no gps log was found")
 
         self.set_gps_logenabled(enable=False)
@@ -369,7 +371,7 @@ class GnssBroadcomConfigurationTest(BaseTestClass):
 
         self.run_gps_and_capture_log()
         try:
-            result, _ = gutils.parse_brcm_nmea_log(self.ad, "slog    :", [])
+            result, _ = gutils.parse_brcm_nmea_log(self.ad, pattern, [])
             asserts.assert_false(
                 bool(result),
                 ("LogEnabled is set to False but still found %d slog" % len(result)))

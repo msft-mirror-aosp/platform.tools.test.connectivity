@@ -8,8 +8,6 @@ TEST_NAME_BY_TESTTRACKER_UUID = {
     "test_sap_valid_modes": "89bb8103-a3af-4953-8f07-e43c7e829bdd",
     "test_network_location_provider_cell": "6f59d0f5-569c-4d52-990b-0042123b70ab",
     "test_network_location_provider_wifi": "eec8b4bd-6990-4098-ad7a-acc19574bdee",
-    "test_gmap_location_report_gps_network": "06aa85a2-7c3a-453a-b765-dc9ea6ee6b9b",
-    "test_gmap_location_report_gps": "36347b6e-d03e-4773-82bf-2e12d4f4dd0d",
     "test_gmap_location_report_battery_saver": "040556bf-1ffc-4db2-b2c5-19c4da19a256",
     "test_gnss_ttff_cs_airplane_mode_on": "bc3d509c-0392-4af1-a0d0-68fd01167573",
     "test_gnss_ttff_ws_airplane_mode_on": "dcafc69a-095e-4d58-8afb-5276c5763f4d",
@@ -53,6 +51,8 @@ TEST_NAME_BY_TESTTRACKER_UUID = {
     "test_cs_ttff_supl_over_wifi_with_airplane_mode_on": "4b2882f8-2966-4b44-9a31-37318beb84bf",
     "test_ws_ttff_supl_over_wifi_with_airplane_mode_on": "a7f77afe-c82e-4b1b-ae54-e3fea17bf721",
     "test_hs_ttff_supl_over_wifi_with_airplane_mode_on": "bc9de22f-90a0-4f2b-8052-cb4529f745e3",
+    "test_ttff_gla_on": "06aa85a2-7c3a-453a-b765-dc9ea6ee6b9b",
+    "test_ttff_gla_off": "36347b6e-d03e-4773-82bf-2e12d4f4dd0d",
     # GnssVendorFeaturesTest
     "test_xtra_ttff_cs_mobile_data": "da0bf0a1-d635-4942-808a-30070cfb2c78",
     "test_xtra_ttff_ws_mobile_data": "95f17477-c88e-4663-a0ab-c09dc1706f75",
