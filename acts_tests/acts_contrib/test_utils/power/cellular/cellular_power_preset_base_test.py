@@ -251,7 +251,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
         self.unpack_userparams(is_mdstest_supported=True)
         self.log.info(f'Supports mdstest: {self.is_mdstest_supported}')
-        if self.is_mdstest_supported == 'True':
+        if self.is_mdstest_supported:
             # UE preset
             self.log.info('Disable antenna switch.')
             self.at_util.disable_txas()
