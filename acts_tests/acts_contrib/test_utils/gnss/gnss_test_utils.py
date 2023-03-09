@@ -267,11 +267,11 @@ def enable_vendor_orbit_assistance_data(ad):
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    if is_device_wearable(ad):
-        lto_mode_wearable(ad, True)
-    elif check_chipset_vendor_by_qualcomm(ad):
+    if check_chipset_vendor_by_qualcomm(ad):
         disable_xtra_throttle(ad)
         reboot(ad)
+    elif is_device_wearable(ad):
+        lto_mode_wearable(ad, True)
     else:
         lto_mode(ad, True)
 
@@ -286,10 +286,10 @@ def disable_vendor_orbit_assistance_data(ad):
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    if is_device_wearable(ad):
-        lto_mode_wearable(ad, False)
-    elif check_chipset_vendor_by_qualcomm(ad):
+    if check_chipset_vendor_by_qualcomm(ad):
         disable_qualcomm_orbit_assistance_data(ad)
+    elif is_device_wearable(ad):
+        lto_mode_wearable(ad, False)
     else:
         lto_mode(ad, False)
 

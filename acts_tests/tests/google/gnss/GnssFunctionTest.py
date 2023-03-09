@@ -168,7 +168,7 @@ class GnssFunctionTest(BaseTestClass):
         path = self.user_params.get("radio_image")
         if isinstance(path, list):
             path = path[0]
-        if "dev/null" in path:
+        if not path or "dev/null" in path:
             self.ad.log.info("Radio image path is not defined in Test flag.")
             return False
         for path_key in os.listdir(path):
