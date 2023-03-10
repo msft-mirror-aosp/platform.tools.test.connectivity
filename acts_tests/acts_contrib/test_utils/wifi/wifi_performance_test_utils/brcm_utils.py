@@ -343,7 +343,11 @@ def push_firmware(dut, firmware_files):
 
 
 def disable_beamforming(dut):
+    dut.adb.shell('wl down')
+    time.sleep(VERY_SHORT_SLEEP)
     dut.adb.shell('wl txbf 0')
+    dut.adb.shell('wl txbfe_cap 0')
+    dut.adb.shell('wl up')
 
 
 def set_nss_capability(dut, nss):
@@ -366,16 +370,27 @@ def set_chain_mask(dut, chain):
         return
     # Set chain mask if needed
     dut.adb.shell('wl down')
-    time.sleep(VERY_SHORT_SLEEP)
+    time.sleep(SHORT_SLEEP)
     dut.adb.shell('wl txchain 0x{}'.format(chain))
     dut.adb.shell('wl rxchain 0x{}'.format(chain))
     dut.adb.shell('wl up')
+
+    try:
+        curr_tx_chain = int(dut.adb.shell('wl txchain'))
+        curr_rx_chain = int(dut.adb.shell('wl rxchain'))
+    except:
+        curr_tx_chain = -1
+        curr_rx_chain = -1
+    if curr_tx_chain != chain or curr_rx_chain != chain:
+        logging.error('Set chain mask failed.')
 
 
 class LinkLayerStats():
 
     LLSTATS_CMD = 'wl dump ampdu; wl counters;'
     LL_STATS_CLEAR_CMD = 'wl dump_clear ampdu; wl reset_cnts;'
+    BRCM_PHY_LOG_CLEAR_CMD = 'wl dump phycal; wl dump_clear txbf;'
+    BRCM_PHY_LOG_CMD = 'wl phy_rssi_ant; wl phy_snr_ant; wl nrate; wl dump phycal; wl tvpm; wl dump txbf;'
     BW_REGEX = re.compile(r'Chanspec:.+ (?P<bandwidth>[0-9]+)MHz')
     MCS_REGEX = re.compile(r'(?P<count>[0-9]+)\((?P<percent>[0-9]+)%\)')
     RX_REGEX = re.compile(
@@ -413,6 +428,7 @@ class LinkLayerStats():
             try:
                 llstats_output = self.dut.adb.shell(self.LLSTATS_CMD,
                                                     timeout=1)
+
                 self.dut.adb.shell_nb(self.LL_STATS_CLEAR_CMD)
 
                 wl_join = self.dut.adb.shell("wl status")
@@ -421,9 +437,17 @@ class LinkLayerStats():
                         re.search(self.BW_REGEX, wl_join).group('bandwidth'))
             except:
                 llstats_output = ''
+            try:
+                phy_log_output = self.dut.adb.shell(self.BRCM_PHY_LOG_CMD,
+                                                    ignore_status=True,
+                                                    timeout=1)
+                self.dut.adb.shell_nb(self.BRCM_PHY_LOG_CLEAR_CMD)
+            except:
+                phy_log_output = ''
         else:
             llstats_output = ''
-        self._update_stats(llstats_output)
+            phy_log_output = ''
+        self._update_stats(llstats_output, phy_log_output)
 
     def reset_stats(self):
         self.llstats_cumulative = self._empty_llstats()
@@ -574,10 +598,11 @@ class LinkLayerStats():
             llstats_summary['rx_per'] = 0
         return llstats_summary
 
-    def _update_stats(self, llstats_output):
+    def _update_stats(self, llstats_output, phy_log_output):
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
         self.llstats_incremental['raw_output'] = llstats_output
+        self.llstats_incremental['phy_log_output'] = phy_log_output
         self.llstats_incremental['mcs_stats'] = self._parse_mcs_stats(
             llstats_output)
         self.llstats_incremental['mpdu_stats'] = self._parse_mpdu_stats(
