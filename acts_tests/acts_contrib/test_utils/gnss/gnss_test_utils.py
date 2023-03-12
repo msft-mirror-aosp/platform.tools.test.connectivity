@@ -2714,7 +2714,7 @@ def bcm_gps_xml_update_option(
                 child_node = node
                 break
 
-        if not child_node:
+        if child_node is None:
             raise LookupError(f"Couldn't find node with {child_tag}")
 
         for key, value in items_to_update.items():
