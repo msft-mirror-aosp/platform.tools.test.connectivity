@@ -99,6 +99,15 @@ def BandwidthFromFloat(bw):
     raise ValueError('Bandwidth {} MHz is not valid for LTE'.format(bandwidth))
 
 
+class DrxMode(Enum):
+    """DRX Modes."""
+    DRXS = 'DRXS'
+    DRXL = 'DRXL'
+    USER_DEFINED = 'UDEF'
+    ON = 'ON'
+    OFF = 'OFF'
+
+
 class DuplexMode(Enum):
     """Duplex Modes"""
     FDD = 'FDD'
@@ -544,6 +553,172 @@ class Cmw500(abstract_inst.SocketInstrument):
             ctype: Connection type.
         """
         cmd = 'CONFigure:LTE:SIGN:CONNection:CTYPe {}'.format(ctype.value)
+        self.send_and_recv(cmd)
+
+    @property
+    def drx_connected_mode(self):
+        """ Gets the Connected DRX LTE cell parameter
+
+        Args:
+            None
+
+        Returns:
+            DRX connected mode (ON, OFF, USER_DEFINED, DRX_S, DRX_L)
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:ENABle?'
+        return self.send_and_recv(cmd)
+
+    @drx_connected_mode.setter
+    def drx_connected_mode(self, mode):
+        """  Sets the Connected DRX LTE cell parameter
+
+        Args:
+            mode: DRX mode
+
+        Returns:
+            None
+        """
+        if not isinstance(mode, DrxMode):
+            raise ValueError('state should be the instance of DrxMode.')
+
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:ENABle {}'.format(mode.value)
+        self.send_and_recv(cmd)
+
+    @property
+    def drx_on_duration_timer(self):
+        """ Gets the amount of PDCCH subframes to wait for data after
+            waking up from a DRX cycle
+
+        Args:
+            None
+
+        Returns:
+            DRX mode duration timer
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:ODTimer?'
+        return self.send_and_recv(cmd)
+
+    @drx_on_duration_timer.setter
+    def drx_on_duration_timer(self, time):
+        """ Sets the amount of PDCCH subframes to wait for data after
+            waking up from a DRX cycle
+
+        Args:
+            timer: Length of interval to wait for user data to be transmitted
+
+        Returns:
+            None
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:ODTimer {}'.format(time)
+        self.send_and_recv(cmd)
+
+    @property
+    def drx_inactivity_timer(self):
+        """ Gets the number of PDCCH subframes to wait before entering DRX mode
+
+        Args:
+            None
+
+        Returns:
+            DRX mode inactivity timer
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:ITIMer?'
+        return self.send_and_recv(cmd)
+
+    @drx_inactivity_timer.setter
+    def drx_inactivity_timer(self, time):
+        """ Sets the number of PDCCH subframes to wait before entering DRX mode
+
+        Args:
+            timer: Length of the interval to wait
+
+        Returns:
+            None
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:ITIMer {}'.format(time)
+        self.send_and_recv(cmd)
+
+    @property
+    def drx_retransmission_timer(self):
+        """ Gets the number of consecutive PDCCH subframes to wait
+        for retransmission
+
+        Args:
+            None
+
+        Returns:
+            Number of PDCCH subframes to wait for retransmission
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:RTIMer?'
+        self.send_and_recv(cmd)
+
+    @drx_retransmission_timer.setter
+    def drx_retransmission_timer(self, time):
+        """ Sets the number of consecutive PDCCH subframes to wait
+        for retransmission
+
+        Args:
+            time: Number of PDCCH subframes to wait
+            for retransmission
+
+        Returns:
+            None
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:RTIMer {}'.format(time)
+        self.send_and_recv(cmd)
+
+    @property
+    def drx_long_cycle(self):
+        """ Gets the amount of subframes representing a DRX long cycle
+
+        Args:
+            None
+
+        Returns:
+            The amount of subframes representing one long DRX cycle.
+            One cycle consists of DRX sleep + DRX on duration
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:LDCYcle?'
+        return self.send_and_recv(cmd)
+
+    @drx_long_cycle.setter
+    def drx_long_cycle(self, long_cycle):
+        """ Sets the amount of subframes representing a DRX long cycle
+
+        Args:
+            long_cycle: The amount of subframes representing one long DRX cycle.
+                One cycle consists of DRX sleep + DRX on duration
+
+        Returns:
+            None
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:LDCYcle {}'.format(
+            long_cycle)
+        self.send_and_recv(cmd)
+
+    @property
+    def drx_long_cycle_offset(self):
+        """ Gets the offset used to determine long cycle starting
+        subframe
+
+        Args:
+            None
+
+        Returns:
+            Long cycle offset
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:SOFFset?'
+        return self.send_and_recv(cmd)
+
+    @drx_long_cycle_offset.setter
+    def drx_long_cycle_offset(self, offset):
+        """ Sets the offset used to determine long cycle starting
+        subframe
+
+        Args:
+            offset: Number in range 0...(long cycle - 1)
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:SOFFset {}'.format(offset)
         self.send_and_recv(cmd)
 
     def get_base_station(self, bts_num=BtsNumber.BTS1):
@@ -1108,156 +1283,6 @@ class BaseStation(object):
         cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:CLTPower {}'.format(
             self._bts, cltpower)
         self._cmw.send_and_recv(cmd)
-
-    @property
-    def drx_connected_mode(self):
-        """ Gets the Connected DRX LTE cell parameter
-
-        Args:
-            None
-
-        Returns:
-            DRX connected mode (OFF, AUTO, MANUAL)
-        """
-        raise NotImplementedError()
-
-    @drx_connected_mode.setter
-    def drx_connected_mode(self, mode):
-        """  Sets the Connected DRX LTE cell parameter
-
-        Args:
-            mode: DRX Connected mode
-
-        Returns:
-            None
-        """
-        raise NotImplementedError()
-
-    @property
-    def drx_on_duration_timer(self):
-        """ Gets the amount of PDCCH subframes to wait for data after
-            waking up from a DRX cycle
-
-        Args:
-            None
-
-        Returns:
-            DRX mode duration timer
-        """
-        raise NotImplementedError()
-
-    @drx_on_duration_timer.setter
-    def drx_on_duration_timer(self, time):
-        """ Sets the amount of PDCCH subframes to wait for data after
-            waking up from a DRX cycle
-
-        Args:
-            timer: Length of interval to wait for user data to be transmitted
-
-        Returns:
-            None
-        """
-        raise NotImplementedError()
-
-    @property
-    def drx_inactivity_timer(self):
-        """ Gets the number of PDCCH subframes to wait before entering DRX mode
-
-        Args:
-            None
-
-        Returns:
-            DRX mode inactivity timer
-        """
-        raise NotImplementedError()
-
-    @drx_inactivity_timer.setter
-    def drx_inactivity_timer(self, time):
-        """ Sets the number of PDCCH subframes to wait before entering DRX mode
-
-        Args:
-            timer: Length of the interval to wait
-
-        Returns:
-            None
-        """
-        raise NotImplementedError()
-
-    @property
-    def drx_retransmission_timer(self):
-        """ Gets the number of consecutive PDCCH subframes to wait
-        for retransmission
-
-        Args:
-            None
-
-        Returns:
-            Number of PDCCH subframes to wait for retransmission
-        """
-        raise NotImplementedError()
-
-    @drx_retransmission_timer.setter
-    def drx_retransmission_timer(self, time):
-        """ Sets the number of consecutive PDCCH subframes to wait
-        for retransmission
-
-        Args:
-            time: Number of PDCCH subframes to wait
-            for retransmission
-
-        Returns:
-            None
-        """
-        raise NotImplementedError()
-
-    @property
-    def drx_long_cycle(self):
-        """ Gets the amount of subframes representing a DRX long cycle
-
-        Args:
-            None
-
-        Returns:
-            The amount of subframes representing one long DRX cycle.
-            One cycle consists of DRX sleep + DRX on duration
-        """
-        raise NotImplementedError()
-
-    @drx_long_cycle.setter
-    def drx_long_cycle(self, time):
-        """ Sets the amount of subframes representing a DRX long cycle
-
-        Args:
-            long_cycle: The amount of subframes representing one long DRX cycle.
-                One cycle consists of DRX sleep + DRX on duration
-
-        Returns:
-            None
-        """
-        raise NotImplementedError()
-
-    @property
-    def drx_long_cycle_offset(self):
-        """ Gets the offset used to determine long cycle starting
-        subframe
-
-        Args:
-            None
-
-        Returns:
-            Long cycle offset
-        """
-        raise NotImplementedError()
-
-    @drx_long_cycle_offset.setter
-    def drx_long_cycle_offset(self, offset):
-        """ Sets the offset used to determine long cycle starting
-        subframe
-
-        Args:
-            offset: Number in range 0...(long cycle - 1)
-        """
-        raise NotImplementedError()
 
 
 class LteMeasurementState(Enum):

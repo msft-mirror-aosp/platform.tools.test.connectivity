@@ -576,6 +576,71 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.error('Configuring the PHICH resource setting is not yet '
                        'implemented in the CMW500 controller.')
 
+    def set_drx_connected_mode(self, bts_index, active):
+        """ Sets the time interval to wait before entering DRX mode
+
+        Args:
+            bts_index: the base station number
+            active: Boolean indicating whether cDRX mode
+                is active
+        """
+        self.cmw.drx_connected_mode = (cmw500.DrxMode.USER_DEFINED
+                                       if active else cmw500.DrxMode.OFF)
+
+    def set_drx_on_duration_timer(self, bts_index, timer):
+        """ Sets the amount of PDCCH subframes to wait for data after
+            waking up from a DRX cycle
+
+        Args:
+            bts_index: the base station number
+            timer: Number of PDCCH subframes to wait and check for user data
+                after waking from the DRX cycle
+        """
+        timer = 'PSF{}'.format(timer)
+        self.cmw.drx_on_duration_timer = timer
+
+    def set_drx_inactivity_timer(self, bts_index, timer):
+        """ Sets the number of PDCCH subframes to wait before entering DRX mode
+
+        Args:
+            bts_index: the base station number
+            timer: The amount of time to wait before entering DRX mode
+        """
+        timer = 'PSF{}'.format(timer)
+        self.cmw.drx_inactivity_timer = timer
+
+    def set_drx_retransmission_timer(self, bts_index, timer):
+        """ Sets the number of consecutive PDCCH subframes to wait
+        for retransmission
+
+        Args:
+            bts_index: the base station number
+            timer: Number of PDCCH subframes to remain active
+        """
+        timer = 'PSF{}'.format(timer)
+        self.cmw.drx_retransmission_timer = timer
+
+    def set_drx_long_cycle(self, bts_index, cycle):
+        """ Sets the amount of subframes representing a DRX long cycle.
+
+        Args:
+            bts_index: the base station number
+            cycle: The amount of subframes representing one long DRX cycle.
+                One cycle consists of DRX sleep + DRX on duration
+        """
+        cycle = 'SF{}'.format(cycle)
+        self.cmw.drx_long_cycle = cycle
+
+    def set_drx_long_cycle_offset(self, bts_index, offset):
+        """ Sets the offset used to determine the subframe number
+        to begin the long drx cycle
+
+        Args:
+            bts_index: the base station number
+            offset: Number in range 0 to (long cycle - 1)
+        """
+        self.cmw.drx_long_cycle_offset = offset
+
     def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
         attached to the primary carrier first.
