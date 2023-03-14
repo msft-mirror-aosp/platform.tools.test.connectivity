@@ -1028,8 +1028,11 @@ def gnss_tracking_via_gtw_gpstool(ad,
         set to False.
         freq: An integer to set location update frequency. Default set to 0.
         is_screen_off: whether to turn off during tracking
+
+    Returns:
+        The datetime obj of first fixed
     """
-    process_gnss_by_gtw_gpstool(
+    first_fixed_time = process_gnss_by_gtw_gpstool(
         ad, criteria=criteria, api_type=api_type, meas_flag=meas_flag, freq=freq,
         bg_display=is_screen_off)
     ad.log.info("Start %s tracking test for %d minutes" % (api_type.upper(),
@@ -1039,6 +1042,8 @@ def gnss_tracking_via_gtw_gpstool(ad,
         wait_n_mins_for_gnss_tracking(ad, begin_time, testtime, api_type)
         ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, state=False, api_type=api_type)
+
+    return first_fixed_time
 
 
 def wait_n_mins_for_gnss_tracking(ad, begin_time, testtime, api_type="gnss",
