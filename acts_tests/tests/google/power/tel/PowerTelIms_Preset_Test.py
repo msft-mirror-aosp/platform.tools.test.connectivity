@@ -55,6 +55,8 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
     IMS_CLIENT = 'client'
     IMS_SERVER = 'server'
 
+    UE_DEFAULT_NUMBER = '001010123456789'
+
     def setup_class(self):
         """ Executed only once when initializing the class. """
         super().setup_class()
@@ -78,7 +80,8 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.unpack_userparams(api_connector_port=self.IMS_API_CONNECTOR_DEFAULT_PORT,
                                api_token=self.IMS_CLIENT_DEFAULT_API_TOKEN,
                                ims_client_ip=self.IMS_CLIENT_DEFAULT_IP,
-                               ims_client_port=self.IMS_CLIENT_DEFAULT_PORT)
+                               ims_client_port=self.IMS_CLIENT_DEFAULT_PORT,
+                               ue_number=self.UE_DEFAULT_NUMBER)
         self.ims_client = ImsApiConnector(
             self.uxm_ip,
             self.api_connector_port,
@@ -112,7 +115,7 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
 
         # Initiate the voice call
         self.log.info('Callbox initiates call to UE.')
-        self.ims_client.initiate_call('001010123456789')
+        self.ims_client.initiate_call(self.ue_number)
 
         time.sleep(5)
 
