@@ -45,11 +45,12 @@ class AbstractCellularSimulator:
         """ Configures the equipment for an LTE simulation. """
         raise NotImplementedError()
 
-    def set_band_combination(self, bands):
-        """ Prepares the test equipment for the indicated CA combination.
+    def set_band_combination(self, bands, mimo_modes):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
         Args:
             bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each antenna
         """
         raise NotImplementedError()
 
@@ -121,8 +122,8 @@ class AbstractCellularSimulator:
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode ==
-                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode
+                    == cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
@@ -192,8 +193,8 @@ class AbstractCellularSimulator:
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode ==
-                    cellular_lib.LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode
+                    == cellular_lib.LteSimulation.SchedulingMode.STATIC
                     and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
                              and config.ul_mcs)):
                 raise ValueError('When the scheduling mode is set to manual, '
