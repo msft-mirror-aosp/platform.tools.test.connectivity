@@ -40,6 +40,21 @@ class SignallingState(Enum):
     ReadyForHandover = 'RFH'
 
 
+class SccActivationMode(Enum):
+    """Activation mode to use for SCCs."""
+    AUTO = 'AUTO'
+    MANUAL = 'MAN'
+    SEMI_AUTO = 'SEM'
+
+
+class SccState(Enum):
+    """Secondary component carrier states."""
+    ON = 'ON'
+    OFF = 'OFF'
+    RRC = 'RRC'
+    MAC = 'MAC'
+
+
 class LteState(Enum):
     """LTE ON and OFF"""
     LTE_ON = 'ON'
@@ -245,6 +260,31 @@ class Cmw500(abstract_inst.SocketInstrument):
             time_elapsed += 1
         else:
             raise CmwError('Failed to turn {} LTE signalling.'.format(state))
+
+    def switch_scc_state(self, scc_index, state):
+        """ Changes the SCC to the requested state.
+
+        Args:
+            scc_index: the SCC number to modify.
+            state: an instance of SccState indicating which SCC state to set.
+        """
+        cmd = 'CALL:LTE:SIGN:SCC{}:ACTion {}'.format(scc_index, state.value)
+        self.send_and_recv(cmd)
+        self.wait_for_scc_state(scc_index, [state])
+
+    def wait_for_scc_state(self, scc_index, allowed, timeout=120):
+        """ Polls for a SCC to reach the requested state.
+
+        Args:
+            scc_index: an integer defining the scc number.
+            allowed: a list of SccStates defining the allowed states.
+            timeout: the maximum amount of time to wait for the requested state.
+        """
+        self.wait_for_response(
+            'FETCh:LTE:SIGN:SCC{}:STATe?'.format(scc_index),
+            [a.value for a in allowed],
+            timeout,
+        )
 
     def wait_for_response(self, cmd, allowed, timeout=120):
         """Polls a specific query command until an allowed response is returned.
@@ -456,6 +496,27 @@ class Cmw500(abstract_inst.SocketInstrument):
         self.send_and_recv(cmd)
 
     @property
+    def scc_activation_mode(self):
+        """Gets the activation mode to use for SCCs when establishing a
+        connection.
+        """
+        return self.send_and_recv('CONFigure:LTE:SIGN:SCC:AMODe?')
+
+    @scc_activation_mode.setter
+    def scc_activation_mode(self, activation_mode):
+        """Sets the activation mode to use with SCCs when establishing a
+        connection.
+
+        Args:
+            activation_mode: the scc activation mode to use.
+        """
+        if not isinstance(activation_mode, SccActivationMode):
+            raise ValueError('state should be the instance of RrcState.')
+
+        cmd = 'CONFigure:LTE:SIGN:SCC:AMODe {}'.format(activation_mode.value)
+        self.send_and_recv(cmd)
+
+    @property
     def dl_mac_padding(self):
         """Gets the state of mac padding."""
         return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:DLPadding?')
@@ -531,12 +592,17 @@ class Cmw500(abstract_inst.SocketInstrument):
 
 class BaseStation(object):
     """Class to interact with different base stations"""
-
     def __init__(self, cmw, bts_num):
         if not isinstance(bts_num, BtsNumber):
             raise ValueError('bts_num should be an instance of BtsNumber.')
         self._bts = bts_num.value
         self._cmw = cmw
+
+    @property
+    def scc_state(self):
+        """Gets the scc state of cell."""
+        cmd = 'FETCh:LTE:SIGN:{}:STATe?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
 
     @property
     def duplex_mode(self):
