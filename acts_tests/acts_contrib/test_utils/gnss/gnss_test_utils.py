@@ -2594,7 +2594,8 @@ def is_wearable_btwifi(ad):
     """
     package = ad.adb.getprop("ro.product.product.name")
     ad.log.debug("[ro.product.product.name]: [%s]" % package)
-    return "btwifi" in package
+    # temp solution. Will check with dev team if there is a command to check.
+    return "btwifi" in package or ad.model == 'aurora'
 
 
 def compare_watch_phone_location(ad,watch_file, phone_file):
