@@ -523,11 +523,25 @@ class LteSimulation(BaseSimulation):
                 # The band is just a number, so just add it to the list
                 new_cell_list.append(cell)
 
+        # verify mimo mode parameter is provided
+        for cell in new_cell_list:
+            if not LteCellConfig.PARAM_MIMO in cell:
+                raise ValueError(
+                    'The config dictionary must include parameter "{}" with the'
+                    ' mimo mode.'.format(self.PARAM_MIMO))
+
+            if cell[LteCellConfig.PARAM_MIMO] not in (m.value
+                                                      for m in MimoMode):
+                raise ValueError(
+                    'The value of {} must be one of the following:'
+                    '1x1, 2x2 or 4x4.'.format(self.PARAM_MIMO))
+
         # Logs new_cell_list for debug
         self.log.info('new cell list: {}'.format(new_cell_list))
 
         self.simulator.set_band_combination(
-            [c[LteCellConfig.PARAM_BAND] for c in new_cell_list])
+            [c[LteCellConfig.PARAM_BAND] for c in new_cell_list],
+            [MimoMode(c[LteCellConfig.PARAM_MIMO]) for c in new_cell_list])
 
         self.num_carriers = len(new_cell_list)
 
