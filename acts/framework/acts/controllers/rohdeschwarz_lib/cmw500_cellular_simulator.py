@@ -17,6 +17,7 @@ import time
 
 from acts.controllers.rohdeschwarz_lib import cmw500
 from acts.controllers import cellular_simulator as cc
+from acts.controllers.rohdeschwarz_lib import cmw500_scenario_generator as cg
 from acts.controllers.cellular_lib import LteSimulation
 
 CMW_TM_MAPPING = {
@@ -37,6 +38,12 @@ CMW_MIMO_MAPPING = {
     LteSimulation.MimoMode.MIMO_1x1: cmw500.MimoModes.MIMO1x1,
     LteSimulation.MimoMode.MIMO_2x2: cmw500.MimoModes.MIMO2x2,
     LteSimulation.MimoMode.MIMO_4x4: cmw500.MimoModes.MIMO4x4
+}
+
+MIMO_ANTENNA_COUNT = {
+    LteSimulation.MimoMode.MIMO_1x1: 1,
+    LteSimulation.MimoMode.MIMO_2x2: 2,
+    LteSimulation.MimoMode.MIMO_4x4: 4,
 }
 
 # get mcs vs tbsi map with 256-qam disabled(downlink)
@@ -189,16 +196,29 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
         self.cmw.connection_type = cmw500.ConnectionType.DAU
-        self.bts = [self.cmw.get_base_station()]
+        # if bts has not yet been initialized
+        if not self.bts:
+            self.bts = [self.cmw.get_base_station()]
         self.cmw.switch_lte_signalling(cmw500.LteState.LTE_ON)
 
-    def set_band_combination(self, bands):
-        """ Prepares the test equipment for the indicated band combination.
+    def set_band_combination(self, bands, mimo_modes):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
         Args:
             bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each carrier
         """
         self.num_carriers = len(bands)
+        self.bts = [self.cmw.get_base_station(cmw500.BtsNumber.BTS1)]
+        for i in range(1, len(bands)):
+            self.bts.append(
+                self.cmw.get_base_station(cmw500.BtsNumber('SCC{}'.format(i))))
+
+        antennas = [MIMO_ANTENNA_COUNT[m] for m in mimo_modes]
+        self.set_scenario(bands, antennas)
+
+    def get_band_combination(self):
+        return [int(bts.band.strip('OB')) for bts in self.bts]
 
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
@@ -335,21 +355,65 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         bts = self.bts[bts_index]
         mimo_mode = CMW_MIMO_MAPPING[mimo_mode]
         if mimo_mode == cmw500.MimoModes.MIMO1x1:
-            self.cmw.configure_mimo_settings(cmw500.MimoScenario.SCEN1x1)
+            self.set_bts_antenna(bts_index, 1)
             bts.dl_antenna = cmw500.MimoModes.MIMO1x1
 
         elif mimo_mode == cmw500.MimoModes.MIMO2x2:
-            self.cmw.configure_mimo_settings(cmw500.MimoScenario.SCEN2x2)
+            self.set_bts_antenna(bts_index, 2)
             bts.dl_antenna = cmw500.MimoModes.MIMO2x2
             # set default transmission mode and DCI for this scenario
             bts.transmode = cmw500.TransmissionModes.TM3
             bts.dci_format = cmw500.DciFormat.D2A
 
         elif mimo_mode == cmw500.MimoModes.MIMO4x4:
-            self.cmw.configure_mimo_settings(cmw500.MimoScenario.SCEN4x4)
+            self.set_bts_antenna(bts_index, 4)
             bts.dl_antenna = cmw500.MimoModes.MIMO4x4
         else:
             raise RuntimeError('The requested MIMO mode is not supported.')
+
+    def set_bts_antenna(self, bts_index, antenna_count):
+        """ Sets the mimo mode for a particular component carrier.
+
+        Args:
+            bts_index: index of the base station to configure.
+            antenna_count: number of antennas to use for the component carrier
+                either (1, 2, 4)
+        """
+        antennas = self.get_antenna_combination()
+        antennas[bts_index] = antenna_count
+        bands = self.get_band_combination()
+        self.set_scenario(bands, antennas)
+
+    def get_antenna_combination(self):
+        """ Gets the current antenna configuration.
+
+        Returns:
+            antenna_count: a list containing the number of antennas to use for
+                each bts/CC.
+        """
+        cmd = 'ROUTe:LTE:SIGN:SCENario?'
+        scenario_name = self.cmw.send_and_recv(cmd)
+        return cg.get_antennas(scenario_name)
+
+    def set_scenario(self, bands, antennas):
+        """ Sets the MIMO scenario on the CMW.
+
+        Args:
+            bands: a list defining the bands to use for each CC.
+            antennas: a list of integers defining the number of antennas to use
+                for each bts/CC.
+        """
+        self.log.debug('Setting scenario: bands: {}, antennas: {}'.format(
+            bands, antennas))
+        scenario = cg.get_scenario(bands, antennas)
+        cmd = 'ROUTe:LTE:SIGN:SCENario:{}:FLEXible {}'.format(
+            scenario.name, scenario.routing)
+        self.cmw.send_and_recv(cmd)
+        self.cmw.scc_activation_mode = cmw500.SccActivationMode.AUTO
+
+        # apply requested bands now
+        for i, band in enumerate(bands):
+            self.set_band(i, str(band))
 
     def set_transmission_mode(self, bts_index, tmode):
         """ Sets the transmission mode for the indicated base station.
@@ -520,7 +584,26 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             ue_capability_enquiry: UE capability enquiry message to be sent to
         the UE before starting carrier aggregation.
         """
-        raise NotImplementedError()
+        for i in range(1, len(self.bts)):
+            bts = self.bts[i]
+            if bts.scc_state == cmw500.SccState.OFF.value:
+                if (self.cmw.scc_activation_mode ==
+                        cmw500.SccActivationMode.MANUAL.value):
+                    self.cmw.switch_scc_state(i, cmw500.SccState.ON)
+                # SEMI_AUTO -> directly to MAC activation
+                if (self.cmw.scc_activation_mode ==
+                        cmw500.SccActivationMode.SEMI_AUTO.value):
+                    self.cmw.switch_scc_state(i, cmw500.SccState.MAC)
+
+            # no need to do anything for auto
+            if self.cmw.scc_activation_mode != cmw500.SccActivationMode.AUTO.value:
+                if bts.scc_state == cmw500.SccState.ON.value:
+                    self.cmw.switch_scc_state(i, cmw500.SccState.RRC)
+
+                if bts.scc_state == cmw500.SccState.RRC.value:
+                    self.cmw.switch_scc_state(i, cmw500.SccState.MAC)
+
+            self.cmw.wait_for_scc_state(i, [cmw500.SccState.MAC])
 
     def wait_until_attached(self, timeout=120):
         """ Waits until the DUT is attached to the primary carrier.
