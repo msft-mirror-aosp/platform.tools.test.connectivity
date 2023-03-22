@@ -3019,6 +3019,7 @@ def set_screen_status(ad, off=True):
 def full_gnss_measurement(ad):
     """Context manager function to enable full gnss measurement"""
     try:
+        ad.adb.shell("settings put global development_settings_enabled 1")
         ad.adb.shell("settings put global enable_gnss_raw_meas_full_tracking 1")
         yield ad
     finally:
