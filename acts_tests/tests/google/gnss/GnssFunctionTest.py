@@ -670,9 +670,9 @@ class GnssFunctionTest(BaseTestClass):
                               validate_gnssstatus=True)
 
     def test_location_update_after_resuming_from_deep_suspend(self):
-        """Verify the GPS location reported after resume from suspend mode
+        """Verify the GPS location reported after resume from deep doze mode
         1. Enable GPS location report for 1 min to make sure the GPS is working
-        2. Force DUT into deep suspend mode for a while(3 times with 15s interval)
+        2. Force DUT into deep doze mode for 60s
         3. Enable GPS location report for 5 mins
         4. Check the report frequency
         5. Check the location fix rate
@@ -682,18 +682,18 @@ class GnssFunctionTest(BaseTestClass):
         gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                       testtime=gps_enable_minutes)
         result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
-        self.ad.log.debug("Location report details before suspend")
+        self.ad.log.debug("Location report details before deep doze")
         self.ad.log.debug(result)
         gutils.validate_location_fix_rate(self.ad, result, run_time=gps_enable_minutes,
                                           fix_rate_criteria=0.95)
 
-        gutils.deep_suspend_device(self.ad)
+        gutils.enter_deep_doze_mode(self.ad, lasting_time_in_seconds=60)
 
         gps_enable_minutes = 5
         gnss_tracking_via_gtw_gpstool(self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                                       testtime=gps_enable_minutes)
         result = parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, api_type="gnss")
-        self.ad.log.debug("Location report details after suspend")
+        self.ad.log.debug("Location report details after deep doze")
         self.ad.log.debug(result)
 
         location_report_time = list(result.keys())

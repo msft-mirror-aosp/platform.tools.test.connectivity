@@ -25,7 +25,7 @@ import subprocess
 import tempfile
 from retry import retry
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from xml.etree import ElementTree
 from contextlib import contextmanager
 from statistics import median
@@ -43,6 +43,7 @@ from acts_contrib.test_utils.gnss.gnss_measurement import GnssMeasurement
 from acts_contrib.test_utils.wifi import wifi_test_utils as wutils
 from acts_contrib.test_utils.tel import tel_logging_utils as tlutils
 from acts_contrib.test_utils.tel import tel_test_utils as tutils
+from acts_contrib.test_utils.gnss import device_doze
 from acts_contrib.test_utils.gnss import gnssstatus_utils
 from acts_contrib.test_utils.gnss import gnss_constant
 from acts_contrib.test_utils.gnss import supl
@@ -2859,49 +2860,6 @@ def disable_ramdump(ad):
     ad.start_adb_logcat()
 
 
-def deep_suspend_device(ad):
-    """Force DUT to enter deep suspend mode
-
-    When DUT is connected to PCs, it won't enter deep suspend mode
-    by pressing power button.
-
-    To force DUT enter deep suspend mode, we need to send the
-    following command to DUT  "echo mem >/sys/power/state"
-
-    To make sure the DUT stays in deep suspend mode for a while,
-    it will send the suspend command 3 times with 15s interval
-
-    Args:
-        ad: An AndroidDevice object.
-    """
-    ad.log.info("Ready to go to deep suspend mode")
-    begin_time = get_device_time(ad)
-    ad.droid.goToSleepNow()
-    ensure_power_manager_is_dozing(ad, begin_time)
-    ad.stop_services()
-    try:
-        command = "echo deep > /sys/power/mem_sleep && echo mem > /sys/power/state"
-        for i in range(1, 4):
-            ad.log.debug(f"Send deep suspend command round {i}")
-            ad.adb.shell(command, ignore_status=True)
-            # sleep here to ensure the device stays enough time in deep suspend mode
-            time.sleep(15)
-            if not _is_device_enter_deep_suspend(ad):
-                raise signals.TestFailure("Device didn't enter deep suspend mode")
-        ad.log.info("Wake device up now")
-    except Exception:
-        # when exception happen, it's very likely the device is rebooting
-        # to ensure the test can go on, wait for the device is ready
-        ad.log.warn("Device may be rebooting, wait for it")
-        ad.wait_for_boot_completion()
-        ad.root_adb()
-        raise
-    finally:
-        tutils.bring_up_sl4a(ad)
-        ad.start_adb_logcat()
-        ad.droid.wakeUpNow()
-
-
 def get_device_time(ad):
     """Get current datetime from device
 
@@ -2935,27 +2893,23 @@ def ensure_power_manager_is_dozing(ad, begin_time):
     else:
         ad.log.warn("Power manager didn't enter dozing")
 
-
-
-def _is_device_enter_deep_suspend(ad):
-    """Check device has been enter deep suspend mode
-
-    If device has entered deep suspend mode, we should be able to find keyword
-    "suspend entry (deep)"
+def enter_deep_doze_mode(ad, lasting_time_in_seconds: int):
+    """Puts the device into deep doze mode.
 
     Args:
-        ad: An AndroidDevice object.
-
-    Returns:
-        bool: True / False -> has / has not entered deep suspend
+        ad: The device under test.
+        lasting_time_in_seconds: How long does the doze mode last.
     """
-    cmd = f"adb -s {ad.serial} logcat -d|grep \"suspend entry (deep)\""
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, shell=True)
-    result, _ = process.communicate()
-    ad.log.debug(f"suspend result = {result}")
+    target_time = datetime.now() + timedelta(seconds=lasting_time_in_seconds)
 
-    return bool(result)
+    try:
+      ad.log.info("Enter deep doze mode for %d seconds" % lasting_time_in_seconds)
+      device_doze.enter_doze_mode(ad, device_doze.DozeType.DEEP)
+      while datetime.now() < target_time:
+        time.sleep(1)
+    finally:
+      ad.log.info("Leave deep doze mode")
+      device_doze.leave_doze_mode(ad, device_doze.DozeType.DEEP)
 
 
 def check_location_report_interval(ad, location_reported_time_src, total_seconds, tolerance):
