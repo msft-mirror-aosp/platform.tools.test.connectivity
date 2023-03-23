@@ -155,7 +155,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                                pass_fail_tolerance=THRESHOLD_TOLERANCE_DEFAULT,
                                mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT,
                                ap_dtim_period=None,
-                               bits_root_rail_csv_export=False)
+                               bits_root_rail_csv_export=False,
+                               is_odpm_supported=False)
 
         # Setup the must have controllers, phone and monsoon
         self.dut = self.android_devices[0]
@@ -165,7 +166,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Make odpm path for P21 or later
         platform = self.dut.adb.shell(GET_PROPERTY_HARDWARE_PLATFORM)
         self.log.info('The hardware platform is {}'.format(platform))
-        if platform.startswith('gs'):
+        if platform.startswith('gs') or self.is_odpm_supported:
             self.odpm_folder = os.path.join(self.log_path, 'odpm')
             os.makedirs(self.odpm_folder, exist_ok=True)
             self.log.info('For P21 or later, create odpm folder {}'.format(
