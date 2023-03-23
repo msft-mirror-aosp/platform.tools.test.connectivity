@@ -7,6 +7,7 @@ from acts import asserts
 from acts import signals
 from acts.controllers.cellular_lib import AndroidCellularDut
 import acts_contrib.test_utils.power.cellular.cellular_power_base_test as PWCEL
+from acts_contrib.test_utils.tel import tel_test_utils as telutils
 
 # TODO: b/261639867
 class AtUtil():
@@ -107,7 +108,11 @@ class AtUtil():
         cmd = r'am instrument -w -e request at+GOOGGETNV=\"!SAEL3.Manual.Enabled.RFBands.BitMap\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
         res = self.send(cmd)
         cmd = r'am instrument -w -e request at+GOOGGETNV=\"!SAEL3.Manual.Band.Select\ Enb\/\ Dis\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
-        res = self.send(cmd)
+        res += self.send(cmd)
+        cmd = r'am instrument -w -e request at+GOOGGETNV=\"!NRRRC.SIM_BASED_BAND_LIST_SUPPORT\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        res += self.send(cmd)
+        cmd = r'am instrument -w -e request at+GOOGGETNV=\"!NRRRC.SIM_OPERATOR_BAND_LIST\" -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        res += self.send(cmd)
         return res
 
     def set_nv(self, nv_name, index, value):
@@ -258,11 +263,20 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             time.sleep(10)
 
             self.at_util.lock_band()
+            self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
 
         self.unpack_userparams(is_wifi_only_device=False)
 
         # get sdim type
         self.unpack_userparams(has_3gpp_sim=True)
+
+        # toggle on/off APM for all devices
+        self.log.info('Toggle APM on/off for all devices.')
+        for ad in self.android_devices:
+            telutils.toggle_airplane_mode(self.log, ad, False)
+            time.sleep(2)
+            telutils.toggle_airplane_mode(self.log, ad, True)
+            time.sleep(2)
 
     def collect_power_data_and_validate(self):
         super().collect_power_data()
@@ -283,16 +297,6 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self.cellular_simulator.recovery_ta()
             self.cellular_simulator.socket_connect()
             raise signals.TestFailure('TA crashed mid test, retry needed.')
-        # except:
-        #     # self.log.info('Waiting for device to on.')
-        #     # self.dut.adb.wait_for_device()
-        #     # self.cellular_dut = AndroidCellularDut.AndroidCellularDut(
-        #     # self.android_devices[0], self.log)
-        #     # self.dut.root_adb()
-        #     # # Restart SL4A
-        #     # self.dut.start_services()
-        #     # self.need_retry = True
-        #     raise signals.TestError('Device reboot mid test, retry needed.')
 
     def toggle_modem_log(self, new_state: bool, timeout: int=30):
         new_state = str(new_state).lower()
@@ -520,6 +524,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self.cellular_dut.ad.adb.shell('svc data enable')
         self.cellular_simulator.detach()
         self.cellular_dut.toggle_airplane_mode(True)
+
+        self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
 
         # processing result
         self.sponge_upload()
