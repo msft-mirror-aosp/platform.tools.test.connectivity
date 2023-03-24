@@ -145,6 +145,13 @@ class GnssFunctionTest(BaseTestClass):
             set_wifi_and_bt_scanning(self.ad, True)
         log_current_epoch_time(self.ad, "test_end_time")
 
+    def keep_logs(self):
+        # for debug cs is faster than ws issue
+        test_name = self.test_name
+        self.ad.take_bug_report(test_name, self.begin_time)
+        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+        get_tcpdump_log(self.ad, test_name, self.begin_time)
+
     def on_fail(self, test_name, begin_time):
         if self.collect_logs:
             self.ad.take_bug_report(test_name, begin_time)
@@ -251,6 +258,7 @@ class GnssFunctionTest(BaseTestClass):
         toggle_airplane_mode(self.ad.log, self.ad, new_state=True)
         gutils.run_ttff_via_gtw_gpstool(
             self.ad, mode, criteria, self.ttff_test_cycle, self.pixel_lab_location)
+        self.keep_logs()
 
     """ Test Cases """
 
