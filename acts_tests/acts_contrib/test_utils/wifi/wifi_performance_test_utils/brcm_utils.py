@@ -345,8 +345,11 @@ def push_firmware(dut, firmware_files):
 def disable_beamforming(dut):
     dut.adb.shell('wl down')
     time.sleep(VERY_SHORT_SLEEP)
-    dut.adb.shell('wl txbf 0')
-    dut.adb.shell('wl txbfe_cap 0')
+    try:
+        dut.adb.shell('wl txbf 0')
+        dut.adb.shell('wl txbf_bfe_cap 0')
+    except:
+        logging.warning('Could not disable beamforming.')
     dut.adb.shell('wl up')
 
 
