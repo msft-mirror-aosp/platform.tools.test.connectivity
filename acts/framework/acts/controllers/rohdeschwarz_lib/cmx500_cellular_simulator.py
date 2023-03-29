@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import time
+from enum import Enum
 
 from acts.controllers.rohdeschwarz_lib import cmx500
 from acts.controllers.rohdeschwarz_lib.cmx500 import LteBandwidth
@@ -43,6 +44,10 @@ CMX_MIMO_MAPPING = {
 }
 
 
+class ConfigurationMode(Enum):
+    Power = "Power"
+
+
 class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMX 500
     controller. """
@@ -50,12 +55,16 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     # The maximum power that the equipment is able to transmit
     MAX_DL_POWER = -25
 
-    def __init__(self, ip_address, port='5025'):
+    def __init__(self,
+                 ip_address,
+                 port='5025',
+                 config_mode=ConfigurationMode.Power):
         """ Initializes the cellular simulator.
 
         Args:
             ip_address: the ip address of the CMX500
             port: the port number for the CMX500 controller
+            config_mode: A pre-defined configuration mode to use.
         """
         super().__init__()
         try:
@@ -63,6 +72,7 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         except:
             raise cc.CellularSimulatorError('Error when Initializes CMX500.')
 
+        self._config_mode = config_mode
         self.bts = self.cmx.bts
 
     def destroy(self):
@@ -339,6 +349,14 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.bts[1].attach_as_secondary_cell()
         time.sleep(10)
 
+        if self._config_mode and self._config_mode == ConfigurationMode.Power:
+            self.configure_for_power_measurement()
+
+        self.log.info('The radio connectivity is {}'.format(
+            self.cmx.dut.state.radio_connectivity))
+
+    def configure_for_power_measurement(self):
+        """ Applies a pre-defined configuration for PDCCH power testing."""
         self.log.info('set lte cdrx for nr nsa scenario')
         self.bts[0].set_cdrx_config()
         time.sleep(5)
@@ -359,9 +377,6 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.info('Disables Nr UL slots')
         self.bts[1].disable_all_ul_slots()
         time.sleep(5)
-
-        self.log.info('The radio connectivity is {}'.format(
-            self.cmx.dut.state.radio_connectivity))
 
     def wait_until_attached(self, timeout=120):
         """ Waits until the DUT is attached to the primary carrier.
@@ -400,6 +415,15 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.log.info('wait for rrc off state')
         return self.cmx.wait_for_rrc_state(cmx500.RrcState.RRC_OFF, timeout)
+
+    def wait_until_quiet(self, timeout=120):
+        """Waits for all pending operations to finish on the simulator.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        self.cmx._network.apply_changes()
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
