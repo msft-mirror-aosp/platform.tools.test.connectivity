@@ -825,11 +825,12 @@ class GnssFunctionTest(BaseTestClass):
         gutils.stop_pixel_logger(self.ad)
 
     def test_the_diff_of_gps_clock_and_elapsed_realtime_should_be_stable(self):
+        gutils.start_pixel_logger(self.ad)
         with gutils.full_gnss_measurement(self.ad):
             first_fixed_time = gnss_tracking_via_gtw_gpstool(
                 self.ad, criteria=self.supl_cs_criteria, api_type="gnss",
                 testtime=3, meas_flag=True)
-
+        gutils.stop_pixel_logger(self.ad)
         start_time = first_fixed_time + datetime.timedelta(
             seconds=time.timezone + _PPS_KICKIN_WAITING_TIME_IN_SECOND)
         self.ad.log.debug("Start time is %s" % start_time)
