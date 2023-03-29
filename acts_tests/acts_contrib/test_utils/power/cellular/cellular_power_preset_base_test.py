@@ -282,7 +282,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         super().collect_power_data()
         # power measurement results
         odpm_power_results = self.get_odpm_values()
-        self.odpm_power = odpm_power_results.get(self.ODPM_MODEM_CHANNEL_NAME, 0)
+        self.odpm_power = odpm_power_results.get(
+            self.ODPM_MODEM_CHANNEL_NAME.lower(), 0)
         if hasattr(self, 'bitses'):
             self.parse_power_rails_csv()
 
@@ -376,6 +377,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                         # example result of line.strip().split()
                         # ['[VSYS_PWR_DISPLAY]:Display', '1039108.42', 'mWs', '(', '344.69)']
                         channel, _, _, _, delta_str = line.strip().split()
+                        channel = channel.lower()
                         delta = float(delta_str[:-2].strip())
 
                         # calculate OPDM power
@@ -493,7 +495,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                            "the configuration file.".format(self.test_name))
             return
         voltage = self.cellular_test_params['mon_voltage']
-        average_power = self.modem_power if self.modem_power else self.system_power
+        average_power = self.system_power
+        if hasattr(self, 'bitses'):
+            average_power = self.modem_power - self.pcie_power
         average_current = average_power / voltage
         current_threshold = self.threshold[self.test_name]
         acceptable_difference = max(
