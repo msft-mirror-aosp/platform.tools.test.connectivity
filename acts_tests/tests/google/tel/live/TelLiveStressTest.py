@@ -273,8 +273,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.info("Phone VOLTE is enabled successfully.")
             # TODO: b/186865335 Move 5G methods to NR directory
             if self.nsa_5g_for_stress:
-                if not provision_device_for_5g(
-                        self.log, ad, nr_type=self.nr_type):
+                if not provision_device_for_5g(self.log, ad):
                     ad.log.error("Phone failed to attach 5G NSA.")
                     return False
                 ad.log.info("Phone 5G NSA VOLTE is enabled successfully.")
@@ -1362,14 +1361,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     @test_tracker_info(uuid="4212d0e0-fb87-47e5-ba48-9df9a4a6bb9b")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_performance_stress(self):
-        """ Voice Performance stress test"""
+        """ Vocie Performance stress test"""
         return self.performance_tests()
-
-    @test_tracker_info(uuid="a126793e-6e78-4920-a8c4-b382a444c4b7")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_voice_performance_stress_nr(self):
-        """ Voice Performance stress test"""
-        return self.performance_tests(
-            setup_func=self._setup_lte_volte_enabled)
 
     """ Tests End """
