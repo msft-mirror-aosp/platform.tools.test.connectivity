@@ -529,7 +529,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.cellular_simulator.detach()
         self.cellular_dut.toggle_airplane_mode(True)
 
-        self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
+        if self.is_mdstest_supported:
+            self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
 
         # processing result
         self.sponge_upload()
