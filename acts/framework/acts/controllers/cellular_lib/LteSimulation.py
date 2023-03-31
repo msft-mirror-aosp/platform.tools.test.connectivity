@@ -87,7 +87,7 @@ class LteSimulation(BaseSimulation):
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
     # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
     DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
-        'excellent': -75,
+        'excellent': -62,
         'high': -110,
         'medium': -115,
         'weak': -120,
