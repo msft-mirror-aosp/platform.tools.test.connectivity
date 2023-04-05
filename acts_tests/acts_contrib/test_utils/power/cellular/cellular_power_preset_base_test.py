@@ -204,7 +204,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     MODEM_MMWAVE_RAIL_NAME = 'VSYS_PWR_MMWAVE'
 
-    MONSOON_RAIL_NAME = 'Monsoon'
+    MONSOON_RAIL_NAME = 'Monsoon:mW'
 
     # params key
     MONSOON_VOLTAGE_KEY = 'mon_voltage'
@@ -431,7 +431,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                     elif self.MODEM_MMWAVE_RAIL_NAME in railname:
                         self.log.info('%s: %f',railname, power)
                         self.mmwave_power = power
-                    elif self.MONSOON_RAIL_NAME == railname:
+                    elif self.MONSOON_RAIL_NAME in railname:
                         self.log.info('%s: %f',railname, power)
                         self.monsoon_power = power
                     elif self.WEARABLE_POWER_RAIL in railname:
