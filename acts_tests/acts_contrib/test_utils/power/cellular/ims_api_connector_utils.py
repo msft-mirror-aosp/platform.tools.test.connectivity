@@ -295,6 +295,3 @@ class ImsApiConnector:
     # check if dial success (not idle)
     if self._is_line_idle(call_line_idx):
       raise RuntimeError('Fail to dial.')
-
-  def __del__(self):
-    self.remove_ims_app_link()
