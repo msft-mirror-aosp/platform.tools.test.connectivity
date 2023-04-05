@@ -1,7 +1,7 @@
+import json
 import os
 from typing import Optional, List
 import time
-import shlex
 
 from acts import asserts
 from acts import signals
@@ -200,6 +200,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     MODEM_POWER_RAIL_NAME = 'VSYS_PWR_MODEM'
 
+    WEARABLE_POWER_RAIL = 'LTE_DC'
+
     MODEM_MMWAVE_RAIL_NAME = 'VSYS_PWR_MMWAVE'
 
     MONSOON_RAIL_NAME = 'Monsoon'
@@ -397,36 +399,44 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     def parse_power_rails_csv(self):
         kibble_dir = os.path.join(self.root_output_path, 'Kibble')
-        kibble_csv_path = None
+        kibble_json_path = None
         if os.path.exists(kibble_dir):
             for f in os.listdir(kibble_dir):
-                if self.test_name in f and '.csv' in f:
-                    kibble_csv_path = os.path.join(kibble_dir, f)
-                    self.log.info('Kibble csv file path: ' + kibble_csv_path)
+                if self.test_name in f and '.json' in f:
+                    kibble_json_path = os.path.join(kibble_dir, f)
+                    self.log.info('Kibble json file path: ' + kibble_json_path)
                     break
 
         self.log.info('Parsing power rails from csv.')
-        if kibble_csv_path:
-            with open(kibble_csv_path, 'r') as f:
-                for line in f:
-                    # railname,val,mA,val,mV,val,mW
-                    railname, _, _, _, _, power, _ = line.split(',')
+        if kibble_json_path:
+            with open(kibble_json_path, 'r') as f:
+                rails_data_json = json.load(f)
+            if rails_data_json:
+                for record in rails_data_json:
+                    unit = record['unit']
+                    if unit != 'mW':
+                        continue
+                    railname = record['name']
+                    power = record['avg']
                     # parse pcie power
                     if self._is_any_substring(railname, self.MODEM_PCIE_RAIL_NAME_LIST):
-                        self.log.info(railname + ': ' + power)
-                        self.pcie_power += float(power)
+                        self.log.info('%s: %f',railname, power)
+                        self.pcie_power += power
                     elif self.MODEM_POWER_RAIL_NAME in railname:
-                        self.log.info(railname + ': ' + power)
-                        self.modem_power = float(power)
+                        self.log.info('%s: %f',railname, power)
+                        self.modem_power = power
                     elif self._is_any_substring(railname, self.MODEM_RFFE_RAIL_NAME_LIST):
-                        self.log.info(railname + ': ' + power)
-                        self.rffe_power = float(power)
+                        self.log.info('%s: %f',railname, power)
+                        self.rffe_power = power
                     elif self.MODEM_MMWAVE_RAIL_NAME in railname:
-                        self.log.info(railname + ': ' + power)
-                        self.mmwave_power = float(power)
+                        self.log.info('%s: %f',railname, power)
+                        self.mmwave_power = power
                     elif self.MONSOON_RAIL_NAME == railname:
-                        self.log.info(railname + ': ' + power)
-                        self.monsoon_power = float(power)
+                        self.log.info('%s: %f',railname, power)
+                        self.monsoon_power = power
+                    elif self.WEARABLE_POWER_RAIL in railname:
+                        self.log.info('%s: %f',railname, power)
+                        self.modem_power = power
         if self.modem_power:
             self.power_results[self.test_name] = self.modem_power
 
