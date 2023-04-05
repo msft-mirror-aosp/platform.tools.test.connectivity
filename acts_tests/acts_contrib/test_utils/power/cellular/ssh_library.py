@@ -1,15 +1,14 @@
+"""Ssh module for checking status, starting and closing apps."""
 import logging
 import re
-import time
-from typing import Iterable, List
 import paramiko  # type: ignore
 from paramiko.client import SSHClient
 
 _LOG = logging.getLogger(__name__)
 
 
-class SshAppStarter:
-  """Utilities for creating ssh connection, closing and opening apps."""
+class SshLibrary:
+  """Library for creating a ssh connection, closing and opening apps."""
 
   _PSEXEC_PROC_STARTED_REGEX_FORMAT = 'started on * with process ID {proc_id}'
 
@@ -22,20 +21,36 @@ class SshAppStarter:
     self.ssh = self.create_ssh_socket(hostname, username)
 
   def create_ssh_socket(self, hostname: str, username: str) -> SSHClient:
-    """Creates ssh session to host."""
+    """Creates ssh session to host.
 
-    self.log.info('Creating ssh session to %s ' % hostname)
+    Args:
+      hostname: ip address of the host machine
+      username: username of the host ims account
+
+    Returns:
+      An SSHClient object connected the hostname
+    """
+
+    self.log.info('Creating ssh session to hostname:%s ', hostname)
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.load_system_host_keys()
     ssh.connect(hostname=hostname, username=username)
-    self.log.info('SSH client to %s is connected' % hostname)
+    self.log.info('SSH client to hostname:%s is connected', hostname)
     return ssh
 
-  def run_command_paramiko(self, command: str) -> str:
-    """Runs a command using Paramiko and return stdout code."""
+  def run_command_paramiko(self, command: str) -> tuple[str, str, str]:
+    """Runs a command using Paramiko and return stdout code.
 
-    self.log.info('Running command: ' + str(command))
+    Args:
+      command: command to run on the connected host
+
+    Returns:
+      A tuple containing the command result output, error information, and exit
+      status
+    """
+
+    self.log.info('Running command: command:%s', command)
     stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10)
     stdin.close()
     err = ''.join(stderr.readlines())
@@ -47,7 +62,7 @@ class SshAppStarter:
       self.log.error(str(err))
     else:
       self.log.info(str(out))
-    return out, err, exit_status
+    return out, err, str(exit_status)
 
   def close_ssh_connection(self):
     """Closes ssh connection."""
@@ -56,14 +71,33 @@ class SshAppStarter:
     self.ssh.close()
 
   def close_app(self, app: str) -> str:
-    """Closes any app whose name passed as an argument."""
+    """Closes any app whose name passed as an argument.
+
+    Args:
+      app: application name
+
+    Returns:
+      Resulting output of closing the application
+    """
 
     command = self._SSH_KILL_PROCESS_BY_NAME.format(process_name=app)
     result, _, _ = self.run_command_paramiko(command)
     return result
 
   def start_app(self, app: str, location: str) -> str:
-    """Starts any app whose name passed as an argument."""
+    """Starts any app whose name passed as an argument.
+
+    Args:
+      app: application name
+      location: directory location of the application
+
+    Raises:
+      RuntimeError:
+        application failed to start
+
+    Returns:
+      Resulting output of starting the application
+    """
 
     command = self._SSH_START_APP_CMD_FORMAT.format(exe_path=location + app)
     results, err, exit_status = self.run_command_paramiko(command)
@@ -73,12 +107,19 @@ class SshAppStarter:
         err[-1],
     )
     if id_in_err:
-      raise RuntimeError('Fail to start app: ' + out + err)
+      raise RuntimeError('Fail to start app: ' + results + err)
 
     return results
 
   def check_app_running(self, app: str) -> bool:
-    """Checks if the given app is running"""
+    """Checks if the given app is running.
+
+    Args:
+      app: application name
+
+    Returns:
+      A boolean representing if the application is running or not
+    """
     is_running_cmd1 = self._SSH_CHECK_APP_RUNNING_CMD_FORMAT.format(
         regex_app_name=app
     )
@@ -89,7 +130,4 @@ class SshAppStarter:
     # Sometimes app is run as .ex instead of .exe
     result1, _, _ = self.run_command_paramiko(is_running_cmd1)
     result2, _, _ = self.run_command_paramiko(is_running_cmd2)
-    return result1 != '' or result2 != ''
-
-  def __del__(self):
-    self.close_ssh_connection()
+    return bool(result1 or result2)

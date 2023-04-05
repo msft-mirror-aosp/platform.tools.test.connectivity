@@ -16,6 +16,7 @@
 import time
 
 from acts_contrib.test_utils.power.cellular.ims_api_connector_utils import ImsApiConnector
+from acts_contrib.test_utils.power.cellular.ims_api_connector_utils import ImsAppName
 from acts_contrib.test_utils.tel.tel_test_utils import set_phone_silent_mode
 import acts_contrib.test_utils.power.cellular.cellular_power_preset_base_test as PB
 
@@ -85,16 +86,19 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         self.ims_client = ImsApiConnector(
             self.uxm_ip,
             self.api_connector_port,
-            self.IMS_CLIENT,
-            self.api_token,
-            self.ims_client_ip,
-            self.ims_client_port,
-            self.log
+            ImsAppName.CLIENT
+        )
+
+        self.ims_server = ImsApiConnector(
+            self.uxm_ip,
+            self.api_connector_port,
+            ImsAppName.SERVER
         )
 
     def setup_test(self):
         # Enable NR if it is VoNR test case
         self.log.info(f'test name: {self.test_name}')
+        self.ims_server.restart_server()
         if 'NR' in self.test_name:
             self.log.info('Enable VoNR for UE.')
             self.at_util.enable_ims_nr()
@@ -140,7 +144,8 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
 
     def teardown_class(self):
         super().teardown_class()
-        self.ims_client.remove_ims_app_link()
+        self.ims_client.tear_down()
+        self.ims_server.tear_down()
         self.log.info('Disable IMS.')
         self.dut.adb.shell(self.ADB_CMD_DISABLE_IMS)
 
