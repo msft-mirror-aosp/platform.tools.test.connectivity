@@ -137,10 +137,10 @@ class PowerTelImsPresetTest(PB.PowerCellularPresetLabBaseTest):
         # End the call
         self.log.info('Hangup.')
         self.ims_client.hangup_call()
-        self.ims_client.remove_ims_app_link()
 
     def teardown_class(self):
         super().teardown_class()
+        self.ims_client.remove_ims_app_link()
         self.log.info('Disable IMS.')
         self.dut.adb.shell(self.ADB_CMD_DISABLE_IMS)
 
