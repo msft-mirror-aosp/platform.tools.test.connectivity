@@ -225,6 +225,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     ADB_CMD_TOGGLE_MODEM_LOG = 'setprop persist.vendor.sys.modem.logging.enable {state}'
 
+    _ADB_GET_ACTIVE_NETWORK = ('dumpsys connectivity | '
+                             'grep \'Active default network\'')
+
     def __init__(self, controllers):
         super().__init__(controllers)
         self.retryable_exceptions = signals.TestFailure
@@ -530,7 +533,21 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             asserts.fail(
                 'Something happened, measurement is not complete, test failed')
 
+    def _get_device_network(self) -> str:
+        """Get active network on device.
+
+        Returns:
+        Information of active network in string.
+        """
+        return self.dut.adb.shell(
+            self._ADB_GET_ACTIVE_NETWORK)
+
     def teardown_test(self):
+        self.log.info('===>Before test end info.<====')
+        cells_status = self.cellular_simulator.get_all_cell_status()
+        self.log.info('UXM cell status: %s', cells_status)
+        active_network = self._get_device_network()
+        self.log.info('Device network: %s', active_network)
         super().teardown_test()
         # restore device to ready state for next test
         if not self.is_wifi_only_device:
