@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, List
 import time
 from acts import context
 from acts import signals
@@ -25,6 +25,10 @@ class AtUtil():
         res = str(self.dut.adb.shell(cmd))
         self.log.info(f'cmd sent: {cmd}')
         self.log.info(f'response: {res}')
+        if 'SUCCESS' in res:
+            self.log.info('Command executed.')
+        else:
+            self.log.error('Fail to executed command.')
         return res
 
     def lock_LTE(self):
@@ -88,19 +92,27 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     CUSTOM_PROP_KEY_TEST_NAME = 'test_name'
     CUSTOM_PROP_KEY_MODEM_KIBBLE_WO_PCIE_POWER = 'modem_kibble_power_wo_pcie'
     CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER = 'modem_kibble_pcie_power'
-
+    CUSTOM_PROP_KEY_RFFE_POWER = 'rffe_power'
+    CUSTOM_PROP_KEY_MMWAVE_POWER = 'mmwave_power'
     # kibble report
     KIBBLE_SYSTEM_RECORD_NAME = '- name: default_device.C10_EVT_1_1.Monsoon:mA'
-    MODEM_PCIE_RAIL_LIST = [
-        'C4_23__PP1800_L2C_PCIEG3',
-        'C2_23__PP1200_L9C_PCIE',
-        'C2_06__PP0850_L8C_PCIE'
+    MODEM_PCIE_RAIL_NAME_LIST = [
+        'PP1800_L2C_PCIEG3',
+        'PP1200_L9C_PCIE',
+        'PP0850_L8C_PCIE'
     ]
 
-    MODEM_RAIL_LIST = [
-        'C1_43__VSENSE_VSYS_PWR_MODEM',
-        'C1_43__VSYS_PWR_MODEM'
+    MODEM_RFFE_RAIL_NAME_LIST = [
+        'PP1200_L31C_RFFE',
+        'VSYS_PWR_RFFE',
+        'PP2800_L33C_RFFE'
     ]
+
+    MODEM_POWER_RAIL_NAME = 'VSYS_PWR_MODEM'
+
+    MODEM_MMWAVE_RAIL_NAME = 'VSYS_PWR_MMWAVE'
+
+    MONSOON_RAIL_NAME = 'Monsoon'
 
     # params key
     MONSOON_VOLTAGE_KEY = 'mon_voltage'
@@ -115,6 +127,12 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
     def __init__(self, controllers):
         super().__init__(controllers)
         self.retryable_exceptions = signals.TestFailure
+        self.power_rails = {}
+        self.pcie_power = 0
+        self.rffe_power = 0
+        self.mmwave_power = 0
+        self.modem_power = 0
+        self.monsoon_power = 0
 
     def setup_class(self):
         super().setup_class()
@@ -133,7 +151,11 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         is_txas_disabled = self.at_util.disable_txas()
         self.log.info('Disable txas: ' + str(is_txas_disabled))
 
+        # get sim type
+        self.unpack_userparams(has_3gpp_sim=True)
+
     def setup_test(self):
+        self.cellular_simulator.set_sim_type(self.has_3gpp_sim)
         try:
             if 'LTE' in self.test_name:
                 self.at_util.lock_LTE()
@@ -156,10 +178,16 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         #     raise signals.TestError('Device reboot mid test, retry needed.')
 
     def install_apk(self):
+        sleep_time = 3
         for file in self.custom_files:
             if self.MDSTEST_APP_APK_NAME in file:
-                self.log.info('Found mdstest apk: ' + file)
-                self.cellular_dut.ad.adb.install(file)
+                if not self.cellular_dut.ad.is_apk_installed("com.google.mdstest"):
+                    self.cellular_dut.ad.adb.install("-r -g %s" % file, timeout=300, ignore_status=True)
+        time.sleep(sleep_time)
+        if self.cellular_dut.ad.is_apk_installed("com.google.mdstest"):
+            self.log.info('mdstest installed.')
+        else:
+            self.log.warning('fail to install mdstest.')
 
     def set_nv(self, nv_name, index, value):
         cmd = self.ADB_CMD_SET_NV.format(
@@ -274,66 +302,44 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                         )
         return odpm_power_results
 
-    def get_system_power(self):
-        """Parsing system power from test_run_debug file.
+    def _is_any_substring(self, longer_word: str, word_list: List[str]) -> bool:
+        """Check if any word in word list a substring of a longer word."""
+        return any(w in longer_word for w in word_list)
 
-        Kibble measurements are available in test_run_debug.
-        This frunction iterates through test_run_debug file
-        to get system power.
-        Returns:
-            kibble_system_power: system power value in mW.
-        """
-        kibble_system_power = 0
-
-        # getting system power if kibble is on
-        context_path = context.get_current_context().get_full_output_path()
-        test_run_debug_log_path = os.path.join(
-            context_path, 'test_run_debug.txt'
-        )
-        self.log.debug('test_run_debug path: ' + test_run_debug_log_path)
-        with open(test_run_debug_log_path, 'r') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                if self.KIBBLE_SYSTEM_RECORD_NAME in line:
-                    value_line = f.readline()
-                    system_power_str = value_line.split(':')[1].strip()
-                    monsoon_voltage = self.test_params[self.MONSOON_VOLTAGE_KEY]
-                    kibble_system_power = float(system_power_str) * monsoon_voltage
-                    break
-        return kibble_system_power
-
-    def get_modem_pcie_power(self):
-        """Get PCIE MODEM values from kibble csv."""
-        modem_pcie_power = 0
-        # find kibble rail data csv file path.
+    def parse_power_rails_csv(self):
         kibble_dir = os.path.join(self.root_output_path, 'Kibble')
+        kibble_csv_path = None
         if os.path.exists(kibble_dir):
-            kibble_csv_path = None
             for f in os.listdir(kibble_dir):
                 if self.test_name in f and '.csv' in f:
                     kibble_csv_path = os.path.join(kibble_dir, f)
                     self.log.info('Kibble csv file path: ' + kibble_csv_path)
                     break
 
-        # parsing modem pcie power rails.
-        self.log.info('Parsing MODEM PCIE power.')
-        modem_rail = 0
+        self.log.info('Parsing power rails from csv.')
         if kibble_csv_path:
             with open(kibble_csv_path, 'r') as f:
                 for line in f:
                     # railname,val,mA,val,mV,val,mW
                     railname, _, _, _, _, power, _ = line.split(',')
-                    if railname in self.MODEM_PCIE_RAIL_LIST:
+                    # parse pcie power
+                    if self._is_any_substring(railname, self.MODEM_PCIE_RAIL_NAME_LIST):
                         self.log.info(railname + ': ' + power)
-                        modem_pcie_power += float(power)
-                    elif railname in self.MODEM_RAIL_LIST:
+                        self.pcie_power += float(power)
+                    elif self.MODEM_POWER_RAIL_NAME in railname:
                         self.log.info(railname + ': ' + power)
-                        modem_rail = float(power)
-        if modem_rail:
-            self.power_results[self.test_name] = modem_rail
-        return modem_pcie_power
+                        self.modem_power = float(power)
+                    elif self._is_any_substring(railname, self.MODEM_RFFE_RAIL_NAME_LIST):
+                        self.log.info(railname + ': ' + power)
+                        self.rffe_power = float(power)
+                    elif self.MODEM_MMWAVE_RAIL_NAME in railname:
+                        self.log.info(railname + ': ' + power)
+                        self.mmwave_power = float(power)
+                    elif self.MONSOON_RAIL_NAME == railname:
+                        self.log.info(railname + ': ' + power)
+                        self.monsoon_power = float(power)
+        if self.modem_power:
+            self.power_results[self.test_name] = self.modem_power
 
     def sponge_upload(self):
         """Upload result to sponge as custom field."""
@@ -364,20 +370,15 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         odpm_power_results = self.get_odpm_values()
         odpm_power = odpm_power_results.get(self.ODPM_MODEM_CHANNEL_NAME, 0)
         system_power = 0
-        modem_kibble_power = 0
 
         # if kibbles are using, get power from kibble
+        modem_kibble_power_wo_pcie = 0
         if hasattr(self, 'bitses'):
-            # modem kibble power without pcie
-            modem_kibble_power_wo_pcie = 0
-            modem_pcie = 0
-            modem_pcie = self.get_modem_pcie_power()
-            modem_kibble_power = self.power_results.get(self.test_name, None)
-            modem_kibble_power_wo_pcie = modem_kibble_power - modem_pcie
-            system_power = self.get_system_power()
+            self.parse_power_rails_csv()
+            modem_kibble_power_wo_pcie = self.modem_power - self.pcie_power
+            system_power = self.monsoon_power
         else:
-            system_power = self.power_results.get(self.test_name, None)
-
+            system_power = self.power_results.get(self.test_name, 0)
 
         self.record_data({
             'Test Name': self.test_name,
@@ -390,19 +391,24 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                 self.CUSTOM_PROP_KEY_MODEM_ODPM_POWER: odpm_power,
                 self.CUSTOM_PROP_KEY_DEVICE_NAME: device_name,
                 self.CUSTOM_PROP_KEY_DEVICE_BUILD_PHASE: device_build_phase,
-                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER: modem_kibble_power,
+                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_POWER: self.modem_power,
                 self.CUSTOM_PROP_KEY_TEST_NAME: test_name_for_sponge,
                 self.CUSTOM_PROP_KEY_MODEM_KIBBLE_WO_PCIE_POWER: modem_kibble_power_wo_pcie,
-                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER: modem_pcie
+                self.CUSTOM_PROP_KEY_MODEM_KIBBLE_PCIE_POWER: self.pcie_power,
+                self.CUSTOM_PROP_KEY_RFFE_POWER: self.rffe_power,
+                self.CUSTOM_PROP_KEY_MMWAVE_POWER: self.mmwave_power
             },
         })
 
     def teardown_test(self):
         super().teardown_test()
+        # restore device to ready state for next test
         self.log.info('Enable mobile data.')
         self.dut.adb.shell('svc data enable')
         self.cellular_simulator.detach()
         self.cellular_dut.toggle_airplane_mode(True)
+
+        # processing result
         self.sponge_upload()
         if 'LTE' in self.test_name:
             self.at_util.clear_lock_band()

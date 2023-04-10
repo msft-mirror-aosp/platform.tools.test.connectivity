@@ -85,11 +85,12 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
         self.log.info('setup nsa scenario (start lte cell and nr cell')
         self.cmx.switch_on_nsa_signalling()
 
-    def set_band_combination(self, bands):
-        """ Prepares the test equipment for the indicated band combination.
+    def set_band_combination(self, bands, mimo_modes):
+        """ Prepares the test equipment for the indicated band/mimo combination.
 
         Args:
             bands: a list of bands represented as ints or strings
+            mimo_modes: a list of LteSimulation.MimoMode to use for each carrier
         """
         self.num_carriers = len(bands)
 

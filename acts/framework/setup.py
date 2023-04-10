@@ -23,6 +23,9 @@ from setuptools.command import test
 import sys
 
 install_requires = [
+    # Require an older version of setuptools that does not enforce PEP 440.
+    # This must be added first.
+    'setuptools<66.0.0',
     'backoff',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',

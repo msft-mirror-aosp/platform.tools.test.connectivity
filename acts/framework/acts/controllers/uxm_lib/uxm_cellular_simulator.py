@@ -129,10 +129,9 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     PSEXEC_PROC_STARTED_REGEX_FORMAT = 'started on * with process ID {proc_id}'
 
     # HCCU default value
-    HHCU_SOCKET_PORT = 4882
-    HHCU_FR1_SETUP_NAME = ''
+    HCCU_SOCKET_PORT = 4882
     # number of digit of the length of setup name
-    HHCU_SCPI_CHANGE_SETUP_CMD = ':SYSTem:SETup:CONFig #{number_of_digit}{setup_name_len}{setup_name}'
+    HCCU_SCPI_CHANGE_SETUP_CMD = ':SYSTem:SETup:CONFig #{number_of_digit}{setup_name_len}{setup_name}'
     HCCU_SCPI_CHANGE_SCENARIO_CMD = ':SETup:SCENe "((NE_1, {scenario_name}))"'
     HCCU_STATUS_CHECK_CMD = ':SETup:INSTrument:STATus? 0\n'
     HCCU_FR2_SETUP_NAME = '{Name:"TSPC_1UXM5G_HF_2RRH_M1740A"}'
@@ -182,7 +181,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.timeout = 120
 
         # hccu socket
-        self.hccu_socket_port = self.HHCU_SOCKET_PORT
+        self.hccu_socket_port = self.HCCU_SOCKET_PORT
         self.hccu_socket = SocketWrapper(self.uxm_ip, self.hccu_socket_port)
 
     def socket_connect(self):
@@ -206,7 +205,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         """
         setup_name_len = str(len(setup_name))
         number_of_digit = str(len(setup_name_len))
-        cmd = self.HHCU_SCPI_CHANGE_SETUP_CMD.format(
+        cmd = self.HCCU_SCPI_CHANGE_SETUP_CMD.format(
             number_of_digit=number_of_digit,
             setup_name_len=setup_name_len,
             setup_name=setup_name
@@ -215,7 +214,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         self.log.debug(f'Sent command: {cmd}')
         # this is require for the command to take effect
         # because hccu's port need to be free.
-        self.hccu_socket.close
+        self.hccu_socket.close()
 
     def wait_until_hccu_operational(self, timeout=1200):
         """ Wait for hccu is ready to operate for a specified timeout.
@@ -564,6 +563,17 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         # Restart SL4A
         dut.ad.start_services()
 
+    def set_sim_type(self, is_3gpp_sim):
+        sim_type = 'KEYSight'
+        if is_3gpp_sim:
+            sim_type = 'TEST3GPP'
+        self._socket_send_SCPI_command(
+            self.SCPI_CHANGE_SIM_NR_CMD.format(sim_type))
+        time.sleep(2)
+        self._socket_send_SCPI_command(
+            self.SCPI_CHANGE_SIM_LTE_CMD.format(sim_type))
+        time.sleep(2)
+
     def wait_until_attached_one_cell(self,
                                      cell_type,
                                      cell_number,
@@ -590,14 +600,6 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         Raise:
             RuntimeError: device unable to connect to cell.
         """
-        sim_type = 'TEST3GPP'
-        self._socket_send_SCPI_command(
-            self.SCPI_CHANGE_SIM_NR_CMD.format(sim_type))
-        time.sleep(2)
-        self._socket_send_SCPI_command(
-            self.SCPI_CHANGE_SIM_LTE_CMD.format(sim_type))
-        time.sleep(2)
-
         # airplane mode on
         dut.toggle_airplane_mode(True)
         time.sleep(5)
@@ -631,8 +633,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                     time.sleep(5)
                 count += interval
 
-            # reboot device on every fourth try
-            if (index % 3) == 0:
+            # reboot device
+            if (index % 2) == 0:
                 dut.ad.reboot()
                 if self.rockbottom_script:
                     self.dut_rockbottom(dut)
@@ -641,7 +643,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                         f'Rockbottom script was not executed after reboot.'
                     )
             # toggle APM and cell on/off
-            elif (index % 2) == 0:
+            elif (index % 1) == 0:
                 # Toggle APM on
                 dut.toggle_airplane_mode(True)
                 time.sleep(5)

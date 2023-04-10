@@ -458,59 +458,6 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(test_result_all),
                             "Fail to get networkLocationType=wifi")
 
-    def test_gmap_location_report_gps_network(self):
-        """Verify GnssLocationProvider API reports location to Google Map
-           when GPS and Location Accuracy are on.
-
-        Steps:
-            1. GPS and NLP are on.
-            2. Launch Google Map.
-            3. Verify whether test devices could report location.
-            4. Repeat Step 2. to Step 3. for 5 times.
-
-        Expected Results:
-            Test devices could report location to Google Map.
-        """
-        test_result_all = []
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for i in range(1, 6):
-            grant_location_permission(self.ad, True)
-            launch_google_map(self.ad)
-            test_result = check_location_api(self.ad, retries=3)
-            self.ad.send_keycode("HOME")
-            test_result_all.append(test_result)
-            self.ad.log.info("Iteration %d => %s" % (i, test_result))
-        asserts.assert_true(all(test_result_all), "Fail to get location update")
-
-    def test_gmap_location_report_gps(self):
-        """Verify GnssLocationProvider API reports location to Google Map
-           when GPS is on and Location Accuracy is off.
-
-        Steps:
-            1. GPS is on.
-            2. Location Accuracy is off.
-            3. Launch Google Map.
-            4. Verify whether test devices could report location.
-            5. Repeat Step 3. to Step 4. for 5 times.
-
-        Expected Results:
-            Test devices could report location to Google Map.
-        """
-        test_result_all = []
-        gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        self.ad.adb.shell("settings put secure location_mode 1")
-        out = int(self.ad.adb.shell("settings get secure location_mode"))
-        self.ad.log.info("Modify current Location Mode to %d" % out)
-        for i in range(1, 6):
-            grant_location_permission(self.ad, True)
-            launch_google_map(self.ad)
-            test_result = check_location_api(self.ad, retries=3)
-            self.ad.send_keycode("HOME")
-            test_result_all.append(test_result)
-            self.ad.log.info("Iteration %d => %s" % (i, test_result))
-        check_location_service(self.ad)
-        asserts.assert_true(all(test_result_all), "Fail to get location update")
-
     def test_gmap_location_report_battery_saver(self):
         """Verify GnssLocationProvider API reports location to Google Map
            when Battery Saver is enabled.

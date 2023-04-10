@@ -32,6 +32,8 @@ from acts.utils import start_standing_subprocess
 from acts.utils import wait_for_standing_subprocess
 from acts_contrib.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts_contrib.test_utils.tel.tel_defines import CARRIER_TEST_CONF_XML_PATH
+from acts_contrib.test_utils.tel.tel_defines import NO_SOUND_TIME
+from acts_contrib.test_utils.tel.tel_defines import NO_VIBRATION_TIME
 from acts_contrib.test_utils.tel.tel_defines import UK_EE
 from acts_contrib.test_utils.tel.tel_defines import COLUMBIA_TELEFONICA
 from acts_contrib.test_utils.tel.tel_defines import JAPAN_EMOBILE
@@ -593,6 +595,14 @@ class CellBroadcastTest(TelephonyBaseTest):
             sound_time = value.get("sound_time", DEFAULT_SOUND_TIME)
             offset = value.get("offset", DEFAULT_OFFSET)
             alert_type = value.get("alert_type", DEFAULT_ALERT_TYPE)
+            if sound_time == NO_SOUND_TIME:
+                ad.log.info("Skip the verification of sound time because no sound time"
+                            + " is defined for the channel!")
+                self.verify_sound = False
+            if vibration_time == NO_VIBRATION_TIME:
+                ad.log.info("Skip the verification of vibration time because no vibration time"
+                            + " is defined for the channel!")
+                self.verify_vibration = False
 
             # Begin Iteration
             begintime = self._get_current_time_in_secs(ad)
