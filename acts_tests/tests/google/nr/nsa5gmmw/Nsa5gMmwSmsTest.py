@@ -332,4 +332,151 @@ class Nsa5gMmwSmsTest(TelephonyBaseTest):
                             mt_rat='5g_nsa_mmwave',
                             long_msg=True)
 
+    @test_tracker_info(uuid="bee8b263-fe61-4a5c-a857-eb849426f0c7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_sms_mo_mt_in_call_volte(self):
+        """ Test MO SMS during a MO VoLTE call over 5G NSA MMW.
+
+        Provision devices on VoLTE
+        Provision devices in 5g NSA MMW
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify both devices are still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(self.log,
+                            self.android_devices[0],
+                            self.android_devices[1],
+                            mo_rat='5g_nsa_mmw_volte',
+                            mt_rat='5g_nsa_mmw_volte',
+                            msg_in_call=True)
+
+    @test_tracker_info(uuid="1a5ca91a-91f6-4b5d-b4b9-f436bb3870ff")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_sms_mo_in_call_volte(self):
+        """ Test MO SMS during a MO VoLTE call over 5G NSA MMW.
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA MMW
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(self.log,
+                            self.android_devices[0],
+                            self.android_devices[1],
+                            mo_rat='5g_nsa_mmw_volte',
+                            mt_rat='default',
+                            msg_in_call=True)
+
+    @test_tracker_info(uuid="8a334ce7-a431-4fdc-bd65-f094d5ae727b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_sms_mt_in_call_volte(self):
+        """ Test MT SMS during a MT VoLTE call over 5G NSA.
+
+        Provision PhoneA on VoLTE
+        Provision PhoneA in 5g NSA MMW
+        Make a Voice call from PhoneB to PhoneA
+        Send and Verify SMS from PhoneB to PhoneA
+        Verify phoneA is still on 5g NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return message_test(self.log,
+                            self.android_devices[1],
+                            self.android_devices[0],
+                            mo_rat='default',
+                            mt_rat='5g_nsa_mmw_volte',
+                            msg_in_call=True)
+
+    @test_tracker_info(uuid="ff29b86c-df34-4c6e-b880-baa321442fcf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_sms_mo_mt_iwlan(self):
+        """ Test SMS text function between two phones,
+        Phones in APM, WiFi connected, WFC Cell Preferred mode.
+
+        Disable APM on both devices
+        Provision devices in 5g NSA MMW
+        Provision devices for WFC Cell Pref with APM ON
+        Send and Verify SMS from PhoneA to PhoneB
+
+        Returns:
+            True if pass; False if fail.
+        """
+        apm_mode = [
+            toggle_airplane_mode(self.log, ad, False)
+            for ad in self.android_devices
+        ]
+        return message_test(self.log,
+                            self.android_devices[0],
+                            self.android_devices[1],
+                            mo_rat='5g_nsa_mmw_wfc',
+                            mt_rat='5g_nsa_mmw_wfc',
+                            is_airplane_mode=True,
+                            wfc_mode=WFC_MODE_CELLULAR_PREFERRED,
+                            wifi_ssid=self.wifi_network_ssid,
+                            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="010a85d9-84d5-4893-aa43-478490bbf03c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_sms_mo_mt_iwlan_apm_off(self):
+        """ Test MO SMS, Phone in APM off, WiFi connected, WFC WiFi Preferred mode.
+
+        Disable APM on both devices
+        Provision devices in 5g NSA MMW
+        Provision devices for WFC Wifi Pref with APM OFF
+        Send and Verify SMS from PhoneA to PhoneB
+        Verify 5g NSA MMW attach for both devices
+
+        Returns:
+            True if pass; False if fail.
+        """
+        apm_mode = [
+            toggle_airplane_mode(self.log, ad, False)
+            for ad in self.android_devices
+        ]
+        return message_test(self.log,
+                            self.android_devices[0],
+                            self.android_devices[1],
+                            mo_rat='5g_nsa_mmw_wfc',
+                            mt_rat='5g_nsa_mmw_wfc',
+                            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+                            wifi_ssid=self.wifi_network_ssid,
+                            wifi_pwd=self.wifi_network_pass)
+
+    @test_tracker_info(uuid="40c11bd3-e0a2-46f9-b7f0-ccb8366e85b7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_mmw_sms_mo_mt_in_call_iwlan(self):
+        """ Test MO SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+
+        Disable APM on both devices
+        Provision devices in 5g NSA MMW
+        Provision devices for WFC Wifi Pref with APM ON
+        Make a Voice call from PhoneA to PhoneB
+        Send and Verify SMS from PhoneA to PhoneB
+
+        Returns:
+            True if pass; False if fail.
+        """
+        apm_mode = [
+            toggle_airplane_mode(self.log, ad, False)
+            for ad in self.android_devices
+        ]
+        return message_test(self.log,
+                            self.android_devices[0],
+                            self.android_devices[1],
+                            mo_rat='5g_nsa_mmw_wfc',
+                            mt_rat='5g_nsa_mmw_wfc',
+                            msg_in_call=True,
+                            is_airplane_mode=True,
+                            wfc_mode=WFC_MODE_WIFI_PREFERRED,
+                            wifi_ssid=self.wifi_network_ssid,
+                            wifi_pwd=self.wifi_network_pass)
+
     """ Tests End """
