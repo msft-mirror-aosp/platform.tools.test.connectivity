@@ -14,11 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from collections import defaultdict
 import datetime
 import os
 import re
 import time
+import functools
 import fnmatch
+from statistics import mean
 
 from acts import asserts
 from acts import signals
@@ -75,6 +78,7 @@ class GnssFunctionTest(BaseTestClass):
                       "supl_hs_criteria",
                       "standalone_cs_criteria",
                       "wearable_reboot_hs_criteria",
+                      "first_satellite_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "gnss_init_error_list",
@@ -288,44 +292,87 @@ class GnssFunctionTest(BaseTestClass):
         asserts.assert_true(all(overall_test_result),
                             "SUPL fail after system server restart.")
 
-    def test_cs_ttff_after_gps_service_restart(self):
-        """Verify cs ttff after modem silent reboot / GPS daemons restart.
+    def test_recovery_and_location_time_after_gnss_services_restart(self):
+        """Verify gpsd recover time after gpsd being killed.
 
         Steps:
-            1. Trigger modem crash by adb/Restart GPS daemons by killing PID.
-            2. Wait 1 minute for modem to recover.
-            3. TTFF Cold Start for 3 iteration.
-            4. Repeat Step 1. to Step 3. for 5 times.
+            1. Start GPS tracking
+            2. Restart GPS daemons by killing PID.
+            3. Waiting for GPS service to restart
+            4. Waiting for the first fixed
+            4. Re-run steps 1~4 for 5 times.
 
         Expected Results:
-            All SUPL TTFF Cold Start results should be within supl_cs_criteria.
+            1. The time GPSd services take to restart must be within 3 seconds.
+            2. Location fix time must be within supl_hs_criteria
         """
-        supl_ssr_test_result_all = []
+        test_times = 5
         gutils.start_qxdm_and_tcpdump_log(self.ad, self.collect_logs)
-        for times in range(1, 6):
-            begin_time = get_current_epoch_time()
-            if gutils.check_chipset_vendor_by_qualcomm(self.ad):
-                test_info = "Modem SSR"
-                gutils.gnss_trigger_modem_ssr_by_mds(self.ad)
-            else:
-                test_info = "restarting GPS daemons"
-                gutils.restart_gps_daemons(self.ad)
-            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                                expected_state=True):
-                raise signals.TestFailure("Fail to connect to LTE network.")
-            gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    self.pixel_lab_location)
-            supl_ssr_test_result = gutils.check_ttff_data(
-                self.ad, ttff_data, ttff_mode="Cold Start",
-                criteria=self.supl_cs_criteria)
-            self.ad.log.info("SUPL after %s test %d times -> %s" % (
-                test_info, times, supl_ssr_test_result))
-            supl_ssr_test_result_all.append(supl_ssr_test_result)
+        satellite_times = defaultdict(list)
+        location_fix_times = defaultdict(list)
 
-        asserts.assert_true(all(supl_ssr_test_result_all),
-                            "TTFF fails to reach designated criteria")
+        killed_processes, _restart_gps_daemons = (gutils.
+                                                  get_gps_process_and_kill_function_by_vendor(
+                                                      self.ad))
+        for time in range(1, test_times+1):
+            self.ad.log.info("Performing test times %d", time)
+            first_fixed_time = process_gnss_by_gtw_gpstool(
+                self.ad,
+                criteria=self.supl_hs_criteria,
+                clear_data=False)
+
+            begin_time = int(first_fixed_time.timestamp() * 1000)
+            self.ad.log.info("Start tracking")
+            gutils.wait_n_mins_for_gnss_tracking(self.ad,
+                                                 begin_time,
+                                                 testtime=0.25,
+                                                 ignore_hal_crash=False)
+
+
+            for num, process in enumerate(killed_processes):
+                kill_start_time = _restart_gps_daemons(service=process)
+                first_gpsd_update_time = (gutils.get_gpsd_update_time(
+                    self.ad,
+                    kill_start_time))
+                self.ad.log.info("Resume tracking ... ")
+                gutils.wait_n_mins_for_gnss_tracking(self.ad,
+                                                     begin_time,
+                                                     testtime=num+0.5,
+                                                     ignore_hal_crash=True)
+
+                location_fix_time = (gutils.
+                                     get_location_fix_time_via_gpstool_log(
+                                         self.ad, first_gpsd_update_time))
+
+                satellite_times[process].append(first_gpsd_update_time - kill_start_time)
+                location_fix_times[process].append(location_fix_time - first_gpsd_update_time)
+                # gpsd recovery time : Time between gpsd killed to first satellite update.
+                self.ad.log.info("%s recovery time : %d ms",
+                                 process, (first_gpsd_update_time - kill_start_time))
+                # TTFF Hot Start : Time between first satellite update to first location fix.
+                self.ad.log.info("TTFF Hot Start %d ms",
+                                 (location_fix_time - first_gpsd_update_time))
+            start_gnss_by_gtw_gpstool(self.ad, state=False)
+
+        for num, process in enumerate(killed_processes):
+            prop_basename = gutils.UPLOAD_TO_SPONGE_PREFIX + f"{process}_recovery_time_"
+            self.ad.log.info(prop_basename + "AVG %d",
+                             mean(satellite_times[process]))
+            self.ad.log.info(prop_basename + "MAX %d",
+                             max(satellite_times[process]))
+            prop_basename = gutils.UPLOAD_TO_SPONGE_PREFIX + f"{process}_ttff_hs_"
+            self.ad.log.info(prop_basename + "AVG %d",
+                             mean(location_fix_times[process]))
+            self.ad.log.info(prop_basename + "MAX %d",
+                             max(location_fix_times[process]))
+            asserts.assert_true(mean(satellite_times[process])/1000 <=
+                                self.first_satellite_criteria,
+                                f"{process} takes more than {self.first_satellite_criteria}"
+                                "seconds in average to recover")
+            asserts.assert_true(mean(location_fix_times[process])/1000 <=
+                                self.supl_hs_criteria,
+                                f"Location fix time is more than {self.supl_hs_criteria}"
+                                "seconds in average")
 
     def test_gnss_one_hour_tracking(self):
         """Verify GNSS tracking performance of signal strength and position
