@@ -707,7 +707,7 @@ class MD8475BCellularSimulator(MD8475CellularSimulator):
     LTE_MAX_CARRIERS = 4
 
     # The maximum power that the equipment is able to transmit
-    MAX_DL_POWER = -30
+    MAX_DL_POWER = -10
 
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
