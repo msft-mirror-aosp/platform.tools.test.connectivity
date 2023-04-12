@@ -91,8 +91,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     """A cellular simulator for UXM callbox."""
 
     # Keys to obtain data from cell_info dictionary.
-    KEY_CELL_NUMBER = "cell_number"
-    KEY_CELL_TYPE = "cell_type"
+    _KEY_CELL_NUMBER = "cell_number"
+    _KEY_CELL_TYPE = "cell_type"
 
     # UXM socket port
     UXM_SOCKET_PORT = 5125
@@ -399,7 +399,7 @@ class UXMCellularSimulator(AbstractCellularSimulator):
         It is required to create a dedicated bearer setup
         with EPS bearer ID 10.
         """
-        cell_number = self.cells[0][self.KEY_CELL_NUMBER]
+        cell_number = self.cells[0][self._KEY_CELL_NUMBER]
         self._socket_send_SCPI_command(
                 self.SCPI_CREATE_DEDICATED_BEARER.format(cell_number))
 
@@ -432,6 +432,20 @@ class UXMCellularSimulator(AbstractCellularSimulator):
             raise ValueError('Invalid cell info\n' +
                              f' cell type: {cell_type}\n' +
                              f' cell number: {cell_number}\n')
+
+    def get_all_cell_status(self):
+        """Gets status of all cells.
+
+        Returns:
+        List of tuples which has values (cell_type, cell_number, cell_status)
+        """
+        res = []
+        for cell in self.cells:
+            cell_type = cell[self._KEY_CELL_TYPE]
+            cell_number = cell[self._KEY_CELL_NUMBER]
+            cell_status = self.get_cell_status(cell_type, cell_number)
+            res.append((cell_type, cell_number, cell_status))
+        return res
 
     def get_cell_status(self, cell_type, cell_number):
         """Get status of cell.
@@ -654,11 +668,11 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 to connect to 1 basestation.
         """
         # get cell info
-        first_cell_type = self.cells[0][self.KEY_CELL_TYPE]
-        first_cell_number = self.cells[0][self.KEY_CELL_NUMBER]
+        first_cell_type = self.cells[0][self._KEY_CELL_TYPE]
+        first_cell_number = self.cells[0][self._KEY_CELL_NUMBER]
         if len(self.cells) == 2:
-            second_cell_type = self.cells[1][self.KEY_CELL_TYPE]
-            second_cell_number = self.cells[1][self.KEY_CELL_NUMBER]
+            second_cell_type = self.cells[1][self._KEY_CELL_TYPE]
+            second_cell_number = self.cells[1][self._KEY_CELL_NUMBER]
 
         # connect to 1st cell
         self.wait_until_attached_one_cell(first_cell_type,
@@ -928,8 +942,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
                 CellularSimulatorError exception. Default is 120 seconds.
         """
         # turn on RRC release
-        cell_type = self.cells[0][self.KEY_CELL_TYPE]
-        cell_number = self.cells[0][self.KEY_CELL_NUMBER]
+        cell_type = self.cells[0][self._KEY_CELL_TYPE]
+        cell_number = self.cells[0][self._KEY_CELL_NUMBER]
 
         # choose cmd base on cell type
         cmd = None
@@ -959,8 +973,8 @@ class UXMCellularSimulator(AbstractCellularSimulator):
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
         for cell in self.cells:
-            cell_type = cell[self.KEY_CELL_TYPE]
-            cell_number = cell[self.KEY_CELL_NUMBER]
+            cell_type = cell[self._KEY_CELL_TYPE]
+            cell_number = cell[self._KEY_CELL_NUMBER]
             self.turn_cell_off(cell_type, cell_number)
             time.sleep(5)
 
