@@ -51,6 +51,7 @@ LTE_MHZ_UPPER_BOUND_TO_RB = [
     (17.5, 75),
 ]
 
+
 class DciFormat(Enum):
     """Support DCI Formats for MIMOs."""
     DCI_FORMAT_0 = 1
@@ -74,12 +75,12 @@ class DuplexMode(Enum):
 
 class LteBandwidth(Enum):
     """Supported LTE bandwidths."""
-    BANDWIDTH_1MHz = 6 # MHZ_1 is RB_6
-    BANDWIDTH_3MHz = 15 # MHZ_3 is RB_15
-    BANDWIDTH_5MHz = 25 # MHZ_5 is RB_25
-    BANDWIDTH_10MHz = 50 # MHZ_10 is RB_50
-    BANDWIDTH_15MHz = 75 # MHZ_15 is RB_75
-    BANDWIDTH_20MHz = 100 # MHZ_20 is RB_100
+    BANDWIDTH_1MHz = 6  # MHZ_1 is RB_6
+    BANDWIDTH_3MHz = 15  # MHZ_3 is RB_15
+    BANDWIDTH_5MHz = 25  # MHZ_5 is RB_25
+    BANDWIDTH_10MHz = 50  # MHZ_10 is RB_50
+    BANDWIDTH_15MHz = 75  # MHZ_15 is RB_75
+    BANDWIDTH_20MHz = 100  # MHZ_20 is RB_100
 
 
 class LteState(Enum):
@@ -152,7 +153,6 @@ MIMO_MAX_LAYER_MAPPING = {
 
 
 class Cmx500(abstract_inst.SocketInstrument):
-
     def __init__(self, ip_addr, port, xlapi_path=DEFAULT_XLAPI_PATH):
         """Init method to setup variables for the controller.
 
@@ -168,7 +168,7 @@ class Cmx500(abstract_inst.SocketInstrument):
         self._initial_xlapi()
         self._settings.system.set_instrument_address(ip_addr)
         logger.info('The instrument address is {}'.format(
-                self._settings.system.get_instrument_address()))
+            self._settings.system.get_instrument_address()))
 
         self.bts = []
 
@@ -281,7 +281,7 @@ class Cmx500(abstract_inst.SocketInstrument):
                 getter = getattr(cell, attr)
                 logger.info('The {} is {}'.format(attr, getter()))
             except Exception as e:
-                logger.warning('Error in get {}: {}'.format(attr,e))
+                logger.warning('Error in get {}: {}'.format(attr, e))
 
     def get_base_station(self, bts_index=0):
         """Gets the base station object based on bts num. By default
@@ -349,8 +349,8 @@ class Cmx500(abstract_inst.SocketInstrument):
             for bts in self.bts:
                 if isinstance(bts, LteBaseStation):
                     bts.stop()
-                logger.info(
-                    'The LTE cell status is {} after stop'.format(bts.is_on()))
+                logger.info('The LTE cell status is {} after stop'.format(
+                    bts.is_on()))
 
     def switch_on_nsa_signalling(self):
 
@@ -424,7 +424,7 @@ class Cmx500(abstract_inst.SocketInstrument):
                 logger.info('{} reached at {} s'.format(state.value, idx))
                 return True
         error_message = 'Waiting for {} state timeout after {}'.format(
-                state.value, timeout)
+            state.value, timeout)
         logger.error(error_message)
         raise CmxError(error_message)
 
@@ -441,12 +441,19 @@ class Cmx500(abstract_inst.SocketInstrument):
             self.dut.signaling.wait_for_lte_attach(self.lte_cell, timeout)
         except:
             raise CmxError(
-                    'wait_until_attached timeout after {}'.format(timeout))
+                'wait_until_attached timeout after {}'.format(timeout))
+
+    def send_sms(self, message):
+        """ Sends an SMS message to the DUT.
+
+        Args:
+            message: the SMS message to send.
+        """
+        self.dut.signaling.mt_sms(message)
 
 
 class BaseStation(object):
     """Class to interact with different the base stations."""
-
     def __init__(self, cmx, cell):
         """Init method to setup variables for base station.
 
@@ -510,7 +517,7 @@ class BaseStation(object):
         """
         self._cell.set_band(band)
         logger.info('The band is set to {} and is {} after setting'.format(
-                band, self.band))
+            band, self.band))
 
     def set_dl_mac_padding(self, state):
         """Enables/Disables downlink padding at the mac layer.
@@ -564,7 +571,6 @@ class BaseStation(object):
 
 class LteBaseStation(BaseStation):
     """ LTE base station."""
-
     def __init__(self, cmx, cell):
         """Init method to setup variables for the LTE base station.
 
@@ -574,13 +580,22 @@ class LteBaseStation(BaseStation):
         """
         from xlapi.lte_cell import LteCell
         if not isinstance(cell, LteCell):
-            raise CmxError('The cell is not a LTE cell, LTE base station  fails'
-                           ' to create.')
+            raise CmxError(
+                'The cell is not a LTE cell, LTE base station  fails'
+                ' to create.')
         super().__init__(cmx, cell)
 
-    def _config_scheduler(self, dl_mcs=None, dl_rb_alloc=None, dl_dci_ncce=None,
-        dl_dci_format=None, dl_tm=None, dl_num_layers=None, dl_mcs_table=None,
-        ul_mcs=None, ul_rb_alloc=None, ul_dci_ncce=None):
+    def _config_scheduler(self,
+                          dl_mcs=None,
+                          dl_rb_alloc=None,
+                          dl_dci_ncce=None,
+                          dl_dci_format=None,
+                          dl_tm=None,
+                          dl_num_layers=None,
+                          dl_mcs_table=None,
+                          ul_mcs=None,
+                          ul_rb_alloc=None,
+                          ul_dci_ncce=None):
 
         from rs_mrt.testenvironment.signaling.sri.rat.lte import DciFormat
         from rs_mrt.testenvironment.signaling.sri.rat.lte import DlTransmissionMode
@@ -626,11 +641,16 @@ class LteBaseStation(BaseStation):
         self._cell.set_num_crs_antenna_ports(4)
         scheduler = self._cmx.dut.get_scheduler(self._cell)
         logger.info('configure scheduler for {}'.format(','.join(log_list)))
-        scheduler.configure_scheduler(
-                dl_mcs=dl_mcs, dl_rb_alloc=dl_rb_alloc, dl_dci_ncce=dl_dci_ncce,
-                dl_dci_format=dl_dci_format, dl_tm=dl_tm,
-                dl_num_layers=dl_num_layers, dl_mcs_table=dl_mcs_table,
-                ul_mcs=ul_mcs, ul_rb_alloc=ul_rb_alloc, ul_dci_ncce=ul_dci_ncce)
+        scheduler.configure_scheduler(dl_mcs=dl_mcs,
+                                      dl_rb_alloc=dl_rb_alloc,
+                                      dl_dci_ncce=dl_dci_ncce,
+                                      dl_dci_format=dl_dci_format,
+                                      dl_tm=dl_tm,
+                                      dl_num_layers=dl_num_layers,
+                                      dl_mcs_table=dl_mcs_table,
+                                      ul_mcs=ul_mcs,
+                                      ul_rb_alloc=ul_rb_alloc,
+                                      ul_dci_ncce=ul_dci_ncce)
         logger.info('Configure scheduler succeeds')
 
         # Sets num of crs antenna ports back to previous value
@@ -663,7 +683,7 @@ class LteBaseStation(BaseStation):
         """Get the downlink frequency of the cell."""
         from mrtype.frequency import Frequency
         return self._cell.get_dl_earfcn().to_freq().in_units(
-                Frequency.Units.GHz)
+            Frequency.Units.GHz)
 
     def _to_rb_bandwidth(self, bandwidth):
         for idx in range(5):
@@ -701,8 +721,7 @@ class LteBaseStation(BaseStation):
             inactivity_timer=LteDrxInactivityTimer.PSF_200,
             retransmission_timer=LteDrxRetransmissionTimer.PSF_33,
             long_cycle_start_offset=LteDrxLongCycleStartOffset.ms160(83),
-            short_drx= None
-        )
+            short_drx=None)
         self._cmx.dut.lte_cell_group().set_drx_and_adjust_scheduler(
             drx_config=lte_drx_config)
         self._network.apply_changes()
@@ -725,8 +744,8 @@ class LteBaseStation(BaseStation):
         if ssf_cfg:
             ssf_pattern = SpecialSubframePattern(ssf_cfg)
         tdd = Tdd(tdd_config=Tdd.TddConfigSignaling(
-                subframe_assignment=tdd_subframe,
-                special_subframe_pattern=ssf_pattern))
+            subframe_assignment=tdd_subframe,
+            special_subframe_pattern=ssf_pattern))
         self._cell.stub.SetCellFrequencyBand(CellFrequencyBand(tdd=tdd))
         self._network.apply_changes()
 
@@ -740,7 +759,7 @@ class LteBaseStation(BaseStation):
         from rs_mrt.testenvironment.signaling.sri.rat.lte.config import PdcchRegionReq
 
         logger.info('The cfi enum to set is {}'.format(
-                NumberOfPdcchSymbols(cfi)))
+            NumberOfPdcchSymbols(cfi)))
         req = PdcchRegionReq()
         req.num_pdcch_symbols = NumberOfPdcchSymbols(cfi)
         self._cell.stub.SetPdcchControlRegion(req)
@@ -794,8 +813,11 @@ class LteBaseStation(BaseStation):
         if is_on:
             self._cell.start()
 
-    def set_scheduling_mode(
-        self, mcs_dl=None, mcs_ul=None, nrb_dl=None, nrb_ul=None):
+    def set_scheduling_mode(self,
+                            mcs_dl=None,
+                            mcs_ul=None,
+                            nrb_dl=None,
+                            nrb_ul=None):
         """Sets scheduling mode.
 
         Args:
@@ -805,8 +827,10 @@ class LteBaseStation(BaseStation):
             nrb_dl: Number of RBs for downlink.
             nrb_ul: Number of RBs for uplink.
         """
-        self._config_scheduler(dl_mcs=mcs_dl, ul_mcs=mcs_ul, dl_rb_alloc=nrb_dl,
-                ul_rb_alloc=nrb_ul)
+        self._config_scheduler(dl_mcs=mcs_dl,
+                               ul_mcs=mcs_ul,
+                               dl_rb_alloc=nrb_dl,
+                               ul_rb_alloc=nrb_ul)
 
     def set_ssf_config(self, ssf_config):
         """Sets ssf subframe assignment with tdd_config.
@@ -838,7 +862,6 @@ class LteBaseStation(BaseStation):
         self._cc.set_dl_tm(dl_tm)
         self._network.apply_changes()
 
-
     def set_ul_channel(self, channel):
         """Sets the up link channel number of cell.
 
@@ -869,7 +892,7 @@ class LteBaseStation(BaseStation):
         """
         from mrtype.frequency import Frequency
         return self._cell.get_ul_earfcn().to_freq().in_units(
-                Frequency.Units.GHz)
+            Frequency.Units.GHz)
 
     def set_ul_modulation_table(self, modulation):
         """Sets up link modulation table.
@@ -887,7 +910,6 @@ class LteBaseStation(BaseStation):
 
 class NrBaseStation(BaseStation):
     """ NR base station."""
-
     def __init__(self, cmx, cell):
         """Init method to setup variables for the NR base station.
 
@@ -902,9 +924,14 @@ class NrBaseStation(BaseStation):
 
         super().__init__(cmx, cell)
 
-    def _config_scheduler(self, dl_mcs=None, dl_mcs_table=None,
-                          dl_rb_alloc=None, dl_mimo_mode=None,
-                          ul_mcs=None, ul_mcs_table=None, ul_rb_alloc=None,
+    def _config_scheduler(self,
+                          dl_mcs=None,
+                          dl_mcs_table=None,
+                          dl_rb_alloc=None,
+                          dl_mimo_mode=None,
+                          ul_mcs=None,
+                          ul_mcs_table=None,
+                          ul_rb_alloc=None,
                           ul_mimo_mode=None):
 
         from rs_mrt.testenvironment.signaling.sri.rat.nr import McsTable
@@ -942,11 +969,14 @@ class NrBaseStation(BaseStation):
         scheduler = self._cmx.dut.get_scheduler(self._cell)
         logger.info('configure scheduler for {}'.format(','.join(log_list)))
 
-        scheduler.configure_ue_scheduler(
-                dl_mcs=dl_mcs, dl_mcs_table=dl_mcs_table,
-                dl_rb_alloc=dl_rb_alloc, dl_mimo_mode=dl_mimo_mode,
-                ul_mcs=ul_mcs, ul_mcs_table=ul_mcs_table,
-                ul_rb_alloc=ul_rb_alloc, ul_mimo_mode=ul_mimo_mode)
+        scheduler.configure_ue_scheduler(dl_mcs=dl_mcs,
+                                         dl_mcs_table=dl_mcs_table,
+                                         dl_rb_alloc=dl_rb_alloc,
+                                         dl_mimo_mode=dl_mimo_mode,
+                                         ul_mcs=ul_mcs,
+                                         ul_mcs_table=ul_mcs_table,
+                                         ul_rb_alloc=ul_rb_alloc,
+                                         ul_mimo_mode=ul_mimo_mode)
         logger.info('Configure scheduler succeeds')
         self._network.apply_changes()
 
@@ -980,7 +1010,7 @@ class NrBaseStation(BaseStation):
         from rs_mrt.testenvironment.signaling.sri.rat.common import SetupRelease
 
         logger.info('Config flexible slots')
-        req= CellFrequencyBandReq()
+        req = CellFrequencyBandReq()
         req.band.frequency_range.fr1.tdd.tdd_config_common.setup_release = SetupRelease.RELEASE
         self._cell.stub.SetCellFrequencyBand(req)
         self._network.apply_changes()
@@ -1040,9 +1070,10 @@ class NrBaseStation(BaseStation):
         if not scs:
             scs = self._cell.get_scs()
         self._cell.set_carrier_bandwidth_and_scs(
-                self._bandwidth_to_carrier_bandwidth(bandwidth), scs)
-        logger.info('The bandwidth in MHz is {}. After setting, the value is {}'
-                    .format(bandwidth, str(self._cell.get_carrier_bandwidth())))
+            self._bandwidth_to_carrier_bandwidth(bandwidth), scs)
+        logger.info(
+            'The bandwidth in MHz is {}. After setting, the value is {}'.
+            format(bandwidth, str(self._cell.get_carrier_bandwidth())))
 
     def set_dl_channel(self, channel):
         """Sets the downlink channel number of cell.
@@ -1098,8 +1129,11 @@ class NrBaseStation(BaseStation):
         if is_on:
             self._cell.start()
 
-    def set_scheduling_mode(
-        self, mcs_dl=None, mcs_ul=None, nrb_dl=None, nrb_ul=None):
+    def set_scheduling_mode(self,
+                            mcs_dl=None,
+                            mcs_ul=None,
+                            nrb_dl=None,
+                            nrb_ul=None):
         """Sets scheduling mode.
 
         Args:
@@ -1108,8 +1142,10 @@ class NrBaseStation(BaseStation):
             nrb_dl: Number of RBs for downlink.
             nrb_ul: Number of RBs for uplink.
         """
-        self._config_scheduler(dl_mcs=mcs_dl, ul_mcs=mcs_ul, dl_rb_alloc=nrb_dl,
-                ul_rb_alloc=nrb_ul)
+        self._config_scheduler(dl_mcs=mcs_dl,
+                               ul_mcs=mcs_ul,
+                               dl_rb_alloc=nrb_dl,
+                               ul_rb_alloc=nrb_ul)
 
     def set_ssf_config(self, ssf_config):
         """Sets ssf subframe assignment with tdd_config.
