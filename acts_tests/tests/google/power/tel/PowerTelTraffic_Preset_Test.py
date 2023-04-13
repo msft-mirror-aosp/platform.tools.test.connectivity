@@ -26,7 +26,7 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
 
     # command to start iperf server on UE
     # (require: 1.path to iperf exe 2.hostname/hostIP)
-    START_IPERF_CLIENT_UE_CMD = 'nohup > /dev/null 2>&1 sh -c "iperf3 -c {iperf_host_ip} -i1 -p5202 -w8m -t2000 > /dev/null &"'
+    START_IPERF_CLIENT_UE_CMD = 'nohup > /dev/null 2>&1 sh -c "iperf3 -c {iperf_host_ip} -i1 -p5202 -w8m -t2000 -O{second} > /dev/null &"'
 
     # command to start iperf server on host()
     START_IPERF_SV_HOST_CMD = '{exe_path}\\iperf3 -s -p5202'
@@ -34,10 +34,10 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
     # command to start iperf client on host
     # (require: 1.path to iperf exe 2.UE IP)
     START_IPERF_CLIENT_HOST_CMD = (
-        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201')
+        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -O{second}')
 
     START_IPERF_CLIENT_HOST_CMD_FR2 = (
-        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -P32')
+        '{exe_path}\\iperf3 -c {ue_ip} -w16M -t1000 -p5201 -P32 -O{second}')
 
     def __init__(self, controllers):
         super().__init__(controllers)
@@ -65,7 +65,8 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
 
         # get tput configs
         self.unpack_userparams(abnormal_bandwidth_tolerance=0.1,
-                               bandwidth_tolerance=0.1)
+                               bandwidth_tolerance=0.1,
+                               n_second_to_omitted=45)
         self.expected_downlink_bandwidth = float(self.test_configs[self.test_name]['tput']['downlink'].split()[0])
         self.expected_uplink_bandwidth = float(self.test_configs[self.test_name]['tput']['uplink'].split()[0])
 
@@ -115,8 +116,12 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
             raise RuntimeError('\n'.join(err_message))
 
     def teardown_test(self):
-        self._end_iperfs()
-        super().teardown_test()
+        try:
+            self._end_iperfs()
+        except RuntimeError as re:
+            raise re
+        finally:
+            super().teardown_test()
 
     def _iperf_log_check(self, file, expected_bandwidth):
         """Check iperf log and abnormal bandwidth instances.
@@ -176,11 +181,13 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
         if 'fr2' in self.test_name:
             cmd = self.START_IPERF_CLIENT_HOST_CMD_FR2.format(
                 exe_path=self.iperf_exe_path,
-                ue_ip=self.ue_ip)
+                ue_ip=self.ue_ip,
+                second=self.n_second_to_omitted)
         else:
             cmd = self.START_IPERF_CLIENT_HOST_CMD.format(
                 exe_path=self.iperf_exe_path,
-                ue_ip=self.ue_ip)
+                ue_ip=self.ue_ip,
+                second=self.n_second_to_omitted)
 
         if not cmd:
             raise RuntimeError('Cannot format command to start iperf client.')
@@ -198,7 +205,8 @@ class PowerTelTrafficPresetTest(PB.PowerCellularPresetLabBaseTest):
         time.sleep(5)
         # start UE iperf
         adb_cmd = self.START_IPERF_CLIENT_UE_CMD.format(
-            iperf_host_ip=self.iperf_host_ip)
+            iperf_host_ip=self.iperf_host_ip,
+            second=self.n_second_to_omitted)
         self.cellular_dut.ad.adb.shell(adb_cmd)
         self.log.info('cmd sent to UE: ' + adb_cmd)
         self.log.info('UE iperf client started')

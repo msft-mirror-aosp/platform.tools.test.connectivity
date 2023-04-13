@@ -124,6 +124,14 @@ class AtUtil():
         res = self.send(cmd)
         return res
 
+    def get_sim_slot_mapping(self):
+        cmd = r'am instrument -w -e request at+slotmap? -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        return self.send(cmd)
+
+    def set_single_psim(self):
+        cmd = r'am instrument -w -e request at+slotmap=1 -e response wait "com.google.mdstest/com.google.mdstest.instrument.ModemATCommandInstrumentation"'
+        return self.send(cmd)
+
     def enable_ims_nr(self):
         # set !NRCAPA.Gen.VoiceOverNr
         self.set_nv(
@@ -269,6 +277,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
             self.at_util.lock_band()
             self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
+
+            self.at_util.set_single_psim()
 
         self.unpack_userparams(is_wifi_only_device=False)
 
@@ -557,7 +567,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         self.cellular_dut.toggle_airplane_mode(True)
 
         if self.is_mdstest_supported:
-            self.log.info('Band lock info: \n%s',self.at_util.get_band_lock_info())
+            self.log.info('Band lock info: \n%s', self.at_util.get_band_lock_info())
+            self.log.info('Sim slot map: \n%s', self.at_util.get_sim_slot_mapping())
 
         # processing result
         self.sponge_upload()
