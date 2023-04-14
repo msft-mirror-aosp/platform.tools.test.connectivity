@@ -428,6 +428,30 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
+    def set_apn(self, apn):
+        """ Configures the callbox network Access Point Name.
+
+        Args:
+            apn: the APN name
+        """
+        raise NotImplementedError()
+
+    def set_ip_type(self, ip_type):
+        """ Configures the callbox network IP type.
+
+        Args:
+            ip_type: the network type to use.
+        """
+        raise NotImplementedError()
+
+    def set_mtu(self, mtu):
+        """ Configures the callbox network Maximum Transmission Unit.
+
+        Args:
+            mtu: the MTU size.
+        """
+        raise NotImplementedError()
+
     def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
         attached to the primary carrier first.
