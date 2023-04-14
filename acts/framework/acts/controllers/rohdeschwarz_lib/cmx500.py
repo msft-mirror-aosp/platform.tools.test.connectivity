@@ -616,13 +616,9 @@ class LteBaseStation(BaseStation):
             dl_mcs_table = McsTable(dl_mcs_table)
             log_list.append('dl_mcs_table: {}'.format(dl_mcs_table))
 
-        is_on = self._cell.is_on()
         num_crs_antenna_ports = self._cell.get_num_crs_antenna_ports()
 
         # Sets num of crs antenna ports to 4 for configuring
-        if is_on:
-            self._cell.stop()
-            time.sleep(1)
         self._cell.set_num_crs_antenna_ports(4)
         scheduler = self._cmx.dut.get_scheduler(self._cell)
         logger.info('configure scheduler for {}'.format(','.join(log_list)))
@@ -636,9 +632,6 @@ class LteBaseStation(BaseStation):
         # Sets num of crs antenna ports back to previous value
         self._cell.set_num_crs_antenna_ports(num_crs_antenna_ports)
         self._network.apply_changes()
-
-        if is_on:
-            self._cell.start()
 
     @property
     def bandwidth(self):
@@ -786,13 +779,8 @@ class LteBaseStation(BaseStation):
         if not isinstance(mimo, MimoModes):
             raise CmxError("Wrong type of mimo mode")
 
-        is_on = self._cell.is_on()
-        if is_on:
-            self._cell.stop()
         self._cell.set_num_crs_antenna_ports(mimo.value)
         self._config_scheduler(dl_num_layers=MIMO_MAX_LAYER_MAPPING[mimo])
-        if is_on:
-            self._cell.start()
 
     def set_scheduling_mode(
         self, mcs_dl=None, mcs_ul=None, nrb_dl=None, nrb_ul=None):
@@ -935,10 +923,6 @@ class NrBaseStation(BaseStation):
         if ul_mimo_mode:
             log_list.append('ul_mimo_mode: {}'.format(ul_mimo_mode))
 
-        is_on = self._cell.is_on()
-        if is_on:
-            self._cell.stop()
-            time.sleep(1)
         scheduler = self._cmx.dut.get_scheduler(self._cell)
         logger.info('configure scheduler for {}'.format(','.join(log_list)))
 
@@ -949,9 +933,6 @@ class NrBaseStation(BaseStation):
                 ul_rb_alloc=ul_rb_alloc, ul_mimo_mode=ul_mimo_mode)
         logger.info('Configure scheduler succeeds')
         self._network.apply_changes()
-
-        if is_on:
-            self._cell.start()
 
     def attach_as_secondary_cell(self, endc_timer=DEFAULT_ENDC_TIMER):
         """Enable endc mode for NR cell.
@@ -1091,12 +1072,7 @@ class NrBaseStation(BaseStation):
         if not isinstance(mimo, MimoModes):
             raise CmxError("Wrong type of mimo mode")
 
-        is_on = self._cell.is_on()
-        if is_on:
-            self._cell.stop()
         self._config_scheduler(dl_mimo_mode=DownlinkMimoMode.Enum(mimo.value))
-        if is_on:
-            self._cell.start()
 
     def set_scheduling_mode(
         self, mcs_dl=None, mcs_ul=None, nrb_dl=None, nrb_ul=None):
