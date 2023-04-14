@@ -497,10 +497,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log,
                 self.dut,
                 self.call_server_number,
-                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
-                call_stats_check=self.call_stats_check,
-                voice_type_init=voice_type_init,
-                result_info = self.result_info
+                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
