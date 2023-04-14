@@ -235,6 +235,7 @@ class ImsApiConnector:
       self.ssh.start_app(self._IMS_SERVER_APP, self._IMS_SERVER_APP_LOC)
       time.sleep(self._APP_BOOT_TIME)
 
+      self.create_ims_app_link()
       self.ims_api_call_method('ISipConnection.Unregister()')
       self.ims_api_call_method('ISipConnection.Register()')
 
