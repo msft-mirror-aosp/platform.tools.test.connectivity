@@ -33,6 +33,13 @@ WCDMA_PSWITCHED_ON_RESP = 'ON'
 STATE_CHANGE_TIMEOUT = 20
 
 
+class IPAddressType(Enum):
+    """ IP Address types"""
+    IPV4 = "IPV4"
+    IPV6 = "IPV6"
+    IPV4V6 = "IPV46"
+
+
 class SignallingState(Enum):
     """Signalling states common to all RATs."""
     ON = 'ON'
@@ -719,6 +726,58 @@ class Cmw500(abstract_inst.SocketInstrument):
             offset: Number in range 0...(long cycle - 1)
         """
         cmd = 'CONFigure:LTE:SIGN:CONNection:CDRX:SOFFset {}'.format(offset)
+        self.send_and_recv(cmd)
+
+    @property
+    def apn(self):
+        """Gets the callbox network Access Point Name."""
+        cmd = 'CONFigure:LTE:SIGNaling:CONNection:APN?'
+        return self.send_and_recv(cmd)
+
+    @apn.setter
+    def apn(self, apn):
+        """Sets the callbox network Access Point Name.
+
+        Args:
+            apn: the APN name
+        """
+        cmd = 'CONFigure:LTE:SIGNaling:CONNection:APN {}'.format(apn)
+        self.send_and_recv(cmd)
+
+    @property
+    def ip_type(self):
+        """Gets the callbox network IP type."""
+        cmd = 'CONFigure:LTE:SIGNaling:CONNection:IPVersion?'
+        return self.send_and_recv(cmd)
+
+    @ip_type.setter
+    def ip_type(self, ip_type):
+        """ Configures the callbox network IP type.
+
+        Args:
+            ip_type: the network type to use.
+        """
+        if not isinstance(ip_type, IPAddressType):
+            raise ValueError('state should be the instance of IPAddressType.')
+
+        cmd = 'CONFigure:LTE:SIGNaling:CONNection:IPVersion {}'.format(
+            ip_type.value)
+        return self.send_and_recv(cmd)
+
+    @property
+    def mtu(self):
+        """Gets the callbox network Maximum Transmission Unit."""
+        cmd = 'CONFigure:DATA:CONTrol:MTU?'
+        return self.send_and_recv(cmd)
+
+    @mtu.setter
+    def mtu(self, mtu):
+        """Sets the callbox network Maximum Transmission Unit.
+
+        Args:
+            mtu: the MTU size.
+        """
+        cmd = 'CONFigure:DATA:CONTrol:MTU {}'.format(mtu)
         self.send_and_recv(cmd)
 
     def get_base_station(self, bts_num=BtsNumber.BTS1):
