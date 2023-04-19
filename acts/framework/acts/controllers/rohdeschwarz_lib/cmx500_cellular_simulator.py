@@ -442,3 +442,11 @@ class CMX500CellularSimulator(cc.AbstractCellularSimulator):
     def stop_data_traffic(self):
         """ Stops transmitting data from the instrument to the DUT. """
         self.log.warning('The stop_data_traffic is not implemented yet')
+
+    def send_sms(self, message):
+        """ Sends an SMS message to the DUT.
+
+        Args:
+            message: the SMS message to send.
+        """
+        self.cmx.send_sms(message)
