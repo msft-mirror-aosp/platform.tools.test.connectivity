@@ -22,6 +22,13 @@ from acts.controllers.cellular_lib.NrCellConfig import NrCellConfig
 from acts.controllers.cellular_lib import BaseCellularDut
 
 
+class IPAddressType(Enum):
+    """ IP Address types"""
+    IPV4 = "IPV4"
+    IPV6 = "IPV6"
+    IPV4V6 = "IPV4V6"
+
+
 class TransmissionMode(Enum):
     """ Transmission modes for LTE (e.g., TM1, TM4, ...) """
     TM1 = "TM1"
@@ -87,7 +94,7 @@ class LteSimulation(BaseSimulation):
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
     # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
     DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
-        'excellent': -75,
+        'excellent': -62,
         'high': -110,
         'medium': -115,
         'weak': -120,
