@@ -210,6 +210,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
 
     WEARABLE_POWER_RAIL = 'LTE_DC'
 
+    WEARABLE_SOC_MODEM_RAIL = 'SOC_MODEM_USBHS'
+
     MODEM_MMWAVE_RAIL_NAME = 'VSYS_PWR_MMWAVE'
 
     MONSOON_RAIL_NAME = 'Monsoon:mW'
@@ -447,9 +449,9 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                     elif self.MONSOON_RAIL_NAME in railname:
                         self.log.info('%s: %f',railname, power)
                         self.monsoon_power = power
-                    elif self.WEARABLE_POWER_RAIL in railname:
+                    elif self.WEARABLE_POWER_RAIL in railname or self.WEARABLE_SOC_MODEM_RAIL in railname:
                         self.log.info('%s: %f',railname, power)
-                        self.modem_power = power
+                        self.modem_power += power
         if self.modem_power:
             self.power_results[self.test_name] = self.modem_power
 
