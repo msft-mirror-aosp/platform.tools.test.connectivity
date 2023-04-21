@@ -23,6 +23,7 @@ import fnmatch
 import posixpath
 import subprocess
 import tempfile
+import functools
 from retry import retry
 from collections import namedtuple
 from datetime import datetime, timedelta
@@ -627,6 +628,9 @@ def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
     Args:
         ad: An AndroidDevice object.
         dwelltime: Waiting time for modem reset. Default is 60 seconds.
+
+    Returns:
+        ssr_crash_time: The epoch time SSR is crashed
     """
     mds_check = ad.adb.shell("pm path com.google.mdstest")
     if not mds_check:
@@ -636,6 +640,7 @@ def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
            '"com.google.mdstest/com.google.mdstest.instrument'
            '.ModemCommandInstrumentation"')
     ad.log.info("Triggering modem SSR crash by MDS")
+    ssr_crash_time = get_current_epoch_time()
     output = ad.adb.shell(cmd, ignore_status=True)
     ad.log.debug(output)
     time.sleep(dwelltime)
@@ -645,6 +650,7 @@ def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
     else:
         raise signals.TestError(
             "Failed to trigger modem SSR crash by MDS. \n%s" % output)
+    return ssr_crash_time
 
 
 def check_xtra_download(ad, begin_time):
@@ -2258,30 +2264,117 @@ def get_process_pid(ad, process_name):
     return pid
 
 
-def restart_gps_daemons(ad):
+def restart_gps_daemons(ad, service):
     """Restart GPS daemons by killing services of gpsd, lhd and scd.
 
     Args:
         ad: An AndroidDevice object.
+
+    Returns:
+        kill_start_time: The time GPSd being killed.
     """
-    gps_daemons_list = ["gpsd", "lhd", "scd"]
+    kill_start_time = 0
     ad.root_adb()
-    for service in gps_daemons_list:
-        time.sleep(3)
-        ad.log.info("Kill GPS daemon \"%s\"" % service)
-        service_pid = get_process_pid(ad, service)
-        ad.log.debug("%s PID: %s" % (service, service_pid))
-        ad.adb.shell(f"kill -9 {service_pid}")
-        # Wait 3 seconds for daemons and services to start.
-        time.sleep(3)
+    ad.log.info("Kill GPS daemon \"%s\"" % service)
+    service_pid = get_process_pid(ad, service)
+    ad.log.debug("%s PID: %s" % (service, service_pid))
+    ad.adb.shell(f"kill -9 {service_pid}")
+    kill_start_time = get_current_epoch_time()
+    new_pid, recover_time = get_new_pid_process_time(ad, service_pid, service, 20)
 
-        new_pid = get_process_pid(ad, service)
-        ad.log.debug("%s new PID: %s" % (service, new_pid))
-        if not new_pid or service_pid == new_pid:
-            raise signals.TestError("Unable to restart \"%s\"" % service)
+    ad.log.info("GPS daemon \"%s\" restarts successfully. PID from %s to %s" % (
+        service, service_pid, new_pid))
+    ad.log.info("\t- \"%s\" process recovered time: %d ms" % (service, recover_time))
+    return kill_start_time
 
-        ad.log.info("GPS daemon \"%s\" restarts successfully. PID from %s to %s" % (
-            service, service_pid, new_pid))
+
+def get_new_pid_process_time(ad, origin_pid, process_name, timeout):
+    """Get the new process PID and the time it took for restarting
+
+    Args:
+        ad: An AndroidDevice object.
+        origin_pid: The original pid of specified process
+        process_name: Name of process
+        timeout: Timeout of checking
+
+    Returns:
+        1. How long takes for restarting the specified process.
+        2. New PID
+    """
+    begin_time = get_current_epoch_time()
+    pid = None
+    while not pid and get_current_epoch_time() - begin_time < timeout * 1000:
+        pid = get_process_pid(ad, process_name)
+        if pid and origin_pid != pid:
+            ad.log.debug("%s new PID: %s" % (process_name, pid))
+            return pid, get_current_epoch_time() - begin_time
+    raise ValueError("Unable to restart \"%s\"" % process_name)
+
+
+def get_gpsd_update_time(ad, begin_time):
+    """Get the UTC time of first GPSd status update shows up after begin_time
+
+    Args:
+        ad: An AndroidDevice object.
+        begin_time: The start time of the log.
+
+    Returns:
+        The datetime object which indicates when is first GPSd status update
+    """
+    ad.log.info("Checking GNSS status after %s",
+                datetime.fromtimestamp( begin_time / 1000))
+    for retry_times in range(1, 7):
+        gnss_status = ad.search_logcat("Gnss status update",
+                                       begin_time=begin_time)
+        if len(gnss_status) > 0:
+            break
+        ad.log.info("GNSS status update not found, waiting for retry %d", retry_times)
+        time.sleep(1)
+    else:
+        raise ValueError("No \"GNSS status update\" found in logs.")
+    ad.log.info("GNSS status update found.")
+    return int(gnss_status[0]["datetime_obj"].timestamp() * 1000)
+
+
+def get_location_fix_time_via_gpstool_log(ad, begin_time):
+    """Get the UTC time of location update with given
+    device time from the log output by GPSTool.
+
+    Args:
+        ad: An AndroidDevice object.
+        begin_time: The start time of the log.
+
+    Returns:
+        The datetime object which indicates when is the
+        first location fix time shows up
+    """
+    location_fix_time = ad.search_logcat("GPSService: Time",
+                                         begin_time=begin_time)
+    if not location_fix_time:
+        raise ValueError("No \"Location fix time\" found in logs.")
+    return int(location_fix_time[0]["datetime_obj"].timestamp() * 1000)
+
+
+def get_gps_process_and_kill_function_by_vendor(ad):
+    """Get process to be killed by vendor and
+    return the kill function accordingly
+
+    Args:
+        ad: An AndroidDevice object.
+
+    Returns:
+        killed_processes: What processes to be killed
+        kill_function: What method to be used for killing the process
+    """
+    if check_chipset_vendor_by_qualcomm(ad):
+        ad.log.info("Triggered modem SSR")
+        kill_function = functools.partial(gnss_trigger_modem_ssr_by_mds, ad=ad)
+        killed_processes = ['SSR']
+    else:
+        ad.log.info("Triggered restarting GPS daemons")
+        kill_function = functools.partial(restart_gps_daemons, ad=ad)
+        killed_processes = ['gpsd', 'scd', 'lhd']
+    return killed_processes, kill_function
 
 
 def is_device_wearable(ad):
