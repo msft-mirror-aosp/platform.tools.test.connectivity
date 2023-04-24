@@ -200,11 +200,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
         'PP0850_L8C_PCIE'
     ]
 
-    MODEM_RFFE_RAIL_NAME_LIST = [
-        'PP1200_L31C_RFFE',
-        'VSYS_PWR_RFFE',
-        'PP2800_L33C_RFFE'
-    ]
+    MODEM_RFFE_RAIL_NAME = 'VSYS_PWR_RFFE'
 
     MODEM_POWER_RAIL_NAME = 'VSYS_PWR_MODEM'
 
@@ -315,6 +311,8 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
             self.cellular_simulator.recovery_ta()
             self.cellular_simulator.socket_connect()
             raise signals.TestFailure('TA crashed mid test, retry needed.')
+
+    
 
     def toggle_modem_log(self, new_state: bool, timeout: int=30):
         new_state = str(new_state).lower()
@@ -440,7 +438,7 @@ class PowerCellularPresetLabBaseTest(PWCEL.PowerCellularLabBaseTest):
                     elif self.MODEM_POWER_RAIL_NAME in railname:
                         self.log.info('%s: %f',railname, power)
                         self.modem_power = power
-                    elif self._is_any_substring(railname, self.MODEM_RFFE_RAIL_NAME_LIST):
+                    elif self.MODEM_RFFE_RAIL_NAME in railname:
                         self.log.info('%s: %f',railname, power)
                         self.rffe_power = power
                     elif self.MODEM_MMWAVE_RAIL_NAME in railname:
